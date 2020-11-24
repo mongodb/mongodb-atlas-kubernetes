@@ -1,6 +1,6 @@
-module https: //github.com/mongodb/mongodb-atlas-kubernetes
+module github.com/mongodb/mongodb-atlas-kubernetes
 
-go 1.13
+go 1.15
 
 require (
 	k8s.io/apimachinery v0.18.6
