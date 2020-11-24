@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasclusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlascluster-editor-role
+rules:
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasclusters/status
+  verbs:
+  - get
