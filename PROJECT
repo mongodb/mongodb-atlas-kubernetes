@@ -1,0 +1,7 @@
+domain: mongodb.com
+layout: go.kubebuilder.io/v2
+projectName: mongodb-atlas-kubernetes
+repo: github.com/mongodb/mongodb-atlas-kubernetes
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}
