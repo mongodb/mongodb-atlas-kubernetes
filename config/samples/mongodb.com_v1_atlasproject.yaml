@@ -1,0 +1,7 @@
+apiVersion: mongodb.com.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: atlasproject-sample
+spec:
+  # Add fields here
+  foo: bar
