@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package controller
 
 import (
 	"path/filepath"
@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/api/v1"
+	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

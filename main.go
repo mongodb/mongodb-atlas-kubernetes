@@ -18,6 +18,8 @@ package main
 
 import (
 	"flag"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/altascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,8 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/controllers"
+	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -67,7 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.AtlasClusterReconciler{
+	if err = (&altascluster.AtlasClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("AtlasCluster"),
 		Scheme: mgr.GetScheme(),
@@ -75,7 +76,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
 	}
-	if err = (&controllers.AtlasProjectReconciler{
+	if err = (&atlasproject.AtlasProjectReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("AtlasProject"),
 		Scheme: mgr.GetScheme(),
