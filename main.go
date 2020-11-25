@@ -29,7 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -41,7 +41,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(mongodbcomv1.AddToScheme(scheme))
+	utilruntime.Must(mdbv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

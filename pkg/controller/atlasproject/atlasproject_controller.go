@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
@@ -48,6 +48,6 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mongodbcomv1.AtlasProject{}).
+		For(&mdbv1.AtlasProject{}).
 		Complete(r)
 }
