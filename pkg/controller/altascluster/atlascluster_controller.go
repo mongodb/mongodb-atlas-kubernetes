@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package altascluster
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 // AtlasClusterReconciler reconciles a AtlasCluster object
@@ -48,6 +48,6 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mongodbcomv1.AtlasCluster{}).
+		For(&mdbv1.AtlasCluster{}).
 		Complete(r)
 }

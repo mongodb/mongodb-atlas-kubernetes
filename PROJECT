@@ -6,6 +6,9 @@ resources:
 - group: mongodb.com
   kind: AtlasCluster
   version: v1
+- group: mongodb.com
+  kind: AtlasProject
+  version: v1
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
