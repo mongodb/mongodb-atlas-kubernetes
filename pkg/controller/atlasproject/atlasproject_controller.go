@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package atlasproject
 
 import (
 	"context"
@@ -24,30 +24,30 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mongodbcomv1 "github.com/mongodb/mongodb-atlas-kubernetes/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
-// AtlasClusterReconciler reconciles a AtlasCluster object
-type AtlasClusterReconciler struct {
+// AtlasProjectReconciler reconciles a AtlasProject object
+type AtlasProjectReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
 
-func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("atlascluster", req.NamespacedName)
+	_ = r.Log.WithValues("atlasproject", req.NamespacedName)
 
 	// your logic here
 
 	return ctrl.Result{}, nil
 }
 
-func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mongodbcomv1.AtlasCluster{}).
+		For(&mdbv1.AtlasProject{}).
 		Complete(r)
 }
