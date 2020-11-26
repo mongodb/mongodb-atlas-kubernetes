@@ -20,26 +20,48 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Important:
+// The procedure working with this file:
+// 1. Edit the file
+// 1. Run "make generate" to regenerate code
+// 2. Run "make manifests" to regenerate the CRD
 
-// AtlasProjectSpec defines the desired state of AtlasProject
-type AtlasProjectSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+// Dev note: this file should be placed in "v1" package (not the nested one) as 'make manifests' doesn't generate the proper
+// CRD - this may be addressed later as having a subpackage may get a much nicer code
 
-	// Foo is an example field of AtlasProject. Edit AtlasProject_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+func init() {
+	SchemeBuilder.Register(&AtlasProject{}, &AtlasProjectList{})
 }
+
+// AtlasProjectSpec defines the desired state of Project in Atlas
+type AtlasProjectSpec struct {
+
+	// Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
+	Name string `json:"name"`
+
+	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
+	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
+	// +optional
+	ConnectionSecret *SecretRef `json:"connectionSecretRef,omitempty"`
+
+	// ProjectIPAccessList allows to enable the API Access List for the Project. See more information at
+	// https://docs.atlas.mongodb.com/configure-api-access/
+	// +optional
+	ProjectIPAccessList []ProjectIPAccessList `json:"ipAccessList,omitempty"`
+}
+
+// +kubebuilder:subresource:status
 
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Ideas: projectId? Warnings? (e.g. about expired project IP access lists)
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
 
 // AtlasProject is the Schema for the atlasprojects API
 type AtlasProject struct {
@@ -51,7 +73,6 @@ type AtlasProject struct {
 }
 
 // +kubebuilder:object:root=true
-
 // AtlasProjectList contains a list of AtlasProject
 type AtlasProjectList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -59,6 +80,20 @@ type AtlasProjectList struct {
 	Items           []AtlasProject `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&AtlasProject{}, &AtlasProjectList{})
+type ProjectIPAccessList struct {
+	// Unique identifier of AWS security group in this access list entry.
+	// +optional
+	AwsSecurityGroup string `json:"awsSecurityGroup,omitempty"`
+	// Range of IP addresses in CIDR notation in this access list entry.
+	// +optional
+	CIDRBlock string `json:"cidrBlock,omitempty"`
+	// Comment associated with this access list entry.
+	// +optional
+	Comment string `json:"comment,omitempty"`
+	// Timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the temporary access list entry.
+	// +optional
+	DeleteAfterDate string `json:"deleteAfterDate,omitempty"`
+	// Entry using an IP address in this access list entry.
+	// +optional
+	IPAddress string `json:"ipAddress,omitempty"`
 }

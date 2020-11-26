@@ -1,0 +1,100 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: atlasprojects.mongodb.com.mongodb.com
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.name
+    name: Name
+    type: string
+  group: mongodb.com.mongodb.com
+  names:
+    kind: AtlasProject
+    listKind: AtlasProjectList
+    plural: atlasprojects
+    singular: atlasproject
+  scope: Namespaced
+  subresources: {}
+  validation:
+    openAPIV3Schema:
+      description: AtlasProject is the Schema for the atlasprojects API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: AtlasProjectSpec defines the desired state of Project in Atlas
+          properties:
+            connectionSecretRef:
+              description: ConnectionSecret is the name of the Kubernetes Secret which
+                contains the information about the way to connect to Atlas (organization
+                ID, API keys). The default Operator connection configuration will
+                be used if not provided.
+              properties:
+                name:
+                  description: Name is the name of the Kubernetes Secret
+                  type: string
+              required:
+              - name
+              type: object
+            ipAccessList:
+              description: ProjectIPAccessList allows to enable the API Access List
+                for the Project. See more information at https://docs.atlas.mongodb.com/configure-api-access/
+              items:
+                properties:
+                  awsSecurityGroup:
+                    description: Unique identifier of AWS security group in this access
+                      list entry.
+                    type: string
+                  cidrBlock:
+                    description: Range of IP addresses in CIDR notation in this access
+                      list entry.
+                    type: string
+                  comment:
+                    description: Comment associated with this access list entry.
+                    type: string
+                  deleteAfterDate:
+                    description: Timestamp in ISO 8601 date and time format in UTC
+                      after which Atlas deletes the temporary access list entry.
+                    type: string
+                  ipAddress:
+                    description: Entry using an IP address in this access list entry.
+                    type: string
+                type: object
+              type: array
+            name:
+              description: Name is the name of the Project that is created in Atlas
+                by the Operator if it doesn't exist yet.
+              type: string
+          required:
+          - name
+          type: object
+        status:
+          description: AtlasProjectStatus defines the observed state of AtlasProject
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

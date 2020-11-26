@@ -18,13 +18,11 @@ package atlasproject
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
@@ -48,6 +46,6 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mdbv1.AtlasProject{}).
+		For(&v1.AtlasProject{}).
 		Complete(r)
 }

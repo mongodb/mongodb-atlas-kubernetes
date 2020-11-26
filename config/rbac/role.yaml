@@ -1,0 +1,48 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasprojects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mongodb.com.mongodb.com
+  resources:
+  - atlasprojects/status
+  verbs:
+  - get
+  - patch
+  - update
