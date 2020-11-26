@@ -1,0 +1,74 @@
+# Manually triggered using GitHub UI.
+# Please, open Actions tab, choose workflow "Publish image to GitHub Container Registry" and press "Run workflow"
+
+name: Publish image to GitHub Container Registry
+
+on:
+  push:
+    branches:
+  workflow_dispatch:
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.1
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.32
+
+          # Optional: working directory, useful for monorepos
+          # working-directory:
+
+          args: --timeout 10m
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+  unit-test:
+    name: Unit tests for Atlas-operator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.1
+
+      - name: Unit test
+        run: |
+          echo "Unit test"
+
+  build:
+    name: Push to GitHub Registry
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2.3.1
+
+    - name: Push Atlas-operator to Local Registry
+      id: registry
+      run: |
+        image="localhost:5000/dev-test:latest"
+        docker run -d -p 5000:5000 --name registry registry:2
+        docker build -t "${image}" .
+        docker push "${image}"
+        docker images | grep dev-test
+        echo "::set-output name=image::$image"
+
+    # sample push to GitHub Package Registry or GitHub Container Registry
+    #
+    # - name: Build and Push image to GitHub registry
+    #   run: |
+    #     tag=$(echo "$GITHUB_REF" | awk -F'/' '{print $3}')
+    #     appname=dev-test
+    #     image="${INPUT_REGISTRY}/${{ github.repository }}/${appname}:${tag}"
+
+    #     echo "${INPUT_REGISTRY_PASSWORD}" | docker login ${INPUT_REGISTRY} -u ${INPUT_REGISTRY_USERNAME} --password-stdin
+    #     docker build -t "${image}" .
+    #     docker images | grep dev-test
+    #     docker push "${image}"
+    #   with:
+    #     REGISTRY: ${{ secrets.REGISTRY }}
+    #     REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+    #     REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
