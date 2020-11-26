@@ -1,6 +1,6 @@
 # Check for every push
 
-name: Push checks
+name: Unit test
 
 on:
   push:
