@@ -54,6 +54,9 @@ jobs:
         docker images | grep dev-test
         echo "::set-output name=image::$image"
 
+    - name: Delete Registry
+      run: docker container stop registry && docker container rm -v registry
+
     # sample push to GitHub Package Registry or GitHub Container Registry
     #
     # - name: Build and Push image to GitHub registry
