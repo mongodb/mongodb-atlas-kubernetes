@@ -1,11 +1,9 @@
 # Manually triggered using GitHub UI.
-# Please, open Actions tab, choose workflow "Publish image to GitHub Container Registry" and press "Run workflow"
 
-name: Publish image to GitHub Container Registry
+name: Publish image to Registry
 
 on:
-  push:
-    branches:
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -39,7 +37,7 @@ jobs:
           echo "Unit test"
 
   build:
-    name: Push to GitHub Registry
+    name: Push to Registry
     runs-on: ubuntu-latest
     steps:
 
