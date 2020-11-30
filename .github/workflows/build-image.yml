@@ -4,6 +4,9 @@ name: Publish image to Registry
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -20,6 +23,9 @@ jobs:
       run: |
         commit_id=$(git rev-parse --short HEAD)
         branch_name=${{ github.head_ref }}
+        if [[ -z $branch_name ]]; then
+          branch_name=$(echo "$GITHUB_REF" | awk -F'/' '{print $3}')
+        fi
         tag="${branch_name}-${commit_id}"
         echo "::set-output name=tag::$tag"
 
@@ -29,4 +35,5 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: ${{ secrets.DOCKER_REPO }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
         tags: ${{ steps.prepare.outputs.tag }}

@@ -1,5 +1,5 @@
 # GitHub Actions
-GitHub Actions help to automate and customize workflows. We deploy Atlas Broker to Cloud Foundry using [GitHub Actions](https://docs.github.com/en/actions). Also, they are used for other tasks like release Atlas-OSB, cleaning our Atlas organization, testing, and demo-runs.
+GitHub Actions help automate and customize workflows. We deploy Atlas Operator to Kubernetes using [GitHub Actions](https://docs.github.com/en/actions).
 
 ## Using GitHub Actions locally
 Tools for successfully running pipeline locally:
@@ -10,29 +10,31 @@ Tools for successfully running pipeline locally:
 Put the file `.actrc` to the root project folder with used secrets in GitHub
 
 ```
--s DOCKER_PASSWORD=<dd>
--s DOCKER_USERNAME=<dd>
--s DOCKER_REPO=<OWNER/IMAGE_NAME>
+# Push to Docker Registry
+-s DOCKER_USERNAME=username
+-s DOCKER_PASSWORD=password
+-s DOCKER_REPO=owner/repo_name
+-s DOCKER_REGISTRY=docker.io
 ```
 
 ## Ways to run
 
-Simply call trigger:
+Act allow us run workflows/jobs with different runs-on images (default `act`-image doesn't have all tools for our pipeline, e.g. docker). For example, `build` job requires docker tool for running.:
+
+```bash
+act -j build -P ubuntu-latest=leori/atlas-ci:v3
+```
+
+Calling push trigger will run all workflow with `push` trigger. This command will run build-image and push-test workflows:
 
 ```bash
 act push
 ```
 
-This sample runs a specific job
+This sample runs a specific job - unit-test
 
 ```bash
-act -j <job name>
-```
-
-Additionally, we can run workflows/jobs with different runs-on images:
-
-```bash
-act -j build -P ubuntu-latest=leori/atlas-ci:v3
+act -j unit-test
 ```
 
 Some workflows have `workflow_dispatch` trigger - manual launch with inputs. It is possible to run it with `act` too.
@@ -64,4 +66,15 @@ event_pull_request.json:
     }
   }
 }
+```
+
+## Samples steps
+
+For example, we need to run image-build
+1. Prepare `.actrc` file from `.actrc.sample`
+2. Find the name of job or trigger (.github/workflows/). For image-build, the name of the job is `build`
+3. Run job with a custom image (because the default act image doesn't have docker tool)
+
+```bash
+act -j build -P ubuntu-latest=leori/atlas-ci:v3
 ```
