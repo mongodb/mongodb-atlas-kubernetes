@@ -13,7 +13,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
-# Produce CRDs that work back to Kubernetes 1.16 (no version conversion)
+# Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 CRD_OPTIONS ?= "crd:crdVersions=v1"
 #CRD_OPTIONS ?= "crd:trivialVersions=true"
 
