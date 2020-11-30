@@ -50,8 +50,6 @@ type AtlasProjectSpec struct {
 	ProjectIPAccessList []ProjectIPAccessList `json:"ipAccessList,omitempty"`
 }
 
-// +kubebuilder:subresource:status
-
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -62,7 +60,7 @@ type AtlasProjectStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
-
+// +kubebuilder:subresource:status
 // AtlasProject is the Schema for the atlasprojects API
 type AtlasProject struct {
 	metav1.TypeMeta   `json:",inline"`
