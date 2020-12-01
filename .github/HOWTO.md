@@ -19,12 +19,6 @@ Put the file `.actrc` to the root project folder with used secrets in GitHub
 
 ## Ways to run
 
-Act allow us run workflows/jobs with different runs-on images (default `act`-image doesn't have all tools for our pipeline, e.g. docker). For example, `build` job requires docker tool for running.:
-
-```bash
-act -j build -P ubuntu-latest=leori/atlas-ci:v3
-```
-
 Calling push trigger will run all workflow with `push` trigger. This command will run build-image and push-test workflows:
 
 ```bash
@@ -73,8 +67,8 @@ event_pull_request.json:
 For example, we need to run image-build
 1. Prepare `.actrc` file from `.actrc.sample`
 2. Find the name of job or trigger (.github/workflows/). For image-build, the name of the job is `build`
-3. Run job with a custom image (because the default act image doesn't have docker tool)
+3. Run job
 
 ```bash
-act -j build -P ubuntu-latest=leori/atlas-ci:v3
+act -j build
 ```
