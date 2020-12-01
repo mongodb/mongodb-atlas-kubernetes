@@ -18,13 +18,11 @@ package atlasproject
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
