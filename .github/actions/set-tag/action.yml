@@ -1,0 +1,8 @@
+name: 'Setup tag for docker image'
+description: 'Setup tag for docker image: branch name with commit ID'
+outputs:
+  tag:
+    description: 'tag for the image'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
