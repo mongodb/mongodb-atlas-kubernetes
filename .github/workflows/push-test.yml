@@ -27,6 +27,15 @@ jobs:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true
 
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run ShellCheck
+        uses: bewuethr/shellcheck-action@v2
+
   unit-test:
     name: Unit tests
     runs-on: ubuntu-latest
