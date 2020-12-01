@@ -53,9 +53,13 @@ spec:
                 required:
                 - name
                 type: object
-              ipAccessList:
-                description: ProjectIPAccessList allows to enable the API Access List
-                  for the Project. See more information at https://docs.atlas.mongodb.com/configure-api-access/
+              name:
+                description: Name is the name of the Project that is created in Atlas
+                  by the Operator if it doesn't exist yet.
+                type: string
+              projectIpAccessList:
+                description: ProjectIPAccessList allows to enable the IP Access List
+                  for the Project. See more information at https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
                 items:
                   properties:
                     awsSecurityGroup:
@@ -78,10 +82,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              name:
-                description: Name is the name of the Project that is created in Atlas
-                  by the Operator if it doesn't exist yet.
-                type: string
             required:
             - name
             type: object

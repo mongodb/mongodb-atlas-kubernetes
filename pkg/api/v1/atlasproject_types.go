@@ -44,10 +44,10 @@ type AtlasProjectSpec struct {
 	// +optional
 	ConnectionSecret *SecretRef `json:"connectionSecretRef,omitempty"`
 
-	// ProjectIPAccessList allows to enable the API Access List for the Project. See more information at
-	// https://docs.atlas.mongodb.com/configure-api-access/
+	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
+	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
 	// +optional
-	ProjectIPAccessList []ProjectIPAccessList `json:"ipAccessList,omitempty"`
+	ProjectIPAccessList []ProjectIPAccessList `json:"projectIpAccessList,omitempty"`
 }
 
 // AtlasProjectStatus defines the observed state of AtlasProject
