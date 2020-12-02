@@ -1,0 +1,41 @@
+package atlas
+
+import (
+	"context"
+	"errors"
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// Connection encapsulates Atlas connectivity information that is necessary to perform API requests
+type Connection struct {
+	OrgID      string
+	PublicKey  string
+	PrivateKey string
+}
+
+// ReadConnection reads Atlas API connection parameters from AtlasProject Secret or from the default Operator one if the
+// former is not specified
+func ReadConnection(kubeClient client.Client, operatorName string, projectOverrideSecretRef *client.ObjectKey, log *zap.SugaredLogger) (Connection, error) {
+	if projectOverrideSecretRef != nil {
+		// TODO is it possible that part of connection (like orgID is still in the Operator level secret and needs to get merged?)
+		log.Infof("Reading Atlas API credentials from the AtlasProject Secret %s", projectOverrideSecretRef)
+		return readAtlasConnectionFromSecret(kubeClient, *projectOverrideSecretRef)
+	}
+	// TODO check the default "Operator level" Secret
+	// return readAtlasConnectionFromSecret(operatorName + "-connection")
+	return Connection{}, errors.New("The API keys are not configured")
+}
+
+func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.ObjectKey) (Connection, error) {
+	secret := &corev1.Secret{}
+	if err := kubeClient.Get(context.Background(), secretRef, secret); err != nil {
+		return Connection{}, err
+	}
+	return Connection{
+		OrgID:      secret.StringData["orgId"],
+		PublicKey:  secret.StringData["publicKey"],
+		PrivateKey: secret.StringData["privateKey"],
+	}, nil
+}

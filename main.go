@@ -18,16 +18,18 @@ package main
 
 import (
 	"flag"
+	"github.com/go-logr/zapr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/altascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"go.uber.org/zap"
 	"os"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -54,7 +56,13 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	// controller-runtime/pkg/log/zap is a wrapper over zap that implements logr
+	// logr looks quite limited in functionality so we better use Zap directly.
+	// Though we still need the controller-runtime library and go-logr/zapr as they are used in controller-runtime
+	// logging
+	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
+
+	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -78,7 +86,7 @@ func main() {
 	}
 	if err = (&atlasproject.AtlasProjectReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AtlasProject"),
+		Log:    *logger.Named("controllers").Named("AtlasProject").Sugar(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")

@@ -18,17 +18,21 @@ package atlasproject
 
 import (
 	"context"
-	"github.com/go-logr/logr"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
 	client.Client
-	Log    logr.Logger
+	Log    zap.SugaredLogger
 	Scheme *runtime.Scheme
 }
 
@@ -36,10 +40,33 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
 
 func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("atlasproject", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.With("atlasproject", req.NamespacedName)
 
-	// your logic here
+	project := &mdbv1.AtlasProject{}
+	if err := r.Client.Get(ctx, kube.ObjectKey(req.Namespace, req.Name), project); err != nil {
+		// TODO make generic (update status, log message)
+		log.Error(err, "Failed to read the AtlasProject")
+		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	}
+
+	if project.Spec.ConnectionSecret == nil {
+		log.Error("So far the Connection Secret in AtlasProject is mandatory!")
+		return reconcile.Result{}, nil
+	}
+
+	connection, err := atlas.ReadConnection(r.Client, "TODO!", project.ConnectionSecretObjectKey(), log)
+	if err != nil {
+		log.Error(err, "Failed to read Atlas Connection details")
+		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	}
+
+	if err := ensureProjectExists(connection, project, log); err != nil {
+		log.Error(err, "Failed to read the AtlasProject")
+		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	}
+
+	// TODO projectAccessList
 
 	return ctrl.Result{}, nil
 }
