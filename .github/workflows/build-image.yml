@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-push:
     name: Push to Registry
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
       id: prepare
       uses: ./.github/actions/set-tag
 
-    - name: Push Atlas-osb to Registry
+    - name: Push Atlas Operator to Registry
       uses: docker/build-push-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}

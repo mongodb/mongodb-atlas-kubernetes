@@ -66,9 +66,9 @@ event_pull_request.json:
 
 For example, we need to run image-build
 1. Prepare `.actrc` file from `.actrc.sample`
-2. Find the name of job or trigger (.github/workflows/). For image-build, the name of the job is `build`
+2. Find the name of job or trigger (.github/workflows/). For image build and push, the name of the job is `build-push`
 3. Run job
 
 ```bash
-act -j build
+act -j build-push
 ```

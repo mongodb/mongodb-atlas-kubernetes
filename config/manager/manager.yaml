@@ -27,7 +27,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: controller:latest
+        image: mongodb-atlas-kubernetes-operator:latest
         name: manager
         resources:
           limits:
