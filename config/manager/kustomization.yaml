@@ -5,7 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5000/mongodb-atlas-kubernetes-operator
-  newTag: latest
-- name: mongodb-atlas-kubernetes-operator
-  newName: localhost:5000/mongodb-atlas-kubernetes-operator
   newTag: main-311bf0e
