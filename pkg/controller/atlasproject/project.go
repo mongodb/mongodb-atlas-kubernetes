@@ -10,14 +10,17 @@ import (
 )
 
 func ensureProjectExists(connection atlas.Connection, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
-	// TODO transport + http client!
+	// TODO transport + http client + configurable atlas backend!
 	t := digest.NewTransport(connection.PublicKey, connection.PrivateKey)
 	tc, err := t.Client()
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	client := mongodbatlas.NewClient(tc)
+	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	if err != nil {
+		return err
+	}
 	p := &mongodbatlas.Project{
 		OrgID: connection.OrgID,
 		Name:  project.Spec.Name,

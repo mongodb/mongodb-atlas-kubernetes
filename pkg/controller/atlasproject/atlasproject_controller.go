@@ -38,6 +38,7 @@ type AtlasProjectReconciler struct {
 
 // +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=mongodb.com.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -49,6 +50,8 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		log.Error(err, "Failed to read the AtlasProject")
 		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 	}
+
+	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	if project.Spec.ConnectionSecret == nil {
 		log.Error("So far the Connection Secret in AtlasProject is mandatory!")

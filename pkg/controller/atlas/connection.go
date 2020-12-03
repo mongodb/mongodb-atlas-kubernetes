@@ -3,6 +3,7 @@ package atlas
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,9 +34,22 @@ func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.Ob
 	if err := kubeClient.Get(context.Background(), secretRef, secret); err != nil {
 		return Connection{}, err
 	}
+	secretData := make(map[string]string)
+	for k, v := range secret.Data {
+		secretData[k] = string(v)
+	}
+	if _, ok := secretData["orgId"]; !ok {
+		return Connection{}, fmt.Errorf("Missing field with key 'orgId' in the secret %v", secretRef)
+	}
+	if _, ok := secretData["publicApiKey"]; !ok {
+		return Connection{}, fmt.Errorf("Missing field with key 'publicApiKey' in the secret %v", secretRef)
+	}
+	if _, ok := secretData["privateApiKey"]; !ok {
+		return Connection{}, fmt.Errorf("Missing field with key 'privateApiKey' in the secret %v", secretRef)
+	}
 	return Connection{
-		OrgID:      secret.StringData["orgId"],
-		PublicKey:  secret.StringData["publicApiKey"],
-		PrivateKey: secret.StringData["privateApiKey"],
+		OrgID:      secretData["orgId"],
+		PublicKey:  secretData["publicApiKey"],
+		PrivateKey: secretData["privateApiKey"],
 	}, nil
 }
