@@ -35,7 +35,7 @@ func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.Ob
 	}
 	return Connection{
 		OrgID:      secret.StringData["orgId"],
-		PublicKey:  secret.StringData["publicKey"],
-		PrivateKey: secret.StringData["privateKey"],
+		PublicKey:  secret.StringData["publicApiKey"],
+		PrivateKey: secret.StringData["privateApiKey"],
 	}, nil
 }
