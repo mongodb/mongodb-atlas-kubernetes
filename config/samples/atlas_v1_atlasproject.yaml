@@ -1,4 +1,4 @@
-apiVersion: mongodb.com.mongodb.com/v1
+apiVersion: atlas.mongodb.com/v1
 kind: AtlasProject
 metadata:
   name: atlasproject-sample
