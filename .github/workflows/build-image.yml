@@ -30,3 +30,9 @@ jobs:
         repository: ${{ secrets.DOCKER_REPO }}
         registry: ${{ secrets.DOCKER_REGISTRY }}
         tags: ${{ steps.prepare.outputs.tag }}
+
+    - name: Deploy Operator to K8s cluster
+      uses: ./.github/actions/deploy
+      with:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        image: ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}

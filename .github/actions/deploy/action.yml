@@ -1,0 +1,12 @@
+name: 'Deploy Operator'
+description: 'Prepare and deploy operator'
+inputs:
+  kube_config_data:
+    description: "kubeconfig"
+    required: true
+  image:
+    description: "Operator image"
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
