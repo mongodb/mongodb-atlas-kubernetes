@@ -17,7 +17,9 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Important:
@@ -94,4 +96,12 @@ type ProjectIPAccessList struct {
 	// Entry using an IP address in this access list entry.
 	// +optional
 	IPAddress string `json:"ipAddress,omitempty"`
+}
+
+func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
+	if p.Spec.ConnectionSecret != nil {
+		key := kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
+		return &key
+	}
+	return nil
 }
