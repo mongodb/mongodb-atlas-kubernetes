@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+
 	"github.com/mongodb-forks/digest"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
