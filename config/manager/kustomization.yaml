@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5000/mongodb-atlas-kubernetes-operator
-  newTag: CLOUDP-77636-project-controller-basic-35bbb09
+  newTag: main-311bf0e

@@ -1,5 +1,0 @@
-# Push to Docker Registry
--s DOCKER_USERNAME=username
--s DOCKER_PASSWORD=password
--s DOCKER_REPO=owner/repo_name
--s DOCKER_REGISTRY=docker.io
