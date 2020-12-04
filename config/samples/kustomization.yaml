@@ -1,5 +1,5 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- mongodb.com_v1_atlascluster.yaml
-- mongodb.com_v1_atlasproject.yaml
+- atlas_v1_atlascluster.yaml
+- atlas_v1_atlasproject.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
