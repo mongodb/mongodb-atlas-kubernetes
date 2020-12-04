@@ -10,6 +10,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	orgIdKey      = "orgId"
+	publicApiKey  = "publicApiKey"
+	privateApiKey = "privateApiKey"
+)
+
 // Connection encapsulates Atlas connectivity information that is necessary to perform API requests
 type Connection struct {
 	OrgID      string
@@ -27,7 +33,7 @@ func ReadConnection(kubeClient client.Client, operatorName string, projectOverri
 	}
 	// TODO check the default "Operator level" Secret
 	// return readAtlasConnectionFromSecret(operatorName + "-connection")
-	return Connection{}, errors.New("The API keys are not configured")
+	return Connection{}, errors.New("the API keys are not configured")
 }
 
 func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.ObjectKey) (Connection, error) {
@@ -39,18 +45,30 @@ func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.Ob
 	for k, v := range secret.Data {
 		secretData[k] = string(v)
 	}
-	if _, ok := secretData["orgId"]; !ok {
-		return Connection{}, fmt.Errorf("Missing field with key 'orgId' in the secret %v", secretRef)
+
+	if err := validateConnectionSecret(secretRef, secretData); err != nil {
+		return Connection{}, err
 	}
-	if _, ok := secretData["publicApiKey"]; !ok {
-		return Connection{}, fmt.Errorf("Missing field with key 'publicApiKey' in the secret %v", secretRef)
-	}
-	if _, ok := secretData["privateApiKey"]; !ok {
-		return Connection{}, fmt.Errorf("Missing field with key 'privateApiKey' in the secret %v", secretRef)
-	}
+
 	return Connection{
 		OrgID:      secretData["orgId"],
 		PublicKey:  secretData["publicApiKey"],
 		PrivateKey: secretData["privateApiKey"],
 	}, nil
+}
+
+func validateConnectionSecret(secretRef client.ObjectKey, secretData map[string]string) error {
+	var missingFields []string
+	requiredKeys := []string{orgIdKey, publicApiKey, privateApiKey}
+
+	for _, key := range requiredKeys {
+		if _, ok := secretData[key]; !ok {
+			missingFields = append(missingFields, key)
+		}
+	}
+
+	if len(missingFields) > 0 {
+		return fmt.Errorf("the following fields are missing in the Secret %v: %v", secretRef, missingFields)
+	}
+	return nil
 }
