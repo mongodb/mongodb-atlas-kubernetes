@@ -61,12 +61,12 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	connection, err := atlas.ReadConnection(r.Client, "TODO!", project.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		log.Error(err, "Failed to read Atlas Connection details")
+		log.Errorf("Failed to read Atlas Connection details: %s", err)
 		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 	}
 
 	if err := ensureProjectExists(connection, project, log); err != nil {
-		log.Error(err, "Failed to read the AtlasProject")
+		log.Errorf("Failed to read the AtlasProject: %s", err)
 		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 	}
 

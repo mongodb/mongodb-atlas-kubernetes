@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 
-	"github.com/mongodb-forks/digest"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -11,14 +10,7 @@ import (
 )
 
 func ensureProjectExists(connection atlas.Connection, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
-	// TODO transport + http client + configurable atlas backend!
-	t := digest.NewTransport(connection.PublicKey, connection.PrivateKey)
-	tc, err := t.Client()
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	client, err := atlas.AtlasClient(connection, log)
 	if err != nil {
 		return err
 	}
