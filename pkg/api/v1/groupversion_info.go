@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1 contains API Schema definitions for the mongodb.com v1 API group
 // +kubebuilder:object:generate=true
-// +groupName=mongodb.com.mongodb.com
+// +groupName=mongodb.com
 package v1
 
 import (

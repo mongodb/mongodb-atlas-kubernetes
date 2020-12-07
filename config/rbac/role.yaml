@@ -17,6 +17,26 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
+  - atlasclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasclusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
   - atlasprojects
   verbs:
   - create
@@ -30,26 +50,6 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasprojects/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - mongodb.com
-  resources:
-  - atlasclusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - mongodb.com
-  resources:
-  - atlasclusters/status
   verbs:
   - get
   - patch

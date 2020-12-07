@@ -5,7 +5,7 @@ metadata:
   name: atlascluster-viewer-role
 rules:
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasclusters
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasclusters/status
   verbs:

@@ -34,8 +34,8 @@ type AtlasClusterReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
 
 func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()

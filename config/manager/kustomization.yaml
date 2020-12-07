@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5000/mongodb-atlas-kubernetes-operator
-  newTag: main-311bf0e
+  newTag: fix-api-groups-05114b9
