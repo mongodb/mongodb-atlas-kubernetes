@@ -3,10 +3,10 @@ layout: go.kubebuilder.io/v2
 projectName: mongodb-atlas-kubernetes
 repo: github.com/mongodb/mongodb-atlas-kubernetes
 resources:
-- group: mongodb.com
+- group: atlas
   kind: AtlasCluster
   version: v1
-- group: mongodb.com
+- group: atlas
   kind: AtlasProject
   version: v1
 version: 3-alpha

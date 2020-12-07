@@ -63,6 +63,8 @@ type AtlasProjectStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
 // +kubebuilder:subresource:status
+// +groupName:=atlas.mongodb.com
+
 // AtlasProject is the Schema for the atlasprojects API
 type AtlasProject struct {
 	metav1.TypeMeta   `json:",inline"`

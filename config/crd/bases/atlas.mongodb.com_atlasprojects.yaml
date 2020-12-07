@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: atlasprojects.mongodb.com.mongodb.com
+  name: atlasprojects.atlas.mongodb.com
 spec:
-  group: mongodb.com.mongodb.com
+  group: atlas.mongodb.com
   names:
     kind: AtlasProject
     listKind: AtlasProjectList

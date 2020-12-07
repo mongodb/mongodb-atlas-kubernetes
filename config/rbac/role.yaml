@@ -15,7 +15,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasclusters
   verbs:
@@ -27,7 +27,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasclusters/status
   verbs:
@@ -35,7 +35,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasprojects
   verbs:
@@ -47,7 +47,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - mongodb.com.mongodb.com
+  - atlas.mongodb.com
   resources:
   - atlasprojects/status
   verbs:
