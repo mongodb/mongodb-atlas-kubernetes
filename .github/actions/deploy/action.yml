@@ -4,9 +4,6 @@ inputs:
   IMAGE:
     description: "Operator image"
     required: true
-  CRD_OPTIONS:
-    description: "CRD options"
-    required: true
   KUBE_CONFIG_DATA:
     description: "Copy kubeconfig"
     required: true
@@ -15,5 +12,4 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.IMAGE }}
-    - ${{ inputs.CRD_OPTIONS }}
     - ${{ inputs.KUBE_CONFIG_DATA }}

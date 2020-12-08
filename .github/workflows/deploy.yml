@@ -6,7 +6,6 @@ name: Deploy Operator to k8s cluster
 on:
   workflow_dispatch:
 
-
 jobs:
   deploy:
     name: Deploy to k8s
@@ -24,5 +23,4 @@ jobs:
       uses: ./.github/actions/deploy
       with:
         IMAGE: ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
-        CRD_OPTIONS: "crd:crdVersions=v1"
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}

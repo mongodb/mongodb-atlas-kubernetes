@@ -4,7 +4,7 @@ export KUBECONFIG="./kube.config"
 
 kubectl version
 
-controller-gen "${INPUT_CRD_OPTIONS}" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 kustomize build config/crd | kubectl apply -f -
 
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE}"
