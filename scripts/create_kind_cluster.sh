@@ -1,5 +1,5 @@
-# sample from https://kind.sigs.k8s.io/docs/user/local-registry/
 #!/bin/sh
+# sample from https://kind.sigs.k8s.io/docs/user/local-registry/
 set -o errexit
 
 # create registry container unless it already exists
