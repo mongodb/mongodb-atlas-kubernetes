@@ -7,13 +7,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewLoggingClient returns the http.Client with wrapped Transport that is capable of logging request
-func NewLoggingClient(client http.Client, log *zap.SugaredLogger) http.Client {
-	return http.Client{
-		Transport:     &loggedRoundTripper{rt: client.Transport, log: log},
-		CheckRedirect: client.CheckRedirect,
-		Jar:           client.Jar,
-		Timeout:       client.Timeout,
+// LoggingTransport is the option adding logging capability to an http Client
+func LoggingTransport(log *zap.SugaredLogger) ClientOpt {
+	return func(c *http.Client) error {
+		c.Transport = &loggedRoundTripper{rt: c.Transport, log: log}
+		return nil
 	}
 }
 
