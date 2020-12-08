@@ -6,7 +6,6 @@
 1. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
 1. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
 1. Build and push Operator image to the local registry: `act -j build-push`
-1. Ensure local docker registry started and create Kind cluster (with support for local registry): use the following [script](https://kind.sigs.k8s.io/docs/user/local-registry/)
 1. Deploy Operator into the K8s cluster: `make deploy`
 
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
