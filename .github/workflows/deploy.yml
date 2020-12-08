@@ -1,0 +1,28 @@
+# Use for local deploing. Triggered manually only.
+# Used builded Image with tag: branch_name-commit_id
+
+name: Deploy Operator to k8s cluster
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  deploy:
+    name: Deploy to k8s
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2.3.1
+
+    - name: Prepare tag
+      id: prepare
+      uses: ./.github/actions/set-tag
+
+    - name: Deploy Operator to K8s cluster
+      uses: ./.github/actions/deploy
+      with:
+        IMAGE: ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+        CRD_OPTIONS: "crd:crdVersions=v1"
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
