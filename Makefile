@@ -46,9 +46,9 @@ uninstall: manifests kustomize
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: rkube
+deploy: run-kind
 	KUBE_CONFIG_DATA=$(shell kind get kubeconfig | yq r - -j)
-	act -j deploy -s KUBE_CONFIG_DATA='$(KUBE_CONFIG_DATA)'
+	act -j deploy -s KUBE_CONFIG_DATA='$(KUBE_CONFIG_DATA)' -s DOCKER_REGISTRY="localhost:5000" -s DOCKER_REPO="ao-test"
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -112,7 +112,7 @@ bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 #local k8s
-rkube:
+run-kind:
 ifeq ($(shell kind get clusters),kind)
 	@echo "create kind cluster: nothing to do"
 else
@@ -120,5 +120,5 @@ else
 endif
 
 #local k8s
-skube:
+stop-kind:
 	kind delete cluster
