@@ -42,6 +42,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.1
 
-      - name: Unit test
-        run: |
-          echo "Unit test"
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.6'
+      - run: go version
+      - name: Run testing
+        run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
