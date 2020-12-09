@@ -305,8 +305,6 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
-go.mongodb.org/atlas v0.5.0 h1:WoeXdXSLCyquhSqSqTa0PwpjxWZbm70E1Gkbx+w3Sco=
-go.mongodb.org/atlas v0.5.0/go.mod h1:CIaBeO8GLHhtYLw7xSSXsw7N90Z4MFY87Oy9qcPyuEs=
 go.mongodb.org/atlas v0.5.1-0.20201208094933-0e2a93147ccd h1:522hIBk7NjCNro3wxslqPjnMUlg/A1JZVHTWudcOC50=
 go.mongodb.org/atlas v0.5.1-0.20201208094933-0e2a93147ccd/go.mod h1:CIaBeO8GLHhtYLw7xSSXsw7N90Z4MFY87Oy9qcPyuEs=
 go.mongodb.org/mongo-driver v1.0.3/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=

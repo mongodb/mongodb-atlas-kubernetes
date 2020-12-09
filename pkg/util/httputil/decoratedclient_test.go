@@ -14,11 +14,12 @@ func Test_DecorateClient(t *testing.T) {
 	withLogging := LoggingTransport(zap.S())
 
 	decorated, err := DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest, withLogging)
-	assert.NoError(t, err)
-	assert.Equal(t, httpClient.Timeout, decorated.Timeout)
-	assert.Equal(t, httpClient.Jar, decorated.Jar)
-	assert.NotNil(t, decorated.Transport)
+	a := assert.New(t)
+	a.NoError(err)
+	a.Equal(httpClient.Timeout, decorated.Timeout)
+	a.Equal(httpClient.Jar, decorated.Jar)
+	a.NotNil(decorated.Transport)
 
 	// not going deeper here, just need to confirm that transport was changed
-	assert.NotEqual(t, httpClient.Transport, decorated.Transport)
+	a.NotEqual(t, httpClient.Transport, decorated.Transport)
 }
