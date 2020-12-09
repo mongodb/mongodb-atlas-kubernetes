@@ -6,10 +6,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func configureIpAccessList(connection atlas.Connection, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
-	client, err := atlas.AtlasClient(connection, log)
-	if err != nil {
-		return err
-	}
-
+func configureIpAccessList(connection atlas.Connection, project mdbv1.AtlasProject, log *zap.SugaredLogger) error {
+	return nil
 }
