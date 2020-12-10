@@ -1,7 +1,7 @@
 name: 'Deploy Operator'
 description: 'Prepare and deploy operator'
 inputs:
-  IMAGE:
+  IMAGE_URL:
     description: "Operator image"
     required: true
   KUBE_CONFIG_DATA:
@@ -11,5 +11,5 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.IMAGE }}
+    - ${{ inputs.IMAGE_URL }}
     - ${{ inputs.KUBE_CONFIG_DATA }}

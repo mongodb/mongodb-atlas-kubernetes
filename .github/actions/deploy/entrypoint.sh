@@ -9,5 +9,5 @@ controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..
 kustomize build config/crd | kubectl apply -f -
 
 #Installing the Operator
-cd config/manager && kustomize edit set image controller="${INPUT_IMAGE}"
+cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd - && kustomize build config/default | kubectl apply -f -

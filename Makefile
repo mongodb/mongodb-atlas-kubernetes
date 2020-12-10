@@ -48,7 +48,7 @@ uninstall: manifests kustomize
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: run-kind
 	KUBE_CONFIG_DATA=$(shell kind get kubeconfig | yq r - -j)
-	act -j deploy -s KUBE_CONFIG_DATA='$(KUBE_CONFIG_DATA)' -s DOCKER_REGISTRY="localhost:5000" -s DOCKER_REPO="ao-test"
+	act -j deploy -s KUBE_CONFIG_DATA='$(KUBE_CONFIG_DATA)'
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
