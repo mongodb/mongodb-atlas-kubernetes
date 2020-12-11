@@ -15,6 +15,13 @@ Put the file `.actrc` to the root project folder with used secrets in GitHub
 -s DOCKER_PASSWORD=password
 -s DOCKER_REPO=owner/repo_name
 -s DOCKER_REGISTRY=docker.io
+-s KUBE_CONFIG_DATA=<copy of kubeconfig>
+```
+
+sample how to get config:
+
+```bash
+KUBE_CONFIG_DATA=$(kubectl config view -o json --raw | jq -c '.')
 ```
 
 ## Ways to run
