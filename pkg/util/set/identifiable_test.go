@@ -49,7 +49,7 @@ func Test_SetDifference(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("", func(t *testing.T) {
-			assert.Equal(t, testCase.out, Difference(testCase.left, testCase.right))
+			assert.Equal(t, testCase.out, differenceIdentifiable(testCase.left, testCase.right))
 		})
 	}
 }
@@ -64,8 +64,8 @@ func Test_SetDifferenceCovariant(t *testing.T) {
 	leftNotIdentifiable := []someId{oneLeft, twoLeft}
 	rightNotIdentifiable := []someId{twoRight, threeRight}
 
-	assert.Equal(t, []Identifiable{oneLeft}, SetDifferenceGeneric(leftNotIdentifiable, rightNotIdentifiable))
-	assert.Equal(t, []Identifiable{threeRight}, SetDifferenceGeneric(rightNotIdentifiable, leftNotIdentifiable))
+	assert.Equal(t, []Identifiable{oneLeft}, Difference(leftNotIdentifiable, rightNotIdentifiable))
+	assert.Equal(t, []Identifiable{threeRight}, Difference(rightNotIdentifiable, leftNotIdentifiable))
 }
 
 func Test_SetIntersection(t *testing.T) {
@@ -80,7 +80,7 @@ func Test_SetIntersection(t *testing.T) {
 		right []Identifiable
 		out   [][]Identifiable
 	}{
-		// Intersection on "2"
+		// intersectionIdentifiable on "2"
 		{left: []Identifiable{oneLeft, twoLeft}, right: []Identifiable{twoRight, threeRight}, out: [][]Identifiable{pair(twoLeft, twoRight)}},
 		{left: []Identifiable{twoRight, threeRight}, right: []Identifiable{oneLeft, twoLeft}, out: [][]Identifiable{pair(twoRight, twoLeft)}},
 		// No intersection
@@ -96,7 +96,7 @@ func Test_SetIntersection(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run("", func(t *testing.T) {
-			assert.Equal(t, testCase.out, Intersection(testCase.left, testCase.right))
+			assert.Equal(t, testCase.out, intersectionIdentifiable(testCase.left, testCase.right))
 		})
 	}
 }
@@ -113,8 +113,8 @@ func Test_SetIntersectionCovariant(t *testing.T) {
 	leftNotIdentifiable := []someId{oneLeft, twoLeft}
 	rightNotIdentifiable := []someId{oneRight, twoRight, threeRight}
 
-	assert.Equal(t, [][]Identifiable{pair(oneLeft, oneRight), pair(twoLeft, twoRight)}, SetIntersectionGeneric(leftNotIdentifiable, rightNotIdentifiable))
-	assert.Equal(t, [][]Identifiable{pair(oneRight, oneLeft), pair(twoRight, twoLeft)}, SetIntersectionGeneric(rightNotIdentifiable, leftNotIdentifiable))
+	assert.Equal(t, [][]Identifiable{pair(oneLeft, oneRight), pair(twoLeft, twoRight)}, Intersection(leftNotIdentifiable, rightNotIdentifiable))
+	assert.Equal(t, [][]Identifiable{pair(oneRight, oneLeft), pair(twoRight, twoLeft)}, Intersection(rightNotIdentifiable, leftNotIdentifiable))
 }
 
 func pair(left, right Identifiable) []Identifiable {
