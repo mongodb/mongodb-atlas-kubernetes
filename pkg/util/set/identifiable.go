@@ -1,4 +1,4 @@
-package identifiable
+package set
 
 import (
 	"reflect"
@@ -10,8 +10,8 @@ type Identifiable interface {
 	Identifier() interface{}
 }
 
-// SetDifference returns all 'Identifiable' elements that are in left slice and not in the right one
-func SetDifference(left, right []Identifiable) []Identifiable {
+// Difference returns all 'Identifiable' elements that are in left slice and not in the right one
+func Difference(left, right []Identifiable) []Identifiable {
 	result := make([]Identifiable, 0)
 	for _, l := range left {
 		found := false
@@ -28,9 +28,9 @@ func SetDifference(left, right []Identifiable) []Identifiable {
 	return result
 }
 
-// SetIntersection returns all 'Identifiable' elements from 'left' and 'right' slice that intersect by 'Identifier()'
+// Intersection returns all 'Identifiable' elements from 'left' and 'right' slice that intersect by 'Identifier()'
 //value. Each intersection is represented as a tuple of two elements - matching elements from 'left' and 'right'
-func SetIntersection(left, right []Identifiable) [][]Identifiable {
+func Intersection(left, right []Identifiable) [][]Identifiable {
 	result := make([][]Identifiable, 0)
 	for _, l := range left {
 		for _, r := range right {
@@ -49,7 +49,7 @@ func SetDifferenceGeneric(left, right interface{}) []Identifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
-	return SetDifference(leftIdentifiers, rightIdentifiers)
+	return Difference(leftIdentifiers, rightIdentifiers)
 }
 
 // SetIntersectionGeneric is a convenience function solving lack of covariance in Go: it allows to pass the arrays declared
@@ -59,7 +59,7 @@ func SetIntersectionGeneric(left, right interface{}) [][]Identifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
-	return SetIntersection(leftIdentifiers, rightIdentifiers)
+	return Intersection(leftIdentifiers, rightIdentifiers)
 }
 
 // toIdentifiableSlice uses reflection to cast the array
