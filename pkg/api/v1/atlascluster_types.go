@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,10 +35,10 @@ type AtlasClusterSpec struct {
 
 // AtlasClusterStatus defines the observed state of AtlasCluster
 type AtlasClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	status.Common `json:",inline"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -61,4 +62,8 @@ type AtlasClusterList struct {
 
 func init() {
 	SchemeBuilder.Register(&AtlasCluster{}, &AtlasClusterList{})
+}
+
+func (c AtlasCluster) GetStatus() interface{} {
+	return c.Status
 }
