@@ -46,7 +46,7 @@ spec:
             properties:
               phase:
                 description: 'The phase the current Custom Resource is in. Possible
-                  values: ''Reconciling'', ''Pending'', ''Running'', ''Failed'''
+                  values: "Reconciling", "Pending", "Running", "Failed"'
                 type: string
             required:
             - phase
