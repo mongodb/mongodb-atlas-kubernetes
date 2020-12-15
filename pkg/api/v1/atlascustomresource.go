@@ -11,3 +11,5 @@ type AtlasCustomResource interface {
 	runtime.Object
 	status.Reader
 }
+
+var _ AtlasCustomResource = &AtlasProject{}
