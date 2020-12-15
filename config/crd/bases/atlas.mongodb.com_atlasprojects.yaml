@@ -91,12 +91,6 @@ spec:
               id:
                 description: The ID of the Atlas Project
                 type: string
-              phase:
-                description: 'The phase the current Custom Resource is in. Possible
-                  values: "Reconciling", "Pending", "Running", "Failed"'
-                type: string
-            required:
-            - phase
             type: object
         type: object
     served: true
