@@ -13,3 +13,9 @@ type SecretRef struct {
 	// Name is the name of the Kubernetes Secret
 	Name string `json:"name"`
 }
+
+// LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
+type LabelSpec struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
