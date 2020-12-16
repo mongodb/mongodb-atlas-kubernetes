@@ -4,6 +4,6 @@
 -s DOCKER_REPO=mongodb-atlas-kubernetes-operator
 -s DOCKER_REGISTRY=localhost:5000
 # Update this data with your cloud-qa custom data
--s ORG_ID=5fa01978e8e90532f1457b7d
--s PUBLIC_API_KEY=igqyakli
--s PRIVATE_API_KEY=4382c3e9-38d8-4a64-84d3-271c13830bd4
+-s ORG_ID=
+-s PUBLIC_API_KEY=
+-s PRIVATE_API_KEY=
