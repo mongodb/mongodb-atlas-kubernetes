@@ -18,6 +18,7 @@ package v1
 
 import (
 	"github.com/jinzhu/copier"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -242,13 +243,10 @@ func (spec *AtlasClusterSpec) Cluster() *mongodbatlas.Cluster {
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
 type AtlasClusterStatus struct {
-	// TODO: this is a stub; will implement the Conditions proposal here
-
-	GroupID   string `json:"groupId,omitempty"`
-	ID        string `json:"id,omitempty"`
-	StateName string `json:"stateName,omitempty"`
+	status.Common `json:",inline"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -276,4 +274,8 @@ type AtlasClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AtlasCluster `json:"items"`
+}
+
+func (c AtlasCluster) GetStatus() interface{} {
+	return c.Status
 }

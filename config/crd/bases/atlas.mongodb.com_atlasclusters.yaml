@@ -310,12 +310,12 @@ spec:
           status:
             description: AtlasClusterStatus defines the observed state of AtlasCluster.
             properties:
-              groupId:
+              phase:
+                description: 'The phase the current Custom Resource is in. Possible
+                  values: "Reconciling", "Pending", "Running", "Failed"'
                 type: string
-              id:
-                type: string
-              stateName:
-                type: string
+            required:
+            - phase
             type: object
         type: object
     served: true

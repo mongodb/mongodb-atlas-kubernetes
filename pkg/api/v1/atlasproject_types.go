@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,12 +55,14 @@ type AtlasProjectSpec struct {
 
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	status.Common `json:",inline"`
 
-	// Ideas: projectId? Warnings? (e.g. about expired project IP access lists)
+	// The ID of the Atlas Project
+	// +optional
+	ID string `json:"id,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
 // +kubebuilder:subresource:status
@@ -106,4 +109,8 @@ func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 		return &key
 	}
 	return nil
+}
+
+func (p AtlasProject) GetStatus() interface{} {
+	return p.Status
 }
