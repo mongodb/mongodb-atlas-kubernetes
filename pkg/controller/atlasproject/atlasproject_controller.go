@@ -21,7 +21,10 @@ import (
 	"time"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,15 +45,14 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	if err := r.Client.Get(ctx, kube.ObjectKey(req.Namespace, req.Name), project); err != nil {
-		// TODO make generic (update status, log message)
+	if err := r.Client.Get(context.Background(), kube.ObjectKey(req.Namespace, req.Name), project); err != nil {
 		log.Error(err, "Failed to read the AtlasProject")
 		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 	}
+	ctx := workflow.NewContext(log)
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
@@ -59,16 +61,23 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return reconcile.Result{}, nil
 	}
 
-	connection, err := atlas.ReadConnection(r.Client, "TODO!", project.ConnectionSecretObjectKey(), log)
-	if err != nil {
-		log.Errorf("Failed to read Atlas Connection details: %s", err)
-		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	connection, result := atlas.ReadConnection(ctx, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+
+	if !result.IsOk() {
+		// merge result into ctx
+		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
+		log.Debugf("returning %+v", result.ReconcileResult())
+		return result.ReconcileResult(), nil
 	}
 
-	if err := ensureProjectExists(connection, project, log); err != nil {
-		log.Errorf("Failed to read the AtlasProject: %s", err)
-		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	if _, result := ensureProjectExists(ctx, connection, project); !result.IsOk() {
+		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
+		return result.ReconcileResult(), nil
 	}
+
+	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
+	ctx.SetConditionTrue(status.ProjectReadyType)
+	statushandler.Update(ctx.SetConditionFalse(status.IPAccessListReadyType), r.Client, project)
 
 	// TODO projectAccessList
 

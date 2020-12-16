@@ -114,3 +114,11 @@ func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 func (p AtlasProject) GetStatus() interface{} {
 	return p.Status
 }
+
+func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	p.Status.Conditions = conditions
+
+	if option, exists := status.GetOption(options, status.IDOption{}); exists {
+		p.Status.ID = option.Value().(string)
+	}
+}

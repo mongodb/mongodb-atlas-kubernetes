@@ -5,8 +5,13 @@ type Reader interface {
 	GetStatus() interface{}
 }
 
+type Writer interface {
+	// UpdateStatus allows to do the update of the status of an Atlas Custom resource.
+	UpdateStatus(conditions []Condition, option ...Option)
+}
+
 // Common is the struct shared by all statuses in existing Custom Resources.
 type Common struct {
-	// The phase the current Custom Resource is in. Possible values: "Reconciling", "Pending", "Running", "Failed"
-	Phase Phase `json:"phase"`
+	// Conditions is the list of statuses showing the current state of the Atlas Custom Resource
+	Conditions []Condition `json:"conditions"`
 }

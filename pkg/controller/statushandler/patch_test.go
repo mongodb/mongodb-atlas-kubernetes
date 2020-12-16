@@ -1,4 +1,4 @@
-package status
+package statushandler
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	updatedProject := existingProject.DeepCopy()
 	updatedProject.Status.Common.Phase = status.PhasePending
 	updatedProject.Status.ID = "theId"
-	assert.NoError(t, PatchUpdateStatus(fakeClient, updatedProject))
+	assert.NoError(t, patchUpdateStatus(fakeClient, updatedProject))
 
 	projectAfterPatch := &mdbv1.AtlasProject{}
 	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(updatedProject), projectAfterPatch))

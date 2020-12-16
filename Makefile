@@ -47,8 +47,7 @@ uninstall: manifests kustomize
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: run-kind
-	KUBE_CONFIG_DATA=$(shell kind get kubeconfig | yq r - -j)
-	act -j deploy -s KUBE_CONFIG_DATA='$(KUBE_CONFIG_DATA)'
+	@ act -j deploy -s KUBE_CONFIG_DATA='$(shell kind get kubeconfig | yq r - -j)'
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -122,3 +121,6 @@ endif
 #local k8s
 stop-kind:
 	kind delete cluster
+
+log:
+	kubectl logs deploy/mongodb-atlas-kubernetes-controller-manager manager -n mongodb-atlas-kubernetes-system -f
