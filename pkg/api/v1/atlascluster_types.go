@@ -41,12 +41,6 @@ type AtlasClusterSpec struct {
 	// +optional
 	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
 
-	// Deprecated: do not use.
-	// Flag that indicates whether legacy backups have been enabled.
-	// Applicable only for M10+ clusters.
-	// +optional
-	BackupEnabled *bool `json:"backupEnabled,omitempty"`
-
 	// Configuration of BI Connector for Atlas on this cluster.
 	// The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only available for M10 and larger clusters.
 	// +optional

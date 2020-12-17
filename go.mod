@@ -3,6 +3,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes
 go 1.15
 
 require (
+	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.0
 	github.com/jinzhu/copier v0.1.0
 	github.com/mongodb-forks/digest v1.0.1
