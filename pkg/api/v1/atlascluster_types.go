@@ -31,11 +31,6 @@ func init() {
 
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
-	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
-	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
-	// +optional
-	ConnectionSecret *SecretRef `json:"connectionSecretRef,omitempty"`
-
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
 	// +optional
@@ -47,6 +42,7 @@ type AtlasClusterSpec struct {
 	BIConnector *BiConnectorSpec `json:"biConnector,omitempty"`
 
 	// Type of the cluster that you want to create.
+	// The parameter is required if replicationSpecs are set or if Global Clusters are deployed.
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
 	ClusterType string `json:"clusterType,omitempty"`
@@ -54,12 +50,14 @@ type AtlasClusterSpec struct {
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
 	// This value must be a positive integer.
+	// The parameter is required if replicationSpecs are configured.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4096
 	// +optional
 	DiskSizeGB *int `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
 
 	// Cloud service provider that offers Encryption at Rest.
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;NONE
 	// +optional
 	EncryptionAtRestProvider string `json:"encryptionAtRestProvider,omitempty"`
 
@@ -77,6 +75,7 @@ type AtlasClusterSpec struct {
 	Name string `json:"name,omitempty"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded cluster.
+	// The parameter is required if replicationSpecs are configured
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=50
 	// +optional
