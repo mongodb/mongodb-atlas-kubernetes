@@ -63,7 +63,7 @@ type AtlasClusterSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4096
 	// +optional
-	DiskSizeGB *int `json:"diskSizeGB,omitempty"` // TODO: why on earth is this *float64 in mongodbatlas?
+	DiskSizeGB *int `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
 
 	// Cloud service provider that offers Encryption at Rest.
 	// +optional
