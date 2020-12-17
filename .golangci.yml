@@ -1,4 +1,5 @@
 linters:
+  disable-all: true
   enable:
     - bodyclose
     - deadcode
@@ -8,8 +9,6 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
-    # - gochecknoinits
-    # - gochecknoglobals
     - gocritic
     - gocyclo
     - gofumpt
@@ -19,14 +18,11 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - misspell
-    # - nlreturn
     - nolintlint
     - noctx
     - prealloc
     - rowserrcheck
-    - scopelint
     - staticcheck
     - structcheck
     - stylecheck
@@ -36,7 +32,11 @@ linters:
     - unused
     - varcheck
     - whitespace
-    # - wrapcheck
+
+linters-settings:
+  misspell:
+    locale: US
+
 issues:
   exclude-use-default: false
   exclude:
