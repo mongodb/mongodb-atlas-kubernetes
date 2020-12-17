@@ -35,7 +35,7 @@ func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, pro
 			}*/
 		return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
 	}
-	ctx.EnsureStatusOption(status.NewIDOption(p.ID))
+	ctx.EnsureStatusOption(status.AtlasProjectIDOption(p.ID))
 
 	return p.ID, workflow.OK()
 }
