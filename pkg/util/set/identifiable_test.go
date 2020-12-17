@@ -6,21 +6,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type someId struct {
+type someID struct {
 	// name is a "key" field used for merging
 	name string
 	// some other property. Indicates which exactly object was returned by an aggregation operation
 	property string
 }
 
-func newSome(name, property string) someId {
-	return someId{
+func newSome(name, property string) someID {
+	return someID{
 		name:     name,
 		property: property,
 	}
 }
 
-func (s someId) Identifier() interface{} {
+func (s someID) Identifier() interface{} {
 	return s.name
 }
 
@@ -61,8 +61,8 @@ func Test_SetDifferenceCovariant(t *testing.T) {
 	twoLeft := newSome("2", "left")
 	twoRight := newSome("2", "right")
 	threeRight := newSome("3", "right")
-	leftNotIdentifiable := []someId{oneLeft, twoLeft}
-	rightNotIdentifiable := []someId{twoRight, threeRight}
+	leftNotIdentifiable := []someID{oneLeft, twoLeft}
+	rightNotIdentifiable := []someID{twoRight, threeRight}
 
 	assert.Equal(t, []Identifiable{oneLeft}, Difference(leftNotIdentifiable, rightNotIdentifiable))
 	assert.Equal(t, []Identifiable{threeRight}, Difference(rightNotIdentifiable, leftNotIdentifiable))
@@ -110,8 +110,8 @@ func Test_SetIntersectionCovariant(t *testing.T) {
 
 	// check reflection magic to solve lack of covariance in go. The arrays are declared as '[]someId' instead of
 	// '[]Identifiable'
-	leftNotIdentifiable := []someId{oneLeft, twoLeft}
-	rightNotIdentifiable := []someId{oneRight, twoRight, threeRight}
+	leftNotIdentifiable := []someID{oneLeft, twoLeft}
+	rightNotIdentifiable := []someID{oneRight, twoRight, threeRight}
 
 	assert.Equal(t, [][]Identifiable{pair(oneLeft, oneRight), pair(twoLeft, twoRight)}, Intersection(leftNotIdentifiable, rightNotIdentifiable))
 	assert.Equal(t, [][]Identifiable{pair(oneRight, oneLeft), pair(twoRight, twoLeft)}, Intersection(rightNotIdentifiable, leftNotIdentifiable))

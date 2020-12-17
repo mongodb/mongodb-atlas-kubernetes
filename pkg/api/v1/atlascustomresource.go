@@ -6,6 +6,7 @@ import (
 )
 
 //+k8s:deepcopy-gen=false
+
 // AtlasCustomResource is the interface common for all Atlas entities
 type AtlasCustomResource interface {
 	runtime.Object
