@@ -21,7 +21,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 			Name:      "some-project",
 			Namespace: "test-ns",
 		},
-		Status: mdbv1.AtlasProjectStatus{
+		Status: status.AtlasProjectStatus{
 			Common: status.Common{Conditions: []status.Condition{{
 				Type:   status.IPAccessListReadyType,
 				Status: corev1.ConditionFalse,
