@@ -16,17 +16,17 @@ func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, pro
 		return "", workflow.Terminate(workflow.Internal, err.Error())
 	}
 	// Try to find the project
-	projectID, err := findProject(connection, project, client)
+	p, _, err := client.Projects.GetOneProjectByName(context.Background(), project.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
 	}
-	if projectID != "" {
-		ctx.Log.Debugw("Found Atlas Project", "id", projectID)
-		return projectID, workflow.OK()
+	if p.ID != "" {
+		ctx.Log.Debugw("Found Atlas Project", "id", p.ID)
+		return p.ID, workflow.OK()
 	}
 
 	// Otherwise try to create it
-	p := &mongodbatlas.Project{
+	p = &mongodbatlas.Project{
 		OrgID: connection.OrgID,
 		Name:  project.Spec.Name,
 	}
@@ -37,28 +37,4 @@ func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, pro
 	ctx.Log.Infow("Created Atlas Project", "name", project.Spec.Name, "id", p.ID)
 
 	return p.ID, workflow.OK()
-}
-
-func findProject(connection atlas.Connection, project *mdbv1.AtlasProject, client *mongodbatlas.Client) (string, error) {
-	var projectID string
-	err := atlas.TraversePages(func(pageNum int) (atlas.Paginated, error) {
-		return getProjectsForOrganizations(client, connection.OrgID, pageNum)
-	}, func(entity interface{}) bool {
-		p := entity.(*mongodbatlas.Project)
-		if p.Name == project.Spec.Name {
-			projectID = p.ID
-			return true
-		}
-		return false
-	})
-	return projectID, err
-}
-
-func getProjectsForOrganizations(client *mongodbatlas.Client, orgID string, pageNum int) (atlas.Paginated, error) {
-	// TODO test if the project level API key allows to find the project
-	projects, response, err := client.Organizations.Projects(context.Background(), orgID, atlas.DefaultListOptions(pageNum))
-	if err != nil {
-		return nil, err
-	}
-	return atlas.NewAtlasPaginated(response, projects.Results), err
 }
