@@ -1,8 +1,6 @@
 package workflow
 
 import (
-	"reflect"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,12 +30,9 @@ func (s *Status) EnsureCondition(condition status.Condition) {
 }
 
 func (s *Status) EnsureOption(option status.Option) {
-	for i, c := range s.options {
-		if reflect.TypeOf(c) == reflect.TypeOf(option) {
-			s.options[i] = option
-			return
-		}
-	}
-	// Condition not found - appending
+	// Condition not found - appending (the Option of the same type may be appended more than once)
+	// Important! This will work only if the function behind the Option always makes the same updates. If there's a
+	// conditional logic and different information is updated this means that we may need some logic to replace the
+	// option instead of adding (e.g. some "name" inside the Option)
 	s.options = append(s.options, option)
 }
