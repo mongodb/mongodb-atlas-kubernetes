@@ -16,7 +16,7 @@ func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, pro
 		return "", workflow.Terminate(workflow.Internal, err.Error())
 	}
 	// Try to find the project
-	projectID, err := findProject(ctx, connection, project, err, client)
+	projectID, err := findProject(connection, project, client)
 	if err != nil {
 		return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
 	}
@@ -39,9 +39,9 @@ func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, pro
 	return p.ID, workflow.OK()
 }
 
-func findProject(ctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject, err error, client *mongodbatlas.Client) (string, error) {
+func findProject(connection atlas.Connection, project *mdbv1.AtlasProject, client *mongodbatlas.Client) (string, error) {
 	var projectID string
-	err = atlas.TraversePages(func(pageNum int) (atlas.Paginated, error) {
+	err := atlas.TraversePages(func(pageNum int) (atlas.Paginated, error) {
 		return getProjectsForOrganizations(client, connection.OrgID, pageNum)
 	}, func(entity interface{}) bool {
 		p := entity.(*mongodbatlas.Project)
