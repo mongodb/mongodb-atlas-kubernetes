@@ -28,10 +28,11 @@ func Terminate(reason ConditionReason, message string) Result {
 	return Result{done: true, requeueAfter: defaultRetry, reason: reason, message: message}
 }
 
-func (r *Result) WithRetry(retryInSeconds time.Duration) *Result {
-	r.requeueAfter = retryInSeconds
+func (r *Result) WithRetry(retry time.Duration) *Result {
+	r.requeueAfter = retry
 	return r
 }
+
 func (r Result) IsOk() bool {
 	return !r.done
 }

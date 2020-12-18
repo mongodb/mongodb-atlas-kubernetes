@@ -36,6 +36,7 @@ func (c Context) Conditions() []status.Condition {
 func (c Context) StatusOptions() []status.Option {
 	return c.status.options
 }
+
 func (c Context) LastCondition() *status.Condition {
 	return c.lastCondition
 }
@@ -60,6 +61,7 @@ func (c *Context) SetConditionFromResult(conditionType status.ConditionType, res
 	})
 	return c
 }
+
 func (c *Context) SetConditionFalse(conditionType status.ConditionType) *Context {
 	c.EnsureCondition(status.Condition{
 		Type:   conditionType,

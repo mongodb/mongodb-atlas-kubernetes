@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
@@ -62,7 +63,6 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	connection, result := atlas.ReadConnection(ctx, r.Client, "TODO!", project.ConnectionSecretObjectKey())
-
 	if !result.IsOk() {
 		// merge result into ctx
 		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
@@ -70,10 +70,12 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return result.ReconcileResult(), nil
 	}
 
-	if _, result := ensureProjectExists(ctx, connection, project); !result.IsOk() {
+	var projectID string
+	if projectID, result = ensureProjectExists(ctx, connection, project); !result.IsOk() {
 		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
 		return result.ReconcileResult(), nil
 	}
+	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
@@ -87,5 +89,6 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mdbv1.AtlasProject{}).
+		WithEventFilter(watch.CommonPredicates()).
 		Complete(r)
 }

@@ -15,4 +15,5 @@ type AtlasCustomResource interface {
 }
 
 var _ AtlasCustomResource = &AtlasProject{}
+
 var _ AtlasCustomResource = &AtlasCluster{}
