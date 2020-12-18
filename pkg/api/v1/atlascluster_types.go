@@ -67,3 +67,7 @@ func init() {
 func (c AtlasCluster) GetStatus() interface{} {
 	return c.Status
 }
+
+func (p AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	p.Status.Conditions = conditions
+}

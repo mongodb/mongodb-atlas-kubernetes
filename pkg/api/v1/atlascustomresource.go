@@ -11,6 +11,8 @@ import (
 type AtlasCustomResource interface {
 	runtime.Object
 	status.Reader
+	status.Writer
 }
 
 var _ AtlasCustomResource = &AtlasProject{}
+var _ AtlasCustomResource = &AtlasCluster{}

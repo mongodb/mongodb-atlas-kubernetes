@@ -55,3 +55,4 @@ jobs:
       - run: go version
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
+

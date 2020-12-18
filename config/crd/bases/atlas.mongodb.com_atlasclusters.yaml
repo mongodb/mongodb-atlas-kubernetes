@@ -44,12 +44,38 @@ spec:
           status:
             description: AtlasClusterStatus defines the observed state of AtlasCluster
             properties:
-              phase:
-                description: 'The phase the current Custom Resource is in. Possible
-                  values: "Reconciling", "Pending", "Running", "Failed"'
-                type: string
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
             required:
-            - phase
+            - conditions
             type: object
         type: object
     served: true

@@ -2,10 +2,9 @@ package atlas
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -25,21 +24,22 @@ type Connection struct {
 
 // ReadConnection reads Atlas API connection parameters from AtlasProject Secret or from the default Operator one if the
 // former is not specified
-func ReadConnection(kubeClient client.Client, operatorName string, projectOverrideSecretRef *client.ObjectKey, log *zap.SugaredLogger) (Connection, error) {
+func ReadConnection(ctx *workflow.Context, kubeClient client.Client, operatorName string, projectOverrideSecretRef *client.ObjectKey) (Connection, workflow.Result) {
 	if projectOverrideSecretRef != nil {
 		// TODO is it possible that part of connection (like orgID is still in the Operator level secret and needs to get merged?)
-		log.Infof("Reading Atlas API credentials from the AtlasProject Secret %s", projectOverrideSecretRef)
+		ctx.Log.Infof("Reading Atlas API credentials from the AtlasProject Secret %s", projectOverrideSecretRef)
 		return readAtlasConnectionFromSecret(kubeClient, *projectOverrideSecretRef)
 	}
+
 	// TODO check the default "Operator level" Secret
 	// return readAtlasConnectionFromSecret(operatorName + "-connection")
-	return Connection{}, errors.New("the API keys are not configured")
+	return Connection{}, workflow.Terminate(workflow.AtlasCredentialsNotProvided, "the API keys are not configured")
 }
 
-func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.ObjectKey) (Connection, error) {
+func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.ObjectKey) (Connection, workflow.Result) {
 	secret := &corev1.Secret{}
 	if err := kubeClient.Get(context.Background(), secretRef, secret); err != nil {
-		return Connection{}, err
+		return Connection{}, workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 	}
 	secretData := make(map[string]string)
 	for k, v := range secret.Data {
@@ -47,14 +47,14 @@ func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.Ob
 	}
 
 	if err := validateConnectionSecret(secretRef, secretData); err != nil {
-		return Connection{}, err
+		return Connection{}, workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 	}
 
 	return Connection{
 		OrgID:      secretData["orgId"],
 		PublicKey:  secretData["publicApiKey"],
 		PrivateKey: secretData["privateApiKey"],
-	}, nil
+	}, workflow.OK()
 }
 
 func validateConnectionSecret(secretRef client.ObjectKey, secretData map[string]string) error {

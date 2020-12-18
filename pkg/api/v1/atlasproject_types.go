@@ -53,15 +53,6 @@ type AtlasProjectSpec struct {
 	ProjectIPAccessList []ProjectIPAccessList `json:"projectIpAccessList,omitempty"`
 }
 
-// AtlasProjectStatus defines the observed state of AtlasProject
-type AtlasProjectStatus struct {
-	status.Common `json:",inline"`
-
-	// The ID of the Atlas Project
-	// +optional
-	ID string `json:"id,omitempty"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
@@ -73,8 +64,8 @@ type AtlasProject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasProjectSpec   `json:"spec,omitempty"`
-	Status AtlasProjectStatus `json:"status,omitempty"`
+	Spec   AtlasProjectSpec          `json:"spec,omitempty"`
+	Status status.AtlasProjectStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -114,4 +105,14 @@ func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 
 func (p AtlasProject) GetStatus() interface{} {
 	return p.Status
+}
+
+func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	p.Status.Conditions = conditions
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasProjectStatusOption)
+		v(&p.Status)
+	}
 }

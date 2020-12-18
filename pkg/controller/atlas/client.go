@@ -29,7 +29,7 @@ func Client(connection Connection, log *zap.SugaredLogger) (*mongodbatlas.Client
 		return nil, err
 	}
 	client.UserAgent = userAgent
-	return client, err
+	return client, nil
 }
 
 func basicClient() *http.Client {

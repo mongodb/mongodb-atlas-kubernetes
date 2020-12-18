@@ -1,4 +1,4 @@
-package status
+package statushandler
 
 import (
 	"context"
@@ -16,9 +16,9 @@ type patchValue struct {
 	Value interface{} `json:"value"`
 }
 
-// PatchUpdateStatus performs the JSONPatch patch update to the Atlas Custom Resource.
+// patchUpdateStatus performs the JSONPatch patch update to the Atlas Custom Resource.
 // The "jsonPatch" merge allows to update only status field so is more
-func PatchUpdateStatus(kubeClient client.Client, resource mdbv1.AtlasCustomResource) error {
+func patchUpdateStatus(kubeClient client.Client, resource mdbv1.AtlasCustomResource) error {
 	return doPatch(kubeClient, resource, resource.GetStatus())
 }
 
