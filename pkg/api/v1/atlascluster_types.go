@@ -17,12 +17,11 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/jinzhu/copier"
+	"encoding/json"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func init() {
@@ -31,6 +30,7 @@ func init() {
 
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
+	Project *ResourceRef `json:"projectRef"`
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
 	// +optional
@@ -225,13 +225,18 @@ type RegionsConfig struct {
 
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() *mongodbatlas.Cluster {
-	result := &mongodbatlas.Cluster{}
-	err := copier.Copy(result, spec)
+	result := mongodbatlas.Cluster{}
+	b, err := json.Marshal(spec)
 	if err != nil {
 		panic(err)
 	}
 
-	return result
+	err = json.Unmarshal(b, &result)
+	if err != nil {
+		panic(err)
+	}
+
+	return &result
 }
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
@@ -250,14 +255,6 @@ type AtlasCluster struct {
 
 	Spec   AtlasClusterSpec   `json:"spec,omitempty"`
 	Status AtlasClusterStatus `json:"status,omitempty"`
-}
-
-func (c *AtlasCluster) ConnectionSecretObjectKey() *client.ObjectKey {
-	if c.Spec.ConnectionSecret != nil {
-		key := kube.ObjectKey(c.Namespace, c.Spec.ConnectionSecret.Name)
-		return &key
-	}
-	return nil
 }
 
 // +kubebuilder:object:root=true
