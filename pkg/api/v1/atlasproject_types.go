@@ -78,6 +78,7 @@ type AtlasProject struct {
 }
 
 // +kubebuilder:object:root=true
+
 // AtlasProjectList contains a list of AtlasProject
 type AtlasProjectList struct {
 	metav1.TypeMeta `json:",inline"`

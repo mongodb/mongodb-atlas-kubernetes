@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	orgIdKey      = "orgId"
-	publicApiKey  = "publicApiKey"
-	privateApiKey = "privateApiKey"
+	orgIDKey      = "orgId"
+	publicAPIKey  = "publicApiKey"
+	privateAPIKey = "privateApiKey"
 )
 
 // Connection encapsulates Atlas connectivity information that is necessary to perform API requests
@@ -59,7 +59,7 @@ func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.Ob
 
 func validateConnectionSecret(secretRef client.ObjectKey, secretData map[string]string) error {
 	var missingFields []string
-	requiredKeys := []string{orgIdKey, publicApiKey, privateApiKey}
+	requiredKeys := []string{orgIDKey, publicAPIKey, privateAPIKey}
 
 	for _, key := range requiredKeys {
 		if _, ok := secretData[key]; !ok {
