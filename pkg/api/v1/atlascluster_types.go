@@ -224,19 +224,19 @@ type RegionsConfig struct {
 }
 
 // Cluster converts the Spec to native Atlas client format.
-func (spec *AtlasClusterSpec) Cluster() *mongodbatlas.Cluster {
+func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	result := mongodbatlas.Cluster{}
 	b, err := json.Marshal(spec)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	err = json.Unmarshal(b, &result)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &result
+	return &result, nil
 }
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
