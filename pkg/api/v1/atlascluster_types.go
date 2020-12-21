@@ -269,3 +269,7 @@ type AtlasClusterList struct {
 func (c AtlasCluster) GetStatus() interface{} {
 	return c.Status
 }
+
+func (c AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	c.Status.Conditions = conditions
+}

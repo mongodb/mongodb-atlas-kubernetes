@@ -3,3 +3,7 @@
 -s DOCKER_PASSWORD=password
 -s DOCKER_REPO=mongodb-atlas-kubernetes-operator
 -s DOCKER_REGISTRY=localhost:5000
+# Update this data with your cloud-qa custom data
+-s ORG_ID=
+-s PUBLIC_API_KEY=
+-s PRIVATE_API_KEY=

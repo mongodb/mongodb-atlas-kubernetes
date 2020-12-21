@@ -18,11 +18,13 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/go-logr/zapr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/altascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"go.uber.org/zap"
-	"os"
+
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"k8s.io/apimachinery/pkg/runtime"
