@@ -45,7 +45,7 @@ type AtlasProjectSpec struct {
 	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
 	// +optional
-	ConnectionSecret *SecretRef `json:"connectionSecretRef,omitempty"`
+	ConnectionSecret *ResourceRef `json:"connectionSecretRef,omitempty"`
 
 	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
