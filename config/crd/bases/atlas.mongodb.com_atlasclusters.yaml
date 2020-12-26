@@ -71,10 +71,6 @@ spec:
                       enabled. The default is true.
                     type: boolean
                 type: object
-              backupEnabled:
-                description: 'Deprecated: do not use. Flag that indicates whether
-                  legacy backups have been enabled. Applicable only for M10+ clusters.'
-                type: boolean
               biConnector:
                 description: Configuration of BI Connector for Atlas on this cluster.
                   The MongoDB Connector for Business Intelligence for Atlas (BI Connector)
@@ -92,33 +88,29 @@ spec:
                     type: string
                 type: object
               clusterType:
-                description: Type of the cluster that you want to create.
+                description: Type of the cluster that you want to create. The parameter
+                  is required if replicationSpecs are set or if Global Clusters are
+                  deployed.
                 enum:
                 - REPLICASET
                 - SHARDED
                 - GEOSHARDED
                 type: string
-              connectionSecretRef:
-                description: ConnectionSecret is the name of the Kubernetes Secret
-                  which contains the information about the way to connect to Atlas
-                  (organization ID, API keys). The default Operator connection configuration
-                  will be used if not provided.
-                properties:
-                  name:
-                    description: Name is the name of the Kubernetes Secret
-                    type: string
-                required:
-                - name
-                type: object
               diskSizeGB:
                 description: Capacity, in gigabytes, of the host's root volume. Increase
                   this number to add capacity, up to a maximum possible value of 4096
-                  (i.e., 4 TB). This value must be a positive integer.
+                  (i.e., 4 TB). This value must be a positive integer. The parameter
+                  is required if replicationSpecs are configured.
                 maximum: 4096
                 minimum: 0
                 type: integer
               encryptionAtRestProvider:
                 description: Cloud service provider that offers Encryption at Rest.
+                enum:
+                - AWS
+                - GCP
+                - AZURE
+                - NONE
                 type: string
               labels:
                 description: Collection of key-value pairs that tag and categorize
@@ -147,7 +139,8 @@ spec:
                 type: string
               numShards:
                 description: Positive integer that specifies the number of shards
-                  to deploy for a sharded cluster.
+                  to deploy for a sharded cluster. The parameter is required if replicationSpecs
+                  are configured
                 maximum: 50
                 minimum: 1
                 type: integer
@@ -155,6 +148,15 @@ spec:
                 description: Flag that indicates the cluster uses continuous cloud
                   backups.
                 type: boolean
+              projectRef:
+                description: ResourceRef is a reference to a Kubernetes Resource
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates
                   if the cluster uses Cloud Backups for backups.
@@ -306,16 +308,44 @@ spec:
                       type: string
                   type: object
                 type: array
+            required:
+            - projectRef
             type: object
           status:
             description: AtlasClusterStatus defines the observed state of AtlasCluster.
             properties:
-              phase:
-                description: 'The phase the current Custom Resource is in. Possible
-                  values: "Reconciling", "Pending", "Running", "Failed"'
-                type: string
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
             required:
-            - phase
+            - conditions
             type: object
         type: object
     served: true

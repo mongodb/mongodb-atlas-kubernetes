@@ -45,21 +45,12 @@ type AtlasProjectSpec struct {
 	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
 	// +optional
-	ConnectionSecret *SecretRef `json:"connectionSecretRef,omitempty"`
+	ConnectionSecret *ResourceRef `json:"connectionSecretRef,omitempty"`
 
 	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
 	// +optional
 	ProjectIPAccessList []ProjectIPAccessList `json:"projectIpAccessList,omitempty"`
-}
-
-// AtlasProjectStatus defines the observed state of AtlasProject
-type AtlasProjectStatus struct {
-	status.Common `json:",inline"`
-
-	// The ID of the Atlas Project
-	// +optional
-	ID string `json:"id,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -73,11 +64,12 @@ type AtlasProject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasProjectSpec   `json:"spec,omitempty"`
-	Status AtlasProjectStatus `json:"status,omitempty"`
+	Spec   AtlasProjectSpec          `json:"spec,omitempty"`
+	Status status.AtlasProjectStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+
 // AtlasProjectList contains a list of AtlasProject
 type AtlasProjectList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -113,4 +105,14 @@ func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 
 func (p AtlasProject) GetStatus() interface{} {
 	return p.Status
+}
+
+func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	p.Status.Conditions = conditions
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasProjectStatusOption)
+		v(&p.Status)
+	}
 }

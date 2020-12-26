@@ -27,6 +27,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -43,6 +44,7 @@ type AtlasClusterReconciler struct {
 func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.With("atlascluster", req.NamespacedName)
+	wctx := workflow.NewContext(log)
 
 	cluster := &mdbv1.AtlasCluster{}
 	if err := r.Client.Get(ctx, kube.ObjectKey(req.Namespace, req.Name), cluster); err != nil {
@@ -53,12 +55,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
 
-	if cluster.Spec.ConnectionSecret == nil {
-		log.Error("So far the Connection Secret in AtlasProject is mandatory!")
-		return kube.ResultRetry, nil
-	}
-
-	connection, err := atlas.ReadConnection(r.Client, "TODO!", cluster.ConnectionSecretObjectKey(), log)
+	connection, err := atlas.ReadConnection(wctx, r.Client, "TODO!", cluster.ConnectionSecretObjectKey())
 	if err != nil {
 		log.Errorf("Failed to read Atlas Connection details: %s", err)
 		return kube.ResultRetry, nil
