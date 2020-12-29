@@ -12,6 +12,8 @@ import (
 )
 
 func ensureClusterState(ctx context.Context, wctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
+	c = &mongodbatlas.Cluster{}
+
 	client, err := atlas.Client(connection, wctx.Log)
 	if err != nil {
 		wctx.Log.Errorf("Failed to read Atlas Connection details: %s", err.Error())

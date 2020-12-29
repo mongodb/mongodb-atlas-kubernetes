@@ -11,7 +11,7 @@ const defaultRetry = time.Second * 10
 type ConditionReason string
 
 type Result struct {
-	done         bool
+	terminated   bool
 	requeueAfter time.Duration
 	message      string
 	reason       ConditionReason
@@ -19,14 +19,14 @@ type Result struct {
 
 func OK() Result {
 	return Result{
-		done:         false,
+		terminated:   false,
 		requeueAfter: -1,
 	}
 }
 
 func Terminate(reason ConditionReason, message string) Result {
 	return Result{
-		done:         true,
+		terminated:   true,
 		requeueAfter: defaultRetry,
 		reason:       reason,
 		message:      message,
@@ -35,7 +35,7 @@ func Terminate(reason ConditionReason, message string) Result {
 
 func InProgress(message string) Result {
 	return Result{
-		done:         false,
+		terminated:   false,
 		requeueAfter: defaultRetry,
 		message:      message,
 	}
@@ -47,7 +47,7 @@ func (r *Result) WithRetry(retry time.Duration) *Result {
 }
 
 func (r Result) IsOk() bool {
-	return !r.done
+	return !r.terminated
 }
 
 func (r Result) ReconcileResult() reconcile.Result {

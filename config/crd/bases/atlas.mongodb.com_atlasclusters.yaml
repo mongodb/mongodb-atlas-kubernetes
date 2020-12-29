@@ -344,12 +344,36 @@ spec:
                   - type
                   type: object
                 type: array
+              connectionStrings:
+                description: ConnectionStrings configuration for applications use
+                  to connect to this cluster
+                properties:
+                  awsPrivateLink:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  awsPrivateLinkSrv:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  private:
+                    type: string
+                  privateSrv:
+                    type: string
+                  standard:
+                    type: string
+                  standardSrv:
+                    type: string
+                type: object
               mongoDBVersion:
+                type: string
+              mongoURIUpdated:
                 type: string
               stateName:
                 type: string
             required:
             - conditions
+            - connectionStrings
             type: object
         type: object
     served: true

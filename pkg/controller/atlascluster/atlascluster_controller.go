@@ -64,26 +64,32 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
 
 	wctx := workflow.NewContext(log)
+	defer statushandler.Update(wctx, r, cluster)
+
 	connection, result := atlas.ReadConnection(wctx, r, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
-		statushandler.Update(wctx.SetConditionFromResult(status.ClusterReadyType, result), r, cluster)
+		wctx.SetConditionFromResult(status.ClusterReadyType, result)
 		log.Debugf("returning %+v", result.ReconcileResult())
 		return result.ReconcileResult(), nil
 	}
 
 	c, result := ensureClusterState(ctx, wctx, connection, project, cluster)
+	if c.StateName != "" {
+		wctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
 	if !result.IsOk() {
 		wctx.SetConditionFromResult(status.ClusterReadyType, result)
-	} else {
-		wctx.SetConditionTrue(status.ClusterReadyType)
+		log.Debugf("returning %+v", result.ReconcileResult())
+		return result.ReconcileResult(), nil
 	}
 
 	wctx.
-		EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName)).
-		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion))
-
-	statushandler.Update(wctx, r, cluster)
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
+		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
 
 	return result.ReconcileResult(), nil
 }

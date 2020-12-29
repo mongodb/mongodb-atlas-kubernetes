@@ -1,10 +1,14 @@
 package status
 
+import "go.mongodb.org/atlas/mongodbatlas"
+
 // AtlasClusterStatus defines the observed state of AtlasCluster.
 type AtlasClusterStatus struct {
-	Common         `json:",inline"`
-	StateName      string `json:"stateName,omitempty"`
-	MongoDBVersion string `json:"mongoDBVersion,omitempty"`
+	Common            `json:",inline"`
+	StateName         string                          `json:"stateName,omitempty"`
+	MongoDBVersion    string                          `json:"mongoDBVersion,omitempty"`
+	ConnectionStrings *mongodbatlas.ConnectionStrings `json:"connectionStrings"`
+	MongoURIUpdated   string                          `json:"mongoURIUpdated,omitempty"`
 }
 
 // +k8s:deepcopy-gen=false
@@ -21,5 +25,17 @@ func AtlasClusterStateNameOption(stateName string) AtlasClusterStatusOption {
 func AtlasClusterMongoDBVersionOption(mongoDBVersion string) AtlasClusterStatusOption {
 	return func(s *AtlasClusterStatus) {
 		s.MongoDBVersion = mongoDBVersion
+	}
+}
+
+func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasClusterStatusOption {
+	return func(s *AtlasClusterStatus) {
+		s.ConnectionStrings = connectionStrings
+	}
+}
+
+func AtlasClusterMongoURIUpdatedOption(mongoURIUpdated string) AtlasClusterStatusOption {
+	return func(s *AtlasClusterStatus) {
+		s.MongoURIUpdated = mongoURIUpdated
 	}
 }
