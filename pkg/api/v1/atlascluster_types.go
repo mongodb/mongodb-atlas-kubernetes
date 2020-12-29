@@ -22,7 +22,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func init() {
@@ -240,11 +239,6 @@ func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	return &result, nil
 }
 
-// AtlasClusterStatus defines the observed state of AtlasCluster.
-type AtlasClusterStatus struct {
-	status.Common `json:",inline"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -254,12 +248,8 @@ type AtlasCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasClusterSpec   `json:"spec,omitempty"`
-	Status AtlasClusterStatus `json:"status,omitempty"`
-}
-
-func (c *AtlasCluster) ConnectionSecretObjectKey() *client.ObjectKey {
-	return nil
+	Spec   AtlasClusterSpec          `json:"spec,omitempty"`
+	Status status.AtlasClusterStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

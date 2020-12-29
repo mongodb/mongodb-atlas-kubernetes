@@ -344,6 +344,10 @@ spec:
                   - type
                   type: object
                 type: array
+              mongoDBVersion:
+                type: string
+              stateName:
+                type: string
             required:
             - conditions
             type: object

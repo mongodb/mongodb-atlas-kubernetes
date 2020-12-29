@@ -18,17 +18,19 @@ package atlascluster
 
 import (
 	"context"
-	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // AtlasClusterReconciler reconciles a AtlasCluster object
@@ -44,49 +46,46 @@ type AtlasClusterReconciler struct {
 func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.With("atlascluster", req.NamespacedName)
-	wctx := workflow.NewContext(log)
 
 	cluster := &mdbv1.AtlasCluster{}
-	if err := r.Client.Get(ctx, kube.ObjectKey(req.Namespace, req.Name), cluster); err != nil {
-		// TODO make generic (update status, log message)
-		log.Error(err, "Failed to read the AtlasCluster")
-		return kube.ResultRetry, nil
+	if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {
+		log.Error(err, "Failed to read AtlasCluster")
+		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	}
+
+	log = log.With("clusterName", cluster.Spec.Name)
+
+	project := &mdbv1.AtlasProject{}
+	if err := r.Get(ctx, req.NamespacedName, project); err != nil {
+		log.Error(err, "Failed to read Project from AtlasCluster")
+		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
 	}
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
 
-	connection, err := atlas.ReadConnection(wctx, r.Client, "TODO!", cluster.ConnectionSecretObjectKey())
-	if err != nil {
-		log.Errorf("Failed to read Atlas Connection details: %s", err)
-		return kube.ResultRetry, nil
+	wctx := workflow.NewContext(log)
+	connection, result := atlas.ReadConnection(wctx, r, "TODO!", project.ConnectionSecretObjectKey())
+	if !result.IsOk() {
+		// merge result into ctx
+		statushandler.Update(wctx.SetConditionFromResult(status.ClusterReadyType, result), r, cluster)
+		log.Debugf("returning %+v", result.ReconcileResult())
+		return result.ReconcileResult(), nil
 	}
 
-	client, err := atlas.Client(connection, log)
-	if err != nil {
-		log.Errorf("Failed to read Atlas Connection details: %s", err)
-		return kube.ResultRetry, nil
+	c, result := ensureClusterState(ctx, wctx, connection, project, cluster)
+	if !result.IsOk() {
+		wctx.SetConditionFromResult(status.ClusterReadyType, result)
+	} else {
+		wctx.SetConditionTrue(status.ClusterReadyType)
 	}
 
-	c, resp, err := client.Clusters.Get(ctx, cluster.Status.GroupID, cluster.Spec.Name)
-	if err != nil && resp.StatusCode == http.StatusNotFound {
-		c, _, err = client.Clusters.Create(ctx, cluster.Status.GroupID, cluster.Spec.Cluster())
-		if err != nil {
-			log.Errorf("Cannot get or create cluster %q: %w", cluster.Spec.Name, err)
-			return kube.ResultRetry, nil
-		}
-	}
+	wctx.
+		EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName)).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion))
 
-	switch c.StateName {
-	case "IDLE":
-		return kube.ResultSuccess, nil
+	statushandler.Update(wctx, r, cluster)
 
-	case "CREATING", "UPDATING", "REPAIRING":
-		return kube.ResultRetry, nil
-
-	default:
-		log.Errorf("Unknown cluster state %q", c.StateName)
-		return kube.ResultRetry, nil
-	}
+	return result.ReconcileResult(), nil
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {

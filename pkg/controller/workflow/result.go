@@ -25,7 +25,20 @@ func OK() Result {
 }
 
 func Terminate(reason ConditionReason, message string) Result {
-	return Result{done: true, requeueAfter: defaultRetry, reason: reason, message: message}
+	return Result{
+		done:         true,
+		requeueAfter: defaultRetry,
+		reason:       reason,
+		message:      message,
+	}
+}
+
+func InProgress(message string) Result {
+	return Result{
+		done:         false,
+		requeueAfter: defaultRetry,
+		message:      message,
+	}
 }
 
 func (r *Result) WithRetry(retry time.Duration) *Result {

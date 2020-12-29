@@ -1,10 +1,17 @@
 package workflow
 
+// General reasons
 const (
-	// General reasons
 	AtlasCredentialsNotProvided ConditionReason = "AtlasCredentialsNotProvided"
 	Internal                    ConditionReason = "InternalError"
+)
 
-	// Atlas Project
+// Atlas Project reasons
+const (
 	ProjectNotCreatedInAtlas ConditionReason = "ProjectNotCreatedInAtlas"
+)
+
+// Atlas Cluster reasons
+const (
+	ClusterNotCreatedInAtlas ConditionReason = "ClusterNotCreatedInAtlas"
 )
