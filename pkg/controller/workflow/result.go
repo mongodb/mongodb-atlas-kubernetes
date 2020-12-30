@@ -6,7 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const defaultRetry = time.Second * 10
+const DefaultRetry = time.Second * 10
 
 type ConditionReason string
 
@@ -25,7 +25,7 @@ func OK() Result {
 }
 
 func Terminate(reason ConditionReason, message string) Result {
-	return Result{done: true, requeueAfter: defaultRetry, reason: reason, message: message}
+	return Result{done: true, requeueAfter: DefaultRetry, reason: reason, message: message}
 }
 
 func (r *Result) WithRetry(retry time.Duration) *Result {
