@@ -35,6 +35,15 @@ jobs:
         set -x
         tar czvf ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one-${{ steps.tag.outputs.version }}.yaml
 
+    - name: Push Atlas Operator to Registry
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ secrets.DOCKER_REPO }}
+        registry: ${{ secrets.DOCKER_RELEASE_REPO }}
+        tags: ${{ steps.tag.outputs.tag }}
+
     - name: Create simple description
       uses: ./.github/actions/changelog
       with:
@@ -62,12 +71,3 @@ jobs:
         asset_path: ./ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
         asset_name: ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
         asset_content_type: application/tgz
-
-    - name: Push Atlas Operator to Registry
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ secrets.DOCKER_REPO }}
-        registry: ${{ secrets.DOCKER_RELEASE_REPO }}
-        tags: ${{ steps.tag.outputs.tag }}
