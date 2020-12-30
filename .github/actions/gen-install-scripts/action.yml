@@ -1,5 +1,5 @@
-name: 'create all-in-one'
-description: 'kustomized configs in one file'
+name: 'create all-in-one files'
+description: 'Generate installation kustomized configs in one file `all-in-one`'
 inputs:
   IMAGE_URL:
     description: "Operator image"

@@ -24,10 +24,10 @@ jobs:
       with:
         fetch-depth: 0 #required for tags
 
-    - name: Create all-in-one configuration
-      uses: ./.github/actions/all-in-one
+    - name: Create all-in-one installation script
+      uses: ./.github/actions/gen-install-scripts
       with:
-        IMAGE_URL: ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_REPO }}:${{ env.VERSION }}
+        IMAGE_URL: ${{ secrets.DOCKER_REGISTRY }}/${{ secrets.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
         version: ${{ env.VERSION }}
 
     - name: Create branch and push it
@@ -35,18 +35,11 @@ jobs:
         git checkout -b "release/${VERSION}"
         git push origin "release/${VERSION}"
 
-    - name: Commit file'n'sign
-      uses: ./.github/actions/put-contents
+    - name: Commit file and sign it
+      uses: ./.github/actions/push-files
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         FILE_TO_COMMIT: "deploy/all-in-one.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit file'n'sign
-      uses: ./.github/actions/put-contents
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/all-in-one-${{ env.VERSION }}.yaml"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR

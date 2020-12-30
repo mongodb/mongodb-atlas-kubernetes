@@ -4,7 +4,7 @@
 
 echo "Commits: " > changelog.md
 #find previos tag
-start_tag=$(git for-each-ref refs/tags/ --count=2 --sort=-version:refname --format='%(refname:short)' | awk 'NR==2')
+start_tag=$(git describe --abbrev=0 --tags --match 'v*')
 if [ -n "${start_tag}" ]; then
     git log "${start_tag}...HEAD" --pretty=format:"- %s" >> changelog.md
 else
