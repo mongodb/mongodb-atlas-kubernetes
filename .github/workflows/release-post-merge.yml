@@ -1,0 +1,73 @@
+# GitHub workflow for createing release.
+# Trigger release branch should be merge into main
+
+name: Create Release.
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  create-release:
+    name: Create Release
+    if: (github.event.pull_request.merged == true) && (startsWith(github.event.pull_request.head.ref, 'release'))
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Print Env and Get version
+      id: tag
+      env:
+        BRANCH: ${{ github.event.pull_request.head.ref }}
+      run: |
+        echo "BRANCH:$BRANCH"
+        version=$(echo $BRANCH | awk -F '/' '{print $2}')
+        tag="v${version}"
+        echo "::set-output name=version::$version"
+        echo "::set-output name=tag::$tag"
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 #needs for tags
+
+    - name: Create configuration package
+      run: |
+        set -x
+        tar czvf ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one-${{ steps.tag.outputs.version }}.yaml
+
+    - name: Create simple description
+      uses: ./.github/actions/changelog
+      with:
+        tag: ${{ steps.tag.outputs.tag }}
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        release_name: Release ${{ steps.tag.outputs.version }}
+        body_path: changelog.md
+        draft: true
+        prerelease: false
+
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+        asset_path: ./ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
+        asset_name: ao-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
+        asset_content_type: application/tgz
+
+    - name: Push Atlas Operator to Registry
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ secrets.DOCKER_REPO }}
+        registry: ${{ secrets.DOCKER_RELEASE_REPO }}
+        tags: ${{ steps.tag.outputs.tag }}

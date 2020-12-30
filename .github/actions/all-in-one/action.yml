@@ -1,0 +1,9 @@
+name: 'create all-in-one'
+description: 'kustomized configs in one file'
+inputs:
+  IMAGE_URL:
+    description: "Operator image"
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
