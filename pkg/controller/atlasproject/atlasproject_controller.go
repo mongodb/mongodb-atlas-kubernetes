@@ -46,8 +46,8 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	if result := customresource.GetResource(r.Client, req, project, log); result != nil {
-		return *result, nil
+	if result := customresource.GetResource(r.Client, req, project, log); !result.IsOk() {
+		return result.ReconcileResult(), nil
 	}
 
 	ctx := workflow.NewContext(log)

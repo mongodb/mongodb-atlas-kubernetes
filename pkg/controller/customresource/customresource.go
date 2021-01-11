@@ -14,18 +14,19 @@ import (
 // GetResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
 // Note the logic: any reconcile result different from nil should be considered as "terminal" and will stop reconciliation
 // right away (the pointer will be empty). Otherwise the pointer 'resource' will always reference the existing resource
-func GetResource(client client.Client, request reconcile.Request, resource runtime.Object, log *zap.SugaredLogger) *reconcile.Result {
+func GetResource(client client.Client, request reconcile.Request, resource runtime.Object, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(context.Background(), request.NamespacedName, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
-			return &reconcile.Result{}
+			return workflow.TerminateSilently().WithoutRetry()
 		}
-		// Error reading the object - requeue the request.
+		// Error reading the object - requeue the request. Note, that we don't intend to update resource status
+		// as most of all it will fail as well.
 		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
-		return &reconcile.Result{RequeueAfter: workflow.DefaultRetry}
+		return workflow.TerminateSilently()
 	}
-	return nil
+	return workflow.OK()
 }
