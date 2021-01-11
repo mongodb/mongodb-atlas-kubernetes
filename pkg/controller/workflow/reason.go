@@ -1,5 +1,7 @@
 package workflow
 
+type ConditionReason string
+
 // General reasons
 const (
 	AtlasCredentialsNotProvided ConditionReason = "AtlasCredentialsNotProvided"
@@ -14,4 +16,6 @@ const (
 // Atlas Cluster reasons
 const (
 	ClusterNotCreatedInAtlas ConditionReason = "ClusterNotCreatedInAtlas"
+	ClusterCreating          ConditionReason = "ClusterCreating"
+	ClusterUpdating          ConditionReason = "ClusterUpdating"
 )

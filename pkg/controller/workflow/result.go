@@ -8,8 +8,6 @@ import (
 
 const defaultRetry = time.Second * 10
 
-type ConditionReason string
-
 type Result struct {
 	terminated   bool
 	requeueAfter time.Duration
@@ -33,10 +31,11 @@ func Terminate(reason ConditionReason, message string) Result {
 	}
 }
 
-func InProgress(message string) Result {
+func InProgress(reason ConditionReason, message string) Result {
 	return Result{
 		terminated:   false,
 		requeueAfter: defaultRetry,
+		reason:       reason,
 		message:      message,
 	}
 }
