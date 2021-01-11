@@ -4,11 +4,21 @@ import "go.mongodb.org/atlas/mongodbatlas"
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
 type AtlasClusterStatus struct {
-	Common            `json:",inline"`
-	StateName         string             `json:"stateName,omitempty"`
-	MongoDBVersion    string             `json:"mongoDBVersion,omitempty"`
+	Common `json:",inline"`
+
+	// StateName is the current state of the cluster.
+	// The possible states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING
+	StateName string `json:"stateName,omitempty"`
+
+	// MongoDBVersion is the version of MongoDB the cluster runs, in <major version>.<minor version> format.
+	MongoDBVersion string `json:"mongoDBVersion,omitempty"`
+
+	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
 	ConnectionStrings *ConnectionStrings `json:"connectionStrings"`
-	MongoURIUpdated   string             `json:"mongoURIUpdated,omitempty"`
+
+	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
+	// The connection string changes if you update any of the other values.
+	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
 }
 
 // ConnectionStrings is a copy of mongodbatlas.ConnectionStrings for deepcopy compatibility purposes.
@@ -21,7 +31,7 @@ type ConnectionStrings struct {
 	PrivateSrv        string            `json:"privateSrv,omitempty"`
 }
 
-// check that the two types are compatible.
+// Check compatibility with library type.
 var _ = ConnectionStrings(mongodbatlas.ConnectionStrings{})
 
 // +k8s:deepcopy-gen=false

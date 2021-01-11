@@ -70,7 +70,6 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	if !result.IsOk() {
 		// merge result into ctx
 		wctx.SetConditionFromResult(status.ClusterReadyType, result)
-		log.Debugf("returning %+v", result.ReconcileResult())
 		return result.ReconcileResult(), nil
 	}
 
@@ -81,7 +80,6 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	if !result.IsOk() {
 		wctx.SetConditionFromResult(status.ClusterReadyType, result)
-		log.Debugf("returning %+v", result.ReconcileResult())
 		return result.ReconcileResult(), nil
 	}
 

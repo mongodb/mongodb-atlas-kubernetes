@@ -128,6 +128,9 @@ type ComputeSpec struct {
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
 }
 
+// Check compatibility with library type.
+var _ = ComputeSpec(mongodbatlas.Compute{})
+
 // BiConnectorSpec specifies BI Connector for Atlas configuration on this cluster
 type BiConnectorSpec struct {
 	// Flag that indicates whether or not BI Connector for Atlas is enabled on the cluster.
@@ -138,6 +141,9 @@ type BiConnectorSpec struct {
 	// +optional
 	ReadPreference string `json:"readPreference,omitempty"`
 }
+
+// Check compatibility with library type.
+var _ = BiConnectorSpec(mongodbatlas.BiConnector{})
 
 // ProviderSettingsSpec configuration for the provisioned servers on which MongoDB runs. The available options are specific to the cloud service provider.
 type ProviderSettingsSpec struct {
@@ -222,6 +228,9 @@ type RegionsConfig struct {
 	// +optional
 	ReadOnlyNodes *int64 `json:"readOnlyNodes,omitempty"`
 }
+
+// Check compatibility with library type.
+var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
