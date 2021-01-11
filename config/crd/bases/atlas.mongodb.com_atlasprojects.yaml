@@ -48,7 +48,7 @@ spec:
                   will be used if not provided.
                 properties:
                   name:
-                    description: Name is the name of the Kubernetes Secret
+                    description: Name is the name of the Kubernetes Resource
                     type: string
                 required:
                 - name

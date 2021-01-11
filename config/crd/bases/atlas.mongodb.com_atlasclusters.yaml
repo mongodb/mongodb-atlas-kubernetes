@@ -149,10 +149,10 @@ spec:
                   backups.
                 type: boolean
               projectRef:
-                description: ResourceRef is a reference to a Kubernetes Secret
+                description: ResourceRef is a reference to a Kubernetes Resource
                 properties:
                   name:
-                    description: Name is the name of the Kubernetes Secret
+                    description: Name is the name of the Kubernetes Resource
                     type: string
                 required:
                 - name
