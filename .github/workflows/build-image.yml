@@ -30,4 +30,3 @@ jobs:
         repository: ${{ secrets.DOCKER_REPO }}
         registry: ${{ secrets.DOCKER_REGISTRY }}
         tags: ${{ steps.prepare.outputs.tag }}
-
