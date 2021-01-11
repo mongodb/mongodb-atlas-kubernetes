@@ -11,7 +11,6 @@ linters:
     - exportloopref
     - gocritic
     - gocyclo
-    - gofumpt
     - goimports
     - goprintffuncname
     - gosec
