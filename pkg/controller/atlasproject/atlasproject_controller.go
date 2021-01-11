@@ -17,16 +17,13 @@ limitations under the License.
 package atlasproject
 
 import (
-	"context"
-	"time"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,10 +46,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	if err := r.Client.Get(context.Background(), kube.ObjectKey(req.Namespace, req.Name), project); err != nil {
-		log.Error(err, "Failed to read the AtlasProject")
-		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	if result := customresource.GetResource(r.Client, req, project, log); !result.IsOk() {
+		return result.ReconcileResult(), nil
 	}
+
 	ctx := workflow.NewContext(log)
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
