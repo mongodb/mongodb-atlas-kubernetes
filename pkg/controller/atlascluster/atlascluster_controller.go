@@ -17,18 +17,15 @@ limitations under the License.
 package atlascluster
 
 import (
-	"context"
-	"time"
-
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
@@ -44,21 +41,18 @@ type AtlasClusterReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
 
 func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
 	log := r.Log.With("atlascluster", req.NamespacedName)
 
 	cluster := &mdbv1.AtlasCluster{}
-	if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {
-		log.Error(err, "Failed to read AtlasCluster")
-		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	if result := customresource.GetResource(r.Client, req, cluster, log); !result.IsOk() {
+		return result.ReconcileResult(), nil
 	}
 
 	log = log.With("clusterName", cluster.Spec.Name)
 
 	project := &mdbv1.AtlasProject{}
-	if err := r.Get(ctx, req.NamespacedName, project); err != nil {
-		log.Error(err, "Failed to read Project from AtlasCluster")
-		return reconcile.Result{RequeueAfter: time.Second * 10}, nil
+	if result := customresource.GetResource(r.Client, req, project, log); !result.IsOk() {
+		return result.ReconcileResult(), nil
 	}
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)

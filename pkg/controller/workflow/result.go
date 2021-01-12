@@ -37,7 +37,7 @@ func Terminate(reason ConditionReason, message string) Result {
 
 func InProgress(reason ConditionReason, message string) Result {
 	return Result{
-		terminated:   false,
+		terminated:   true,
 		requeueAfter: DefaultRetry,
 		reason:       reason,
 		message:      message,
