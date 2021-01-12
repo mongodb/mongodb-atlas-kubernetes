@@ -345,8 +345,8 @@ spec:
                   type: object
                 type: array
               connectionStrings:
-                description: ConnectionStrings configuration for applications use
-                  to connect to this cluster
+                description: ConnectionStrings is a set of connection strings that
+                  your applications use to connect to this cluster.
                 properties:
                   awsPrivateLink:
                     additionalProperties:
@@ -366,14 +366,20 @@ spec:
                     type: string
                 type: object
               mongoDBVersion:
+                description: MongoDBVersion is the version of MongoDB the cluster
+                  runs, in <major version>.<minor version> format.
                 type: string
               mongoURIUpdated:
+                description: MongoURIUpdated is a timestamp in ISO 8601 date and time
+                  format in UTC when the connection string was last updated. The connection
+                  string changes if you update any of the other values.
                 type: string
               stateName:
+                description: 'StateName is the current state of the cluster. The possible
+                  states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'
                 type: string
             required:
             - conditions
-            - connectionStrings
             type: object
         type: object
     served: true
