@@ -8,20 +8,16 @@ type AtlasClusterStatus struct {
 
 	// StateName is the current state of the cluster.
 	// The possible states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING
-	// +optional
 	StateName string `json:"stateName,omitempty"`
 
 	// MongoDBVersion is the version of MongoDB the cluster runs, in <major version>.<minor version> format.
-	// +optional
 	MongoDBVersion string `json:"mongoDBVersion,omitempty"`
 
 	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
-	// +optional
-	ConnectionStrings *ConnectionStrings `json:"connectionStrings"`
+	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
-	// +optional
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
 }
 
