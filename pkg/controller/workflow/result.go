@@ -23,9 +23,9 @@ func OK() Result {
 	}
 }
 
-// Terminate indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued)
+// Terminate indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued).
 // 'reason' and 'message' indicate the error state and are supposed to be reflected in the `conditions` for the
-// reconciled Custom Resource
+// reconciled Custom Resource.
 func Terminate(reason ConditionReason, message string) Result {
 	return Result{
 		terminated:   true,
@@ -35,6 +35,8 @@ func Terminate(reason ConditionReason, message string) Result {
 	}
 }
 
+// InProgress indicates that the reconciliation logic cannot proceed and needs to be finished (and possibly requeued).
+// 'reason' and 'message' indicate the in-progress state and are supposed to be reflected in the 'conditions' for the reconciled Custom Resource.
 func InProgress(reason ConditionReason, message string) Result {
 	return Result{
 		terminated:   true,
