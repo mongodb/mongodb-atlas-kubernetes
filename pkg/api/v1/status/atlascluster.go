@@ -55,7 +55,7 @@ var _ = ConnectionStrings(mongodbatlas.ConnectionStrings{})
 
 // +k8s:deepcopy-gen=false
 
-// AtlasClusterStatusOption is the option that is applied to Atlas Project Status.
+// AtlasClusterStatusOption is the option that is applied to Atlas Cluster Status.
 type AtlasClusterStatusOption func(s *AtlasClusterStatus)
 
 func AtlasClusterStateNameOption(stateName string) AtlasClusterStatusOption {

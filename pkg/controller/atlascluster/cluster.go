@@ -13,7 +13,6 @@ import (
 
 func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
 	ctx := context.Background()
-	c = &mongodbatlas.Cluster{}
 
 	client, err := atlas.Client(connection, wctx.Log)
 	if err != nil {

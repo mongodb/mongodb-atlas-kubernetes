@@ -68,7 +68,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	c, result := ensureClusterState(wctx, connection, project, cluster)
-	if c.StateName != "" {
+	if c != nil && c.StateName != "" {
 		wctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
 

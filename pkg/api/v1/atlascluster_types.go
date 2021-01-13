@@ -270,10 +270,16 @@ type AtlasClusterList struct {
 	Items           []AtlasCluster `json:"items"`
 }
 
-func (c AtlasCluster) GetStatus() interface{} {
+func (c *AtlasCluster) GetStatus() interface{} {
 	return c.Status
 }
 
-func (c AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (c *AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
 	c.Status.Conditions = conditions
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasClusterStatusOption)
+		v(&c.Status)
+	}
 }
