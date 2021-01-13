@@ -27,12 +27,31 @@ type AtlasClusterStatus struct {
 
 // ConnectionStrings is a copy of mongodbatlas.ConnectionStrings for deepcopy compatibility purposes.
 type ConnectionStrings struct {
-	Standard          string            `json:"standard,omitempty"`
-	StandardSrv       string            `json:"standardSrv,omitempty"`
-	AwsPrivateLink    map[string]string `json:"awsPrivateLink,omitempty"`
+	// Public mongodb:// connection string for this cluster.
+	Standard string `json:"standard,omitempty"`
+
+	// Public mongodb+srv:// connection string for this cluster.
+	StandardSrv string `json:"standardSrv,omitempty"`
+
+	// TODO: update when the replacement is implemented in mongodbatlas
+
+	// Deprecated: use connectionStrings.privateEndpoint[n].connectionString instead.
+	// Private-endpoint-aware mongodb://connection strings for each AWS PrivateLink private endpoint.
+	// Atlas returns this parameter only if you deployed a AWS PrivateLink private endpoint to the same regions as all of this cluster's nodes.
+	AwsPrivateLink map[string]string `json:"awsPrivateLink,omitempty"`
+
+	// Deprecated: use connectionStrings.privateEndpoint[n].srvConnectionString instead.
+	// Private-endpoint-aware mongodb+srv:// connection strings for each AWS PrivateLink private endpoint.
 	AwsPrivateLinkSrv map[string]string `json:"awsPrivateLinkSrv,omitempty"`
-	Private           string            `json:"private,omitempty"`
-	PrivateSrv        string            `json:"privateSrv,omitempty"`
+
+	// Network-peering-endpoint-aware mongodb://connection strings for each interface VPC endpoint you configured to connect to this cluster.
+	// Atlas returns this parameter only if you created a network peering connection to this cluster.
+	Private string `json:"private,omitempty"`
+
+	// Network-peering-endpoint-aware mongodb+srv:// connection strings for each interface VPC endpoint you configured to connect to this cluster.
+	// Atlas returns this parameter only if you created a network peering connection to this cluster.
+	// Use this URI format if your driver supports it. If it doesn't, use connectionStrings.private.
+	PrivateSrv string `json:"privateSrv,omitempty"`
 }
 
 // Check compatibility with library type.

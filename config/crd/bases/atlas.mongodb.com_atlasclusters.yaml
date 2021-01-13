@@ -250,6 +250,9 @@ spec:
                     - STANDARD
                     - PROVISIONED
                     type: string
+                required:
+                - instanceSizeName
+                - providerName
                 type: object
               replicationSpecs:
                 description: Configuration for cluster regions.
@@ -309,7 +312,9 @@ spec:
                   type: object
                 type: array
             required:
+            - name
             - projectRef
+            - providerSettings
             type: object
           status:
             description: AtlasClusterStatus defines the observed state of AtlasCluster.
@@ -351,18 +356,38 @@ spec:
                   awsPrivateLink:
                     additionalProperties:
                       type: string
+                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].connectionString
+                      instead. Private-endpoint-aware mongodb://connection strings
+                      for each AWS PrivateLink private endpoint. Atlas returns this
+                      parameter only if you deployed a AWS PrivateLink private endpoint
+                      to the same regions as all of this cluster''s nodes.'
                     type: object
                   awsPrivateLinkSrv:
                     additionalProperties:
                       type: string
+                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].srvConnectionString
+                      instead. Private-endpoint-aware mongodb+srv:// connection strings
+                      for each AWS PrivateLink private endpoint.'
                     type: object
                   private:
+                    description: Network-peering-endpoint-aware mongodb://connection
+                      strings for each interface VPC endpoint you configured to connect
+                      to this cluster. Atlas returns this parameter only if you created
+                      a network peering connection to this cluster.
                     type: string
                   privateSrv:
+                    description: Network-peering-endpoint-aware mongodb+srv:// connection
+                      strings for each interface VPC endpoint you configured to connect
+                      to this cluster. Atlas returns this parameter only if you created
+                      a network peering connection to this cluster. Use this URI format
+                      if your driver supports it. If it doesn't, use connectionStrings.private.
                     type: string
                   standard:
+                    description: Public mongodb:// connection string for this cluster.
                     type: string
                   standardSrv:
+                    description: Public mongodb+srv:// connection string for this
+                      cluster.
                     type: string
                 type: object
               mongoDBVersion:

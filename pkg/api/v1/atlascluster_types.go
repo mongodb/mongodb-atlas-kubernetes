@@ -72,7 +72,7 @@ type AtlasClusterSpec struct {
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
 	// Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded cluster.
 	// The parameter is required if replicationSpecs are configured
@@ -91,7 +91,7 @@ type AtlasClusterSpec struct {
 	ProviderBackupEnabled *bool `json:"providerBackupEnabled,omitempty"`
 
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec `json:"providerSettings,omitempty"`
+	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 
 	// Configuration for cluster regions.
 	// +optional
@@ -167,11 +167,11 @@ type ProviderSettingsSpec struct {
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
 	// Atlas provides different cluster tiers, each with a default storage capacity and RAM size. The cluster you select is used for all the data-bearing hosts in your cluster tier.
-	InstanceSizeName string `json:"instanceSizeName,omitempty"`
+	InstanceSizeName string `json:"instanceSizeName"`
 
 	// Cloud service provider on which Atlas provisions the hosts.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
-	ProviderName string `json:"providerName,omitempty"`
+	ProviderName string `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
 	// The region you choose can affect network latency for clients accessing your databases.
