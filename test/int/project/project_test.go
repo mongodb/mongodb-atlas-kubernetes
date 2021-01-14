@@ -1,41 +1,58 @@
 package project
 
 import (
+	"context"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Book", func() {
+var _ = Describe("AtlasProject", func() {
 	var (
-		longBook  Book
-		shortBook Book
+		namespace        corev1.Namespace
+		connectionSecret corev1.Secret
 	)
 
 	BeforeEach(func() {
-		longBook = Book{
-			Title:  "Les Miserables",
-			Author: "Victor Hugo",
-			Pages:  1488,
+		namespace = corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				// TODO name namespace by the name of the project and include the creation date/time
+				Namespace: "test",
+				Name:      "test",
+			},
 		}
+		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
-		shortBook = Book{
-			Title:  "Fox In Socks",
-			Author: "Dr. Seuss",
-			Pages:  24,
+		connectionSecret = corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-atlas-key",
+				Namespace: namespace.Name,
+			},
+			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 		}
+		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
 	})
 
-	Describe("Categorizing book length", func() {
-		Context("With more than 300 pages", func() {
-			It("should be a novel", func() {
-				Expect(longBook.CategoryByLength()).To(Equal("NOVEL"))
-			})
-		})
+	AfterEach(func() {
+		err := k8sClient.Delete(context.Background(), &namespace)
+		Expect(err).ToNot(HaveOccurred())
+	})
 
-		Context("With fewer than 300 pages", func() {
-			It("should be a short story", func() {
-				Expect(shortBook.CategoryByLength()).To(Equal("SHORT STORY"))
-			})
+	Describe("Creating the project", func() {
+		It("Succeeds", func() {
+			project := mdbv1.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-project",
+					Namespace: namespace.Name,
+				},
+				Spec: mdbv1.AtlasProjectSpec{
+					Name:             "Test Project",
+					ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecret.Name},
+				},
+			}
+			Expect(k8sClient.Create(context.Background(), &project)).ToNot(HaveOccurred())
 		})
 	})
 })
