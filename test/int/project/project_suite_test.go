@@ -90,8 +90,6 @@ var _ = BeforeSuite(func(done Done) {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	// TODO instantiate the atlas client based on the credentials env properties
-
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client: k8sManager.GetClient(),
 		Log:    *logger.Named("controllers").Named("AtlasProject").Sugar(),
