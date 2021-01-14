@@ -17,17 +17,18 @@ limitations under the License.
 package project
 
 import (
+	"net/http"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/go-logr/zapr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
