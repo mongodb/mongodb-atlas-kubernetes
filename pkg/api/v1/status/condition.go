@@ -24,15 +24,23 @@ conditions:
     type: Ready
 
 */
+
+type ConditionType string
+
 const (
 	ReadyType ConditionType = "Ready"
+)
 
-	// AtlasProject condition types
+// AtlasProject condition types
+const (
 	ProjectReadyType      ConditionType = "ProjectReady"
 	IPAccessListReadyType ConditionType = "IPAccessListReady"
 )
 
-type ConditionType string
+// AtlasCluster condition types
+const (
+	ClusterReadyType ConditionType = "ClusterReady"
+)
 
 // Condition describes the state of an Atlas Custom Resource at a certain point.
 type Condition struct {
