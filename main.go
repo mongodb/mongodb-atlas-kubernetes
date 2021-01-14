@@ -21,19 +21,16 @@ import (
 	"os"
 
 	"github.com/go-logr/zapr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/altascluster"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"go.uber.org/zap"
-
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,9 +75,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&altascluster.AtlasClusterReconciler{
+	if err = (&atlascluster.AtlasClusterReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AtlasCluster"),
+		Log:    logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
