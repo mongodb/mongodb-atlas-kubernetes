@@ -72,7 +72,7 @@ type AtlasClusterSpec struct {
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
 	// Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded cluster.
 	// The parameter is required if replicationSpecs are configured
@@ -91,7 +91,7 @@ type AtlasClusterSpec struct {
 	ProviderBackupEnabled *bool `json:"providerBackupEnabled,omitempty"`
 
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec `json:"providerSettings,omitempty"`
+	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 
 	// Configuration for cluster regions.
 	// +optional
@@ -128,6 +128,9 @@ type ComputeSpec struct {
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
 }
 
+// Check compatibility with library type.
+var _ = ComputeSpec(mongodbatlas.Compute{})
+
 // BiConnectorSpec specifies BI Connector for Atlas configuration on this cluster
 type BiConnectorSpec struct {
 	// Flag that indicates whether or not BI Connector for Atlas is enabled on the cluster.
@@ -138,6 +141,9 @@ type BiConnectorSpec struct {
 	// +optional
 	ReadPreference string `json:"readPreference,omitempty"`
 }
+
+// Check compatibility with library type.
+var _ = BiConnectorSpec(mongodbatlas.BiConnector{})
 
 // ProviderSettingsSpec configuration for the provisioned servers on which MongoDB runs. The available options are specific to the cloud service provider.
 type ProviderSettingsSpec struct {
@@ -161,11 +167,11 @@ type ProviderSettingsSpec struct {
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
 	// Atlas provides different cluster tiers, each with a default storage capacity and RAM size. The cluster you select is used for all the data-bearing hosts in your cluster tier.
-	InstanceSizeName string `json:"instanceSizeName,omitempty"`
+	InstanceSizeName string `json:"instanceSizeName"`
 
 	// Cloud service provider on which Atlas provisions the hosts.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
-	ProviderName string `json:"providerName,omitempty"`
+	ProviderName string `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
 	// The region you choose can affect network latency for clients accessing your databases.
@@ -223,6 +229,9 @@ type RegionsConfig struct {
 	ReadOnlyNodes *int64 `json:"readOnlyNodes,omitempty"`
 }
 
+// Check compatibility with library type.
+var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
+
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	result := mongodbatlas.Cluster{}
@@ -239,11 +248,6 @@ func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	return &result, nil
 }
 
-// AtlasClusterStatus defines the observed state of AtlasCluster.
-type AtlasClusterStatus struct {
-	status.Common `json:",inline"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -253,8 +257,8 @@ type AtlasCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasClusterSpec   `json:"spec,omitempty"`
-	Status AtlasClusterStatus `json:"status,omitempty"`
+	Spec   AtlasClusterSpec          `json:"spec,omitempty"`
+	Status status.AtlasClusterStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -266,10 +270,16 @@ type AtlasClusterList struct {
 	Items           []AtlasCluster `json:"items"`
 }
 
-func (c AtlasCluster) GetStatus() interface{} {
+func (c *AtlasCluster) GetStatus() interface{} {
 	return c.Status
 }
 
-func (c AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (c *AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
 	c.Status.Conditions = conditions
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasClusterStatusOption)
+		v(&c.Status)
+	}
 }

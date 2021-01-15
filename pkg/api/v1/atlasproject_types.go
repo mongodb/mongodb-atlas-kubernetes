@@ -95,7 +95,7 @@ type ProjectIPAccessList struct {
 	IPAddress string `json:"ipAddress,omitempty"`
 }
 
-func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
+func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	if p.Spec.ConnectionSecret != nil {
 		key := kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
 		return &key
@@ -103,7 +103,7 @@ func (p AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	return nil
 }
 
-func (p AtlasProject) GetStatus() interface{} {
+func (p *AtlasProject) GetStatus() interface{} {
 	return p.Status
 }
 

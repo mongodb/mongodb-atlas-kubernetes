@@ -24,15 +24,23 @@ conditions:
     type: Ready
 
 */
+
+type ConditionType string
+
 const (
 	ReadyType ConditionType = "Ready"
+)
 
-	// AtlasProject condition types
+// AtlasProject condition types
+const (
 	ProjectReadyType      ConditionType = "ProjectReady"
 	IPAccessListReadyType ConditionType = "IPAccessListReady"
 )
 
-type ConditionType string
+// AtlasCluster condition types
+const (
+	ClusterReadyType ConditionType = "ClusterReady"
+)
 
 // Condition describes the state of an Atlas Custom Resource at a certain point.
 type Condition struct {
@@ -49,4 +57,16 @@ type Condition struct {
 	// A human readable message indicating details about the transition.
 	// +optional
 	Message string `json:"message,omitempty"`
+}
+
+// TrueCondition returns the Condition that has the 'Status' set to 'true' and 'Type' to 'conditionType'.
+// It explicitly omits the 'Reason' and 'Message' fields.
+func TrueCondition(conditionType ConditionType) Condition {
+	return Condition{
+		Type:               conditionType,
+		Status:             corev1.ConditionTrue,
+		LastTransitionTime: metav1.Now(),
+		Reason:             "",
+		Message:            "",
+	}
 }
