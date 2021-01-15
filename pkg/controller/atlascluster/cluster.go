@@ -43,9 +43,6 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 	}
 
 	switch c.StateName {
-	case "CREATING":
-		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
-
 	case "IDLE":
 		spec, err := cluster.Spec.Cluster()
 		if err != nil {
@@ -64,6 +61,9 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 		}
 
 		return c, workflow.InProgress(workflow.ClusterNotUpToDate, "cluster update started")
+
+	case "CREATING":
+		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
 	case "UPDATING", "REPAIRING":
 		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
