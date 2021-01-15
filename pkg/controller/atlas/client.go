@@ -24,7 +24,7 @@ func Client(connection Connection, log *zap.SugaredLogger) (*mongodbatlas.Client
 		return nil, err
 	}
 	// TODO configuration for base URL (as a global Operator config?)
-	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL("https://cloud.mongodb.com/api/atlas/v1.0/"))
 	if err != nil {
 		return nil, err
 	}
