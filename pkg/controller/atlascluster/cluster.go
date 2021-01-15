@@ -10,7 +10,6 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/prometheus/common/log"
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
@@ -45,7 +44,7 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 
 	switch c.StateName {
 	case "CREATING":
-		return c, workflow.InProgress(workflow.ClusterCreating, "Cluster is provisioning")
+		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
 	case "IDLE":
 		spec, err := cluster.Spec.Cluster()
@@ -53,9 +52,9 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		if ok, err := clusterMatchesSpec(c, cluster.Spec); err != nil {
+		if done, err := clusterMatchesSpec(wctx, c, cluster.Spec); err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
-		} else if ok {
+		} else if done {
 			return c, workflow.OK()
 		}
 
@@ -64,16 +63,35 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		fallthrough
+		return c, workflow.InProgress(workflow.ClusterNotUpToDate, "cluster update started")
 
 	case "UPDATING", "REPAIRING":
-		return c, workflow.InProgress(workflow.ClusterUpdating, "Cluster is updating")
+		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
 		return c, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", c.StateName))
 	}
+}
+
+// clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change
+func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
+	clusterMerged := mongodbatlas.Cluster{}
+	if err := jsonCopy(&clusterMerged, cluster); err != nil {
+		return false, err
+	}
+
+	if err := jsonCopy(&clusterMerged, spec); err != nil {
+		return false, err
+	}
+
+	d := cmp.Diff(*cluster, clusterMerged)
+	if d != "" {
+		ctx.Log.Debugf("Cluster differs from spec: %s", d)
+	}
+
+	return d == "", nil
 }
 
 func jsonCopy(dst, src interface{}) error {
@@ -88,29 +106,4 @@ func jsonCopy(dst, src interface{}) error {
 	}
 
 	return nil
-}
-
-func toJson(x interface{}) string {
-	v, _ := json.Marshal(x)
-	return string(v)
-}
-
-// clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change
-func clusterMatchesSpec(cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
-	clusterOrig := mongodbatlas.Cluster{}
-	if err := jsonCopy(&clusterOrig, cluster); err != nil {
-		return false, err
-	}
-
-	if err := jsonCopy(cluster, spec); err != nil {
-		return false, err
-	}
-
-	d := cmp.Diff(*cluster, clusterOrig)
-	if d != "" {
-		log.Infof("Not equal! %#v != %#v (%#v)", toJson(cluster), toJson(&clusterOrig), toJson(spec))
-	} else {
-		log.Infof("Equal!")
-	}
-	return d == "", nil
 }
