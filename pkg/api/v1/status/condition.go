@@ -101,7 +101,6 @@ func EnsureConditionExists(condition Condition, source []Condition) []Condition 
 	return target
 }
 
-// TODO move 'ConditionReason' to 'api' package?
 func (c Condition) WithReason(reason string) Condition {
 	c.Reason = reason
 	return c
