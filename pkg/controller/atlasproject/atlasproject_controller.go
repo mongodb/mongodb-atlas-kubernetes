@@ -23,7 +23,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,11 +45,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	if result := customresource.GetResource(r.Client, req, project, log); !result.IsOk() {
+	result, ctx := customresource.PrepareResource(r.Client, req, project, log)
+	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
-
-	ctx := workflow.NewContext(log)
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
@@ -58,17 +56,19 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		log.Error("So far the Connection Secret in AtlasProject is mandatory!")
 		return reconcile.Result{}, nil
 	}
+	// This update will make sure the status is always updated in case of any errors or successful result
+	defer statushandler.Update(ctx, r, project)
 
 	connection, result := atlas.ReadConnection(ctx, r.Client, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
-		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
+		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	var projectID string
 	if projectID, result = ensureProjectExists(ctx, connection, project); !result.IsOk() {
-		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
+		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
@@ -78,7 +78,7 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	statushandler.Update(ctx.SetConditionFalse(status.IPAccessListReadyType), r.Client, project)
 
 	// TODO projectAccessList
-
+	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
 }
 

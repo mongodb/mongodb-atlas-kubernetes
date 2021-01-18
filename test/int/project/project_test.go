@@ -69,11 +69,19 @@ var _ = Describe("AtlasProject", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", connectionSecret.Name)
 			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
 
-			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ProjectReadyType)),
+			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
 
 			Expect(createdProject.Status.ID).NotTo(BeNil())
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 
+			// Atlas
 			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.Status.ID)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -83,15 +91,25 @@ var _ = Describe("AtlasProject", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", "non-existent-secret")
 			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
 
-			expectedCondition := status.FalseCondition(status.ProjectReadyType, string(workflow.AtlasCredentialsNotProvided))
+			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
 			Eventually(waitForProject(expectedProject, createdProject, expectedCondition),
 				10, interval).Should(BeTrue())
 
+			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.FalseCondition(status.ProjectReadyType),
+				status.FalseCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdProject.Status.ID).To(BeEmpty())
+			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+
+			// Atlas
 			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), "Test Project")
 
 			// "NOT_IN_GROUP" is what is returned if the project is not found
 			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(Equal(true))
+			Expect(errors.As(err, &apiError)).To(BeTrue())
 			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
 		})
 	})
@@ -103,22 +121,24 @@ var _ = Describe("AtlasProject", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", connectionSecret.Name)
 			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
 
-			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ProjectReadyType)),
+			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
 
-			By("Updating the project (the existing project is expected to be read)")
+			// Updating (the existing project is expected to be read from Atlas)
+			By("Updating the project")
 
 			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{CIDRBlock: "0.0.0.0/0"}}
-			Expect(k8sClient.Update(context.Background(), createdProject)).ToNot(HaveOccurred())
+			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-			// TODO make this deterministic: CLOUDP-80550
-			time.Sleep(10 * time.Second)
+			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
+				10, interval).Should(BeTrue())
 
-			Expect(readAtlasProject(expectedProject, createdProject)).To(Equal(true))
+			Expect(readAtlasProject(expectedProject, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
+
+			// Atlas
 			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.Status.ID)
 			Expect(err).ToNot(HaveOccurred())
-
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 	})
@@ -144,6 +164,10 @@ func waitForProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProje
 		if ok := readAtlasProject(project, createdProject); !ok {
 			return false
 		}
+		// Atlas Operator hasn't started working yet
+		if createdProject.Generation != createdProject.Status.ObservedGeneration {
+			return false
+		}
 		match, err := ContainElement(testutil.MatchCondition(expectedCondition)).Match(createdProject.Status.Conditions)
 		if err != nil || !match {
 			return false
@@ -155,7 +179,7 @@ func waitForProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProje
 func readAtlasProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProject) bool {
 	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(&project), createdProject); err != nil {
 		// The only error we tolerate is "not found"
-		Expect(apiErrors.IsNotFound(err)).To(Equal(true))
+		Expect(apiErrors.IsNotFound(err)).To(BeTrue())
 		return false
 	}
 	return true

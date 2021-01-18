@@ -28,4 +28,5 @@ When running integration tests from an IDE the following environment variables n
 `ATLAS_ORG_ID=<..>`
 `ATLAS_PUBLIC_KEY=<..>`
 `ATLAS_PRIVATE_KEY=<..>`
+`GINKGO_EDITOR_INTEGRATION=true`
 

@@ -22,9 +22,9 @@ type Context struct {
 	lastCondition *status.Condition
 }
 
-func NewContext(log *zap.SugaredLogger) *Context {
+func NewContext(log *zap.SugaredLogger, conditions []status.Condition) *Context {
 	return &Context{
-		status: Status{},
+		status: NewStatus(conditions),
 		Log:    log,
 	}
 }

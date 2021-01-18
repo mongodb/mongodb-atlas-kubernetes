@@ -149,7 +149,8 @@ spec:
                   backups.
                 type: boolean
               projectRef:
-                description: ResourceRef is a reference to a Kubernetes Resource
+                description: Project is a reference to AtlasProject resource the cluster
+                  belongs to
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
@@ -399,6 +400,13 @@ spec:
                   format in UTC when the connection string was last updated. The connection
                   string changes if you update any of the other values.
                 type: string
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
               stateName:
                 description: 'StateName is the current state of the cluster. The possible
                   states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'

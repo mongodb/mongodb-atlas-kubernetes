@@ -17,6 +17,9 @@ limitations under the License.
 package atlascluster
 
 import (
+	"context"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -27,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 // AtlasClusterReconciler reconciles a AtlasCluster object
@@ -44,21 +46,19 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlascluster", req.NamespacedName)
 
 	cluster := &mdbv1.AtlasCluster{}
-	if result := customresource.GetResource(r.Client, req, cluster, log); !result.IsOk() {
-		return result.ReconcileResult(), nil
-	}
-
-	log = log.With("clusterName", cluster.Spec.Name)
-
-	project := &mdbv1.AtlasProject{}
-	if result := customresource.GetResource(r.Client, req, project, log); !result.IsOk() {
+	result, wctx := customresource.PrepareResource(r.Client, req, cluster, log)
+	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
-
-	wctx := workflow.NewContext(log)
 	defer statushandler.Update(wctx, r, cluster)
+
+	project := &mdbv1.AtlasProject{}
+	if result := readProjectResource(r, cluster, project); !result.IsOk() {
+		wctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
 
 	connection, result := atlas.ReadConnection(wctx, r, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
@@ -83,7 +83,15 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
 		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
 
+	wctx.SetConditionTrue(status.ReadyType)
 	return result.ReconcileResult(), nil
+}
+
+func readProjectResource(r *AtlasClusterReconciler, cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
+	if err := r.Client.Get(context.Background(), cluster.AtlasProjectObjectKey(), project); err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	return workflow.OK()
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {

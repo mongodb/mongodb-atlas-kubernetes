@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Status is a mutable container containing the status of some particular reconciliation. It is expected to be updated
@@ -13,20 +12,14 @@ type Status struct {
 	conditions []status.Condition
 }
 
-func (s *Status) EnsureCondition(condition status.Condition) {
-	condition.LastTransitionTime = metav1.Now()
-	for i, c := range s.conditions {
-		if c.Type == condition.Type {
-			// We don't update the last transition time in case status hasn't changed.
-			if s.conditions[i].Status == condition.Status {
-				condition.LastTransitionTime = s.conditions[i].LastTransitionTime
-			}
-			s.conditions[i] = condition
-			return
-		}
+func NewStatus(conditions []status.Condition) Status {
+	return Status{
+		conditions: conditions,
 	}
-	// Condition not found - appending
-	s.conditions = append(s.conditions, condition)
+}
+
+func (s *Status) EnsureCondition(condition status.Condition) {
+	s.conditions = status.EnsureConditionExists(condition, s.conditions)
 }
 
 func (s *Status) EnsureOption(option status.Option) {
