@@ -45,3 +45,12 @@ func (m *conditionMatcher) FailureMessage(actual interface{}) (message string) {
 func (m *conditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "not to match", m.ExpectedCondition)
 }
+
+func FindConditionByType(conditions []status.Condition, conditionType status.ConditionType) (status.Condition, bool) {
+	for _, c := range conditions {
+		if c.Type == conditionType {
+			return c, true
+		}
+	}
+	return status.Condition{}, false
+}
