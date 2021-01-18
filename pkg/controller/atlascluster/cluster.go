@@ -75,7 +75,8 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 	}
 }
 
-// clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change
+// clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change.
+// Direct comparison is not feasible because Atlas will set a lot of fields to default values, so we need to apply our changes on top of that.
 func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
 	clusterMerged := mongodbatlas.Cluster{}
 	if err := jsonCopy(&clusterMerged, cluster); err != nil {
