@@ -15,4 +15,4 @@ cd - && kustomize build config/default | kubectl apply -f -
 
 # Ensuring the Atlas credentials Secret
 kubectl delete secrets my-atlas-key --ignore-not-found -n mongodb-atlas-kubernetes-system
-kubectl create secret generic my-atlas-key --from-literal="orgId=${INPUT_ORG_ID}" --from-literal="publicApiKey=${INPUT_PUBLIC_API_KEY}" --from-literal="privateApiKey=${INPUT_PRIVATE_API_KEY}" -n mongodb-atlas-kubernetes-system
+kubectl create secret generic my-atlas-key --from-literal="orgId=${INPUT_ATLAS_ORG_ID}" --from-literal="publicApiKey=${INPUT_ATLAS_PUBLIC_KEY}" --from-literal="privateApiKey=${INPUT_ATLAS_PRIVATE_KEY}" -n mongodb-atlas-kubernetes-system
