@@ -63,7 +63,6 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	if !result.IsOk() {
 		// merge result into ctx
 		statushandler.Update(ctx.SetConditionFromResult(status.ProjectReadyType, result), r.Client, project)
-		log.Debugf("returning %+v", result.ReconcileResult())
 		return result.ReconcileResult(), nil
 	}
 

@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: tuesday
+    reviewers:
+      - "antonlisovenko"
+      - "vasilevp"
+      - "leo-ri"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: tuesday
+    reviewers:
+      - "antonlisovenko"
+      - "vasilevp"
+      - "leo-ri"

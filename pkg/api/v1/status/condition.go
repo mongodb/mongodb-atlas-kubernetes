@@ -58,3 +58,30 @@ type Condition struct {
 	// +optional
 	Message string `json:"message,omitempty"`
 }
+
+// TrueCondition returns the Condition that has the 'Status' set to 'true' and 'Type' to 'conditionType'.
+// It explicitly omits the 'Reason' and 'Message' fields.
+func TrueCondition(conditionType ConditionType) Condition {
+	return Condition{
+		Type:               conditionType,
+		Status:             corev1.ConditionTrue,
+		LastTransitionTime: metav1.Now(),
+	}
+}
+
+// FalseCondition returns the COndition that has the 'Status' set to 'false' and 'Type' to 'conditionType'.
+// The reason and message can be provided optionally
+func FalseCondition(conditionType ConditionType, reasonAndMessage ...string) Condition {
+	condition := Condition{
+		Type:               conditionType,
+		Status:             corev1.ConditionFalse,
+		LastTransitionTime: metav1.Now(),
+	}
+	if len(reasonAndMessage) >= 1 {
+		condition.Reason = reasonAndMessage[0]
+	}
+	if len(reasonAndMessage) == 2 {
+		condition.Message = reasonAndMessage[1]
+	}
+	return condition
+}
