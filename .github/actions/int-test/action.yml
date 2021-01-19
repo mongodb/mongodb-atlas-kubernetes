@@ -1,0 +1,5 @@
+name: 'Integration Tests'
+description: 'Run integration tests'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

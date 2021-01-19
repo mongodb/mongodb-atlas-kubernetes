@@ -2,7 +2,11 @@ FROM golang:1.15
 
 ENV KUBECTL_VERSION 1.18.12
 
-# Install
+# Download binaries for envtets (api-server, etcd)
+RUN curl -sSLo /usr/bin/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh && \
+    chmod +x /usr/bin/setup-envtest.sh && \
+    source setup-envtest.sh; && \
+    fetch_envtest_tools
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
 RUN cd /usr/local/bin &&\
