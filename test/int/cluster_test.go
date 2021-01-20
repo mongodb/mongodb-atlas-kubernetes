@@ -73,6 +73,9 @@ var _ = Describe("AtlasProject", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
+			//validatePending := func(a mdbv1.AtlasCluster) {
+			//	Expect(a.Status.)
+			//}
 			Eventually(testutil.WaitFor(k8sClient, expectedCluster, createdProject, status.TrueCondition(status.ReadyType)),
 				360, interval).Should(BeTrue())
 
