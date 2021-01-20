@@ -2,6 +2,8 @@ package workflow
 
 type ConditionReason string
 
+// TODO move 'ConditionReason' to 'api' package?
+
 // General reasons
 const (
 	AtlasCredentialsNotProvided ConditionReason = "AtlasCredentialsNotProvided"

@@ -16,6 +16,8 @@ func Update(ctx *workflow.Context, kubeClient client.Client, resource mdbv1.Atla
 	resource.UpdateStatus(ctx.Conditions(), ctx.StatusOptions()...)
 
 	if err := patchUpdateStatus(kubeClient, resource); err != nil {
+		// Implementation logic: we deliberately don't return the 'error' to avoid cumbersome handling logic as the
+		// failed update of the status is not something that should block reconciliation
 		ctx.Log.Errorf("Failed to update status: %s", err)
 	}
 }

@@ -11,6 +11,15 @@ func MatchCondition(expected status.Condition) types.GomegaMatcher {
 	return &conditionMatcher{ExpectedCondition: expected}
 }
 
+// MatchConditions is a convenience method that allows to create the range of matchers simplifying testing
+func MatchConditions(expected ...status.Condition) []types.GomegaMatcher {
+	result := make([]types.GomegaMatcher, len(expected))
+	for i, c := range expected {
+		result[i] = MatchCondition(c)
+	}
+	return result
+}
+
 type conditionMatcher struct {
 	ExpectedCondition status.Condition
 }

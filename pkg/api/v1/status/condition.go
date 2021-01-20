@@ -69,19 +69,44 @@ func TrueCondition(conditionType ConditionType) Condition {
 	}
 }
 
-// FalseCondition returns the COndition that has the 'Status' set to 'false' and 'Type' to 'conditionType'.
+// FalseCondition returns the Condition that has the 'Status' set to 'false' and 'Type' to 'conditionType'.
 // The reason and message can be provided optionally
-func FalseCondition(conditionType ConditionType, reasonAndMessage ...string) Condition {
+func FalseCondition(conditionType ConditionType) Condition {
 	condition := Condition{
 		Type:               conditionType,
 		Status:             corev1.ConditionFalse,
 		LastTransitionTime: metav1.Now(),
 	}
-	if len(reasonAndMessage) >= 1 {
-		condition.Reason = reasonAndMessage[0]
-	}
-	if len(reasonAndMessage) == 2 {
-		condition.Message = reasonAndMessage[1]
-	}
 	return condition
+}
+
+// EnsureConditionExists adds or updates the condition in the copy of a 'source' slice
+func EnsureConditionExists(condition Condition, source []Condition) []Condition {
+	condition.LastTransitionTime = metav1.Now()
+	target := make([]Condition, len(source))
+	copy(target, source)
+	for i, c := range source {
+		if c.Type == condition.Type {
+			// We don't update the last transition time in case status hasn't changed.
+			if c.Status == condition.Status {
+				condition.LastTransitionTime = c.LastTransitionTime
+			}
+			//goland:noinspection GoNilness
+			target[i] = condition
+			return target
+		}
+	}
+	// Condition not found - appending
+	target = append(target, condition)
+	return target
+}
+
+func (c Condition) WithReason(reason string) Condition {
+	c.Reason = reason
+	return c
+}
+
+func (c Condition) WithMessage(msg string) Condition {
+	c.Message = msg
+	return c
 }

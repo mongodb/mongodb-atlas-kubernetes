@@ -3,18 +3,19 @@ package customresource
 import (
 	"context"
 
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// GetResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
-// Note the logic: any reconcile result different from nil should be considered as "terminal" and will stop reconciliation
-// right away (the pointer will be empty). Otherwise the pointer 'resource' will always reference the existing resource
-func GetResource(client client.Client, request reconcile.Request, resource runtime.Object, log *zap.SugaredLogger) workflow.Result {
+// PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
+// It also performs some updates to the 'status' field to indicate the start of reconciliation.
+func PrepareResource(client client.Client, request reconcile.Request, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(context.Background(), request.NamespacedName, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
@@ -28,5 +29,17 @@ func GetResource(client client.Client, request reconcile.Request, resource runti
 		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
 		return workflow.TerminateSilently()
 	}
+
 	return workflow.OK()
+}
+
+// MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
+// Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
+func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) *workflow.Context {
+	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
+
+	ctx := workflow.NewContext(log, updatedConditions)
+	statushandler.Update(ctx, client, resource)
+
+	return ctx
 }

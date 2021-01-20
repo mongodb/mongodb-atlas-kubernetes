@@ -103,12 +103,13 @@ func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	return nil
 }
 
-func (p *AtlasProject) GetStatus() interface{} {
+func (p *AtlasProject) GetStatus() status.Status {
 	return p.Status
 }
 
 func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...status.Option) {
 	p.Status.Conditions = conditions
+	p.Status.ObservedGeneration = p.ObjectMeta.Generation
 
 	for _, o := range options {
 		// This will fail if the Option passed is incorrect - which is expected
