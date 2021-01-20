@@ -31,11 +31,12 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		c, err := cluster.Spec.Cluster()
+		c, err = cluster.Spec.Cluster()
 		if err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
+		wctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
 		c, _, err = client.Clusters.Create(ctx, project.Status.ID, c)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
