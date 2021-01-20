@@ -11,12 +11,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap"
 )
 
-func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
+func ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
 	ctx := context.Background()
 
-	client, err := atlas.Client(connection, wctx.Log)
+	client, err := atlas.Client(connection, log)
 	if err != nil {
 		return c, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -49,7 +50,7 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		if done, err := clusterMatchesSpec(wctx, c, cluster.Spec); err != nil {
+		if done, err := clusterMatchesSpec(log, c, cluster.Spec); err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		} else if done {
 			return c, workflow.OK()
@@ -77,7 +78,7 @@ func ensureClusterState(wctx *workflow.Context, connection atlas.Connection, pro
 
 // clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change.
 // Direct comparison is not feasible because Atlas will set a lot of fields to default values, so we need to apply our changes on top of that.
-func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
+func clusterMatchesSpec(log *zap.SugaredLogger, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
 	clusterMerged := mongodbatlas.Cluster{}
 	if err := jsonCopy(&clusterMerged, cluster); err != nil {
 		return false, err
@@ -89,7 +90,7 @@ func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, sp
 
 	d := cmp.Diff(*cluster, clusterMerged)
 	if d != "" {
-		ctx.Log.Debugf("Cluster differs from spec: %s", d)
+		log.Debugf("Cluster differs from spec: %s", d)
 	}
 
 	return d == "", nil

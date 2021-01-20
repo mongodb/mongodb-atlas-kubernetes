@@ -60,7 +60,7 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r, project)
 
-	connection, result := atlas.ReadConnection(ctx, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)

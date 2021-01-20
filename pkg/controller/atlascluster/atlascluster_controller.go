@@ -18,12 +18,15 @@ package atlascluster
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -32,9 +35,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 )
 
-// AtlasClusterReconciler reconciles a AtlasCluster object
+// AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	client.Client
+	Client client.Client
 	Log    *zap.SugaredLogger
 	Scheme *runtime.Scheme
 }
@@ -53,22 +56,22 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
-	defer statushandler.Update(ctx, r, cluster)
+	defer statushandler.Update(ctx, r.Client, cluster)
 
 	project := &mdbv1.AtlasProject{}
-	if result := readProjectResource(r, cluster, project); !result.IsOk() {
+	if result := r.readProjectResource(cluster, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	connection, result := atlas.ReadConnection(ctx, r, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	c, result := ensureClusterState(ctx, connection, project, cluster)
+	c, result := ensureClusterState(log, connection, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
@@ -88,7 +91,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	return result.ReconcileResult(), nil
 }
 
-func readProjectResource(r *AtlasClusterReconciler, cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
 	if err := r.Client.Get(context.Background(), cluster.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -97,6 +100,40 @@ func readProjectResource(r *AtlasClusterReconciler, cluster *mdbv1.AtlasCluster,
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mdbv1.AtlasCluster{}).
+		Watches(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &workflow.DeleteEventHandler{Parent: r}).
 		Complete(r)
+}
+
+// Delete implements a handler for the Delete event.
+func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
+	log := r.Log.With("gvk", obj.GetObjectKind().GroupVersionKind())
+	cluster, ok := obj.(*mdbv1.AtlasCluster)
+	if !ok {
+		log.Debugf("Ignoring onDelete call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
+		return nil
+	}
+
+	project := &mdbv1.AtlasProject{}
+	if result := r.readProjectResource(cluster, project); !result.IsOk() {
+		return errors.New("cannot read project resource")
+	}
+
+	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	if !result.IsOk() {
+		return errors.New("cannot read Atlas connection")
+	}
+
+	client, err := atlas.Client(connection, log)
+	if err != nil {
+		return fmt.Errorf("cannot build Atlas client: %w", err)
+	}
+
+	_, err = client.Clusters.Delete(context.Background(), project.Status.ID, cluster.Name)
+	if err != nil {
+		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
+	}
+
+	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
+
+	return nil
 }
