@@ -20,8 +20,10 @@ import (
 	"encoding/json"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func init() {
@@ -30,7 +32,9 @@ func init() {
 
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
-	Project *ResourceRef `json:"projectRef"`
+	// Project is a reference to AtlasProject resource the cluster belongs to
+	Project ResourceRef `json:"projectRef"`
+
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
 	// +optional
@@ -270,12 +274,17 @@ type AtlasClusterList struct {
 	Items           []AtlasCluster `json:"items"`
 }
 
-func (c *AtlasCluster) GetStatus() interface{} {
+func (c AtlasCluster) AtlasProjectObjectKey() client.ObjectKey {
+	return kube.ObjectKey(c.Namespace, c.Spec.Project.Name)
+}
+
+func (c *AtlasCluster) GetStatus() status.Status {
 	return c.Status
 }
 
 func (c *AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
 	c.Status.Conditions = conditions
+	c.Status.ObservedGeneration = c.ObjectMeta.Generation
 
 	for _, o := range options {
 		// This will fail if the Option passed is incorrect - which is expected
