@@ -12,7 +12,7 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.1
+      - uses: actions/checkout@v2.3.4
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
@@ -31,7 +31,7 @@ jobs:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.3.4
 
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
@@ -40,7 +40,7 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.1
+      - uses: actions/checkout@v2.3.4
 
       - name: Cache multiple paths
         uses: actions/cache@v2
