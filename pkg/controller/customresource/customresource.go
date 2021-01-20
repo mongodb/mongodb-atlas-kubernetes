@@ -15,27 +15,27 @@ import (
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
 // It also performs some updates to the 'status' field to indicate the start of reconciliation.
-func PrepareResource(client client.Client, request reconcile.Request, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) (workflow.Result, *workflow.Context) {
+func PrepareResource(client client.Client, request reconcile.Request, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(context.Background(), request.NamespacedName, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
-			return workflow.TerminateSilently().WithoutRetry(), nil
+			return workflow.TerminateSilently().WithoutRetry()
 		}
 		// Error reading the object - requeue the request. Note, that we don't intend to update resource status
 		// as most of all it will fail as well.
 		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
-		return workflow.TerminateSilently(), nil
+		return workflow.TerminateSilently()
 	}
 
-	return workflow.OK(), indicateStartOfReconciliation(client, resource, log)
+	return workflow.OK()
 }
 
-func indicateStartOfReconciliation(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) *workflow.Context {
-	// update the status of the resource to indicate that the resource is not ready
-	// Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
+// MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
+// Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
+func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) *workflow.Context {
 	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
 
 	ctx := workflow.NewContext(log, updatedConditions)

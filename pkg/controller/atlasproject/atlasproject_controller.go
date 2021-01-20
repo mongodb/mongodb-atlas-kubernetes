@@ -45,10 +45,11 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	result, ctx := customresource.PrepareResource(r.Client, req, project, log)
+	result := customresource.PrepareResource(r.Client, req, project, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 

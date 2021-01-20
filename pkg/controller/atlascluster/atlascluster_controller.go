@@ -46,44 +46,45 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	log := r.Log.With("atlascluster", req.NamespacedName)
 
 	cluster := &mdbv1.AtlasCluster{}
-	result, wctx := customresource.PrepareResource(r.Client, req, cluster, log)
+	result := customresource.PrepareResource(r.Client, req, cluster, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
-	defer statushandler.Update(wctx, r, cluster)
+	defer statushandler.Update(ctx, r, cluster)
 
 	project := &mdbv1.AtlasProject{}
 	if result := readProjectResource(r, cluster, project); !result.IsOk() {
-		wctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	connection, result := atlas.ReadConnection(wctx, r, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(ctx, r, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
-		wctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	c, result := ensureClusterState(wctx, connection, project, cluster)
+	c, result := ensureClusterState(ctx, connection, project, cluster)
 	if c != nil && c.StateName != "" {
-		wctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
-		wctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	wctx.
+	ctx.
 		SetConditionTrue(status.ClusterReadyType).
 		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
 		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
 		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
 
-	wctx.SetConditionTrue(status.ReadyType)
+	ctx.SetConditionTrue(status.ReadyType)
 	return result.ReconcileResult(), nil
 }
 
