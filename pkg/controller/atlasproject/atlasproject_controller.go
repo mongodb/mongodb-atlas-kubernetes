@@ -33,7 +33,7 @@ import (
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
 	client.Client
-	Log    zap.SugaredLogger
+	Log    *zap.SugaredLogger
 	Scheme *runtime.Scheme
 }
 

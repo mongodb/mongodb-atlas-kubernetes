@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-logr/zapr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -92,7 +93,13 @@ var _ = BeforeSuite(func(done Done) {
 
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client: k8sManager.GetClient(),
-		Log:    *logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Log:    logger.Named("controllers").Named("AtlasProject").Sugar(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlascluster.AtlasClusterReconciler{
+		Client: k8sManager.GetClient(),
+		Log:    logger.Named("controllers").Named("AtlasCluster").Sugar(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
