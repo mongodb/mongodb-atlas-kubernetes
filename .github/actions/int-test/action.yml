@@ -1,0 +1,15 @@
+name: 'Integration Tests'
+description: 'Run integration tests'
+inputs:
+  ATLAS_ORG_ID:
+    description: "Organization ID"
+    required: true
+  ATLAS_PUBLIC_KEY:
+    description: "Organization public API key"
+    required: true
+  ATLAS_PRIVATE_KEY:
+    description: "Organization private API key"
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

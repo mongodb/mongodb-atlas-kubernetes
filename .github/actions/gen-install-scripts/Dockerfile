@@ -1,7 +1,6 @@
 FROM golang:1.15
 
 ENV KUBECTL_VERSION 1.18.12
-ENV GOLANG_VERSION=1.15.5
 
 # Install
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
