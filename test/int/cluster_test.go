@@ -7,6 +7,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = FDescribe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -73,29 +74,48 @@ var _ = Describe("AtlasProject", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
-			//validatePending := func(a mdbv1.AtlasCluster) {
-			//	Expect(a.Status.)
-			//}
-			Eventually(testutil.WaitFor(k8sClient, expectedCluster, createdProject, status.TrueCondition(status.ReadyType)),
+			startedCreation := false
+			validatePending := func(a mdbv1.AtlasCustomResource) {
+				c := a.(*mdbv1.AtlasCluster)
+				if c.Status.StateName != "" {
+					print("Started!!")
+					startedCreation = true
+				}
+				// When the create request has been made to Atlas - we expect the following status
+				if startedCreation {
+					Expect(c.Status.StateName).To(Equal("CREATING"))
+					expectedConditionsMatchers := testutil.MatchConditions(
+						status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessage("cluster is provisioning"),
+						status.FalseCondition(status.ReadyType),
+					)
+					Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+					print("Equal!!")
+				}
+			}
+			Eventually(testutil.WaitFor(k8sClient, expectedCluster, createdProject, status.TrueCondition(status.ReadyType), validatePending),
 				360, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
 			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
 			Expect(createdCluster.Status.MongoURIUpdated).To(BeNil())
 			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.TrueCondition(status.ProjectReadyType),
-				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.ClusterReadyType),
 				status.TrueCondition(status.ReadyType),
 			)
-			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+			Expect(createdCluster.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
 
 			// Atlas
-			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.Status.ID)
+			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasProject.Name).To(Equal(expectedCluster.Spec.Name))
+			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
+
+			// TODO check connectivity to cluster
 		})
 	})
 })
@@ -108,11 +128,12 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasClusterSpec{
-			Name:    "test cluster",
+			Name:    "test-cluster",
 			Project: mdbv1.ResourceRef{Name: projectName},
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
 				InstanceSizeName: "M10",
 				ProviderName:     "AWS",
+				RegionName:       "US_EAST_1",
 			},
 		},
 	}

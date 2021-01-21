@@ -88,6 +88,11 @@ func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, sp
 		return false, err
 	}
 
+	// TODO
+	if cluster.Labels == nil || len(cluster.Labels) == 0 {
+		cluster.Labels = nil
+	}
+
 	d := cmp.Diff(*cluster, clusterMerged)
 	if d != "" {
 		ctx.Log.Debugf("Cluster differs from spec: %s", d)

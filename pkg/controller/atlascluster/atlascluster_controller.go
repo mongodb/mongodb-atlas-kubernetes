@@ -19,6 +19,7 @@ package atlascluster
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -98,5 +99,6 @@ func readProjectResource(r *AtlasClusterReconciler, cluster *mdbv1.AtlasCluster,
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mdbv1.AtlasCluster{}).
+		WithEventFilter(watch.CommonPredicates()).
 		Complete(r)
 }
