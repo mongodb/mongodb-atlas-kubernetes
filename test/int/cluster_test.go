@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = FDescribe("AtlasProject", func() {
+var _ = Describe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
