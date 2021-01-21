@@ -61,11 +61,11 @@ var _ = FDescribe("AtlasProject", func() {
 				By("Removing Atlas Cluster " + createdCluster.Spec.Name)
 				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 				Expect(err).ToNot(HaveOccurred())
-				// TODO we need to wait until the cluster is removed
 			}
-			By("Removing Atlas Project " + createdProject.Status.ID)
-			_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
-			Expect(err).ToNot(HaveOccurred())
+			// TODO need to wait for the cluster to get removed
+			//By("Removing Atlas Project " + createdProject.Status.ID)
+			//_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
+			//Expect(err).ToNot(HaveOccurred())
 		}
 
 		By("Removing the namespace " + namespace.Name)
@@ -96,7 +96,7 @@ var _ = FDescribe("AtlasProject", func() {
 				}
 			}
 			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-				600, interval).Should(BeTrue())
+				1200, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
