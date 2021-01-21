@@ -65,7 +65,7 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := testAtlasProject(namespace.Name, "Test Project", connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -88,7 +88,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := testAtlasProject(namespace.Name, "Test Project", "non-existent-secret")
+			expectedProject := testAtlasProject(namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -119,7 +119,7 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := testAtlasProject(namespace.Name, "Test Project", connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -147,43 +147,15 @@ var _ = Describe("AtlasProject", func() {
 })
 
 // TODO builders
-func testAtlasProject(namespace, projectName, connectionSecretName string) *mdbv1.AtlasProject {
+func testAtlasProject(namespace, connectionSecretName string) *mdbv1.AtlasProject {
 	return &mdbv1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-project",
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             projectName,
+			Name:             "Test Project",
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
 	}
 }
-
-/*
-// waitForProject waits until the AtlasProject reaches some state - this is configured by 'expectedCondition'
-func waitForProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProject, expectedCondition status.Condition) func() bool {
-	return func() bool {
-		if ok := readAtlasProject(project, createdProject); !ok {
-			return false
-		}
-		// Atlas Operator hasn't started working yet
-		if createdProject.Generation != createdProject.Status.ObservedGeneration {
-			return false
-		}
-		match, err := ContainElement(testutil.MatchCondition(expectedCondition)).Match(createdProject.Status.Conditions)
-		if err != nil || !match {
-			return false
-		}
-		return true
-	}
-}
-
-func readAtlasProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProject) bool {
-	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(&project), createdProject); err != nil {
-		// The only error we tolerate is "not found"
-		Expect(apiErrors.IsNotFound(err)).To(BeTrue())
-		return false
-	}
-	return true
-}*/

@@ -1,13 +1,12 @@
 package testutil
 
-//goland:noinspection GoLinterLocal
 import (
 	"context"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -25,7 +24,7 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 			return false
 		}
 
-		match, err := ContainElement(MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
+		match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
 		if err != nil || !match {
 			if len(check) > 0 {
 				for _, f := range check {
@@ -41,7 +40,7 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 func ReadAtlasResource(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource) bool {
 	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdResource), createdResource); err != nil {
 		// The only error we tolerate is "not found"
-		Expect(apiErrors.IsNotFound(err)).To(BeTrue())
+		gomega.Expect(apiErrors.IsNotFound(err)).To(gomega.BeTrue())
 		return false
 	}
 	return true
