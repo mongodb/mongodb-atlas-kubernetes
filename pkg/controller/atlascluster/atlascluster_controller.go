@@ -21,11 +21,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -99,8 +103,26 @@ func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	filterDeleteOnly := predicate.Funcs{
+		CreateFunc: func(ce event.CreateEvent) bool {
+			return false
+		},
+		UpdateFunc: func(ce event.UpdateEvent) bool {
+			return false
+		},
+		GenericFunc: func(ce event.GenericEvent) bool {
+			return false
+		},
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &workflow.DeleteEventHandler{Parent: r}).
+		For(&mdbv1.AtlasCluster{}).
+		WithEventFilter(watch.CommonPredicates()).
+		Watches(
+			&source.Kind{Type: &mdbv1.AtlasCluster{}},
+			&workflow.DeleteEventHandler{Parent: r},
+			builder.WithPredicates(filterDeleteOnly),
+		).
 		Complete(r)
 }
 
@@ -112,6 +134,8 @@ func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
 		log.Debugf("Ignoring onDelete call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
 		return nil
 	}
+
+	log.Infow("-> Starting AtlasCluster deletion", "spec", cluster.Spec)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {

@@ -11,7 +11,6 @@ import (
 
 type DeleteEventHandler struct {
 	*handler.EnqueueRequestForObject
-	log    *zap.SugaredLogger
 	Parent interface {
 		Delete(runtime.Object) error
 	}
@@ -19,7 +18,7 @@ type DeleteEventHandler struct {
 
 func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
 	objectKey := kube.ObjectKey(e.Meta.GetNamespace(), e.Meta.GetName())
-	log := d.log.With("resource", objectKey)
+	log := zap.S().With("resource", objectKey)
 
 	log.Infow("Cleaning up Atlas resource", "resource", e.Object)
 	if err := d.Parent.Delete(e.Object); err != nil {

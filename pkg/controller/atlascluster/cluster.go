@@ -32,7 +32,7 @@ func ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		c, err := cluster.Spec.Cluster()
+		c, err = cluster.Spec.Cluster()
 		if err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
