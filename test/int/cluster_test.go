@@ -63,9 +63,9 @@ var _ = FDescribe("AtlasProject", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 			// TODO need to wait for the cluster to get removed
-			//By("Removing Atlas Project " + createdProject.Status.ID)
-			//_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
-			//Expect(err).ToNot(HaveOccurred())
+			// By("Removing Atlas Project " + createdProject.Status.ID)
+			// _, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
+			// Expect(err).ToNot(HaveOccurred())
 		}
 
 		By("Removing the namespace " + namespace.Name)
