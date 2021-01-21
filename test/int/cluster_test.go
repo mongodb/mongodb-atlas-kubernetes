@@ -93,6 +93,9 @@ var _ = FDescribe("AtlasProject", func() {
 						status.FalseCondition(status.ReadyType),
 					)
 					Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+				} else {
+					// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
+					Expect(testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)).To(BeNil())
 				}
 			}
 			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
