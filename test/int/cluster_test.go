@@ -27,6 +27,7 @@ var _ = FDescribe("AtlasProject", func() {
 	)
 
 	BeforeEach(func() {
+		createdCluster = &mdbv1.AtlasCluster{}
 		namespace = corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "test",
@@ -47,9 +48,11 @@ var _ = FDescribe("AtlasProject", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
 
-		createdProject = testAtlasProject(namespace.Name, "test-project", "Test Project", connectionSecret.Name)
+		createdProject = testAtlasProject(namespace.Name, "Test Project", connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+			10, interval).Should(BeTrue())
 	})
 
 	AfterEach(func() {
@@ -58,6 +61,7 @@ var _ = FDescribe("AtlasProject", func() {
 				By("Removing Atlas Cluster " + createdCluster.Spec.Name)
 				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 				Expect(err).ToNot(HaveOccurred())
+				// TODO we need to wait until the cluster is removed
 			}
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
@@ -72,13 +76,13 @@ var _ = FDescribe("AtlasProject", func() {
 	Describe("Creating the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
 			startedCreation := false
 			validatePending := func(a mdbv1.AtlasCustomResource) {
 				c := a.(*mdbv1.AtlasCluster)
 				if c.Status.StateName != "" {
-					print("Started!!")
 					startedCreation = true
 				}
 				// When the create request has been made to Atlas - we expect the following status
@@ -89,17 +93,16 @@ var _ = FDescribe("AtlasProject", func() {
 						status.FalseCondition(status.ReadyType),
 					)
 					Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-					print("Equal!!")
 				}
 			}
-			Eventually(testutil.WaitFor(k8sClient, expectedCluster, createdProject, status.TrueCondition(status.ReadyType), validatePending),
-				360, interval).Should(BeTrue())
+			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+				600, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
 			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoURIUpdated).To(BeNil())
+			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
 			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
 
 			expectedConditionsMatchers := testutil.MatchConditions(
@@ -113,7 +116,11 @@ var _ = FDescribe("AtlasProject", func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
+			// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
 			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
+			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
+			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
+			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
 
 			// TODO check connectivity to cluster
 		})
