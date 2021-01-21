@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"fmt"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -40,7 +41,7 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 func ReadAtlasResource(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource) bool {
 	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdResource), createdResource); err != nil {
 		// The only error we tolerate is "not found"
-		gomega.Expect(apiErrors.IsNotFound(err)).To(gomega.BeTrue())
+		gomega.Expect(apiErrors.IsNotFound(err)).To(gomega.BeTrue(), fmt.Sprintf("Unexpected error: %s", err))
 		return false
 	}
 	return true
