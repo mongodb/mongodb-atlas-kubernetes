@@ -1,4 +1,4 @@
-package workflow
+package watch
 
 import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -11,7 +11,7 @@ import (
 
 type DeleteEventHandler struct {
 	*handler.EnqueueRequestForObject
-	Parent interface {
+	Controller interface {
 		Delete(runtime.Object) error
 	}
 }
@@ -20,11 +20,8 @@ func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitin
 	objectKey := kube.ObjectKey(e.Meta.GetNamespace(), e.Meta.GetName())
 	log := zap.S().With("resource", objectKey)
 
-	log.Infow("Cleaning up Atlas resource", "resource", e.Object)
-	if err := d.Parent.Delete(e.Object); err != nil {
+	if err := d.Controller.Delete(e.Object); err != nil {
 		log.Errorf("MongoDB resource removed from Kubernetes, but failed to clean some state in Atlas: %s", err)
 		return
 	}
-
-	log.Info("Removed MongoDB resource from Kubernetes and Atlas")
 }

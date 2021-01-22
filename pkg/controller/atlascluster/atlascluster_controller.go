@@ -23,13 +23,12 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -103,37 +102,26 @@ func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	filterDeleteOnly := predicate.Funcs{
-		CreateFunc: func(ce event.CreateEvent) bool {
-			return false
-		},
-		UpdateFunc: func(ce event.UpdateEvent) bool {
-			return false
-		},
-		GenericFunc: func(ce event.GenericEvent) bool {
-			return false
-		},
-	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mdbv1.AtlasCluster{}).
 		WithEventFilter(watch.CommonPredicates()).
 		Watches(
 			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&workflow.DeleteEventHandler{Parent: r},
-			builder.WithPredicates(filterDeleteOnly),
+			&watch.DeleteEventHandler{Controller: r},
+			builder.WithPredicates(watch.DeleteOnly()),
 		).
 		Complete(r)
 }
 
 // Delete implements a handler for the Delete event.
 func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
-	log := r.Log.With("gvk", obj.GetObjectKind().GroupVersionKind())
 	cluster, ok := obj.(*mdbv1.AtlasCluster)
 	if !ok {
-		log.Debugf("Ignoring onDelete call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
 		return nil
 	}
+
+	log := r.Log.With("atlascluster", kube.ObjectKeyFromObject(cluster))
 
 	log.Infow("-> Starting AtlasCluster deletion", "spec", cluster.Spec)
 

@@ -19,3 +19,18 @@ func CommonPredicates() predicate.Funcs {
 		},
 	}
 }
+
+// DeleteOnly returns a predicate that will filter out everything except the Delete event
+func DeleteOnly() predicate.Funcs {
+	return predicate.Funcs{
+		CreateFunc: func(ce event.CreateEvent) bool {
+			return false
+		},
+		UpdateFunc: func(ce event.UpdateEvent) bool {
+			return false
+		},
+		GenericFunc: func(ce event.GenericEvent) bool {
+			return false
+		},
+	}
+}
