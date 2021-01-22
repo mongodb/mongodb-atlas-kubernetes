@@ -1,0 +1,12 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: my-atlas-cluster
+spec:
+  name: "Test Cluster"
+  projectRef:
+    name: my-project
+  providerSettings:
+    instanceSizeName: M10
+    providerName: AWS
+    regionName: US_EAST_1
