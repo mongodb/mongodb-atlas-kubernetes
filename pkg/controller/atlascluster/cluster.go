@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -88,12 +89,7 @@ func clusterMatchesSpec(ctx *workflow.Context, cluster *mongodbatlas.Cluster, sp
 		return false, err
 	}
 
-	// TODO
-	if cluster.Labels == nil || len(cluster.Labels) == 0 {
-		cluster.Labels = nil
-	}
-
-	d := cmp.Diff(*cluster, clusterMerged)
+	d := cmp.Diff(*cluster, clusterMerged, cmpopts.EquateEmpty())
 	if d != "" {
 		ctx.Log.Debugf("Cluster differs from spec: %s", d)
 	}

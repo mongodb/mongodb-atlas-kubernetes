@@ -65,7 +65,7 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := testAtlasProject(namespace.Name, connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -88,7 +88,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := testAtlasProject(namespace.Name, "non-existent-secret")
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -110,7 +110,7 @@ var _ = Describe("AtlasProject", func() {
 
 			// "NOT_IN_GROUP" is what is returned if the project is not found
 			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue())
+			Expect(errors.As(err, &apiError)).To(BeTrue(), "Error occurred: "+err.Error())
 			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
 		})
 	})
@@ -119,7 +119,7 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := testAtlasProject(namespace.Name, connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -147,14 +147,14 @@ var _ = Describe("AtlasProject", func() {
 })
 
 // TODO builders
-func testAtlasProject(namespace, connectionSecretName string) *mdbv1.AtlasProject {
+func testAtlasProject(namespace, name, connectionSecretName string) *mdbv1.AtlasProject {
 	return &mdbv1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-project",
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             "Test Project",
+			Name:             name,
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
 	}
