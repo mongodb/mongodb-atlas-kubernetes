@@ -59,9 +59,8 @@ var _ = Describe("AtlasCluster", func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdCluster != nil {
-				// By("Removing Atlas Cluster " + createdCluster.Spec.Name)
-				// _, err := atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-				// Expect(err).ToNot(HaveOccurred())
+				By("Removing Atlas Cluster " + createdCluster.Spec.Name)
+				_, _ = atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			}
 			// TODO need to wait for the cluster to get removed
 			// By("Removing Atlas Project " + createdProject.Status.ID)
