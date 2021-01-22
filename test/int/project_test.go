@@ -16,7 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -66,10 +65,11 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", connectionSecret.Name)
-			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
-			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
 
 			Expect(createdProject.Status.ID).NotTo(BeNil())
@@ -88,11 +88,12 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", "non-existent-secret")
-			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, "non-existent-secret")
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
 			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
-			Eventually(waitForProject(expectedProject, createdProject, expectedCondition),
+			Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
 				10, interval).Should(BeTrue())
 
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
@@ -105,11 +106,11 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 
 			// Atlas
-			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), "Test Project")
+			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), expectedProject.Spec.Name)
 
 			// "NOT_IN_GROUP" is what is returned if the project is not found
 			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue())
+			Expect(errors.As(err, &apiError)).To(BeTrue(), "Error occurred: "+err.Error())
 			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
 		})
 	})
@@ -118,10 +119,11 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := testAtlasProject(namespace.Name, "test-project", "Test Project", connectionSecret.Name)
-			Expect(k8sClient.Create(context.Background(), &expectedProject)).ToNot(HaveOccurred())
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
-			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
 
 			// Updating (the existing project is expected to be read from Atlas)
@@ -130,10 +132,10 @@ var _ = Describe("AtlasProject", func() {
 			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{CIDRBlock: "0.0.0.0/0"}}
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-			Eventually(waitForProject(expectedProject, createdProject, status.TrueCondition(status.ReadyType)),
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				10, interval).Should(BeTrue())
 
-			Expect(readAtlasProject(expectedProject, createdProject)).To(BeTrue())
+			Expect(testutil.ReadAtlasResource(k8sClient, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
 
 			// Atlas
@@ -145,42 +147,15 @@ var _ = Describe("AtlasProject", func() {
 })
 
 // TODO builders
-func testAtlasProject(namespace, name, projectName, connectionSecretName string) mdbv1.AtlasProject {
-	return mdbv1.AtlasProject{
+func testAtlasProject(namespace, name, connectionSecretName string) *mdbv1.AtlasProject {
+	return &mdbv1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-project",
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             projectName,
+			Name:             name,
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
 	}
-}
-
-// waitForProject waits until the AtlasProject reaches some state - this is configured by 'expectedCondition'
-func waitForProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProject, expectedCondition status.Condition) func() bool {
-	return func() bool {
-		if ok := readAtlasProject(project, createdProject); !ok {
-			return false
-		}
-		// Atlas Operator hasn't started working yet
-		if createdProject.Generation != createdProject.Status.ObservedGeneration {
-			return false
-		}
-		match, err := ContainElement(testutil.MatchCondition(expectedCondition)).Match(createdProject.Status.Conditions)
-		if err != nil || !match {
-			return false
-		}
-		return true
-	}
-}
-
-func readAtlasProject(project mdbv1.AtlasProject, createdProject *mdbv1.AtlasProject) bool {
-	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(&project), createdProject); err != nil {
-		// The only error we tolerate is "not found"
-		Expect(apiErrors.IsNotFound(err)).To(BeTrue())
-		return false
-	}
-	return true
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -37,6 +38,7 @@ func ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
+		log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
 		c, _, err = client.Clusters.Create(ctx, project.Status.ID, c)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
@@ -88,7 +90,7 @@ func clusterMatchesSpec(log *zap.SugaredLogger, cluster *mongodbatlas.Cluster, s
 		return false, err
 	}
 
-	d := cmp.Diff(*cluster, clusterMerged)
+	d := cmp.Diff(*cluster, clusterMerged, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Cluster differs from spec: %s", d)
 	}

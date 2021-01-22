@@ -1,7 +1,0 @@
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasCluster
-metadata:
-  name: atlascluster-sample
-spec:
-  # Add fields here
-  foo: bar
