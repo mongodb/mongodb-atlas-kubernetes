@@ -10,7 +10,9 @@ namePrefix: mongodb-atlas-kubernetes-
 
 # Labels to add to all resources and selectors.
 #commonLabels:
-#  someName: someValue
+#  app.kubernetes.io/component: controller
+#  app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+#  app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
 
 bases:
 - ../crd

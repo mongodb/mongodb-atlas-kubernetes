@@ -74,8 +74,8 @@ var _ = Describe("AtlasProject", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FDescribe("Creating the cluster", func() {
-		It("Creation should succeed", func() {
+	Describe("Creating the cluster", func() {
+		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
@@ -164,7 +164,7 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
 				InstanceSizeName: "M10",
 				ProviderName:     "GCP",
-				RegionName:       "US_WEST_2",
+				RegionName:       "EASTERN_US",
 			},
 		},
 	}
