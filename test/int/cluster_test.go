@@ -106,7 +106,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
 			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
-			Expect(int(*atlasCluster.DiskSizeGB)).To(Equal(*expectedCluster.Spec.DiskSizeGB))
+			Expect(atlasCluster.DiskSizeGB).To(Equal(*expectedCluster.Spec.DiskSizeGB))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
@@ -114,8 +114,7 @@ var _ = Describe("AtlasCluster", func() {
 			// TODO check connectivity to cluster
 
 			By("Updating the Cluster")
-			newSize := 5
-			createdCluster.Spec.DiskSizeGB = &newSize
+			createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
 			Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
 			validatePending = clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
@@ -136,7 +135,7 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdCluster.Spec.Name))
-			Expect(int(*atlasCluster.DiskSizeGB)).To(Equal(*expectedCluster.Spec.DiskSizeGB))
+			Expect(atlasCluster.Labels).To(Equal(createdCluster.Spec.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdCluster.Spec.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdCluster.Spec.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdCluster.Spec.ProviderSettings.RegionName))
@@ -169,7 +168,6 @@ func clusterPendingFunc(expectedState, expectedMessage string, reason workflow.C
 
 // TODO builders
 func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
-	size := 3
 	return &mdbv1.AtlasCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -183,7 +181,6 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 				ProviderName:     "GCP",
 				RegionName:       "EASTERN_US",
 			},
-			DiskSizeGB: &size,
 		},
 	}
 }
