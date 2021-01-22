@@ -143,8 +143,8 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			Project: mdbv1.ResourceRef{Name: projectName},
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
 				InstanceSizeName: "M10",
-				ProviderName:     "AWS",
-				RegionName:       "US_EAST_1",
+				ProviderName:     "GCP",
+				RegionName:       "EASTERN_US",
 			},
 		},
 	}
