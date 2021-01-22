@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = Describe("AtlasCluster", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -59,9 +59,9 @@ var _ = Describe("AtlasProject", func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdCluster != nil {
-				By("Removing Atlas Cluster " + createdCluster.Spec.Name)
-				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-				Expect(err).ToNot(HaveOccurred())
+				// By("Removing Atlas Cluster " + createdCluster.Spec.Name)
+				// _, err := atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+				// Expect(err).ToNot(HaveOccurred())
 			}
 			// TODO need to wait for the cluster to get removed
 			// By("Removing Atlas Project " + createdProject.Status.ID)
