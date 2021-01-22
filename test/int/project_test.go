@@ -106,7 +106,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 
 			// Atlas
-			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), "Test Project")
+			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), expectedProject.Spec.Name)
 
 			// "NOT_IN_GROUP" is what is returned if the project is not found
 			var apiError *mongodbatlas.ErrorResponse
