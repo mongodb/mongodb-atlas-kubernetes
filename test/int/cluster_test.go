@@ -3,6 +3,7 @@ package int
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -73,8 +74,8 @@ var _ = Describe("AtlasProject", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Describe("Creating the cluster", func() {
-		It("Should Succeed", func() {
+	FDescribe("Creating the cluster", func() {
+		It("Creation should succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
@@ -127,6 +128,25 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
 
 			// TODO check connectivity to cluster
+
+			err = k8sClient.Delete(context.Background(), createdCluster)
+			Expect(err).ToNot(HaveOccurred())
+
+			checkAtlasDeleteStarted := func() bool {
+				c, r, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+				if err != nil {
+					// cluster already deleted - that's fine for us
+					if r != nil && r.StatusCode == http.StatusNotFound {
+						return true
+					}
+
+					return false
+				}
+
+				return c.StateName == "DELETING" || c.StateName == "DELETED"
+			}
+
+			Eventually(checkAtlasDeleteStarted, 1200, interval).Should(BeTrue())
 		})
 	})
 })
@@ -143,8 +163,8 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			Project: mdbv1.ResourceRef{Name: projectName},
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
 				InstanceSizeName: "M10",
-				ProviderName:     "AWS",
-				RegionName:       "US_EAST_1",
+				ProviderName:     "GCP",
+				RegionName:       "US_WEST_2",
 			},
 		},
 	}
