@@ -83,6 +83,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
 	}
+
 	if err = (&atlasproject.AtlasProjectReconciler{
 		Client: mgr.GetClient(),
 		Log:    logger.Named("controllers").Named("AtlasProject").Sugar(),
