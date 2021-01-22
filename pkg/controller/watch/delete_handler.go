@@ -21,7 +21,7 @@ func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitin
 	log := zap.S().With("resource", objectKey)
 
 	if err := d.Controller.Delete(e.Object); err != nil {
-		log.Errorf("MongoDB resource removed from Kubernetes, but failed to clean some state in Atlas: %s", err)
+		log.Errorf("Resource %s removed from Kubernetes, but failed to clean some state in Atlas: %s", e.Object.GetObjectKind(), err)
 		return
 	}
 }
