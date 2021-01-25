@@ -106,8 +106,6 @@ var _ = Describe("AtlasCluster", func() {
 
 			// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
 			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
-			// TODO: fix this?
-			// Expect(atlasCluster.DiskSizeGB).To(Equal(expectedCluster.Spec.DiskSizeGB))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
