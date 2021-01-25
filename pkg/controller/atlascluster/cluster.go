@@ -63,7 +63,7 @@ func ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, pro
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		return c, workflow.InProgress(workflow.ClusterNotUpToDate, "cluster update started")
+		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	case "CREATING":
 		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
