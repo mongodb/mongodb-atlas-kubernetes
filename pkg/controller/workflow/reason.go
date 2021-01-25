@@ -20,5 +20,4 @@ const (
 	ClusterNotCreatedInAtlas ConditionReason = "ClusterNotCreatedInAtlas"
 	ClusterCreating          ConditionReason = "ClusterCreating"
 	ClusterUpdating          ConditionReason = "ClusterUpdating"
-	ClusterNotUpToDate       ConditionReason = "ClusterNotUpToDate"
 )
