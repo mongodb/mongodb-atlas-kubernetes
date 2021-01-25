@@ -133,11 +133,14 @@ var _ = Describe("AtlasCluster", func() {
 			atlasCluster, _, err = atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasCluster.Name).To(Equal(createdCluster.Spec.Name))
-			Expect(atlasCluster.Labels).To(Equal(createdCluster.Spec.Labels))
-			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdCluster.Spec.ProviderSettings.InstanceSizeName))
-			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdCluster.Spec.ProviderSettings.ProviderName))
-			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdCluster.Spec.ProviderSettings.RegionName))
+			createdAtlasCluster, err := createdCluster.Spec.Cluster()
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
+			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
+			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
+			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
+			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
 
 			By("Deleting the cluster")
 			err = k8sClient.Delete(context.Background(), createdCluster)
@@ -158,7 +161,6 @@ var _ = Describe("AtlasCluster", func() {
 			}
 
 			Eventually(checkAtlasDeleteStarted, 1200, interval).Should(BeTrue())
-
 		})
 	})
 })
