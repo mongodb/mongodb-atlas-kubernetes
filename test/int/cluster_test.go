@@ -146,21 +146,7 @@ var _ = Describe("AtlasCluster", func() {
 			err = k8sClient.Delete(context.Background(), createdCluster)
 			Expect(err).ToNot(HaveOccurred())
 
-			checkAtlasDeleteStarted := func() bool {
-				c, r, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-				if err != nil {
-					// cluster already deleted - that's fine for us
-					if r != nil && r.StatusCode == http.StatusNotFound {
-						return true
-					}
-
-					return false
-				}
-
-				return c.StateName == "DELETING" || c.StateName == "DELETED"
-			}
-
-			Eventually(checkAtlasDeleteStarted, 1200, interval).Should(BeTrue())
+			Eventually(checkAtlasDeleteStarted(createdProject.Status.ID, createdCluster.Name), 1200, interval).Should(BeTrue())
 		})
 	})
 })
@@ -204,5 +190,20 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 				RegionName:       "EASTERN_US",
 			},
 		},
+	}
+}
+func checkAtlasDeleteStarted(projectID string, clusterName string) func() bool {
+	return func() bool {
+		c, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
+		if err != nil {
+			// cluster already deleted - that's fine for us
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return true
+			}
+
+			return false
+		}
+
+		return c.StateName == "DELETING" || c.StateName == "DELETED"
 	}
 }
