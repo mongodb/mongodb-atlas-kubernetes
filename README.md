@@ -2,11 +2,11 @@
 Welcome to MongoDB Atlas Operator - the Operator allowing to manage Atlas Clusters from Kubernetes.
 > Current Status: *pre-alpha*. We are currently working on the initial set of features that will give users the opportunity to provision Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information into the applications deployed to Kubernetes.   
 ## Quick Start guide
-### Step 1. Deploy Kubernetes operator using all in on config file
+### Step 1. Deploy Kubernetes operator using all in one config file
 ```
 kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/deploy/all-in-one.yaml
 ```
-## Step 2. Create Atlas Cluster
+### Step 2. Create Atlas Cluster
 
 **1.** Create Atlas API Key Secret
 In order to work with Atlas Operator you'll need to provide the [authentication information](https://docs.atlas.mongodb.com/configure-api-access) that would allow the Atlas Operator communicate with Atlas API. You need to create the secret first:
@@ -51,7 +51,7 @@ spec:
     regionName: US_EAST_1
 EOF
 ```
-## Step 3. Inspect Atlas Cluster Status
+### Step 3. Inspect Atlas Cluster Status
 You can use the following command to track the status of the Atlas Cluster Resource
 ```
 kubectl get atlasclusters.atlas.mongodb.com -o yaml
