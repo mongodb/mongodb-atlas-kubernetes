@@ -652,7 +652,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: /mongodb/mongodb-atlas-kubernetes-operator:0.1.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:0.1.0
         imagePullPolicy: Always
         name: manager
         resources:
