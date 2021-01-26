@@ -43,7 +43,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: ${{ secrets.DOCKER_RELEASE_REPO }}
         registry: ${{ secrets.DOCKER_REGISTRY }}
-        tags: ${{ steps.tag.outputs.tag }}
+        tags: ${{ steps.tag.outputs.version }}
 
     - name: Create simple description
       uses: ./.github/actions/changelog
