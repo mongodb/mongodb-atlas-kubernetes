@@ -1,10 +1,13 @@
-FROM alpine/git:latest
+#TODO change to alpine
+FROM ubuntu:18.04
+
 # Install GitHub CLI
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git
 RUN mkdir /ghcli && \
     cd /ghcli && \
-    wget http://dl-cdn.alpinelinux.org/alpine/edge/community/x86_64/github-cli-1.3.1-r0.apk && \
-    apk update && \
-    apk add --allow-untrusted github-cli-1.3.1-r0.apk
+    wget https://github.com/cli/cli/releases/download/v1.0.0/gh_1.0.0_linux_386.tar.gz -O ghcli.tar.gz  && \
+    tar --strip-components=1 -xf ghcli.tar.gz
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /home/entrypoint.sh
