@@ -78,7 +78,7 @@ var _ = Describe("AtlasCluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FDescribe("Create/Update the cluster", func() {
+	Describe("Create/Update the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
