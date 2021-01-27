@@ -1,5 +1,9 @@
 name: 'Create PR'
 description: 'create PR with configuration'
+inputs:
+  REVIEWERS:
+    description: "Add reviewers to PR"
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
