@@ -59,7 +59,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
-	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
+	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "generation", cluster.Generation, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, cluster)
 
 	project := &mdbv1.AtlasProject{}
@@ -136,12 +136,12 @@ func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
 		return errors.New("cannot read Atlas connection")
 	}
 
-	client, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	_, err = client.Clusters.Delete(context.Background(), project.Status.ID, cluster.Name)
+	_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
 		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
 	}
