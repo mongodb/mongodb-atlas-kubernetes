@@ -1,0 +1,15 @@
+# This patch configures the container with production configuration values
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          args:
+            - --atlas-domain=https://cloud-qa.mongodb.com
+            - --metrics-addr=127.0.0.1:8080 # is there any way to reuse the properties that are set by /default overlay?
+            - --enable-leader-election

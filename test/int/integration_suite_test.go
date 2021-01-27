@@ -92,14 +92,16 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client: k8sManager.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client: k8sManager.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

@@ -47,13 +47,7 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.Parse()
+	config := parseConfiguration()
 
 	// controller-runtime/pkg/log/zap is a wrapper over zap that implements logr
 	// logr looks quite limited in functionality so we better use Zap directly.
@@ -65,9 +59,9 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
+		MetricsBindAddress: config.MetricsAddr,
 		Port:               9443,
-		LeaderElection:     enableLeaderElection,
+		LeaderElection:     config.EnableLeaderElection,
 		LeaderElectionID:   "06d035fb.mongodb.com",
 	})
 	if err != nil {
@@ -76,18 +70,20 @@ func main() {
 	}
 
 	if err = (&atlascluster.AtlasClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Scheme:      mgr.GetScheme(),
+		AtlasDomain: config.AtlasDomain,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client: mgr.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:      mgr.GetScheme(),
+		AtlasDomain: config.AtlasDomain,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
@@ -99,4 +95,23 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+type Config struct {
+	AtlasDomain          string
+	EnableLeaderElection bool
+	MetricsAddr          string
+}
+
+// ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
+func parseConfiguration() Config {
+	config := Config{}
+	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com", "the Atlas URL domain name (no slash in the end).")
+	flag.StringVar(&config.MetricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.BoolVar(&config.EnableLeaderElection, "enable-leader-election", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+
+	flag.Parse()
+	return config
 }

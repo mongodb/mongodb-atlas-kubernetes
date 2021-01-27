@@ -15,10 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
+func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
 	ctx := context.Background()
 
-	client, err := atlas.Client(connection, log)
+	client, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		return c, workflow.Terminate(workflow.Internal, err.Error())
 	}
