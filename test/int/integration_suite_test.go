@@ -26,7 +26,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -87,22 +86,22 @@ var _ = BeforeSuite(func(done Done) {
 
 	// +kubebuilder:scaffold:scheme
 
-	config.ParseConfiguration()
-
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client: k8sManager.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client: k8sManager.GetClient(),
-		Log:    logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

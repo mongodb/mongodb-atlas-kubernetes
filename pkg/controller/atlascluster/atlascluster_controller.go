@@ -40,9 +40,10 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	Client client.Client
-	Log    *zap.SugaredLogger
-	Scheme *runtime.Scheme
+	Client      client.Client
+	Log         *zap.SugaredLogger
+	Scheme      *runtime.Scheme
+	AtlasDomain string
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -74,7 +75,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return result.ReconcileResult(), nil
 	}
 
-	c, result := ensureClusterState(log, connection, project, cluster)
+	c, result := r.ensureClusterState(log, connection, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
@@ -135,7 +136,7 @@ func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
 		return errors.New("cannot read Atlas connection")
 	}
 
-	client, err := atlas.Client(connection, log)
+	client, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}

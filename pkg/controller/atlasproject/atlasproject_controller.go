@@ -33,8 +33,9 @@ import (
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
 	client.Client
-	Log    *zap.SugaredLogger
-	Scheme *runtime.Scheme
+	Log         *zap.SugaredLogger
+	Scheme      *runtime.Scheme
+	AtlasDomain string
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
@@ -68,7 +69,7 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	var projectID string
-	if projectID, result = ensureProjectExists(ctx, connection, project); !result.IsOk() {
+	if projectID, result = r.ensureProjectExists(ctx, connection, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
