@@ -10,7 +10,6 @@ spec:
       containers:
         - name: manager
           args:
-            - --atlas-domain=https://cloud.mongodb.com
-            - --log-level=DEBUG # we can change this to INFO once Operator is more stable
+            - --atlas-domain=https://cloud-qa.mongodb.com
             - --metrics-addr=127.0.0.1:8080 # is there any way to reuse the properties that are set by /default overlay?
             - --enable-leader-election
