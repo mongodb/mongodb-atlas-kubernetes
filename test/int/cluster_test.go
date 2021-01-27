@@ -2,17 +2,20 @@ package int
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -59,13 +62,16 @@ var _ = Describe("AtlasCluster", func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdCluster != nil {
-				By("Removing Atlas Cluster " + createdCluster.Spec.Name)
-				_, _ = atlasClient.Clusters.Delete(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+				By("Removing Atlas Cluster " + createdCluster.Name)
+				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
 			}
-			// TODO need to wait for the cluster to get removed
-			// By("Removing Atlas Project " + createdProject.Status.ID)
-			// _, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
-			// Expect(err).ToNot(HaveOccurred())
+			By("Removing Atlas Project " + createdProject.Status.ID)
+			// This is a bit strange but the delete request right after the cluster is removed may fail with "Still active cluster" error
+			// UI shows the cluster being deleted though. Seems to be the issue only if removal is done using API,
+			// if the cluster is terminated using UI - it stays in "Deleting" state
+			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 
 		By("Removing the namespace " + namespace.Name)
@@ -73,7 +79,7 @@ var _ = Describe("AtlasCluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Describe("Create/Update/Delete the cluster", func() {
+	Describe("Create/Update the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
@@ -137,16 +143,12 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
+			print(createdCluster.Labels)
+			print(createdAtlasCluster.Labels)
 			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
-
-			By("Deleting the cluster")
-			err = k8sClient.Delete(context.Background(), createdCluster)
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(checkAtlasDeleteStarted(createdProject.Status.ID, createdCluster.Name), 1200, interval).Should(BeTrue())
 		})
 	})
 })
@@ -182,7 +184,7 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasClusterSpec{
-			Name:    "test-cluster",
+			Name:    "test-atlas-cluster",
 			Project: mdbv1.ResourceRef{Name: projectName},
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
 				InstanceSizeName: "M10",
@@ -192,18 +194,31 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 		},
 	}
 }
-func checkAtlasDeleteStarted(projectID string, clusterName string) func() bool {
+
+// checkAtlasClusterRemoved returns true if the Atlas Cluster is removed from Atlas. Note the behavior: the cluster
+// is removed from Atlas as soon as the DELETE API call has been made. This is different from the case when the
+// cluster is terminated from UI (in this case GET request succeeds while the cluster is being terminated)
+func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool {
 	return func() bool {
-		c, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
+		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
 		if err != nil {
-			// cluster already deleted - that's fine for us
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
 			}
+		}
+		return false
+	}
+}
 
+func removeAtlasProject(projectID string) func() bool {
+	return func() bool {
+		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			Expect(errors.As(err, &apiError)).To(BeTrue())
+			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
 			return false
 		}
-
-		return c.StateName == "DELETING" || c.StateName == "DELETED"
+		return true
 	}
 }
