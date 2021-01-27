@@ -47,7 +47,6 @@ func init() {
 }
 
 func main() {
-
 	config.ParseConfiguration()
 
 	// controller-runtime/pkg/log/zap is a wrapper over zap that implements logr
