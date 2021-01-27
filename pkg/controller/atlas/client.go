@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"runtime"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -23,8 +24,7 @@ func Client(connection Connection, log *zap.SugaredLogger) (*mongodbatlas.Client
 	if err != nil {
 		return nil, err
 	}
-	// TODO configuration for base URL (as a global Operator config?)
-	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(config.OperatorConfig.AtlasDomain+"/api/atlas/v1.0/"))
 	if err != nil {
 		return nil, err
 	}
