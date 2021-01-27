@@ -3,7 +3,7 @@ kind: AtlasCluster
 metadata:
   name: my-atlas-cluster
 spec:
-  name: "Test Cluster"
+  name: "test-cluster"
   projectRef:
     name: my-project
   providerSettings:
