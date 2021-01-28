@@ -25,7 +25,7 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 			return false
 		}
 		fmt.Printf("Generation: %+v, observed Generation: %+v, not cached generation: %+v\n", createdResource.GetGeneration(), createdResource.GetStatus().GetObservedGeneration(), notCachedGeneration)
-		fmt.Printf("%+v", createdResource.GetStatus().GetConditions())
+		fmt.Printf("%+v\n", createdResource.GetStatus().GetConditions())
 		// Atlas Operator hasn't started working yet
 		if createdResource.GetGeneration() != createdResource.GetStatus().GetObservedGeneration() {
 			return false
