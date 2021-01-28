@@ -110,7 +110,7 @@ var _ = BeforeSuite(func(done Done) {
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	// We construct the client directly instead of taking the one from manager (it doesn't use caches and reads directly)
+	// It's recommended to construct the cache directly for tests
 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())

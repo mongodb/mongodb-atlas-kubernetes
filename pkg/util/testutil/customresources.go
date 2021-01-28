@@ -17,19 +17,24 @@ import (
 // This allows to validate the object in case it's in "pending" phase.
 func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, check ...func(mdbv1.AtlasCustomResource)) func() bool {
 	return func() bool {
-		if ok := ReadAtlasResource(k8sClient, createdResource); !ok {
+		// Get requests may return the cached versions while the passed 'createdResource' is the correct one populated
+		// with the updated object. So we take the expected generation from the passed parameter only. Also create the
+		// safe copy
+		notCachedGeneration := createdResource.GetGeneration()
+		existingResource := createdResource.DeepCopyObject().(mdbv1.AtlasCustomResource)
+		if ok := ReadAtlasResource(k8sClient, existingResource); !ok {
 			return false
 		}
 		// Atlas Operator hasn't started working yet
-		if createdResource.GetGeneration() != createdResource.GetStatus().GetObservedGeneration() {
+		if notCachedGeneration != existingResource.GetStatus().GetObservedGeneration() {
 			return false
 		}
 
-		match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
+		match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(existingResource.GetStatus().GetConditions())
 		if err != nil || !match {
 			if len(check) > 0 {
 				for _, f := range check {
-					f(createdResource)
+					f(existingResource)
 				}
 			}
 			return false
