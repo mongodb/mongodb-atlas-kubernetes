@@ -1,0 +1,7 @@
+
+
+resources:
+- ../default
+
+patchesStrategicMerge:
+- manager_configuration.yaml

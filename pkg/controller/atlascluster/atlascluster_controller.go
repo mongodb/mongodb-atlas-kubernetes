@@ -40,9 +40,10 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	Client client.Client
-	Log    *zap.SugaredLogger
-	Scheme *runtime.Scheme
+	Client      client.Client
+	Log         *zap.SugaredLogger
+	Scheme      *runtime.Scheme
+	AtlasDomain string
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -58,7 +59,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
-	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec)
+	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "generation", cluster.Generation, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, cluster)
 
 	project := &mdbv1.AtlasProject{}
@@ -74,7 +75,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return result.ReconcileResult(), nil
 	}
 
-	c, result := ensureClusterState(log, connection, project, cluster)
+	c, result := r.ensureClusterState(log, connection, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
@@ -135,12 +136,12 @@ func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
 		return errors.New("cannot read Atlas connection")
 	}
 
-	client, err := atlas.Client(connection, log)
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	_, err = client.Clusters.Delete(context.Background(), project.Status.ID, cluster.Name)
+	_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
 		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
 	}

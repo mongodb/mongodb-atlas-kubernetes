@@ -11,8 +11,8 @@ import (
 )
 
 // ensureProjectExists creates the project if it doesn't exist yet. Returns the project ID
-func ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject) (string, workflow.Result) {
-	client, err := atlas.Client(connection, ctx.Log)
+func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, connection atlas.Connection, project *mdbv1.AtlasProject) (string, workflow.Result) {
+	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
 	if err != nil {
 		return "", workflow.Terminate(workflow.Internal, err.Error())
 	}
