@@ -64,30 +64,46 @@ func TestAPIs(t *testing.T) {
 		[]Reporter{printer.NewlineReporter{}})
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
-
-	ctrl.SetLogger(zapr.NewLogger(logger))
-
+// SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
+// http://onsi.github.io/ginkgo/#parallel-specs
+// The first function starts the envtest (done only once by the 1st node). The second function is called on each of
+// the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
+var _ = SynchronizedBeforeSuite(func() []byte {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
-
-	atlasClient, connection = prepareAtlasClient()
 
 	var err error
 	cfg, err = testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = mdbv1.AddToScheme(scheme.Scheme)
+	// We cannot serialize the 'cfg' as it contains functions. Serializing only the host url is enough.
+	return []byte(cfg.Host)
+}, func(data []byte) {
+	By("Preparing controllers and atlas client")
+
+	// This is the host that was serialized on the 1st node by the function above.
+	host := string(data)
+	// copied from Environment.Start()
+	cfg = &rest.Config{
+		Host: host,
+		// gotta go fast during tests -- we don't really care about overwhelming our test API server
+		QPS:   1000.0,
+		Burst: 2000.0,
+	}
+	err := mdbv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
+	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
+
+	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: "0",
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -113,10 +129,12 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient = k8sManager.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
 
-	close(done)
-}, 60)
+	atlasClient, connection = prepareAtlasClient()
+})
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
+
+}, func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
