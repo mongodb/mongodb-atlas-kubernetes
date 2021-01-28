@@ -21,20 +21,20 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 		// with the updated object. So we take the expected generation from the passed parameter only. Also create the
 		// safe copy
 		notCachedGeneration := createdResource.GetGeneration()
-		existingResource := createdResource.DeepCopyObject().(mdbv1.AtlasCustomResource)
-		if ok := ReadAtlasResource(k8sClient, existingResource); !ok {
+		if ok := ReadAtlasResource(k8sClient, createdResource); !ok {
 			return false
 		}
+		fmt.Printf("Generation: %+v, observed Generation: %+v, not cached generation: %+v\n", createdResource.GetGeneration(), createdResource.GetStatus().GetObservedGeneration(), notCachedGeneration)
 		// Atlas Operator hasn't started working yet
-		if notCachedGeneration != existingResource.GetStatus().GetObservedGeneration() {
+		if createdResource.GetGeneration() != createdResource.GetStatus().GetObservedGeneration() {
 			return false
 		}
 
-		match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(existingResource.GetStatus().GetConditions())
+		match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
 		if err != nil || !match {
 			if len(check) > 0 {
 				for _, f := range check {
-					f(existingResource)
+					f(createdResource)
 				}
 			}
 			return false
