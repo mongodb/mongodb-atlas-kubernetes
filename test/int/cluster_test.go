@@ -177,6 +177,7 @@ func clusterPendingFunc(expectedState, expectedMessage string, reason workflow.C
 			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
 			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
+		fmt.Println("callback ok")
 	}
 }
 
