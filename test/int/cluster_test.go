@@ -90,7 +90,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			validatePending := clusterPendingFunc("CREATING", "cluster is provisioning", workflow.ClusterCreating)
 			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-				1200, interval).Should(BeTrue())
+				1800, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
