@@ -59,7 +59,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
-	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "generation", cluster.Generation, "status", cluster.Status)
+	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, cluster)
 
 	project := &mdbv1.AtlasProject{}
