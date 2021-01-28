@@ -126,6 +126,8 @@ var _ = Describe("AtlasCluster", func() {
 			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
 				1200, interval).Should(BeTrue())
 
+			fmt.Printf("Cluster updated!! %+v\n", createdCluster.Status)
+
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
@@ -149,6 +151,8 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
+
+			fmt.Println("Update check finished!")
 		})
 	})
 })
