@@ -17,7 +17,7 @@ import (
 // This allows to validate the object in case it's in "pending" phase.
 func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, check ...func(mdbv1.AtlasCustomResource)) func() bool {
 	return func() bool {
-		fmt.Printf("Current resource generation: %s\n", createdResource.GetGeneration())
+		fmt.Printf("Current resource generation: %v\n", createdResource.GetGeneration())
 		if ok := ReadAtlasResource(k8sClient, createdResource); !ok {
 			return false
 		}
