@@ -40,6 +40,7 @@ func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource,
 			}
 			return false
 		}
+		fmt.Printf("Returning TRUE!! Match: %+v, expected: %+v, real: %+v", match, expectedCondition, createdResource.GetStatus().GetConditions())
 		return true
 	}
 }
