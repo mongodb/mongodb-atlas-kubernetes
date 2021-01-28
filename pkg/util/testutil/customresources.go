@@ -17,13 +17,13 @@ import (
 // This allows to validate the object in case it's in "pending" phase.
 func WaitFor(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, check ...func(mdbv1.AtlasCustomResource)) func() bool {
 	return func() bool {
-		fmt.Printf("Current resource generation: %v\n", createdResource.GetGeneration())
+		notCachedGeneration := createdResource.GetGeneration()
 		if ok := ReadAtlasResource(k8sClient, createdResource); !ok {
 			return false
 		}
 		// Atlas Operator hasn't started working yet
-		fmt.Printf("Generation: %+v, observed Generation: %+v\n", createdResource.GetGeneration(), createdResource.GetStatus().GetObservedGeneration())
-		if createdResource.GetGeneration() != createdResource.GetStatus().GetObservedGeneration() {
+		fmt.Printf("Generation: %+v, observed Generation: %+v, notCachedGeneration: %+v\n", createdResource.GetGeneration(), createdResource.GetStatus().GetObservedGeneration(), notCachedGeneration)
+		if notCachedGeneration != createdResource.GetStatus().GetObservedGeneration() {
 			return false
 		}
 
