@@ -28,7 +28,6 @@ var _ = Describe("AtlasCluster", func() {
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
-		enabled          = true
 	)
 
 	BeforeEach(func() {
@@ -94,6 +93,16 @@ var _ = Describe("AtlasCluster", func() {
 		Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
 	}
 
+	performUpdate := func() {
+		Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+		validatePending := clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
+		Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+			1200, interval).Should(BeTrue())
+
+		doCommonChecks()
+	}
+
 	Describe("Create/Update the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
@@ -123,41 +132,40 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
-				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-
-				validatePending := clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-					1200, interval).Should(BeTrue())
-
-				doCommonChecks()
+				performUpdate()
 			})
 
 			By("Updating the Cluster backups settings", func() {
-				createdCluster.Spec.ProviderBackupEnabled = &enabled
-				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-
-				validatePending := clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-					1200, interval).Should(BeTrue())
-
-				doCommonChecks()
+				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
+				performUpdate()
 			})
 
-			// Atlas
-			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-			Expect(err).ToNot(HaveOccurred())
+			By("Decreasing the Cluster disk size", func() {
+				createdCluster.Spec.DiskSizeGB = intptr(10)
+				performUpdate()
+			})
 
-			createdAtlasCluster, err := createdCluster.Spec.Cluster()
-			Expect(err).ToNot(HaveOccurred())
+			By("Increasing the Cluster disk size", func() {
+				createdCluster.Spec.DiskSizeGB = intptr(10)
+				performUpdate()
+			})
 
-			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-			print(createdCluster.Labels)
-			print(createdAtlasCluster.Labels)
-			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
-			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
-			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
-			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
-			Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
+			By("Verifying Cluster state in Atlas", func() {
+				atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+				Expect(err).ToNot(HaveOccurred())
+
+				createdAtlasCluster, err := createdCluster.Spec.Cluster()
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
+				print(createdCluster.Labels)
+				print(createdAtlasCluster.Labels)
+				Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
+				Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
+				Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
+				Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
+				Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
+			})
 		})
 	})
 })
@@ -230,4 +238,12 @@ func removeAtlasProject(projectID string) func() bool {
 		}
 		return true
 	}
+}
+
+func intptr(i int) *int {
+	return &i
+}
+
+func boolptr(b bool) *bool {
+	return &b
 }
