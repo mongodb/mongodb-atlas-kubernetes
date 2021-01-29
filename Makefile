@@ -71,6 +71,10 @@ fmt: ## Run go fmt against code
 vet: ## Run go vet against code
 	go vet ./...
 
+.PHONY: lint
+lint: golangci-lint ## Run go vet against code
+	golangci-lint run
+
 .PHONY: generate
 generate: controller-gen ## Generate code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -129,11 +133,11 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
-ifeq ($(shell kind get clusters),kind)
-	@echo "create kind cluster: nothing to do"
-else
-	@bash ./scripts/create_kind_cluster.sh
-endif
+	@if [ "$(kind get clusters)" = "kind" ]; then \
+		echo "create kind cluster: nothing to do"; \
+	else \
+		bash ./scripts/create_kind_cluster.sh; \
+	fi
 
 .PHONY: stop-kind
 stop-kind: ## Stop the local kind cluster
@@ -142,3 +146,12 @@ stop-kind: ## Stop the local kind cluster
 .PHONY: log
 log: ## View manager logs
 	kubectl logs deploy/mongodb-atlas-kubernetes-controller-manager manager -n mongodb-atlas-kubernetes-system -f
+
+.PHONY: golangci-lint
+golangci-lint: ## Find golangci-lint or download it if necessary
+ifeq (, $(shell which golangci-lint))
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v1.35.2
+GOLANGCI_LINT=$(GOBIN)/golangci-lint
+else
+GOLANGCI_LINT=$(shell which golangci-lint)
+endif

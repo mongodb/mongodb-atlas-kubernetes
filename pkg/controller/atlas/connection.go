@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 const (

@@ -7,17 +7,18 @@ import (
 	"net/http"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("AtlasCluster", func() {

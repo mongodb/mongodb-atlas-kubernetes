@@ -17,17 +17,18 @@ limitations under the License.
 package atlasproject
 
 import (
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
