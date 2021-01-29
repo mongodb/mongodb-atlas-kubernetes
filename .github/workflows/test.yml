@@ -28,7 +28,6 @@ jobs:
   int-test:
     name: Integration tests
     runs-on: ubuntu-latest
-    needs: unit-test
     steps:
       - uses: actions/checkout@v2.3.4
 
