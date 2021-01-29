@@ -21,7 +21,7 @@ type AtlasClusterStatus struct {
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
 }
 
-// ConnectionStrings is a copy of mongodbatlas.ConnectionStrings for deepcopy compatibility purposes.
+// ConnectionStrings contains configuration for applications use to connect to this cluster
 type ConnectionStrings struct {
 	// Public mongodb:// connection string for this cluster.
 	Standard string `json:"standard,omitempty"`
@@ -29,18 +29,12 @@ type ConnectionStrings struct {
 	// Public mongodb+srv:// connection string for this cluster.
 	StandardSrv string `json:"standardSrv,omitempty"`
 
-	// TODO: update when the replacement is implemented in mongodbatlas
+	// Private endpoint connection strings.
+	// Each object describes the connection strings you can use to connect to this cluster through a private endpoint.
+	// Atlas returns this parameter only if you deployed a private endpoint to all regions to which you deployed this cluster's nodes.
+	PrivateEndpoint []PrivateEndpoint `json:"privateEndpoint,omitempty"`
 
-	// Deprecated: use connectionStrings.privateEndpoint[n].connectionString instead.
-	// Private-endpoint-aware mongodb://connection strings for each AWS PrivateLink private endpoint.
-	// Atlas returns this parameter only if you deployed a AWS PrivateLink private endpoint to the same regions as all of this cluster's nodes.
-	AwsPrivateLink map[string]string `json:"awsPrivateLink,omitempty"`
-
-	// Deprecated: use connectionStrings.privateEndpoint[n].srvConnectionString instead.
-	// Private-endpoint-aware mongodb+srv:// connection strings for each AWS PrivateLink private endpoint.
-	AwsPrivateLinkSrv map[string]string `json:"awsPrivateLinkSrv,omitempty"`
-
-	// Network-peering-endpoint-aware mongodb://connection strings for each interface VPC endpoint you configured to connect to this cluster.
+	// Network-peering-endpoint-aware mongodb:// connection strings for each interface VPC endpoint you configured to connect to this cluster.
 	// Atlas returns this parameter only if you created a network peering connection to this cluster.
 	Private string `json:"private,omitempty"`
 
@@ -50,8 +44,41 @@ type ConnectionStrings struct {
 	PrivateSrv string `json:"privateSrv,omitempty"`
 }
 
-// Check compatibility with library type.
-var _ = ConnectionStrings(mongodbatlas.ConnectionStrings{})
+// PrivateEndpoint connection strings. Each object describes the connection strings
+// you can use to connect to this cluster through a private endpoint.
+// Atlas returns this parameter only if you deployed a private endpoint to all regions
+// to which you deployed this cluster's nodes.
+type PrivateEndpoint struct {
+	// Private-endpoint-aware mongodb:// connection string for this private endpoint.
+	ConnectionString string `json:"connectionString,omitempty"`
+
+	// Private endpoint through which you connect to Atlas when you use connectionStrings.privateEndpoint[n].connectionString or connectionStrings.privateEndpoint[n].srvConnectionString.
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
+
+	// Private-endpoint-aware mongodb+srv:// connection string for this private endpoint.
+	SRVConnectionString string `json:"srvConnectionString,omitempty"`
+
+	// Type of MongoDB process that you connect to with the connection strings
+	//
+	// Atlas returns:
+	//
+	// • MONGOD for replica sets, or
+	//
+	// • MONGOS for sharded clusters
+	Type string `json:"type,omitempty"`
+}
+
+// Endpoint through which you connect to Atlas
+type Endpoint struct {
+	// Unique identifier of the private endpoint.
+	EndpointID string `json:"endpointId,omitempty"`
+
+	// Cloud provider to which you deployed the private endpoint. Atlas returns AWS or AZURE.
+	ProviderName string `json:"providerName,omitempty"`
+
+	// Region to which you deployed the private endpoint.
+	Region string `json:"region,omitempty"`
+}
 
 // +k8s:deepcopy-gen=false
 
@@ -72,7 +99,28 @@ func AtlasClusterMongoDBVersionOption(mongoDBVersion string) AtlasClusterStatusO
 
 func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasClusterStatusOption {
 	return func(s *AtlasClusterStatus) {
-		cs := ConnectionStrings(*connectionStrings)
+		pe := make([]PrivateEndpoint, 0, len(connectionStrings.PrivateEndpoint))
+		for _, v := range connectionStrings.PrivateEndpoint {
+			endpoints := make([]Endpoint, 0, len(v.Endpoints))
+			for _, e := range v.Endpoints {
+				endpoints = append(endpoints, Endpoint(e))
+			}
+
+			pe = append(pe, PrivateEndpoint{
+				ConnectionString:    v.ConnectionString,
+				Endpoints:           endpoints,
+				SRVConnectionString: v.SRVConnectionString,
+				Type:                v.Type,
+			})
+		}
+
+		cs := ConnectionStrings{
+			Standard:        connectionStrings.Standard,
+			StandardSrv:     connectionStrings.StandardSrv,
+			Private:         connectionStrings.Private,
+			PrivateSrv:      connectionStrings.PrivateSrv,
+			PrivateEndpoint: pe,
+		}
 		s.ConnectionStrings = &cs
 	}
 }
