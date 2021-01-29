@@ -28,6 +28,7 @@ var _ = Describe("AtlasCluster", func() {
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
+		enabled          = true
 	)
 
 	BeforeEach(func() {
@@ -79,64 +80,71 @@ var _ = Describe("AtlasCluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	doCommonChecks := func() {
+		Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
+		Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
+		Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
+		Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
+		Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
+		Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+		Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
+			status.TrueCondition(status.ClusterReadyType),
+			status.TrueCondition(status.ReadyType),
+		)))
+		Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+	}
+
 	Describe("Create/Update the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)))
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
-			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
-			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+				validatePending := clusterPendingFunc("CREATING", "cluster is provisioning", workflow.ClusterCreating)
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+					1200, interval).Should(BeTrue())
 
-			validatePending := clusterPendingFunc("CREATING", "cluster is provisioning", workflow.ClusterCreating)
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-				1200, interval).Should(BeTrue())
+				doCommonChecks()
 
-			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
-			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+				// Atlas
+				atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+				Expect(err).ToNot(HaveOccurred())
 
-			expectedConditionsMatchers := testutil.MatchConditions(
-				status.TrueCondition(status.ClusterReadyType),
-				status.TrueCondition(status.ReadyType),
-			)
-			Expect(createdCluster.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
-
-			// Atlas
-			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
-			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
-			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
-			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
-			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
+				// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
+				Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
+				Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
+				Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
+				Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
+			})
 
 			// TODO check connectivity to cluster
 
-			By("Updating the Cluster")
-			createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
-			Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+			By("Updating the Cluster labels", func() {
+				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
-			validatePending = clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-				1200, interval).Should(BeTrue())
+				validatePending := clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+					1200, interval).Should(BeTrue())
 
-			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
-			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-			Expect(createdCluster.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+				doCommonChecks()
+			})
+
+			By("Updating the Cluster backups settings", func() {
+				createdCluster.Spec.ProviderBackupEnabled = &enabled
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				validatePending := clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+					1200, interval).Should(BeTrue())
+
+				doCommonChecks()
+			})
 
 			// Atlas
-			atlasCluster, _, err = atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
 			createdAtlasCluster, err := createdCluster.Spec.Cluster()
@@ -149,6 +157,7 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
+			Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
 		})
 	})
 })
