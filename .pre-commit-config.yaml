@@ -3,3 +3,7 @@ repos:
     rev: v1.36.0
     hooks:
       - id: golangci-lint
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: master
+    hooks:
+      - id: shellcheck
