@@ -79,7 +79,7 @@ var _ = Describe("AtlasCluster", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FDescribe("Create/Update the cluster", func() {
+	Describe("Create/Update the cluster", func() {
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
@@ -141,8 +141,6 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-			print(createdCluster.Labels)
-			print(createdAtlasCluster.Labels)
 			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
