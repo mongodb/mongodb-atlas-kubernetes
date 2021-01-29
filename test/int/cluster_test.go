@@ -24,23 +24,15 @@ var _ = Describe("AtlasCluster", func() {
 	const interval = time.Second * 1
 
 	var (
-		namespace        corev1.Namespace
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
 	)
 
 	BeforeEach(func() {
+		prepareControllers()
+
 		createdCluster = &mdbv1.AtlasCluster{}
-		namespace = corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "test",
-				// TODO name namespace by the name of the project and include the creation date/time to perform GC
-				GenerateName: "test",
-			},
-		}
-		By("Creating the namespace " + namespace.Name)
-		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
 		connectionSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -73,10 +65,7 @@ var _ = Describe("AtlasCluster", func() {
 			// if the cluster is terminated using UI - it stays in "Deleting" state
 			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
-
-		By("Removing the namespace " + namespace.Name)
-		err := k8sClient.Delete(context.Background(), &namespace)
-		Expect(err).ToNot(HaveOccurred())
+		removeControllersAndNamespace()
 	})
 
 	Describe("Create/Update the cluster", func() {
@@ -88,9 +77,8 @@ var _ = Describe("AtlasCluster", func() {
 			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
-			validatePending := clusterPendingFunc("CREATING", "cluster is provisioning", workflow.ClusterCreating)
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
-				1200, interval).Should(BeTrue())
+			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				1800, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
@@ -122,8 +110,7 @@ var _ = Describe("AtlasCluster", func() {
 			createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
 			Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
-			validatePending = clusterPendingFunc("UPDATING", "cluster is updating", workflow.ClusterUpdating)
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validatePending),
+			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 				1200, interval).Should(BeTrue())
 
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
@@ -143,8 +130,6 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-			print(createdCluster.Labels)
-			print(createdAtlasCluster.Labels)
 			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
@@ -153,7 +138,7 @@ var _ = Describe("AtlasCluster", func() {
 	})
 })
 
-func clusterPendingFunc(expectedState, expectedMessage string, reason workflow.ConditionReason) func(a mdbv1.AtlasCustomResource) {
+func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
 		c := a.(*mdbv1.AtlasCluster)
@@ -162,9 +147,9 @@ func clusterPendingFunc(expectedState, expectedMessage string, reason workflow.C
 		}
 		// When the create request has been made to Atlas - we expect the following status
 		if startedCreation {
-			Expect(c.Status.StateName).To(Equal(expectedState), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(reason)).WithMessage(expectedMessage),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessage("cluster is provisioning"),
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -172,6 +157,25 @@ func clusterPendingFunc(expectedState, expectedMessage string, reason workflow.C
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
 			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
 			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
+		}
+	}
+}
+func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
+	isIdle := true
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasCluster)
+		// It's ok if the first invocations see IDLE
+		if c.Status.StateName != "IDLE" {
+			isIdle = false
+		}
+		// When the create request has been made to Atlas - we expect the following status
+		if !isIdle {
+			Expect(c.Status.StateName).To(Equal("UPDATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessage("cluster is updating"),
+				status.FalseCondition(status.ReadyType),
+			)
+			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}
 	}
 }

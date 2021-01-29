@@ -23,22 +23,14 @@ var _ = Describe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
-		namespace        corev1.Namespace
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 	)
 
 	BeforeEach(func() {
+		prepareControllers()
+
 		createdProject = &mdbv1.AtlasProject{}
-		namespace = corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "test",
-				// TODO name namespace by the name of the project and include the creation date/time to perform GC
-				GenerateName: "test",
-			},
-		}
-		By("Creating the namespace " + namespace.Name)
-		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
 		connectionSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,10 +49,7 @@ var _ = Describe("AtlasProject", func() {
 			_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
 			Expect(err).ToNot(HaveOccurred())
 		}
-
-		By("Removing the namespace " + namespace.Name)
-		err := k8sClient.Delete(context.Background(), &namespace)
-		Expect(err).ToNot(HaveOccurred())
+		removeControllersAndNamespace()
 	})
 
 	Describe("Creating the project", func() {
