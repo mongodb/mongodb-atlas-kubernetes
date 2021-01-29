@@ -1,7 +1,7 @@
-![MongoDB Atlas Operator](https://github.com/mongodb/mongodb-atlas-kubernetes/workflows/Test/badge.svg)
-[![MongoDB Atlas Go Client](https://img.shields.io/badge/Powered%20by%20-go--client--mongodb--atlas-%2313AA52?style=for-the-badge)](https://github.com/mongodb/go-client-mongodb-atlas)
-
 # MongoDB Atlas Operator
+![MongoDB Atlas Operator](https://github.com/mongodb/mongodb-atlas-kubernetes/workflows/Test/badge.svg)
+[![MongoDB Atlas Go Client](https://img.shields.io/badge/Powered%20by%20-go--client--mongodb--atlas-%2313AA52)](https://github.com/mongodb/go-client-mongodb-atlas)
+
 Welcome to MongoDB Atlas Operator - the Operator allowing to manage Atlas Clusters from Kubernetes.
 > Current Status: *pre-alpha*. We are currently working on the initial set of features that will give users the opportunity to provision Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information into the applications deployed to Kubernetes.
 ## Quick Start guide
