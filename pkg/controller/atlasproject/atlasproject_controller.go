@@ -24,15 +24,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
 	client.Client
+	watch.ResourceWatcher
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
 	AtlasDomain string
@@ -59,7 +63,7 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return reconcile.Result{}, nil
 	}
 	// This update will make sure the status is always updated in case of any errors or successful result
-	defer statushandler.Update(ctx, r, project)
+	defer statushandler.Update(ctx, r.Client, project)
 
 	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
@@ -84,9 +88,23 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	return ctrl.Result{}, nil
 }
 
+func (r *AtlasProjectReconciler) Delete(obj runtime.Object) error {
+	// TODO CLOUDP-80607
+	return nil
+}
+
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mdbv1.AtlasProject{}).
+		Watches(
+			&source.Kind{Type: &mdbv1.AtlasCluster{}},
+			&watch.DeleteEventHandler{Controller: r},
+			builder.WithPredicates(watch.DeleteOnly()),
+		).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			&watch.ResourcesHandler{TrackedResources: r.WatchedResources},
+		).
 		WithEventFilter(watch.CommonPredicates()).
 		Complete(r)
 }
