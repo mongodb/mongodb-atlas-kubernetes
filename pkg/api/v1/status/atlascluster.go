@@ -1,8 +1,9 @@
 package status
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"go.mongodb.org/atlas/mongodbatlas"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
@@ -103,7 +104,7 @@ func AtlasClusterMongoDBVersionOption(mongoDBVersion string) AtlasClusterStatusO
 func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasClusterStatusOption {
 	return func(s *AtlasClusterStatus) {
 		cs := ConnectionStrings{}
-		err := compat.JSONCopy(cs, connectionStrings)
+		err := compat.JSONCopy(&cs, connectionStrings)
 		if err != nil {
 			return
 		}
