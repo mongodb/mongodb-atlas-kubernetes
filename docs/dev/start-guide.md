@@ -1,8 +1,15 @@
 # Onboarding to Atlas Operator
 
 1. Install Go (1.15)
-1. Install act (`brew install act` on Mac or check [instructions](https://github.com/nektos/act#installation))
-1. Install `yq`(`brew install yq` on Mac)
+1. Install dependencies 
+```
+# on Mac
+brew install act # or https://github.com/nektos/act#installation
+brew install yq # or https://pypi.org/project/yq/
+brew install shellcheck # or https://github.com/koalaman/shellcheck#installing
+brew install pre-commit # or https://pre-commit.com/index.html#install
+pre-commit install # from the root of the project
+```
 1. Install Kind ([instructions](https://kind.sigs.k8s.io/docs/user/quick-start/#installation))
 1. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
 1. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
