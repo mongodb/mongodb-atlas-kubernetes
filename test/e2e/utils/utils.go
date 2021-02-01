@@ -9,14 +9,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
-//LoadUserProjectConfig load configuration into object
+// LoadUserProjectConfig load configuration into object
 func LoadUserProjectConfig(path string) *v1.AtlasProject {
 	var config v1.AtlasProject
 	ReadInYAMLFileAndConvert(path, &config)
 	return &config
 }
 
-//LoadUserClusterConfig load configuration into object
+// LoadUserClusterConfig load configuration into object
 func LoadUserClusterConfig(path string) *v1.AtlasCluster {
 	var config v1.AtlasCluster
 	ReadInYAMLFileAndConvert(path, &config)

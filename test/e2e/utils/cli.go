@@ -98,13 +98,13 @@ func GetClusterStatus(projectID string, clusterName string) func() string {
 	}
 }
 
-//TODO move
+// TODO move
 func GenKubeVersion(fullVersion string) string {
 	version := strings.Split(fullVersion, ".")
 	return fmt.Sprintf("Major:\"%s\", Minor:\"%s\"", version[0], version[1])
 }
 
-//TODO move
+// TODO move
 func GetPodStatus(ns string) func() string{
 	return func() string{
 		session := Execute("kubectl", "get", "pods", "-l", "control-plane=controller-manager", "-o", "jsonpath={.items[0].status.phase}", "-n", ns)

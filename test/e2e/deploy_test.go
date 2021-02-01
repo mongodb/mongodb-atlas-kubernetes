@@ -16,7 +16,7 @@ var _ = Describe("Deploy simple cluster", func() {
 
 	It("Release sample all-in-one.yaml should work", func() {
 		By("Prepare namespaces")
-		namespaceUserResources := uuid.NewRandom().String() //TODO
+		namespaceUserResources := uuid.NewRandom().String() // TODO
 		namespaceOperator := "mongodb-atlas-kubernetes-system"
 		session := cli.Execute("kubectl", "create", "namespace", namespaceUserResources)
 		Expect(session).ShouldNot(Say("created"))
@@ -70,7 +70,7 @@ var _ = Describe("Deploy simple cluster", func() {
 			"35m", "1m",
 		).Should(Equal("IDLE"))
 
-		By("check cluster Attribute") //TODO ...
+		By("check cluster Attribute") // TODO ...
 		cluster := cli.GetClustersInfo(projectID, userClusterConfig.Spec.Name)
 		Expect(
 			cluster.ProviderSettings.InstanceSizeName,
@@ -83,7 +83,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(Equal(userClusterConfig.Spec.ProviderSettings.RegionName))
 
 		By("Update cluster\n")
-		session = cli.Execute("kubectl", "apply", "-f", "data/updated_atlascluster_basic.yaml", "-n", namespaceUserResources) //TODO param
+		session = cli.Execute("kubectl", "apply", "-f", "data/updated_atlascluster_basic.yaml", "-n", namespaceUserResources) // TODO param
 		Eventually(session.Wait()).Should(Say("atlascluster-sample configured"))
 
 		By("Wait creation")
