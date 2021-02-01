@@ -35,7 +35,7 @@ import (
 
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
-	client.Client
+	Client client.Client
 	watch.ResourceWatcher
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
@@ -95,9 +95,10 @@ func (r *AtlasProjectReconciler) Delete(obj runtime.Object) error {
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		// Listen to all kiinds
 		For(&mdbv1.AtlasProject{}).
 		Watches(
-			&source.Kind{Type: &mdbv1.AtlasCluster{}},
+			&source.Kind{Type: &mdbv1.AtlasProject{}},
 			&watch.DeleteEventHandler{Controller: r},
 			builder.WithPredicates(watch.DeleteOnly()),
 		).
