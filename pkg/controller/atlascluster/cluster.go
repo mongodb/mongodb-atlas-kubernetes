@@ -2,17 +2,18 @@ package atlascluster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
 func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
@@ -82,11 +83,11 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 // Direct comparison is not feasible because Atlas will set a lot of fields to default values, so we need to apply our changes on top of that.
 func clusterMatchesSpec(log *zap.SugaredLogger, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
 	clusterMerged := mongodbatlas.Cluster{}
-	if err := jsonCopy(&clusterMerged, cluster); err != nil {
+	if err := compat.JSONCopy(&clusterMerged, cluster); err != nil {
 		return false, err
 	}
 
-	if err := jsonCopy(&clusterMerged, spec); err != nil {
+	if err := compat.JSONCopy(&clusterMerged, spec); err != nil {
 		return false, err
 	}
 
@@ -96,18 +97,4 @@ func clusterMatchesSpec(log *zap.SugaredLogger, cluster *mongodbatlas.Cluster, s
 	}
 
 	return d == "", nil
-}
-
-func jsonCopy(dst, src interface{}) error {
-	b, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(b, &dst)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

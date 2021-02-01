@@ -1,6 +1,10 @@
 package status
 
-import "go.mongodb.org/atlas/mongodbatlas"
+import (
+	"go.mongodb.org/atlas/mongodbatlas"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+)
 
 // AtlasClusterStatus defines the observed state of AtlasCluster.
 type AtlasClusterStatus struct {
@@ -99,27 +103,10 @@ func AtlasClusterMongoDBVersionOption(mongoDBVersion string) AtlasClusterStatusO
 
 func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasClusterStatusOption {
 	return func(s *AtlasClusterStatus) {
-		pe := make([]PrivateEndpoint, 0, len(connectionStrings.PrivateEndpoint))
-		for _, v := range connectionStrings.PrivateEndpoint {
-			endpoints := make([]Endpoint, 0, len(v.Endpoints))
-			for _, e := range v.Endpoints {
-				endpoints = append(endpoints, Endpoint(e))
-			}
-
-			pe = append(pe, PrivateEndpoint{
-				ConnectionString:    v.ConnectionString,
-				Endpoints:           endpoints,
-				SRVConnectionString: v.SRVConnectionString,
-				Type:                v.Type,
-			})
-		}
-
-		cs := ConnectionStrings{
-			Standard:        connectionStrings.Standard,
-			StandardSrv:     connectionStrings.StandardSrv,
-			Private:         connectionStrings.Private,
-			PrivateSrv:      connectionStrings.PrivateSrv,
-			PrivateEndpoint: pe,
+		cs := ConnectionStrings{}
+		err := compat.JSONCopy(&cs, connectionStrings)
+		if err != nil {
+			return
 		}
 		s.ConnectionStrings = &cs
 	}
