@@ -19,11 +19,12 @@ package v1
 import (
 	"encoding/json"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 func init() {
@@ -71,8 +72,6 @@ type AtlasClusterSpec struct {
 	Labels []LabelSpec `json:"labels,omitempty"`
 
 	// Version of the cluster to deploy.
-	// +kubebuilder:validation:Enum="3.6";"4.0";"4.2";"4.4"
-	// +optional
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
 	// Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
