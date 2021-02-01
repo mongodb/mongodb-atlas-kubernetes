@@ -133,11 +133,6 @@ var _ = Describe("AtlasCluster", func() {
 				performUpdate()
 			})
 
-			By("Increasing the Cluster disk size", func() {
-				createdCluster.Spec.DiskSizeGB = intptr(64)
-				performUpdate()
-			})
-
 			By("Verifying Cluster state in Atlas", func() {
 				atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 				Expect(err).ToNot(HaveOccurred())
