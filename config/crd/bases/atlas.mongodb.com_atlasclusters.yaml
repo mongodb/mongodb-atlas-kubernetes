@@ -127,11 +127,6 @@ spec:
                 type: array
               mongoDBMajorVersion:
                 description: Version of the cluster to deploy.
-                enum:
-                - "3.6"
-                - "4.0"
-                - "4.2"
-                - "4.4"
                 type: string
               name:
                 description: Name of the cluster as it appears in Atlas. After Atlas
