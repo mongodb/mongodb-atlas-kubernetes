@@ -349,28 +349,60 @@ spec:
                 description: ConnectionStrings is a set of connection strings that
                   your applications use to connect to this cluster.
                 properties:
-                  awsPrivateLink:
-                    additionalProperties:
-                      type: string
-                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].connectionString
-                      instead. Private-endpoint-aware mongodb://connection strings
-                      for each AWS PrivateLink private endpoint. Atlas returns this
-                      parameter only if you deployed a AWS PrivateLink private endpoint
-                      to the same regions as all of this cluster''s nodes.'
-                    type: object
-                  awsPrivateLinkSrv:
-                    additionalProperties:
-                      type: string
-                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].srvConnectionString
-                      instead. Private-endpoint-aware mongodb+srv:// connection strings
-                      for each AWS PrivateLink private endpoint.'
-                    type: object
                   private:
-                    description: Network-peering-endpoint-aware mongodb://connection
+                    description: Network-peering-endpoint-aware mongodb:// connection
                       strings for each interface VPC endpoint you configured to connect
                       to this cluster. Atlas returns this parameter only if you created
                       a network peering connection to this cluster.
                     type: string
+                  privateEndpoint:
+                    description: Private endpoint connection strings. Each object
+                      describes the connection strings you can use to connect to this
+                      cluster through a private endpoint. Atlas returns this parameter
+                      only if you deployed a private endpoint to all regions to which
+                      you deployed this cluster's nodes.
+                    items:
+                      description: PrivateEndpoint connection strings. Each object
+                        describes the connection strings you can use to connect to
+                        this cluster through a private endpoint. Atlas returns this
+                        parameter only if you deployed a private endpoint to all regions
+                        to which you deployed this cluster's nodes.
+                      properties:
+                        connectionString:
+                          description: Private-endpoint-aware mongodb:// connection
+                            string for this private endpoint.
+                          type: string
+                        endpoints:
+                          description: Private endpoint through which you connect
+                            to Atlas when you use connectionStrings.privateEndpoint[n].connectionString
+                            or connectionStrings.privateEndpoint[n].srvConnectionString.
+                          items:
+                            description: Endpoint through which you connect to Atlas
+                            properties:
+                              endpointId:
+                                description: Unique identifier of the private endpoint.
+                                type: string
+                              providerName:
+                                description: Cloud provider to which you deployed
+                                  the private endpoint. Atlas returns AWS or AZURE.
+                                type: string
+                              region:
+                                description: Region to which you deployed the private
+                                  endpoint.
+                                type: string
+                            type: object
+                          type: array
+                        srvConnectionString:
+                          description: Private-endpoint-aware mongodb+srv:// connection
+                            string for this private endpoint.
+                          type: string
+                        type:
+                          description: "Type of MongoDB process that you connect to
+                            with the connection strings \n Atlas returns: \n • MONGOD
+                            for replica sets, or \n • MONGOS for sharded clusters"
+                          type: string
+                      type: object
+                    type: array
                   privateSrv:
                     description: Network-peering-endpoint-aware mongodb+srv:// connection
                       strings for each interface VPC endpoint you configured to connect
