@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"gopkg.in/yaml.v2"
 )
 
@@ -26,9 +27,9 @@ func LoadUserClusterConfig(path string) *v1.AtlasCluster {
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given
 func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface{} {
 	// Read in the yaml file at the path given
-	yamlFile, err := ioutil.ReadFile(pathToYamlFile)
+	yamlFile, err := ioutil.ReadFile(filepath.Clean(pathToYamlFile))
 	if err != nil {
-		log.Printf("Error while parsing YAML file %v, error: %s", pathToYamlFile, err)
+		log.Printf("Error while parsing YAML file %v, error: %s", filepath.Clean(pathToYamlFile), err)
 	}
 
 	// Map yamlFile to interface

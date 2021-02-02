@@ -2,11 +2,12 @@ package e2e_test
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"os"
 	"testing"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -40,7 +41,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 }, func(_ []byte) {
 	GinkgoWriter.Write([]byte(fmt.Sprintf("==============================Global Node %d Synchronized Before Each==============================\n", GinkgoParallelNode())))
 	if GinkgoParallelNode() != 1 {
-		Fail("Please Test suite cannot run in parallel")
+		Fail("Please Test suite cannot run in parallel") // TODO prepare configurations for parallel
 	}
 	GinkgoWriter.Write([]byte(fmt.Sprintf("==============================End of Global Node %d Synchronized Before Each========================\n", GinkgoParallelNode())))
 })
@@ -59,5 +60,4 @@ func checkUpMongoCLI() {
 	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty())
 	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty())
 	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty())
-
 }

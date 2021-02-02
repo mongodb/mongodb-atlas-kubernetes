@@ -16,7 +16,7 @@ var _ = Describe("Deploy simple cluster", func() {
 
 	It("Release sample all-in-one.yaml should work", func() {
 		By("Prepare namespaces")
-		namespaceUserResources := uuid.NewRandom().String() // TODO
+		namespaceUserResources := "e2e-" + uuid.NewRandom().String() // TODO
 		namespaceOperator := "mongodb-atlas-kubernetes-system"
 		session := cli.Execute("kubectl", "create", "namespace", namespaceUserResources)
 		Expect(session).ShouldNot(Say("created"))
@@ -58,6 +58,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("atlascluster-sample created"))
 
 		By("Wait creating and check that it was created")
+		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("1"))
 		Eventually(
 			cli.IsProjectExist(userProjectConfig.Spec.Name),
 			"5m", "3s",
@@ -94,6 +95,7 @@ var _ = Describe("Deploy simple cluster", func() {
 
 		By("Wait creation")
 		userClusterConfig = cli.LoadUserClusterConfig("data/updated_atlascluster_basic.yaml")
+		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(
 			cli.GetClusterStatus(projectID, userClusterConfig.Spec.Name),
 			"35m", "1m",
@@ -115,5 +117,10 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(BeFalse())
 
 		// By("Delete project") //TODO
+		// session = cli.Execute("kubectl", "delete", "-f", "data/atlasproject.yaml", "-n", namespaceUserResources)
+		// Eventually(
+		// 	cli.IsProjectExist(userProjectConfig.Spec.Name),
+		// 	"5m", "20s",
+		// ).Should(BeFalse())
 	})
 })

@@ -114,7 +114,7 @@ func GetPodStatus(ns string) func() string {
 
 func GetGeneration(nc string) func() string {
 	return func() string {
-		session := Execute("kubeclt", "get", "atlascluster.atlas.mongodb.com/atlascluster-sample", "-n", nc, "-o", "jsonpath={.status.observedGeneration}")
-		return string(session.Out.Contents())
+		session := Execute("kubectl", "get", "atlascluster.atlas.mongodb.com/atlascluster-sample", "-n", nc, "-o", "jsonpath={.status.observedGeneration}")
+		return string(session.Wait("1m").Out.Contents())
 	}
 }
