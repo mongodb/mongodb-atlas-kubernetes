@@ -40,6 +40,10 @@ int-test: generate manifests ## Run integration tests
 	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh
 	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo -v -p -nodes=4 ./test/int -coverprofile cover.out
 
+.PHONY: e2e
+e2e:
+	./scripts/e2e_local.sh
+
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
 	go build -o bin/manager main.go

@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 
-	"gopkg.in/yaml.v2"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"gopkg.in/yaml.v2"
 )
 
 // LoadUserProjectConfig load configuration into object

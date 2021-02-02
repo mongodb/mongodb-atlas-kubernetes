@@ -98,16 +98,23 @@ func GetClusterStatus(projectID string, clusterName string) func() string {
 	}
 }
 
-// TODO move
+// GenKubeVersion TODO move
 func GenKubeVersion(fullVersion string) string {
 	version := strings.Split(fullVersion, ".")
 	return fmt.Sprintf("Major:\"%s\", Minor:\"%s\"", version[0], version[1])
 }
 
-// TODO move
-func GetPodStatus(ns string) func() string{
-	return func() string{
+// GetPodStatus TODO move
+func GetPodStatus(ns string) func() string {
+	return func() string {
 		session := Execute("kubectl", "get", "pods", "-l", "control-plane=controller-manager", "-o", "jsonpath={.items[0].status.phase}", "-n", ns)
 		return string(session.Wait("1m").Out.Contents())
+	}
+}
+
+func GetGeneration(nc string) func() string {
+	return func() string {
+		session := Execute("kubeclt", "get", "atlascluster.atlas.mongodb.com/atlascluster-sample", "-n", nc, "-o", "jsonpath={.status.observedGeneration}")
+		return string(session.Out.Contents())
 	}
 }
