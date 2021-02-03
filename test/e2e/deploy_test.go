@@ -98,7 +98,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(
 			cli.GetClusterStatus(projectID, userClusterConfig.Spec.Name),
-			"50m", "1m", //max time 35 ??
+			"50m", "1m", // max time 35 ??
 		).Should(Equal("IDLE"))
 
 		uCluster := cli.GetClustersInfo(projectID, userClusterConfig.Spec.Name)
@@ -116,7 +116,7 @@ var _ = Describe("Deploy simple cluster", func() {
 			"10m", "1m",
 		).Should(BeFalse())
 
-		// By("Delete project") //TODO
+		// By("Delete project") // TODO
 		// session = cli.Execute("kubectl", "delete", "-f", "data/atlasproject.yaml", "-n", namespaceUserResources)
 		// Eventually(
 		// 	cli.IsProjectExist(userProjectConfig.Spec.Name),
