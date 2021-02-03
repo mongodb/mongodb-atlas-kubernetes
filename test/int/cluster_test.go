@@ -28,7 +28,7 @@ var _ = Describe("AtlasCluster", func() {
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
-		lastGeneration   int
+		lastGeneration   int64
 	)
 
 	BeforeEach(func() {
@@ -143,11 +143,6 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Decreasing the Cluster disk size", func() {
-				createdCluster.Spec.DiskSizeGB = intptr(10)
-				performUpdate()
-			})
-
-			By("Increasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
 				performUpdate()
 			})
