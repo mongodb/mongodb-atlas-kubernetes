@@ -25,6 +25,7 @@ jobs:
       - run: go version
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
+
   int-test:
     name: Integration tests
     runs-on: ubuntu-latest
@@ -43,3 +44,95 @@ jobs:
           ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
 
+  prepare-e2e:
+    name: Prepare E2E configuration and image
+    needs: [unit-test, int-test]
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2.3.1
+
+    - name: Prepare tag
+      id: prepare
+      uses: ./.github/actions/set-tag
+
+    - name: Push Atlas Operator to Registry
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ secrets.DOCKER_REPO }}
+        registry: ${{ secrets.DOCKER_REGISTRY }}
+        tags: ${{ steps.prepare.outputs.tag }}
+
+  e2e:
+    name: E2E tests
+    needs: prepare-e2e
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
+        k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
+        test: ["all-in-one"] # TODO refactor
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2.3.1
+
+    - name: Prepare tag
+      id: prepare
+      uses: ./.github/actions/set-tag
+
+    - name: Generate configuration for the tests
+      uses: ./.github/actions/gen-install-scripts
+      with:
+        IMAGE_URL: ${{ secrets.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+        ENV: dev
+
+    - name: Set properties
+      id: properties
+      run: |
+        version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
+        platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
+        echo "::set-output name=k8s_version::$version"
+        echo "::set-output name=k8s_platform::$platform"
+
+    # run if platform = kind #TODO
+    - name: Create k8s Kind Cluster
+      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+      uses: helm/kind-action@v1.1.0
+      with:
+        node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
+        cluster_name: ${{ matrix.k8s }}
+
+    - name: Setup Go
+      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.15.6'
+
+    - name: Install MongoCLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mongocli
+        mongocli --version
+
+    - name: Run e2e test
+      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+      env:
+        MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+        MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+        MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+        MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+        K8s_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
+        K8s_VERSION: "${{ steps.properties.outputs.k8s_version }}"
+        TEST_NAME: "${{ matrix.test }}"
+      run: |
+        kubectl version
+
+        go version
+        go get github.com/onsi/ginkgo/ginkgo && \
+        go get github.com/onsi/gomega/...
+        ginkgo ./test/e2e -x -focus "${TEST_NAME}"
