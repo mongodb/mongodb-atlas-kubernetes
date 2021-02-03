@@ -7,17 +7,18 @@ import (
 	"net/http"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("AtlasCluster", func() {
@@ -28,6 +29,7 @@ var _ = Describe("AtlasCluster", func() {
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
+		lastGeneration   int
 	)
 
 	BeforeEach(func() {
@@ -39,6 +41,9 @@ var _ = Describe("AtlasCluster", func() {
 				GenerateName: "test",
 			},
 		}
+
+		lastGeneration = 0
+
 		By("Creating the namespace " + namespace.Name)
 		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
@@ -80,17 +85,38 @@ var _ = Describe("AtlasCluster", func() {
 	})
 
 	doCommonChecks := func() {
-		Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
-		Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
-		Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
-		Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
-		Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
-		Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-		Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
-			status.TrueCondition(status.ClusterReadyType),
-			status.TrueCondition(status.ReadyType),
-		)))
-		Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+		By("Checking observed Cluster state", func() {
+			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
+			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
+			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
+			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
+				status.TrueCondition(status.ClusterReadyType),
+				status.TrueCondition(status.ReadyType),
+			)))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
+			lastGeneration++
+		})
+
+		By("Verifying Cluster state in Atlas", func() {
+			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			createdAtlasCluster, err := createdCluster.Spec.Cluster()
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
+			print(createdCluster.Labels)
+			print(createdAtlasCluster.Labels)
+			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
+			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
+			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
+			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
+			Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
+		})
 	}
 
 	performUpdate := func() {
@@ -116,16 +142,6 @@ var _ = Describe("AtlasCluster", func() {
 					1200, interval).Should(BeTrue())
 
 				doCommonChecks()
-
-				// Atlas
-				atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-				Expect(err).ToNot(HaveOccurred())
-
-				// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
-				Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
-				Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
-				Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
-				Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
 			})
 
 			// TODO check connectivity to cluster
@@ -148,23 +164,6 @@ var _ = Describe("AtlasCluster", func() {
 			By("Increasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
 				performUpdate()
-			})
-
-			By("Verifying Cluster state in Atlas", func() {
-				atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-				Expect(err).ToNot(HaveOccurred())
-
-				createdAtlasCluster, err := createdCluster.Spec.Cluster()
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-				print(createdCluster.Labels)
-				print(createdAtlasCluster.Labels)
-				Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
-				Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
-				Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
-				Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
-				Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
 			})
 		})
 	})
