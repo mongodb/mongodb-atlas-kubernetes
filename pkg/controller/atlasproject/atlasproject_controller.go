@@ -54,6 +54,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+	if project.ConnectionSecretObjectKey() != nil {
+		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", *project.ConnectionSecretObjectKey())
+		// TODO CLOUDP-80516: the "global" connection secret also needs to be watched
+	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)

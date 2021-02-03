@@ -17,6 +17,8 @@ type ResourceWatcher struct {
 	WatchedResources map[WatchedObject][]client.ObjectKey
 }
 
+// EnsureResourcesAreWatched registers a dependant for the watched objects.
+// This will let the controller to react on the events for the watched objects and trigger reconciliation for dependants.
 func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, resourceKind string, watchedObjectsKeys ...client.ObjectKey) {
 	for _, watchedObjectKey := range watchedObjectsKeys {
 		r.addWatchedResourceIfNotAdded(watchedObjectKey, resourceKind, dependant)
