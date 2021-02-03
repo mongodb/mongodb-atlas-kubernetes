@@ -44,7 +44,7 @@ var _ = Describe("AtlasCluster", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
 
-		createdProject = testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+		createdProject = testAtlasProject(namespace.Name, "test project", namespace.Name, connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),

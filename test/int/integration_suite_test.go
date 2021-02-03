@@ -28,6 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -167,9 +168,10 @@ func prepareControllers() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client:      k8sManager.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain: "https://cloud-qa.mongodb.com",
+		Client:          k8sManager.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		ResourceWatcher: watch.NewResourceWatcher(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

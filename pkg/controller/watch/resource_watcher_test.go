@@ -5,6 +5,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -15,8 +16,8 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		project2 := kube.ObjectKey("test", "project2")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
 
-		watcher.EnsureResourcesAreWatched(project1, "Secret", connectionSecret)
-		watcher.EnsureResourcesAreWatched(project2, "Secret", connectionSecret)
+		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret)
+		watcher.EnsureResourcesAreWatched(project2, "Secret", zap.S(), connectionSecret)
 
 		expectedWatched := map[WatchedObject][]client.ObjectKey{
 			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}: {project1, project2}}
@@ -28,7 +29,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
 		connectionSecret2 := kube.ObjectKey("test", "connectionSecret2")
 
-		watcher.EnsureResourcesAreWatched(project1, "Secret", connectionSecret, connectionSecret2)
+		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret, connectionSecret2)
 
 		expectedWatched := map[WatchedObject][]client.ObjectKey{
 			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}:  {project1},
@@ -44,11 +45,11 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		connectionSecret2 := kube.ObjectKey("test", "connectionSecret2")
 		connectionSecret3 := kube.ObjectKey("test", "connectionSecret3")
 
-		watcher.EnsureResourcesAreWatched(project1, "Secret", connectionSecret, connectionSecret2)
-		watcher.EnsureResourcesAreWatched(project2, "Secret", connectionSecret, connectionSecret2)
+		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret, connectionSecret2)
+		watcher.EnsureResourcesAreWatched(project2, "Secret", zap.S(), connectionSecret, connectionSecret2)
 
 		// The second secret is not watched any more
-		watcher.EnsureResourcesAreWatched(project1, "Secret", connectionSecret, connectionSecret3)
+		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret, connectionSecret3)
 
 		// We expect that the watching state stays consistent and the project 1 doesn't watch secret2 anymore
 

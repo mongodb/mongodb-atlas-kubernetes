@@ -18,7 +18,7 @@ import (
 func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is not handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
-		handler := ResourcesHandler{TrackedResources: make(map[WatchedObject][]types.NamespacedName)}
+		handler := NewSecretHandler(make(map[WatchedObject][]types.NamespacedName))
 		createEvent := event.CreateEvent{Meta: secret, Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
@@ -28,7 +28,7 @@ func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
 		dependentResourceKey := kube.ObjectKey("ns", "testAtlasProject")
-		handler := ResourcesHandler{TrackedResources: watchedResourcesMap(secret, dependentResourceKey)}
+		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
 
 		createEvent := event.CreateEvent{Meta: secret, Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
@@ -51,7 +51,7 @@ func TestHandleUpdate(t *testing.T) {
 		oldSecret := secretForTesting("testSecret")
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
-		handler := ResourcesHandler{TrackedResources: watchedResourcesMap(watchedSecret, dependentResourceKey)}
+		handler := NewSecretHandler(watchedResourcesMap(watchedSecret, dependentResourceKey))
 		updateEvent := event.UpdateEvent{MetaOld: oldSecret, ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
@@ -69,7 +69,7 @@ func TestHandleUpdate(t *testing.T) {
 		watchedResources := make(map[WatchedObject][]types.NamespacedName)
 		watchedObject := WatchedObject{ResourceKind: secret.Kind, Resource: kube.ObjectKeyFromObject(secret)}
 		watchedResources[watchedObject] = []types.NamespacedName{dependentResourceKey}
-		handler := ResourcesHandler{TrackedResources: watchedResources}
+		handler := NewSecretHandler(watchedResources)
 
 		updateEvent := event.UpdateEvent{MetaOld: oldSecret, ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
