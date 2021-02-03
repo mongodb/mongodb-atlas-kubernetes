@@ -88,7 +88,9 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
 			lastGeneration++
 		})
+	}
 
+	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.Cluster)) {
 		By("Verifying Cluster state in Atlas", func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
@@ -101,7 +103,10 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
-			Expect(atlasCluster.ProviderBackupEnabled).To(Equal(createdAtlasCluster.ProviderBackupEnabled))
+
+			for _, check := range additionalChecks {
+				check(atlasCluster)
+			}
 		})
 	}
 
@@ -126,6 +131,7 @@ var _ = Describe("AtlasCluster", func() {
 					1800, interval).Should(BeTrue())
 
 				doCommonChecks()
+				checkAtlasState()
 			})
 
 			// TODO check connectivity to cluster
@@ -133,16 +139,26 @@ var _ = Describe("AtlasCluster", func() {
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
 				performUpdate()
+				checkAtlasState()
 			})
 
 			By("Updating the Cluster backups settings", func() {
 				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
 				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
+				})
 			})
 
 			By("Decreasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
 				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdCluster.Spec.DiskSizeGB))
+
+					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+				})
 			})
 		})
 	})
@@ -240,6 +256,10 @@ func removeAtlasProject(projectID string) func() bool {
 
 func intptr(i int) *int {
 	return &i
+}
+
+func float64ptr(f float64) *float64 {
+	return &f
 }
 
 func boolptr(b bool) *bool {
