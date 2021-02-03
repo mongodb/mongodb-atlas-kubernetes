@@ -46,11 +46,11 @@ var _ = Describe("AtlasCluster", func() {
 			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 		}
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
-		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
 		createdProject = testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
-		Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 			10, interval).Should(BeTrue())
 	})
@@ -97,9 +97,7 @@ var _ = Describe("AtlasCluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-			print(createdCluster.Labels)
-			print(createdAtlasCluster.Labels)
-			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
+			Expect(atlasCluster.Labels).To(ConsistOf(createdAtlasCluster.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
