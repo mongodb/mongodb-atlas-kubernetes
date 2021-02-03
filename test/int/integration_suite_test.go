@@ -17,6 +17,8 @@ limitations under the License.
 package int
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -29,18 +31,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes/scheme"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
+	ctrl "sigs.k8s.io/controller-runtime"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -48,12 +51,18 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cfg         *rest.Config
+	// This variable is "global" - as is visible only on the first ginkgo node
+	testEnv *envtest.Environment
+
+	// These variables are initialized once per each node
 	k8sClient   client.Client
-	testEnv     *envtest.Environment
-	k8sManager  ctrl.Manager
 	atlasClient *mongodbatlas.Client
 	connection  atlas.Connection
+
+	// These variables are per each test and are changed by each BeforeRun
+	namespace           corev1.Namespace
+	cfg                 *rest.Config
+	managerCloseChannel chan struct{}
 )
 
 func TestAPIs(t *testing.T) {
@@ -64,59 +73,48 @@ func TestAPIs(t *testing.T) {
 		[]Reporter{printer.NewlineReporter{}})
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
-
-	ctrl.SetLogger(zapr.NewLogger(logger))
-
+// SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
+// http://onsi.github.io/ginkgo/#parallel-specs
+// The first function starts the envtest (done only once by the 1st node). The second function is called on each of
+// the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
+var _ = SynchronizedBeforeSuite(func() []byte {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
 
-	atlasClient, connection = prepareAtlasClient()
-
-	var err error
-	cfg, err = testEnv.Start()
+	cfg, err := testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = mdbv1.AddToScheme(scheme.Scheme)
+	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
+	return []byte(cfg.Host)
+}, func(data []byte) {
+	// This is the host that was serialized on the 1st node by the function above.
+	host := string(data)
+	// copied from Environment.Start()
+	cfg = &rest.Config{
+		Host: host,
+		// gotta go fast during tests -- we don't really care about overwhelming our test API server
+		QPS:   1000.0,
+		Burst: 2000.0,
+	}
+
+	err := mdbv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	// +kubebuilder:scaffold:scheme
-
-	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
-	})
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasproject.AtlasProjectReconciler{
-		Client:      k8sManager.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain: "https://cloud-qa.mongodb.com",
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlascluster.AtlasClusterReconciler{
-		Client:      k8sManager.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain: "https://cloud-qa.mongodb.com",
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	go func() {
-		err = k8sManager.Start(ctrl.SetupSignalHandler())
-		Expect(err).ToNot(HaveOccurred())
-	}()
-
-	k8sClient = k8sManager.GetClient()
+	// It's recommended to construct the client directly for tests
+	// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
 
-	close(done)
-}, 60)
+	atlasClient, connection = prepareAtlasClient()
+})
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
+
+}, func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
@@ -138,4 +136,65 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 		PublicKey:  publicKey,
 		PrivateKey: privateKey,
 	}
+}
+
+// prepareControllers is a common function used by all the tests that creates the namespace and registers all the
+// reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
+func prepareControllers() {
+	err := mdbv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	namespace = corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test",
+			// TODO name namespace by the name of the project and include the creation date/time to perform GC
+			GenerateName: "test",
+		},
+	}
+	By("Creating the namespace " + namespace.Name)
+	Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
+
+	// +kubebuilder:scaffold:scheme
+	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
+
+	ctrl.SetLogger(zapr.NewLogger(logger))
+
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:             scheme.Scheme,
+		Namespace:          namespace.Name,
+		MetricsBindAddress: "0",
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasproject.AtlasProjectReconciler{
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlascluster.AtlasClusterReconciler{
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Starting controllers")
+
+	managerCloseChannel = make(chan struct{})
+
+	go func() {
+		err = k8sManager.Start(managerCloseChannel)
+		Expect(err).ToNot(HaveOccurred())
+	}()
+}
+
+func removeControllersAndNamespace() {
+	// end the manager
+	managerCloseChannel <- struct{}{}
+
+	By("Removing the namespace " + namespace.Name)
+	err := k8sClient.Delete(context.Background(), &namespace)
+	Expect(err).ToNot(HaveOccurred())
 }
