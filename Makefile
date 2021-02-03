@@ -72,7 +72,7 @@ vet: ## Run go vet against code
 	go vet ./...
 
 .PHONY: lint
-lint: golangci-lint ## Run go vet against code
+lint: golangci-lint ## Run golangci-lint against code
 	golangci-lint run
 
 .PHONY: generate
