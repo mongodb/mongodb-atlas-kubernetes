@@ -59,9 +59,10 @@ func GetProjectID(name string) string {
 
 func GetClustersInfo(projectID string, name string) mongodbatlas.Cluster {
 	session := Execute("mongocli", "atlas", "clusters", "describe", name, "--projectId", projectID, "-o", "json")
-	output := session.Wait("1m").Out.Contents()
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	output := session.Out.Contents()
 	var cluster mongodbatlas.Cluster
-	Expect(json.Unmarshal(output, &cluster)).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, json.Unmarshal(output, &cluster)).ShouldNot(HaveOccurred())
 	return cluster
 }
 

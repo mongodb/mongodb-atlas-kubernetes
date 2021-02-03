@@ -61,7 +61,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("1"))
 		Eventually(
 			cli.IsProjectExist(userProjectConfig.Spec.Name),
-			"5m", "3s",
+			"7m", "10s",
 		).Should(BeTrue())
 
 		projectID := cli.GetProjectID(userProjectConfig.Spec.Name)
@@ -98,7 +98,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(
 			cli.GetClusterStatus(projectID, userClusterConfig.Spec.Name),
-			"35m", "1m",
+			"50m", "1m", //max time 35 ??
 		).Should(Equal("IDLE"))
 
 		uCluster := cli.GetClustersInfo(projectID, userClusterConfig.Spec.Name)
