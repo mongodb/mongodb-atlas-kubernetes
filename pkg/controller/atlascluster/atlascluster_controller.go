@@ -21,15 +21,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"

@@ -3,14 +3,15 @@ package customresource
 import (
 	"context"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.

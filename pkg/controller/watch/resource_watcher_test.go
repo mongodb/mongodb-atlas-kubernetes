@@ -3,10 +3,11 @@ package watch
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 func TestEnsureResourcesAreWatched(t *testing.T) {

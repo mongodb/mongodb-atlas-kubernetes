@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
 
 func Test_EnsureCondition(t *testing.T) {

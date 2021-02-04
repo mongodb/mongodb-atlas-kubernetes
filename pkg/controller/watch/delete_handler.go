@@ -1,12 +1,13 @@
 package watch
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 type AtlasResourceEventHandler struct {

@@ -42,6 +42,7 @@ func TestHandleCreate(t *testing.T) {
 		assert.Equal(t, reconcile.Request{NamespacedName: dependentResourceKey}, enqueued)
 	})
 }
+
 func TestHandleUpdate(t *testing.T) {
 	t.Run("Update event is not handled", func(t *testing.T) {
 		// Update event is not handled as the Secret that triggered the update event is not a watched one

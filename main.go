@@ -21,10 +21,6 @@ import (
 	"os"
 
 	"github.com/go-logr/zapr"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -32,6 +28,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	// +kubebuilder:scaffold:imports
 )
 
