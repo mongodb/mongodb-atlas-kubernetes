@@ -1,9 +1,10 @@
 package statushandler
 
 import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Update performs the update (in the form of patch) for the Atlas Custom Resource status.
