@@ -28,12 +28,15 @@ var _ = Describe("AtlasCluster", func() {
 		connectionSecret corev1.Secret
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
+		lastGeneration   int64
 	)
 
 	BeforeEach(func() {
 		prepareControllers()
 
 		createdCluster = &mdbv1.AtlasCluster{}
+
+		lastGeneration = 0
 
 		connectionSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -43,11 +46,11 @@ var _ = Describe("AtlasCluster", func() {
 			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 		}
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
-		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
 		createdProject = testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
-		Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 			10, interval).Should(BeTrue())
 	})
@@ -69,72 +72,94 @@ var _ = Describe("AtlasCluster", func() {
 		removeControllersAndNamespace()
 	})
 
-	Describe("Create/Update the cluster", func() {
-		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
-
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)))
-
-			createdCluster.ObjectMeta = expectedCluster.ObjectMeta
-			Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
-
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-				1800, interval).Should(BeTrue())
-
+	doCommonChecks := func() {
+		By("Checking observed Cluster state", func() {
 			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
 			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
 			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
 			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
 			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-
-			expectedConditionsMatchers := testutil.MatchConditions(
+			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.ClusterReadyType),
 				status.TrueCondition(status.ReadyType),
-			)
-			Expect(createdCluster.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			)))
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
+			lastGeneration++
+		})
+	}
 
-			// Atlas
+	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.Cluster)) {
+		By("Verifying Cluster state in Atlas", func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Unfortunately we cannot do global checks on cluster/providerSettings fields as Atlas adds default values
-			Expect(atlasCluster.Name).To(Equal(expectedCluster.Spec.Name))
-			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(expectedCluster.Spec.ProviderSettings.InstanceSizeName))
-			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(expectedCluster.Spec.ProviderSettings.ProviderName))
-			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(expectedCluster.Spec.ProviderSettings.RegionName))
-
-			// TODO check connectivity to cluster
-
-			By("Updating the Cluster")
-			createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
-			Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
-				1200, interval).Should(BeTrue())
-
-			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.Standard).NotTo(BeNil())
-			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoDBVersion).NotTo(BeNil())
-			Expect(createdCluster.Status.MongoURIUpdated).NotTo(BeNil())
-			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-			Expect(createdCluster.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
-
-			// Atlas
-			atlasCluster, _, err = atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
 			createdAtlasCluster, err := createdCluster.Spec.Cluster()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasCluster.Name).To(Equal(createdAtlasCluster.Name))
-			Expect(atlasCluster.Labels).To(Equal(createdAtlasCluster.Labels))
+			Expect(atlasCluster.Labels).To(ConsistOf(createdAtlasCluster.Labels))
 			Expect(atlasCluster.ProviderSettings.InstanceSizeName).To(Equal(createdAtlasCluster.ProviderSettings.InstanceSizeName))
 			Expect(atlasCluster.ProviderSettings.ProviderName).To(Equal(createdAtlasCluster.ProviderSettings.ProviderName))
 			Expect(atlasCluster.ProviderSettings.RegionName).To(Equal(createdAtlasCluster.ProviderSettings.RegionName))
+
+			for _, check := range additionalChecks {
+				check(atlasCluster)
+			}
+		})
+	}
+
+	performUpdate := func() {
+		Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+		Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
+			1200, interval).Should(BeTrue())
+
+		doCommonChecks()
+	}
+
+	Describe("Create/Update the cluster", func() {
+		It("Should Succeed", func() {
+			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+
+			// TODO check connectivity to cluster
+
+			By("Updating the Cluster labels", func() {
+				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
+				performUpdate()
+				checkAtlasState()
+			})
+
+			By("Updating the Cluster backups settings", func() {
+				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
+				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
+				})
+			})
+
+			By("Decreasing the Cluster disk size", func() {
+				createdCluster.Spec.DiskSizeGB = intptr(10)
+				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdCluster.Spec.DiskSizeGB))
+
+					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+				})
+			})
 		})
 	})
 })
@@ -161,6 +186,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		}
 	}
 }
+
 func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 	isIdle := true
 	return func(a mdbv1.AtlasCustomResource) {
@@ -226,4 +252,16 @@ func removeAtlasProject(projectID string) func() bool {
 		}
 		return true
 	}
+}
+
+func intptr(i int) *int {
+	return &i
+}
+
+func float64ptr(f float64) *float64 {
+	return &f
+}
+
+func boolptr(b bool) *bool {
+	return &b
 }
