@@ -3,7 +3,6 @@ package watch
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 func TestHandleCreate(t *testing.T) {
@@ -42,6 +43,7 @@ func TestHandleCreate(t *testing.T) {
 		assert.Equal(t, reconcile.Request{NamespacedName: dependentResourceKey}, enqueued)
 	})
 }
+
 func TestHandleUpdate(t *testing.T) {
 	t.Run("Update event is not handled", func(t *testing.T) {
 		// Update event is not handled as the Secret that triggered the update event is not a watched one

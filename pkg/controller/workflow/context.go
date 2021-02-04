@@ -1,9 +1,10 @@
 package workflow
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.

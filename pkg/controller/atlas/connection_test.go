@@ -3,8 +3,9 @@ package atlas
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 func Test_validateConnectionSecret(t *testing.T) {
