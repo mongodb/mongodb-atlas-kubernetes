@@ -2,19 +2,18 @@ package watch
 
 import (
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func NewResourceWatcher() ResourceWatcher {
 	return ResourceWatcher{
-		WatchedResources: map[WatchedObject][]client.ObjectKey{},
+		WatchedResources: map[WatchedObject]map[client.ObjectKey]bool{},
 	}
 }
 
 // ResourceWatcher is the object containing the map of watched_resource -> []dependant_resource.
 type ResourceWatcher struct {
-	WatchedResources map[WatchedObject][]client.ObjectKey
+	WatchedResources map[WatchedObject]map[client.ObjectKey]bool
 }
 
 // EnsureResourcesAreWatched registers a dependant for the watched objects.
@@ -32,41 +31,27 @@ func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, r
 func (r *ResourceWatcher) addWatchedResourceIfNotAdded(watchedObjectKey client.ObjectKey, resourceKind string, dependentResourceNsName client.ObjectKey, log *zap.SugaredLogger) {
 	key := WatchedObject{ResourceKind: resourceKind, Resource: watchedObjectKey}
 	if _, ok := r.WatchedResources[key]; !ok {
-		r.WatchedResources[key] = make([]types.NamespacedName, 0)
+		r.WatchedResources[key] = make(map[client.ObjectKey]bool)
 	}
-	found := false
-	for _, v := range r.WatchedResources[key] {
-		if v == dependentResourceNsName {
-			found = true
-		}
-	}
-	if !found {
-		r.WatchedResources[key] = append(r.WatchedResources[key], dependentResourceNsName)
+	if _, ok := r.WatchedResources[key][dependentResourceNsName]; !ok {
 		log.Debugf("Watching %s to trigger reconciliation for %s", key, dependentResourceNsName)
 	}
+	r.WatchedResources[key][dependentResourceNsName] = true
 }
 
 func (r ResourceWatcher) cleanNonWatchedResources(dependant client.ObjectKey, resourceKind string, watchedKeys []client.ObjectKey) {
 	for k, v := range r.WatchedResources {
-		if pos(watchedKeys, k.Resource) < 0 || k.ResourceKind != resourceKind {
-			var dependantPos int
-			if dependantPos = pos(v, dependant); dependantPos >= 0 {
-				// we found the old dependency (not watched any more) so we need to remove it
-				r.WatchedResources[k] = remove(r.WatchedResources[k], dependantPos)
-			}
+		if !contains(watchedKeys, k.Resource) || k.ResourceKind != resourceKind {
+			delete(v, dependant)
 		}
 	}
 }
 
-func pos(watchedKeys []client.ObjectKey, key client.ObjectKey) int {
-	for i, k := range watchedKeys {
+func contains(watchedKeys []client.ObjectKey, key client.ObjectKey) bool {
+	for _, k := range watchedKeys {
 		if k == key {
-			return i
+			return true
 		}
 	}
-	return -1
-}
-
-func remove(slice []client.ObjectKey, s int) []client.ObjectKey {
-	return append(slice[:s], slice[s+1:]...)
+	return false
 }

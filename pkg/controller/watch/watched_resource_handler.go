@@ -29,10 +29,10 @@ func (w WatchedObject) String() string {
 // on each reconciliation
 type ResourcesHandler struct {
 	ResourceKind     string
-	TrackedResources map[WatchedObject][]client.ObjectKey
+	TrackedResources map[WatchedObject]map[client.ObjectKey]bool
 }
 
-func NewSecretHandler(tracked map[WatchedObject][]client.ObjectKey) *ResourcesHandler {
+func NewSecretHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "Secret", TrackedResources: tracked}
 }
 
@@ -69,9 +69,9 @@ func (c *ResourcesHandler) doHandle(namespace, name, kind string, q workqueue.Ra
 		ResourceKind: kind,
 		Resource:     types.NamespacedName{Name: name, Namespace: namespace},
 	}
-	for _, v := range c.TrackedResources[watchedResource] {
-		zap.S().Infof("%s has been modified -> triggering reconciliation for the %s", watchedResource, v)
-		q.Add(reconcile.Request{NamespacedName: v})
+	for k := range c.TrackedResources[watchedResource] {
+		zap.S().Infof("%s has been modified -> triggering reconciliation for the %s", watchedResource, k)
+		q.Add(reconcile.Request{NamespacedName: k})
 	}
 }
 

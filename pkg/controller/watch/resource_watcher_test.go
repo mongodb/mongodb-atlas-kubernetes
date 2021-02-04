@@ -19,8 +19,8 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret)
 		watcher.EnsureResourcesAreWatched(project2, "Secret", zap.S(), connectionSecret)
 
-		expectedWatched := map[WatchedObject][]client.ObjectKey{
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}: {project1, project2}}
+		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}: {project1: true, project2: true}}
 		assert.Equal(t, expectedWatched, watcher.WatchedResources)
 	})
 	t.Run("One resource watches two secrets", func(t *testing.T) {
@@ -31,9 +31,9 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 
 		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret, connectionSecret2)
 
-		expectedWatched := map[WatchedObject][]client.ObjectKey{
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}:  {project1},
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret2}: {project1},
+		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}:  {project1: true},
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret2}: {project1: true},
 		}
 		assert.Equal(t, expectedWatched, watcher.WatchedResources)
 	})
@@ -53,10 +53,10 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 
 		// We expect that the watching state stays consistent and the project 1 doesn't watch secret2 anymore
 
-		expectedWatched := map[WatchedObject][]client.ObjectKey{
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}:  {project1, project2},
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret2}: {project2},
-			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret3}: {project1},
+		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret}:  {project1: true, project2: true},
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret2}: {project2: true},
+			WatchedObject{ResourceKind: "Secret", Resource: connectionSecret3}: {project1: true},
 		}
 		assert.Equal(t, expectedWatched, watcher.WatchedResources)
 	})

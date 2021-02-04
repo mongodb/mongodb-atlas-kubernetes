@@ -3,22 +3,22 @@ package watch
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is not handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
-		handler := NewSecretHandler(make(map[WatchedObject][]types.NamespacedName))
+		handler := NewSecretHandler(make(map[WatchedObject]map[client.ObjectKey]bool))
 		createEvent := event.CreateEvent{Meta: secret, Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
@@ -66,10 +66,7 @@ func TestHandleUpdate(t *testing.T) {
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
 
-		watchedResources := make(map[WatchedObject][]types.NamespacedName)
-		watchedObject := WatchedObject{ResourceKind: secret.Kind, Resource: kube.ObjectKeyFromObject(secret)}
-		watchedResources[watchedObject] = []types.NamespacedName{dependentResourceKey}
-		handler := NewSecretHandler(watchedResources)
+		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
 
 		updateEvent := event.UpdateEvent{MetaOld: oldSecret, ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
@@ -114,9 +111,9 @@ func secretForTesting(name string) *corev1.Secret {
 	}
 }
 
-func watchedResourcesMap(watched *corev1.Secret, dependent client.ObjectKey) map[WatchedObject][]types.NamespacedName {
-	watchedResources := make(map[WatchedObject][]types.NamespacedName)
+func watchedResourcesMap(watched *corev1.Secret, dependent client.ObjectKey) map[WatchedObject]map[client.ObjectKey]bool {
+	watchedResources := make(map[WatchedObject]map[client.ObjectKey]bool)
 	watchedObject := WatchedObject{ResourceKind: watched.GetObjectKind().GroupVersionKind().Kind, Resource: kube.ObjectKeyFromObject(watched)}
-	watchedResources[watchedObject] = []types.NamespacedName{dependent}
+	watchedResources[watchedObject] = map[client.ObjectKey]bool{dependent: true}
 	return watchedResources
 }
