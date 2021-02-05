@@ -73,7 +73,7 @@ func (d *ResourceEventHandler) Update(e event.UpdateEvent, _ workqueue.RateLimit
 	)
 
 	if err := ctrl.Update(e); err != nil {
-		log.Errorf("Object (%s -> %s) updated in Kubernetes, but controller could not update it: %s", e.ObjectOld.GetObjectKind(), e.ObjectOld.GetObjectKind(), err)
+		log.Errorf("Object (%s -> %s) updated in Kubernetes, but controller could not update it: %s", e.ObjectOld.GetObjectKind(), e.ObjectNew.GetObjectKind(), err)
 		return
 	}
 }
