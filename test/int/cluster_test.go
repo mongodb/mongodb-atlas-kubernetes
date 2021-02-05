@@ -184,8 +184,19 @@ var _ = Describe("AtlasCluster", func() {
 				createdCluster.Spec.Paused = boolptr(false)
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterFailingFunc()),
-					1200, interval).Should(BeTrue())
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
+						validateClusterFailingFunc(),
+					),
+					1200,
+					interval,
+				).Should(BeTrue())
+			})
 			})
 		})
 	})
