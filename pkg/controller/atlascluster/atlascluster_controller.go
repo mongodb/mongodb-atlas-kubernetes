@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -45,6 +46,8 @@ type AtlasClusterReconciler struct {
 	Scheme      *runtime.Scheme
 	AtlasDomain string
 }
+
+var _ watch.Deleter = &AtlasClusterReconciler{}
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
@@ -108,16 +111,16 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(watch.CommonPredicates()).
 		Watches(
 			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&watch.DeleteEventHandler{Controller: r},
+			&watch.ResourceEventHandler{Controller: r},
 		).
 		Complete(r)
 }
 
 // Delete implements a handler for the Delete event.
-func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
-	cluster, ok := obj.(*mdbv1.AtlasCluster)
+func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
+	cluster, ok := e.Object.(*mdbv1.AtlasCluster)
 	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, e.Object)
 		return nil
 	}
 

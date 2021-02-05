@@ -27,6 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -47,6 +48,8 @@ type AtlasProjectReconciler struct {
 	Scheme      *runtime.Scheme
 	AtlasDomain string
 }
+
+var _ watch.Deleter = &AtlasProjectReconciler{}
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
@@ -98,10 +101,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	return ctrl.Result{}, nil
 }
 
-func (r *AtlasProjectReconciler) Delete(obj runtime.Object) error {
-	project, ok := obj.(*mdbv1.AtlasProject)
+func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
+	project, ok := e.Object.(*mdbv1.AtlasProject)
 	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasProject{}, e.Object)
 		return nil
 	}
 
@@ -136,7 +139,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasProject
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.DeleteEventHandler{Controller: r}, watch.CommonPredicates())
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.ResourceEventHandler{Controller: r}, watch.CommonPredicates())
 	if err != nil {
 		return err
 	}
