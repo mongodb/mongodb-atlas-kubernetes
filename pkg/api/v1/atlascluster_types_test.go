@@ -35,9 +35,6 @@ func init() {
 
 	// CLOUDP-80765
 	excludedClusterFieldsTheirs["paused"] = true
-
-	// TODO why not included?
-	excludedClusterFieldsTheirs["autoIndexingEnabled"] = true
 }
 
 func TestCompatibility(t *testing.T) {
