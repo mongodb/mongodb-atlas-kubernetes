@@ -182,7 +182,7 @@ var _ = Describe("AtlasProject", func() {
 		})
 	})
 
-	FDescribe("Creating the project IP access list", func() {
+	Describe("Creating the project IP access list", func() {
 		It("Should Succeed", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
