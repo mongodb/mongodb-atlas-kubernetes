@@ -140,8 +140,8 @@ var _ = Describe("AtlasProject", func() {
 		AfterEach(func() {
 			if secondProject != nil && secondProject.Status.ID != "" {
 				By("Removing (second) Atlas Project " + secondProject.Status.ID)
-				_, err := atlasClient.Projects.Delete(context.Background(), secondProject.Status.ID)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
+				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 600, interval).Should(BeTrue())
 			}
 		})
 		It("Should Succeed", func() {
