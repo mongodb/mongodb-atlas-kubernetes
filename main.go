@@ -32,6 +32,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -81,10 +82,11 @@ func main() {
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:      mgr.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:      mgr.GetScheme(),
-		AtlasDomain: config.AtlasDomain,
+		Client:          mgr.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
