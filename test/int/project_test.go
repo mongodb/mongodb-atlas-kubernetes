@@ -134,6 +134,19 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 	})
+
+	FDescribe("Creating the project IP access list", func() {
+		It("Should Succeed", func() {
+			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+				20, interval).Should(BeTrue())
+		})
+	})
+
 })
 
 // TODO builders

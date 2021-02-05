@@ -17,10 +17,12 @@ limitations under the License.
 package v1
 
 import (
+	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -94,6 +96,19 @@ type ProjectIPAccessList struct {
 	// Entry using an IP address in this access list entry.
 	// +optional
 	IPAddress string `json:"ipAddress,omitempty"`
+}
+
+// ToAtlas converts the ProjectIPAccessList to native Atlas client format.
+func (i *ProjectIPAccessList) ToAtlas() (mongodbatlas.ProjectIPAccessList, error) {
+	result := mongodbatlas.ProjectIPAccessList{}
+	err := compat.JSONCopy(result, i)
+	return result, err
+}
+
+// Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
+// fields - the business layer must validate this beforehand
+func (i ProjectIPAccessList) Identifier() interface{} {
+	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
 func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
