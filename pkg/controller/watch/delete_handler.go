@@ -11,11 +11,12 @@ import (
 )
 
 type DeleteEventHandler struct {
-	*handler.EnqueueRequestForObject
 	Controller interface {
 		Delete(runtime.Object) error
 	}
 }
+
+var _ handler.EventHandler = &DeleteEventHandler{}
 
 func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
 	objectKey := kube.ObjectKey(e.Meta.GetNamespace(), e.Meta.GetName())
@@ -26,3 +27,7 @@ func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitin
 		return
 	}
 }
+
+func (d *DeleteEventHandler) Create(event.CreateEvent, workqueue.RateLimitingInterface)   {}
+func (d *DeleteEventHandler) Update(event.UpdateEvent, workqueue.RateLimitingInterface)   {}
+func (d *DeleteEventHandler) Generic(event.GenericEvent, workqueue.RateLimitingInterface) {}
