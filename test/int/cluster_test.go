@@ -160,6 +160,30 @@ var _ = Describe("AtlasCluster", func() {
 					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
+
+			By("Pausing the Cluster", func() {
+				createdCluster.Spec.Paused = boolptr(true)
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.Internal)),
+						validateClusterFailingFunc(),
+					),
+					1200,
+					interval,
+				).Should(BeTrue())
+			})
+
+			By("Unpausing the Cluster", func() {
+				createdCluster.Spec.Paused = boolptr(false)
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterFailingFunc()),
+					1200, interval).Should(BeTrue())
+			})
 		})
 	})
 })
@@ -204,6 +228,28 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}
+	}
+}
+
+func validateClusterFailingFunc() func(a mdbv1.AtlasCustomResource) {
+	isIdle := true
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasCluster)
+		// It's ok if the first invocations see IDLE
+		if c.Status.StateName != "IDLE" {
+			isIdle = false
+		}
+
+		// When the create request has been made to Atlas - we expect the following status
+		if isIdle {
+			return
+		}
+
+		expectedConditionsMatchers := testutil.MatchConditions(
+			status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas)).WithMessage("cluster is updating"),
+			status.FalseCondition(status.ReadyType),
+		)
+		Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
 }
 
