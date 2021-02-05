@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -139,7 +140,13 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasProject
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.ResourceEventHandler{Controller: r}, watch.CommonPredicates())
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &handler.EnqueueRequestForObject{}, watch.CommonPredicates())
+	if err != nil {
+		return err
+	}
+
+	// Watch for our custom event handlers (Delete)
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.ResourceEventHandler{Controller: r})
 	if err != nil {
 		return err
 	}
