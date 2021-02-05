@@ -12,7 +12,8 @@ const (
 
 // Atlas Project reasons
 const (
-	ProjectNotCreatedInAtlas ConditionReason = "ProjectNotCreatedInAtlas"
+	ProjectNotCreatedInAtlas    ConditionReason = "ProjectNotCreatedInAtlas"
+	ProjectIPAccessBadFormatted ConditionReason = "ProjectIpAccessListBadFormatted"
 )
 
 // Atlas Cluster reasons
