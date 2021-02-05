@@ -109,7 +109,7 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(watch.CommonPredicates()).
 		Watches(
 			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&watch.DeleteEventHandler{Controller: r},
+			&watch.AtlasResourceEventHandler{Controller: r},
 			builder.WithPredicates(watch.DeleteOnly()),
 		).
 		Complete(r)
