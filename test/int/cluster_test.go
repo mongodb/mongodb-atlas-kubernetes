@@ -190,13 +190,12 @@ var _ = Describe("AtlasCluster", func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
+							WithReason(string(workflow.ClusterNotCreatedInAtlas)),
 						validateClusterFailingFunc(),
 					),
 					1200,
 					interval,
 				).Should(BeTrue())
-			})
 			})
 		})
 	})
