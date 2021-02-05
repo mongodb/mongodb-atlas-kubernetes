@@ -1,12 +1,9 @@
 # Triggered by Pull Request or Manually (from GitHub UI) events
+# TODO remove after removing scripts/e2e_local.sh
 
 name: Publish image to Registry
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:

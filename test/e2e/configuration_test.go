@@ -5,25 +5,43 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	// . "github.com/onsi/ginkgo/extensions/table"
 	"github.com/pborman/uuid"
 
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("Deploy simple cluster", func() {
 
+
+
 	It("Release sample all-in-one.yaml should work", func() {
-		By("Prepare namespaces")
-		namespaceUserResources := "e2e-" + uuid.NewRandom().String() // TODO
+		By("Prepare namespaces and project configuration") // TODO clusters/keys will be a bit later
+		id := uuid.NewRandom().String()
+		// TODO move it
+		namespaceUserResources := "e2e-" + id
 		namespaceOperator := "mongodb-atlas-kubernetes-system"
+		keyName := "my-atlas-key"
+		pName := id
+		k8sProjectName := "k-" + id
+		ProjectSampleFile := "data/"+pName+".yaml"
+		ClusterSampleFile := "data/atlascluster_basic.yaml" // TODO put it to dataprovider
+		GinkgoWriter.Write([]byte(namespaceUserResources))
 		session := cli.Execute("kubectl", "create", "namespace", namespaceUserResources)
-		Expect(session).ShouldNot(Say("created"))
-		session = cli.Execute("kubectl", "create", "namespace", namespaceOperator)
-		Expect(session).ShouldNot(Say("created"))
-		userProjectConfig := cli.LoadUserProjectConfig("data/atlasproject.yaml")
-		userClusterConfig := cli.LoadUserClusterConfig("data/atlascluster_basic.yaml")
+		Expect(session.Wait()).Should(Say("created"))
+
+		project := utils.NewProject().ProjectName(pName).SecretRef(keyName).CompleteK8sConfig(k8sProjectName)
+		utils.SaveToFile(ProjectSampleFile, project)
+
+		userProjectConfig := cli.LoadUserProjectConfig(ProjectSampleFile)
+		userClusterConfig := cli.LoadUserClusterConfig(ClusterSampleFile)
+		userClusterConfig.Spec.Project.Name = k8sProjectName
+		clusterData, _ := utils.JSONToYAMLConvert(userClusterConfig)
+		utils.SaveToFile(ClusterSampleFile, clusterData)
 
 		By("Check Kubernetes/MongoCLI version\n")
 		session = cli.Execute("kubectl", "version")
@@ -40,7 +58,6 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(Equal("Running"))
 
 		By("Create secret")
-
 		session = cli.Execute("kubectl", "create", "secret", "generic", "my-atlas-key",
 			"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 			"--from-literal=publicApiKey="+os.Getenv("MCLI_PUBLIC_API_KEY"),
@@ -50,14 +67,15 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("my-atlas-key created"))
 
 		By("Create Sample Project\n")
-		session = cli.Execute("kubectl", "apply", "-f", ProjectSample, "-n", namespaceUserResources)
-		Eventually(session.Wait()).Should(Say("atlasproject.atlas.mongodb.com/my-project"))
+		session = cli.Execute("kubectl", "apply", "-f", ProjectSampleFile, "-n", namespaceUserResources)
+		Eventually(session.Wait()).Should(Say("atlasproject.atlas.mongodb.com/"+k8sProjectName + " created"))
 
 		By("Sample Cluster\n")
 		session = cli.Execute("kubectl", "apply", "-f", ClusterSample, "-n", namespaceUserResources)
-		Eventually(session.Wait()).Should(Say("atlascluster-sample created"))
+		Eventually(session.Wait()).Should(Say("created"))
 
 		By("Wait creating and check that it was created")
+		Eventually(cli.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName))
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("1"))
 		Eventually(
 			cli.IsProjectExist(userProjectConfig.Spec.Name),
@@ -66,7 +84,6 @@ var _ = Describe("Deploy simple cluster", func() {
 
 		projectID := cli.GetProjectID(userProjectConfig.Spec.Name)
 		GinkgoWriter.Write([]byte("projectID = " + projectID))
-
 		Eventually(
 			cli.IsClusterExist(projectID, userClusterConfig.Spec.Name),
 			"5m", "1s",
@@ -90,11 +107,15 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(Equal(userClusterConfig.Spec.ProviderSettings.RegionName))
 
 		By("Update cluster\n")
-		session = cli.Execute("kubectl", "apply", "-f", "data/updated_atlascluster_basic.yaml", "-n", namespaceUserResources) // TODO param
+		// userClusterConfig := cli.LoadUserClusterConfig(ClusterSampleFile)
+		userClusterConfig.Spec.ProviderSettings.InstanceSizeName = "M20"
+		clusterData, _ = utils.JSONToYAMLConvert(userClusterConfig)
+		utils.SaveToFile(ClusterSampleFile, clusterData)
+
+		session = cli.Execute("kubectl", "apply", "-f", ClusterSampleFile, "-n", namespaceUserResources) // TODO param
 		Eventually(session.Wait()).Should(Say("atlascluster-sample configured"))
 
 		By("Wait creation")
-		userClusterConfig = cli.LoadUserClusterConfig("data/updated_atlascluster_basic.yaml")
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(
 			cli.GetClusterStatus(projectID, userClusterConfig.Spec.Name),
@@ -115,6 +136,7 @@ var _ = Describe("Deploy simple cluster", func() {
 			cli.IsClusterExist(projectID, userClusterConfig.Spec.Name),
 			"10m", "1m",
 		).Should(BeFalse())
+
 
 		// By("Delete project") // TODO
 		// session = cli.Execute("kubectl", "delete", "-f", "data/atlasproject.yaml", "-n", namespaceUserResources)

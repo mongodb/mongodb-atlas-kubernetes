@@ -2,12 +2,14 @@ package utils
 
 import (
 	"encoding/json"
+
 	"io/ioutil"
 	"log"
 	"path/filepath"
 
+	"gopkg.in/yaml.v3"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"gopkg.in/yaml.v2"
 )
 
 // LoadUserProjectConfig load configuration into object
@@ -18,10 +20,25 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 }
 
 // LoadUserClusterConfig load configuration into object
-func LoadUserClusterConfig(path string) *v1.AtlasCluster {
-	var config v1.AtlasCluster
+func LoadUserClusterConfig(path string) AC {
+	var config AC
 	ReadInYAMLFileAndConvert(path, &config)
-	return &config
+	return config
+}
+
+func SaveToFile(path string, data []byte) {
+	ioutil.WriteFile(path, data, 0777)
+}
+
+
+func JSONToYAMLConvert(cnfg interface{}) ([]byte, error) {
+	var jsonI interface{}
+	j, _ := json.Marshal(cnfg)
+	err := yaml.Unmarshal(j, &jsonI)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(jsonI)
 }
 
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given

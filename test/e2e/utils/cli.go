@@ -119,3 +119,11 @@ func GetGeneration(nc string) func() string {
 		return string(session.Wait("1m").Out.Contents())
 	}
 }
+
+// GetStatus TODO move
+func GetStatus(nc string, atlasname string) func() string {
+	return func() string {
+		session := Execute("kubectl", "get", "atlascluster.atlas.mongodb.com/"+atlasname, "-n", nc, "-o", "{.status.conditions[?(@.type=='Ready')].status}")
+		return string(session.Wait("1m").Out.Contents())
+	}
+}

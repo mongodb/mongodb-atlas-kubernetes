@@ -41,7 +41,7 @@ int-test: generate manifests ## Run integration tests
 	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo -v -p -nodes=4 ./test/int -coverprofile cover.out
 
 .PHONY: e2e
-e2e:
+e2e: run-kind
 	./scripts/e2e_local.sh
 
 .PHONY: manager

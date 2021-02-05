@@ -46,7 +46,7 @@ jobs:
 
   prepare-e2e:
     name: Prepare E2E configuration and image
-    needs: [unit-test, int-test]
+    needs: [unit-test]
     runs-on: ubuntu-latest
     steps:
 
@@ -136,3 +136,6 @@ jobs:
         go get github.com/onsi/ginkgo/ginkgo && \
         go get github.com/onsi/gomega/...
         ginkgo ./test/e2e -x -focus "${TEST_NAME}"
+
+
+# TODO if int test failed - stop e2e, add job for cleanup Atlas projects/clusters
