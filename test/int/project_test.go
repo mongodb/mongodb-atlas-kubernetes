@@ -47,8 +47,8 @@ var _ = Describe("AtlasProject", func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})

@@ -2,7 +2,6 @@ package int
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,7 +14,6 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
@@ -60,14 +58,12 @@ var _ = Describe("AtlasCluster", func() {
 			if createdCluster != nil {
 				By("Removing Atlas Cluster " + createdCluster.Name)
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
 			}
+
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			// This is a bit strange but the delete request right after the cluster is removed may fail with "Still active cluster" error
-			// UI shows the cluster being deleted though. Seems to be the issue only if removal is done using API,
-			// if the cluster is terminated using UI - it stays in "Deleting" state
-			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -241,16 +237,16 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 	}
 }
 
-func removeAtlasProject(projectID string) func() bool {
+// checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
+func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
 		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue())
-			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
-			return false
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return true
+			}
 		}
-		return true
+		return false
 	}
 }
 
