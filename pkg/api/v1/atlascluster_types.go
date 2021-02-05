@@ -84,6 +84,9 @@ type AtlasClusterSpec struct {
 	// +optional
 	NumShards *int `json:"numShards,omitempty"`
 
+	// Flag that indicates whether the cluster should be paused.
+	Paused *bool `json:"paused,omitempty"`
+
 	// Flag that indicates the cluster uses continuous cloud backups.
 	// +optional
 	PitEnabled *bool `json:"pitEnabled,omitempty"`
