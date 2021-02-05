@@ -169,7 +169,10 @@ var _ = Describe("AtlasCluster", func() {
 					testutil.WaitFor(
 						k8sClient,
 						createdCluster,
-						status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.Internal)),
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
+							WithMessage(`\(request \\"CANNOT_UPDATE_AND_PAUSE_CLUSTER\\"\) Cannot update and pause cluster test-atlas-cluster at the same time\.$`),
 						validateClusterFailingFunc(),
 					),
 					1200,
