@@ -99,8 +99,8 @@ type ProjectIPAccessList struct {
 }
 
 // ToAtlas converts the ProjectIPAccessList to native Atlas client format.
-func (i *ProjectIPAccessList) ToAtlas() (mongodbatlas.ProjectIPAccessList, error) {
-	result := mongodbatlas.ProjectIPAccessList{}
+func (i ProjectIPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
+	result := &mongodbatlas.ProjectIPAccessList{}
 	err := compat.JSONCopy(result, i)
 	return result, err
 }

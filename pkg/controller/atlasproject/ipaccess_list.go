@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -16,6 +15,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
+// atlasProjectIPAccessList is a synonym of Atlas object as we need to implement 'Identifier' (and we cannot modify
+// their object)
 type atlasProjectIPAccessList mongodbatlas.ProjectIPAccessList
 
 func (i atlasProjectIPAccessList) Identifier() interface{} {
@@ -26,10 +27,8 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
-	active, expired, result := filterActiveIPAccessLists(project)
-	if !result.IsOk() {
-		return result
-	}
+	active, _ := filterActiveIPAccessLists(project)
+
 	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -37,7 +36,7 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if result := createOrDeleteInAtlas(client, projectID, active, ctx.Log); !result.IsOk() {
 		return result
 	}
-	fmt.Println(active, expired, ctx, connection)
+	// TODO update status - add the expired project IP access list there
 	return workflow.OK()
 }
 
@@ -58,29 +57,37 @@ func validateIPAccessLists(ipAccessList []mdbv1.ProjectIPAccessList) error {
 	return nil
 }
 
-func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, ipAccessLists []mdbv1.ProjectIPAccessList, log *zap.SugaredLogger) workflow.Result {
-	atlasAccessLists, _, err := client.ProjectIPAccessList.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operatorIPAccessLists []mdbv1.ProjectIPAccessList, log *zap.SugaredLogger) workflow.Result {
+	atlasAccess, _, err := client.ProjectIPAccessList.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
 	}
-	atlasAccess := make([]atlasProjectIPAccessList, len(atlasAccessLists.Results))
-	for i, r := range atlasAccessLists.Results {
-		atlasAccess[i] = atlasProjectIPAccessList(r)
+	// Making a new slice with synonyms as Atlas IP Access list to enable usage of 'Identifiable'
+	atlasAccessLists := make([]atlasProjectIPAccessList, len(atlasAccess.Results))
+	for i, r := range atlasAccess.Results {
+		atlasAccessLists[i] = atlasProjectIPAccessList(r)
 	}
 
+	difference := set.Difference(atlasAccessLists, operatorIPAccessLists)
+
+	if err := deleteIPAccessFromAtlas(client, projectID, difference, log); err != nil {
+		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
+	}
+
+	if result := createIPAccessListsInAtlas(client, projectID, operatorIPAccessLists); !result.IsOk() {
+		return result
+	}
+	return workflow.OK()
+}
+
+func createIPAccessListsInAtlas(client *mongodbatlas.Client, projectID string, ipAccessLists []mdbv1.ProjectIPAccessList) workflow.Result {
 	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
 	for i, list := range ipAccessLists {
 		atlasFormat, err := list.ToAtlas()
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
-		operatorAccessLists[i] = &atlasFormat
-	}
-
-	difference := set.Difference(atlasAccess, operatorAccessLists)
-
-	if err := deleteIPAccessFromAtlas(client, projectID, difference, log); err != nil {
-		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
+		operatorAccessLists[i] = atlasFormat
 	}
 
 	if _, _, err := client.ProjectIPAccessList.Create(context.Background(), projectID, operatorAccessLists); err != nil {
@@ -99,16 +106,13 @@ func deleteIPAccessFromAtlas(client *mongodbatlas.Client, projectID string, list
 	return nil
 }
 
-func filterActiveIPAccessLists(project *mdbv1.AtlasProject) ([]mdbv1.ProjectIPAccessList, []mdbv1.ProjectIPAccessList, workflow.Result) {
+func filterActiveIPAccessLists(project *mdbv1.AtlasProject) ([]mdbv1.ProjectIPAccessList, []mdbv1.ProjectIPAccessList) {
 	active := make([]mdbv1.ProjectIPAccessList, 0)
 	expired := make([]mdbv1.ProjectIPAccessList, 0)
 	for _, list := range project.Spec.ProjectIPAccessList {
 		if list.DeleteAfterDate != "" {
-			iso8601, err := timeutil.ParseISO8601(list.DeleteAfterDate)
-			if err != nil {
-				// Bad formatting done by user
-				return active, expired, workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
-			}
+			// We are ignoring the error as it will never happen due to validation check before
+			iso8601, _ := timeutil.ParseISO8601(list.DeleteAfterDate)
 			if iso8601.Before(time.Now()) {
 				expired = append(expired, list)
 				continue
@@ -117,7 +121,7 @@ func filterActiveIPAccessLists(project *mdbv1.AtlasProject) ([]mdbv1.ProjectIPAc
 		// Either 'deleteAfterDate' field is not specified or it's higher than the current time
 		active = append(active, list)
 	}
-	return active, expired, workflow.OK()
+	return active, expired
 }
 
 func isNotEmpty(s string) bool {
