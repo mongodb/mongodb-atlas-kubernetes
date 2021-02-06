@@ -182,10 +182,10 @@ var _ = Describe("AtlasProject", func() {
 		})
 	})
 
-	Describe("Creating the project IP access list", func() {
+	FDescribe("Creating the project IP access list", func() {
 		It("Should Succeed", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15", DeleteAfterDate: "2021-02-07"}}
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
