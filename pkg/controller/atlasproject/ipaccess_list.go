@@ -42,17 +42,24 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 
 func validateIPAccessLists(ipAccessList []mdbv1.ProjectIPAccessList) error {
 	for _, list := range ipAccessList {
-		if list.DeleteAfterDate != "" {
-			_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
-			if err != nil {
-				return err
-			}
+		if err := validateSingleIPAccessList(list); err != nil {
+			return err
 		}
-		// Go doesn't support XOR, but uses '!=' instead: https://stackoverflow.com/a/23025720/614239
-		onlyOneSpecified := isNotEmpty(list.AwsSecurityGroup) != isNotEmpty(list.CIDRBlock) != isNotEmpty(list.IPAddress)
-		if !onlyOneSpecified {
-			return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
+	}
+	return nil
+}
+
+func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
+	if list.DeleteAfterDate != "" {
+		_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
+		if err != nil {
+			return err
 		}
+	}
+	// Go doesn't support XOR, but uses '!=' instead: https://stackoverflow.com/a/23025720/614239
+	onlyOneSpecified := isNotEmpty(list.AwsSecurityGroup) != isNotEmpty(list.CIDRBlock) != isNotEmpty(list.IPAddress)
+	if !onlyOneSpecified {
+		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
 	}
 	return nil
 }
