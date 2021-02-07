@@ -98,17 +98,9 @@ type ProjectIPAccessList struct {
 	IPAddress string `json:"ipAddress,omitempty"`
 }
 
-// ToAtlas converts the ProjectIPAccessList to native Atlas client format.
-func (i ProjectIPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
-	result := &mongodbatlas.ProjectIPAccessList{}
-	err := compat.JSONCopy(result, i)
-	return result, err
-}
-
-// Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
-// fields - the business layer must validate this beforehand
-func (i ProjectIPAccessList) Identifier() interface{} {
-	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
+// ID is just a shortcut for ID from the status
+func (p AtlasProject) ID() string {
+	return p.Status.ID
 }
 
 func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
@@ -132,4 +124,17 @@ func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...st
 		v := o.(status.AtlasProjectStatusOption)
 		v(&p.Status)
 	}
+}
+
+// ToAtlas converts the ProjectIPAccessList to native Atlas client format.
+func (i ProjectIPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
+	result := &mongodbatlas.ProjectIPAccessList{}
+	err := compat.JSONCopy(result, i)
+	return result, err
+}
+
+// Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
+// fields - the business layer must validate this beforehand
+func (i ProjectIPAccessList) Identifier() interface{} {
+	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }

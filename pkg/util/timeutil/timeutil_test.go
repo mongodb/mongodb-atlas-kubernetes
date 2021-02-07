@@ -13,6 +13,7 @@ func TestParseISO8601(t *testing.T) {
 		{name: "Correct Date (long timezone)", dateTime: "2020-11-02T20:04:05-0700", wantErr: false},
 		{name: "Correct Date (short timezone)", dateTime: "2016-12-02T20:04:05-07", wantErr: false},
 		{name: "Correct Date (timezone with dot)", dateTime: "2021-11-30T15:04:05+08:00", wantErr: false},
+		{name: "Correct Date (UTC)", dateTime: "2021-02-07T21:39:31Z", wantErr: false},
 		{name: "Correct Date (no timezone)", dateTime: "2021-11-30T15:04:05", wantErr: false},
 		{name: "Correct Date (no time)", dateTime: "2021-11-30", wantErr: false},
 		{name: "Incorrect Date (date)", dateTime: "2021/11/30T15:04:05", wantErr: true},
