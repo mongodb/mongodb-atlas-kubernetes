@@ -234,7 +234,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(list.Results).To(HaveLen(2))
 			Expect(list.Results).To(ContainElements(testutil.BuildMatchersFromExpected(expectedProject.Spec.ProjectIPAccessList)))
 		})
-		FIt("Should Fail (AWS security group not supported without VPC)", func() {
+		It("Should Fail (AWS security group not supported without VPC)", func() {
 			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{AwsSecurityGroup: "sg-0026348ec11780bd1"}}
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
