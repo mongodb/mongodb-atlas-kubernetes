@@ -21,9 +21,13 @@ func ParseISO8601(dateTime string) (time.Time, error) {
 	if err == nil {
 		return parse, nil
 	}
-	// Note, that the full format is intentionally left as the last one as it will be included into the error, shown
-	// to the user, so let's show the full ISO8601
 	parse, err = time.Parse("2006-01-02T15:04:05-0700", dateTime)
+	if err == nil {
+		return parse, nil
+	}
+	// This is the default format as returned by Atlas (UTC time - marked by 'Z') - so let's show this in the error
+	// if any
+	parse, err = time.Parse("2006-01-02T15:04:05.999Z", dateTime)
 	if err == nil {
 		return parse, nil
 	}
