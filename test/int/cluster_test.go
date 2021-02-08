@@ -237,11 +237,9 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
-				By(fmt.Sprintf("checkAtlasClusterRemoved: cluster doesn't exist! (%s)", time.Now()))
 				return true
 			}
 		}
-		By(fmt.Sprintf("checkAtlasClusterRemoved: cluster exists (%s)", time.Now()))
 
 		return false
 	}
