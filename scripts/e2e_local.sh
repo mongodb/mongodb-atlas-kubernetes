@@ -9,7 +9,7 @@ image=$(grep "DOCKER_REPO" .actrc | cut -d "=" -f 2):$(git rev-parse --abbrev-re
 export MCLI_OPS_MANAGER_URL="https://cloud-qa.mongodb.com/"
 export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
-export MCLI_ORG_ID=org_id="${org_id}"
+export MCLI_ORG_ID="${org_id}"
 export INPUT_IMAGE_URL="${image}"
 export INPUT_ENV=dev
 

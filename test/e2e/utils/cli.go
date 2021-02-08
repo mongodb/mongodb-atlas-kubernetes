@@ -42,7 +42,7 @@ func GetProjects() mongodbatlas.Projects {
 	session := Execute("mongocli", "iam", "projects", "list", "-o", "json")
 	output := session.Wait("1m").Out.Contents()
 	var projects mongodbatlas.Projects
-	ExpectWithOffset(1, json.Unmarshal(output, &projects)).ShouldNot(HaveOccurred())
+	json.Unmarshal(output, &projects)
 	return projects
 }
 
