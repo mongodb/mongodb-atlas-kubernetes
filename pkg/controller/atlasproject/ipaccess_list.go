@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
@@ -34,7 +35,7 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
-	active, _ := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
+	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
 	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
 	if err != nil {
@@ -43,7 +44,12 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if result := createOrDeleteInAtlas(client, projectID, active, ctx.Log); !result.IsOk() {
 		return result
 	}
-	// TODO update status - add the expired project IP access list there
+	// TODO remove after the circular dependency is solved
+	expiredCopy := make([]status.ProjectIPAccessList, len(expired))
+	for i, list := range expired {
+		expiredCopy[i] = status.ProjectIPAccessList(list)
+	}
+	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredCopy))
 	return workflow.OK()
 }
 
