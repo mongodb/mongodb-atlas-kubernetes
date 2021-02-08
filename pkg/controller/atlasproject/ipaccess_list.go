@@ -59,9 +59,9 @@ func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
 			return err
 		}
 	}
-	// Go doesn't support XOR, but uses '!=' instead: https://stackoverflow.com/a/23025720/614239
 	onlyOneSpecified := isNotEmpty(list.AwsSecurityGroup) != isNotEmpty(list.CIDRBlock) != isNotEmpty(list.IPAddress)
-	if !onlyOneSpecified {
+	allSpecified := isNotEmpty(list.AwsSecurityGroup) && isNotEmpty(list.CIDRBlock) && isNotEmpty(list.IPAddress)
+	if !onlyOneSpecified || allSpecified {
 		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
 	}
 	return nil

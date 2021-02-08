@@ -26,6 +26,7 @@ func TestValidateSingleIPAccessList(t *testing.T) {
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2011-01-02T15:04:05", IPAddress: "192.158.0.0", CIDRBlock: "203.0.113.0/24"}, errorExpectedRegex: "only one of the "},
 		{in: mdbv1.ProjectIPAccessList{IPAddress: "192.158.0.0", AwsSecurityGroup: "sg-0026348ec11780bd1"}, errorExpectedRegex: "only one of the "},
 		{in: mdbv1.ProjectIPAccessList{CIDRBlock: "203.0.113.0/24", AwsSecurityGroup: "sg-0026348ec11780bd1"}, errorExpectedRegex: "only one of the "},
+		{in: mdbv1.ProjectIPAccessList{CIDRBlock: "203.0.113.0/24", AwsSecurityGroup: "sg-0026348ec11780bd1", IPAddress: "192.158.0.0"}, errorExpectedRegex: "only one of the "},
 		{in: mdbv1.ProjectIPAccessList{}, errorExpectedRegex: "only one of the "},
 	}
 
