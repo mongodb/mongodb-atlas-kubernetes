@@ -17,7 +17,7 @@ func TestValidateSingleIPAccessList(t *testing.T) {
 		// Date
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "incorrect", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2020/01/02T15:04:05-0700", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
-		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2020-01-02T15:04:05-07000", IPAddress: "192.158.0.0"}, errorExpectedRegex: `extra text: "0"`},
+		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2020-01-02T15:04:05-07000", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2020-11-02T20:04:05-0700", IPAddress: "192.158.0.0"}},
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2020-11-02T20:04:05+03", IPAddress: "192.158.0.0"}},
 		{in: mdbv1.ProjectIPAccessList{DeleteAfterDate: "2011-01-02T15:04:05", IPAddress: "192.158.0.0"}},
