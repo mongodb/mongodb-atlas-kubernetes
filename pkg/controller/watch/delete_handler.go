@@ -10,14 +10,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
-type DeleteEventHandler struct {
+type AtlasResourceEventHandler struct {
 	*handler.EnqueueRequestForObject
 	Controller interface {
 		Delete(runtime.Object) error
 	}
 }
 
-func (d *DeleteEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
+func (d *AtlasResourceEventHandler) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
 	objectKey := kube.ObjectKey(e.Meta.GetNamespace(), e.Meta.GetName())
 	log := zap.S().With("resource", objectKey)
 

@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -27,7 +28,12 @@ func (w WatchedObject) String() string {
 // done via consulting the 'TrackedResources' map. The map is stored in relevant Reconciler which ensures it's up-to-date
 // on each reconciliation
 type ResourcesHandler struct {
-	TrackedResources map[WatchedObject][]types.NamespacedName
+	ResourceKind     string
+	TrackedResources map[WatchedObject]map[client.ObjectKey]bool
+}
+
+func NewSecretHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "Secret", TrackedResources: tracked}
 }
 
 // Create handles the Create event for the resource.
@@ -41,7 +47,9 @@ func (c *ResourcesHandler) Update(e event.UpdateEvent, q workqueue.RateLimitingI
 	if !shouldHandleUpdate(e) {
 		return
 	}
-	c.doHandle(e.MetaOld.GetNamespace(), e.MetaOld.GetName(), e.ObjectOld.GetObjectKind().GroupVersionKind().Kind, q)
+	// For some reasons e.ObjectOld.GetObjectKind().GroupVersionKind().Kind is empty... that's why we have to keep the
+	// resourceKind as a field in the handler...
+	c.doHandle(e.MetaOld.GetNamespace(), e.MetaOld.GetName(), c.ResourceKind, q)
 }
 
 // shouldHandleUpdate return true if the update event must be handled. This should happen only if the real data has
@@ -61,9 +69,9 @@ func (c *ResourcesHandler) doHandle(namespace, name, kind string, q workqueue.Ra
 		ResourceKind: kind,
 		Resource:     types.NamespacedName{Name: name, Namespace: namespace},
 	}
-	for _, v := range c.TrackedResources[watchedResource] {
-		zap.S().Infof("%s has been modified -> triggering reconciliation for the %s", watchedResource, v)
-		q.Add(reconcile.Request{NamespacedName: v})
+	for k := range c.TrackedResources[watchedResource] {
+		zap.S().Infof("%s has been modified -> triggering reconciliation for the %s", watchedResource, k)
+		q.Add(reconcile.Request{NamespacedName: k})
 	}
 }
 

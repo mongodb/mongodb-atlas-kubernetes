@@ -34,15 +34,17 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	// +kubebuilder:scaffold:imports
 )
@@ -166,9 +168,10 @@ func prepareControllers() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client:      k8sManager.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain: "https://cloud-qa.mongodb.com",
+		Client:          k8sManager.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		ResourceWatcher: watch.NewResourceWatcher(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

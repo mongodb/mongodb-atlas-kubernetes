@@ -55,7 +55,7 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -65,7 +65,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ID).NotTo(BeNil())
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -78,7 +78,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := testAtlasProject(namespace.Name, namespace.Name, "non-existent-secret")
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -109,7 +109,7 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -134,17 +134,77 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 	})
+
+	Describe("Two projects watching the Connection Secret", func() {
+		var secondProject *mdbv1.AtlasProject
+		AfterEach(func() {
+			if secondProject != nil && secondProject.Status.ID != "" {
+				By("Removing (second) Atlas Project " + secondProject.Status.ID)
+				_, err := atlasClient.Projects.Delete(context.Background(), secondProject.Status.ID)
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+		It("Should Succeed", func() {
+			By("Creating two projects first", func() {
+				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+				secondProject = testAtlasProject(namespace.Name, "second-project", "second Project", connectionSecret.Name)
+				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+
+				Eventually(testutil.WaitFor(k8sClient, secondProject, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+			})
+			By("Breaking the Connection Secret", func() {
+				connectionSecret.StringData["publicApiKey"] = "non-existing"
+				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
+
+				// Both projects are expected to get to Failed state right away
+				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
+				Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
+					20, interval).Should(BeTrue())
+				Eventually(testutil.WaitFor(k8sClient, secondProject, expectedCondition),
+					20, interval).Should(BeTrue())
+			})
+			By("Fixing the Connection Secret", func() {
+				connectionSecret.StringData["publicApiKey"] = connection.PublicKey
+				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
+
+				// Both projects are expected to recover
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+				Eventually(testutil.WaitFor(k8sClient, secondProject, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+			})
+		})
+	})
+
+	Describe("Creating the project IP access list", func() {
+		It("Should Succeed", func() {
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+				20, interval).Should(BeTrue())
+		})
+	})
+
 })
 
 // TODO builders
-func testAtlasProject(namespace, name, connectionSecretName string) *mdbv1.AtlasProject {
+func testAtlasProject(namespace, name, atlasName, connectionSecretName string) *mdbv1.AtlasProject {
 	return &mdbv1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-project",
+			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             name,
+			Name:             atlasName,
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
 	}
