@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-var _ = FDescribe("AtlasProject", func() {
+var _ = Describe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -59,6 +59,14 @@ var _ = FDescribe("AtlasProject", func() {
 
 		Expect(list.Results).To(HaveLen(len(createdProject.Spec.ProjectIPAccessList)))
 		Expect(list.Results[0]).To(testutil.MatchIPAccessList(createdProject.Spec.ProjectIPAccessList[0]))
+	}
+
+	checkExpiredAccessLists := func(lists []mdbv1.ProjectIPAccessList) {
+		expiredCopy := make([]status.ProjectIPAccessList, len(lists))
+		for i, list := range lists {
+			expiredCopy[i] = status.ProjectIPAccessList(list)
+		}
+		Expect(createdProject.Status.ExpiredIPAccessList).To(Equal(expiredCopy))
 	}
 
 	checkAtlasProjectIsReady := func() {
@@ -204,6 +212,7 @@ var _ = FDescribe("AtlasProject", func() {
 				20, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
+			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 			checkIPAccessListInAtlas()
 		})
 		It("Should Succeed (multiple)", func() {
@@ -220,7 +229,31 @@ var _ = FDescribe("AtlasProject", func() {
 				20, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
+			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 			checkIPAccessListInAtlas()
+		})
+		It("Should Succeed (1 expired)", func() {
+			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			tenHoursBefore := time.Now().Add(time.Hour * -10).Format("2006-01-02T15:04:05+0200")
+
+			expiredList := mdbv1.ProjectIPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
+			activeList := mdbv1.ProjectIPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
+			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{expiredList, activeList}
+
+			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
+				20, interval).Should(BeTrue())
+
+			checkAtlasProjectIsReady()
+			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{expiredList})
+
+			// Atlas
+			list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(list.Results).To(HaveLen(1))
+			Expect(list.Results[0]).To(testutil.MatchIPAccessList(activeList))
 		})
 		It("Should Fail (AWS security group not supported without VPC)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
@@ -240,6 +273,7 @@ var _ = FDescribe("AtlasProject", func() {
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 		})
 	})
 	Describe("Updating the project IP access list", func() {
@@ -263,6 +297,7 @@ var _ = FDescribe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
+				checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 				checkIPAccessListInAtlas()
 			})
 		})
@@ -292,6 +327,7 @@ var _ = FDescribe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
+				checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 				checkIPAccessListInAtlas()
 			})
 		})
