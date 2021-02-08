@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -20,6 +21,12 @@ import (
 type atlasProjectIPAccessList mongodbatlas.ProjectIPAccessList
 
 func (i atlasProjectIPAccessList) Identifier() interface{} {
+	// hack: Atlas adds the CIDRBlock in case IPAddress is specified in the response.
+	// This breaks the contract (one field per List) and doesn't allow to "merge" lists.
+	// So we ignore the CIDRblock in this case.
+	if i.CIDRBlock != "" && i.IPAddress != "" && strings.HasPrefix(i.CIDRBlock, i.IPAddress) {
+		return i.AwsSecurityGroup + i.IPAddress
+	}
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
