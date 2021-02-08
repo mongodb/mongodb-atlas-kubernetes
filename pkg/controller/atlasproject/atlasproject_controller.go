@@ -17,20 +17,21 @@ limitations under the License.
 package atlasproject
 
 import (
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
@@ -53,6 +54,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	result := customresource.PrepareResource(r.Client, req, project, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
+	}
+	if project.ConnectionSecretObjectKey() != nil {
+		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", log, *project.ConnectionSecretObjectKey())
+		// TODO CLOUDP-80516: the "global" connection secret also needs to be watched
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
 
@@ -94,18 +99,21 @@ func (r *AtlasProjectReconciler) Delete(obj runtime.Object) error {
 }
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		// Listen to all kiinds
-		For(&mdbv1.AtlasProject{}).
-		Watches(
-			&source.Kind{Type: &mdbv1.AtlasProject{}},
-			&watch.DeleteEventHandler{Controller: r},
-			builder.WithPredicates(watch.DeleteOnly()),
-		).
-		Watches(
-			&source.Kind{Type: &corev1.Secret{}},
-			&watch.ResourcesHandler{TrackedResources: r.WatchedResources},
-		).
-		WithEventFilter(watch.CommonPredicates()).
-		Complete(r)
+	c, err := controller.New("AtlasProject", mgr, controller.Options{Reconciler: r})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to primary resource MongoDbReplicaSet
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.AtlasResourceEventHandler{Controller: r}, watch.CommonPredicates())
+	if err != nil {
+		return err
+	}
+
+	// Watch for Connection Secrets
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
+	if err != nil {
+		return err
+	}
+	return nil
 }

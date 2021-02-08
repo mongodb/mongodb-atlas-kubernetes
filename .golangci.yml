@@ -16,6 +16,7 @@ linters:
     - gosec
     - gosimple
     - govet
+    - gofmt
     - ineffassign
     - misspell
     - nolintlint
@@ -35,6 +36,8 @@ linters:
 linters-settings:
   misspell:
     locale: US
+  goimports:
+    local-prefixes: github.com/mongodb/mongodb-atlas-kubernetes
 
 issues:
   exclude-use-default: false

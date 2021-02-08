@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 )
 
 // TODO proper version passed on compile time
