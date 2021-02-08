@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ const (
 	EventuallyTimeout   = 60 * time.Second
 	ConsistentlyTimeout = 1 * time.Second
 	// TODO data provider?
-	ConfigAll     = "../../deploy/all-in-one.yaml" // basic configuration (release)
+	ConfigAll     = "../../deploy/" // Released generated files
 	ProjectSample = "data/atlasproject.yaml"
 	ClusterSample = "data/atlascluster_basic.yaml"
 )
@@ -30,25 +29,12 @@ func TestE2e(t *testing.T) {
 	RunSpecs(t, "E2e Suite")
 }
 
-var _ = SynchronizedBeforeSuite(func() []byte {
-	GinkgoWriter.Write([]byte("==============================Global FIRST Node Synchronized Before Each==============================\n"))
-	GinkgoWriter.Write([]byte("SetUp Global Timeout\n"))
+var _ = BeforeSuite(func() {
+	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
 	checkUpMongoCLI()
-	GinkgoWriter.Write([]byte("==============================End of Global FIRST Node Synchronized Before Each=======================\n"))
-	return nil
-}, func(_ []byte) {
-	GinkgoWriter.Write([]byte(fmt.Sprintf("==============================Global Node %d Synchronized Before Each==============================\n", GinkgoParallelNode())))
-	if GinkgoParallelNode() != 1 {
-		Fail("Please Test suite cannot run in parallel") // TODO prepare configurations for parallel
-	}
-	GinkgoWriter.Write([]byte(fmt.Sprintf("==============================End of Global Node %d Synchronized Before Each========================\n", GinkgoParallelNode())))
-})
-
-var _ = BeforeEach(func() {
-	GinkgoWriter.Write([]byte("==============================Global Before Each==============================\n"))
-	GinkgoWriter.Write([]byte("========================End of Global Before Each==============================\n"))
+	GinkgoWriter.Write([]byte("========================End of Before==============================\n"))
 })
 
 // setUpMongoCLI initial setup

@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -65,35 +66,34 @@ func GetClustersInfo(projectID string, name string) mongodbatlas.Cluster {
 	return cluster
 }
 
-func IsProjectExist(name string) func() bool {
-	return func() bool {
-		projects := GetProjects().Results
-		for _, p := range projects {
-			if p.Name == name {
-				return true
-			}
-		}
-		return false
-	}
+func DeleteCluster(projectID, clusterName string) *Buffer {
+	session := Execute("mongocli", "atlas", "cluster", "delete", clusterName, "--projectId", projectID, "--force")
+	return session.Wait().Out
 }
 
-func IsClusterExist(projectID string, name string) func() bool {
-	return func() bool {
-		clusters := GetClusters(projectID)
-		// if clusters
-		for _, c := range clusters {
-			GinkgoWriter.Write([]byte(c.Name + name + "\n"))
-			if c.Name == name {
-				return true
-			}
+func IsProjectExist(name string) bool {
+	projects := GetProjects().Results
+	for _, p := range projects {
+		if p.Name == name {
+			return true
 		}
-		return false
 	}
+	return false
 }
 
-func GetClusterStatus(projectID string, clusterName string) func() string {
-	return func() string {
-		result := GetClustersInfo(projectID, clusterName)
-		return result.StateName
+func IsClusterExist(projectID string, name string) bool {
+	clusters := GetClusters(projectID)
+	// if clusters
+	for _, c := range clusters {
+		GinkgoWriter.Write([]byte(c.Name + name + "\n"))
+		if c.Name == name {
+			return true
+		}
 	}
+	return false
+}
+
+func GetClusterStateName(projectID string, clusterName string) string {
+	result := GetClustersInfo(projectID, clusterName)
+	return result.StateName
 }
