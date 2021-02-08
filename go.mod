@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/atlas v0.7.1
 	go.uber.org/zap v1.16.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
