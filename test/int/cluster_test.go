@@ -160,6 +160,22 @@ var _ = Describe("AtlasCluster", func() {
 					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
+
+			By("Pausing the cluster", func() {
+				createdCluster.Spec.Paused = boolptr(true)
+				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
+				})
+			})
+
+			By("Unpausing the cluster", func() {
+				createdCluster.Spec.Paused = boolptr(false)
+				performUpdate()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
+				})
+			})
 		})
 	})
 })
