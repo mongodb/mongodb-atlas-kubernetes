@@ -61,9 +61,13 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
 			}
 
+			// TODO: CLOUDP-82115
+			// By("Removing Atlas Project " + createdProject.Status.ID)
+			// Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			// Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
+
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -236,21 +240,6 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 		}
 		By(fmt.Sprintf("checkAtlasClusterRemoved: cluster exists (%s)", time.Now()))
 
-		return false
-	}
-}
-
-// checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
-func checkAtlasProjectRemoved(projectID string) func() bool {
-	return func() bool {
-		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
-		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
-				By(fmt.Sprintf("checkAtlasProjectRemoved: project doesn't exist! (%s)", time.Now()))
-				return true
-			}
-		}
-		By(fmt.Sprintf("checkAtlasProjectRemoved: project exists (%s)", time.Now()))
 		return false
 	}
 }

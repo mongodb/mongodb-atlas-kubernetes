@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -194,5 +195,33 @@ func testAtlasProject(namespace, name, atlasName, connectionSecretName string) *
 			Name:             atlasName,
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
+	}
+}
+
+func removeAtlasProject(projectID string) func() bool {
+	return func() bool {
+		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			Expect(errors.As(err, &apiError)).To(BeTrue())
+			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
+			return false
+		}
+		return true
+	}
+}
+
+// checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
+func checkAtlasProjectRemoved(projectID string) func() bool {
+	return func() bool {
+		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				By(fmt.Sprintf("checkAtlasProjectRemoved: project doesn't exist! (%s)", time.Now()))
+				return true
+			}
+		}
+		By(fmt.Sprintf("checkAtlasProjectRemoved: project exists (%s)", time.Now()))
+		return false
 	}
 }
