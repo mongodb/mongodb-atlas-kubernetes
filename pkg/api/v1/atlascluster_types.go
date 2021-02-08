@@ -17,13 +17,12 @@ limitations under the License.
 package v1
 
 import (
-	"encoding/json"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -240,18 +239,9 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
-	result := mongodbatlas.Cluster{}
-	b, err := json.Marshal(spec)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	result := &mongodbatlas.Cluster{}
+	err := compat.JSONCopy(result, spec)
+	return result, err
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

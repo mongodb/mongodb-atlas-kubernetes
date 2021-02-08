@@ -65,7 +65,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ID).NotTo(BeNil())
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -181,6 +181,19 @@ var _ = Describe("AtlasProject", func() {
 			})
 		})
 	})
+
+	Describe("Creating the project IP access list", func() {
+		It("Should Succeed", func() {
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+				20, interval).Should(BeTrue())
+		})
+	})
+
 })
 
 // TODO builders
