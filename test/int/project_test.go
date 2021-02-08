@@ -65,7 +65,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ID).NotTo(BeNil())
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
