@@ -213,7 +213,7 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		}
 		// When the create request has been made to Atlas - we expect the following status
 		if !isIdle {
-			Expect(c.Status.StateName).To(Equal("UPDATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			Expect(c.Status.StateName).To(Or(Equal("UPDATING"), Equal("REPAIRING")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessage("cluster is updating"),
 				status.FalseCondition(status.ReadyType),
