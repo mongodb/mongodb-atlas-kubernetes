@@ -7,7 +7,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
@@ -27,9 +27,8 @@ func LoadUserClusterConfig(path string) AC {
 }
 
 func SaveToFile(path string, data []byte) {
-	ioutil.WriteFile(path, data, 0777)
+	ioutil.WriteFile(path, data, 0777) //nolint:gosec // kubectl apply (?)
 }
-
 
 func JSONToYAMLConvert(cnfg interface{}) ([]byte, error) {
 	var jsonI interface{}

@@ -6,9 +6,9 @@ import (
 )
 
 type AC struct {
-	metav1.TypeMeta   `json:",inline"`
-	ObjectMeta *metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec ClusterSpec `json:"spec,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec            ClusterSpec        `json:"spec,omitempty"`
 }
 
 type ClusterSpec v1.AtlasClusterSpec

@@ -17,8 +17,6 @@ import (
 
 var _ = Describe("Deploy simple cluster", func() {
 
-
-
 	It("Release sample all-in-one.yaml should work", func() {
 		By("Prepare namespaces and project configuration") // TODO clusters/keys will be a bit later
 		id := uuid.NewRandom().String()
@@ -28,7 +26,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		keyName := "my-atlas-key"
 		pName := id
 		k8sProjectName := "k-" + id
-		ProjectSampleFile := "data/"+pName+".yaml"
+		ProjectSampleFile := "data/" + pName + ".yaml"
 		ClusterSampleFile := "data/atlascluster_basic.yaml" // TODO put it to dataprovider
 		GinkgoWriter.Write([]byte(namespaceUserResources))
 		session := cli.Execute("kubectl", "create", "namespace", namespaceUserResources)
@@ -68,7 +66,7 @@ var _ = Describe("Deploy simple cluster", func() {
 
 		By("Create Sample Project\n")
 		session = cli.Execute("kubectl", "apply", "-f", ProjectSampleFile, "-n", namespaceUserResources)
-		Eventually(session.Wait()).Should(Say("atlasproject.atlas.mongodb.com/"+k8sProjectName + " created"))
+		Eventually(session.Wait()).Should(Say("atlasproject.atlas.mongodb.com/" + k8sProjectName + " created"))
 
 		By("Sample Cluster\n")
 		session = cli.Execute("kubectl", "apply", "-f", ClusterSample, "-n", namespaceUserResources)
@@ -136,7 +134,6 @@ var _ = Describe("Deploy simple cluster", func() {
 			cli.IsClusterExist(projectID, userClusterConfig.Spec.Name),
 			"10m", "1m",
 		).Should(BeFalse())
-
 
 		// By("Delete project") // TODO
 		// session = cli.Execute("kubectl", "delete", "-f", "data/atlasproject.yaml", "-n", namespaceUserResources)
