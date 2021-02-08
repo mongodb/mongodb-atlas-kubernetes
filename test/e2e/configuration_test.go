@@ -5,13 +5,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	// . "github.com/onsi/ginkgo/extensions/table"
+
 	"github.com/pborman/uuid"
 
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
@@ -32,14 +31,14 @@ var _ = Describe("Deploy simple cluster", func() {
 		session := cli.Execute("kubectl", "create", "namespace", namespaceUserResources)
 		Expect(session.Wait()).Should(Say("created"))
 
-		project := utils.NewProject().ProjectName(pName).SecretRef(keyName).CompleteK8sConfig(k8sProjectName)
-		utils.SaveToFile(ProjectSampleFile, project)
+		project := cli.NewProject().ProjectName(pName).SecretRef(keyName).CompleteK8sConfig(k8sProjectName)
+		cli.SaveToFile(ProjectSampleFile, project)
 
 		userProjectConfig := cli.LoadUserProjectConfig(ProjectSampleFile)
 		userClusterConfig := cli.LoadUserClusterConfig(ClusterSampleFile)
 		userClusterConfig.Spec.Project.Name = k8sProjectName
-		clusterData, _ := utils.JSONToYAMLConvert(userClusterConfig)
-		utils.SaveToFile(ClusterSampleFile, clusterData)
+		clusterData, _ := cli.JSONToYAMLConvert(userClusterConfig)
+		cli.SaveToFile(ClusterSampleFile, clusterData)
 
 		By("Check Kubernetes/MongoCLI version\n")
 		session = cli.Execute("kubectl", "version")
@@ -106,8 +105,8 @@ var _ = Describe("Deploy simple cluster", func() {
 
 		By("Update cluster\n")
 		userClusterConfig.Spec.ProviderSettings.InstanceSizeName = "M20"
-		clusterData, _ = utils.JSONToYAMLConvert(userClusterConfig)
-		utils.SaveToFile(ClusterSampleFile, clusterData)
+		clusterData, _ = cli.JSONToYAMLConvert(userClusterConfig)
+		cli.SaveToFile(ClusterSampleFile, clusterData)
 
 		session = cli.Execute("kubectl", "apply", "-f", ClusterSampleFile, "-n", namespaceUserResources) // TODO param
 		Eventually(session.Wait()).Should(Say("atlascluster-sample configured"))

@@ -3,7 +3,7 @@ package utils
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 type AC struct {
