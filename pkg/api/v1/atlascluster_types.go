@@ -239,9 +239,9 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
-	result := mongodbatlas.Cluster{}
+	result := &mongodbatlas.Cluster{}
 	err := compat.JSONCopy(result, spec)
-	return &result, err
+	return result, err
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
