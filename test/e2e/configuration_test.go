@@ -73,7 +73,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("created"))
 
 		By("Wait creating and check that it was created")
-		Eventually(cli.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName))
+		Eventually(cli.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("1"))
 		Eventually(
 			cli.IsProjectExist(userProjectConfig.Spec.Name),
@@ -105,7 +105,6 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(Equal(userClusterConfig.Spec.ProviderSettings.RegionName))
 
 		By("Update cluster\n")
-		// userClusterConfig := cli.LoadUserClusterConfig(ClusterSampleFile)
 		userClusterConfig.Spec.ProviderSettings.InstanceSizeName = "M20"
 		clusterData, _ = utils.JSONToYAMLConvert(userClusterConfig)
 		utils.SaveToFile(ClusterSampleFile, clusterData)
@@ -114,6 +113,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("atlascluster-sample configured"))
 
 		By("Wait creation")
+		Eventually(cli.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
 		Eventually(cli.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(
 			cli.GetClusterStatus(projectID, userClusterConfig.Spec.Name),
