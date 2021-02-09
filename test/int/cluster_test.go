@@ -192,6 +192,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Checking that modifications were applied after unpausing", func() {
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
