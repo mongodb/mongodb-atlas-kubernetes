@@ -23,7 +23,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -41,6 +40,7 @@ type AtlasProjectReconciler struct {
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
 	AtlasDomain string
+	OperatorPod client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
@@ -63,14 +63,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
-	if project.Spec.ConnectionSecret == nil {
-		log.Error("So far the Connection Secret in AtlasProject is mandatory!")
-		return reconcile.Result{}, nil
-	}
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, project)
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)

@@ -33,13 +33,7 @@ var _ = Describe("AtlasProject", func() {
 
 		createdProject = &mdbv1.AtlasProject{}
 
-		connectionSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-atlas-key",
-				Namespace: namespace.Name,
-			},
-			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
-		}
+		connectionSecret = buildConnectionSecret("my-atlas-key")
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).ToNot(HaveOccurred())
 	})
@@ -194,18 +188,53 @@ var _ = Describe("AtlasProject", func() {
 		})
 	})
 
+	FDescribe("Using the global Connection Secret", func() {
+		It("Should Succeed", func() {
+			globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
+			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).ToNot(HaveOccurred())
+
+			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
+
+			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+				20, interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+		})
+	})
+
 })
+
+func buildConnectionSecret(name string) corev1.Secret {
+	return corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace.Name,
+		},
+		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
+	}
+}
 
 // TODO builders
 func testAtlasProject(namespace, name, atlasName, connectionSecretName string) *mdbv1.AtlasProject {
-	return &mdbv1.AtlasProject{
+	project := mdbv1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             atlasName,
-			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
+			Name: atlasName,
 		},
 	}
+	if connectionSecretName != "" {
+		project.Spec.ConnectionSecret = &mdbv1.ResourceRef{Name: connectionSecretName}
+	}
+	return &project
 }
