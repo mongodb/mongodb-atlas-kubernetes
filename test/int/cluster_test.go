@@ -211,7 +211,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if startedCreation {
 			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessage("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -235,7 +235,7 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if !isIdle {
 			Expect(c.Status.StateName).To(Or(Equal("UPDATING"), Equal("REPAIRING")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessage("cluster is updating"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessageRegexp("cluster is updating"),
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
