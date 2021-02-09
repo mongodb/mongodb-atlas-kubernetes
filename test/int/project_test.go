@@ -271,7 +271,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 		})
-		FIt("Should Fail if the global Secret doesn't exist", func() {
+		It("Should Fail if the global Secret doesn't exist", func() {
 			By("Creating without a global Secret", func() {
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
 
