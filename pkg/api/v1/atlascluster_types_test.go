@@ -10,8 +10,10 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-var excludedClusterFieldsOurs = map[string]bool{}
-var excludedClusterFieldsTheirs = map[string]bool{}
+var (
+	excludedClusterFieldsOurs   = map[string]bool{}
+	excludedClusterFieldsTheirs = map[string]bool{}
+)
 
 func init() {
 	excludedClusterFieldsOurs["projectRef"] = true
@@ -32,9 +34,6 @@ func init() {
 	excludedClusterFieldsTheirs["connectionStrings"] = true
 	excludedClusterFieldsTheirs["srvAddress"] = true
 	excludedClusterFieldsTheirs["stateName"] = true
-
-	// CLOUDP-80765
-	excludedClusterFieldsTheirs["paused"] = true
 }
 
 func TestCompatibility(t *testing.T) {
