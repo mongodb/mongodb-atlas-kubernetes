@@ -86,7 +86,6 @@ var _ = Describe("AtlasCluster", func() {
 			)))
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
-			lastGeneration++
 		})
 	}
 
@@ -116,7 +115,7 @@ var _ = Describe("AtlasCluster", func() {
 		Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 			1200, interval).Should(BeTrue())
 
-		doCommonChecks()
+		lastGeneration++
 	}
 
 	Describe("Create/Update the cluster", func() {
@@ -130,6 +129,8 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1800, interval).Should(BeTrue())
 
+				lastGeneration++
+
 				doCommonChecks()
 				checkAtlasState()
 			})
@@ -139,12 +140,14 @@ var _ = Describe("AtlasCluster", func() {
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState()
 			})
 
 			By("Updating the Cluster backups settings", func() {
 				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
@@ -153,6 +156,7 @@ var _ = Describe("AtlasCluster", func() {
 			By("Decreasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdCluster.Spec.DiskSizeGB))
 
@@ -164,6 +168,7 @@ var _ = Describe("AtlasCluster", func() {
 			By("Pausing the cluster", func() {
 				createdCluster.Spec.Paused = boolptr(true)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
 				})
@@ -173,19 +178,17 @@ var _ = Describe("AtlasCluster", func() {
 				createdCluster.Spec.ProviderBackupEnabled = boolptr(false)
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-
 				Eventually(
 					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
 					60,
 					interval,
 				).Should(BeTrue())
-
-				lastGeneration++
 			})
 
 			By("Unpausing the cluster", func() {
 				createdCluster.Spec.Paused = boolptr(false)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
 				})
