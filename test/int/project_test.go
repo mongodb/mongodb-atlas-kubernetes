@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = FDescribe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -221,10 +221,10 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Succeed (multiple)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05+0200")
+			twentyHoursLater := time.Now().Add(time.Hour * 20).Format("2006-01-02T15:04:05+0200")
 
 			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
-				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
+				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: twentyHoursLater},
 				{Comment: "foo", IPAddress: "192.0.2.20"},
 			}
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
@@ -308,10 +308,10 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed (multiple)", func() {
 			By("Creating the project first", func() {
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-				tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05+0200")
+				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05+0200")
 
 				createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
-					{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
+					{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: thirtyHoursLater},
 					{Comment: "foo", IPAddress: "192.0.2.20"},
 				}
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
