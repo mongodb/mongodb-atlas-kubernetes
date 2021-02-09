@@ -27,7 +27,7 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
-	active, _ := filterActiveIPAccessLists(project)
+	active, _ := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
 	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
 	if err != nil {
@@ -42,17 +42,27 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 
 func validateIPAccessLists(ipAccessList []mdbv1.ProjectIPAccessList) error {
 	for _, list := range ipAccessList {
-		if list.DeleteAfterDate != "" {
-			_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
-			if err != nil {
-				return err
-			}
+		if err := validateSingleIPAccessList(list); err != nil {
+			return err
 		}
-		// Go doesn't support XOR, but uses '!=' instead: https://stackoverflow.com/a/23025720/614239
-		onlyOneSpecified := isNotEmpty(list.AwsSecurityGroup) != isNotEmpty(list.CIDRBlock) != isNotEmpty(list.IPAddress)
-		if !onlyOneSpecified {
-			return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
+	}
+	return nil
+}
+
+// validateSingleIPAccessList performs validation of the IP access list. Note, that we intentionally don't validate
+// IP addresses or CIDR blocks - this will be done by Atlas. But we need to validate the timestamp as we use it to filter
+// active and expired ip access lists.
+func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
+	if list.DeleteAfterDate != "" {
+		_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
+		if err != nil {
+			return err
 		}
+	}
+	onlyOneSpecified := onlyOneSpecified(list.AwsSecurityGroup, list.CIDRBlock, list.IPAddress)
+	allSpecified := isNotEmpty(list.AwsSecurityGroup) && isNotEmpty(list.CIDRBlock) && isNotEmpty(list.IPAddress)
+	if !onlyOneSpecified || allSpecified {
+		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
 	}
 	return nil
 }
@@ -106,10 +116,10 @@ func deleteIPAccessFromAtlas(client *mongodbatlas.Client, projectID string, list
 	return nil
 }
 
-func filterActiveIPAccessLists(project *mdbv1.AtlasProject) ([]mdbv1.ProjectIPAccessList, []mdbv1.ProjectIPAccessList) {
+func filterActiveIPAccessLists(accessLists []mdbv1.ProjectIPAccessList) ([]mdbv1.ProjectIPAccessList, []mdbv1.ProjectIPAccessList) {
 	active := make([]mdbv1.ProjectIPAccessList, 0)
 	expired := make([]mdbv1.ProjectIPAccessList, 0)
-	for _, list := range project.Spec.ProjectIPAccessList {
+	for _, list := range accessLists {
 		if list.DeleteAfterDate != "" {
 			// We are ignoring the error as it will never happen due to validation check before
 			iso8601, _ := timeutil.ParseISO8601(list.DeleteAfterDate)
@@ -126,4 +136,21 @@ func filterActiveIPAccessLists(project *mdbv1.AtlasProject) ([]mdbv1.ProjectIPAc
 
 func isNotEmpty(s string) bool {
 	return s != ""
+}
+
+func onlyOneSpecified(values ...string) bool {
+	found := false
+	for _, v := range values {
+		if v == "" {
+			continue
+		}
+
+		if found {
+			return false
+		}
+
+		found = true
+	}
+
+	return found
 }
