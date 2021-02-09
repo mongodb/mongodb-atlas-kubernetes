@@ -47,8 +47,6 @@ type AtlasClusterReconciler struct {
 	AtlasDomain string
 }
 
-var _ watch.Deleter = &AtlasClusterReconciler{}
-
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
 
@@ -111,7 +109,7 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(watch.CommonPredicates()).
 		Watches(
 			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&watch.ResourceEventHandler{Controller: r},
+			&watch.EventHandlerWithDelete{Controller: r},
 		).
 		Complete(r)
 }
