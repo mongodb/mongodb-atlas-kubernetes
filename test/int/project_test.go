@@ -66,7 +66,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.ID).NotTo(BeNil())
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.FalseCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -93,7 +93,7 @@ var _ = Describe("AtlasProject", func() {
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			Expect(createdProject.Status.ID).To(BeEmpty())
+			Expect(createdProject.ID()).To(BeEmpty())
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 
 			// Atlas
@@ -130,7 +130,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
 
 			// Atlas
-			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.Status.ID)
+			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.ID())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
@@ -182,6 +182,80 @@ var _ = Describe("AtlasProject", func() {
 			})
 		})
 	})
+
+	Describe("Creating the project IP access list", func() {
+		It("Should Succeed (single)", func() {
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessList),
+				20, interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+
+			// Atlas
+			list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(list.Results).To(HaveLen(1))
+			Expect(list.Results[0]).To(testutil.MatchIPAccessList(expectedProject.Spec.ProjectIPAccessList[0]))
+		})
+		It("Should Succeed (multiple)", func() {
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05+0200")
+
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
+				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
+				{Comment: "foo", IPAddress: "192.0.2.20"},
+			}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessList),
+				20, interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+
+			// Atlas
+			list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(list.Results).To(HaveLen(2))
+			Expect(list.Results).To(ContainElements(testutil.BuildMatchersFromExpected(expectedProject.Spec.ProjectIPAccessList)))
+		})
+		It("Should Fail (AWS security group not supported without VPC)", func() {
+			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{AwsSecurityGroup: "sg-0026348ec11780bd1"}}
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.IPAccessListReadyType)),
+				20, interval).Should(BeTrue())
+
+			ipAccessFailedCondition := status.FalseCondition(status.IPAccessListReadyType).
+				WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
+				WithMessageRegexp(".*CANNOT_USE_AWS_SECURITY_GROUP_WITHOUT_VPC_PEERING_CONNECTION.*")
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				ipAccessFailedCondition,
+				status.FalseCondition(status.ReadyType),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+		})
+	})
 })
 
 // TODO builders
@@ -222,4 +296,12 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 		}
 		return false
 	}
+}
+
+// validateNoErrorsIPAccessList performs check that no problems happen to IP Access list during the update.
+// This allows the test to fail fast instead by timeout if there are any troubles.
+func validateNoErrorsIPAccessList(a mdbv1.AtlasCustomResource) {
+	c := a.(*mdbv1.AtlasProject)
+	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
+	Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 }

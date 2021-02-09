@@ -92,9 +92,12 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
-	statushandler.Update(ctx.SetConditionFalse(status.IPAccessListReadyType), r.Client, project)
 
-	// TODO projectAccessList
+	if result = r.ensureIPAccessList(ctx, connection, projectID, project); !result.IsOk() {
+		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
 }
