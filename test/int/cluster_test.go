@@ -179,6 +179,8 @@ var _ = Describe("AtlasCluster", func() {
 					60,
 					interval,
 				).Should(BeTrue())
+
+				lastGeneration++
 			})
 
 			By("Unpausing the cluster", func() {
