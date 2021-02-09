@@ -188,7 +188,7 @@ var _ = Describe("AtlasProject", func() {
 		})
 	})
 
-	FDescribe("Using the global Connection Secret", func() {
+	Describe("Using the global Connection Secret", func() {
 		It("Should Succeed", func() {
 			globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
 			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).ToNot(HaveOccurred())
