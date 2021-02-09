@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 
@@ -41,8 +42,8 @@ func (m *conditionMatcher) Match(actual interface{}) (success bool, err error) {
 		return false, nil
 	}
 	// Add regexp when necessary
-	if m.ExpectedCondition.Message != "" && c.Message != m.ExpectedCondition.Message {
-		return false, nil
+	if m.ExpectedCondition.Message != "" {
+		gomega.Expect(c.Message).To(gomega.MatchRegexp(m.ExpectedCondition.Message))
 	}
 
 	return true, nil
