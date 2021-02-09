@@ -169,11 +169,29 @@ var _ = Describe("AtlasCluster", func() {
 				})
 			})
 
+			By("Updating the Cluster configuration while paused (should fail)", func() {
+				createdCluster.Spec.ProviderBackupEnabled = boolptr(false)
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(
+					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					60,
+					interval,
+				).Should(BeTrue())
+			})
+
 			By("Unpausing the cluster", func() {
 				createdCluster.Spec.Paused = boolptr(false)
 				performUpdate()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
+				})
+			})
+
+			By("Checking that modifications were applied after unpausing", func() {
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
 			})
 		})
