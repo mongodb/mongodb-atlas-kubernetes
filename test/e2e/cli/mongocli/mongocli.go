@@ -1,27 +1,20 @@
-package utils
+package mongocli
 
 import (
-	"fmt"
-	"os/exec"
-
 	"encoding/json"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"go.mongodb.org/atlas/mongodbatlas"
+
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
 
-func Execute(command string, args ...string) *gexec.Session {
-	// GinkgoWriter.Write([]byte("\n " + command + " " + strings.Join(args, " "))) //TODO for the local run only
-	cmd := exec.Command(command, args...)
-	session, _ := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	return session
-}
-
 func GetClusters(projectID string) []mongodbatlas.Cluster {
-	session := Execute("mongocli", "atlas", "clusters", "list", "--projectId", projectID, "-o", "json")
+	session := cli.Execute("mongocli", "atlas", "clusters", "list", "--projectId", projectID, "-o", "json")
 	output := session.Wait("1m").Out.Contents()
 	var clusters []mongodbatlas.Cluster
 	ExpectWithOffset(1, json.Unmarshal(output, &clusters)).ShouldNot(HaveOccurred())
@@ -39,7 +32,7 @@ func GetClusterByName(projectID string, name string) mongodbatlas.Cluster {
 }
 
 func GetProjects() mongodbatlas.Projects {
-	session := Execute("mongocli", "iam", "projects", "list", "-o", "json")
+	session := cli.Execute("mongocli", "iam", "projects", "list", "-o", "json")
 	output := session.Wait("1m").Out.Contents()
 	var projects mongodbatlas.Projects
 	json.Unmarshal(output, &projects)
@@ -58,7 +51,7 @@ func GetProjectID(name string) string {
 }
 
 func GetClustersInfo(projectID string, name string) mongodbatlas.Cluster {
-	session := Execute("mongocli", "atlas", "clusters", "describe", name, "--projectId", projectID, "-o", "json")
+	session := cli.Execute("mongocli", "atlas", "clusters", "describe", name, "--projectId", projectID, "-o", "json")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	output := session.Out.Contents()
 	var cluster mongodbatlas.Cluster
@@ -67,7 +60,7 @@ func GetClustersInfo(projectID string, name string) mongodbatlas.Cluster {
 }
 
 func DeleteCluster(projectID, clusterName string) *Buffer {
-	session := Execute("mongocli", "atlas", "cluster", "delete", clusterName, "--projectId", projectID, "--force")
+	session := cli.Execute("mongocli", "atlas", "cluster", "delete", clusterName, "--projectId", projectID, "--force")
 	return session.Wait().Out
 }
 
