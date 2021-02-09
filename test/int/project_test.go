@@ -80,7 +80,6 @@ var _ = Describe("AtlasProject", func() {
 			Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
 				10, interval).Should(BeTrue())
 
-			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ProjectReadyType),
 				status.FalseCondition(status.ReadyType),
@@ -254,11 +253,12 @@ var _ = Describe("AtlasProject", func() {
 	Describe("Using the global Connection Secret", func() {
 		It("Should Succeed", func() {
 			globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
-			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
 
+			// We don't specify the connection Secret per project - the global one must be used
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
 
-			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
@@ -270,6 +270,32 @@ var _ = Describe("AtlasProject", func() {
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+		})
+		FIt("Should Fail if the global Secret doesn't exist", func() {
+			By("Creating without a global Secret", func() {
+				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
+
+				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+
+				expectedConditionsMatchers := testutil.MatchConditions(
+					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
+					status.FalseCondition(status.ReadyType),
+				)
+				Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+				Expect(createdProject.ID()).To(BeEmpty())
+				Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+			})
+			By("Creating a global Secret - should get fixed", func() {
+				globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
+				Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+			})
+
 		})
 	})
 
