@@ -66,7 +66,11 @@ var _ = Describe("AtlasProject", func() {
 		for i, list := range lists {
 			expiredCopy[i] = status.ProjectIPAccessList(list)
 		}
-		Expect(createdProject.Status.ExpiredIPAccessList).To(Equal(expiredCopy))
+		currentStatusIPs := createdProject.Status.ExpiredIPAccessList
+		if currentStatusIPs == nil {
+			currentStatusIPs = []status.ProjectIPAccessList{}
+		}
+		Expect(currentStatusIPs).To(Equal(expiredCopy))
 	}
 
 	checkAtlasProjectIsReady := func() {
