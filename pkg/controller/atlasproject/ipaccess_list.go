@@ -59,7 +59,7 @@ func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
 			return err
 		}
 	}
-	onlyOneSpecified := isNotEmpty(list.AwsSecurityGroup) != isNotEmpty(list.CIDRBlock) != isNotEmpty(list.IPAddress)
+	onlyOneSpecified := onlyOneSpecified(list.AwsSecurityGroup, list.CIDRBlock, list.IPAddress)
 	allSpecified := isNotEmpty(list.AwsSecurityGroup) && isNotEmpty(list.CIDRBlock) && isNotEmpty(list.IPAddress)
 	if !onlyOneSpecified || allSpecified {
 		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
@@ -136,4 +136,21 @@ func filterActiveIPAccessLists(accessLists []mdbv1.ProjectIPAccessList) ([]mdbv1
 
 func isNotEmpty(s string) bool {
 	return s != ""
+}
+
+func onlyOneSpecified(values ...string) bool {
+	found := false
+	for _, v := range values {
+		if v == "" {
+			continue
+		}
+
+		if found {
+			return false
+		}
+
+		found = true
+	}
+
+	return found
 }
