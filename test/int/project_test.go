@@ -85,7 +85,7 @@ var _ = Describe("AtlasProject", func() {
 
 			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
 			Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
-				10, interval).Should(BeTrue())
+				20, interval).Should(BeTrue())
 
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 			expectedConditionsMatchers := testutil.MatchConditions(
@@ -124,7 +124,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				10, interval).Should(BeTrue())
+				20, interval).Should(BeTrue())
 
 			Expect(testutil.ReadAtlasResource(k8sClient, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
@@ -217,11 +217,9 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
-				By(fmt.Sprintf("checkAtlasProjectRemoved: project doesn't exist! (%s)", time.Now()))
 				return true
 			}
 		}
-		By(fmt.Sprintf("checkAtlasProjectRemoved: project exists (%s)", time.Now()))
 		return false
 	}
 }

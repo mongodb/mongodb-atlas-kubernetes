@@ -111,7 +111,7 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasCluster & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r})
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
 	if err != nil {
 		return err
 	}

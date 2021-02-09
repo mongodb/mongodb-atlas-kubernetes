@@ -137,7 +137,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasProject & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r})
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
 	if err != nil {
 		return err
 	}
