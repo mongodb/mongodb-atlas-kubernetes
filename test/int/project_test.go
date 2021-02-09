@@ -49,7 +49,7 @@ var _ = Describe("AtlasProject", func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -142,7 +142,7 @@ var _ = Describe("AtlasProject", func() {
 			if secondProject != nil && secondProject.Status.ID != "" {
 				By("Removing (second) Atlas Project " + secondProject.Status.ID)
 				Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
-				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
 			}
 		})
 		It("Should Succeed", func() {
