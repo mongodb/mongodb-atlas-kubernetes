@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/fatih/structtag v1.2.0
-	github.com/go-logr/zapr v0.1.0
+	github.com/go-logr/zapr v0.4.0
 	github.com/google/go-cmp v0.5.4
 	github.com/mongodb-forks/digest v1.0.2
 	github.com/onsi/ginkgo v1.14.2
