@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -104,14 +105,18 @@ func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&mdbv1.AtlasCluster{}).
-		WithEventFilter(watch.CommonPredicates()).
-		Watches(
-			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&watch.EventHandlerWithDelete{Controller: r},
-		).
-		Complete(r)
+	c, err := controller.New("AtlasCluster", mgr, controller.Options{Reconciler: r})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to primary resource AtlasCluster & handle delete separately
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete implements a handler for the Delete event.
