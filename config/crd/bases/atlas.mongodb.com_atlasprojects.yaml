@@ -118,6 +118,35 @@ spec:
                   - type
                   type: object
                 type: array
+              expiredIpAccessList:
+                description: The list of IP Access List entries that are expired due
+                  to 'deleteAfterDate' being less than the current date. Note, that
+                  this field is updated by the Atlas Operator only after specification
+                  changes
+                items:
+                  description: TODO solve circular dependency (move ProjectIPAccessList
+                    to subpackage?) Copy of mdbv1.ProjectIPAccessList
+                  properties:
+                    awsSecurityGroup:
+                      description: Unique identifier of AWS security group in this
+                        access list entry.
+                      type: string
+                    cidrBlock:
+                      description: Range of IP addresses in CIDR notation in this
+                        access list entry.
+                      type: string
+                    comment:
+                      description: Comment associated with this access list entry.
+                      type: string
+                    deleteAfterDate:
+                      description: Timestamp in ISO 8601 date and time format in UTC
+                        after which Atlas deletes the temporary access list entry.
+                      type: string
+                    ipAddress:
+                      description: Entry using an IP address in this access list entry.
+                      type: string
+                  type: object
+                type: array
               id:
                 description: The ID of the Atlas Project
                 type: string

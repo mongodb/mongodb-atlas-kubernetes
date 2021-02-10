@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 
 	"github.com/go-logr/zapr"
@@ -27,6 +28,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -71,11 +73,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	operatorPod := operatorPodObjectKey()
+
 	if err = (&atlascluster.AtlasClusterReconciler{
 		Client:      mgr.GetClient(),
 		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		Scheme:      mgr.GetScheme(),
 		AtlasDomain: config.AtlasDomain,
+		OperatorPod: operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
@@ -87,6 +92,7 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		AtlasDomain:     config.AtlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
+		OperatorPod:     operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
@@ -117,4 +123,17 @@ func parseConfiguration() Config {
 
 	flag.Parse()
 	return config
+}
+
+func operatorPodObjectKey() client.ObjectKey {
+	operatorName := os.Getenv("OPERATOR_NAME")
+	if operatorName == "" {
+		log.Fatal(`"OPERATOR_NAME" environment variable must be set!`)
+	}
+	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
+	if operatorNamespace == "" {
+		log.Fatal(`"OPERATOR_NAMESPACE" environment variable must be set!`)
+	}
+
+	return client.ObjectKey{Namespace: operatorNamespace, Name: operatorName}
 }

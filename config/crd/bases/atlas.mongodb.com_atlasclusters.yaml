@@ -143,6 +143,9 @@ spec:
                 maximum: 50
                 minimum: 1
                 type: integer
+              paused:
+                description: Flag that indicates whether the cluster should be paused.
+                type: boolean
               pitEnabled:
                 description: Flag that indicates the cluster uses continuous cloud
                   backups.

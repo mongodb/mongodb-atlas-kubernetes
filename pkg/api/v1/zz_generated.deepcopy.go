@@ -104,6 +104,11 @@ func (in *AtlasClusterSpec) DeepCopyInto(out *AtlasClusterSpec) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.Paused != nil {
+		in, out := &in.Paused, &out.Paused
+		*out = new(bool)
+		**out = **in
+	}
 	if in.PitEnabled != nil {
 		in, out := &in.PitEnabled, &out.PitEnabled
 		*out = new(bool)

@@ -17,13 +17,17 @@ limitations under the License.
 package atlasproject
 
 import (
+	"context"
+	"errors"
+	"fmt"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -32,6 +36,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // AtlasProjectReconciler reconciles a AtlasProject object
@@ -41,6 +46,7 @@ type AtlasProjectReconciler struct {
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
 	AtlasDomain string
+	OperatorPod client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
@@ -63,14 +69,10 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
-	if project.Spec.ConnectionSecret == nil {
-		log.Error("So far the Connection Secret in AtlasProject is mandatory!")
-		return reconcile.Result{}, nil
-	}
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, project)
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
@@ -96,8 +98,34 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	return ctrl.Result{}, nil
 }
 
-func (r *AtlasProjectReconciler) Delete(obj runtime.Object) error {
-	// TODO CLOUDP-80607
+func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
+	project, ok := e.Object.(*mdbv1.AtlasProject)
+	if !ok {
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasProject{}, e.Object)
+		return nil
+	}
+
+	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
+
+	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
+
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if !result.IsOk() {
+		return errors.New("cannot read Atlas connection")
+	}
+
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	if err != nil {
+		return fmt.Errorf("cannot build Atlas client: %w", err)
+	}
+
+	_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
+	if err != nil {
+		return fmt.Errorf("cannot delete Atlas project: %w", err)
+	}
+
+	log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
+
 	return nil
 }
 
@@ -107,8 +135,8 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// Watch for changes to primary resource MongoDbReplicaSet
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.AtlasResourceEventHandler{Controller: r}, watch.CommonPredicates())
+	// Watch for changes to primary resource AtlasProject & handle delete separately
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
 	if err != nil {
 		return err
 	}
