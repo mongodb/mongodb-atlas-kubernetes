@@ -149,10 +149,10 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
-		return fmt.Errorf("cannot delete Atlas atlas: %w", err)
+		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
 	}
 
-	log.Infow("Started Atlas atlas deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
+	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
 
 	return nil
 }

@@ -77,18 +77,18 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		return c, workflow.InProgress(workflow.ClusterUpdating, "atlas is updating")
+		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	case "CREATING":
-		return c, workflow.InProgress(workflow.ClusterCreating, "atlas is provisioning")
+		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return c, workflow.InProgress(workflow.ClusterUpdating, "atlas is updating")
+		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return c, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown atlas state %q", c.StateName))
+		return c, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", c.StateName))
 	}
 }
 
