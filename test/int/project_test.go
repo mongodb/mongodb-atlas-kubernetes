@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = FDescribe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -221,10 +221,10 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Succeed (multiple)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			twentyHoursLater := time.Now().Add(time.Hour * 20).Format("2006-01-02T15:04:05+0200")
+			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05-0700")
 
 			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
-				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: twentyHoursLater},
+				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
 				{Comment: "foo", IPAddress: "192.0.2.20"},
 			}
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
@@ -238,7 +238,7 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Succeed (1 expired)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			tenHoursBefore := time.Now().Add(time.Hour * -10).Format("2006-01-02T15:04:05+0200")
+			tenHoursBefore := time.Now().Add(time.Hour * -10).Format("2006-01-02T15:04:05-0700")
 
 			expiredList := mdbv1.ProjectIPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
 			activeList := mdbv1.ProjectIPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
@@ -283,7 +283,7 @@ var _ = Describe("AtlasProject", func() {
 	Describe("Updating the project IP access list", func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
-				tenMinutesLater := time.Now().Add(time.Minute * 10).Format("2006-01-02T15:04:05-0900")
+				tenMinutesLater := time.Now().Add(time.Minute * 10).Format("2006-01-02T15:04:05-0700")
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 				createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15", DeleteAfterDate: tenMinutesLater}}
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
@@ -308,7 +308,7 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed (multiple)", func() {
 			By("Creating the project first", func() {
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05+0200")
+				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05-0700")
 
 				createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
 					{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: thirtyHoursLater},
