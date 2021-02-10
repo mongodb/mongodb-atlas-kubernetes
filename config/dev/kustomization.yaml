@@ -1,4 +1,4 @@
-
+namespace: mongodb-atlas-kubernetes-system
 
 resources:
 - ../default

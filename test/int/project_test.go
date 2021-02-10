@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -47,8 +48,8 @@ var _ = Describe("AtlasProject", func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			_, err := atlasClient.Projects.Delete(context.Background(), createdProject.Status.ID)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -108,7 +109,7 @@ var _ = Describe("AtlasProject", func() {
 
 			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
 			Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
-				10, interval).Should(BeTrue())
+				20, interval).Should(BeTrue())
 
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 			expectedConditionsMatchers := testutil.MatchConditions(
@@ -147,7 +148,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				10, interval).Should(BeTrue())
+				20, interval).Should(BeTrue())
 
 			Expect(testutil.ReadAtlasResource(k8sClient, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
@@ -163,9 +164,9 @@ var _ = Describe("AtlasProject", func() {
 		var secondProject *mdbv1.AtlasProject
 		AfterEach(func() {
 			if secondProject != nil && secondProject.Status.ID != "" {
-				By("Removing (second) Atlas Project " + secondProject.ID())
-				_, err := atlasClient.Projects.Delete(context.Background(), secondProject.ID())
-				Expect(err).ToNot(HaveOccurred())
+				By("Removing (second) Atlas Project " + secondProject.Status.ID)
+				Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
+				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
 			}
 		})
 		It("Should Succeed", func() {
@@ -280,6 +281,7 @@ var _ = Describe("AtlasProject", func() {
 			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
 		})
 	})
+
 	Describe("Updating the project IP access list", func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
@@ -305,6 +307,7 @@ var _ = Describe("AtlasProject", func() {
 				checkIPAccessListInAtlas()
 			})
 		})
+
 		It("Should Succeed (multiple)", func() {
 			By("Creating the project first", func() {
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
@@ -336,7 +339,6 @@ var _ = Describe("AtlasProject", func() {
 			})
 		})
 	})
-
 })
 
 // TODO builders
@@ -350,6 +352,32 @@ func testAtlasProject(namespace, name, atlasName, connectionSecretName string) *
 			Name:             atlasName,
 			ConnectionSecret: &mdbv1.ResourceRef{Name: connectionSecretName},
 		},
+	}
+}
+
+func removeAtlasProject(projectID string) func() bool {
+	return func() bool {
+		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			Expect(errors.As(err, &apiError)).To(BeTrue())
+			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
+			return false
+		}
+		return true
+	}
+}
+
+// checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
+func checkAtlasProjectRemoved(projectID string) func() bool {
+	return func() bool {
+		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return true
+			}
+		}
+		return false
 	}
 }
 
