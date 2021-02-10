@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,14 +93,23 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
 	return []byte(cfg.Host)
 }, func(data []byte) {
-	// This is the host that was serialized on the 1st node by the function above.
-	host := string(data)
-	// copied from Environment.Start()
-	cfg = &rest.Config{
-		Host: host,
-		// gotta go fast during tests -- we don't really care about overwhelming our test API server
-		QPS:   1000.0,
-		Burst: 2000.0,
+	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
+		var err error
+		// For the existing cluster we read the kubeconfig
+		cfg, err = config.GetConfig()
+		if err != nil {
+			panic("Failed to read the config for existing cluster")
+		}
+	} else {
+		// This is the host that was serialized on the 1st node by the function above.
+		host := string(data)
+		// copied from Environment.Start()
+		cfg = &rest.Config{
+			Host: host,
+			// gotta go fast during tests -- we don't really care about overwhelming our test API server
+			QPS:   1000.0,
+			Burst: 2000.0,
+		}
 	}
 
 	err := mdbv1.AddToScheme(scheme.Scheme)
