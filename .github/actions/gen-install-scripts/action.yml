@@ -4,6 +4,9 @@ inputs:
   IMAGE_URL:
     description: "Operator image"
     required: true
+  ENV:
+    description: "Kustomize patch name (enviroment configuration patch)"
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
