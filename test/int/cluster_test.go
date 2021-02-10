@@ -122,6 +122,32 @@ var _ = Describe("AtlasCluster", func() {
 	}
 
 	Describe("Create/Update the cluster", func() {
+		It("Should fail, then be fixed", func() {
+			invalidCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			invalidCluster.Spec.MongoDBMajorVersion = "42.42"
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(invalidCluster)), func() {
+				createdCluster.ObjectMeta = invalidCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), invalidCluster)).ToNot(HaveOccurred())
+
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("TODOTODO"),
+					),
+					1800,
+					interval,
+				).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+		})
+
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
@@ -186,7 +212,7 @@ var _ = Describe("AtlasCluster", func() {
 						status.
 							FalseCondition(status.ClusterReadyType).
 							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("TODOTODO"),
+							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
 					),
 					60,
 					interval,
@@ -229,6 +255,8 @@ var _ = Describe("AtlasCluster", func() {
 					interval,
 				).Should(BeTrue())
 
+				lastGeneration++
+
 				By("Renaming the Cluster back", func() {
 					createdCluster.Spec.Name = oldName
 					performUpdate()
@@ -258,6 +286,8 @@ var _ = Describe("AtlasCluster", func() {
 					interval,
 				).Should(BeTrue())
 
+				lastGeneration++
+
 				By("Fixing the Cluster", func() {
 					createdCluster.Spec.ProviderSettings.AutoScaling = nil
 					performUpdate()
@@ -267,11 +297,8 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Setting incorrect instance size (should fail)", func() {
-				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
-					Compute: &mdbv1.ComputeSpec{
-						Enabled: boolptr(false),
-					},
-				}
+				oldSizeName := createdCluster.Spec.ProviderSettings.InstanceSizeName
+				createdCluster.Spec.ProviderSettings.InstanceSizeName = "M42"
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 				Eventually(
@@ -287,8 +314,10 @@ var _ = Describe("AtlasCluster", func() {
 					interval,
 				).Should(BeTrue())
 
+				lastGeneration++
+
 				By("Fixing the Cluster", func() {
-					createdCluster.Spec.ProviderSettings.AutoScaling = nil
+					createdCluster.Spec.ProviderSettings.InstanceSizeName = oldSizeName
 					performUpdate()
 					doCommonChecks()
 					checkAtlasState()
