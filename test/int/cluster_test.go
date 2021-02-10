@@ -258,7 +258,7 @@ var _ = Describe("AtlasCluster", func() {
 						status.
 							FalseCondition(status.ClusterReadyType).
 							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("TODOTODO"),
+							WithMessageRegexp("INVALID_ATTRIBUTE"),
 					),
 					60,
 					interval,
@@ -286,7 +286,7 @@ var _ = Describe("AtlasCluster", func() {
 						status.
 							FalseCondition(status.ClusterReadyType).
 							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("TODOTODO"),
+							WithMessageRegexp("INVALID_ATTRIBUTE"),
 					),
 					60,
 					interval,
