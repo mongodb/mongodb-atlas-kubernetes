@@ -74,7 +74,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 
 		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, spec)
 		if err != nil {
-			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 		}
 
 		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")

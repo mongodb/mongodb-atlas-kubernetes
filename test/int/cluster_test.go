@@ -180,7 +180,14 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 				Eventually(
-					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)),.
+							WithMessageRegexp("TODOTODO")
+					),
 					60,
 					interval,
 				).Should(BeTrue())
@@ -210,7 +217,14 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 				Eventually(
-					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("TODOTODO"),
+					),
 					60,
 					interval,
 				).Should(BeTrue())
@@ -232,7 +246,14 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 				Eventually(
-					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("TODOTODO"),
+					),
 					60,
 					interval,
 				).Should(BeTrue())
