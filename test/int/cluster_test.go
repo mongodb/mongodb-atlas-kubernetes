@@ -126,7 +126,7 @@ var _ = Describe("AtlasCluster", func() {
 			invalidCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			invalidCluster.Spec.MongoDBMajorVersion = "42.42"
 
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(invalidCluster)), func() {
+			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(invalidCluster)), func() {
 				createdCluster.ObjectMeta = invalidCluster.ObjectMeta
 				Expect(k8sClient.Create(context.Background(), invalidCluster)).ToNot(HaveOccurred())
 
@@ -136,13 +136,19 @@ var _ = Describe("AtlasCluster", func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("TODOTODO"),
+							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
+							WithMessageRegexp("UNEXPECTED_ERROR"),
 					),
-					1800,
+					60,
 					interval,
 				).Should(BeTrue())
 
+				lastGeneration++
+			})
+
+			By("Fixing the cluster", func() {
+				invalidCluster.Spec.MongoDBMajorVersion = "4.2"
+				performUpdate()
 				doCommonChecks()
 				checkAtlasState()
 			})
@@ -234,34 +240,6 @@ var _ = Describe("AtlasCluster", func() {
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
-				})
-			})
-
-			By("Renaming the Cluster (should fail)", func() {
-				oldName := createdCluster.Spec.Name
-				createdCluster.Spec.Name = oldName + "-rnm"
-
-				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-				Eventually(
-					testutil.WaitFor(
-						k8sClient,
-						createdCluster,
-						status.
-							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("TODOTODO"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
-
-				lastGeneration++
-
-				By("Renaming the Cluster back", func() {
-					createdCluster.Spec.Name = oldName
-					performUpdate()
-					doCommonChecks()
-					checkAtlasState()
 				})
 			})
 
