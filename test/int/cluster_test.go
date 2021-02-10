@@ -288,28 +288,6 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 	}
 }
 
-func validateClusterFailingFunc() func(a mdbv1.AtlasCustomResource) {
-	isIdle := true
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasCluster)
-		// It's ok if the first invocations see IDLE
-		if c.Status.StateName != "IDLE" {
-			isIdle = false
-		}
-
-		// When the create request has been made to Atlas - we expect the following status
-		if isIdle {
-			return
-		}
-
-		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas)).WithMessageRegexp("cluster is updating"),
-			status.FalseCondition(status.ReadyType),
-		)
-		Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-	}
-}
-
 // TODO builders
 func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 	return &mdbv1.AtlasCluster{
