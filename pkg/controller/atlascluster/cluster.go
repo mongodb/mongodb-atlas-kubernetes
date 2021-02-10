@@ -48,15 +48,28 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 
 	switch c.StateName {
 	case "IDLE":
+		if done, err := clusterMatchesSpec(log, c, cluster.Spec); err != nil {
+			return c, workflow.Terminate(workflow.Internal, err.Error())
+		} else if done {
+			return c, workflow.OK()
+		}
+
 		spec, err := cluster.Spec.Cluster()
 		if err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		if done, err := clusterMatchesSpec(log, c, cluster.Spec); err != nil {
-			return c, workflow.Terminate(workflow.Internal, err.Error())
-		} else if done {
-			return c, workflow.OK()
+		if cluster.Spec.Paused != nil {
+			if c.Paused == nil || *c.Paused != *cluster.Spec.Paused {
+				// paused is different from Atlas
+				// we need to first send a special (un)pause request before reconciling everything else
+				spec = &mongodbatlas.Cluster{
+					Paused: cluster.Spec.Paused,
+				}
+			} else {
+				// otherwise, don't send the paused field
+				spec.Paused = nil
+			}
 		}
 
 		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, spec)
