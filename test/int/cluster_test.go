@@ -198,6 +198,47 @@ var _ = Describe("AtlasCluster", func() {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
 			})
+
+			By("Renaming the Cluster (should fail)", func() {
+				oldName := createdCluster.Spec.Name
+				createdCluster.Spec.Name = oldName + "-rnm"
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				By("Renaming the Cluster back", func() {
+					createdCluster.Spec.Name = oldName
+					performUpdate()
+					doCommonChecks()
+					checkAtlasState()
+				})
+			})
+
+			By("Setting AutoScaling.Compute.Enabled to false (should fail)", func() {
+				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled: boolptr(false),
+					},
+				}
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				By("Fixing the Cluster", func() {
+					createdCluster.Spec.ProviderSettings.AutoScaling = nil
+					performUpdate()
+					doCommonChecks()
+					checkAtlasState()
+				})
+			})
 		})
 	})
 })
