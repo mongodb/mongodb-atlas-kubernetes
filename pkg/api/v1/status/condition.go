@@ -106,7 +106,7 @@ func (c Condition) WithReason(reason string) Condition {
 	return c
 }
 
-func (c Condition) WithMessage(msg string) Condition {
+func (c Condition) WithMessageRegexp(msg string) Condition {
 	c.Message = msg
 	return c
 }
