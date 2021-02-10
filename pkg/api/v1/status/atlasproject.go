@@ -29,9 +29,9 @@ type AtlasProjectStatus struct {
 	ExpiredIPAccessList []ProjectIPAccessList `json:"expiredIpAccessList,omitempty"`
 }
 
-// Copy of mdbv1.ProjectIPAccessList
 // TODO solve circular dependency (move ProjectIPAccessList to subpackage?)
 
+// ProjectIPAccessList is a copy of mdbv1.ProjectIPAccessList
 type ProjectIPAccessList struct {
 	// Unique identifier of AWS security group in this access list entry.
 	// +optional
