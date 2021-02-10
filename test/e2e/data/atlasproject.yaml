@@ -1,0 +1,8 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: my-project
+spec:
+  name: Test Atlas Operator Project
+  connectionSecretRef:
+    name: my-atlas-key

@@ -86,5 +86,9 @@ issues:
       linters:
         - gochecknoglobals
         - wrapcheck
+    - path: test/e2e
+      linters:
+        - errcheck
+        - stylecheck
   max-issues-per-linter: 0
   max-same-issues: 0
