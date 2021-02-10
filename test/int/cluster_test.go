@@ -129,8 +129,6 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1800, interval).Should(BeTrue())
 
-				lastGeneration++
-
 				doCommonChecks()
 				checkAtlasState()
 			})
