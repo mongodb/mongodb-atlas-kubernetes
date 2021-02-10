@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -182,6 +183,7 @@ func prepareControllers() {
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ResourceWatcher: watch.NewResourceWatcher(),
+		OperatorPod:     kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -189,6 +191,7 @@ func prepareControllers() {
 		Client:      k8sManager.GetClient(),
 		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		AtlasDomain: "https://cloud-qa.mongodb.com",
+		OperatorPod: kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

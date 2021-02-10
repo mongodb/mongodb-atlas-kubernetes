@@ -46,6 +46,7 @@ type AtlasClusterReconciler struct {
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
 	AtlasDomain string
+	OperatorPod client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -70,7 +71,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return result.ReconcileResult(), nil
 	}
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
@@ -136,7 +137,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		return errors.New("cannot read Atlas connection")
 	}
