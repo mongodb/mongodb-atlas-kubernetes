@@ -35,8 +35,8 @@ func GetGeneration(ns string) func() string {
 	}
 }
 
-// GetStatus .status.conditions.type=Ready.status
-func GetStatus(ns string, atlasname string) func() string {
+// GetStatusCondition .status.conditions.type=Ready.status
+func GetStatusCondition(ns string, atlasname string) func() string {
 	return func() string {
 		session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
 		return string(session.Wait("1m").Out.Contents())

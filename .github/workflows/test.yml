@@ -126,8 +126,8 @@ jobs:
         MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
         MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
         MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-        K8s_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
-        K8s_VERSION: "${{ steps.properties.outputs.k8s_version }}"
+        K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
+        K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
         TEST_NAME: "${{ matrix.test }}"
       run: |
         kubectl version

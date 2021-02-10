@@ -39,8 +39,8 @@ var _ = BeforeSuite(func() {
 
 // setUpMongoCLI initial setup
 func checkUpMongoCLI() {
-	Platform = os.Getenv("K8s_PLATFORM")
-	K8sVersion = os.Getenv("K8s_VERSION")
+	Platform = os.Getenv("K8S_PLATFORM")
+	K8sVersion = os.Getenv("K8S_VERSION")
 	// additional checks
 	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty())
 	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty())

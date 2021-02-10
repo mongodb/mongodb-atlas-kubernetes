@@ -84,7 +84,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("created"))
 
 		By("Wait project creation")
-		Eventually(kube.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
+		Eventually(kube.GetStatusCondition(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
 		Eventually(kube.GetGeneration(namespaceUserResources)).Should(Equal("1"))
 		Expect(
 			mongocli.IsProjectExist(userProjectConfig.Spec.Name),
@@ -123,7 +123,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		Eventually(session.Wait()).Should(Say("atlascluster-sample configured"))
 
 		By("Wait creation")
-		Eventually(kube.GetStatus(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
+		Eventually(kube.GetStatusCondition(namespaceUserResources, "atlasproject.atlas.mongodb.com/"+k8sProjectName)).Should(Equal("True"))
 		Eventually(kube.GetGeneration(namespaceUserResources)).Should(Equal("2"))
 		Eventually(kube.GetK8sClusterStateName(
 			namespaceUserResources, "atlascluster.atlas.mongodb.com/"+userClusterConfig.ObjectMeta.Name),
