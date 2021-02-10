@@ -48,7 +48,7 @@ var _ = Describe("AtlasCluster", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = testAtlasProject(namespace.Name, namespace.Name, connectionSecret.Name)
+		createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -172,7 +172,7 @@ var _ = Describe("AtlasCluster", func() {
 						status.
 							FalseCondition(status.ClusterReadyType).
 							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
-							WithMessage(`\(request \\"CANNOT_UPDATE_AND_PAUSE_CLUSTER\\"\) Cannot update and pause cluster test-atlas-cluster at the same time\.$`),
+							WithMessageRegexp(`\(request \\"CANNOT_UPDATE_AND_PAUSE_CLUSTER\\"\) Cannot update and pause cluster test-atlas-cluster at the same time\.$`),
 						validateClusterFailingFunc(),
 					),
 					1200,
@@ -212,7 +212,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if startedCreation {
 			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessage("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -236,7 +236,7 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if !isIdle {
 			Expect(c.Status.StateName).To(Equal("UPDATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessage("cluster is updating"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessageRegexp("cluster is updating"),
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
@@ -259,7 +259,7 @@ func validateClusterFailingFunc() func(a mdbv1.AtlasCustomResource) {
 		}
 
 		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas)).WithMessage("cluster is updating"),
+			status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas)).WithMessageRegexp("cluster is updating"),
 			status.FalseCondition(status.ReadyType),
 		)
 		Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))

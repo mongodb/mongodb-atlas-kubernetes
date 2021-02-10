@@ -41,6 +41,10 @@ spec:
                   for the cluster. If you specify the autoScaling object, you must
                   also specify the providerSettings.autoScaling object.
                 properties:
+                  autoIndexingEnabled:
+                    description: Flag that indicates whether autopilot mode for Performance
+                      Advisor is enabled. The default is false.
+                    type: boolean
                   compute:
                     description: Collection of settings that configure how a cluster
                       might scale its cluster tier and whether the cluster can scale
@@ -168,6 +172,10 @@ spec:
                     description: Range of instance sizes to which your cluster can
                       scale.
                     properties:
+                      autoIndexingEnabled:
+                        description: Flag that indicates whether autopilot mode for
+                          Performance Advisor is enabled. The default is false.
+                        type: boolean
                       compute:
                         description: Collection of settings that configure how a cluster
                           might scale its cluster tier and whether the cluster can
