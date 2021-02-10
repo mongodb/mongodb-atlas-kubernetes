@@ -24,8 +24,9 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -45,6 +46,7 @@ type AtlasClusterReconciler struct {
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
 	AtlasDomain string
+	OperatorPod client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -69,7 +71,7 @@ func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return result.ReconcileResult(), nil
 	}
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		// merge result into ctx
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
@@ -104,22 +106,25 @@ func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster
 }
 
 func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&mdbv1.AtlasCluster{}).
-		WithEventFilter(watch.CommonPredicates()).
-		Watches(
-			&source.Kind{Type: &mdbv1.AtlasCluster{}},
-			&watch.AtlasResourceEventHandler{Controller: r},
-			builder.WithPredicates(watch.DeleteOnly()),
-		).
-		Complete(r)
+	c, err := controller.New("AtlasCluster", mgr, controller.Options{Reconciler: r})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to primary resource AtlasCluster & handle delete separately
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete implements a handler for the Delete event.
-func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
-	cluster, ok := obj.(*mdbv1.AtlasCluster)
+func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
+	cluster, ok := e.Object.(*mdbv1.AtlasCluster)
 	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, obj)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, e.Object)
 		return nil
 	}
 
@@ -132,7 +137,7 @@ func (r *AtlasClusterReconciler) Delete(obj runtime.Object) error {
 		return errors.New("cannot read project resource")
 	}
 
-	connection, result := atlas.ReadConnection(log, r.Client, "TODO!", project.ConnectionSecretObjectKey())
+	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if !result.IsOk() {
 		return errors.New("cannot read Atlas connection")
 	}

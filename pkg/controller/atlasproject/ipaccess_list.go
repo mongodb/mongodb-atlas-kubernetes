@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
@@ -20,6 +21,15 @@ import (
 type atlasProjectIPAccessList mongodbatlas.ProjectIPAccessList
 
 func (i atlasProjectIPAccessList) Identifier() interface{} {
+	// hack: Atlas adds the CIDRBlock in case IPAddress is specified in the response.
+	// This doesn't conform to the "update" contract (one field per List) and doesn't allow to "merge" lists.
+	// So we ignore the CIDRblock in this case.
+	// Note, this used to have "&& strings.HasPrefix(i.CIDRBlock, i.IPAddress" check as well but according to the example:
+	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/#example-body the IP may
+	// be not a prefix of CIDR!
+	if i.CIDRBlock != "" && i.IPAddress != "" {
+		return i.AwsSecurityGroup + i.IPAddress
+	}
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
@@ -27,7 +37,7 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
-	active, _ := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
+	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
 	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
 	if err != nil {
@@ -36,7 +46,12 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if result := createOrDeleteInAtlas(client, projectID, active, ctx.Log); !result.IsOk() {
 		return result
 	}
-	// TODO update status - add the expired project IP access list there
+	// TODO remove after the circular dependency is solved
+	expiredCopy := make([]status.ProjectIPAccessList, len(expired))
+	for i, list := range expired {
+		expiredCopy[i] = status.ProjectIPAccessList(list)
+	}
+	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredCopy))
 	return workflow.OK()
 }
 

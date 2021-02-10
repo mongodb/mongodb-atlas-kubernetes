@@ -2,7 +2,6 @@ package int
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,7 +14,6 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
@@ -52,7 +50,7 @@ var _ = Describe("AtlasCluster", func() {
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-			10, interval).Should(BeTrue())
+			20, interval).Should(BeTrue())
 	})
 
 	AfterEach(func() {
@@ -60,9 +58,14 @@ var _ = Describe("AtlasCluster", func() {
 			if createdCluster != nil {
 				By("Removing Atlas Cluster " + createdCluster.Name)
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
 			}
+
+			// TODO: CLOUDP-82115
+			// By("Removing Atlas Project " + createdProject.Status.ID)
+			// Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			// Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
+
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			// This is a bit strange but the delete request right after the cluster is removed may fail with "Still active cluster" error
 			// UI shows the cluster being deleted though. Seems to be the issue only if removal is done using API,
@@ -86,7 +89,6 @@ var _ = Describe("AtlasCluster", func() {
 			)))
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
 			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
-			lastGeneration++
 		})
 	}
 
@@ -116,7 +118,7 @@ var _ = Describe("AtlasCluster", func() {
 		Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 			1200, interval).Should(BeTrue())
 
-		doCommonChecks()
+		lastGeneration++
 	}
 
 	Describe("Create/Update the cluster", func() {
@@ -139,12 +141,14 @@ var _ = Describe("AtlasCluster", func() {
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState()
 			})
 
 			By("Updating the Cluster backups settings", func() {
 				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
@@ -153,11 +157,50 @@ var _ = Describe("AtlasCluster", func() {
 			By("Decreasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
 				performUpdate()
+				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdCluster.Spec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
 					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+				})
+			})
+
+			By("Pausing the cluster", func() {
+				createdCluster.Spec.Paused = boolptr(true)
+				performUpdate()
+				doCommonChecks()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
+				})
+			})
+
+			By("Updating the Cluster configuration while paused (should fail)", func() {
+				createdCluster.Spec.ProviderBackupEnabled = boolptr(false)
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				lastGeneration++
+			})
+
+			By("Unpausing the cluster", func() {
+				createdCluster.Spec.Paused = boolptr(false)
+				performUpdate()
+				doCommonChecks()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
+				})
+			})
+
+			By("Checking that modifications were applied after unpausing", func() {
+				doCommonChecks()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
 				})
 			})
 		})
@@ -197,7 +240,7 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		}
 		// When the create request has been made to Atlas - we expect the following status
 		if !isIdle {
-			Expect(c.Status.StateName).To(Equal("UPDATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			Expect(c.Status.StateName).To(Or(Equal("UPDATING"), Equal("REPAIRING")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessageRegexp("cluster is updating"),
 				status.FalseCondition(status.ReadyType),
@@ -237,20 +280,8 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 				return true
 			}
 		}
-		return false
-	}
-}
 
-func removeAtlasProject(projectID string) func() bool {
-	return func() bool {
-		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue())
-			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
-			return false
-		}
-		return true
+		return false
 	}
 }
 
