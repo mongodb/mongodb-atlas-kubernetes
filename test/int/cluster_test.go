@@ -185,8 +185,8 @@ var _ = Describe("AtlasCluster", func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)),.
-							WithMessageRegexp("TODOTODO")
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("TODOTODO"),
 					),
 					60,
 					interval,
@@ -238,6 +238,35 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Setting AutoScaling.Compute.Enabled to false (should fail)", func() {
+				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled: boolptr(false),
+					},
+				}
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("TODOTODO"),
+					),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				By("Fixing the Cluster", func() {
+					createdCluster.Spec.ProviderSettings.AutoScaling = nil
+					performUpdate()
+					doCommonChecks()
+					checkAtlasState()
+				})
+			})
+
+			By("Setting incorrect instance size (should fail)", func() {
 				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
 						Enabled: boolptr(false),
