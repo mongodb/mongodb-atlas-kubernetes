@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eou pipefail
+#set -eou pipefail
 
 export ATLAS_ORG_ID="${INPUT_ATLAS_ORG_ID}"
 export ATLAS_PUBLIC_KEY="${INPUT_ATLAS_PUBLIC_KEY}"
