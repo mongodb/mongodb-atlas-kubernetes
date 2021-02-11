@@ -49,7 +49,7 @@ jobs:
     needs: [unit-test]
     runs-on: ubuntu-latest
     env:
-      DOCKER_REPO: mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
 
     - name: Check out code

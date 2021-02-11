@@ -14,7 +14,7 @@ jobs:
     if: (github.event.pull_request.merged == true) && (startsWith(github.event.pull_request.head.ref, 'release'))
     runs-on: ubuntu-latest
     env:
-      DOCKER_RELEASE_REPO: mongodb-atlas-kubernetes-operator
+      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
     steps:
 
     - name: Print Env and Get version
