@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-set -eou pipefail
+#set -eou pipefail
 
 #commit file to the destination branch
 
