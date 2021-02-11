@@ -133,11 +133,7 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
-	@if [ "$(kind get clusters)" = "kind" ]; then \
-		echo "create kind cluster: nothing to do"; \
-	else \
-		bash ./scripts/create_kind_cluster.sh; \
-	fi
+		bash ./scripts/create_kind_cluster.sh;
 
 .PHONY: stop-kind
 stop-kind: ## Stop the local kind cluster
