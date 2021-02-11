@@ -8,9 +8,9 @@ require (
 	github.com/go-logr/zapr v0.4.0
 	github.com/google/go-cmp v0.5.4
 	github.com/mongodb-forks/digest v1.0.2
-	github.com/onsi/ginkgo v1.14.2
-	github.com/pborman/uuid v1.2.0
+	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
+	github.com/pborman/uuid v1.2.0
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/atlas v0.7.1
 	go.uber.org/multierr v1.6.0 // indirect
