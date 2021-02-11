@@ -38,7 +38,9 @@ const (
 	ProviderGCP    ProviderName = "GCP"
 	ProviderAzure  ProviderName = "AZURE"
 	ProviderTenant ProviderName = "TENANT"
+)
 
+const (
 	TypeReplicaSet ClusterType = "REPLICASET"
 	TypeSharded    ClusterType = "SHARDED"
 	TypeGeoSharded ClusterType = "GEOSHARDED"
