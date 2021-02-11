@@ -124,7 +124,7 @@ var _ = Describe("AtlasCluster", func() {
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
 			invalidCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
-			invalidCluster.Spec.MongoDBMajorVersion = "42.42"
+			invalidCluster.Spec.Name = ""
 
 			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(invalidCluster)), func() {
 				createdCluster.ObjectMeta = invalidCluster.ObjectMeta
@@ -147,7 +147,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Fixing the cluster", func() {
-				invalidCluster.Spec.MongoDBMajorVersion = "4.2"
+				invalidCluster.Spec.Name = "fixed-cluster"
 				performUpdate()
 				doCommonChecks()
 				checkAtlasState()
