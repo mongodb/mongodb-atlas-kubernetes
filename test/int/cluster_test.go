@@ -136,8 +136,8 @@ var _ = Describe("AtlasCluster", func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotCreatedInAtlas)).
-							WithMessageRegexp("UNEXPECTED_ERROR"),
+							WithReason(string(workflow.Internal)).
+							WithMessageRegexp("name is invalid because must be set"),
 					),
 					60,
 					interval,
