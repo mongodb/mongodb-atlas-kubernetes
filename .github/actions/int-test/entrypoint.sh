@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #set -eou pipefail
 
 export ATLAS_ORG_ID="${INPUT_ATLAS_ORG_ID}"
