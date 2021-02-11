@@ -136,7 +136,7 @@ var _ = Describe("AtlasCluster", func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.Internal)).
+							WithReason(string(workflow.Internal)). // Internal due to reconciliation failing on the initial GET request
 							WithMessageRegexp("name is invalid because must be set"),
 					),
 					60,
