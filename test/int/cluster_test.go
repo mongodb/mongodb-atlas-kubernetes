@@ -148,7 +148,14 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Fixing the cluster", func() {
 				createdCluster.Spec.Name = "fixed-cluster"
-				performUpdate()
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1200, interval).Should(BeTrue())
+
+				lastGeneration++
+
 				doCommonChecks()
 				checkAtlasState()
 			})
