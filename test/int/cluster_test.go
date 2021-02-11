@@ -122,6 +122,43 @@ var _ = Describe("AtlasCluster", func() {
 	}
 
 	Describe("Create/Update the cluster", func() {
+		It("Should fail, then be fixed", func() {
+			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster.Spec.Name = ""
+
+			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.Internal)). // Internal due to reconciliation failing on the initial GET request
+							WithMessageRegexp("name is invalid because must be set"),
+					),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				lastGeneration++
+			})
+
+			By("Fixing the cluster", func() {
+				createdCluster.Spec.Name = "fixed-cluster"
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1200, interval).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+		})
+
 		It("Should Succeed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 
@@ -180,7 +217,14 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 				Eventually(
-					testutil.WaitFor(k8sClient, createdCluster, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterNotCreatedInAtlas))),
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
+					),
 					60,
 					interval,
 				).Should(BeTrue())
@@ -201,6 +245,65 @@ var _ = Describe("AtlasCluster", func() {
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
+				})
+			})
+
+			By("Setting AutoScaling.Compute.Enabled to false (should fail)", func() {
+				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled: boolptr(false),
+					},
+				}
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("INVALID_ATTRIBUTE"),
+					),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				lastGeneration++
+
+				By("Fixing the Cluster", func() {
+					createdCluster.Spec.ProviderSettings.AutoScaling = nil
+					performUpdate()
+					doCommonChecks()
+					checkAtlasState()
+				})
+			})
+
+			By("Setting incorrect instance size (should fail)", func() {
+				oldSizeName := createdCluster.Spec.ProviderSettings.InstanceSizeName
+				createdCluster.Spec.ProviderSettings.InstanceSizeName = "M42"
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						createdCluster,
+						status.
+							FalseCondition(status.ClusterReadyType).
+							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithMessageRegexp("INVALID_ENUM_VALUE"),
+					),
+					60,
+					interval,
+				).Should(BeTrue())
+
+				lastGeneration++
+
+				By("Fixing the Cluster", func() {
+					createdCluster.Spec.ProviderSettings.InstanceSizeName = oldSizeName
+					performUpdate()
+					doCommonChecks()
+					checkAtlasState()
 				})
 			})
 		})
