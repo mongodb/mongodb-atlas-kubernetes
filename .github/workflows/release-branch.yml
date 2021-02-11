@@ -28,6 +28,7 @@ jobs:
       uses: ./.github/actions/gen-install-scripts
       with:
         IMAGE_URL: ${{ secrets.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        ENV: default
 
     - name: Create branch and push it
       run: |

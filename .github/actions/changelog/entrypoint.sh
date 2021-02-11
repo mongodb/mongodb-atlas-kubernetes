@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eou pipefail
+
 # simple changelog: get all commits beetween 2 tags and put them into file
 
 echo "Commits: " > changelog.md
