@@ -124,8 +124,7 @@ spec:
                   this field is updated by the Atlas Operator only after specification
                   changes
                 items:
-                  description: TODO solve circular dependency (move ProjectIPAccessList
-                    to subpackage?) Copy of mdbv1.ProjectIPAccessList
+                  description: ProjectIPAccessList is a copy of mdbv1.ProjectIPAccessList
                   properties:
                     awsSecurityGroup:
                       description: Unique identifier of AWS security group in this
