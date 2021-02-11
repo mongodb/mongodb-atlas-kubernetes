@@ -123,12 +123,12 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
-			invalidCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
-			invalidCluster.Spec.Name = ""
+			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster.Spec.Name = ""
 
-			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(invalidCluster)), func() {
-				createdCluster.ObjectMeta = invalidCluster.ObjectMeta
-				Expect(k8sClient.Create(context.Background(), invalidCluster)).ToNot(HaveOccurred())
+			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
 				Eventually(
 					testutil.WaitFor(
@@ -147,7 +147,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Fixing the cluster", func() {
-				invalidCluster.Spec.Name = "fixed-cluster"
+				createdCluster.Spec.Name = "fixed-cluster"
 				performUpdate()
 				doCommonChecks()
 				checkAtlasState()
