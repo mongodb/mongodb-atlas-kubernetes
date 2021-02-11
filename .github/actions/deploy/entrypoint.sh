@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -eou pipefail
+
 echo "${INPUT_KUBE_CONFIG_DATA}" >> ./kube.config
 export KUBECONFIG="./kube.config"
 

@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -eou pipefail
+
 #commit file to the destination branch
 
 MESSAGE="generated $FILE_TO_COMMIT"

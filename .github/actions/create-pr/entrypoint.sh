@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eou pipefail
+
 # Create Pull Request (by default on current branch)
 gh pr create \
     --title "Release ${VERSION}" \

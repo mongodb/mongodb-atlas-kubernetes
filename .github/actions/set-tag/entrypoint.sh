@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -eou pipefail
+
 # Setup tag name
 commit_id=$(git rev-parse --short HEAD)
 branch_name=$GITHUB_HEAD_REF
