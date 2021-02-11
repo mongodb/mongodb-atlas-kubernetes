@@ -122,7 +122,7 @@ var _ = Describe("AtlasCluster", func() {
 	}
 
 	Describe("Create/Update the cluster", func() {
-		FIt("Should fail, then be fixed", func() {
+		It("Should fail, then be fixed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
 			expectedCluster.Spec.Name = ""
 
@@ -153,8 +153,6 @@ var _ = Describe("AtlasCluster", func() {
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1200, interval).Should(BeTrue())
-
-				// lastGeneration++
 
 				doCommonChecks()
 				checkAtlasState()
