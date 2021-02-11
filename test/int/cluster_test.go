@@ -286,7 +286,7 @@ var _ = Describe("AtlasCluster", func() {
 						status.
 							FalseCondition(status.ClusterReadyType).
 							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("INVALID_ATTRIBUTE"),
+							WithMessageRegexp("INVALID_ENUM_VALUE"),
 					),
 					60,
 					interval,
