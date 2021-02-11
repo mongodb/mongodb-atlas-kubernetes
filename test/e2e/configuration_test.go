@@ -109,7 +109,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		).Should(Equal(userClusterConfig.Spec.ProviderSettings.InstanceSizeName))
 		Expect(
 			cluster.ProviderSettings.ProviderName,
-		).Should(Equal(userClusterConfig.Spec.ProviderSettings.ProviderName))
+		).Should(Equal(string(userClusterConfig.Spec.ProviderSettings.ProviderName)))
 		Expect(
 			cluster.ProviderSettings.RegionName,
 		).Should(Equal(userClusterConfig.Spec.ProviderSettings.RegionName))
