@@ -3,7 +3,10 @@
 [![MongoDB Atlas Go Client](https://img.shields.io/badge/Powered%20by%20-go--client--mongodb--atlas-%2313AA52)](https://github.com/mongodb/go-client-mongodb-atlas)
 
 Welcome to MongoDB Atlas Operator - the Operator allowing to manage Atlas Clusters from Kubernetes.
-> Current Status: *pre-alpha*. We are currently working on the initial set of features that will give users the opportunity to provision Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information into the applications deployed to Kubernetes.
+> Current Status: *alpha*. We are currently working on the initial set of features that will give users the opportunity 
+> to provision Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information 
+> into the applications deployed to Kubernetes.
+
 ## Quick Start guide
 ### Step 1. Deploy Kubernetes operator using all in one config file
 ```
@@ -12,17 +15,18 @@ kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kuberne
 ### Step 2. Create Atlas Cluster
 
 **1.** Create Atlas API Key Secret
-In order to work with Atlas Operator you'll need to provide the [authentication information](https://docs.atlas.mongodb.com/configure-api-access) that would allow the Atlas Operator communicate with Atlas API. You need to create the secret first:
+In order to work with Atlas Operator you'll need to provide the [authentication information](https://docs.atlas.mongodb.com/configure-api-access) 
+ that would allow the Atlas Operator communicate with Atlas API. You need to create the secret first:
 ```
 kubectl create secret generic my-atlas-key \
          --from-literal="orgId=<the_atlas_organization_id>" \
          --from-literal="publicApiKey=<the_atlas_api_public_key>" \
          --from-literal="privateApiKey=<the_atlas_api_private_key>"
 ```
-**2.** Create `AtlasProject` Custom resource
+**2.** Create `AtlasProject` Custom Resource
 
 `AtlasProject` represents Atlas Project in our Kubernetes cluster.
-Note: Property `connectionSecretRef` should reference the Secret `my-atlas-key` that was created in previous step:
+Note: Property `connectionSecretRef` should reference the Secret `my-atlas-key` that was created in the previous step:
 ```
 cat <<EOF | kubectl apply -f -
 apiVersion: atlas.mongodb.com/v1
@@ -33,6 +37,11 @@ spec:
   name: Test Atlas Operator Project
   connectionSecretRef:
     name: my-atlas-key
+  projectIpAccessList:
+    - ipAddress: "192.0.2.15"
+      comment: "IP address for Application Server A"
+    - ipAddress: "203.0.113.0/24"
+      comment: "CIDR block for Application Server B - D"
 EOF
 ```
 **3.** Create the `AtlasCluster` Resource.
