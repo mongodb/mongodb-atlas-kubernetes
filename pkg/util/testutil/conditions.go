@@ -41,7 +41,6 @@ func (m *conditionMatcher) Match(actual interface{}) (success bool, err error) {
 	if m.ExpectedCondition.Type != "" && c.Type != m.ExpectedCondition.Type {
 		return false, nil
 	}
-	// Add regexp when necessary
 	if m.ExpectedCondition.Message != "" {
 		gomega.Expect(c.Message).To(gomega.MatchRegexp(m.ExpectedCondition.Message))
 	}

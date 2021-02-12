@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -eou pipefail
 
 target_dir="deploy"
 mkdir -p "${target_dir}"
