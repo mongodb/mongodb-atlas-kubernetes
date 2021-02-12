@@ -49,6 +49,8 @@ jobs:
     needs: [unit-test]
     runs-on: ubuntu-latest
     env:
+      # uncomment the below for local testing
+      # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
 
@@ -72,6 +74,10 @@ jobs:
     name: E2E tests
     needs: prepare-e2e
     runs-on: ubuntu-latest
+    env:
+      # uncomment the below for local testing
+      # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
+      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     strategy:
       fail-fast: false
       matrix:
