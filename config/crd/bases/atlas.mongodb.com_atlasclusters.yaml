@@ -127,6 +127,9 @@ spec:
                       type: string
                     value:
                       type: string
+                  required:
+                  - key
+                  - value
                   type: object
                 type: array
               mongoDBMajorVersion:
