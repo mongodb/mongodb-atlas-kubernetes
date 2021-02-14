@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -46,16 +47,11 @@ func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, conne
 	if result := createOrDeleteInAtlas(client, projectID, active, ctx.Log); !result.IsOk() {
 		return result
 	}
-	// TODO remove after the circular dependency is solved
-	expiredCopy := make([]status.ProjectIPAccessList, len(expired))
-	for i, list := range expired {
-		expiredCopy[i] = status.ProjectIPAccessList(list)
-	}
-	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredCopy))
+	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
 	return workflow.OK()
 }
 
-func validateIPAccessLists(ipAccessList []mdbv1.ProjectIPAccessList) error {
+func validateIPAccessLists(ipAccessList []project.IPAccessList) error {
 	for _, list := range ipAccessList {
 		if err := validateSingleIPAccessList(list); err != nil {
 			return err
@@ -67,7 +63,7 @@ func validateIPAccessLists(ipAccessList []mdbv1.ProjectIPAccessList) error {
 // validateSingleIPAccessList performs validation of the IP access list. Note, that we intentionally don't validate
 // IP addresses or CIDR blocks - this will be done by Atlas. But we need to validate the timestamp as we use it to filter
 // active and expired ip access lists.
-func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
+func validateSingleIPAccessList(list project.IPAccessList) error {
 	if list.DeleteAfterDate != "" {
 		_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
 		if err != nil {
@@ -82,7 +78,7 @@ func validateSingleIPAccessList(list mdbv1.ProjectIPAccessList) error {
 	return nil
 }
 
-func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operatorIPAccessLists []mdbv1.ProjectIPAccessList, log *zap.SugaredLogger) workflow.Result {
+func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operatorIPAccessLists []project.IPAccessList, log *zap.SugaredLogger) workflow.Result {
 	atlasAccess, _, err := client.ProjectIPAccessList.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
@@ -105,7 +101,7 @@ func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operat
 	return workflow.OK()
 }
 
-func createIPAccessListsInAtlas(client *mongodbatlas.Client, projectID string, ipAccessLists []mdbv1.ProjectIPAccessList) workflow.Result {
+func createIPAccessListsInAtlas(client *mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
 	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
 	for i, list := range ipAccessLists {
 		atlasFormat, err := list.ToAtlas()
@@ -131,9 +127,9 @@ func deleteIPAccessFromAtlas(client *mongodbatlas.Client, projectID string, list
 	return nil
 }
 
-func filterActiveIPAccessLists(accessLists []mdbv1.ProjectIPAccessList) ([]mdbv1.ProjectIPAccessList, []mdbv1.ProjectIPAccessList) {
-	active := make([]mdbv1.ProjectIPAccessList, 0)
-	expired := make([]mdbv1.ProjectIPAccessList, 0)
+func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IPAccessList, []project.IPAccessList) {
+	active := make([]project.IPAccessList, 0)
+	expired := make([]project.IPAccessList, 0)
 	for _, list := range accessLists {
 		if list.DeleteAfterDate != "" {
 			// We are ignoring the error as it will never happen due to validation check before

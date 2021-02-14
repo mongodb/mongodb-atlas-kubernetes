@@ -5,7 +5,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
@@ -13,11 +13,11 @@ import (
 // the 'expected' mdbv1.ProjectIPAccessList  one.
 // Note, that we cannot compare them by all the fields as Atlas tends to set default fields after IPAccessList creation
 // so we need to compare only the fields that the Operator has set
-func MatchIPAccessList(expected mdbv1.ProjectIPAccessList) types.GomegaMatcher {
+func MatchIPAccessList(expected project.IPAccessList) types.GomegaMatcher {
 	return &ipAccessListMatcher{ExpectedIPAccessList: expected}
 }
 
-func BuildMatchersFromExpected(ipLists []mdbv1.ProjectIPAccessList) []types.GomegaMatcher {
+func BuildMatchersFromExpected(ipLists []project.IPAccessList) []types.GomegaMatcher {
 	result := make([]types.GomegaMatcher, len(ipLists))
 	for i, list := range ipLists {
 		result[i] = MatchIPAccessList(list)
@@ -26,7 +26,7 @@ func BuildMatchersFromExpected(ipLists []mdbv1.ProjectIPAccessList) []types.Gome
 }
 
 type ipAccessListMatcher struct {
-	ExpectedIPAccessList mdbv1.ProjectIPAccessList
+	ExpectedIPAccessList project.IPAccessList
 }
 
 func (m *ipAccessListMatcher) Match(actual interface{}) (success bool, err error) {
