@@ -18,8 +18,10 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // Important:
@@ -118,6 +120,10 @@ type ScopeSpec struct {
 	// Type is a type of resource that the user has access to.
 	// +kubebuilder:validation:Enum=CLUSTER;DATA_LAKE
 	Type ScopeType `json:"type"`
+}
+
+func (p AtlasDatabaseUser) AtlasProjectObjectKey() client.ObjectKey {
+	return kube.ObjectKey(p.Namespace, p.Spec.Project.Name)
 }
 
 func (p *AtlasDatabaseUser) GetStatus() status.Status {
