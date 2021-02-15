@@ -4,9 +4,9 @@
 
 Welcome to the MongoDB Atlas Operator - a Kubernetes Operator which manages MongoDB Atlas Clusters from Kubernetes.
 
-> Current Status: *alpha*. We are currently working on the initial set of features that will give users the opportunity
-> to provision Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information
-> into the applications deployed to Kubernetes.
+> Current Status: *alpha*. We are working on an initial set of features to give users the ability to provision
+> Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information
+> into applications deployed to Kubernetes.
 
 ## Quick Start guide
 ### Step 1. Deploy Kubernetes operator using all in one config file
