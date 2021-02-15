@@ -151,7 +151,7 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType)),
 					1200, interval).Should(BeTrue())
 
 				doCommonChecks()
