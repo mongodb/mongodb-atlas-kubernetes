@@ -11,10 +11,10 @@ kubectl version
 controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 #Installing the CRD,Operator,Role
-ns=mongodb-atlas-kubernetes-system
-kubectl delete deployment mongodb-atlas-kubernetes-controller-manager -n "${ns}" || true # temporary
+ns=mongodb-atlas
+kubectl delete deployment mongodb-atlas-operator -n "${ns}" || true # temporary
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
-cd - && kustomize build config/dev | kubectl apply -f -
+cd - && kuszomize build --load_restrictor none config/release/dev/allinone | kubectl apply -f -
 
 # Ensuring the Atlas credentials Secret
 kubectl delete secrets my-atlas-key --ignore-not-found -n "${ns}"

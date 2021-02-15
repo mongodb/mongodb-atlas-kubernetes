@@ -28,23 +28,23 @@ jobs:
       uses: ./.github/actions/gen-install-scripts
       with:
         IMAGE_URL: ${{ secrets.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
-        ENV: default
-
-    - name: Create branch and push it
-      run: |
-        git checkout -b "release/${VERSION}"
-        git push origin "release/${VERSION}"
-
-    - name: Commit file and sign it
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/all-in-one.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Create PR
-      uses: ./.github/actions/create-pr
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        REVIEWERS: antonlisovenko,vasilevp,leo-ri
+        ENV: prod
+#
+#    - name: Create branch and push it
+#      run: |
+#        git checkout -b "release/${VERSION}"
+#        git push origin "release/${VERSION}"
+#
+#    - name: Commit file and sign it
+#      uses: ./.github/actions/push-files
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        FILE_TO_COMMIT: "deploy/all-in-one.yaml"
+#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+#
+#    - name: Create PR
+#      uses: ./.github/actions/create-pr
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      with:
+#        REVIEWERS: antonlisovenko,vasilevp,leo-ri

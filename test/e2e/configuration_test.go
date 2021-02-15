@@ -32,7 +32,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		ID = uuid.NewRandom().String()
 		// TODO move it
 		namespaceUserResources := "ns-" + ID
-		namespaceOperator := "mongodb-atlas-kubernetes-system"
+		namespaceOperator := "mongodb-atlas"
 		keyName := "my-atlas-key"
 		pName := ID
 		k8sProjectName := "k-" + ID

@@ -51,6 +51,9 @@ type AtlasClusterReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
 
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
+
 func (r *AtlasClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlascluster", req.NamespacedName)
 

@@ -49,9 +49,15 @@ type AtlasProjectReconciler struct {
 	OperatorPod client.ObjectKey
 }
 
+// Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
+
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 
 func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasproject", req.NamespacedName)

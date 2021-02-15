@@ -1,0 +1,7 @@
+namespace: mongodb-atlas
+
+namePrefix: mongodb-atlas-
+
+resources:
+- ../../../default
+- ../../../rbac/namespaced

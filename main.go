@@ -67,6 +67,7 @@ func main() {
 		Port:               9443,
 		LeaderElection:     config.EnableLeaderElection,
 		LeaderElectionID:   "06d035fb.mongodb.com",
+		Namespace:          config.WatchedNamespaces,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -110,12 +111,14 @@ type Config struct {
 	AtlasDomain          string
 	EnableLeaderElection bool
 	MetricsAddr          string
+	WatchedNamespaces    string
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
 func parseConfiguration() Config {
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com", "the Atlas URL domain name (no slash in the end).")
+	flag.StringVar(&config.WatchedNamespaces, "watchedNamespaces", "", "the namespaces that should be watched by the Operator. Leave empty to watch for all the namespaces. Multiple values are not supported for the current version.")
 	flag.StringVar(&config.MetricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&config.EnableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
