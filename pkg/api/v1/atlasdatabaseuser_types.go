@@ -98,14 +98,14 @@ type AtlasDatabaseUserList struct {
 // A role on the admin database can include privileges that apply to the other databases as well.
 type RoleSpec struct {
 	// RoleName is a name of the role. This value can either be a built-in role or a custom role.
-	RoleName string `json:"roleName,omitempty"`
+	RoleName string `json:"roleName"`
 
 	// DatabaseName is a database on which the user has the specified role. A role on the admin database can include
 	// privileges that apply to the other databases.
-	DatabaseName string `json:"databaseName,omitempty"`
+	DatabaseName string `json:"databaseName"`
 
 	// CollectionName is a collection for which the role applies.
-	CollectionName string `json:"collectionName,omitempty"`
+	CollectionName string `json:"collectionName"`
 }
 
 // ScopeSpec if presents a database user only have access to the indicated resource (Cluster or Atlas Data Lake)

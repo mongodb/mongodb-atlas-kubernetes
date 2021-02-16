@@ -111,6 +111,10 @@ spec:
                       description: RoleName is a name of the role. This value can
                         either be a built-in role or a custom role.
                       type: string
+                  required:
+                  - collectionName
+                  - databaseName
+                  - roleName
                   type: object
                 type: array
               scopes:
