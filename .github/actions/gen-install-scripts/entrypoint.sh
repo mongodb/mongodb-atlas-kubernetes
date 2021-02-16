@@ -18,6 +18,7 @@ cd -
 
 
 which kustomize
+kustomize version
 # all-in-one
 kustomize build --load_restrictor none "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
