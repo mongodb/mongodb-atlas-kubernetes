@@ -121,6 +121,54 @@ var _ = Describe("AtlasCluster", func() {
 		lastGeneration++
 	}
 
+	Describe("Create cluster & change ReplicationSpecs", func() {
+		It("Should Succeed", func() {
+			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+
+			By("Updating ReplicationSpecs", func() {
+				createdCluster.Spec.ReplicationSpecs = append(createdCluster.Spec.ReplicationSpecs, mdbv1.ReplicationSpec{
+					NumShards: int64ptr(2),
+				})
+				createdCluster.Spec.NumShards = intptr(2)
+			})
+		})
+	})
+
+	Describe("Create cluster & increase DiskSizeGB", func() {
+		It("Should Succeed", func() {
+			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+
+			By("Increasing DiskSizeGB", func() {
+				createdCluster.Spec.DiskSizeGB = intptr(512)
+				performUpdate()
+				doCommonChecks()
+				checkAtlasState()
+			})
+		})
+	})
+
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
 			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
@@ -386,6 +434,10 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 
 		return false
 	}
+}
+
+func int64ptr(i int64) *int64 {
+	return &i
 }
 
 func intptr(i int) *int {
