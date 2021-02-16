@@ -11,7 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = FDescribe("Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
+var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
 
 	var NortonSpec, NimnulSpec userInputs
 	commonClusterName := "MegaCluster"
@@ -96,11 +96,11 @@ var _ = FDescribe("Users (Norton and Nimnul) can work with one Cluster wide oper
 		By("Wait creation projects/clusters", func() {
 			// projects Norton
 			waitProject(NortonSpec, "1")
-			NortonSpec.projectID = kube.GetProjectResource(NortonSpec.GenNamespace(), "atlasproject.atlas.mongodb.com/"+NortonSpec.ProjectK8sName()).Status.ID
+			NortonSpec.projectID = kube.GetProjectResource(NortonSpec.GenNamespace(), NortonSpec.GetFullK8sAtlasProjectName()).Status.ID
 
 			// projects Nimnul
 			waitProject(NimnulSpec, "1")
-			NimnulSpec.projectID = kube.GetProjectResource(NortonSpec.GenNamespace(), "atlasproject.atlas.mongodb.com/"+NortonSpec.ProjectK8sName()).Status.ID
+			NimnulSpec.projectID = kube.GetProjectResource(NimnulSpec.GenNamespace(), NimnulSpec.GetFullK8sAtlasProjectName()).Status.ID
 
 			waitCluster(NortonSpec, "1")
 			waitCluster(NimnulSpec, "1")

@@ -65,8 +65,8 @@ func waitCluster(input userInputs, generation string) {
 }
 
 func waitProject(input userInputs, generation string) {
-	EventuallyWithOffset(1, kube.GetStatusCondition(input.GenNamespace(), "atlasproject.atlas.mongodb.com/"+input.ProjectK8sName())).Should(Equal("True"))
-	EventuallyWithOffset(1, kube.GetGeneration(input.GenNamespace(), "atlasproject.atlas.mongodb.com/"+input.ProjectK8sName())).Should(Equal(generation))
+	EventuallyWithOffset(1, kube.GetStatusCondition(input.GenNamespace(), input.GetFullK8sAtlasProjectName())).Should(Equal("True"))
+	EventuallyWithOffset(1, kube.GetGeneration(input.GenNamespace(), input.GetFullK8sAtlasProjectName())).Should(Equal(generation))
 	ExpectWithOffset(1,
 		mongocli.IsProjectExist(input.projectName),
 	).Should(BeTrue())
