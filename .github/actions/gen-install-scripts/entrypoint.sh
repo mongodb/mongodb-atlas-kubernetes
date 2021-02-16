@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eou pipefail
+set -xeou pipefail
 
 target_dir="deploy"
 clusterwide_dir="${target_dir}/clusterwide"
@@ -16,6 +16,8 @@ controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 
+
+which kustomize
 # all-in-one
 kustomize build --load_restrictor none "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
