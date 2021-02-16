@@ -1,4 +1,4 @@
-namespace: mongodb-atlas
+namespace: mongodb-atlas-system
 
 namePrefix: mongodb-atlas-
 

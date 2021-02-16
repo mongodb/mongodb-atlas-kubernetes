@@ -29,22 +29,29 @@ jobs:
       with:
         IMAGE_URL: ${{ secrets.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
         ENV: prod
-#
-#    - name: Create branch and push it
-#      run: |
-#        git checkout -b "release/${VERSION}"
-#        git push origin "release/${VERSION}"
-#
-#    - name: Commit file and sign it
-#      uses: ./.github/actions/push-files
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        FILE_TO_COMMIT: "deploy/all-in-one.yaml"
-#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-#
-#    - name: Create PR
-#      uses: ./.github/actions/create-pr
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      with:
-#        REVIEWERS: antonlisovenko,vasilevp,leo-ri
+
+    - name: Create branch and push it
+      run: |
+        git checkout -b "release/${VERSION}"
+        git push origin "release/${VERSION}"
+
+    - name: Commit all-in-one
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/all-in-one.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit crd project
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/crds/atlas.mongodb.com_atlasprojects.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Create PR
+      uses: ./.github/actions/create-pr
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        REVIEWERS: antonlisovenko,vasilevp,leo-ri

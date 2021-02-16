@@ -1,7 +1,10 @@
-namespace: mongodb-atlas
+namespace: mongodb-atlas-system
 
 namePrefix: mongodb-atlas-
 
 resources:
 - ../../../default
 - ../../../rbac/namespaced
+
+patchesStrategicMerge:
+  - manager_watched_namespace_patch.yaml

@@ -143,4 +143,4 @@ stop-kind: ## Stop the local kind cluster
 
 .PHONY: log
 log: ## View manager logs
-	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas -f
+	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas-system -f
