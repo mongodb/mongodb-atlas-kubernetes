@@ -20,16 +20,16 @@ cd -
 which kustomize
 kustomize version
 # all-in-one
-kustomize build --load_restrictor none "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
+kustomize build --load-restrictor none "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
 
 # clusterwide
-kustomize build --load_restrictor none "config/release/${INPUT_ENV}/clusterwide" > "${clusterwide_dir}/clusterwide-config.yaml"
+kustomize build --load-restrictor none "config/release/${INPUT_ENV}/clusterwide" > "${clusterwide_dir}/clusterwide-config.yaml"
 kustomize build "config/crd" > "${clusterwide_dir}/crds.yaml"
 echo "Created clusterwide config"
 
 # namespaced
-kustomize build --load_restrictor none "config/release/${INPUT_ENV}/namespaced" > "${namespaced_dir}/namespaced-config.yaml"
+kustomize build --load-restrictor none "config/release/${INPUT_ENV}/namespaced" > "${namespaced_dir}/namespaced-config.yaml"
 kustomize build "config/crd" > "${namespaced_dir}/crds.yaml"
 echo "Created namespaced config"
 
