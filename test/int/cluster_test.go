@@ -123,7 +123,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -141,13 +141,16 @@ var _ = Describe("AtlasCluster", func() {
 					NumShards: int64ptr(2),
 				})
 				createdCluster.Spec.NumShards = intptr(2)
+				performUpdate()
+				doCommonChecks()
+				checkAtlasState()
 			})
 		})
 	})
 
 	Describe("Create cluster & increase DiskSizeGB", func() {
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -161,7 +164,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Increasing DiskSizeGB", func() {
-				createdCluster.Spec.DiskSizeGB = intptr(512)
+				createdCluster.Spec.DiskSizeGB = intptr(128)
 				performUpdate()
 				doCommonChecks()
 				checkAtlasState()
@@ -171,7 +174,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
 			expectedCluster.Spec.Name = ""
 
 			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(expectedCluster)), func() {
@@ -208,7 +211,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -402,10 +405,10 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 }
 
 // TODO builders
-func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
+func testAtlasCluster(namespace, projectName string) *mdbv1.AtlasCluster {
 	return &mdbv1.AtlasCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-cluster",
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasClusterSpec{

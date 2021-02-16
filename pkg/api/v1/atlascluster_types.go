@@ -31,7 +31,6 @@ func init() {
 }
 
 type ProviderName string
-type ClusterType string
 
 const (
 	ProviderAWS    ProviderName = "AWS"
@@ -39,6 +38,8 @@ const (
 	ProviderAzure  ProviderName = "AZURE"
 	ProviderTenant ProviderName = "TENANT"
 )
+
+type ClusterType string
 
 const (
 	TypeReplicaSet ClusterType = "REPLICASET"
