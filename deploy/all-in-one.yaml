@@ -40,6 +40,9 @@ spec:
               autoScaling:
                 description: Collection of settings that configures auto-scaling information for the cluster. If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
                 properties:
+                  autoIndexingEnabled:
+                    description: Flag that indicates whether autopilot mode for Performance Advisor is enabled. The default is false.
+                    type: boolean
                   compute:
                     description: Collection of settings that configure how a cluster might scale its cluster tier and whether the cluster can scale down.
                     properties:
@@ -103,11 +106,6 @@ spec:
                 type: array
               mongoDBMajorVersion:
                 description: Version of the cluster to deploy.
-                enum:
-                - "3.6"
-                - "4.0"
-                - "4.2"
-                - "4.4"
                 type: string
               name:
                 description: Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
@@ -117,6 +115,9 @@ spec:
                 maximum: 50
                 minimum: 1
                 type: integer
+              paused:
+                description: Flag that indicates whether the cluster should be paused.
+                type: boolean
               pitEnabled:
                 description: Flag that indicates the cluster uses continuous cloud backups.
                 type: boolean
@@ -138,6 +139,9 @@ spec:
                   autoScaling:
                     description: Range of instance sizes to which your cluster can scale.
                     properties:
+                      autoIndexingEnabled:
+                        description: Flag that indicates whether autopilot mode for Performance Advisor is enabled. The default is false.
+                        type: boolean
                       compute:
                         description: Collection of settings that configure how a cluster might scale its cluster tier and whether the cluster can scale down.
                         properties:
@@ -273,19 +277,41 @@ spec:
               connectionStrings:
                 description: ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
                 properties:
-                  awsPrivateLink:
-                    additionalProperties:
-                      type: string
-                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].connectionString instead. Private-endpoint-aware mongodb://connection strings for each AWS PrivateLink private endpoint. Atlas returns this parameter only if you deployed a AWS PrivateLink private endpoint to the same regions as all of this cluster''s nodes.'
-                    type: object
-                  awsPrivateLinkSrv:
-                    additionalProperties:
-                      type: string
-                    description: 'Deprecated: use connectionStrings.privateEndpoint[n].srvConnectionString instead. Private-endpoint-aware mongodb+srv:// connection strings for each AWS PrivateLink private endpoint.'
-                    type: object
                   private:
-                    description: Network-peering-endpoint-aware mongodb://connection strings for each interface VPC endpoint you configured to connect to this cluster. Atlas returns this parameter only if you created a network peering connection to this cluster.
+                    description: Network-peering-endpoint-aware mongodb:// connection strings for each interface VPC endpoint you configured to connect to this cluster. Atlas returns this parameter only if you created a network peering connection to this cluster.
                     type: string
+                  privateEndpoint:
+                    description: Private endpoint connection strings. Each object describes the connection strings you can use to connect to this cluster through a private endpoint. Atlas returns this parameter only if you deployed a private endpoint to all regions to which you deployed this cluster's nodes.
+                    items:
+                      description: PrivateEndpoint connection strings. Each object describes the connection strings you can use to connect to this cluster through a private endpoint. Atlas returns this parameter only if you deployed a private endpoint to all regions to which you deployed this cluster's nodes.
+                      properties:
+                        connectionString:
+                          description: Private-endpoint-aware mongodb:// connection string for this private endpoint.
+                          type: string
+                        endpoints:
+                          description: Private endpoint through which you connect to Atlas when you use connectionStrings.privateEndpoint[n].connectionString or connectionStrings.privateEndpoint[n].srvConnectionString.
+                          items:
+                            description: Endpoint through which you connect to Atlas
+                            properties:
+                              endpointId:
+                                description: Unique identifier of the private endpoint.
+                                type: string
+                              providerName:
+                                description: Cloud provider to which you deployed the private endpoint. Atlas returns AWS or AZURE.
+                                type: string
+                              region:
+                                description: Region to which you deployed the private endpoint.
+                                type: string
+                            type: object
+                          type: array
+                        srvConnectionString:
+                          description: Private-endpoint-aware mongodb+srv:// connection string for this private endpoint.
+                          type: string
+                        type:
+                          description: "Type of MongoDB process that you connect to with the connection strings \n Atlas returns: \n • MONGOD for replica sets, or \n • MONGOS for sharded clusters"
+                          type: string
+                      type: object
+                    type: array
                   privateSrv:
                     description: Network-peering-endpoint-aware mongodb+srv:// connection strings for each interface VPC endpoint you configured to connect to this cluster. Atlas returns this parameter only if you created a network peering connection to this cluster. Use this URI format if your driver supports it. If it doesn't, use connectionStrings.private.
                     type: string
@@ -423,6 +449,28 @@ spec:
                   required:
                   - status
                   - type
+                  type: object
+                type: array
+              expiredIpAccessList:
+                description: The list of IP Access List entries that are expired due to 'deleteAfterDate' being less than the current date. Note, that this field is updated by the Atlas Operator only after specification changes
+                items:
+                  description: ProjectIPAccessList is a copy of mdbv1.ProjectIPAccessList
+                  properties:
+                    awsSecurityGroup:
+                      description: Unique identifier of AWS security group in this access list entry.
+                      type: string
+                    cidrBlock:
+                      description: Range of IP addresses in CIDR notation in this access list entry.
+                      type: string
+                    comment:
+                      description: Comment associated with this access list entry.
+                      type: string
+                    deleteAfterDate:
+                      description: Timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the temporary access list entry.
+                      type: string
+                    ipAddress:
+                      description: Entry using an IP address in this access list entry.
+                      type: string
                   type: object
                 type: array
               id:
@@ -653,7 +701,16 @@ spec:
         - --atlas-domain=https://cloud.mongodb.com
         command:
         - /manager
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.2.0
+        env:
+        - name: OPERATOR_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: mongodb/mongodb-atlas-kubernetes-operator:0.3.0
         imagePullPolicy: Always
         name: manager
         resources:

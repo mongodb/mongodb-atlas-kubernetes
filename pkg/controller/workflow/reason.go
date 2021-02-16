@@ -20,6 +20,7 @@ const (
 // Atlas Cluster reasons
 const (
 	ClusterNotCreatedInAtlas ConditionReason = "ClusterNotCreatedInAtlas"
+	ClusterNotUpdatedInAtlas ConditionReason = "ClusterNotUpdatedInAtlas"
 	ClusterCreating          ConditionReason = "ClusterCreating"
 	ClusterUpdating          ConditionReason = "ClusterUpdating"
 )

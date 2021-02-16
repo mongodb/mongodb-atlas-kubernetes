@@ -6,3 +6,10 @@ spec:
   name: Test Atlas Operator Project
   connectionSecretRef:
     name: my-atlas-key
+  projectIpAccessList:
+    - ipAddress: "192.0.2.15"
+      comment: "IP address for Application Server A"
+    - ipAddress: "203.0.113.0/24"
+      comment: "CIDR block for Application Server B - D"
+    - awsSecurityGroup: "sg-0026348ec11780bd1"
+      comment: "Access Listed AWS Security Group"

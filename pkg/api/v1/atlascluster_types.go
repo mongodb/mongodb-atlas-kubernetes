@@ -30,6 +30,22 @@ func init() {
 	SchemeBuilder.Register(&AtlasCluster{}, &AtlasClusterList{})
 }
 
+type ProviderName string
+type ClusterType string
+
+const (
+	ProviderAWS    ProviderName = "AWS"
+	ProviderGCP    ProviderName = "GCP"
+	ProviderAzure  ProviderName = "AZURE"
+	ProviderTenant ProviderName = "TENANT"
+)
+
+const (
+	TypeReplicaSet ClusterType = "REPLICASET"
+	TypeSharded    ClusterType = "SHARDED"
+	TypeGeoSharded ClusterType = "GEOSHARDED"
+)
+
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
@@ -49,7 +65,7 @@ type AtlasClusterSpec struct {
 	// The parameter is required if replicationSpecs are set or if Global Clusters are deployed.
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
-	ClusterType string `json:"clusterType,omitempty"`
+	ClusterType ClusterType `json:"clusterType,omitempty"`
 
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
@@ -82,6 +98,9 @@ type AtlasClusterSpec struct {
 	// +kubebuilder:validation:Maximum=50
 	// +optional
 	NumShards *int `json:"numShards,omitempty"`
+
+	// Flag that indicates whether the cluster should be paused.
+	Paused *bool `json:"paused,omitempty"`
 
 	// Flag that indicates the cluster uses continuous cloud backups.
 	// +optional
@@ -176,7 +195,7 @@ type ProviderSettingsSpec struct {
 
 	// Cloud service provider on which Atlas provisions the hosts.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
-	ProviderName string `json:"providerName"`
+	ProviderName ProviderName `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
 	// The region you choose can affect network latency for clients accessing your databases.

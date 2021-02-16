@@ -25,6 +25,7 @@ bin
 
 # act tool
 .actrc
+.env
 event_*.json
 
 # any custom files created by developers and not intended for public use should start with "my-"

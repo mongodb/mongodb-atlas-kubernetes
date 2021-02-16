@@ -28,6 +28,14 @@ func GetPodStatus(ns string) func() string {
 	}
 }
 
+// DescribeOperatorPod performs "kubectl describe" to get Operator pod information
+func DescribeOperatorPod(ns string) func() string {
+	return func() string {
+		session := cli.Execute("kubectl", "describe", "pods", "-l", "control-plane=controller-manager", "-n", ns)
+		return string(session.Wait("1m").Out.Contents())
+	}
+}
+
 // GetGeneration .status.observedGeneration
 func GetGeneration(ns, resourceName string) func() string {
 	return func() string {

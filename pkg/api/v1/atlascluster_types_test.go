@@ -10,8 +10,10 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-var excludedClusterFieldsOurs = map[string]bool{}
-var excludedClusterFieldsTheirs = map[string]bool{}
+var (
+	excludedClusterFieldsOurs   = map[string]bool{}
+	excludedClusterFieldsTheirs = map[string]bool{}
+)
 
 func init() {
 	excludedClusterFieldsOurs["projectRef"] = true
@@ -32,13 +34,30 @@ func init() {
 	excludedClusterFieldsTheirs["connectionStrings"] = true
 	excludedClusterFieldsTheirs["srvAddress"] = true
 	excludedClusterFieldsTheirs["stateName"] = true
-
-	// CLOUDP-80765
-	excludedClusterFieldsTheirs["paused"] = true
 }
 
 func TestCompatibility(t *testing.T) {
 	compareStruct(AtlasClusterSpec{}, mongodbatlas.Cluster{}, t)
+}
+
+// TestEnums verifies that replacing the strings with "enum" in Atlas Operator works correctly and is (de)serialized
+// into the correct Atlas Cluster
+func TestEnums(t *testing.T) {
+	atlasCluster := mongodbatlas.Cluster{
+		ProviderSettings: &mongodbatlas.ProviderSettings{
+			ProviderName: "AWS",
+		},
+		ClusterType: "GEOSHARDED",
+	}
+	operatorCluster := AtlasClusterSpec{
+		ProviderSettings: &ProviderSettingsSpec{
+			ProviderName: ProviderAWS,
+		},
+		ClusterType: TypeGeoSharded,
+	}
+	transformedCluster, err := operatorCluster.Cluster()
+	assert.NoError(t, err)
+	assert.Equal(t, atlasCluster, *transformedCluster)
 }
 
 func compareStruct(ours interface{}, their interface{}, t *testing.T) {

@@ -6,9 +6,9 @@ import (
 
 	. "github.com/onsi/gomega/gbytes"
 
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
-	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
-	utils "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("Deploy simple cluster", func() {
