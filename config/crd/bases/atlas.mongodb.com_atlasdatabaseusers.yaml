@@ -116,6 +116,7 @@ spec:
                   - databaseName
                   - roleName
                   type: object
+                minItems: 1
                 type: array
               scopes:
                 description: Scopes is an array of clusters and Atlas Data Lakes that
@@ -151,7 +152,6 @@ spec:
             - passwordSecretRef
             - projectRef
             - roles
-            - scopes
             - username
             type: object
           status:

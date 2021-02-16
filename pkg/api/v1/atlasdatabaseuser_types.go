@@ -58,10 +58,11 @@ type AtlasDatabaseUserSpec struct {
 
 	// Roles is an array of this user's roles and the databases / collections on which the roles apply. A role allows
 	// the user to perform particular actions on the specified database.
+	// +kubebuilder:validation:MinItems=1
 	Roles []RoleSpec `json:"roles"`
 
 	// Scopes is an array of clusters and Atlas Data Lakes that this user has access to.
-	Scopes []ScopeSpec `json:"scopes"`
+	Scopes []ScopeSpec `json:"scopes,omitempty"`
 
 	// PasswordSecret is a reference to the Secret keeping the user password.
 	PasswordSecret *ResourceRef `json:"passwordSecretRef"`
