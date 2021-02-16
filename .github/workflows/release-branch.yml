@@ -11,12 +11,13 @@ on:
         required: true
 
 jobs:
-  create-release:
+  create-release-branch:
     name: Create Release
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ github.event.inputs.version }}
       TAG: v${{ github.event.inputs.version }}
+      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
     steps:
 
     - name: Check out code into the Go module directory
@@ -27,7 +28,7 @@ jobs:
     - name: Create all-in-one installation script
       uses: ./.github/actions/gen-install-scripts
       with:
-        IMAGE_URL: ${{ secrets.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        IMAGE_URL: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
         ENV: prod
 
     - name: Create branch and push it
