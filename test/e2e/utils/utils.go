@@ -9,6 +9,8 @@ import (
 
 	yaml "gopkg.in/yaml.v3"
 
+	"github.com/pborman/uuid"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
@@ -30,14 +32,15 @@ func SaveToFile(path string, data []byte) {
 	ioutil.WriteFile(path, data, 0777) //nolint:gosec // kubectl apply (?)
 }
 
-func JSONToYAMLConvert(cnfg interface{}) ([]byte, error) {
+func JSONToYAMLConvert(cnfg interface{}) []byte {
 	var jsonI interface{}
 	j, _ := json.Marshal(cnfg)
 	err := yaml.Unmarshal(j, &jsonI)
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	return yaml.Marshal(jsonI)
+	y, _ := yaml.Marshal(jsonI)
+	return y
 }
 
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given
@@ -86,4 +89,8 @@ func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 	}
 
 	return i
+}
+
+func GenUniqID() string {
+	return uuid.NewRandom().String()
 }
