@@ -49,6 +49,41 @@ jobs:
         FILE_TO_COMMIT: "deploy/crds/atlas.mongodb.com_atlasprojects.yaml"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
+    - name: Commit crd cluster
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/crds/atlas.mongodb.com_atlasclusters.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit namespaced crds
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/namespaced/crds.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit namespaced config
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/namespaced/namespaced-config.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit clusterwide crds
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/clusterwide/crds.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit clusterwide config
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "deploy/clusterwide/clusterwide-config.yaml"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
     - name: Create PR
       uses: ./.github/actions/create-pr
       env:
