@@ -86,8 +86,10 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	result = r.ensureDatabaseUser(ctx, project, *databaseUser)
 	if !result.IsOk() {
 		ctx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		return result.ReconcileResult(), nil
 	}
 
+	ctx.SetConditionTrue(status.DatabaseUserReadyType)
 	ctx.SetConditionTrue(status.ReadyType)
 	return result.ReconcileResult(), nil
 }
@@ -105,7 +107,7 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// Watch for changes to primary resource AtlasCluster & handle delete separately
+	// Watch for changes to primary resource AtlasDatabaseUser & handle delete separately
 	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDatabaseUser{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
 	if err != nil {
 		return err

@@ -3,7 +3,6 @@ package atlasdatabaseuser
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -13,24 +12,30 @@ import (
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project *mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	apiUser, err := dbUser.ToAtlas(r.Client)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
 	// Try to find the user
-	p, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), project.ID(), dbUser.Spec.DatabaseName, dbUser.Spec.Username)
+	_, _, err = ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
 		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
 			// User doesn't exist? Try to create it
-			apiUser, err := dbUser.ToAtlas(r.Client)
-			if err != nil {
-				return workflow.Terminate(workflow.Internal, err.Error())
-			}
-			if p, _, err = ctx.Client.DatabaseUsers.Create(context.Background(), project.ID(), apiUser); err != nil {
+			if _, _, err = ctx.Client.DatabaseUsers.Create(context.Background(), project.ID(), apiUser); err != nil {
 				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 			}
 			ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
+			return workflow.OK()
 		} else {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
 	}
-	fmt.Printf("%v", p)
+	// Update
+	_, _, err = ctx.Client.DatabaseUsers.Update(context.Background(), project.ID(), dbUser.Spec.Username, apiUser)
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
+	}
+
 	return workflow.OK()
 }
