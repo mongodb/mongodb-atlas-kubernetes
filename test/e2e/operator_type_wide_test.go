@@ -49,7 +49,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 					CompleteK8sConfig(NortonSpec.k8sProjectName)
 				utils.SaveToFile(FilePathTo(NortonSpec.projectName), project)
 				NortonSpec.clusters = append(NortonSpec.clusters, utils.LoadUserClusterConfig(ClusterSample))
-				NortonSpec.clusters[0].Spec.Project.Name = NortonSpec.projectName
+				NortonSpec.clusters[0].Spec.Project.Name = NortonSpec.k8sProjectName
 				NortonSpec.clusters[0].ObjectMeta.Name = "norton-cluster"
 				utils.SaveToFile(
 					NortonSpec.clusters[0].ClusterFileName(),
