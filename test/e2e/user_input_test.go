@@ -16,26 +16,26 @@ var (
 )
 
 type userInputs struct {
-	projectName string
-	projectID   string
-	keyName     string
-	namespace string
-	k8sProjectName string
+	projectName        string
+	projectID          string
+	keyName            string
+	namespace          string
+	k8sProjectName     string
 	k8sFullProjectName string
-	projectPath string
-	clusters    []utils.AC
+	projectPath        string
+	clusters           []utils.AC
 }
 
 func NewUserInputs(keyName string) userInputs {
 	uid := utils.GenUniqID()
 	return userInputs{
-		projectName: uid,
-		projectID: "",
-		keyName: keyName,
-		namespace: "ns-" + uid,
-		k8sProjectName: "k-" + uid,
+		projectName:        uid,
+		projectID:          "",
+		keyName:            keyName,
+		namespace:          "ns-" + uid,
+		k8sProjectName:     "k-" + uid,
 		k8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + uid,
-		projectPath: DataFolder + uid + ".yaml",
+		projectPath:        DataFolder + uid + ".yaml",
 	}
 }
 
