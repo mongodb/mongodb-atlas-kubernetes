@@ -109,7 +109,7 @@ type RoleSpec struct {
 	CollectionName string `json:"collectionName"`
 }
 
-// ScopeSpec if presents a database user only have access to the indicated resource (Cluster or Atlas Data Lake)
+// ScopeSpec if present a database user only have access to the indicated resource (Cluster or Atlas Data Lake)
 // if none is given then it has access to all.
 // It's highly recommended to restrict the access of the database users only to a limited set of resources.
 type ScopeSpec struct {
