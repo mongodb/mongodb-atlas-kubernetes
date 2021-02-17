@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -56,16 +57,12 @@ var _ = Describe("AtlasProject", func() {
 		Expect(list.Results[0]).To(testutil.MatchIPAccessList(createdProject.Spec.ProjectIPAccessList[0]))
 	}
 
-	checkExpiredAccessLists := func(lists []mdbv1.ProjectIPAccessList) {
-		expiredCopy := make([]status.ProjectIPAccessList, len(lists))
-		for i, list := range lists {
-			expiredCopy[i] = status.ProjectIPAccessList(list)
-		}
+	checkExpiredAccessLists := func(lists []project.IPAccessList) {
 		currentStatusIPs := createdProject.Status.ExpiredIPAccessList
 		if currentStatusIPs == nil {
-			currentStatusIPs = []status.ProjectIPAccessList{}
+			currentStatusIPs = []project.IPAccessList{}
 		}
-		Expect(currentStatusIPs).To(Equal(expiredCopy))
+		Expect(currentStatusIPs).To(Equal(lists))
 	}
 
 	checkAtlasProjectIsReady := func() {
@@ -137,7 +134,7 @@ var _ = Describe("AtlasProject", func() {
 			// Updating (the existing project is expected to be read from Atlas)
 			By("Updating the project")
 
-			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{CIDRBlock: "0.0.0.0/0"}}
+			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{CIDRBlock: "0.0.0.0/0"}}
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -203,21 +200,21 @@ var _ = Describe("AtlasProject", func() {
 	Describe("Creating the project IP access list", func() {
 		It("Should Succeed (single)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
 				20, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
-			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
+			checkExpiredAccessLists([]project.IPAccessList{})
 			checkIPAccessListInAtlas()
 		})
 		It("Should Succeed (multiple)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05-0700")
 
-			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
+			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{
 				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
 				{Comment: "foo", IPAddress: "192.0.2.20"},
 			}
@@ -227,16 +224,16 @@ var _ = Describe("AtlasProject", func() {
 				20, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
-			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
+			checkExpiredAccessLists([]project.IPAccessList{})
 			checkIPAccessListInAtlas()
 		})
 		It("Should Succeed (1 expired)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			tenHoursBefore := time.Now().Add(time.Hour * -10).Format("2006-01-02T15:04:05-0700")
 
-			expiredList := mdbv1.ProjectIPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
-			activeList := mdbv1.ProjectIPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
-			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{expiredList, activeList}
+			expiredList := project.IPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
+			activeList := project.IPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
+			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{expiredList, activeList}
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -244,7 +241,7 @@ var _ = Describe("AtlasProject", func() {
 				20, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
-			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{expiredList})
+			checkExpiredAccessLists([]project.IPAccessList{expiredList})
 
 			// Atlas
 			list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
@@ -255,7 +252,7 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Fail (AWS security group not supported without VPC)", func() {
 			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{AwsSecurityGroup: "sg-0026348ec11780bd1"}}
+			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{AwsSecurityGroup: "sg-0026348ec11780bd1"}}
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.IPAccessListReadyType)),
@@ -271,7 +268,7 @@ var _ = Describe("AtlasProject", func() {
 				status.FalseCondition(status.ReadyType),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-			checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
+			checkExpiredAccessLists([]project.IPAccessList{})
 		})
 	})
 
@@ -280,7 +277,7 @@ var _ = Describe("AtlasProject", func() {
 			By("Creating the project first", func() {
 				tenMinutesLater := time.Now().Add(time.Minute * 10).Format("2006-01-02T15:04:05-0700")
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-				createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{{Comment: "bla", IPAddress: "192.0.2.15", DeleteAfterDate: tenMinutesLater}}
+				createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{Comment: "bla", IPAddress: "192.0.2.15", DeleteAfterDate: tenMinutesLater}}
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
@@ -296,7 +293,7 @@ var _ = Describe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
-				checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
+				checkExpiredAccessLists([]project.IPAccessList{})
 				checkIPAccessListInAtlas()
 			})
 		})
@@ -306,7 +303,7 @@ var _ = Describe("AtlasProject", func() {
 				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05-0700")
 
-				createdProject.Spec.ProjectIPAccessList = []mdbv1.ProjectIPAccessList{
+				createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{
 					{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: thirtyHoursLater},
 					{Comment: "foo", IPAddress: "192.0.2.20"},
 				}
@@ -327,7 +324,7 @@ var _ = Describe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
-				checkExpiredAccessLists([]mdbv1.ProjectIPAccessList{})
+				checkExpiredAccessLists([]project.IPAccessList{})
 				checkIPAccessListInAtlas()
 			})
 		})
