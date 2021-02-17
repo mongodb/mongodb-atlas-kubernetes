@@ -17,10 +17,15 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
+	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -139,4 +144,23 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 		v := o.(status.AtlasDatabaseUserStatusOption)
 		v(&p.Status)
 	}
+}
+
+// ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
+func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
+	var password string
+
+	if p.Spec.PasswordSecret != nil {
+		secret := &corev1.Secret{}
+		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
+			return nil, err
+		}
+		password = secret.StringData["password"]
+	}
+
+	result := &mongodbatlas.DatabaseUser{}
+	err := compat.JSONCopy(result, p)
+	result.Password = password
+
+	return result, err
 }

@@ -67,14 +67,23 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 		return result.ReconcileResult(), nil
 	}
 
-	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
-	if !result.IsOk() {
-		// merge result into ctx
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	ctx.Connection = connection
 
-	result = r.ensureDatabaseUser(ctx, connection, project, *databaseUser)
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.Client = atlasClient
+
+	result = r.ensureDatabaseUser(ctx, project, *databaseUser)
 	if !result.IsOk() {
 		ctx.SetConditionFromResult(status.DatabaseUserReadyType, result)
 	}
