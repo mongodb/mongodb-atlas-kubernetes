@@ -110,7 +110,7 @@ func CreateNamespace(name string) *Buffer {
 	return session.Out
 }
 
-func CreateKey(keyName, ns string) { // TODO ?
+func CreateKeySecret(keyName, ns string) { // TODO ?
 	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+os.Getenv("MCLI_PUBLIC_API_KEY"),

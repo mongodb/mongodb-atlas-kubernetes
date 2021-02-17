@@ -68,14 +68,14 @@ func waitProject(input userInputs, generation string) {
 	).Should(BeTrue())
 }
 
-// func checkIfProjectExist(input userInputs) func() bool {
-// 	return func() bool {
-// 		return mongocli.IsProjectExist(input.projectName)
-// 	}
-// }
+func checkIfProjectExist(input userInputs) func() bool {
+	return func() bool {
+		return mongocli.IsProjectExist(input.projectName)
+	}
+}
 
 func checkIfClusterExist(input userInputs) func() bool {
 	return func() bool {
-		return mongocli.IsClusterExist(input.projectID, input.projectName)
+		return mongocli.IsClusterExist(input.projectID, input.clusters[0].Spec.Name)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/onsi/gomega/gbytes"
+	. "github.com/onsi/gomega/gstruct"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
@@ -15,6 +16,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 
 	var NortonSpec, NimnulSpec userInputs
 	commonClusterName := "MegaCluster"
+
 	var _ = BeforeEach(func() {
 		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kube.Apply(ConfigAll)).Should(
@@ -58,7 +60,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 
 				By("Apply Nortons configuration", func() {
 					kube.CreateNamespace(NortonSpec.namespace)
-					kube.CreateKey(NortonSpec.keyName, NortonSpec.namespace)
+					kube.CreateKeySecret(NortonSpec.keyName, NortonSpec.namespace)
 					kube.Apply(FilePathTo(NortonSpec.projectName), "-n", NortonSpec.namespace)
 					kube.Apply(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
 				})
@@ -80,7 +82,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 
 				By("Apply Nortons configuration", func() {
 					kube.CreateNamespace(NimnulSpec.namespace)
-					kube.CreateKey(NimnulSpec.keyName, NimnulSpec.namespace)
+					kube.CreateKeySecret(NimnulSpec.keyName, NimnulSpec.namespace)
 					kube.Apply(FilePathTo(NimnulSpec.projectName), "-n", NimnulSpec.namespace)
 					kube.Apply(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
 				})
@@ -119,9 +121,20 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			kube.Apply(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
 			waitCluster(NortonSpec, "2")
 
-			Eventually(
-				kube.GetClusterResource(NimnulSpec.namespace, NimnulSpec.clusters[0].GetClusterNameResource()).Labels,
-			).Should(BeNil())
+			By("Norton cluster has labels", func() {
+				Expect(
+					kube.GetClusterResource(NortonSpec.namespace, NortonSpec.clusters[0].GetClusterNameResource()).Spec.Labels[0],
+				).To(MatchFields(IgnoreExtras, Fields{
+					"Key":   Equal("something"),
+					"Value": Equal("awesome"),
+				}))
+			})
+
+			By("Nimnul cluster does not have labels", func() {
+				Eventually(
+					kube.GetClusterResource(NimnulSpec.namespace, NimnulSpec.clusters[0].GetClusterNameResource()).Spec.Labels,
+				).Should(BeNil())
+			})
 		})
 	})
 })

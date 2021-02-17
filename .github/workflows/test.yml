@@ -83,7 +83,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["all-in-one", "cluster wide operator"] # TODO refactor
+        test: ["sample all-in-one", "cluster wide operator"] # TODO refactor
     steps:
 
     - name: Check out code

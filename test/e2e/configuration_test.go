@@ -49,7 +49,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		})
 
 		By("Create users resources", func() {
-			kube.CreateKey(userSpec.keyName, userSpec.namespace)
+			kube.CreateKeySecret(userSpec.keyName, userSpec.namespace)
 			kube.Apply(FilePathTo(userSpec.projectName), "-n", userSpec.namespace)
 			kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.namespace)
 		})
@@ -106,13 +106,12 @@ var _ = Describe("Deploy simple cluster", func() {
 			).Should(BeFalse())
 		})
 
-		// By("Delete project", func() { // TODO
-		// 	kube.Delete(userSpec.UserProjectFile(), "-n", userSpec.GenNamespace())
-		// 	// session = cli.Execute("kubectl", "delete", "-f", "data/atlasproject.yaml", "-n", userSpec.GenNamespace())
-		// 	Eventually(
-		// 		checkIfProjectExist(userSpec),
-		// 		"5m", "20s",
-		// 	).Should(BeFalse())
-		// })
+		By("Delete project", func() {
+			kube.Delete(userSpec.projectPath, "-n", userSpec.namespace)
+			Eventually(
+				checkIfProjectExist(userSpec),
+				"5m", "20s",
+			).Should(BeFalse())
+		})
 	})
 })
