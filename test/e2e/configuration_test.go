@@ -13,28 +13,25 @@ import (
 
 var _ = Describe("Deploy simple cluster", func() {
 
-	userSpec := userInputs{
-		projectName: utils.GenUniqID(),
-		keyName:     "my-atlas-key",
-	}
+	userSpec := NewUserInputs("my-atlas-key")
 
 	var _ = AfterEach(func() {
 		GinkgoWriter.Write([]byte(userSpec.projectID))
-		Eventually(kube.DeleteNamespace(userSpec.GenNamespace())).Should(Say("deleted"))
+		Eventually(kube.DeleteNamespace(userSpec.namespace)).Should(Say("deleted"))
 		// mongocli.DeleteCluster(ID, "cluster45") // TODO struct
 	})
 
 	It("Release sample all-in-one.yaml should work", func() {
 		By("Prepare namespaces and project configuration", func() {
-			kube.CreateNamespace(userSpec.GenNamespace())
+			kube.CreateNamespace(userSpec.namespace)
 			project := utils.NewProject().
 				ProjectName(userSpec.projectName).
 				SecretRef(userSpec.keyName).
-				CompleteK8sConfig(userSpec.ProjectK8sName())
+				CompleteK8sConfig(userSpec.k8sProjectName)
 			utils.SaveToFile(FilePathTo(userSpec.projectName), project)
 
 			userSpec.clusters = append(userSpec.clusters, utils.LoadUserClusterConfig(ClusterSample))
-			userSpec.clusters[0].Spec.Project.Name = userSpec.ProjectK8sName()
+			userSpec.clusters[0].Spec.Project.Name = userSpec.k8sProjectName
 			userSpec.clusters[0].Spec.ProviderSettings.InstanceSizeName = "M10"
 			userSpec.clusters[0].ObjectMeta.Name = "init-cluster"
 			utils.SaveToFile(
@@ -52,14 +49,14 @@ var _ = Describe("Deploy simple cluster", func() {
 		})
 
 		By("Create users resources", func() {
-			kube.CreateKey(userSpec.keyName, userSpec.GenNamespace())
-			kube.Apply(FilePathTo(userSpec.projectName), "-n", userSpec.GenNamespace())
-			kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.GenNamespace())
+			kube.CreateKey(userSpec.keyName, userSpec.namespace)
+			kube.Apply(FilePathTo(userSpec.projectName), "-n", userSpec.namespace)
+			kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.namespace)
 		})
 
 		By("Wait project creation", func() {
 			waitProject(userSpec, "1")
-			userSpec.projectID = kube.GetProjectResource(userSpec.GenNamespace(), "atlasproject.atlas.mongodb.com/"+userSpec.ProjectK8sName()).Status.ID
+			userSpec.projectID = kube.GetProjectResource(userSpec.namespace, userSpec.k8sFullProjectName).Status.ID
 		})
 
 		By("Wait cluster creation", func() {
@@ -85,7 +82,7 @@ var _ = Describe("Deploy simple cluster", func() {
 				userSpec.clusters[0].ClusterFileName(),
 				utils.JSONToYAMLConvert(userSpec.clusters[0]),
 			)
-			kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.GenNamespace())
+			kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.namespace)
 		})
 
 		By("Wait cluster updating", func() {
@@ -102,7 +99,7 @@ var _ = Describe("Deploy simple cluster", func() {
 		})
 
 		By("Delete cluster", func() {
-			kube.Delete(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.GenNamespace())
+			kube.Delete(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.namespace)
 			Eventually(
 				checkIfClusterExist(userSpec),
 				"10m", "1m",

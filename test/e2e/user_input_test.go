@@ -19,28 +19,24 @@ type userInputs struct {
 	projectName string
 	projectID   string
 	keyName     string
+	namespace string
+	k8sProjectName string
+	k8sFullProjectName string
+	projectPath string
 	clusters    []utils.AC
 }
 
-func (t *userInputs) GenNamespace() string {
-	return "ns-" + t.projectName
-	// return "mongodb-atlas-kubernetes-system"
-}
-
-func (t *userInputs) GenProjectSample() string {
-	return DataFolder + t.projectName + ".yaml"
-}
-
-func (t *userInputs) ProjectK8sName() string {
-	return "k-" + t.projectName
-}
-
-func (t *userInputs) UserProjectFile() string {
-	return DataFolder + t.projectName + ".yaml"
-}
-
-func (t *userInputs) GetFullK8sAtlasProjectName() string {
-	return "atlasproject.atlas.mongodb.com/" + t.ProjectK8sName()
+func NewUserInputs(keyName string) userInputs {
+	uid := utils.GenUniqID()
+	return userInputs{
+		projectName: uid,
+		projectID: "",
+		keyName: keyName,
+		namespace: "ns-" + uid,
+		k8sProjectName: "k-" + uid,
+		k8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + uid,
+		projectPath: DataFolder + uid + ".yaml",
+	}
 }
 
 func FilePathTo(name string) string {
@@ -48,14 +44,14 @@ func FilePathTo(name string) string {
 }
 
 func waitCluster(input userInputs, generation string) {
-	Eventually(kube.GetGeneration(input.GenNamespace(), input.clusters[0].GetClusterNameResource())).Should(Equal(generation))
+	Eventually(kube.GetGeneration(input.namespace, input.clusters[0].GetClusterNameResource())).Should(Equal(generation))
 	Eventually(
-		kube.GetStatusCondition(input.GenNamespace(), input.clusters[0].GetClusterNameResource()),
+		kube.GetStatusCondition(input.namespace, input.clusters[0].GetClusterNameResource()),
 		"45m", "1m",
 	).Should(Equal("True"))
 
 	Eventually(kube.GetK8sClusterStateName(
-		input.GenNamespace(), input.clusters[0].GetClusterNameResource()),
+		input.namespace, input.clusters[0].GetClusterNameResource()),
 		"45m", "1m",
 	).Should(Equal("IDLE"))
 
@@ -65,8 +61,8 @@ func waitCluster(input userInputs, generation string) {
 }
 
 func waitProject(input userInputs, generation string) {
-	EventuallyWithOffset(1, kube.GetStatusCondition(input.GenNamespace(), input.GetFullK8sAtlasProjectName())).Should(Equal("True"))
-	EventuallyWithOffset(1, kube.GetGeneration(input.GenNamespace(), input.GetFullK8sAtlasProjectName())).Should(Equal(generation))
+	EventuallyWithOffset(1, kube.GetStatusCondition(input.namespace, input.k8sFullProjectName)).Should(Equal("True"))
+	EventuallyWithOffset(1, kube.GetGeneration(input.namespace, input.k8sFullProjectName)).Should(Equal(generation))
 	ExpectWithOffset(1,
 		mongocli.IsProjectExist(input.projectName),
 	).Should(BeTrue())
