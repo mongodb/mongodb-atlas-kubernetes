@@ -33,6 +33,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	// +kubebuilder:scaffold:imports
@@ -95,6 +96,17 @@ func main() {
 		OperatorPod:     operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
+		os.Exit(1)
+	}
+
+	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
+		Client:      mgr.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:      mgr.GetScheme(),
+		AtlasDomain: config.AtlasDomain,
+		OperatorPod: operatorPod,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -36,7 +36,7 @@ import (
 // 2. Run "make manifests" to regenerate the CRD
 
 func init() {
-	SchemeBuilder.Register(&AtlasProject{}, &AtlasProjectList{})
+	SchemeBuilder.Register(&AtlasDatabaseUser{}, &AtlasDatabaseUserList{})
 }
 
 type ScopeType string
@@ -113,7 +113,7 @@ type RoleSpec struct {
 	DatabaseName string `json:"databaseName"`
 
 	// CollectionName is a collection for which the role applies.
-	CollectionName string `json:"collectionName"`
+	CollectionName string `json:"collectionName,omitempty"`
 }
 
 // ScopeSpec if present a database user only have access to the indicated resource (Cluster or Atlas Data Lake)
@@ -155,11 +155,15 @@ func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.Data
 		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
 			return nil, err
 		}
-		password = secret.StringData["password"]
+		secretData := make(map[string]string)
+		for k, v := range secret.Data {
+			secretData[k] = string(v)
+		}
+		password = secretData["password"]
 	}
 
 	result := &mongodbatlas.DatabaseUser{}
-	err := compat.JSONCopy(result, p)
+	err := compat.JSONCopy(result, p.Spec)
 	result.Password = password
 
 	return result, err

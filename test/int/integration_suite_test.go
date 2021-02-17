@@ -44,6 +44,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
@@ -190,6 +191,14 @@ func prepareControllers() {
 	err = (&atlascluster.AtlasClusterReconciler{
 		Client:      k8sManager.GetClient(),
 		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain: "https://cloud-qa.mongodb.com",
+		OperatorPod: kube.ObjectKey(namespace.Name, "atlas-operator"),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
+		Client:      k8sManager.GetClient(),
+		Log:         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasDomain: "https://cloud-qa.mongodb.com",
 		OperatorPod: kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
