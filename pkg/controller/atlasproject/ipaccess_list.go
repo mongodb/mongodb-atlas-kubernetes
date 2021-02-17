@@ -11,7 +11,6 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
@@ -34,17 +33,13 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
-func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, connection atlas.Connection, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
 	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
-	client, err := atlas.Client(r.AtlasDomain, connection, ctx.Log)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-	if result := createOrDeleteInAtlas(client, projectID, active, ctx.Log); !result.IsOk() {
+	if result := createOrDeleteInAtlas(ctx.Client, projectID, active, ctx.Log); !result.IsOk() {
 		return result
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
@@ -78,7 +73,7 @@ func validateSingleIPAccessList(list project.IPAccessList) error {
 	return nil
 }
 
-func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operatorIPAccessLists []project.IPAccessList, log *zap.SugaredLogger) workflow.Result {
+func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operatorIPAccessLists []project.IPAccessList, log *zap.SugaredLogger) workflow.Result {
 	atlasAccess, _, err := client.ProjectIPAccessList.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
@@ -101,7 +96,7 @@ func createOrDeleteInAtlas(client *mongodbatlas.Client, projectID string, operat
 	return workflow.OK()
 }
 
-func createIPAccessListsInAtlas(client *mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
+func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
 	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
 	for i, list := range ipAccessLists {
 		atlasFormat, err := list.ToAtlas()
@@ -117,7 +112,7 @@ func createIPAccessListsInAtlas(client *mongodbatlas.Client, projectID string, i
 	return workflow.OK()
 }
 
-func deleteIPAccessFromAtlas(client *mongodbatlas.Client, projectID string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) error {
+func deleteIPAccessFromAtlas(client mongodbatlas.Client, projectID string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) error {
 	for _, l := range listsToRemove {
 		if _, err := client.ProjectIPAccessList.Delete(context.Background(), projectID, l.Identifier().(string)); err != nil {
 			return err
