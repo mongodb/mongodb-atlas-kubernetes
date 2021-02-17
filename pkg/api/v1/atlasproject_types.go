@@ -17,12 +17,11 @@ limitations under the License.
 package v1
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -53,7 +52,7 @@ type AtlasProjectSpec struct {
 	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
 	// +optional
-	ProjectIPAccessList []ProjectIPAccessList `json:"projectIpAccessList,omitempty"`
+	ProjectIPAccessList []project.IPAccessList `json:"projectIpAccessList,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -78,24 +77,6 @@ type AtlasProjectList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AtlasProject `json:"items"`
-}
-
-type ProjectIPAccessList struct {
-	// Unique identifier of AWS security group in this access list entry.
-	// +optional
-	AwsSecurityGroup string `json:"awsSecurityGroup,omitempty"`
-	// Range of IP addresses in CIDR notation in this access list entry.
-	// +optional
-	CIDRBlock string `json:"cidrBlock,omitempty"`
-	// Comment associated with this access list entry.
-	// +optional
-	Comment string `json:"comment,omitempty"`
-	// Timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the temporary access list entry.
-	// +optional
-	DeleteAfterDate string `json:"deleteAfterDate,omitempty"`
-	// Entry using an IP address in this access list entry.
-	// +optional
-	IPAddress string `json:"ipAddress,omitempty"`
 }
 
 // ID is just a shortcut for ID from the status
@@ -124,17 +105,4 @@ func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...st
 		v := o.(status.AtlasProjectStatusOption)
 		v(&p.Status)
 	}
-}
-
-// ToAtlas converts the ProjectIPAccessList to native Atlas client format.
-func (i ProjectIPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
-	result := &mongodbatlas.ProjectIPAccessList{}
-	err := compat.JSONCopy(result, i)
-	return result, err
-}
-
-// Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
-// fields - the business layer must validate this beforehand
-func (i ProjectIPAccessList) Identifier() interface{} {
-	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
