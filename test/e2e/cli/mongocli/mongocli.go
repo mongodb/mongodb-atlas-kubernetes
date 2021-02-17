@@ -3,6 +3,7 @@ package mongocli
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,6 +33,7 @@ func GetClusterByName(projectID string, name string) mongodbatlas.Cluster {
 }
 
 func GetProjects() mongodbatlas.Projects {
+	time.Sleep(time.Second * 10) // TODO // mongocli iam projects list -o json >> Error: GET https://cloud-qa.mongodb.com/api/atlas/v1.0/groups: 404 (request "INVALID_ATLAS_GROUP") Atlas group 6026c0654c99af06ac632572 is in an invalid state and cannot be loaded.
 	session := cli.Execute("mongocli", "iam", "projects", "list", "-o", "json")
 	output := session.Wait("1m").Out.Contents()
 	var projects mongodbatlas.Projects
@@ -67,6 +69,7 @@ func DeleteCluster(projectID, clusterName string) *Buffer {
 func IsProjectExist(name string) bool {
 	projects := GetProjects().Results
 	for _, p := range projects {
+		GinkgoWriter.Write([]byte(p.Name + "<->" + name + "\n"))
 		if p.Name == name {
 			return true
 		}
@@ -76,9 +79,8 @@ func IsProjectExist(name string) bool {
 
 func IsClusterExist(projectID string, name string) bool {
 	clusters := GetClusters(projectID)
-	// if clusters
 	for _, c := range clusters {
-		GinkgoWriter.Write([]byte(c.Name + name + "\n"))
+		GinkgoWriter.Write([]byte(c.Name + "<->" + name + "\n"))
 		if c.Name == name {
 			return true
 		}
@@ -89,4 +91,9 @@ func IsClusterExist(projectID string, name string) bool {
 func GetClusterStateName(projectID string, clusterName string) string {
 	result := GetClustersInfo(projectID, clusterName)
 	return result.StateName
+}
+
+func GetVersionOutput() {
+	session := cli.Execute("mongocli", "--version")
+	session.Wait()
 }

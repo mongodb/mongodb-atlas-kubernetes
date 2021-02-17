@@ -13,3 +13,11 @@ type AC struct {
 }
 
 type ClusterSpec v1.AtlasClusterSpec
+
+func (ac *AC) ClusterFileName() string {
+	return "data/cluster-" + ac.ObjectMeta.Name + ".yaml"
+}
+
+func (ac *AC) GetClusterNameResource() string {
+	return "atlascluster.atlas.mongodb.com/" + ac.ObjectMeta.Name
+}
