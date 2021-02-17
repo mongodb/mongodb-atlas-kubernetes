@@ -44,12 +44,12 @@ type AtlasDatabaseUserSpec struct {
 	// Project is a reference to AtlasProject resource the user belongs to
 	Project ResourceRef `json:"projectRef"`
 
-	// DatabaseName is a Database against which Atlas authenticates the user. Must be equal to 'admin'
-	// as only SCRAM authentication is supported so far.
-	DatabaseName string `json:"databaseName"`
+	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
+	// +kubebuilder:default=admin
+	DatabaseName string `json:"databaseName,omitempty"`
 
 	// DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
-	// The specified date must be in the future and within one week of the time you make the API request.
+	// The specified date must be in the future and within one week.
 	DeleteAfterDate string `json:"deleteAfterDate,omitempty"`
 
 	// Labels is an array containing key-value pairs that tag and categorize the database user.

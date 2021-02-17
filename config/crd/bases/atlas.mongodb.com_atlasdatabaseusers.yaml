@@ -42,15 +42,14 @@ spec:
               User in Atlas
             properties:
               databaseName:
+                default: admin
                 description: DatabaseName is a Database against which Atlas authenticates
-                  the user. Must be equal to 'admin' as only SCRAM authentication
-                  is supported so far.
+                  the user. Default value is 'admin'.
                 type: string
               deleteAfterDate:
                 description: DeleteAfterDate is a timestamp in ISO 8601 date and time
                   format in UTC after which Atlas deletes the user. The specified
-                  date must be in the future and within one week of the time you make
-                  the API request.
+                  date must be in the future and within one week.
                 type: string
               labels:
                 description: Labels is an array containing key-value pairs that tag
@@ -61,6 +60,7 @@ spec:
                     the Cluster/DBUser
                   properties:
                     key:
+                      maxLength: 255
                       type: string
                     value:
                       type: string
@@ -148,7 +148,6 @@ spec:
                 description: Username is a username for authenticating to MongoDB.
                 type: string
             required:
-            - databaseName
             - passwordSecretRef
             - projectRef
             - roles

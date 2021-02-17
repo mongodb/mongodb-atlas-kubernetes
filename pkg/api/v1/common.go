@@ -16,6 +16,7 @@ type ResourceRef struct {
 
 // LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
 type LabelSpec struct {
+	// +kubebuilder:validation:MaxLength:=255
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
