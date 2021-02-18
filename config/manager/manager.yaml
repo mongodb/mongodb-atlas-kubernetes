@@ -8,10 +8,10 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: operator
   namespace: system
   labels:
-    control-plane: controller-manager
+    control-plane: operator
 spec:
   selector:
     matchLabels:

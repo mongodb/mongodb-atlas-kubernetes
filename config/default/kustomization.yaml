@@ -1,22 +1,10 @@
-# Adds namespace to all resources.
-namespace: mongodb-atlas-kubernetes-system
-
-# Value of this field is prepended to the
-# names of all resources, e.g. a deployment named
-# "wordpress" becomes "alices-wordpress".
-# Note that it should also match with the prefix (text before '-') of the namespace
-# field above.
-namePrefix: mongodb-atlas-kubernetes-
-
 # Labels to add to all resources and selectors.
 #commonLabels:
 #  app.kubernetes.io/component: controller
 #  app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
 #  app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
 
-bases:
-- ../crd
-- ../rbac
+resources:
 - ../manager
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml

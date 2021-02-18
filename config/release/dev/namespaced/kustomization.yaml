@@ -1,0 +1,11 @@
+resources:
+  - ../../base/namespaced
+
+
+patches:
+  - path: ../dev_patch.json
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: mongodb-atlas-operator

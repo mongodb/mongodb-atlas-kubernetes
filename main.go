@@ -51,14 +51,13 @@ func init() {
 }
 
 func main() {
-	config := parseConfiguration()
-
 	// controller-runtime/pkg/log/zap is a wrapper over zap that implements logr
 	// logr looks quite limited in functionality so we better use Zap directly.
 	// Though we still need the controller-runtime library and go-logr/zapr as they are used in controller-runtime
 	// logging
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 
+	config := parseConfiguration(logger.Sugar())
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -67,6 +66,7 @@ func main() {
 		Port:               9443,
 		LeaderElection:     config.EnableLeaderElection,
 		LeaderElectionID:   "06d035fb.mongodb.com",
+		Namespace:          config.WatchedNamespaces,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -110,10 +110,11 @@ type Config struct {
 	AtlasDomain          string
 	EnableLeaderElection bool
 	MetricsAddr          string
+	WatchedNamespaces    string
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
-func parseConfiguration() Config {
+func parseConfiguration(log *zap.SugaredLogger) Config {
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com", "the Atlas URL domain name (no slash in the end).")
 	flag.StringVar(&config.MetricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
@@ -122,6 +123,14 @@ func parseConfiguration() Config {
 			"Enabling this will ensure there is only one active controller manager.")
 
 	flag.Parse()
+
+	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
+	// there is no way to use it for container arguments
+	watchedNamespace := os.Getenv("WATCHED_NAMESPACE")
+	if watchedNamespace != "" {
+		log.Infof("The Operator is watching the namespace %s", watchedNamespace)
+	}
+	config.WatchedNamespaces = watchedNamespace
 	return config
 }
 
