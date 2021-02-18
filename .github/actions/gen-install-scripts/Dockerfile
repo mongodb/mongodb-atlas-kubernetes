@@ -7,7 +7,6 @@ RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL
     chmod +x /usr/bin/kubectl
 RUN cd /usr/local/bin &&\
     curl -L https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
-    # curl -L https://raw.githubusercontent.com/kubernetes-sigs/kustomize/kustomize/v3.10.0/hack/install_kustomize.sh | bash
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     cd $CONTROLLER_GEN_TMP_DIR && \
     go mod init tmp && \
