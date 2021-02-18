@@ -112,11 +112,11 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	}
 
-	performUpdate := func() {
+	performUpdate := func(timeout interface{}) {
 		Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
 		Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
-			1200, interval).Should(BeTrue())
+			timeout, interval).Should(BeTrue())
 
 		lastGeneration++
 	}
@@ -141,7 +141,7 @@ var _ = Describe("AtlasCluster", func() {
 					NumShards: int64ptr(2),
 				})
 				createdCluster.Spec.NumShards = intptr(2)
-				performUpdate()
+				performUpdate(40 * time.Minute)
 				doCommonChecks()
 				checkAtlasState()
 			})
@@ -165,7 +165,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Increasing DiskSizeGB", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(128)
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState()
 			})
@@ -203,7 +203,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1200, interval).Should(BeTrue())
+					20*time.Minute, interval).Should(BeTrue())
 
 				doCommonChecks()
 				checkAtlasState()
@@ -228,14 +228,14 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState()
 			})
 
 			By("Updating the Cluster backups settings", func() {
 				createdCluster.Spec.ProviderBackupEnabled = boolptr(true)
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
@@ -244,7 +244,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Decreasing the Cluster disk size", func() {
 				createdCluster.Spec.DiskSizeGB = intptr(10)
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdCluster.Spec.DiskSizeGB))
@@ -256,7 +256,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Pausing the cluster", func() {
 				createdCluster.Spec.Paused = boolptr(true)
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
@@ -285,7 +285,7 @@ var _ = Describe("AtlasCluster", func() {
 
 			By("Unpausing the cluster", func() {
 				createdCluster.Spec.Paused = boolptr(false)
-				performUpdate()
+				performUpdate(20 * time.Minute)
 				doCommonChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.Paused).To(Equal(createdCluster.Spec.Paused))
@@ -324,7 +324,7 @@ var _ = Describe("AtlasCluster", func() {
 
 				By("Fixing the Cluster", func() {
 					createdCluster.Spec.ProviderSettings.AutoScaling = nil
-					performUpdate()
+					performUpdate(20 * time.Minute)
 					doCommonChecks()
 					checkAtlasState()
 				})
@@ -352,7 +352,7 @@ var _ = Describe("AtlasCluster", func() {
 
 				By("Fixing the Cluster", func() {
 					createdCluster.Spec.ProviderSettings.InstanceSizeName = oldSizeName
-					performUpdate()
+					performUpdate(20 * time.Minute)
 					doCommonChecks()
 					checkAtlasState()
 				})
