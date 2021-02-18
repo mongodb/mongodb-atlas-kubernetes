@@ -12,7 +12,7 @@ var (
 	ConfigAll         = "../../deploy/" // Released generated files
 	ClusterSample     = "data/atlascluster_basic.yaml"
 	DataFolder        = "data/"
-	defaultOperatorNS = "mongodb-atlas-kubernetes-system"
+	defaultOperatorNS = "mongodb-atlas-system"
 )
 
 type userInputs struct {

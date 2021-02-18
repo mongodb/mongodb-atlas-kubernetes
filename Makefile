@@ -66,6 +66,8 @@ manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
 #manifests: CRD_OPTIONS ?= "crd:trivialVersions=true"
 manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	@./scripts/split_roles_yaml.sh
+
 
 .PHONY: fmt
 fmt: ## Run go fmt against code
@@ -141,4 +143,4 @@ stop-kind: ## Stop the local kind cluster
 
 .PHONY: log
 log: ## View manager logs
-	kubectl logs deploy/mongodb-atlas-kubernetes-controller-manager manager -n mongodb-atlas-kubernetes-system -f
+	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas-system -f

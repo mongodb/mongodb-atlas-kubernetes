@@ -1,0 +1,8 @@
+namespace: mongodb-atlas-system
+
+namePrefix: mongodb-atlas-
+
+resources:
+- ../../../default
+- ../../../crd
+- ../../../rbac/clusterwide
