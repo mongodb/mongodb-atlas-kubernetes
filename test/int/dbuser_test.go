@@ -46,14 +46,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				20, interval).Should(BeTrue())
 		})
 
-		// So far we don't need the cluster
-		// By("Creating cluster", func() {
-		//	createdCluster = testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
-		//	Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
-		//
-		//	Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-		//		1800, interval).Should(BeTrue())
-		// })
+		By("Creating cluster", func() {
+			createdCluster = testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
+			Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				1800, interval).Should(BeTrue())
+		})
 	})
 
 	AfterEach(func() {
