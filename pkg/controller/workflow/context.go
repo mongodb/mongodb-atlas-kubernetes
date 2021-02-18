@@ -1,10 +1,12 @@
 package workflow
 
 import (
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
@@ -15,6 +17,12 @@ type Context struct {
 	// method.
 	// Is not supposed to be mutated!
 	Log *zap.SugaredLogger
+
+	// Client is a mongodb atlas client used to make API calls
+	Client mongodbatlas.Client
+
+	// Connection is an object encapsulating information about connecting to Atlas using API
+	Connection atlas.Connection
 
 	status Status
 

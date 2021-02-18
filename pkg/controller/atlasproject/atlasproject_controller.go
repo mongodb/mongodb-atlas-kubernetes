@@ -18,7 +18,6 @@ package atlasproject
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -36,6 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -72,15 +72,23 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, project)
 
-	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
-	if !result.IsOk() {
-		// merge result into ctx
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	ctx.Connection = connection
+
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	if err != nil {
+		ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+		return result.ReconcileResult(), nil
+	}
+	ctx.Client = atlasClient
 
 	var projectID string
-	if projectID, result = r.ensureProjectExists(ctx, connection, project); !result.IsOk() {
+	if projectID, result = r.ensureProjectExists(ctx, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -89,7 +97,7 @@ func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
 
-	if result = r.ensureIPAccessList(ctx, connection, projectID, project); !result.IsOk() {
+	if result = r.ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -109,9 +117,9 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
-	connection, result := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
-	if !result.IsOk() {
-		return errors.New("cannot read Atlas connection")
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if err != nil {
+		return err
 	}
 
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)

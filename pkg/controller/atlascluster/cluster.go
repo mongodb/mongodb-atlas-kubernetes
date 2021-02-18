@@ -11,20 +11,12 @@ import (
 	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
-func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, connection atlas.Connection, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
-	ctx := context.Background()
-
-	client, err := atlas.Client(r.AtlasDomain, connection, log)
-	if err != nil {
-		return c, workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	c, resp, err := client.Clusters.Get(ctx, project.Status.ID, cluster.Spec.Name)
+func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
+	c, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
 		if resp == nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
@@ -39,8 +31,8 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
-		c, _, err = client.Clusters.Create(ctx, project.Status.ID, c)
+		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
+		c, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, c)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
@@ -48,7 +40,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 
 	switch c.StateName {
 	case "IDLE":
-		if done, err := clusterMatchesSpec(log, c, cluster.Spec); err != nil {
+		if done, err := clusterMatchesSpec(ctx.Log, c, cluster.Spec); err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
 		} else if done {
 			return c, workflow.OK()
@@ -72,7 +64,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 			}
 		}
 
-		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, spec)
+		c, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, spec)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 		}
