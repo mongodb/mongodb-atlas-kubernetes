@@ -37,11 +37,40 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 	}
 
-	waitClustersToHandleChanges(ctx, project, dbUser)
-
-	return workflow.OK()
+	return waitClustersToHandleChanges(ctx, project.ID(), dbUser)
 }
 
-func waitClustersToHandleChanges(ctx *workflow.Context, project mdbv1.AtlasProject, user mdbv1.AtlasDatabaseUser) {
+func waitClustersToHandleChanges(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
+	allClustersInProject, _, err := ctx.Client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
 
+	var clustersToCheck []string
+	if user.Spec.Scopes != nil {
+		var scopeClusters []string
+		for _, scope := range user.Spec.Scopes {
+			if scope.Type == mdbv1.ClusterScopeType {
+				scopeClusters = append(scopeClusters, scope.Name)
+			}
+		}
+		if len(scopeClusters) > 0 {
+			// filtering the scope clusters by the ones existing in Atlas
+			for _, c := range scopeClusters {
+				for _, a := range allClustersInProject {
+					if a.Name == c {
+						clustersToCheck = append(clustersToCheck, c)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if len(clustersToCheck) == 0 {
+		// if no clusters
+		ctx.Log.Debug("foo")
+	}
+
+	return workflow.OK()
 }
