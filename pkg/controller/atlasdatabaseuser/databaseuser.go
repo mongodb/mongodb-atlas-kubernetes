@@ -11,7 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project *mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	apiUser, err := dbUser.ToAtlas(r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -37,5 +37,11 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 	}
 
+	waitClustersToHandleChanges(ctx, project, dbUser)
+
 	return workflow.OK()
+}
+
+func waitClustersToHandleChanges(ctx *workflow.Context, project mdbv1.AtlasProject, user mdbv1.AtlasDatabaseUser) {
+
 }
