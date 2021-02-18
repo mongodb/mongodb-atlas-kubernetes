@@ -72,6 +72,10 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 			}
 		}
 
+		// nil out the deprecated fields since we can never change them
+		spec.ReplicationFactor = nil
+		spec.ReplicationSpec = nil
+
 		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, spec)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
