@@ -124,9 +124,13 @@ spec:
                     the Cluster/DBUser
                   properties:
                     key:
+                      maxLength: 255
                       type: string
                     value:
                       type: string
+                  required:
+                  - key
+                  - value
                   type: object
                 type: array
               mongoDBMajorVersion:

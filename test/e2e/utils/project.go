@@ -45,6 +45,6 @@ func (s ProjectSpec) CompleteK8sConfig(k8sname string) []byte {
 		Name: k8sname,
 	}
 	t.Spec = s
-	yamlConf, _ := JSONToYAMLConvert(t)
+	yamlConf := JSONToYAMLConvert(t)
 	return yamlConf
 }
