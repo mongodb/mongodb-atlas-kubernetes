@@ -361,12 +361,12 @@ func testAtlasCluster(namespace, name, projectName string) *mdbv1.AtlasCluster {
 			Namespace: namespace,
 		},
 		Spec: mdbv1.AtlasClusterSpec{
-			Name:    "Cluster0",
+			Name:    "test-atlas-cluster",
 			Project: mdbv1.ResourceRef{Name: projectName},
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
-				InstanceSizeName: "M0",
-				ProviderName:     mdbv1.ProviderAWS,
-				RegionName:       "us-east-1",
+				InstanceSizeName: "M10",
+				ProviderName:     mdbv1.ProviderGCP,
+				RegionName:       "EASTERN_US",
 			},
 		},
 	}
