@@ -137,9 +137,8 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Updating ReplicationSpecs", func() {
-				createdCluster.Spec.ReplicationSpecs = append(createdCluster.Spec.ReplicationSpecs, mdbv1.ReplicationSpec{
-					NumShards: int64ptr(2),
-				})
+				Expect(createdCluster.Spec.ReplicationSpecs).To(HaveLen(1))
+				createdCluster.Spec.ReplicationSpecs[0].NumShards = int64ptr(2)
 				createdCluster.Spec.NumShards = intptr(2)
 				performUpdate(40 * time.Minute)
 				doCommonChecks()
