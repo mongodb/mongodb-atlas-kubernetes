@@ -22,7 +22,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = FDescribe("AtlasProject", func() {
 	const interval = time.Second * 1
 
 	var (
