@@ -112,7 +112,6 @@ spec:
                         either be a built-in role or a custom role.
                       type: string
                   required:
-                  - collectionName
                   - databaseName
                   - roleName
                   type: object
@@ -122,7 +121,7 @@ spec:
                 description: Scopes is an array of clusters and Atlas Data Lakes that
                   this user has access to.
                 items:
-                  description: ScopeSpec if presents a database user only have access
+                  description: ScopeSpec if present a database user only have access
                     to the indicated resource (Cluster or Atlas Data Lake) if none
                     is given then it has access to all. It's highly recommended to
                     restrict the access of the database users only to a limited set
