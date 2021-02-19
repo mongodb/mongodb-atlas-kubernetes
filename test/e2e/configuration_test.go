@@ -45,7 +45,7 @@ var _ = Describe("Deploy simple cluster", func() {
 			Eventually(
 				kube.GetPodStatus(defaultOperatorNS),
 				"5m", "3s",
-			).Should(Equal("Running"))
+			).Should(Equal("Running"), "The operator should successfully run")
 		})
 
 		By("Create users resources", func() {
@@ -95,7 +95,7 @@ var _ = Describe("Deploy simple cluster", func() {
 				uCluster.ProviderSettings.InstanceSizeName,
 			).Should(Equal(
 				userSpec.clusters[0].Spec.ProviderSettings.InstanceSizeName,
-			))
+			), "Instance size should be the same as requested by the user")
 		})
 
 		By("Delete cluster", func() {
@@ -103,15 +103,17 @@ var _ = Describe("Deploy simple cluster", func() {
 			Eventually(
 				checkIfClusterExist(userSpec),
 				"10m", "1m",
-			).Should(BeFalse())
+			).Should(BeFalse(), "Cluster should be deleted from Atlas")
 		})
 
 		By("Delete project", func() {
 			kube.Delete(userSpec.projectPath, "-n", userSpec.namespace)
 			Eventually(
-				checkIfProjectExist(userSpec),
+				func() bool {
+					return mongocli.IsProjectInfoExist(userSpec.projectID)
+				},
 				"5m", "20s",
-			).Should(BeFalse())
+			).Should(BeFalse(), "Project should be deleted from Atlas")
 		})
 	})
 })
