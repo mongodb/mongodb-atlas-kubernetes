@@ -22,10 +22,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
-		connectionSecret corev1.Secret
-		createdProject   *mdbv1.AtlasProject
-		createdCluster   *mdbv1.AtlasCluster
-		createdDBUser    *mdbv1.AtlasDatabaseUser
+		connectionSecret  corev1.Secret
+		createdProject    *mdbv1.AtlasProject
+		createdClusterAWS *mdbv1.AtlasCluster
+		createdClusterGCP *mdbv1.AtlasCluster
+		createdDBUser     *mdbv1.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
@@ -47,26 +48,34 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		})
 
 		By("Creating cluster", func() {
-			createdCluster = testAtlasCluster(namespace.Name, "test-cluster", createdProject.Name)
-			Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+			createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+			createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 				1800, interval).Should(BeTrue())
+
+			Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				500, interval).Should(BeTrue())
 		})
 	})
 
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
-			if createdCluster != nil {
-				By("Removing Atlas Cluster " + createdCluster.Name)
-				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
+			if createdClusterGCP != nil {
+				By("Removing Atlas Cluster " + createdClusterGCP.Name)
+				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAWS != nil {
+				By("Removing Atlas Cluster " + createdClusterAWS.Name)
+				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			// This is a bit strange but the delete request right after the cluster is removed may fail with "Still active cluster" error
-			// UI shows the cluster being deleted though. Seems to be the issue only if removal is done using API,
-			// if the cluster is terminated using UI - it stays in "Deleting" state
 			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
