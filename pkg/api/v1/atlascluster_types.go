@@ -345,14 +345,14 @@ func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
 }
 
 func DefaultGCPCluster(namespace, projectName string) *AtlasCluster {
-	return NewCluster(namespace, "test-cluster-k8s", "test-cluster-atlas").
+	return NewCluster(namespace, "test-cluster-gcp-k8s", "test-cluster-gcp").
 		WithProjectName(projectName).
 		WithProviderName(ProviderGCP).
 		WithRegionName("EASTERN_US")
 }
 
 func DefaultAWSCluster(namespace, projectName string) *AtlasCluster {
-	return NewCluster(namespace, "test-cluster-k8s", "test-cluster-atlas").
+	return NewCluster(namespace, "test-cluster-aws-k8s", "test-cluster-aws").
 		WithProjectName(projectName).
 		WithProviderName(ProviderAWS).
 		WithRegionName("US_WEST_2")
