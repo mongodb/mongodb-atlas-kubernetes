@@ -17,8 +17,9 @@ import (
 )
 
 const UserPasswordSecret = "user-password-secret"
+const DevMode = true
 
-var _ = Describe("AtlasDatabaseUser", func() {
+var _ = FDescribe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -63,6 +64,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 	})
 
 	AfterEach(func() {
+		if DevMode {
+			// No tearDown in dev mode - projects and both clusters will stay in Atlas so it's easier to develop
+			// tests for users
+			return
+		}
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
