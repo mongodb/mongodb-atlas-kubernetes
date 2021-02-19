@@ -48,35 +48,29 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 
 	switch c.StateName {
 	case "IDLE":
-		if done, err := clusterMatchesSpec(log, c, cluster.Spec); err != nil {
-			return c, workflow.Terminate(workflow.Internal, err.Error())
-		} else if done {
-			return c, workflow.OK()
-		}
-
-		spec, err := cluster.Spec.Cluster()
+		resultingCluster, err := mergedCluster(*c, cluster.Spec)
 		if err != nil {
 			return c, workflow.Terminate(workflow.Internal, err.Error())
+		}
+
+		if done := clustersEqual(log, *c, resultingCluster); done {
+			return c, workflow.OK()
 		}
 
 		if cluster.Spec.Paused != nil {
 			if c.Paused == nil || *c.Paused != *cluster.Spec.Paused {
 				// paused is different from Atlas
 				// we need to first send a special (un)pause request before reconciling everything else
-				spec = &mongodbatlas.Cluster{
+				resultingCluster = mongodbatlas.Cluster{
 					Paused: cluster.Spec.Paused,
 				}
 			} else {
 				// otherwise, don't send the paused field
-				spec.Paused = nil
+				resultingCluster.Paused = nil
 			}
 		}
 
-		// nil out the deprecated fields since we can never change them
-		spec.ReplicationFactor = nil
-		spec.ReplicationSpec = nil
-
-		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, spec)
+		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, &resultingCluster)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 		}
@@ -96,22 +90,34 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 	}
 }
 
-// clusterMatchesSpec will merge everything from the Spec into existing Cluster and use that to detect change.
-// Direct comparison is not feasible because Atlas will set a lot of fields to default values, so we need to apply our changes on top of that.
-func clusterMatchesSpec(log *zap.SugaredLogger, cluster *mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (bool, error) {
-	clusterMerged := mongodbatlas.Cluster{}
-	if err := compat.JSONCopy(&clusterMerged, cluster); err != nil {
-		return false, err
+// mergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
+func mergedCluster(cluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (result mongodbatlas.Cluster, err error) {
+	if err = compat.JSONCopy(&result, cluster); err != nil {
+		return
 	}
 
-	if err := compat.JSONCopy(&clusterMerged, spec); err != nil {
-		return false, err
+	if err = compat.JSONCopy(&result, spec); err != nil {
+		return
 	}
 
-	d := cmp.Diff(*cluster, clusterMerged, cmpopts.EquateEmpty())
+	// TODO: might need to do this with other slices
+	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, cluster.ReplicationSpecs); err != nil {
+		return
+	}
+
+	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, spec.ReplicationSpecs); err != nil {
+		return
+	}
+
+	return
+}
+
+// clustersEqual compares two Atlas Clusters
+func clustersEqual(log *zap.SugaredLogger, clusterA mongodbatlas.Cluster, clusterB mongodbatlas.Cluster) bool {
+	d := cmp.Diff(clusterA, clusterB, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Cluster differs from spec: %s", d)
+		log.Debugf("Clusters are different: %s", d)
 	}
 
-	return d == "", nil
+	return d == ""
 }
