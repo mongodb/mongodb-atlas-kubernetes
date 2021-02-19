@@ -1,7 +1,9 @@
-namespace: mongodb-atlas-kubernetes-system
+namespace: mongodb-atlas
 
 resources:
+- ../crd
 - ../default
+- ../rbac/clusterwide
 
 patchesStrategicMerge:
-- manager_configuration.yaml
+- ../release/dev/manager_configuration.yaml

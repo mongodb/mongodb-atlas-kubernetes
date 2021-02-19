@@ -104,5 +104,5 @@ func GetClusterStateName(projectID string, clusterName string) string {
 
 func GetVersionOutput() {
 	session := cli.Execute("mongocli", "--version")
-	session.Wait()
+	session.Wait(10)
 }
