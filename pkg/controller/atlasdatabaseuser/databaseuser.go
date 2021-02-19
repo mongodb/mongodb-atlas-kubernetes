@@ -17,6 +17,8 @@ import (
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
+
 	apiUser, err := dbUser.ToAtlas(r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -31,7 +33,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 			}
 			ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
-			return workflow.OK()
+			return retryAfterUpdate
 		} else {
 			return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 		}
@@ -45,7 +47,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
-		return workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
+		return retryAfterUpdate
 	}
 
 	return checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser)

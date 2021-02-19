@@ -42,6 +42,10 @@ var _ = FDescribe("AtlasDatabaseUser", func() {
 
 		By("Creating the project", func() {
 			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+			if DevMode {
+				// While developing tests we need to reuse the same project
+				createdProject.Spec.Name = "dev-test-atlas-project"
+			}
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -53,7 +57,7 @@ var _ = FDescribe("AtlasDatabaseUser", func() {
 			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
 			createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
-			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 				1800, interval).Should(BeTrue())
@@ -66,7 +70,7 @@ var _ = FDescribe("AtlasDatabaseUser", func() {
 	AfterEach(func() {
 		if DevMode {
 			// No tearDown in dev mode - projects and both clusters will stay in Atlas so it's easier to develop
-			// tests for users
+			// tests. Just rerun the test and the project + clusters in Atlas will be reused.
 			return
 		}
 		if createdProject != nil && createdProject.Status.ID != "" {
