@@ -168,3 +168,48 @@ func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.Data
 
 	return result, err
 }
+
+// ************************************ Builder methods *************************************************
+
+func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUser {
+	return &AtlasDatabaseUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasDatabaseUserSpec{
+			Username:       dbUserName,
+			Project:        ResourceRef{Name: projectName},
+			PasswordSecret: &ResourceRef{},
+			Roles:          []RoleSpec{},
+		},
+	}
+}
+
+func (p *AtlasDatabaseUser) WithName(name string) *AtlasDatabaseUser {
+	p.Name = name
+	return p
+}
+func (p *AtlasDatabaseUser) WithDBUserName(name string) *AtlasDatabaseUser {
+	p.Spec.Username = name
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithPasswordSecret(name string) *AtlasDatabaseUser {
+	p.Spec.PasswordSecret.Name = name
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithRole(roleName, databaseName, collectionName string) *AtlasDatabaseUser {
+	p.Spec.Roles = append(p.Spec.Roles, RoleSpec{RoleName: roleName, DatabaseName: databaseName, CollectionName: collectionName})
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithScope(scopeType ScopeType, name string) *AtlasDatabaseUser {
+	p.Spec.Scopes = append(p.Spec.Scopes, ScopeSpec{Name: name, Type: scopeType})
+	return p
+}
+
+func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
+	return NewDBUser(namespace, username, username, projectName).WithRole("clusterMonitor", "admin", "")
+}
