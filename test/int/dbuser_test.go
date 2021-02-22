@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -91,6 +92,17 @@ var _ = FDescribe("AtlasDatabaseUser", func() {
 		removeControllersAndNamespace()
 	})
 
+	checkUserInAtlas := func() {
+		By("Verifying Database User state in Atlas", func() {
+			atlasDBUser, _, err := atlasClient.DatabaseUsers.Get(context.Background(), createdDBUser.Spec.DatabaseName, createdProject.ID(), createdDBUser.Spec.Username)
+			Expect(err).ToNot(HaveOccurred())
+			operatorDBUser, err := createdDBUser.ToAtlas(k8sClient)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, createdProject.ID())))
+		})
+	}
+
 	Describe("Create/Update the db user", func() {
 		It("Should Succeed", func() {
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
@@ -100,6 +112,8 @@ var _ = FDescribe("AtlasDatabaseUser", func() {
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
+
+				checkUserInAtlas()
 			})
 		})
 	})
@@ -113,4 +127,26 @@ func buildPasswordSecret(name string) corev1.Secret {
 		},
 		StringData: map[string]string{"password": "Passw0rd!"},
 	}
+}
+
+// normalize brings the operator 'user' to the user returned by Atlas that allows to perform comparison for equality
+func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.DatabaseUser {
+	if user.Scopes == nil {
+		user.Scopes = []mongodbatlas.Scope{}
+	}
+	if user.Labels == nil {
+		user.Labels = []mongodbatlas.Label{}
+	}
+	if user.LDAPAuthType == "" {
+		user.LDAPAuthType = "NONE"
+	}
+	if user.AWSIAMType == "" {
+		user.AWSIAMType = "NONE"
+	}
+	if user.X509Type == "" {
+		user.X509Type = "NONE"
+	}
+	user.GroupID = projectID
+	user.Password = ""
+	return user
 }
