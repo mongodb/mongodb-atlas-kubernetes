@@ -18,7 +18,7 @@ import (
 
 const UserPasswordSecret = "user-password-secret"
 
-var _ = FDescribe("AtlasDatabaseUser", func() {
+var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
