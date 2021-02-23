@@ -59,7 +59,8 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 
-func (r *AtlasProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = context
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}

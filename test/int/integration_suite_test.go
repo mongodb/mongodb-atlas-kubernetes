@@ -65,9 +65,9 @@ var (
 	connection  atlas.Connection
 
 	// These variables are per each test and are changed by each BeforeRun
-	namespace           corev1.Namespace
-	cfg                 *rest.Config
-	managerCloseChannel chan struct{}
+	namespace         corev1.Namespace
+	cfg               *rest.Config
+	managerCancelFunc context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -206,17 +206,18 @@ func prepareControllers() {
 
 	By("Starting controllers")
 
-	managerCloseChannel = make(chan struct{})
+	var ctx context.Context
+	ctx, managerCancelFunc = context.WithCancel(context.Background())
 
 	go func() {
-		err = k8sManager.Start(managerCloseChannel)
+		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 }
 
 func removeControllersAndNamespace() {
 	// end the manager
-	managerCloseChannel <- struct{}{}
+	managerCancelFunc()
 
 	By("Removing the namespace " + namespace.Name)
 	err := k8sClient.Delete(context.Background(), &namespace)

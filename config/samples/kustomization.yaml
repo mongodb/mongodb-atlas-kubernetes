@@ -1,5 +1,8 @@
 ## Append samples you want in your CSV to this file as resources ##
+# Dev note: renaming these files is not allowed as operator-sdk later uses them
+# to generate proper CSV documents
 resources:
 - atlas_v1_atlascluster.yaml
 - atlas_v1_atlasproject.yaml
+- atlas_v1_atlasdatabaseuser.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
