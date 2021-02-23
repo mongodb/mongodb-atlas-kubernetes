@@ -14,7 +14,7 @@ controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..
 ns=mongodb-atlas-system
 kubectl delete deployment mongodb-atlas-operator -n "${ns}" || true # temporary
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
-cd - && kustomize build --load_restrictor none config/release/dev/allinone | kubectl apply -f -
+cd - && kustomize build --load-restrictor LoadRestrictionsNone config/release/dev/allinone | kubectl apply -f -
 
 # Ensuring the Atlas credentials Secret
 kubectl delete secrets my-atlas-key --ignore-not-found -n "${ns}"
