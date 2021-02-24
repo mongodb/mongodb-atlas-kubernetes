@@ -19,7 +19,7 @@ func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is not handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
 		handler := NewSecretHandler(make(map[WatchedObject]map[client.ObjectKey]bool))
-		createEvent := event.CreateEvent{Meta: secret, Object: secret}
+		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
 		handler.Create(createEvent, &queue)
@@ -30,7 +30,7 @@ func TestHandleCreate(t *testing.T) {
 		dependentResourceKey := kube.ObjectKey("ns", "testAtlasProject")
 		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
 
-		createEvent := event.CreateEvent{Meta: secret, Object: secret}
+		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
 		handler.Create(createEvent, &queue)
@@ -53,7 +53,7 @@ func TestHandleUpdate(t *testing.T) {
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
 		handler := NewSecretHandler(watchedResourcesMap(watchedSecret, dependentResourceKey))
-		updateEvent := event.UpdateEvent{MetaOld: oldSecret, ObjectOld: oldSecret, ObjectNew: newSecret}
+		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
 		handler.Update(updateEvent, &queue)
@@ -69,7 +69,7 @@ func TestHandleUpdate(t *testing.T) {
 
 		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
 
-		updateEvent := event.UpdateEvent{MetaOld: oldSecret, ObjectOld: oldSecret, ObjectNew: newSecret}
+		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
 		handler.Update(updateEvent, &queue)
