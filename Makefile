@@ -147,6 +147,10 @@ bundle: manifests kustomize
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
+# Push the docker image
+docker-push:
+	docker push ${IMG}
+
 # Additional make goals
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
