@@ -2,6 +2,7 @@ package compat
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -37,16 +38,16 @@ func JSONSliceMerge(dst, src interface{}) error {
 	for i := 0; i < minLen; i++ {
 		dstX := dstVal.Index(i).Addr().Interface()
 		if err := JSONCopy(dstX, srcVal.Index(i).Interface()); err != nil {
-			return err
+			return fmt.Errorf("cannot copy value at index %d: %w", i, err)
 		}
 	}
 
 	// append extra elements (if any)
-	dstType := dstVal.Index(0).Type()
+	dstType := reflect.TypeOf(dst).Elem().Elem()
 	for i := minLen; i < srcVal.Len(); i++ {
 		newVal := reflect.New(dstType).Interface()
 		if err := JSONCopy(&newVal, srcVal.Index(i).Interface()); err != nil {
-			return err
+			return fmt.Errorf("cannot copy value at index %d: %w", i, err)
 		}
 		dstVal.Set(reflect.Append(dstVal, reflect.ValueOf(newVal).Elem()))
 	}
