@@ -40,7 +40,7 @@ func NewSecretHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *Reso
 // Note that we implement Create in addition to Update to be able to handle cases when config map or secret is deleted
 // and then created again.
 func (c *ResourcesHandler) Create(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-	c.doHandle(e.Meta.GetNamespace(), e.Meta.GetName(), e.Object.GetObjectKind().GroupVersionKind().Kind, q)
+	c.doHandle(e.Object.GetNamespace(), e.Object.GetName(), e.Object.GetObjectKind().GroupVersionKind().Kind, q)
 }
 
 func (c *ResourcesHandler) Update(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
@@ -49,7 +49,7 @@ func (c *ResourcesHandler) Update(e event.UpdateEvent, q workqueue.RateLimitingI
 	}
 	// For some reasons e.ObjectOld.GetObjectKind().GroupVersionKind().Kind is empty... that's why we have to keep the
 	// resourceKind as a field in the handler...
-	c.doHandle(e.MetaOld.GetNamespace(), e.MetaOld.GetName(), c.ResourceKind, q)
+	c.doHandle(e.ObjectOld.GetNamespace(), e.ObjectNew.GetName(), c.ResourceKind, q)
 }
 
 // shouldHandleUpdate return true if the update event must be handled. This should happen only if the real data has

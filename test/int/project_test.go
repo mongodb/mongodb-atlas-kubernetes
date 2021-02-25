@@ -174,6 +174,7 @@ var _ = Describe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 			})
 			By("Breaking the Connection Secret", func() {
+				connectionSecret = buildConnectionSecret("my-atlas-key")
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
@@ -185,7 +186,7 @@ var _ = Describe("AtlasProject", func() {
 					20, interval).Should(BeTrue())
 			})
 			By("Fixing the Connection Secret", func() {
-				connectionSecret.StringData["publicApiKey"] = connection.PublicKey
+				connectionSecret = buildConnectionSecret("my-atlas-key")
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
 				// Both projects are expected to recover
