@@ -190,7 +190,7 @@ func (p *AtlasDatabaseUser) WithName(name string) *AtlasDatabaseUser {
 	p.Name = name
 	return p
 }
-func (p *AtlasDatabaseUser) WithDBUserName(name string) *AtlasDatabaseUser {
+func (p *AtlasDatabaseUser) WithAtlasUserName(name string) *AtlasDatabaseUser {
 	p.Spec.Username = name
 	return p
 }
