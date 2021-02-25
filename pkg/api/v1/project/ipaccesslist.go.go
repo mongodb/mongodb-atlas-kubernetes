@@ -36,3 +36,31 @@ func (i IPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
 func (i IPAccessList) Identifier() interface{} {
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
+
+// ************************************ Builder methods *************************************************
+// Note, that we don't use pointers here as the AtlasProject uses this without pointers
+
+func NewIPAccessList() IPAccessList {
+	return IPAccessList{}
+}
+
+func (i IPAccessList) WithComment(comment string) IPAccessList {
+	i.Comment = comment
+	return i
+}
+func (i IPAccessList) WithIP(ip string) IPAccessList {
+	i.IPAddress = ip
+	return i
+}
+func (i IPAccessList) WithCIDR(cidr string) IPAccessList {
+	i.CIDRBlock = cidr
+	return i
+}
+func (i IPAccessList) WithAWSGroup(group string) IPAccessList {
+	i.AwsSecurityGroup = group
+	return i
+}
+func (i IPAccessList) WithDeleteAfterDate(date string) IPAccessList {
+	i.DeleteAfterDate = date
+	return i
+}

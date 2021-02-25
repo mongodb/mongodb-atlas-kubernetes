@@ -39,7 +39,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 		By("Creating the project", func() {
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -75,7 +75,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 	Describe("Create/Update the db user", func() {
 		It("Should Succeed", func() {
-			createdDBUser = testAtlasDatabaseUser(namespace.Name, "test-db-user", createdProject.Name, "test-db-user")
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
@@ -86,27 +86,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		})
 	})
 })
-
-func testAtlasDatabaseUser(namespace, name, projectName, userName string) *mdbv1.AtlasDatabaseUser {
-	return &mdbv1.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: mdbv1.AtlasDatabaseUserSpec{
-			Username:       userName,
-			Project:        mdbv1.ResourceRef{Name: projectName},
-			PasswordSecret: &mdbv1.ResourceRef{Name: UserPasswordSecret},
-			Roles: []mdbv1.RoleSpec{
-				{
-					RoleName:       "readWriteAnyDatabase",
-					DatabaseName:   "admin",
-					CollectionName: "",
-				},
-			},
-		},
-	}
-}
 
 func buildPasswordSecret(name string) corev1.Secret {
 	return corev1.Secret{
