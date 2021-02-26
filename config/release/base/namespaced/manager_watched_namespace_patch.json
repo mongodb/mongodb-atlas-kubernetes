@@ -1,0 +1,13 @@
+[
+  {"op": "add",
+    "path": "/spec/template/spec/containers/1/env/0",
+    "value": {
+      "name": "WATCHED_NAMESPACE",
+      "valueFrom": {
+        "fieldRef": {
+          "fieldPath": "metadata.namespace"
+        }
+      }
+    }
+  }
+]
