@@ -36,9 +36,9 @@ func main() {
 func newRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/", handler).Methods("GET")
-	r.HandleFunc("/mongo/", getKeyValue).Methods("GET")
+	r.HandleFunc("/mongo/{key}", getKeyValue).Methods("GET")
 	r.HandleFunc("/mongo/", postKeyValue).Methods("POST")
-	r.HandleFunc("/mongo/", deleteKeyValue).Methods("DELETE")
+	r.HandleFunc("/mongo/{key}", deleteKeyValue).Methods("DELETE")
 	return r
 }
 
@@ -47,12 +47,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getKeyValue(w http.ResponseWriter, r *http.Request) {
-	ship := getShipFromRequest(r)
+	key := mux.Vars(r)["key"]
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
 		panic(err)
 	}
-	filter := bson.M{"key": ship.Key}
+	filter := bson.M{"key": key}
 	var foundShip ModelShip
 	collection.FindOne(ctx, filter).Decode(&foundShip)
 	res, _ := json.Marshal(&foundShip)
@@ -78,12 +78,12 @@ func postKeyValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
-	ship := getShipFromRequest(r)
+	key := mux.Vars(r)["key"]
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
 		panic(err)
 	}
-	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key":ship.Key})
+	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key":key})
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func getMongoCollection(DbName string, CollectionName string) (*mongo.Collection
 
 type ModelShip struct {
 	Key   string `json:"key"`
-	ShipModel string `json:"model,omitempty"`
+	ShipModel string `json:"shipmodel,omitempty"`
 	Hp        int    `json:"hp,omitempty"`
 }
 
