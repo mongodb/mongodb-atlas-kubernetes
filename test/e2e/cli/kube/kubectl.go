@@ -92,7 +92,11 @@ func GetVersionOutput() *Buffer {
 }
 
 func Apply(args ...string) *Buffer {
-	args = append([]string{"apply", "-f"}, args...)
+	if args[0] == "-k" {
+		args = append([]string{"apply"}, args...)
+	} else {
+		args = append([]string{"apply", "-f"}, args...)
+	}
 	session := cli.Execute("kubectl", args...)
 	EventuallyWithOffset(1, session).ShouldNot(Say("error"))
 	return session.Wait().Out

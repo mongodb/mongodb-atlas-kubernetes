@@ -28,6 +28,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			).Should(Equal("Running"), "The operator should successfully run")
 		})
 	})
+
 	var _ = AfterEach(func() {
 		By("Delete clusters", func() {
 			kube.Delete(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)

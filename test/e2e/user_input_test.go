@@ -48,22 +48,22 @@ func waitCluster(input userInputs, generation string) {
 	Eventually(
 		kube.GetStatusCondition(input.namespace, input.clusters[0].GetClusterNameResource()),
 		"45m", "1m",
-	).Should(Equal("True"))
+	).Should(Equal("True"), "Kubernetes resource: Cluster status `Ready` should be True")
 
 	Eventually(kube.GetK8sClusterStateName(
 		input.namespace, input.clusters[0].GetClusterNameResource()),
 		"45m", "1m",
-	).Should(Equal("IDLE"))
+	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
 	Expect(
 		mongocli.GetClusterStateName(input.projectID, input.clusters[0].Spec.Name),
-	).Should(Equal("IDLE"))
+	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
 func waitProject(input userInputs, generation string) {
-	EventuallyWithOffset(1, kube.GetStatusCondition(input.namespace, input.k8sFullProjectName)).Should(Equal("True"))
-	EventuallyWithOffset(1, kube.GetGeneration(input.namespace, input.k8sFullProjectName)).Should(Equal(generation))
-	EventuallyWithOffset(1, kube.GetProjectResource(input.namespace, input.k8sFullProjectName).Status.ID).ShouldNot(BeNil())
+	EventuallyWithOffset(1, kube.GetStatusCondition(input.namespace, input.k8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
+	EventuallyWithOffset(1, kube.GetGeneration(input.namespace, input.k8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
+	EventuallyWithOffset(1, kube.GetProjectResource(input.namespace, input.k8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }
 
 func checkIfClusterExist(input userInputs) func() bool {

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"os"
 
 	"io/ioutil"
 	"log"
@@ -29,7 +30,7 @@ func LoadUserClusterConfig(path string) AC {
 }
 
 func SaveToFile(path string, data []byte) {
-	ioutil.WriteFile(path, data, 0777) //nolint:gosec // kubectl apply (?)
+	ioutil.WriteFile(path, data, os.ModePerm)
 }
 
 func JSONToYAMLConvert(cnfg interface{}) []byte {
@@ -93,4 +94,27 @@ func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 
 func GenUniqID() string {
 	return uuid.NewRandom().String()
+}
+
+// CreateCopyKustomizeNamespace create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
+func CreateCopyKustomizeNamespace(namespace string) {
+	fullPath := filepath.Join("data", namespace)
+	os.Mkdir(fullPath, os.ModePerm)
+	CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
+	CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
+	data := []byte(
+		"namespace: " + namespace + "\n" +
+			"resources:" + "\n" +
+			"- crds.yaml" + "\n" +
+			"- namespaced-config.yaml",
+	)
+	SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
+}
+
+func CopyFile(source, target string) {
+	data, _ := ioutil.ReadFile(filepath.Clean(source))
+	err := ioutil.WriteFile(target, data, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 }
