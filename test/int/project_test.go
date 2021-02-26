@@ -78,7 +78,7 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -94,7 +94,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, "non-existent-secret")
+			expectedProject := mdbv1.DefaultProject(namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -124,7 +124,7 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -161,10 +161,10 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Succeed", func() {
 			By("Creating two projects first", func() {
-				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				secondProject = testAtlasProject(namespace.Name, "second-project", "second Project", connectionSecret.Name)
+				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second Project")
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -200,8 +200,8 @@ var _ = Describe("AtlasProject", func() {
 
 	Describe("Creating the project IP access list", func() {
 		It("Should Succeed (single)", func() {
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{Comment: "bla", IPAddress: "192.0.2.15"}}
+			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithIP("192.0.2.15"))
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
@@ -212,13 +212,11 @@ var _ = Describe("AtlasProject", func() {
 			checkIPAccessListInAtlas()
 		})
 		It("Should Succeed (multiple)", func() {
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05-0700")
+			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithCIDR("203.0.113.0/24").WithDeleteAfterDate(tenHoursLater)).
+				WithIPAccessList(project.NewIPAccessList().WithComment("foo").WithIP("192.0.2.20"))
 
-			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{
-				{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursLater},
-				{Comment: "foo", IPAddress: "192.0.2.20"},
-			}
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
@@ -229,12 +227,11 @@ var _ = Describe("AtlasProject", func() {
 			checkIPAccessListInAtlas()
 		})
 		It("Should Succeed (1 expired)", func() {
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 			tenHoursBefore := time.Now().Add(time.Hour * -10).Format("2006-01-02T15:04:05-0700")
-
 			expiredList := project.IPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
 			activeList := project.IPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
-			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{expiredList, activeList}
+
+			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(expiredList).WithIPAccessList(activeList)
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -252,8 +249,9 @@ var _ = Describe("AtlasProject", func() {
 			Expect(list.Results[0]).To(testutil.MatchIPAccessList(activeList))
 		})
 		It("Should Fail (AWS security group not supported without VPC)", func() {
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{AwsSecurityGroup: "sg-0026348ec11780bd1"}}
+			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				WithIPAccessList(project.NewIPAccessList().WithAWSGroup("sg-0026348ec11780bd1"))
+
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.IPAccessListReadyType)),
@@ -277,8 +275,9 @@ var _ = Describe("AtlasProject", func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
 				tenMinutesLater := time.Now().Add(time.Minute * 10).Format("2006-01-02T15:04:05-0700")
-				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
-				createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{Comment: "bla", IPAddress: "192.0.2.15", DeleteAfterDate: tenMinutesLater}}
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+					WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithIP("192.0.2.15").WithDeleteAfterDate(tenMinutesLater))
+
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
@@ -301,13 +300,11 @@ var _ = Describe("AtlasProject", func() {
 
 		It("Should Succeed (multiple)", func() {
 			By("Creating the project first", func() {
-				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
 				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05-0700")
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+					WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithCIDR("203.0.113.0/24").WithDeleteAfterDate(thirtyHoursLater)).
+					WithIPAccessList(project.NewIPAccessList().WithComment("foo").WithIP("192.0.2.20"))
 
-				createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{
-					{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: thirtyHoursLater},
-					{Comment: "foo", IPAddress: "192.0.2.20"},
-				}
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
@@ -337,7 +334,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
 
 			// We don't specify the connection Secret per project - the global one must be used
-			createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
+			createdProject = mdbv1.DefaultProject(namespace.Name, "")
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
@@ -354,7 +351,7 @@ var _ = Describe("AtlasProject", func() {
 		})
 		It("Should Fail if the global Secret doesn't exist", func() {
 			By("Creating without a global Secret", func() {
-				createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, "")
+				createdProject = mdbv1.DefaultProject(namespace.Name, "")
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -390,23 +387,6 @@ func buildConnectionSecret(name string) corev1.Secret {
 		},
 		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 	}
-}
-
-// TODO builders
-func testAtlasProject(namespace, name, atlasName, connectionSecretName string) *mdbv1.AtlasProject {
-	project := mdbv1.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: mdbv1.AtlasProjectSpec{
-			Name: atlasName,
-		},
-	}
-	if connectionSecretName != "" {
-		project.Spec.ConnectionSecret = &mdbv1.ResourceRef{Name: connectionSecretName}
-	}
-	return &project
 }
 
 func removeAtlasProject(projectID string) func() bool {
