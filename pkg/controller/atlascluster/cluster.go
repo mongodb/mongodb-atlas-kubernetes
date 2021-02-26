@@ -70,6 +70,8 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 			}
 		}
 
+		resultingCluster = cleanupCluster(resultingCluster)
+
 		c, _, err = client.Clusters.Update(ctx, project.Status.ID, cluster.Spec.Name, &resultingCluster)
 		if err != nil {
 			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
@@ -88,6 +90,20 @@ func (r *AtlasClusterReconciler) ensureClusterState(log *zap.SugaredLogger, conn
 	default:
 		return c, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", c.StateName))
 	}
+}
+
+func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
+	cluster.ID = ""
+	cluster.MongoDBVersion = ""
+	cluster.MongoURI = ""
+	cluster.MongoURIUpdated = ""
+	cluster.MongoURIWithOptions = ""
+	cluster.SrvAddress = ""
+	cluster.StateName = ""
+	cluster.ReplicationFactor = nil
+	cluster.ReplicationSpec = nil
+	cluster.ConnectionStrings = nil
+	return cluster
 }
 
 // mergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
