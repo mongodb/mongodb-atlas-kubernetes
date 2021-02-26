@@ -1,0 +1,10 @@
+resources:
+  - ../../base/allinone
+
+patches:
+  - path: ../prod_patch.json
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: mongodb-atlas-operator

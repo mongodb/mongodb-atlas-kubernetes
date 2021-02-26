@@ -32,7 +32,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	// Fake client
 	scheme := runtime.NewScheme()
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
-	fakeClient := fake.NewFakeClientWithScheme(scheme, existingProject)
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existingProject).Build()
 
 	// Patch the existing project
 	updatedProject := existingProject.DeepCopy()

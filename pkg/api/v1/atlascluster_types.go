@@ -303,3 +303,57 @@ func (c *AtlasCluster) UpdateStatus(conditions []status.Condition, options ...st
 		v(&c.Status)
 	}
 }
+
+// ************************************ Builder methods *************************************************
+
+func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
+	return &AtlasCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasClusterSpec{
+			Name:             nameInAtlas,
+			ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+		},
+	}
+}
+
+func (c *AtlasCluster) WithName(name string) *AtlasCluster {
+	c.Name = name
+	return c
+}
+
+func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
+	c.Spec.Name = name
+	return c
+}
+
+func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
+	c.Spec.Project = ResourceRef{Name: projectName}
+	return c
+}
+
+func (c *AtlasCluster) WithProviderName(name ProviderName) *AtlasCluster {
+	c.Spec.ProviderSettings.ProviderName = name
+	return c
+}
+
+func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
+	c.Spec.ProviderSettings.RegionName = name
+	return c
+}
+
+func DefaultGCPCluster(namespace, projectName string) *AtlasCluster {
+	return NewCluster(namespace, "test-cluster-gcp-k8s", "test-cluster-gcp").
+		WithProjectName(projectName).
+		WithProviderName(ProviderGCP).
+		WithRegionName("EASTERN_US")
+}
+
+func DefaultAWSCluster(namespace, projectName string) *AtlasCluster {
+	return NewCluster(namespace, "test-cluster-aws-k8s", "test-cluster-aws").
+		WithProjectName(projectName).
+		WithProviderName(ProviderAWS).
+		WithRegionName("US_WEST_2")
+}

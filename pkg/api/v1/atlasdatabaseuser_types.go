@@ -17,9 +17,16 @@ limitations under the License.
 package v1
 
 import (
+	"context"
+
+	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // Important:
@@ -29,7 +36,7 @@ import (
 // 2. Run "make manifests" to regenerate the CRD
 
 func init() {
-	SchemeBuilder.Register(&AtlasProject{}, &AtlasProjectList{})
+	SchemeBuilder.Register(&AtlasDatabaseUser{}, &AtlasDatabaseUserList{})
 }
 
 type ScopeType string
@@ -106,7 +113,7 @@ type RoleSpec struct {
 	DatabaseName string `json:"databaseName"`
 
 	// CollectionName is a collection for which the role applies.
-	CollectionName string `json:"collectionName"`
+	CollectionName string `json:"collectionName,omitempty"`
 }
 
 // ScopeSpec if present a database user only have access to the indicated resource (Cluster or Atlas Data Lake)
@@ -118,6 +125,10 @@ type ScopeSpec struct {
 	// Type is a type of resource that the user has access to.
 	// +kubebuilder:validation:Enum=CLUSTER;DATA_LAKE
 	Type ScopeType `json:"type"`
+}
+
+func (p AtlasDatabaseUser) AtlasProjectObjectKey() client.ObjectKey {
+	return kube.ObjectKey(p.Namespace, p.Spec.Project.Name)
 }
 
 func (p *AtlasDatabaseUser) GetStatus() status.Status {
@@ -133,4 +144,72 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 		v := o.(status.AtlasDatabaseUserStatusOption)
 		v(&p.Status)
 	}
+}
+
+// ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
+func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
+	var password string
+
+	if p.Spec.PasswordSecret != nil {
+		secret := &corev1.Secret{}
+		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
+			return nil, err
+		}
+		secretData := make(map[string]string)
+		for k, v := range secret.Data {
+			secretData[k] = string(v)
+		}
+		password = secretData["password"]
+	}
+
+	result := &mongodbatlas.DatabaseUser{}
+	err := compat.JSONCopy(result, p.Spec)
+	result.Password = password
+
+	return result, err
+}
+
+// ************************************ Builder methods *************************************************
+
+func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUser {
+	return &AtlasDatabaseUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasDatabaseUserSpec{
+			Username:       dbUserName,
+			Project:        ResourceRef{Name: projectName},
+			PasswordSecret: &ResourceRef{},
+			Roles:          []RoleSpec{},
+		},
+	}
+}
+
+func (p *AtlasDatabaseUser) WithName(name string) *AtlasDatabaseUser {
+	p.Name = name
+	return p
+}
+func (p *AtlasDatabaseUser) WithAtlasUserName(name string) *AtlasDatabaseUser {
+	p.Spec.Username = name
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithPasswordSecret(name string) *AtlasDatabaseUser {
+	p.Spec.PasswordSecret.Name = name
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithRole(roleName, databaseName, collectionName string) *AtlasDatabaseUser {
+	p.Spec.Roles = append(p.Spec.Roles, RoleSpec{RoleName: roleName, DatabaseName: databaseName, CollectionName: collectionName})
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithScope(scopeType ScopeType, name string) *AtlasDatabaseUser {
+	p.Spec.Scopes = append(p.Spec.Scopes, ScopeSpec{Name: name, Type: scopeType})
+	return p
+}
+
+func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
+	return NewDBUser(namespace, username, username, projectName).WithRole("clusterMonitor", "admin", "")
 }

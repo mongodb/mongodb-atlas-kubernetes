@@ -19,7 +19,7 @@ type EventHandlerWithDelete struct {
 }
 
 func (d *EventHandlerWithDelete) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
-	objectKey := kube.ObjectKeyFromObject(e.Meta)
+	objectKey := kube.ObjectKeyFromObject(e.Object)
 	log := zap.S().With("resource", objectKey)
 
 	if err := d.Controller.Delete(e); err != nil {

@@ -25,7 +25,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			Eventually(
 				kube.GetPodStatus(defaultOperatorNS),
 				"5m", "3s",
-			).Should(Equal("Running"))
+			).Should(Equal("Running"), "The operator should successfully run")
 		})
 	})
 	var _ = AfterEach(func() {

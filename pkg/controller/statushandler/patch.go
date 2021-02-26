@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -23,7 +22,7 @@ func patchUpdateStatus(kubeClient client.Client, resource mdbv1.AtlasCustomResou
 	return doPatch(kubeClient, resource, resource.GetStatus())
 }
 
-func doPatch(kubeClient client.Client, resource runtime.Object, statusValue interface{}) error {
+func doPatch(kubeClient client.Client, resource client.Object, statusValue interface{}) error {
 	payload := []patchValue{{
 		Op:    "replace",
 		Path:  "/status",

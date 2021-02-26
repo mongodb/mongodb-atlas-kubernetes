@@ -1,8 +1,11 @@
 resources:
-- manager.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-images:
-- name: controller
-  newName: localhost:5000/mongodb-atlas-kubernetes-operator
-  newTag: fix-api-groups-05114b9
+  - manager.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Anton: not sure if the ConfigMap generated here by kubebuilder is used anywhere - so far let's omit it.
+#configMapGenerator:
+#  - name: manager-config
+#    files:
+#      - controller_manager_config.yaml

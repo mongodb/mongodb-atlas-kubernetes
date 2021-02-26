@@ -24,3 +24,9 @@ const (
 	ClusterCreating          ConditionReason = "ClusterCreating"
 	ClusterUpdating          ConditionReason = "ClusterUpdating"
 )
+
+// Atlas Database User reasons
+const (
+	DatabaseUserNotCreatedInAtlas ConditionReason = "DatabaseUserNotCreatedInAtlas"
+	DatabaseUserNotUpdatedInAtlas ConditionReason = "DatabaseUserNotUpdatedInAtlas"
+)

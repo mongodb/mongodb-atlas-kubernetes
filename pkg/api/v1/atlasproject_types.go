@@ -106,3 +106,46 @@ func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...st
 		v(&p.Status)
 	}
 }
+
+// ************************************ Builder methods *************************************************
+
+func NewProject(namespace, name, nameInAtlas string) *AtlasProject {
+	return &AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasProjectSpec{
+			Name: nameInAtlas,
+		},
+	}
+}
+
+func (p *AtlasProject) WithName(name string) *AtlasProject {
+	p.Name = name
+	return p
+}
+
+func (p *AtlasProject) WithAtlasName(name string) *AtlasProject {
+	p.Spec.Name = name
+	return p
+}
+
+func (p *AtlasProject) WithConnectionSecret(name string) *AtlasProject {
+	if name != "" {
+		p.Spec.ConnectionSecret = &ResourceRef{Name: name}
+	}
+	return p
+}
+
+func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasProject {
+	if p.Spec.ProjectIPAccessList == nil {
+		p.Spec.ProjectIPAccessList = []project.IPAccessList{}
+	}
+	p.Spec.ProjectIPAccessList = append(p.Spec.ProjectIPAccessList, ipAccess)
+	return p
+}
+
+func DefaultProject(namespace, connectionSecretName string) *AtlasProject {
+	return NewProject(namespace, "test-project", namespace).WithConnectionSecret(connectionSecretName)
+}
