@@ -76,7 +76,7 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 		utils.CreateCopyKustomizeNamespace(userSpec.namespace)
 		kube.Apply("-k", "data/"+userSpec.namespace)
 		Eventually(
-			kube.GetPodStatus(defaultOperatorNS),
+			kube.GetPodStatus(userSpec.namespace),
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})
