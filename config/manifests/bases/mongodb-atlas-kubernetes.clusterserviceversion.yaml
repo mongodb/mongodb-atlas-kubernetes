@@ -1,0 +1,59 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: mongodb-atlas-kubernetes.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: AtlasCluster is the Schema for the atlasclusters API
+      displayName: Atlas Cluster
+      kind: AtlasCluster
+      name: atlasclusters.atlas.mongodb.com
+      version: v1
+    - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
+      displayName: Atlas Database User
+      kind: AtlasDatabaseUser
+      name: atlasdatabaseusers.atlas.mongodb.com
+      version: v1
+    - description: AtlasProject is the Schema for the atlasprojects API
+      displayName: Atlas Project
+      kind: AtlasProject
+      name: atlasprojects.atlas.mongodb.com
+      version: v1
+  description: Kubernetes Operator which manages MongoDB Atlas Clusters from Kubernetes.
+  displayName: MongoDB Atlas Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - MongoDB
+  - Atlas
+  - Database
+  - Replica Set
+  - Cluster
+  links:
+  - name: Mongodb Atlas Kubernetes
+    url: https://mongodb-atlas-kubernetes.domain
+  maturity: alpha
+  provider:
+    name: MongoDB, Inc
+    url: https://github.com/mongodb/mongodb-atlas-kubernetes
+  version: 0.0.0

@@ -4,5 +4,5 @@ namePrefix: mongodb-atlas-
 
 
 resources:
-- ../../../default
+- ../../../managerwithproxy
 - ../../../rbac/clusterwide
