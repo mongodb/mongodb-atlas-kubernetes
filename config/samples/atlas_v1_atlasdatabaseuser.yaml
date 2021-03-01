@@ -1,0 +1,16 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDatabaseUser
+metadata:
+  name: my-database-user
+spec:
+  databaseName: "admin"
+  roles: [{
+    "databaseName": "admin",
+    "roleName": "readWriteAnyDatabase"
+  }]
+  projectRef:
+    name: my-project
+
+  username: david
+  passwordSecretRef:
+    name: my-database-user-password

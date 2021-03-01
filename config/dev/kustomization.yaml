@@ -1,9 +1,0 @@
-namespace: mongodb-atlas
-
-resources:
-- ../crd
-- ../default
-- ../rbac/clusterwide
-
-patchesStrategicMerge:
-- ../release/dev/manager_configuration.yaml

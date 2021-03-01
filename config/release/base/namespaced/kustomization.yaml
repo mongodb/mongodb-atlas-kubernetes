@@ -3,8 +3,13 @@ namespace: mongodb-atlas-system
 namePrefix: mongodb-atlas-
 
 resources:
-- ../../../default
+- ../../../managerwithproxy
 - ../../../rbac/namespaced
 
-patchesStrategicMerge:
-  - manager_watched_namespace_patch.yaml
+patches:
+  - path: manager_watched_namespace_patch.json
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: operator
