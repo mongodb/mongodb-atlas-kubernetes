@@ -12,7 +12,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
+var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
 
 	var NortonSpec, NimnulSpec userInputs
 	commonClusterName := "MegaCluster"

@@ -83,7 +83,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["Configuration namespaced. Deploy cluster", "cluster wide operator"] # TODO refactor
+        test: ["cluster-ns", "cluster-wide"] # TODO refactor
     steps:
 
     - name: Check out code
@@ -113,7 +113,7 @@ jobs:
       uses: helm/kind-action@v1.1.0
       with:
         node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-        cluster_name: ${{ steps.prepare.outputs.tag }}
+        cluster_name: ${{ matrix.test }}
 
     - name: Setup Go
       if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
