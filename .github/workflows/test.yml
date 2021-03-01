@@ -113,7 +113,7 @@ jobs:
       uses: helm/kind-action@v1.1.0
       with:
         node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-        cluster_name: ${{ matrix.k8s }}
+        cluster_name: ${{ steps.prepare.outputs.tag }}
 
     - name: Setup Go
       if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
