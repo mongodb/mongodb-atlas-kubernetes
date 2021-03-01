@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	"go.mongodb.org/atlas/mongodbatlas"
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
@@ -70,4 +72,21 @@ func checkIfClusterExist(input userInputs) func() bool {
 	return func() bool {
 		return mongocli.IsClusterExist(input.projectID, input.clusters[0].Spec.Name)
 	}
+}
+
+func compareClustersSpec(requested utils.ClusterSpec, created mongodbatlas.Cluster) { // TODO
+	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
+		"MongoURI":            Not(BeEmpty()),
+		"MongoURIWithOptions": Not(BeEmpty()),
+		"Name":                Equal(requested.Name),
+		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
+			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
+			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
+			"RegionName":       Equal(requested.ProviderSettings.RegionName),
+		})),
+		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
+			"Standard":    Not(BeEmpty()),
+			"StandardSrv": Not(BeEmpty()),
+		})),
+	}), "Cluster should be the same as requested by the user")
 }

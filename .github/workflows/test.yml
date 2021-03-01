@@ -143,6 +143,6 @@ jobs:
         go version
         go get github.com/onsi/ginkgo/ginkgo && \
         go get github.com/onsi/gomega/...
-        ginkgo -focus "${TEST_NAME}" test/e2e/ -x
+        ginkgo --focus "${TEST_NAME}" -nodes=3 -x test/e2e/
 
 # TODO if int test failed - stop e2e, add job for cleanup Atlas projects/clusters

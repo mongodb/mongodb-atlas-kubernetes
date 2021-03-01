@@ -2,9 +2,8 @@ package e2e_test
 
 import (
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
@@ -24,8 +23,14 @@ var _ = Describe("Configuration namespaced. Deploy cluster", func() {
 	var data testDataProvider
 
 	var _ = AfterEach(func() {
-		GinkgoWriter.Write([]byte(data.userSpec.projectID))
-		Eventually(kube.DeleteNamespace(data.userSpec.namespace)).Should(Say("deleted"))
+
+		if CurrentGinkgoTestDescription().Failed {
+			GinkgoWriter.Write([]byte("Resources wasn't clean"))
+			kube.GetManagerLogs(data.userSpec.namespace)
+		} else {
+			Eventually(kube.DeleteNamespace(data.userSpec.namespace)).Should(Say("deleted"))
+		}
+		// Eventually(kube.DeleteNamespace(data.userSpec.namespace)).Should(Say("deleted"))
 		// mongocli.DeleteCluster(ID, "cluster45") // TODO struct
 	})
 
@@ -61,7 +66,6 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 		userSpec.clusters = append(userSpec.clusters, utils.LoadUserClusterConfig(clusterConfigurationFile))
 		userSpec.clusters[0].Spec.Project.Name = userSpec.k8sProjectName
 		userSpec.clusters[0].Spec.ProviderSettings.InstanceSizeName = "M10"
-		userSpec.clusters[0].ObjectMeta.Name = "init-cluster"
 		utils.SaveToFile(
 			userSpec.clusters[0].ClusterFileName(),
 			utils.JSONToYAMLConvert(userSpec.clusters[0]),
@@ -92,17 +96,9 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 		waitCluster(userSpec, "1")
 	})
 
-	By("check cluster Attribute", func() { // TODO ...
+	By("check cluster Attribute", func() {
 		cluster := mongocli.GetClustersInfo(userSpec.projectID, userSpec.clusters[0].Spec.Name)
-		Expect(
-			cluster.ProviderSettings.InstanceSizeName,
-		).Should(Equal(userSpec.clusters[0].Spec.ProviderSettings.InstanceSizeName))
-		Expect(
-			cluster.ProviderSettings.ProviderName,
-		).Should(Equal(string(userSpec.clusters[0].Spec.ProviderSettings.ProviderName)))
-		Expect(
-			cluster.ProviderSettings.RegionName,
-		).Should(Equal(userSpec.clusters[0].Spec.ProviderSettings.RegionName))
+		compareClustersSpec(userSpec.clusters[0].Spec, cluster)
 	})
 
 	By("Update cluster\n", func() {
@@ -120,11 +116,7 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 
 	By("Check attributes", func() {
 		uCluster := mongocli.GetClustersInfo(userSpec.projectID, userSpec.clusters[0].Spec.Name)
-		Expect(
-			uCluster.ProviderSettings.InstanceSizeName,
-		).Should(Equal(
-			userSpec.clusters[0].Spec.ProviderSettings.InstanceSizeName,
-		), "Instance size should be the same as requested by the user")
+		compareClustersSpec(userSpec.clusters[0].Spec, uCluster)
 	})
 
 	By("Delete cluster", func() {
