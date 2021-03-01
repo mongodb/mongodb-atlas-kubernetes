@@ -46,7 +46,7 @@ var _ = Describe("AtlasCluster", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = testAtlasProject(namespace.Name, "test-project", namespace.Name, connectionSecret.Name)
+		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -123,7 +123,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -150,7 +150,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & increase DiskSizeGB", func() {
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -174,12 +174,10 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
-			expectedCluster.Spec.Name = ""
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name).WithAtlasName("")
 
-			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(expectedCluster)), func() {
-				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
-				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(
 					testutil.WaitFor(
@@ -202,7 +200,7 @@ var _ = Describe("AtlasCluster", func() {
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType)),
 					20*time.Minute, interval).Should(BeTrue())
 
 				doCommonChecks()
@@ -211,11 +209,10 @@ var _ = Describe("AtlasCluster", func() {
 		})
 
 		It("Should Succeed", func() {
-			expectedCluster := testAtlasCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
-				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
-				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1800, interval).Should(BeTrue())
@@ -223,8 +220,6 @@ var _ = Describe("AtlasCluster", func() {
 				doCommonChecks()
 				checkAtlasState()
 			})
-
-			// TODO check connectivity to cluster
 
 			By("Updating the Cluster labels", func() {
 				createdCluster.Spec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
@@ -401,25 +396,6 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}
-	}
-}
-
-// TODO builders
-func testAtlasCluster(namespace, projectName string) *mdbv1.AtlasCluster {
-	return &mdbv1.AtlasCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cluster",
-			Namespace: namespace,
-		},
-		Spec: mdbv1.AtlasClusterSpec{
-			Name:    "test-atlas-cluster",
-			Project: mdbv1.ResourceRef{Name: projectName},
-			ProviderSettings: &mdbv1.ProviderSettingsSpec{
-				InstanceSizeName: "M10",
-				ProviderName:     mdbv1.ProviderGCP,
-				RegionName:       "EASTERN_US",
-			},
-		},
 	}
 }
 

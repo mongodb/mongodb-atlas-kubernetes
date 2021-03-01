@@ -1,0 +1,15 @@
+namespace: mongodb-atlas-system
+
+namePrefix: mongodb-atlas-
+
+resources:
+- ../../../default
+- ../../../rbac/namespaced
+
+patches:
+  - path: manager_watched_namespace_patch.json
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: operator

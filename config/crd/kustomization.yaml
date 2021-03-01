@@ -4,6 +4,7 @@
 resources:
 - bases/atlas.mongodb.com_atlasclusters.yaml
 - bases/atlas.mongodb.com_atlasprojects.yaml
+- bases/atlas.mongodb.com_atlasdatabaseusers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
