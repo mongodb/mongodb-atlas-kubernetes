@@ -3,6 +3,6 @@ namespace: mongodb-atlas-system
 namePrefix: mongodb-atlas-
 
 resources:
-- ../../../default
+- ../../../managerwithproxy
 - ../../../crd
 - ../../../rbac/clusterwide
