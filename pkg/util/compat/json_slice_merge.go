@@ -7,8 +7,11 @@ import (
 )
 
 // JSONSliceMerge will merge two slices using JSONCopy according to these rules:
+//
 // 1. If `dst` and `src` are the same length, all elements are merged
+//
 // 2. If `dst` is longer, only the first `len(src)` elements are merged
+//
 // 3. If `src` is longer, first `len(dst)` elements are merged, then remaining elements are appended to `dst`
 func JSONSliceMerge(dst, src interface{}) error {
 	dstVal := reflect.ValueOf(dst)

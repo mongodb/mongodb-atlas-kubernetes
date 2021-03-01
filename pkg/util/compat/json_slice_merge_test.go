@@ -34,11 +34,11 @@ func TestJSONSliceMerge(t *testing.T) {
 		{"12345", "extra"}, // extra value
 	}
 
-	expected := []*Item{
-		{"99999", "src1"},
-		{"00002", "src2"},
-		{"00003", "dst3"},
-		{"12345", "extra"},
+	expected := []*Item{ // kept dst element type
+		{"99999", "src1"},  // key & value replaced by src
+		{"00002", "src2"},  // only value replaced by src
+		{"00003", "dst3"},  // untouched
+		{"12345", "extra"}, // appended from src
 	}
 
 	err := JSONSliceMerge(&dst, src)
