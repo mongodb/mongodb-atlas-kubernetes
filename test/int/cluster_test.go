@@ -130,7 +130,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					30*time.Minute, interval).Should(BeTrue())
 
 				doCommonChecks()
 				checkAtlasState()
@@ -140,7 +140,7 @@ var _ = Describe("AtlasCluster", func() {
 				createdCluster.Spec.ReplicationSpecs = append(createdCluster.Spec.ReplicationSpecs, mdbv1.ReplicationSpec{
 					NumShards: int64ptr(2),
 				})
-				createdCluster.Spec.NumShards = intptr(2)
+				createdCluster.Spec.ClusterType = "SHARDED"
 				performUpdate(40 * time.Minute)
 				doCommonChecks()
 				checkAtlasState()
