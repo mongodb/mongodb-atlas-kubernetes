@@ -48,7 +48,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			mainCycle(test.confPath, test.userSpec)
 		},
 		Entry(newData("Simple Test with default cluster", "data/atlascluster_basic.yaml")),
-		// Entry(newData("Simple Backup Configuration and 2 users", "data/atlascluster_backup.yaml")),
+		Entry(newData("Simple Backup Configuration and 2 users", "data/atlascluster_backup.yaml")),
 		// Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml")), // TODO CLOUDP-83419
 	)
 })
