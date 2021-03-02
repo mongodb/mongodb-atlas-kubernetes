@@ -12,7 +12,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
+var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
 
 	var NortonSpec, NimnulSpec userInputs
 	commonClusterName := "MegaCluster"
@@ -28,14 +28,20 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			).Should(Equal("Running"), "The operator should successfully run")
 		})
 	})
+
 	var _ = AfterEach(func() {
 		By("Delete clusters", func() {
-			kube.Delete(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
-			kube.Delete(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
-			// do not wait it
-			// Eventually(kube.DeleteNamespace(NortonSpec.GenNamespace())).Should(Say("deleted"))
-			// Eventually(kube.DeleteNamespace(NimnulSpec.GenNamespace())).Should(Say("deleted"))
-			// // mongocli.DeleteCluster(ID, "cluster45") // TODO struct
+			if CurrentGinkgoTestDescription().Failed {
+				GinkgoWriter.Write([]byte("Resources wasn't clean"))
+				kube.GetManagerLogs("mongodb-atlas-system")
+				// mongocli.DeleteCluster(ID, "cluster45") // TODO struct
+			} else {
+				kube.Delete(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
+				kube.Delete(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
+				// do not wait it
+				// Eventually(kube.DeleteNamespace(NortonSpec.GenNamespace())).Should(Say("deleted"))
+				// Eventually(kube.DeleteNamespace(NimnulSpec.GenNamespace())).Should(Say("deleted"))
+			}
 		})
 	})
 

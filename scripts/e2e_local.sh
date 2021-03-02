@@ -17,6 +17,7 @@ export INPUT_ENV=dev
 
 ./.github/actions/gen-install-scripts/entrypoint.sh
 
-act -j build-push
+docker build -t "${image}" .
+docker push "${image}"
 
-ginkgo -v -x test/e2e
+ginkgo -v -x -nodes=3 test/e2e

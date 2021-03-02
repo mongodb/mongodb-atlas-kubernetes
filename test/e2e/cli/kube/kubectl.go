@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
@@ -92,7 +93,11 @@ func GetVersionOutput() *Buffer {
 }
 
 func Apply(args ...string) *Buffer {
-	args = append([]string{"apply", "-f"}, args...)
+	if args[0] == "-k" {
+		args = append([]string{"apply"}, args...)
+	} else {
+		args = append([]string{"apply", "-f"}, args...)
+	}
 	session := cli.Execute("kubectl", args...)
 	EventuallyWithOffset(1, session).ShouldNot(Say("error"))
 	return session.Wait().Out
@@ -118,4 +123,9 @@ func CreateKeySecret(keyName, ns string) { // TODO ?
 		"-n", ns,
 	)
 	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
+}
+
+func GetManagerLogs(ns string) {
+	session := cli.Execute("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns, "--since=5m")
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }

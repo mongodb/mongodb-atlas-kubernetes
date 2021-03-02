@@ -11,7 +11,6 @@ import (
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
-	// "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 const (
@@ -27,7 +26,7 @@ var (
 
 func TestE2e(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "E2e Suite")
+	RunSpecs(t, "E2E Suite")
 }
 
 var _ = BeforeSuite(func() {
