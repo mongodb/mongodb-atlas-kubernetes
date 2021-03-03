@@ -220,7 +220,7 @@ func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasD
 		return nil, err
 	}
 	err = dbClient.Ping(context.TODO(), nil)
-	Expect(err).NotTo(HaveOccurred())
+
 	return dbClient, err
 }
 
