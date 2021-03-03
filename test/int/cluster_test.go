@@ -163,8 +163,8 @@ var _ = Describe("AtlasCluster", func() {
 				checkAtlasState()
 			})
 
-			By("Increasing DiskSizeGB", func() {
-				createdCluster.Spec.DiskSizeGB = intptr(128)
+			By("Increasing InstanceSize", func() {
+				createdCluster.Spec.ProviderSettings.InstanceSizeName = "M30"
 				performUpdate(40 * time.Minute)
 				doCommonChecks()
 				checkAtlasState()
