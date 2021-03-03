@@ -53,6 +53,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 
 func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 	By("Prepare namespaces and project configuration", func() {
+		kube.CreateNamespace(userSpec.namespace)
 		project := utils.NewProject().
 			ProjectName(userSpec.projectName).
 			SecretRef(userSpec.keyName).
