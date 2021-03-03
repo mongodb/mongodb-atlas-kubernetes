@@ -60,11 +60,11 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 
 	secret.Labels = map[string]string{ProjectLabelKey: projectID, ClusterLabelKey: kube.NormalizeLabelValue(clusterName)}
 
-	secret.StringData = map[string]string{
-		connectionSecretStdKey:    connURL,
-		connectionSecretStdSrvKey: srvConnURL,
-		userNameKey:               data.dbUserName,
-		passwordKey:               data.password,
+	secret.Data = map[string][]byte{
+		connectionSecretStdKey:    []byte(connURL),
+		connectionSecretStdSrvKey: []byte(srvConnURL),
+		userNameKey:               []byte(data.dbUserName),
+		passwordKey:               []byte(data.password),
 	}
 	return nil
 }

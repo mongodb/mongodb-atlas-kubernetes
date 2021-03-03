@@ -83,19 +83,17 @@ func validateSecret(t *testing.T, fakeClient client.Client, namespace, projectNa
 	err := fakeClient.Get(context.Background(), kube.ObjectKey(namespace, secretName), &secret)
 	assert.NoError(t, err)
 
-	expectedData := map[string]string{
-		"connectionString.standard":    buildConnectionURL(data.connURL, data.dbUserName, data.password),
-		"connectionString.standardSrv": buildConnectionURL(data.srvConnURL, data.dbUserName, data.password),
-		"username":                     data.dbUserName,
-		"password":                     data.password,
+	expectedData := map[string][]byte{
+		"connectionString.standard":    []byte(buildConnectionURL(data.connURL, data.dbUserName, data.password)),
+		"connectionString.standardSrv": []byte(buildConnectionURL(data.srvConnURL, data.dbUserName, data.password)),
+		"username":                     []byte(data.dbUserName),
+		"password":                     []byte(data.password),
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   projectID,
 		"atlas.mongodb.com/cluster-name": clusterName,
 	}
-	// Dev note: it seems that when using fake client there is no serialization/deserialization happening, so we can
-	// read from `secret.StringData` directly (not applicable for the real k8s cluster)
-	assert.Equal(t, expectedData, secret.StringData)
+	assert.Equal(t, expectedData, secret.Data)
 	assert.Equal(t, expectedLabels, secret.Labels)
 
 	return secret
