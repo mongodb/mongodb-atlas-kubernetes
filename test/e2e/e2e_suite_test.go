@@ -33,20 +33,20 @@ var _ = BeforeSuite(func() {
 	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
-	checkUpEnviroment()
+	checkUpEnvironment()
 	GinkgoWriter.Write([]byte("========================End of Before==============================\n"))
 })
 
-// checkUpEnviroment initial check setup
-func checkUpEnviroment() {
+// checkUpEnvironment initial check setup
+func checkUpEnvironment() {
 	Platform = os.Getenv("K8S_PLATFORM")
 	K8sVersion = os.Getenv("K8S_VERSION")
 	Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 	mongocli.GetVersionOutput()
 	// additional checks
-	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty(), "Please, setup MCLI_ORG_ID enviroment variable")
-	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PUBLIC_API_KEY enviroment variable")
-	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PRIVATE_API_KEY enviroment variable")
-	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty(), "Please, setup MCLI_OPS_MANAGER_URL enviroment variable")
+	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty(), "Please, setup MCLI_ORG_ID environment variable")
+	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PUBLIC_API_KEY environment variable")
+	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PRIVATE_API_KEY environment variable")
+	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty(), "Please, setup MCLI_OPS_MANAGER_URL environment variable")
 	// TODO check ATLAS URL
 }

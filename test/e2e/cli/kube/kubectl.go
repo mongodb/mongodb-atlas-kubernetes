@@ -132,7 +132,7 @@ func GetManagerLogs(ns string) []byte {
 }
 
 func GetYamlResource(resource string, ns string) []byte {
-	session := cli.ExecuteWithoutWriter("kubectl", "get",  resource, "-o", "yaml", "-n", ns)
+	session := cli.ExecuteWithoutWriter("kubectl", "get", resource, "-o", "yaml", "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
 }
