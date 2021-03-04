@@ -22,28 +22,33 @@ func TestListConnectionSecrets(t *testing.T) {
 
 		// c1, user1
 		data := dataForSecret()
-		data.dbUserName = "user1"
-		assert.NoError(t, Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data))
+		data.DBUserName = "user1"
+		_, err := Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		assert.NoError(t, err)
 
 		// c1, user2
 		data = dataForSecret()
-		data.dbUserName = "user2"
-		assert.NoError(t, Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data))
+		data.DBUserName = "user2"
+		_, err = Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		assert.NoError(t, err)
 
 		// c2, user1
 		data = dataForSecret()
-		data.dbUserName = "user1"
-		assert.NoError(t, Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c2", data))
+		data.DBUserName = "user1"
+		_, err = Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c2", data)
+		assert.NoError(t, err)
 
 		// c1, user1 but different project (p2)
 		data = dataForSecret()
-		data.dbUserName = "user1"
-		assert.NoError(t, Ensure(fakeClient, "testNs", "p2", "some-other-project-id", "c1", data))
+		data.DBUserName = "user1"
+		_, err = Ensure(fakeClient, "testNs", "p2", "some-other-project-id", "c1", data)
+		assert.NoError(t, err)
 
 		// c1, user1 but different namespace
 		data = dataForSecret()
-		data.dbUserName = "user1"
-		assert.NoError(t, Ensure(fakeClient, "otherNs", "p1", "603e7bf38a94956835659ae5", "c1", data))
+		data.DBUserName = "user1"
+		_, err = Ensure(fakeClient, "otherNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		assert.NoError(t, err)
 
 		secrets, err := ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c1")
 		assert.NoError(t, err)
@@ -77,8 +82,9 @@ func TestListConnectionSecrets(t *testing.T) {
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 		data := dataForSecret()
-		data.dbUserName = "user1"
-		assert.NoError(t, Ensure(fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data))
+		data.DBUserName = "user1"
+		_, err := Ensure(fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data)
+		assert.NoError(t, err)
 
 		secrets, err := ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
 		assert.NoError(t, err)

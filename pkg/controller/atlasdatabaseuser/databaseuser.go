@@ -46,11 +46,20 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
+		ctx.Log.Infow("Updated Atlas Database User", "name", dbUser.Spec.Username)
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
 	}
 
-	return checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser)
+	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
+	if err = createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); err != nil {
+		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+	}
+
+	return workflow.OK()
 }
 
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {

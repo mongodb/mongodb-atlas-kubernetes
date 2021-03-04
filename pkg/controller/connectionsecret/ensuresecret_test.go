@@ -39,15 +39,15 @@ func TestEnsure(t *testing.T) {
 	t.Run("Create/Update", func(t *testing.T) {
 		data := dataForSecret()
 		// Create
-		err := Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
+		_, err := Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		validateSecret(t, fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 
 		// Update
-		data.password = "new$!"
-		data.srvConnURL = "mongodb+srv://mongodb10.example.com:27017/?authSource=admin&tls=true"
-		data.connURL = "mongodb://mongodb10.example.com:27017,mongodb1.example.com:27017/?authSource=admin&tls=true"
-		err = Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
+		data.Password = "new$!"
+		data.SrvConnURL = "mongodb+srv://mongodb10.example.com:27017/?authSource=admin&tls=true"
+		data.ConnURL = "mongodb://mongodb10.example.com:27017,mongodb1.example.com:27017/?authSource=admin&tls=true"
+		_, err = Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		validateSecret(t, fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 	})
@@ -55,22 +55,22 @@ func TestEnsure(t *testing.T) {
 	t.Run("Create two different secrets", func(t *testing.T) {
 		data := dataForSecret()
 		// First secret
-		err := Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
+		_, err := Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		validateSecret(t, fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 
 		// The second secret (the same cluster and user name but different projects)
-		err = Ensure(fakeClient, "testNs", "project2", "903e7bf38a94256835659ae5", "cluster1", data)
+		_, err = Ensure(fakeClient, "testNs", "project2", "903e7bf38a94256835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		validateSecret(t, fakeClient, "testNs", "project2", "903e7bf38a94256835659ae5", "cluster1", data)
 	})
 
 	t.Run("Create secret with special symbols", func(t *testing.T) {
 		data := dataForSecret()
-		data.dbUserName = "#simple@user_for.test"
+		data.DBUserName = "#simple@user_for.test"
 
 		// Unfortunately, fake client doesn't validate object names, so this doesn't cover the validness of the produced name :(
-		err := Ensure(fakeClient, "otherNs", "my@project", "603e7bf38a94956835659ae5", "some cluster!", data)
+		_, err := Ensure(fakeClient, "otherNs", "my@project", "603e7bf38a94956835659ae5", "some cluster!", data)
 		assert.NoError(t, err)
 		s := validateSecret(t, fakeClient, "otherNs", "my-project", "603e7bf38a94956835659ae5", "some-cluster", data)
 		assert.Equal(t, "my-project-some-cluster-simple-user-for.test", s.Name)
@@ -79,15 +79,15 @@ func TestEnsure(t *testing.T) {
 
 func validateSecret(t *testing.T, fakeClient client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) corev1.Secret {
 	secret := corev1.Secret{}
-	secretName := fmt.Sprintf("%s-%s-%s", projectName, clusterName, kube.NormalizeIdentifier(data.dbUserName))
+	secretName := fmt.Sprintf("%s-%s-%s", projectName, clusterName, kube.NormalizeIdentifier(data.DBUserName))
 	err := fakeClient.Get(context.Background(), kube.ObjectKey(namespace, secretName), &secret)
 	assert.NoError(t, err)
 
 	expectedData := map[string][]byte{
-		"connectionString.standard":    []byte(buildConnectionURL(data.connURL, data.dbUserName, data.password)),
-		"connectionString.standardSrv": []byte(buildConnectionURL(data.srvConnURL, data.dbUserName, data.password)),
-		"username":                     []byte(data.dbUserName),
-		"password":                     []byte(data.password),
+		"connectionString.standard":    []byte(buildConnectionURL(data.ConnURL, data.DBUserName, data.Password)),
+		"connectionString.standardSrv": []byte(buildConnectionURL(data.SrvConnURL, data.DBUserName, data.Password)),
+		"username":                     []byte(data.DBUserName),
+		"password":                     []byte(data.Password),
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   projectID,
@@ -109,9 +109,9 @@ func buildConnectionURL(connURL, userName, password string) string {
 
 func dataForSecret() ConnectionData {
 	return ConnectionData{
-		dbUserName: "admin",
-		connURL:    "mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin",
-		srvConnURL: "mongodb+srv://mongodb.example.com:27017/?authSource=admin",
-		password:   "m@gick%",
+		DBUserName: "admin",
+		ConnURL:    "mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin",
+		SrvConnURL: "mongodb+srv://mongodb.example.com:27017/?authSource=admin",
+		Password:   "m@gick%",
 	}
 }
