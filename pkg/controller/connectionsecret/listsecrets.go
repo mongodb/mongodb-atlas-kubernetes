@@ -38,16 +38,12 @@ func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName
 			result = append(result, s)
 		}
 		if dbUserName != "" {
-			secretData := make(map[string]string)
-			for k, v := range s.Data {
-				secretData[k] = string(v)
-			}
-			var userName string
+			var userName []byte
 			var ok bool
-			if userName, ok = secretData[userNameKey]; !ok {
+			if userName, ok = s.Data[userNameKey]; !ok {
 				return nil, fmt.Errorf("secret %v is broken: missing the mandatory field %s", s.Name, userNameKey)
 			}
-			if userName == dbUserName {
+			if string(userName) == dbUserName {
 				result = append(result, s)
 			}
 		}
