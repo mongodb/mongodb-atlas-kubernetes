@@ -1,7 +1,6 @@
 package kube
 
 import (
-	"math"
 	"regexp"
 	"strings"
 
@@ -11,13 +10,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// https://github.com/kubernetes/apimachinery/blob/master/pkg/util/validation/validation.go#L155
-var labelValueRegexp = regexp.MustCompile("[-a-z0-9._]")
+var invalidStartEnd = regexp.MustCompile(`(^[^a-z0-9]+)|([^a-z0-9]+$)`)
 
 // https://github.com/kubernetes/apimachinery/blob/master/pkg/util/validation/validation.go#L177
-var identifierRegexp = regexp.MustCompile("[-a-z0-9.]")
+var nonIdentifierRegexp = regexp.MustCompile(`[^a-z0-9.]+`)
 
-var alphanumericRegexp = regexp.MustCompile("[a-z0-9]")
+// https://github.com/kubernetes/apimachinery/blob/master/pkg/util/validation/validation.go#L155
+var nonLabelRegexp = regexp.MustCompile(`[^a-z0-9._]+`)
 
 func ObjectKey(namespace, name string) client.ObjectKey {
 	return types.NamespacedName{Name: name, Namespace: namespace}
@@ -34,7 +33,7 @@ func NormalizeIdentifier(name string) string {
 	if errs := validation.IsDNS1123Subdomain(name); len(errs) == 0 {
 		return name
 	}
-	return normalize(name, 253, identifierRegexp)
+	return normalize(name, 253, nonIdentifierRegexp)
 }
 
 // NormalizeLabelValue returns the 'name' "normalized" for the label value. All non-allowed symbols are replaced with
@@ -44,39 +43,18 @@ func NormalizeLabelValue(name string) string {
 	if errs := validation.IsValidLabelValue(name); len(errs) == 0 {
 		return name
 	}
-	return normalize(name, 63, labelValueRegexp)
+	return normalize(name, 63, nonLabelRegexp)
 }
 
 // Dev note: the algorithm tries to replace the invalid characters with '-' (or simply omit it replacing is not possible)
 // Note, that this algorithm is not ideal - e.g. it won't fix the following: "a.#b" ("a._b" is still not a valid output - as
 // nonalphanumeric symbols cannot go together) though this doesn't intend to work in ALL the cases but in the MAJORITY instead
 func normalize(name string, limit int, regexp *regexp.Regexp) string {
-	name = strings.ToLower(name)
-	var sb strings.Builder
-	lastCharacterInvalid := false
-	for i, c := range name {
-		// edge cases - the first and last symbols can be only alphanumeric - we just skip those symbols
-		lastCharacterPosition := math.Min(float64(limit-1), float64(len(name)-1))
-		if i == 0 || i == int(lastCharacterPosition) {
-			if !alphanumericRegexp.MatchString(string(c)) {
-				continue
-			}
-		}
-		if i >= limit {
-			break
-		}
-		if !regexp.MatchString(string(c)) {
-			if lastCharacterInvalid {
-				// If the previous character was invalid - this means it could have been replaced with '-' and we cannot
-				// repeat such symbols
-				continue
-			}
-			sb.WriteRune('-')
-			lastCharacterInvalid = true
-		} else {
-			sb.WriteRune(c)
-			lastCharacterInvalid = false
-		}
+	if len(name) >= limit {
+		name = name[:limit]
 	}
-	return sb.String()
+	name = strings.ToLower(name)
+	name = invalidStartEnd.ReplaceAllString(name, "") // makes sure start & end are alphanumeric
+	name = regexp.ReplaceAllString(name, "-")         // replaces every sequence of invalid runes with a single "-"
+	return name
 }
