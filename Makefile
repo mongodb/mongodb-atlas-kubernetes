@@ -68,8 +68,8 @@ int-test: generate manifests ## Run integration tests
 	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo -v -p -nodes=4 ./test/int -coverprofile cover.out
 
 .PHONY: e2e
-e2e: run-kind
-	./scripts/e2e_local.sh
+e2e: run-kind ## Run e2e test. Command `make e2e focus=cluster-ns` run cluster-ns test
+	./scripts/e2e_local.sh $(focus)
 
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
@@ -154,7 +154,7 @@ docker-push:
 # Additional make goals
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
-		bash ./scripts/create_kind_cluster.sh;
+	bash ./scripts/create_kind_cluster.sh;
 
 .PHONY: stop-kind
 stop-kind: ## Stop the local kind cluster

@@ -2,7 +2,7 @@
 # sample from https://kind.sigs.k8s.io/docs/user/local-registry/
 set -o errexit
 
-if [[ "$(kind get clusters)" = "kind" ]]; then
+if [[ "$(kind get clusters | grep -x kind)" = "kind" ]]; then
   echo "kind cluster already exists"
   exit 0
 fi

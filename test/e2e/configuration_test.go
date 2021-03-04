@@ -23,15 +23,19 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 	var data testDataProvider
 
 	var _ = AfterEach(func() {
-
 		if CurrentGinkgoTestDescription().Failed {
-			GinkgoWriter.Write([]byte("Resources wasn't clean"))
-			kube.GetManagerLogs(data.userSpec.namespace)
+			GinkgoWriter.Write([]byte("Resources wasn't clean\n"))
+			utils.SaveToFile(
+				"output/operator-logs.txt",
+				kube.GetManagerLogs(data.userSpec.namespace),
+			)
+			SaveK8sResources(
+				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+				data.userSpec.namespace,
+			)
 		} else {
 			Eventually(kube.DeleteNamespace(data.userSpec.namespace)).Should(Say("deleted"))
 		}
-		// Eventually(kube.DeleteNamespace(data.userSpec.namespace)).Should(Say("deleted"))
-		// mongocli.DeleteCluster(ID, "cluster45") // TODO struct
 	})
 
 	newData := func(description, path string) (string, testDataProvider) {
