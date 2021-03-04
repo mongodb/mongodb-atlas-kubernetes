@@ -69,6 +69,21 @@ func TestListConnectionSecrets(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c1-user2"}, getSecretsNames(secrets))
 	})
+	t.Run("Special symbols in names", func(t *testing.T) {
+		// Fake client
+		scheme := runtime.NewScheme()
+		utilruntime.Must(corev1.AddToScheme(scheme))
+		utilruntime.Must(mdbv1.AddToScheme(scheme))
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
+
+		data := dataForSecret()
+		data.dbUserName = "user1"
+		assert.NoError(t, Ensure(fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data))
+
+		secrets, err := ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"nice-project-the-cluster-thecompany.com-user1"}, getSecretsNames(secrets))
+	})
 }
 
 func getSecretsNames(secrets []corev1.Secret) []string {
