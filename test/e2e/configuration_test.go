@@ -60,7 +60,6 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 	By("Prepare namespaces and project configuration", func() {
 		kube.CreateNamespace(userSpec.namespace)
-
 		project := utils.NewProject().
 			ProjectName(userSpec.projectName).
 			SecretRef(userSpec.keyName).
@@ -76,7 +75,7 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 		)
 	})
 
-	By("Apply namespaced operator configuration\n", func() {
+	By("Create namespaced Operator\n", func() {
 		utils.CreateCopyKustomizeNamespace(userSpec.namespace)
 		kube.Apply("-k", "data/"+userSpec.namespace)
 		Eventually(
@@ -86,7 +85,7 @@ func mainCycle(clusterConfigurationFile string, userSpec userInputs) {
 	})
 
 	By("Create users resources", func() {
-		kube.CreateKeySecret(userSpec.keyName, userSpec.namespace)
+		kube.CreateApiKeySecret(userSpec.keyName, userSpec.namespace)
 		kube.Apply(FilePathTo(userSpec.projectName), "-n", userSpec.namespace)
 		kube.Apply(userSpec.clusters[0].ClusterFileName(), "-n", userSpec.namespace)
 	})

@@ -78,7 +78,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 				By("Apply Nortons configuration", func() {
 					kube.CreateNamespace(NortonSpec.namespace)
-					kube.CreateKeySecret(NortonSpec.keyName, NortonSpec.namespace)
+					kube.CreateApiKeySecret(NortonSpec.keyName, NortonSpec.namespace)
 					kube.Apply(FilePathTo(NortonSpec.projectName), "-n", NortonSpec.namespace)
 					kube.Apply(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
 				})
@@ -100,7 +100,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 				By("Apply Nortons configuration", func() {
 					kube.CreateNamespace(NimnulSpec.namespace)
-					kube.CreateKeySecret(NimnulSpec.keyName, NimnulSpec.namespace)
+					kube.CreateApiKeySecret(NimnulSpec.keyName, NimnulSpec.namespace)
 					kube.Apply(FilePathTo(NimnulSpec.projectName), "-n", NimnulSpec.namespace)
 					kube.Apply(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
 				})
