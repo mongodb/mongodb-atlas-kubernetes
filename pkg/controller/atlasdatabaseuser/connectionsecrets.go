@@ -16,7 +16,7 @@ import (
 func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) error {
 	clusters, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
-		// TODO ignore the 404 exception in case no clusters exist by this time
+		// TODO CLOUDP-84205 ignore the 404 exception in case no clusters exist by this time
 		return err
 	}
 
@@ -44,9 +44,9 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		secretNames[cluster.Name] = secretName
 	}
 
-	// TODO we need to remove old secrets in case the dbuser name has changed
+	// TODO CLOUDP-84202 we need to remove old secrets in case the dbuser name has changed
 
-	// TODO 2 : we need to remove the secrets that don't match the scope anymore
+	// TODO 2 CLOUDP-84202 : we need to remove the secrets that don't match the scope anymore
 
 	ctx.EnsureStatusOption(status.AtlasDatabaseUserSecretsOption(secretNames))
 	return nil
