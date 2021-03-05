@@ -135,21 +135,24 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	timeout := time.Now().Add(workflow.DefaultTimeout)
+	go func() {
+		timeout := time.Now().Add(workflow.DefaultTimeout)
 
-	for time.Now().Before(timeout) {
-		_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
-		if err != nil {
-			log.Errorw("cannot delete Atlas project", "error", err)
-			time.Sleep(workflow.DefaultRetry)
-			continue
+		for time.Now().Before(timeout) {
+			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
+			if err != nil {
+				log.Errorw("cannot delete Atlas project", "error", err)
+				time.Sleep(workflow.DefaultRetry)
+				continue
+			}
+
+			log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
+			return
 		}
 
-		log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
-		return nil
-	}
+		log.Errorw("Failed to delete Atlas project in time", "projectID", project.Status.ID)
+	}()
 
-	log.Errorw("Failed to delete Atlas project in time", "projectID", project.Status.ID)
 	return nil
 }
 
