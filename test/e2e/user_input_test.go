@@ -90,3 +90,10 @@ func compareClustersSpec(requested utils.ClusterSpec, created mongodbatlas.Clust
 		})),
 	}), "Cluster should be the same as requested by the user")
 }
+
+func SaveK8sResources(resources []string, ns string) {
+	for _, resource := range resources {
+		data := kube.GetYamlResource(resource, ns)
+		utils.SaveToFile("output/"+resource+".yaml", data)
+	}
+}

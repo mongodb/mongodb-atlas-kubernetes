@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -eou pipefail
+set -eo pipefail
+focus_key=$1
 
 public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
 private_key=$(grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
@@ -20,4 +21,4 @@ export INPUT_ENV=dev
 docker build -t "${image}" .
 docker push "${image}"
 
-ginkgo -v -x -nodes=3 test/e2e
+ginkgo --focus "${focus_key}" -nodes=3 -x -v test/e2e/

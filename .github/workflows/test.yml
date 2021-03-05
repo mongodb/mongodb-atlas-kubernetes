@@ -83,7 +83,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["cluster-ns", "cluster-wide"] # TODO refactor
+        test: ["cluster-ns", "cluster-wide"]
     steps:
 
     - name: Check out code
@@ -145,4 +145,9 @@ jobs:
         go get github.com/onsi/gomega/...
         ginkgo --focus "${TEST_NAME}" -nodes=3 -x test/e2e/
 
-# TODO if int test failed - stop e2e, add job for cleanup Atlas projects/clusters
+    - name: Upload operator logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: test/e2e/output/**

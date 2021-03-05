@@ -125,7 +125,14 @@ func CreateApiKeySecret(keyName, ns string) { // TODO ?
 	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
 }
 
-func GetManagerLogs(ns string) {
-	session := cli.Execute("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns, "--since=5m")
+func GetManagerLogs(ns string) []byte {
+	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
+}
+
+func GetYamlResource(resource string, ns string) []byte {
+	session := cli.ExecuteWithoutWriter("kubectl", "get", resource, "-o", "yaml", "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
 }

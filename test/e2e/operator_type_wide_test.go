@@ -33,8 +33,22 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		By("Delete clusters", func() {
 			if CurrentGinkgoTestDescription().Failed {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
-				kube.GetManagerLogs("mongodb-atlas-system")
-				// mongocli.DeleteCluster(ID, "cluster45") // TODO struct
+				utils.SaveToFile(
+					"output/operator-logs.txt",
+					kube.GetManagerLogs(defaultOperatorNS),
+				)
+				SaveK8sResources(
+					[]string{"deploy"},
+					defaultOperatorNS,
+				)
+				SaveK8sResources(
+					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					NortonSpec.namespace,
+				)
+				SaveK8sResources(
+					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					NimnulSpec.namespace,
+				)
 			} else {
 				kube.Delete(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
 				kube.Delete(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
