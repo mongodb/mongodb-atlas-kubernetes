@@ -172,6 +172,50 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
+	Describe("Create cluster & change it to GEOSHARDED", func() {
+		It("Should Succeed", func() {
+			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
+				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonChecks()
+				checkAtlasState()
+			})
+
+			By("Increasing InstanceSize", func() {
+				createdCluster.Spec.ClusterType = "GEOSHARDED"
+				createdCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{
+					{
+						NumShards: int64ptr(1),
+						ZoneName:  "Zone 1",
+						RegionsConfig: map[string]mdbv1.RegionsConfig{
+							"EASTERN_US": {
+								AnalyticsNodes: int64ptr(0),
+								ElectableNodes: int64ptr(3),
+								Priority:       int64ptr(7),
+								ReadOnlyNodes:  int64ptr(0),
+							},
+							"WESTERN_US": {
+								AnalyticsNodes: int64ptr(0),
+								ElectableNodes: int64ptr(0),
+								Priority:       int64ptr(6),
+								ReadOnlyNodes:  int64ptr(0),
+							},
+						},
+					},
+				}
+				performUpdate(80 * time.Minute)
+				doCommonChecks()
+				checkAtlasState()
+			})
+		})
+	})
+
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed", func() {
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name).WithAtlasName("")
