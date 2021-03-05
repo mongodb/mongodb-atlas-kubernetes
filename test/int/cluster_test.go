@@ -61,10 +61,9 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
 			}
 
-			// TODO: CLOUDP-82115
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -350,10 +349,12 @@ func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool 
 		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
+				fmt.Println("cluster removed!", time.Now())
 				return true
 			}
 		}
 
+		fmt.Println("cluster exists", time.Now())
 		return false
 	}
 }
