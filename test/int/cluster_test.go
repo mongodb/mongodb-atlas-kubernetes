@@ -187,8 +187,9 @@ var _ = Describe("AtlasCluster", func() {
 				checkAtlasState()
 			})
 
-			By("Increasing InstanceSize", func() {
+			By("Change cluster to GEOSHARDED", func() {
 				createdCluster.Spec.ClusterType = "GEOSHARDED"
+				createdCluster.Spec.ProviderSettings.RegionName = ""
 				createdCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{
 					{
 						NumShards: int64ptr(1),
