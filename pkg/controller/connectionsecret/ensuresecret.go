@@ -51,10 +51,10 @@ func Ensure(client client.Client, namespace, projectName, projectID, clusterName
 func fillSecret(secret *corev1.Secret, projectID string, clusterName string, data ConnectionData) error {
 	var connURL, srvConnURL string
 	var err error
-	if connURL, err = addCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
+	if connURL, err = AddCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
-	if srvConnURL, err = addCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
+	if srvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func formatSecretName(projectName, clusterName, dbUserName string) string {
 	return kube.NormalizeIdentifier(name)
 }
 
-func addCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
+func AddCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
 	cs, err := url.Parse(connURL)
 	if err != nil {
 		return "", err

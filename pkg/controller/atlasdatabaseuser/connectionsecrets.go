@@ -7,8 +7,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
 func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) error {
@@ -20,6 +22,10 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 
 	secretNames := make(map[string]string)
 	for _, cluster := range clusters {
+		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
+		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
+			continue
+		}
 		password, err := dbUser.ReadPassword(k8sClient)
 		if err != nil {
 			return err
@@ -40,6 +46,8 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 
 	// TODO we need to remove old secrets in case the dbuser name has changed
 
-	ctx.EnsureStatusOption(secretNames)
+	// TODO 2 : we need to remove the secrets that don't match the scope anymore
+
+	ctx.EnsureStatusOption(status.AtlasDatabaseUserSecretsOption(secretNames))
 	return nil
 }

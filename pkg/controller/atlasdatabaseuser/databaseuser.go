@@ -70,7 +70,7 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 
 	var clustersToCheck []string
 	if user.Spec.Scopes != nil {
-		clustersToCheck = filterScopeClusters(user.Spec.Scopes, allClustersInProject)
+		clustersToCheck = filterScopeClusters(user, allClustersInProject)
 	} else {
 		// otherwise we just take all the existing clusters
 		for _, cluster := range allClustersInProject {
@@ -108,14 +108,9 @@ func cluserIsReady(client mongodbatlas.Client, projectID, clusterName string) (b
 	return true, nil
 }
 
-func filterScopeClusters(scopes []mdbv1.ScopeSpec, allClustersInProject []mongodbatlas.Cluster) []string {
-	var scopeClusters []string
+func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mongodbatlas.Cluster) []string {
+	scopeClusters := user.GetScopes(mdbv1.ClusterScopeType)
 	var clustersToCheck []string
-	for _, scope := range scopes {
-		if scope.Type == mdbv1.ClusterScopeType {
-			scopeClusters = append(scopeClusters, scope.Name)
-		}
-	}
 	if len(scopeClusters) > 0 {
 		// filtering the scope clusters by the ones existing in Atlas
 		for _, c := range scopeClusters {

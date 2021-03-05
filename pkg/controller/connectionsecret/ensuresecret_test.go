@@ -18,12 +18,12 @@ import (
 
 func TestAddCredentialsToConnectionURL(t *testing.T) {
 	t.Run("Adding Credentials to standard url", func(t *testing.T) {
-		url, err := addCredentialsToConnectionURL("mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin", "super-user", "P@ssword!")
+		url, err := AddCredentialsToConnectionURL("mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin", "super-user", "P@ssword!")
 		assert.NoError(t, err)
 		assert.Equal(t, "mongodb://super-user:P%40ssword%21@mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin", url)
 	})
 	t.Run("Adding Credentials to srv url", func(t *testing.T) {
-		url, err := addCredentialsToConnectionURL("mongodb+srv://server.example.com/?authSource=$external&authMechanism=PLAIN&connectTimeoutMS=300000", "ldap_user", "Simple#")
+		url, err := AddCredentialsToConnectionURL("mongodb+srv://server.example.com/?authSource=$external&authMechanism=PLAIN&connectTimeoutMS=300000", "ldap_user", "Simple#")
 		assert.NoError(t, err)
 		assert.Equal(t, "mongodb+srv://ldap_user:Simple%23@server.example.com/?authSource=$external&authMechanism=PLAIN&connectTimeoutMS=300000", url)
 	})
@@ -100,7 +100,7 @@ func validateSecret(t *testing.T, fakeClient client.Client, namespace, projectNa
 }
 
 func buildConnectionURL(connURL, userName, password string) string {
-	url, err := addCredentialsToConnectionURL(connURL, userName, password)
+	url, err := AddCredentialsToConnectionURL(connURL, userName, password)
 	if err != nil {
 		panic(err.Error())
 	}

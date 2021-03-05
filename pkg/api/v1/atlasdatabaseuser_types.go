@@ -176,6 +176,16 @@ func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.Data
 	return result, err
 }
 
+func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {
+	var scopeClusters []string
+	for _, scope := range p.Spec.Scopes {
+		if scope.Type == scopeType {
+			scopeClusters = append(scopeClusters, scope.Name)
+		}
+	}
+	return scopeClusters
+}
+
 // ************************************ Builder methods *************************************************
 
 func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUser {
