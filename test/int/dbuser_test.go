@@ -26,14 +26,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-const DevMode = true
+const DevMode = false
 
 const UserPasswordSecret = "user-password-secret"
 const DBUserPassword = "Passw0rd!"
 const UserPasswordSecret2 = "second-user-password-secret"
 const DBUserPassword2 = "H@lla#!"
 
-var _ = FDescribe("AtlasDatabaseUser", func() {
+var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
