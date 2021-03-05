@@ -19,6 +19,7 @@ package atlasproject
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -134,9 +135,17 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
-	if err != nil {
-		return fmt.Errorf("cannot delete Atlas project: %w", err)
+	timeout := time.Now().Add(workflow.DefaultTimeout)
+
+	for time.Now().Before(timeout) {
+		_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
+		if err != nil {
+			log.Errorw("cannot delete Atlas project", "error", err)
+			time.Sleep(workflow.DefaultRetry)
+			continue
+		}
+
+		break
 	}
 
 	log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -160,9 +161,17 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
-	if err != nil {
-		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
+	timeout := time.Now().Add(workflow.DefaultTimeout)
+
+	for time.Now().Before(timeout) {
+		_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
+		if err != nil {
+			log.Errorw("cannot delete Atlas cluster", "error", err)
+			time.Sleep(workflow.DefaultRetry)
+			continue
+		}
+
+		break
 	}
 
 	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)

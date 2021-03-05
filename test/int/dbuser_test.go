@@ -23,9 +23,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-const UserPasswordSecret = "user-password-secret"
-const DevMode = false
-const DBUserPassword = "Passw0rd!"
+const (
+	UserPasswordSecret = "user-password-secret"
+	DevMode            = false
+	DBUserPassword     = "Passw0rd!"
+)
 
 var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
@@ -91,6 +93,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 			return
 		}
+
 		if createdProject != nil && createdProject.ID() != "" {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
@@ -104,7 +107,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -199,12 +203,14 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	user.Password = ""
 	return user
 }
+
 func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) func() error {
 	return func() error {
 		_, err := mongoClient(projectID, cluster, user)
 		return err
 	}
 }
+
 func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
