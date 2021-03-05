@@ -58,12 +58,12 @@ var _ = Describe("AtlasCluster", func() {
 			if createdCluster != nil {
 				By("Removing Atlas Cluster " + createdCluster.Name)
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})

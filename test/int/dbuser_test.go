@@ -98,17 +98,18 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
 			}
+
 			if createdClusterAWS != nil {
 				By("Removing Atlas Cluster " + createdClusterAWS.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
