@@ -108,7 +108,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 600, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
