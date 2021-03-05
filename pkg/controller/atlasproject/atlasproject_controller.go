@@ -145,11 +145,11 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 			continue
 		}
 
-		break
+		log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
+		return nil
 	}
 
-	log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
-
+	log.Errorw("Failed to delete Atlas project in time", "projectID", project.Status.ID)
 	return nil
 }
 

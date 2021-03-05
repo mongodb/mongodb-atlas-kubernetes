@@ -171,10 +171,10 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 			continue
 		}
 
-		break
+		log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
+		return nil
 	}
 
-	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
-
+	log.Errorw("Failed to delete Atlas cluster in time", "projectID", project.Status.ID, "clusterName", cluster.Name)
 	return nil
 }
