@@ -18,9 +18,11 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -140,6 +142,12 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 
 		for time.Now().Before(timeout) {
 			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+				log.Infow("Project doesn't exist or is already deleted", "projectID", project.Status.ID)
+				return
+			}
+
 			if err != nil {
 				log.Errorw("cannot delete Atlas project", "error", err)
 				time.Sleep(workflow.DefaultRetry)
