@@ -27,7 +27,8 @@ const (
 
 // Atlas Database User reasons
 const (
-	DatabaseUserNotCreatedInAtlas      ConditionReason = "DatabaseUserNotCreatedInAtlas"
-	DatabaseUserNotUpdatedInAtlas      ConditionReason = "DatabaseUserNotUpdatedInAtlas"
-	DatabaseUserClustersAppliedChanges ConditionReason = "ClustersAppliedDatabaseUsersChanges"
+	DatabaseUserNotCreatedInAtlas           ConditionReason = "DatabaseUserNotCreatedInAtlas"
+	DatabaseUserNotUpdatedInAtlas           ConditionReason = "DatabaseUserNotUpdatedInAtlas"
+	DatabaseUserConnectionSecretsNotCreated ConditionReason = "DatabaseUserConnectionSecretsNotCreated"
+	DatabaseUserClustersAppliedChanges      ConditionReason = "ClustersAppliedDatabaseUsersChanges"
 )

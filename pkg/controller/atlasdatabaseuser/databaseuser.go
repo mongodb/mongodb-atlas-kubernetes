@@ -46,11 +46,20 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
+		ctx.Log.Infow("Updated Atlas Database User", "name", dbUser.Spec.Username)
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
 	}
 
-	return checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser)
+	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
+	if err = createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); err != nil {
+		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+	}
+
+	return workflow.OK()
 }
 
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
@@ -61,7 +70,7 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 
 	var clustersToCheck []string
 	if user.Spec.Scopes != nil {
-		clustersToCheck = filterScopeClusters(user.Spec.Scopes, allClustersInProject)
+		clustersToCheck = filterScopeClusters(user, allClustersInProject)
 	} else {
 		// otherwise we just take all the existing clusters
 		for _, cluster := range allClustersInProject {
@@ -99,14 +108,9 @@ func cluserIsReady(client mongodbatlas.Client, projectID, clusterName string) (b
 	return true, nil
 }
 
-func filterScopeClusters(scopes []mdbv1.ScopeSpec, allClustersInProject []mongodbatlas.Cluster) []string {
-	var scopeClusters []string
+func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mongodbatlas.Cluster) []string {
+	scopeClusters := user.GetScopes(mdbv1.ClusterScopeType)
 	var clustersToCheck []string
-	for _, scope := range scopes {
-		if scope.Type == mdbv1.ClusterScopeType {
-			scopeClusters = append(scopeClusters, scope.Name)
-		}
-	}
 	if len(scopeClusters) > 0 {
 		// filtering the scope clusters by the ones existing in Atlas
 		for _, c := range scopeClusters {

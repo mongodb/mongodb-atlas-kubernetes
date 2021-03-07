@@ -24,37 +24,37 @@ const (
 )
 
 type ConnectionData struct {
-	dbUserName, connURL, srvConnURL, password string
+	DBUserName, ConnURL, SrvConnURL, Password string
 }
 
 // Ensure creates or updates the connection Secret for the specific cluster and db user.
-func Ensure(client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) error {
+func Ensure(client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) (string, error) {
 	var getError error
 	s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-		Name:      formatSecretName(projectName, clusterName, data.dbUserName),
+		Name:      formatSecretName(projectName, clusterName, data.DBUserName),
 		Namespace: namespace,
 	}}
 	if getError = client.Get(context.Background(), kube.ObjectKeyFromObject(s), s); getError != nil && !apiErrors.IsNotFound(getError) {
-		return getError
+		return "", getError
 	}
 	if err := fillSecret(s, projectID, clusterName, data); err != nil {
-		return err
+		return "", err
 	}
 	if getError != nil {
 		// Creating
-		return client.Create(context.Background(), s)
+		return s.Name, client.Create(context.Background(), s)
 	}
 
-	return client.Update(context.Background(), s)
+	return s.Name, client.Update(context.Background(), s)
 }
 
 func fillSecret(secret *corev1.Secret, projectID string, clusterName string, data ConnectionData) error {
 	var connURL, srvConnURL string
 	var err error
-	if connURL, err = addCredentialsToConnectionURL(data.connURL, data.dbUserName, data.password); err != nil {
+	if connURL, err = AddCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
-	if srvConnURL, err = addCredentialsToConnectionURL(data.srvConnURL, data.dbUserName, data.password); err != nil {
+	if srvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
 
@@ -63,8 +63,8 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	secret.Data = map[string][]byte{
 		connectionSecretStdKey:    []byte(connURL),
 		connectionSecretStdSrvKey: []byte(srvConnURL),
-		userNameKey:               []byte(data.dbUserName),
-		passwordKey:               []byte(data.password),
+		userNameKey:               []byte(data.DBUserName),
+		passwordKey:               []byte(data.Password),
 	}
 	return nil
 }
@@ -77,7 +77,7 @@ func formatSecretName(projectName, clusterName, dbUserName string) string {
 	return kube.NormalizeIdentifier(name)
 }
 
-func addCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
+func AddCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
 	cs, err := url.Parse(connURL)
 	if err != nil {
 		return "", err
