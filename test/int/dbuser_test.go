@@ -314,7 +314,7 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 		Expect(err).NotTo(HaveOccurred())
 		// Shouldn't return the error - by this step the roles should be propagated
 		Expect(s).To(Equal(p))
-		fmt.Printf("User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
+		fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
 		return nil
 	}
 }
