@@ -165,7 +165,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
 	}
 
-	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
+	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
 
 	return nil
 }

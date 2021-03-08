@@ -18,6 +18,8 @@ package atlasdatabaseuser
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,10 +32,12 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
@@ -121,5 +125,57 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
+	dbUser, ok := e.Object.(*mdbv1.AtlasDatabaseUser)
+	if !ok {
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDatabaseUser{}, e.Object)
+		return nil
+	}
+
+	log := r.Log.With("atlasdatabaseuser", kube.ObjectKeyFromObject(dbUser))
+
+	log.Infow("-> Starting AtlasDatabaseUser deletion", "spec", dbUser.Spec)
+
+	project := &mdbv1.AtlasProject{}
+	if result := r.readProjectResource(dbUser, project); !result.IsOk() {
+		return errors.New("cannot read project resource")
+	}
+
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if err != nil {
+		return err
+	}
+
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	if err != nil {
+		return fmt.Errorf("cannot build Atlas client: %w", err)
+	}
+
+	userName := dbUser.Spec.Username
+	_, err = atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), userName)
+	if err != nil {
+		return fmt.Errorf("cannot delete Database User in Atlas: %w", err)
+	}
+
+	log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
+
+	secrets, err := connectionsecret.ListByUserName(r.Client, dbUser.Namespace, project.ID(), userName)
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for _, secret := range secrets {
+		// Solves the "Implicit memory aliasing in for loop" linter error
+		s := secret.DeepCopy()
+		err = r.Client.Delete(context.Background(), s)
+		if err != nil {
+			log.Errorf("Failed to remove connection Secret: %v", err)
+		} else {
+			log.Debugw("Removed connection Secret", "secret", kube.ObjectKeyFromObject(s))
+		}
+	}
+	if len(secrets) > 0 {
+		log.Infof("Removed %d connection secrets", len(secrets))
+	}
+
 	return nil
 }
