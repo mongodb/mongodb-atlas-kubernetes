@@ -155,8 +155,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
 
 					expectedSecretsInStatus := map[string]string{
-						"test-cluster-aws": "dev-test-atlas-project-test-cluster-aws-test-db-user",
-						"test-cluster-gcp": "dev-test-atlas-project-test-cluster-gcp-test-db-user",
+						"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user"),
+						"test-cluster-gcp": connSecretname("-test-cluster-gcp-test-db-user"),
 					}
 					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
