@@ -10,6 +10,7 @@ on:
         description: "Release version:"
         required: true
 
+
 jobs:
   create-release-branch:
     name: Create Release
@@ -25,7 +26,7 @@ jobs:
       with:
         fetch-depth: 0 #required for tags
 
-    - name: Create all-in-one installation script
+    - name: Create deploy configurations
       uses: ./.github/actions/gen-install-scripts
       with:
         IMAGE_URL: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
@@ -36,53 +37,11 @@ jobs:
         git checkout -b "release/${VERSION}"
         git push origin "release/${VERSION}"
 
-    - name: Commit all-in-one
+    - name: Commit deploy directory
       uses: ./.github/actions/push-files
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/all-in-one.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit crd project
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/crds/atlas.mongodb.com_atlasprojects.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit crd cluster
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/crds/atlas.mongodb.com_atlasclusters.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit namespaced crds
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/namespaced/crds.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit namespaced config
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/namespaced/namespaced-config.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit clusterwide crds
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/clusterwide/crds.yaml"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit clusterwide config
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy/clusterwide/clusterwide-config.yaml"
+        FILE_TO_COMMIT: "deploy"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR
