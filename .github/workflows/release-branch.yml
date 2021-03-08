@@ -37,7 +37,7 @@ jobs:
         git checkout -b "release/${VERSION}"
         git push origin "release/${VERSION}"
 
-    - name: Commit deploy directory
+    - name: Commit and push deploy directory
       uses: ./.github/actions/push-files
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
