@@ -1,4 +1,3 @@
-#TODO change to alpine
 FROM alpine/git:latest
 
 # Install GitHub CLI
