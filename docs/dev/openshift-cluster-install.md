@@ -5,12 +5,19 @@ https://cloud.redhat.com/openshift/install/aws/installer-provisioned
 
 1. Ensure you have an AWS account configured in `~/.aws/credentials`
 1. Download and unpack the MacOS installer
-1. Run `./openshift-install create cluster`. (*TODO this default configuration results in quite a big cluster, this needs 
-   to be changed to a smaller values somehow*)
-  * choose the zone that has enough VPCs
-  * specify the Pull Secrets (can be copied from the link above)
+1. Change the `scripts/openshift/install-config.yaml`. Set the following:
+   * `pullSecret: '<..>'` (copy the content of the Pull Secrets from the link above)
+   * `sshKey: | \n` (public ssh Key)
+1. Run `./openshift-install create cluster --dir=scripts/openshift`.
+  * `--dir=` points to the directory where the `install-config.yaml` file has all the configuration necessary
   * the installer will verify permissions and will show the ones that are missing - it's necessary to give them to your AWS account
 1. Wait for ~40 minutes
+
+Some notes on configuration of the cluster:
+* it's not possible to have less than 3 replicas for control plane and 2 replicas for worker nodes 
+  (see https://docs.openshift.com/container-platform/4.7/installing/installing_aws/installing-aws-customizations.html?extIdCarryOver=true&intcmp=7013a000002CtetAAC&sc_cid=701f2000001OH7iAAG#installation-configuration-parameters_installing-aws-customizations)
+* by default Openshift uses `m5.xlarge` for controlPlane nodes and `m5.large` for worker nodes. This is changed in our
+config and `m5.large` is used for both
 
 The log of the last installation:
 
