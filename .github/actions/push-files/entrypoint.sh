@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xeou pipefail
+set -eou pipefail
 
 commit_single_file() {
   # Commit to the branch
