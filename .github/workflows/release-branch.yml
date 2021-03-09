@@ -41,7 +41,7 @@ jobs:
       uses: ./.github/actions/push-files
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "deploy"
+        PATH_TO_COMMIT: "deploy"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR
