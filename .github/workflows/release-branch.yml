@@ -49,7 +49,7 @@ jobs:
       uses: ./.github/actions/push-files
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FILE_TO_COMMIT: "bundle"
+        PATH_TO_COMMIT: "bundle"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR
