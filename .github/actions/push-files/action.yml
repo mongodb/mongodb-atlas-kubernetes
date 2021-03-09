@@ -4,7 +4,7 @@ inputs:
   GITHUB_TOKEN:
     description: "Action token"
     required: true
-  FILE_TO_COMMIT:
+  PATH_TO_COMMIT:
     description: "Target file which will be committed"
     required: true
   DESTINATION_BRANCH:
