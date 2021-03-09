@@ -39,5 +39,11 @@ cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
 operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
-kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}"
+
+# We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
+if [[ "${INPUT_ENV}" == "dev" ]]; then
+  kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite
+else
+  kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}"
+fi
 operator-sdk bundle validate ./bundle
