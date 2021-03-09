@@ -1,28 +1,36 @@
-#!/bin/sh
+#!/bin/bash
 
-#set -eou pipefail
+set -eou pipefail
 
-#commit file to the destination branch
+commit_single_file() {
+  # Commit to the branch
+  file="$1"
+  sha=$(git rev-parse "$DESTINATION_BRANCH:$file") || true
+  content=$(base64 "$file")
+  message="Pushing $file using GitHub API"
 
-MESSAGE="generated $FILE_TO_COMMIT"
-SHA=$(git rev-parse "$DESTINATION_BRANCH:$FILE_TO_COMMIT")
-CONTENT=$(base64 "$FILE_TO_COMMIT")
-echo "$DESTINATION_BRANCH:$FILE_TO_COMMIT:$SHA"
+  echo "$DESTINATION_BRANCH:$file:$sha"
+  if [ "$sha" = "$DESTINATION_BRANCH:$file" ]; then
+      echo "File does not exist"
+      gh api --method PUT "/repos/:owner/:repo/contents/$file" \
+          --field message="$message" \
+          --field content="$content" \
+          --field encoding="base64" \
+          --field branch="$DESTINATION_BRANCH"
+  else
+      echo "File exists"
+      gh api --method PUT "/repos/:owner/:repo/contents/$file" \
+          --field message="$message" \
+          --field content="$content" \
+          --field encoding="base64" \
+          --field branch="$DESTINATION_BRANCH" \
+          --field sha="$sha"
+  fi
+}
 
-# Commit to the branch
-if [ "$SHA" = "$DESTINATION_BRANCH:$FILE_TO_COMMIT" ]; then
-    echo "File does not exist"
-    gh api --method PUT "/repos/:owner/:repo/contents/$FILE_TO_COMMIT" \
-        --field message="$MESSAGE" \
-        --field content="$CONTENT" \
-        --field encoding="base64" \
-        --field branch="$DESTINATION_BRANCH"
-else
-    echo "File exists"
-    gh api --method PUT "/repos/:owner/:repo/contents/$FILE_TO_COMMIT" \
-        --field message="$MESSAGE" \
-        --field content="$CONTENT" \
-        --field encoding="base64" \
-        --field branch="$DESTINATION_BRANCH" \
-        --field sha="$SHA"
-fi
+# simple 'for loop' does not work correctly, see https://github.com/koalaman/shellcheck/wiki/SC2044#correct-code
+while IFS= read -r -d '' file
+do
+  commit_single_file "$file"
+done <   <(find "${PATH_TO_COMMIT}" -type f -print0)
+
