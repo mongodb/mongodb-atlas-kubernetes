@@ -32,5 +32,5 @@ commit_single_file() {
 while IFS= read -r -d '' file
 do
   commit_single_file "$file"
-done <   <(find "${FILE_TO_COMMIT}" -type f -print0)
+done <   <(find "${PATH_TO_COMMIT}" -type f -print0)
 
