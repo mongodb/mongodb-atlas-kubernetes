@@ -30,6 +30,7 @@ jobs:
       uses: ./.github/actions/gen-install-scripts
       with:
         IMAGE_URL: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        VERSION: ${{ env.VERSION }}
         ENV: prod
 
     - name: Create branch and push it
@@ -42,6 +43,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         FILE_TO_COMMIT: "deploy"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit and push bundle directory
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FILE_TO_COMMIT: "bundle"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR

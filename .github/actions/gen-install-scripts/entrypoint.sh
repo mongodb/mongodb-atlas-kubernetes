@@ -19,6 +19,7 @@ cd -
 
 which kustomize
 kustomize version
+
 # all-in-one
 kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
@@ -36,4 +37,7 @@ echo "Created namespaced config"
 # crds
 cp config/crd/bases/* "${crds_dir}"
 
-
+# CSV bundle
+operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
+kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${VERSION}"
+operator-sdk bundle validate ./bundle
