@@ -143,7 +143,7 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		for time.Now().Before(timeout) {
 			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
 			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 				log.Infow("Project doesn't exist or is already deleted", "projectID", project.Status.ID)
 				return
 			}
