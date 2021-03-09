@@ -97,6 +97,7 @@ jobs:
       uses: ./.github/actions/gen-install-scripts
       with:
         IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+        VERSION: ${{ steps.prepare.outputs.tag }}
         ENV: dev
 
     - name: Set properties
