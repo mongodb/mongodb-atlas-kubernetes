@@ -84,6 +84,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 	}
 }
 
+// cleanupCluster will unset some fields that cannot be changed via API or are deprecated.
 func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
 	cluster.ID = ""
 	cluster.MongoDBVersion = ""
