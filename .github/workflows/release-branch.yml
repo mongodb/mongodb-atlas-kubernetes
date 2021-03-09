@@ -52,6 +52,13 @@ jobs:
         PATH_TO_COMMIT: "bundle"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
+    - name: Commit and push bundle dockerfile
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PATH_TO_COMMIT: "bundle.Dockerfile"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
     - name: Create PR
       uses: ./.github/actions/create-pr
       env:
