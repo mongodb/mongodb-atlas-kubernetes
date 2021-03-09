@@ -196,7 +196,7 @@ var _ = Describe("AtlasCluster", func() {
 						ZoneName:  "Zone 1",
 						RegionsConfig: map[string]mdbv1.RegionsConfig{
 							"EASTERN_US": {
-								AnalyticsNodes: int64ptr(0),
+								AnalyticsNodes: int64ptr(1),
 								ElectableNodes: int64ptr(2),
 								Priority:       int64ptr(7),
 								ReadOnlyNodes:  int64ptr(0),
