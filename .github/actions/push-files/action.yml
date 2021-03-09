@@ -5,7 +5,7 @@ inputs:
     description: "Action token"
     required: true
   PATH_TO_COMMIT:
-    description: "Target file which will be committed"
+    description: "Target file or directory which will be committed"
     required: true
   DESTINATION_BRANCH:
     description: "Target branch"
