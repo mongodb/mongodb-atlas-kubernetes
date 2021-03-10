@@ -3,6 +3,7 @@ package int
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	corev1 "k8s.io/api/core/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -62,7 +64,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				WithIPAccessList(project.NewIPAccessList().WithIP("0.0.0.0/0"))
 			if DevMode {
 				// While developing tests we need to reuse the same project
-				createdProject.Spec.Name = "dev-test-atlas-project"
+				createdProject.Spec.Name = "dev-test atlas-project"
 			}
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
@@ -132,6 +134,10 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		})
 	}
 
+	connSecretname := func(suffix string) string {
+		return kube.NormalizeIdentifier(createdProject.Spec.Name) + suffix
+	}
+
 	Describe("Create/Update the db user", func() {
 		It("Should be created successfully", func() {
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
@@ -151,6 +157,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+
+					expectedSecretsInStatus := map[string]string{
+						"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user"),
+						"test-cluster-gcp": connSecretname("-test-cluster-gcp-test-db-user"),
+					}
+					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 				By("Checking connectivity to Clusters", func() {
 					// The user created lacks read/write roles
@@ -178,6 +190,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+
+					expectedSecretsInStatus := map[string]string{
+						"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user"),
+						"test-cluster-gcp": connSecretname("-test-cluster-gcp-test-db-user"),
+					}
+					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 
 				By("Checking write permissions for Clusters", func() {
@@ -205,6 +223,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *secondDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 3)
+					expectedSecretsInStatus := map[string]string{"test-cluster-gcp": connSecretname("-test-cluster-gcp-second-db-user")}
+					Expect(secondDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 
 				By("Checking write permissions for Clusters", func() {
@@ -220,7 +240,24 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 				})
+				By("Removing Second user", func() {
+					Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
+					Eventually(checkAtlasDatabaseUserRemoved(createdProject.Status.ID, *secondDBUser), 50, interval).Should(BeTrue())
+
+					secretNames := []string{connSecretname("-test-cluster-gcp-second-db-user")}
+					Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
+				})
 			})
+			By("Removing First user", func() {
+				Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+				Eventually(checkAtlasDatabaseUserRemoved(createdProject.Status.ID, *createdDBUser), 50, interval).Should(BeTrue())
+
+				secretNames := []string{connSecretname("-test-cluster-aws-test-db-user"), connSecretname("-test-cluster-gcp-test-db-user")}
+				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+
 		})
 	})
 })
@@ -350,7 +387,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 
 func checkNumberOfConnectionSecrets(k8sClient client.Client, project mdbv1.AtlasProject, length int) {
 	secretList := corev1.SecretList{}
-	Expect(k8sClient.List(context.Background(), &secretList)).To(Succeed())
+	Expect(k8sClient.List(context.Background(), &secretList, client.InNamespace(namespace.Name))).To(Succeed())
 
 	names := make([]string, 0)
 	for _, item := range secretList.Items {
@@ -365,4 +402,31 @@ func buildConnectionURL(connURL, userName, password string) string {
 	u, err := connectionsecret.AddCredentialsToConnectionURL(connURL, userName, password)
 	Expect(err).NotTo(HaveOccurred())
 	return u
+}
+
+func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUser) func() bool {
+	return func() bool {
+		_, r, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username)
+		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
+	return func() bool {
+		nonExisting := 0
+		for _, name := range secretNames {
+			s := corev1.Secret{}
+			err := k8sClient.Get(context.Background(), kube.ObjectKey(namespace, name), &s)
+			if err != nil && apiErrors.IsNotFound(err) {
+				nonExisting++
+			}
+		}
+		return nonExisting == len(secretNames)
+	}
 }

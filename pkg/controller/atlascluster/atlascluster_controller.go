@@ -152,6 +152,8 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
+	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
+
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
@@ -169,7 +171,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 			_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
-				log.Infow("Cluster doesn't exist or is already deleted", "projectID", project.Status.ID, "clusterName", cluster.Name)
+				log.Info("Cluster doesn't exist or is already deleted")
 				return
 			}
 
@@ -179,11 +181,11 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 				continue
 			}
 
-			log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Name)
+			log.Info("Started Atlas cluster deletion process")
 			return
 		}
 
-		log.Errorw("Failed to delete Atlas cluster in time", "projectID", project.Status.ID, "clusterName", cluster.Name)
+		log.Error("Failed to delete Atlas cluster in time")
 	}()
 	return nil
 }
