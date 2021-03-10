@@ -4,6 +4,9 @@ inputs:
   IMAGE_URL:
     description: "Operator image"
     required: true
+  VERSION:
+    description: "Version of the Operator"
+    required: true
   ENV:
     description: "Kustomize patch name (enviroment configuration patch)"
     required: true

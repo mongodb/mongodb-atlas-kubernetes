@@ -1,0 +1,37 @@
+apiVersion: v1
+baseDomain: mongokubernetes.com
+compute:
+- architecture: amd64
+  hyperthreading: Enabled
+  name: worker
+  platform:
+    aws:
+      type: m5.large
+  replicas: 2
+controlPlane:
+  architecture: amd64
+  hyperthreading: Enabled
+  name: master
+  platform:
+    aws:
+      type: t3.xlarge
+  replicas: 3
+metadata:
+  creationTimestamp: null
+  name: atlas.operator
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: 10.0.0.0/16
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  aws:
+    region: eu-west-3
+publish: External
+pullSecret: <add_pull_secrets>
+sshKey: |
+  ssh-rsa <add_ssh_public_key>

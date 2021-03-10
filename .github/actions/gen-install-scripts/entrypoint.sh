@@ -19,6 +19,7 @@ cd -
 
 which kustomize
 kustomize version
+
 # all-in-one
 kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
 echo "Created all-in-one config"
@@ -36,4 +37,13 @@ echo "Created namespaced config"
 # crds
 cp config/crd/bases/* "${crds_dir}"
 
+# CSV bundle
+operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 
+# We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
+if [[ "${INPUT_ENV}" == "dev" ]]; then
+  kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite
+else
+  kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}"
+fi
+operator-sdk bundle validate ./bundle

@@ -185,6 +185,10 @@ spec:
                   - type
                   type: object
                 type: array
+              connectionSecrets:
+                additionalProperties:
+                  type: string
+                type: object
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator

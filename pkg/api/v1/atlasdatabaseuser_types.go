@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
@@ -146,27 +147,43 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 	}
 }
 
-// ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
-func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
-	var password string
-
+func (p *AtlasDatabaseUser) ReadPassword(kubeClient client.Client) (string, error) {
 	if p.Spec.PasswordSecret != nil {
 		secret := &corev1.Secret{}
 		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
-			return nil, err
+			return "", err
 		}
-		secretData := make(map[string]string)
-		for k, v := range secret.Data {
-			secretData[k] = string(v)
+		if p, exist := secret.Data["password"]; !exist {
+			return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
+		} else {
+			return string(p), nil
 		}
-		password = secretData["password"]
+	}
+	return "", nil
+}
+
+// ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
+func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
+	password, err := p.ReadPassword(kubeClient)
+	if err != nil {
+		return nil, err
 	}
 
 	result := &mongodbatlas.DatabaseUser{}
-	err := compat.JSONCopy(result, p.Spec)
+	err = compat.JSONCopy(result, p.Spec)
 	result.Password = password
 
 	return result, err
+}
+
+func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {
+	var scopeClusters []string
+	for _, scope := range p.Spec.Scopes {
+		if scope.Type == scopeType {
+			scopeClusters = append(scopeClusters, scope.Name)
+		}
+	}
+	return scopeClusters
 }
 
 // ************************************ Builder methods *************************************************
