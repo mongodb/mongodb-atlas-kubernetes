@@ -189,10 +189,10 @@ func prepareControllers() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client:      k8sManager.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain: "https://cloud-qa.mongodb.com",
-		OperatorPod: kube.ObjectKey(namespace.Name, "atlas-operator"),
+		Client:                 k8sManager.GetClient(),
+		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain:            "https://cloud-qa.mongodb.com",
+		OperatorDeploymentName: kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

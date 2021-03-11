@@ -43,11 +43,11 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	Client      client.Client
-	Log         *zap.SugaredLogger
-	Scheme      *runtime.Scheme
-	AtlasDomain string
-	OperatorPod client.ObjectKey
+	Client                 client.Client
+	Log                    *zap.SugaredLogger
+	Scheme                 *runtime.Scheme
+	AtlasDomain            string
+	OperatorDeploymentName client.ObjectKey
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -77,7 +77,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorDeploymentName, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
@@ -154,7 +154,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorDeploymentName, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}

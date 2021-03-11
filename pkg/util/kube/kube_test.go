@@ -81,3 +81,29 @@ func TestNormalizeLabelValue(t *testing.T) {
 		}
 	})
 }
+
+func TestParseDeploymentNameFromPodName(t *testing.T) {
+	testCases := []struct {
+		in  string
+		out string
+	}{
+		{in: "prometheus-adapter-797f946f88-97f2q", out: "prometheus-adapter"},
+		{in: "cluster-monitoring-operator-686555c948-z2xrh", out: "cluster-monitoring-operator"},
+		{in: "mongodb-atlas-operator-cd75dc789-tdhvp", out: "mongodb-atlas-operator"},
+		{in: "somenondashed-cd75dc789-tdhvp", out: "somenondashed"},
+		{in: "notadeploymentpod-cd75dc789", out: ""},
+		{in: "notadeploymentpod", out: ""},
+		{in: "notadeploymentpod_cd75dc789", out: ""},
+		{in: "notadeploymentpod.cd75dc789", out: ""},
+	}
+	for _, tc := range testCases {
+		out, err := ParseDeploymentNameFromPodName(tc.in)
+		if tc.out != "" {
+			assert.Equal(t, tc.out, out, "in: %q, out: %q, (expected %q)", tc.in, out, tc.out)
+			assert.Nil(t, err)
+		}
+		if tc.out == "" {
+			assert.Error(t, err)
+		}
+	}
+}
