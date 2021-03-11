@@ -58,19 +58,12 @@ var _ = Describe("AtlasCluster", func() {
 			if createdCluster != nil {
 				By("Removing Atlas Cluster " + createdCluster.Name)
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
-			// TODO: CLOUDP-82115
-			// By("Removing Atlas Project " + createdProject.Status.ID)
-			// Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			// Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
-
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			// This is a bit strange but the delete request right after the cluster is removed may fail with "Still active cluster" error
-			// UI shows the cluster being deleted though. Seems to be the issue only if removal is done using API,
-			// if the cluster is terminated using UI - it stays in "Deleting" state
-			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
