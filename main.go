@@ -37,6 +37,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -76,14 +77,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	operatorPod := operatorPodObjectKey()
+	operatorPod := operatorDeploymentObjectKey()
 
 	if err = (&atlascluster.AtlasClusterReconciler{
-		Client:      mgr.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		Scheme:      mgr.GetScheme(),
-		AtlasDomain: config.AtlasDomain,
-		OperatorPod: operatorPod,
+		Client:                 mgr.GetClient(),
+		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Scheme:                 mgr.GetScheme(),
+		AtlasDomain:            config.AtlasDomain,
+		OperatorDeploymentName: operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
@@ -159,15 +160,18 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	return config
 }
 
-func operatorPodObjectKey() client.ObjectKey {
-	operatorName := os.Getenv("OPERATOR_NAME")
-	if operatorName == "" {
-		log.Fatal(`"OPERATOR_NAME" environment variable must be set!`)
+func operatorDeploymentObjectKey() client.ObjectKey {
+	operatorPodName := os.Getenv("OPERATOR_POD_NAME")
+	if operatorPodName == "" {
+		log.Fatal(`"OPERATOR_POD_NAME" environment variable must be set!`)
 	}
 	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
 	if operatorNamespace == "" {
 		log.Fatal(`"OPERATOR_NAMESPACE" environment variable must be set!`)
 	}
-
-	return client.ObjectKey{Namespace: operatorNamespace, Name: operatorName}
+	deploymentName, err := kube.ParseDeploymentNameFromPodName(operatorPodName)
+	if err != nil {
+		log.Fatalf(`Failed to get Operator Deployment name from "OPERATOR_POD_NAME" environment variable: %s`, err.Error())
+	}
+	return client.ObjectKey{Namespace: operatorNamespace, Name: deploymentName}
 }

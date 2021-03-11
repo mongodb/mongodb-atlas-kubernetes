@@ -55,7 +55,7 @@ spec:
             cpu: 100m
             memory: 20Mi
         env:
-          - name: OPERATOR_NAME
+          - name: OPERATOR_POD_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name

@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -44,6 +45,20 @@ func NormalizeLabelValue(name string) string {
 		return name
 	}
 	return normalize(name, 63, nonLabelRegexp)
+}
+
+// ParseDeploymentNameFromPodName returns the name of Deployment by Pod Name. The Pods for Deployments have two hashes
+// parts as the first one is generated for the ReplicaSet resource created and the second - for the Pod itself.
+// Example:
+// - Deployment: "prometheus-adapter"
+// - ReplicaSet: "prometheus-adapter-65c6cb864f"
+// - Pod: "prometheus-adapter-797f946f88-97f2q"
+func ParseDeploymentNameFromPodName(podName string) (string, error) {
+	parts := strings.Split(podName, "-")
+	if len(parts) <= 2 {
+		return "", fmt.Errorf(`the Pod name must follow the format "<deployment_name>-797f946f88-97f2q" but got %s`, podName)
+	}
+	return strings.Join(parts[0:len(parts)-2], "-"), nil
 }
 
 // Dev note: the algorithm tries to replace the invalid characters with '-' (or simply omit it replacing is not possible)
