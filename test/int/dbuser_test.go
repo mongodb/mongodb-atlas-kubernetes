@@ -28,12 +28,13 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
-const DevMode = false
-
-const UserPasswordSecret = "user-password-secret"
-const DBUserPassword = "Passw0rd!"
-const UserPasswordSecret2 = "second-user-password-secret"
-const DBUserPassword2 = "H@lla#!"
+const (
+	DevMode             = false
+	UserPasswordSecret  = "user-password-secret"
+	DBUserPassword      = "Passw0rd!"
+	UserPasswordSecret2 = "second-user-password-secret"
+	DBUserPassword2     = "H@lla#!"
+)
 
 var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
@@ -101,20 +102,23 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 			return
 		}
+
 		if createdProject != nil && createdProject.ID() != "" {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
 			}
+
 			if createdClusterAWS != nil {
 				By("Removing Atlas Cluster " + createdClusterAWS.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			Eventually(removeAtlasProject(createdProject.Status.ID), 600, interval).Should(BeTrue())
+			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
 	})
@@ -289,12 +293,14 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	user.Password = ""
 	return user
 }
+
 func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) func() error {
 	return func() error {
 		_, err := mongoClient(projectID, cluster, user)
 		return err
 	}
 }
+
 func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

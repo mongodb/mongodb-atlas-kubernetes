@@ -20,7 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -150,6 +152,8 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
+	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
+
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
@@ -160,12 +164,28 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
-	if err != nil {
-		return fmt.Errorf("cannot delete Atlas cluster: %w", err)
-	}
+	go func() {
+		timeout := time.Now().Add(workflow.DefaultTimeout)
 
-	log.Infow("Started Atlas cluster deletion process", "projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
+		for time.Now().Before(timeout) {
+			_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+				log.Info("Cluster doesn't exist or is already deleted")
+				return
+			}
 
+			if err != nil {
+				log.Errorw("cannot delete Atlas cluster", "error", err)
+				time.Sleep(workflow.DefaultRetry)
+				continue
+			}
+
+			log.Info("Started Atlas cluster deletion process")
+			return
+		}
+
+		log.Error("Failed to delete Atlas cluster in time")
+	}()
 	return nil
 }

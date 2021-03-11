@@ -373,10 +373,8 @@ var _ = Describe("AtlasProject", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
 			})
-
 		})
 	})
-
 })
 
 func buildConnectionSecret(name string) corev1.Secret {
@@ -386,19 +384,6 @@ func buildConnectionSecret(name string) corev1.Secret {
 			Namespace: namespace.Name,
 		},
 		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
-	}
-}
-
-func removeAtlasProject(projectID string) func() bool {
-	return func() bool {
-		_, err := atlasClient.Projects.Delete(context.Background(), projectID)
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue())
-			Expect(apiError.ErrorCode).To(Equal(atlas.CannotCloseGroupActiveAtlasCluster))
-			return false
-		}
-		return true
 	}
 }
 

@@ -6,7 +6,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const DefaultRetry = time.Second * 10
+const (
+	DefaultRetry   = time.Second * 10
+	DefaultTimeout = time.Minute * 20
+)
 
 type Result struct {
 	terminated   bool
