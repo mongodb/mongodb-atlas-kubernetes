@@ -8,6 +8,7 @@ import (
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	// v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 var (
@@ -26,11 +27,14 @@ type userInputs struct {
 	k8sFullProjectName string
 	projectPath        string
 	clusters           []utils.AC
+	users              []utils.DBUser
 }
 
-func NewUserInputs(keyName string) userInputs {
+// NewUsersInputs prepare users inputs
+func NewUserInputs(keyName string, users []utils.DBUser) userInputs {
 	uid := utils.GenUniqID()
-	return userInputs{
+
+	input := userInputs{
 		projectName:        uid,
 		projectID:          "",
 		keyName:            keyName,
@@ -39,6 +43,10 @@ func NewUserInputs(keyName string) userInputs {
 		k8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + uid,
 		projectPath:        DataFolder + uid + ".yaml",
 	}
+	for _, user := range users {
+		input.users = append(input.users, *user.WithProjectRef(input.k8sProjectName))
+	}
+	return input
 }
 
 func FilePathTo(name string) string {
@@ -71,6 +79,22 @@ func waitProject(input userInputs, generation string) {
 func checkIfClusterExist(input userInputs) func() bool {
 	return func() bool {
 		return mongocli.IsClusterExist(input.projectID, input.clusters[0].Spec.Name)
+	}
+}
+
+func checkIfUsersExist(input userInputs) func() bool {
+	return func() bool {
+		isExist := true
+		for _, user := range input.users {
+			isExist = isExist && mongocli.IsUserExist(user.Spec.Username, input.projectID)
+		}
+		return isExist
+	}
+}
+
+func checkIfUserExist(username, projecID string) func() bool {
+	return func() bool {
+		return mongocli.IsUserExist(username, projecID)
 	}
 }
 

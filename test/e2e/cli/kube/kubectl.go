@@ -111,8 +111,16 @@ func Delete(args ...string) *Buffer {
 
 func CreateNamespace(name string) *Buffer {
 	session := cli.Execute("kubectl", "create", "namespace", name)
-	ExpectWithOffset(1, session.Wait()).Should(Say("created"))
+	ExpectWithOffset(1, session.Wait()).Should(Say("created"), "Can't create namespace")
 	return session.Out
+}
+
+func CreateUserSecret(name, ns string) { // T ODO
+	session := cli.Execute("kubectl", "create", "secret", "generic", name,
+		"--from-literal=password=superpowersecret",
+		"-n", ns,
+	)
+	EventuallyWithOffset(1, session.Wait()).Should(Say(name + " created"))
 }
 
 func CreateApiKeySecret(keyName, ns string) { // TODO ?
