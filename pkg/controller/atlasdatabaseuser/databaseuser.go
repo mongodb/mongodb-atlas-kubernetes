@@ -99,7 +99,7 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 }
 
 func clusterIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
-	status, _, err := client.Clusters.Status(context.TODO(), projectID, clusterName)
+	status, _, err := client.Clusters.Status(context.Background(), projectID, clusterName)
 	if err != nil {
 		return false, err
 	}

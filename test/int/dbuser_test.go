@@ -150,8 +150,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				checkUserInAtlas(*createdDBUser)
 
-				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)()).Should(Succeed())
-				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)()).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -165,11 +165,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 				By("Checking connectivity to Clusters", func() {
 					// The user created lacks read/write roles
-					err := tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")()
+					err := tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 
-					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")()
+					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 				})
@@ -198,8 +198,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 
 				By("Checking write permissions for Clusters", func() {
-					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")()).Should(Succeed())
-					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")()).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")).Should(Succeed())
 				})
 			})
 			By("Adding another user for GCP cluster only", func() {
@@ -227,14 +227,14 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				By("Checking write permissions for Clusters", func() {
 					// We still can write by the first user
-					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "testCollection")()).Should(Succeed())
-					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "testCollection")()).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "testCollection")).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "testCollection")).Should(Succeed())
 
 					// The second user can eventually write to one collection only
-					Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser)()).Should(Succeed())
-					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection")()).Should(Succeed())
+					Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser)).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection")).Should(Succeed())
 
-					err := tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "test", "someNotAllowedCollection")()
+					err := tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "test", "someNotAllowedCollection")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 				})
@@ -292,11 +292,9 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	return user
 }
 
-func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) func() error {
-	return func() error {
-		_, err := mongoClient(projectID, cluster, user)
-		return err
-	}
+func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) error {
+	_, err := mongoClient(projectID, cluster, user)
+	return err
 }
 
 func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
@@ -326,38 +324,36 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) func() error {
-	return func() error {
-		dbClient, err := mongoClient(projectID, cluster, user)
-		Expect(err).NotTo(HaveOccurred())
-		defer func() {
-			if err = dbClient.Disconnect(context.Background()); err != nil {
-				panic(err)
-			}
-		}()
-
-		collection := dbClient.Database(dbName).Collection(collectionName)
-
-		p := Person{
-			Name: "Patrick",
-			Age:  32,
+func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) error {
+	dbClient, err := mongoClient(projectID, cluster, user)
+	Expect(err).NotTo(HaveOccurred())
+	defer func() {
+		if err = dbClient.Disconnect(context.Background()); err != nil {
+			panic(err)
 		}
+	}()
 
-		_, err = collection.InsertOne(context.Background(), p)
-		if err != nil {
-			return err
-		}
-		filter := bson.D{{Key: "name", Value: "Patrick"}}
+	collection := dbClient.Database(dbName).Collection(collectionName)
 
-		var s Person
-
-		err = collection.FindOne(context.Background(), filter).Decode(&s)
-		Expect(err).NotTo(HaveOccurred())
-		// Shouldn't return the error - by this step the roles should be propagated
-		Expect(s).To(Equal(p))
-		fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
-		return nil
+	p := Person{
+		Name: "Patrick",
+		Age:  32,
 	}
+
+	_, err = collection.InsertOne(context.Background(), p)
+	if err != nil {
+		return err
+	}
+	filter := bson.D{{Key: "name", Value: "Patrick"}}
+
+	var s Person
+
+	err = collection.FindOne(context.Background(), filter).Decode(&s)
+	Expect(err).NotTo(HaveOccurred())
+	// Shouldn't return the error - by this step the roles should be propagated
+	Expect(s).To(Equal(p))
+	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
+	return nil
 }
 
 func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) {
