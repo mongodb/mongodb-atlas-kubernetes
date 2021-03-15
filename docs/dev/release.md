@@ -58,3 +58,5 @@ git push origin mongodb-atlas-operator-${version}
 
 Create the PR to the main repository and wait until CI jobs get green. 
 After the PR is approved and merged - it will soon get available on https://operatorhub.io
+
+Example PR: https://github.com/operator-framework/community-operators/pull/3281
