@@ -72,7 +72,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					AddRole("atlasAdmin", "admin", ""),
 				*utils.NewDBUser("user2").
 					WithSecretRef("dbuser-secret-u2").
-					AddRole("readWriteAnyDatabase", "testDB", ""),
+					AddRole("read", "testDB", ""),
 			),
 		)),
 		// Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
