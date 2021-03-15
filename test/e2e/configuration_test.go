@@ -151,7 +151,7 @@ func mainCycle(clusterConfigurationFile string, u userInputs) {
 		Eventually(checkIfUsersExist(u), "2m", "10s").Should(BeTrue())
 		for _, user := range u.users {
 			atlasUser := mongocli.GetUser(user.Spec.Username, u.projectID)
-			// Requared fields
+			// Required fields
 			Expect(atlasUser).To(MatchFields(IgnoreExtras, Fields{
 				"Username":     Equal(user.Spec.Username),
 				"GroupID":      Equal(u.projectID),
