@@ -80,7 +80,7 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 
 	readyClusters := 0
 	for _, c := range clustersToCheck {
-		ready, err := cluserIsReady(ctx.Client, projectID, c)
+		ready, err := clusterIsReady(ctx.Client, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -98,14 +98,12 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 	return workflow.OK()
 }
 
-func cluserIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
-	// TODO CLOUDP-83026 GET for clusters isn't working, we need the https://docs.atlas.mongodb.com/reference/api/clusters-check-operation-status/
-	_ = fmt.Sprintf("%v %v %v", client, projectID, clusterName)
-	if projectID == "xyz" {
-		// Cheating the linter
-		return false, errors.New("boo")
+func clusterIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
+	status, _, err := client.Clusters.Status(context.TODO(), projectID, clusterName)
+	if err != nil {
+		return false, err
 	}
-	return true, nil
+	return status.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
 func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mongodbatlas.Cluster) []string {

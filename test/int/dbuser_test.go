@@ -146,13 +146,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(*createdDBUser)
 
-				// TODO CLOUDP-83026 and CLOUDP-83098 remove Eventually in favor of Expect
-				Eventually(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser), 90, interval).Should(Succeed())
-				Eventually(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser), 90, interval).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)()).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)()).Should(Succeed())
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -182,7 +181,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(*createdDBUser)
 
@@ -199,9 +198,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 
 				By("Checking write permissions for Clusters", func() {
-					// TODO CLOUDP-83026 remove Eventually in favor of Expect
-					Eventually(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest"), 60, interval).Should(Succeed())
-					Eventually(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest"), 60, interval).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")()).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")()).Should(Succeed())
 				})
 			})
 			By("Adding another user for GCP cluster only", func() {
@@ -215,7 +213,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(*secondDBUser)
 				By("Checking connection Secrets", func() {
@@ -233,8 +231,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "testCollection")()).Should(Succeed())
 
 					// The second user can eventually write to one collection only
-					Eventually(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser), 90, interval).Should(Succeed())
-					Eventually(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection"), 60, interval).Should(Succeed())
+					Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser)()).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection")()).Should(Succeed())
 
 					err := tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "test", "someNotAllowedCollection")()
 					Expect(err).To(HaveOccurred())
