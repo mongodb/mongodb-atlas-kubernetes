@@ -9,8 +9,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
@@ -129,4 +131,38 @@ func clustersEqual(log *zap.SugaredLogger, clusterA mongodbatlas.Cluster, cluste
 	}
 
 	return d == ""
+}
+
+func ensureConnectionSecrets(ctx context.Context, wctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
+	dbUsers, _, err := wctx.Client.DatabaseUsers.List(ctx, project.ID(), &mongodbatlas.ListOptions{})
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+out:
+	for _, dbUser := range dbUsers {
+		for _, scope := range dbUser.Scopes {
+			if scope.Type == string(mdbv1.ClusterScopeType) && scope.Name == cluster.Name {
+				break
+			}
+
+			continue out
+		}
+
+		data := connectionsecret.ConnectionData{
+			DBUserName: dbUser.Username,
+			ConnURL:    cluster.ConnectionStrings.Standard,
+			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
+			Password:   dbUser.Password,
+		}
+
+		var secretName string
+		if secretName, err = connectionsecret.Ensure(k8sClient, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data); err != nil {
+			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+		}
+
+		wctx.Log.Debugw("Ensured connection Secret up-to-date", "name", secretName)
+	}
+
+	return workflow.OK()
 }

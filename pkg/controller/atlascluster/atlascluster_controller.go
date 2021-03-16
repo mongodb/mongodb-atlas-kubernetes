@@ -57,8 +57,6 @@ type AtlasClusterReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
 
 func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO use the context passed
-	_ = context
 	log := r.Log.With("atlascluster", req.NamespacedName)
 
 	cluster := &mdbv1.AtlasCluster{}
@@ -101,6 +99,11 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	if !result.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
+	}
+
+	if csResult := ensureConnectionSecrets(context, ctx, r.Client, project, c); !csResult.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+		return csResult.ReconcileResult(), nil
 	}
 
 	ctx.
