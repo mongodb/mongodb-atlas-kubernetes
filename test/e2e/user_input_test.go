@@ -8,7 +8,6 @@ import (
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
-	// v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 var (
@@ -84,11 +83,12 @@ func checkIfClusterExist(input userInputs) func() bool {
 
 func checkIfUsersExist(input userInputs) func() bool {
 	return func() bool {
-		isExist := true
 		for _, user := range input.users {
-			isExist = isExist && mongocli.IsUserExist(user.Spec.Username, input.projectID)
+			if !mongocli.IsUserExist(user.Spec.Username, input.projectID) {
+				return false
+			}
 		}
-		return isExist
+		return true
 	}
 }
 
@@ -119,5 +119,25 @@ func SaveK8sResources(resources []string, ns string) {
 	for _, resource := range resources {
 		data := kube.GetYamlResource(resource, ns)
 		utils.SaveToFile("output/"+resource+".yaml", data)
+	}
+}
+
+func checkUsersAttributes(input userInputs) {
+	for _, user := range input.users {
+		atlasUser := mongocli.GetUser(user.Spec.Username, input.projectID)
+		// Required fields
+		ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+			"Username":     Equal(user.Spec.Username),
+			"GroupID":      Equal(input.projectID),
+			"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
+		}), "Users attributes should be the same as requested by the user")
+
+		for i, role := range atlasUser.Roles {
+			ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
+				"RoleName":       Equal(user.Spec.Roles[i].RoleName),
+				"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
+				"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
+			}), "Users roles attributes should be the same as requsted by the user")
+		}
 	}
 }

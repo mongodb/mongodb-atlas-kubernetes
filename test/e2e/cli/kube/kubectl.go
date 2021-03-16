@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
+	"github.com/sethvargo/go-password/password"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
@@ -116,8 +118,9 @@ func CreateNamespace(name string) *Buffer {
 }
 
 func CreateUserSecret(name, ns string) { // T ODO
+	secret, _ := password.Generate(10, 3, 3, false, false)
 	session := cli.Execute("kubectl", "create", "secret", "generic", name,
-		"--from-literal=password=superpowersecret",
+		"--from-literal=password="+secret,
 		"-n", ns,
 	)
 	EventuallyWithOffset(1, session.Wait()).Should(Say(name + " created"))
