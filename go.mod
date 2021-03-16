@@ -12,6 +12,7 @@ require (
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
 	github.com/pborman/uuid v1.2.1
+	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/atlas v0.7.2
