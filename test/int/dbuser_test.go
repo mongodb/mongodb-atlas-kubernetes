@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
@@ -45,6 +46,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		createdClusterAWS *mdbv1.AtlasCluster
 		createdClusterGCP *mdbv1.AtlasCluster
 		createdDBUser     *mdbv1.AtlasDatabaseUser
+		secondDBUser      *mdbv1.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
@@ -56,6 +58,9 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 		passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+
+		passwordSecret2 := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
+		Expect(k8sClient.Create(context.Background(), &passwordSecret2)).To(Succeed())
 
 		By("Creating the project", func() {
 			// adding whitespace to the name to check normalization for connection secrets names
@@ -204,15 +209,32 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					Eventually(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest"), 60, interval).Should(Succeed())
 				})
 			})
-			By("Adding another user for GCP cluster only", func() {
-				passwordSecret := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
-				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
-				secondDBUser := mdbv1.DefaultDBUser(namespace.Name, "second-db-user", createdProject.Name).
+			By("Adding second user for GCP cluster only (fails, wrong scope)", func() {
+				secondDBUser = mdbv1.DefaultDBUser(namespace.Name, "second-db-user", createdProject.Name).
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWrite", "someDB", "thisIsTheOnlyAllowedCollection").
-					WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name)
+					// Cluster doesn't exist
+					WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name+"-foo")
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
+
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						secondDBUser,
+						status.
+							FalseCondition(status.DatabaseUserReadyType).
+							WithReason(string(workflow.DatabaseUserInvalidSpec)).
+							WithMessageRegexp("such cluster doesn't exist in Atlas"),
+					),
+					20,
+					interval,
+				).Should(BeTrue())
+			})
+			By("Fixing second user", func() {
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name)
+
+				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
