@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	DevMode             = false
+	DevMode             = true
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
@@ -324,6 +324,55 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
+	FDescribe("Create a single user (watch, expiration)", func() {
+		It("Should succeed", func() {
+			By("Creating clusters", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					500, interval).Should(BeTrue())
+			})
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			var connSecretInitial corev1.Secret
+
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+
+				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+			})
+
+			By("Breaking the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, expectedCondition), 20, interval).Should(BeTrue())
+			})
+			By("Fixing the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				// We need to make sure that the new connection secret is different from the initial one
+				connSecretUpdated := validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(string(connSecretInitial.Data["password"])).To(Equal(DBUserPassword))
+				Expect(string(connSecretUpdated.Data["password"])).To(Equal("someNewPassw00rd"))
+
+				// Everything else is the same
+				connSecretUpdated.Data["password"] = []byte(DBUserPassword)
+				Expect(connSecretUpdated.Data).To(Equal(connSecretInitial.Data))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+		})
+	})
 })
 
 func buildPasswordSecret(name, password string) corev1.Secret {
@@ -426,7 +475,7 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 	return nil
 }
 
-func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) {
+func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
@@ -450,6 +499,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
+	return secret
 }
 
 func checkNumberOfConnectionSecrets(k8sClient client.Client, project mdbv1.AtlasProject, length int) {
