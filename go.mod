@@ -14,7 +14,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg/stringprep v1.0.0 // indirect
-	go.mongodb.org/atlas v0.7.2
+	go.mongodb.org/atlas v0.7.3-0.20210315115044-4b1d3f428c24
 	go.mongodb.org/mongo-driver v1.4.6
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
