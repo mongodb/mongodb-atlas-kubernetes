@@ -2,7 +2,6 @@ package int
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,7 +24,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
@@ -72,6 +70,20 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
+		})
+
+		By("Creating cluster", func() {
+			createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+			createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				1800, interval).Should(BeTrue())
+
+			Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				500, interval).Should(BeTrue())
 		})
 	})
 
@@ -126,28 +138,15 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		return kube.NormalizeIdentifier(createdProject.Spec.Name) + suffix
 	}
 
-	Describe("Create/Update two users, two clusters", func() {
-		It("They should be created successfully", func() {
-			By("Creating clusters", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
-				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
-
-				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
-				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
-
-				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
-
-				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					500, interval).Should(BeTrue())
-			})
+	Describe("Create/Update the db user", func() {
+		It("Should be created successfully", func() {
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(*createdDBUser)
 
@@ -213,7 +212,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType)),
 					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(*secondDBUser)
@@ -257,50 +256,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
 
-		})
-	})
-
-	// Note, that this test doesn't work with "DevMode=true" as requires the cluster to get created
-	Describe("Create a single user first and then the cluster", func() {
-		It("Should succeed", func() {
-			// Here we create a database user first - then the cluster
-			By("Creating database user", func() {
-				createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
-
-				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
-
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					80, interval).Should(BeTrue())
-
-				checkUserInAtlas(*createdDBUser)
-				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
-				Expect(createdDBUser.Status.ConnectionSecrets).To(BeEmpty())
-			})
-			By("Creating cluster", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
-				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
-
-				// We don't wait for the full cluster creation - only when it has started the process
-				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating))),
-					20, interval).Should(BeTrue())
-			})
-			By("Updating the database user while the cluster is being created", func() {
-				createdDBUser = createdDBUser.WithRole("read", "test", "somecollection")
-				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
-
-				// DatabaseUser will wait for the cluster to get created
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserWaitingForCluster()),
-					1800, interval).Should(BeTrue())
-
-				checkUserInAtlas(*createdDBUser)
-				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
-				By("Checking connection Secrets", func() {
-					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
-					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
-					expectedSecretsInStatus := map[string]string{"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user")}
-					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
-				})
-			})
 		})
 	})
 })
@@ -347,10 +302,6 @@ func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasD
 	defer cancel()
 	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.Name)
 	Expect(err).NotTo(HaveOccurred())
-
-	if c.ConnectionStrings == nil {
-		return nil, errors.New("Connection strings are not provided!")
-	}
 
 	cs, err := url.Parse(c.ConnectionStrings.StandardSrv)
 	Expect(err).NotTo(HaveOccurred())
@@ -414,12 +365,9 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.Name)
-	Expect(err).NotTo(HaveOccurred())
-
 	expectedData := map[string][]byte{
-		"connectionString.standard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
-		"connectionString.standardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
+		"connectionString.standard":    []byte(buildConnectionURL(cluster.Status.ConnectionStrings.Standard, username, password)),
+		"connectionString.standardSrv": []byte(buildConnectionURL(cluster.Status.ConnectionStrings.StandardSrv, username, password)),
 		"username":                     []byte(username),
 		"password":                     []byte(password),
 	}
@@ -474,35 +422,5 @@ func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
 			}
 		}
 		return nonExisting == len(secretNames)
-	}
-}
-
-func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		d := a.(*mdbv1.AtlasDatabaseUser)
-		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
-			status.FalseCondition(status.ReadyType),
-		)
-		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-	}
-}
-func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		d := a.(*mdbv1.AtlasDatabaseUser)
-		// this is the first status that db user gets after update
-		userChangesApplied := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
-			status.FalseCondition(status.ReadyType),
-		)
-		// this is the status the db user gets to when tries to create connection secrets and sees that the cluster
-		// is not ready
-		waitingForCluster := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).
-				WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
-				WithMessageRegexp("Waiting for clusters to get created/updated"),
-			status.FalseCondition(status.ReadyType),
-		)
-		Expect(d.Status.Conditions).To(Or(ConsistOf(waitingForCluster), ConsistOf(userChangesApplied)))
 	}
 }
