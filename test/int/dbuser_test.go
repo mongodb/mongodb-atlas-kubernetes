@@ -57,9 +57,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		connectionSecret = buildConnectionSecret("my-atlas-key")
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret))
 		passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret2))
 		passwordSecret2 := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret2)).To(Succeed())
 
@@ -84,14 +86,25 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			// No tearDown in dev mode - projects and both clusters will stay in Atlas so it's easier to develop
 			// tests. Just rerun the test and the project + clusters in Atlas will be reused.
 			// We only need to wipe data in the databases.
-			dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+			if createdClusterAWS != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
+				if err == nil {
+					Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+				}
+			}
+			if createdClusterGCP != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
+				if err == nil {
+					Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+				}
+			}
 
-			dbClient, err = mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
-
+			Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+			Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *createdDBUser), 20, interval).Should(BeTrue())
+			if secondDBUser != nil {
+				Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
+				Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *secondDBUser), 20, interval).Should(BeTrue())
+			}
 			return
 		}
 
@@ -357,6 +370,9 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
 				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
 
+				// Note, that this block doesn't wait for the clusters to apply changes as no real update is done to the
+				// user in atlas (specs don't differ) and the reconciliation is not retried so the following check for
+				// clusters returns "cluster is ready"
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
@@ -365,11 +381,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(string(connSecretInitial.Data["password"])).To(Equal(DBUserPassword))
 				Expect(string(connSecretUpdated.Data["password"])).To(Equal("someNewPassw00rd"))
 
-				// Everything else is the same
-				connSecretUpdated.Data["password"] = []byte(DBUserPassword)
-				Expect(connSecretUpdated.Data).To(Equal(connSecretInitial.Data))
-
-				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+				// This will succeed 'Eventually' instead of 'Expect' as the AtlasDatabaseUser is marked as ready earlier
+				// than the cluster reaches the goal (see above)
+				tryToConnect := func() error {
+					return tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)
+				}
+				Eventually(tryToConnect(), 20, interval).Should(Succeed())
 			})
 		})
 	})
