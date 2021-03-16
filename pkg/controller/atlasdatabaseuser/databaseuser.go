@@ -23,6 +23,9 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
+		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
+	}
 	// Try to find the user
 	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
@@ -60,6 +63,17 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	}
 
 	return workflow.OK()
+}
+
+func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
+	for _, s := range user.GetScopes(mdbv1.ClusterScopeType) {
+		var apiError *mongodbatlas.ErrorResponse
+		_, _, err := ctx.Client.Clusters.Get(context.Background(), projectID, s)
+		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+			return fmt.Errorf(`"scopes" field references cluster named "%s" but such cluster doesn't exist in Atlas'`, s)
+		}
+	}
+	return nil
 }
 
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
