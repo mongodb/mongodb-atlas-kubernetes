@@ -31,4 +31,5 @@ const (
 	DatabaseUserNotUpdatedInAtlas           ConditionReason = "DatabaseUserNotUpdatedInAtlas"
 	DatabaseUserConnectionSecretsNotCreated ConditionReason = "DatabaseUserConnectionSecretsNotCreated"
 	DatabaseUserClustersAppliedChanges      ConditionReason = "ClustersAppliedDatabaseUsersChanges"
+	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
 )
