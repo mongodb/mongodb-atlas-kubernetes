@@ -147,11 +147,11 @@ func mainCycle(clusterConfigurationFile string, u userInputs) {
 		compareClustersSpec(u.clusters[0].Spec, cluster)
 	})
 
-	By("check users Attibutes", func() {
+	By("check database users Attibutes", func() {
 		Eventually(checkIfUsersExist(u), "2m", "10s").Should(BeTrue())
 		for _, user := range u.users {
 			atlasUser := mongocli.GetUser(user.Spec.Username, u.projectID)
-			// Requared fields
+			// Required fields
 			Expect(atlasUser).To(MatchFields(IgnoreExtras, Fields{
 				"Username":     Equal(user.Spec.Username),
 				"GroupID":      Equal(u.projectID),
