@@ -188,6 +188,9 @@ spec:
               connectionSecrets:
                 additionalProperties:
                   type: string
+                description: ConnectionSecrets defines all the Secrets for the current
+                  database user that were created by the Atlas Operator and which
+                  provide the Atlas clusters connectivity information
                 type: object
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
@@ -197,6 +200,8 @@ spec:
                 format: int64
                 type: integer
               passwordVersion:
+                description: PasswordVersion is the 'ResourceVersion' of the password
+                  Secret that the Atlas Operator is aware of
                 type: string
             required:
             - conditions
