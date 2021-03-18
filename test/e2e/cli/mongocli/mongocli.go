@@ -62,11 +62,7 @@ func GetClustersInfo(projectID string, name string) mongodbatlas.Cluster {
 
 func IsProjectInfoExist(projectID string) bool {
 	session := cli.Execute("mongocli", "iam", "project", "describe", projectID, "-o", "json")
-	Eventually(
-		func() int {
-			return session.ExitCode()
-		},
-	).ShouldNot(Equal(-1))
+	sessionShouldExit(session)
 	return session.ExitCode() == 0
 }
 
@@ -105,4 +101,26 @@ func GetClusterStateName(projectID string, clusterName string) string {
 func GetVersionOutput() {
 	session := cli.Execute("mongocli", "--version")
 	session.Wait(10)
+}
+
+func GetUser(userName, projectID string) mongodbatlas.DatabaseUser {
+	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--projectId", projectID, "-o", "json")
+	sessionShouldExit(session)
+	output := session.Out.Contents()
+	var user mongodbatlas.DatabaseUser
+	ExpectWithOffset(1, json.Unmarshal(output, &user)).ShouldNot(HaveOccurred())
+	return user
+}
+
+func IsUserExist(userName, projectID string) bool {
+	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--projectId", projectID, "-o", "json")
+	sessionShouldExit(session)
+	return session.ExitCode() == 0
+}
+
+func sessionShouldExit(session *gexec.Session) {
+	EventuallyWithOffset(
+		2,
+		func() int { return session.ExitCode() },
+	).ShouldNot(Equal(-1))
 }
