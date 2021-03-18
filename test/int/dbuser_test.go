@@ -247,6 +247,10 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
+				// First we need to wait for "such cluster doesn't exist in Atlas" error to be gone
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges))),
+					20, interval).Should(BeTrue())
+
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
 					80, interval).Should(BeTrue())
 
@@ -344,7 +348,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					500, interval).Should(BeTrue())
+					1800, interval).Should(BeTrue())
 			})
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			var connSecretInitial corev1.Secret
