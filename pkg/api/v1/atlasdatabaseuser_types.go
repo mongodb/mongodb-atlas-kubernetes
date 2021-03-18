@@ -158,7 +158,7 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 func (p *AtlasDatabaseUser) ReadPassword(kubeClient client.Client) (string, error) {
 	if p.Spec.PasswordSecret != nil {
 		secret := &corev1.Secret{}
-		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
+		if err := kubeClient.Get(context.Background(), *p.PasswordSecretObjectKey(), secret); err != nil {
 			return "", err
 		}
 		p, exist := secret.Data["password"]

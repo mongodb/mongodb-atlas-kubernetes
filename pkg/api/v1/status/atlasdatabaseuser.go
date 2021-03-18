@@ -11,8 +11,15 @@ func AtlasDatabaseUserSecretsOption(clusters2Secrets map[string]string) AtlasDat
 	}
 }
 
+func AtlasDatabaseUserPasswordVersion(passwordVersion string) AtlasDatabaseUserStatusOption {
+	return func(s *AtlasDatabaseUserStatus) {
+		s.PasswordVersion = passwordVersion
+	}
+}
+
 // AtlasDatabaseUserStatus defines the observed state of AtlasProject
 type AtlasDatabaseUserStatus struct {
 	Common            `json:",inline"`
 	ConnectionSecrets map[string]string `json:"connectionSecrets,omitempty"`
+	PasswordVersion   string            `json:"passwordVersion,omitempty"`
 }

@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	DevMode             = true
+	DevMode             = false
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
@@ -89,13 +89,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			if createdClusterAWS != nil {
 				dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
 				if err == nil {
-					Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
 				}
 			}
 			if createdClusterGCP != nil {
 				dbClient, err := mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
 				if err == nil {
-					Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
 				}
 			}
 
@@ -337,7 +337,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
-	FDescribe("Create a single user (watch, expiration)", func() {
+	Describe("Create a single user (watch, expiration)", func() {
 		It("Should succeed", func() {
 			By("Creating clusters", func() {
 				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
@@ -348,6 +348,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			var connSecretInitial corev1.Secret
+			var pwdSecret corev1.Secret
 
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
@@ -357,6 +358,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
 
 				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &pwdSecret)).To(Succeed())
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(pwdSecret.ResourceVersion))
 			})
 
 			By("Breaking the password secret", func() {
@@ -370,9 +373,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
 				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
 
-				// Note, that this block doesn't wait for the clusters to apply changes as no real update is done to the
-				// user in atlas (specs don't differ) and the reconciliation is not retried so the following check for
-				// clusters returns "cluster is ready"
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
@@ -381,12 +381,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(string(connSecretInitial.Data["password"])).To(Equal(DBUserPassword))
 				Expect(string(connSecretUpdated.Data["password"])).To(Equal("someNewPassw00rd"))
 
-				// This will succeed 'Eventually' instead of 'Expect' as the AtlasDatabaseUser is marked as ready earlier
-				// than the cluster reaches the goal (see above)
-				tryToConnect := func() error {
-					return tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)
-				}
-				Eventually(tryToConnect(), 20, interval).Should(Succeed())
+				var updatedPwdSecret corev1.Secret
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &updatedPwdSecret)).To(Succeed())
+				Expect(updatedPwdSecret.ResourceVersion).NotTo(Equal(pwdSecret.ResourceVersion))
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(updatedPwdSecret.ResourceVersion))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
 			})
 		})
 	})
