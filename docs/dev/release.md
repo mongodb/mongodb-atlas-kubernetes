@@ -41,8 +41,9 @@ git checkout master
 git merge upstream/master
 ```
 
-### Create a Pull Request with a new bundle
+### Create a Pull Request to `upstream-community-operators` with a new bundle
 
+This is necessary for the Operator to appear on [operatorhub.io] site 
 ```
 version=0.5.0
 mkdir <community-operators-repo>/upstream-community-operators/mongodb-atlas-kubernetes/${version}
@@ -60,3 +61,15 @@ Create the PR to the main repository and wait until CI jobs get green.
 After the PR is approved and merged - it will soon get available on https://operatorhub.io
 
 Example PR: https://github.com/operator-framework/community-operators/pull/3281
+
+### Create a Pull Request to `community-operators` with a new bundle
+
+This is necessary for the Operator to appear on "operators" tab in Openshift clusters
+
+```
+# (from <community-operators-repo>)
+cp -r upstream-community-operators/mongodb-atlas-kubernetes/${version} community-operators/mongodb-atlas-kubernetes
+git add community-operators/mongodb-atlas-kubernetes/${version}
+git commit -m "[community] MongoDB Atlas Operator ${version}" --signoff community-operators/mongodb-atlas-kubernetes/${version}
+git push
+```
