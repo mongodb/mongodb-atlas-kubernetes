@@ -9,8 +9,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
@@ -23,6 +25,12 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+	secret := &corev1.Secret{}
+	if err := r.Client.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	currentPasswordResourceVersion := secret.ResourceVersion
+
 	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
@@ -35,6 +43,8 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 			if _, _, err = ctx.Client.DatabaseUsers.Create(context.Background(), project.ID(), apiUser); err != nil {
 				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 			}
+			ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
+
 			ctx.Log.Infow("Created Atlas Database User", "name", dbUser.Spec.Username)
 			return retryAfterUpdate
 		} else {
@@ -42,13 +52,16 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		}
 	}
 	// Update if the spec has changed
-	if done, err := userMatchesSpec(ctx.Log, u, dbUser.Spec); err != nil {
+	if shouldUpdate, err := shouldUpdate(ctx.Log, u, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
-	} else if !done {
+	} else if shouldUpdate {
 		_, _, err = ctx.Client.DatabaseUsers.Update(context.Background(), project.ID(), dbUser.Spec.Username, apiUser)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
+		// Update the status password resource version so that next time no API update call happened
+		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
+
 		ctx.Log.Infow("Updated Atlas Database User", "name", dbUser.Spec.Username)
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
@@ -135,6 +148,22 @@ func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mo
 		}
 	}
 	return clustersToCheck
+}
+
+func shouldUpdate(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, operatorDBUser mdbv1.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
+	matches, err := userMatchesSpec(log, atlasSpec, operatorDBUser.Spec)
+	if err != nil {
+		return false, err
+	}
+	if !matches {
+		return true, nil
+	}
+	// We need to check if the password has changed since the last time
+	passwordsChanged := operatorDBUser.Status.PasswordVersion != currentPasswordResourceVersion
+	if passwordsChanged {
+		log.Debug("Database User password has changed - making the request to Atlas")
+	}
+	return passwordsChanged, nil
 }
 
 // TODO move to a separate utils (reuse from clusters)

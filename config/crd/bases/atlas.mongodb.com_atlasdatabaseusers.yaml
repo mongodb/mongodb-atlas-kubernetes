@@ -196,6 +196,8 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              passwordVersion:
+                type: string
             required:
             - conditions
             type: object
