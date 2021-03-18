@@ -75,6 +75,9 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
+	// We mark the status.Username only when everything is finished including connection secrets
+	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
+
 	return workflow.OK()
 }
 
