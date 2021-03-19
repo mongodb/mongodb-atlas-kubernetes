@@ -414,15 +414,18 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Cluster "+createdCluster.Name, func() {
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
+			})
 
+			By("Checking that Secrets got removed", func() {
 				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdCluster.Spec.Name, createdDBUser.Spec.Username))}
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
 		})
 	})
