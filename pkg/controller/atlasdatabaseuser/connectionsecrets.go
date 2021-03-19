@@ -34,6 +34,13 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 			requeue = true
 			continue
 		}
+		// Cluster may be not ready yet, so no connection urls - skipping
+		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
+		if cluster.ConnectionStrings == nil || cluster.ConnectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cluster.Name)
+			requeue = true
+			continue
+		}
 		password, err := dbUser.ReadPassword(k8sClient)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
@@ -52,13 +59,66 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		secretNames[cluster.Name] = secretName
 	}
 
-	// TODO CLOUDP-84202 we need to remove old secrets in case the dbuser name has changed
-
-	// TODO 2 CLOUDP-84202 : we need to remove the secrets that don't match the scope anymore
+	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID(), dbUser); err != nil {
+		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err.Error())
+	}
 
 	ctx.EnsureStatusOption(status.AtlasDatabaseUserSecretsOption(secretNames))
 	if requeue {
 		return workflow.InProgress(workflow.DatabaseUserConnectionSecretsNotCreated, "Waiting for clusters to get created/updated")
 	}
 	return workflow.OK()
+}
+
+func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
+	if err := removeStaleByScope(ctx, k8sClient, projectID, user); err != nil {
+		return err
+	}
+	if err := removeStaleByUserName(ctx, k8sClient, projectID, user); err != nil {
+		return err
+	}
+	return nil
+}
+
+// removeStaleByScope removes the secrets that are not relevant due to changes to 'scopes' field for the AtlasDatabaseUser.
+func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
+	scopes := user.GetScopes(mdbv1.ClusterScopeType)
+	if len(scopes) == 0 {
+		return nil
+	}
+	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, user.Spec.Username)
+	if err != nil {
+		return err
+	}
+	for i, s := range secrets {
+		cluster, ok := s.Labels[connectionsecret.ClusterLabelKey]
+		if !ok {
+			continue
+		}
+		if !stringutil.Contains(scopes, cluster) {
+			if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
+				return err
+			}
+			ctx.Log.Debugw("Removed connection Secret as it's not referenced by the AtlasDatabaseUser anymore", "secretname", s.Name)
+		}
+	}
+	return nil
+}
+
+// removeStaleByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
+func removeStaleByUserName(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
+	if user.Status.UserName == user.Spec.Username {
+		return nil
+	}
+	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, user.Status.UserName)
+	if err != nil {
+		return err
+	}
+	for i, s := range secrets {
+		if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
+			return err
+		}
+		ctx.Log.Debugw("Removed connection Secret as the database user name has changed", "secretname", s.Name)
+	}
+	return nil
 }

@@ -42,12 +42,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
-		connectionSecret  corev1.Secret
-		createdProject    *mdbv1.AtlasProject
-		createdClusterAWS *mdbv1.AtlasCluster
-		createdClusterGCP *mdbv1.AtlasCluster
-		createdDBUser     *mdbv1.AtlasDatabaseUser
-		secondDBUser      *mdbv1.AtlasDatabaseUser
+		connectionSecret    corev1.Secret
+		createdProject      *mdbv1.AtlasProject
+		createdClusterAWS   *mdbv1.AtlasCluster
+		createdClusterGCP   *mdbv1.AtlasCluster
+		createdClusterAzure *mdbv1.AtlasCluster
+		createdDBUser       *mdbv1.AtlasDatabaseUser
+		secondDBUser        *mdbv1.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
@@ -112,13 +113,23 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
 			}
-
 			if createdClusterAWS != nil {
 				By("Removing Atlas Cluster " + createdClusterAWS.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAzure != nil {
+				By("Removing Atlas Cluster " + createdClusterAzure.Name)
+				Expect(k8sClient.Delete(context.Background(), createdClusterAzure)).To(Succeed())
+			}
+			if createdClusterGCP != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAWS != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAzure != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAzure.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -391,6 +402,64 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(createdDBUser.Status.PasswordVersion).To(Equal(updatedPwdSecret.ResourceVersion))
 
 				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+		})
+	})
+	Describe("Change database users (make sure all stale secrets are removed)", func() {
+		It("Should succeed", func() {
+			By("Creating GCP and Azure clusters", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+			})
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+
+			By(fmt.Sprintf("Creating the Database User %s (no scopes)", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+				validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+			})
+			By("Changing the db user name - one stale secret is expected to be removed", func() {
+				createdDBUser = createdDBUser.WithAtlasUserName("new-user")
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+				secret := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-azure-new-user")))
+				secret = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-gcp-new-user")))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterAzure, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+			By("Changing the scopes - one stale secret is expected to be removed", func() {
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.Name)
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterAzure, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).ShouldNot(Succeed())
 			})
 		})
 	})

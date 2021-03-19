@@ -211,6 +211,7 @@ func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUs
 			Project:        ResourceRef{Name: projectName},
 			PasswordSecret: &ResourceRef{},
 			Roles:          []RoleSpec{},
+			Scopes:         []ScopeSpec{},
 		},
 	}
 }
