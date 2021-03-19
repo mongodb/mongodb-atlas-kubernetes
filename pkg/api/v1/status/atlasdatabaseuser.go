@@ -11,8 +11,18 @@ func AtlasDatabaseUserSecretsOption(clusters2Secrets map[string]string) AtlasDat
 	}
 }
 
+func AtlasDatabaseUserPasswordVersion(passwordVersion string) AtlasDatabaseUserStatusOption {
+	return func(s *AtlasDatabaseUserStatus) {
+		s.PasswordVersion = passwordVersion
+	}
+}
+
 // AtlasDatabaseUserStatus defines the observed state of AtlasProject
 type AtlasDatabaseUserStatus struct {
-	Common            `json:",inline"`
+	Common `json:",inline"`
+	// ConnectionSecrets defines all the Secrets for the current database user that were created by the Atlas Operator
+	// and which provide the Atlas clusters connectivity information
 	ConnectionSecrets map[string]string `json:"connectionSecrets,omitempty"`
+	// PasswordVersion is the 'ResourceVersion' of the password Secret that the Atlas Operator is aware of
+	PasswordVersion string `json:"passwordVersion,omitempty"`
 }

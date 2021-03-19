@@ -57,9 +57,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		connectionSecret = buildConnectionSecret("my-atlas-key")
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret))
 		passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret2))
 		passwordSecret2 := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret2)).To(Succeed())
 
@@ -84,14 +86,25 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			// No tearDown in dev mode - projects and both clusters will stay in Atlas so it's easier to develop
 			// tests. Just rerun the test and the project + clusters in Atlas will be reused.
 			// We only need to wipe data in the databases.
-			dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+			if createdClusterAWS != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
+				if err == nil {
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
+				}
+			}
+			if createdClusterGCP != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
+				if err == nil {
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
+				}
+			}
 
-			dbClient, err = mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
-
+			Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+			Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *createdDBUser), 20, interval).Should(BeTrue())
+			if secondDBUser != nil {
+				Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
+				Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *secondDBUser), 20, interval).Should(BeTrue())
+			}
 			return
 		}
 
@@ -234,6 +247,10 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
+				// First we need to wait for "such cluster doesn't exist in Atlas" error to be gone
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges))),
+					20, interval).Should(BeTrue())
+
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
 					80, interval).Should(BeTrue())
 
@@ -321,6 +338,59 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					expectedSecretsInStatus := map[string]string{"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user")}
 					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
+			})
+		})
+	})
+	Describe("Create a single user (watch, expiration)", func() {
+		It("Should succeed", func() {
+			By("Creating clusters", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+			})
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			var connSecretInitial corev1.Secret
+			var pwdSecret corev1.Secret
+
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+
+				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &pwdSecret)).To(Succeed())
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(pwdSecret.ResourceVersion))
+			})
+
+			By("Breaking the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, expectedCondition), 20, interval).Should(BeTrue())
+			})
+			By("Fixing the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				// We need to make sure that the new connection secret is different from the initial one
+				connSecretUpdated := validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(string(connSecretInitial.Data["password"])).To(Equal(DBUserPassword))
+				Expect(string(connSecretUpdated.Data["password"])).To(Equal("someNewPassw00rd"))
+
+				var updatedPwdSecret corev1.Secret
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &updatedPwdSecret)).To(Succeed())
+				Expect(updatedPwdSecret.ResourceVersion).NotTo(Equal(pwdSecret.ResourceVersion))
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(updatedPwdSecret.ResourceVersion))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
 			})
 		})
 	})
@@ -426,7 +496,7 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 	return nil
 }
 
-func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) {
+func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
@@ -450,6 +520,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
+	return secret
 }
 
 func checkNumberOfConnectionSecrets(k8sClient client.Client, project mdbv1.AtlasProject, length int) {

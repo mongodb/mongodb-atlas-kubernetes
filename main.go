@@ -103,11 +103,12 @@ func main() {
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:      mgr.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:      mgr.GetScheme(),
-		AtlasDomain: config.AtlasDomain,
-		OperatorPod: operatorPod,
+		Client:          mgr.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		OperatorPod:     operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)

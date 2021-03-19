@@ -132,6 +132,14 @@ func (p AtlasDatabaseUser) AtlasProjectObjectKey() client.ObjectKey {
 	return kube.ObjectKey(p.Namespace, p.Spec.Project.Name)
 }
 
+func (p AtlasDatabaseUser) PasswordSecretObjectKey() *client.ObjectKey {
+	if p.Spec.PasswordSecret != nil {
+		key := kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name)
+		return &key
+	}
+	return nil
+}
+
 func (p *AtlasDatabaseUser) GetStatus() status.Status {
 	return p.Status
 }
@@ -150,12 +158,16 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 func (p *AtlasDatabaseUser) ReadPassword(kubeClient client.Client) (string, error) {
 	if p.Spec.PasswordSecret != nil {
 		secret := &corev1.Secret{}
-		if err := kubeClient.Get(context.Background(), kube.ObjectKey(p.Namespace, p.Spec.PasswordSecret.Name), secret); err != nil {
+		if err := kubeClient.Get(context.Background(), *p.PasswordSecretObjectKey(), secret); err != nil {
 			return "", err
 		}
-		if p, exist := secret.Data["password"]; !exist {
+		p, exist := secret.Data["password"]
+		switch {
+		case !exist:
 			return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
-		} else {
+		case len(p) == 0:
+			return "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
+		default:
 			return string(p), nil
 		}
 	}
