@@ -27,7 +27,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if result := checkUserExpired(ctx, r.Client, project.ID(), dbUser); !result.IsOk() {
+	if result := checkUserExpired(ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -53,20 +53,20 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
-func checkUserExpired(ctx *workflow.Context, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.DeleteAfterDate == "" {
 		return workflow.OK()
 	}
 
 	deleteAfter, err := timeutil.ParseISO8601(dbUser.Spec.DeleteAfterDate)
 	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
+		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error()).WithoutRetry()
 	}
 	if deleteAfter.Before(time.Now()) {
-		if err = removeStaleSecretsByUserName(k8sClient, projectID, dbUser.Spec.Username, dbUser, ctx.Log); err != nil {
+		if err = removeStaleSecretsByUserName(k8sClient, projectID, dbUser.Spec.Username, dbUser, log); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
-		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas")
+		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas").WithoutRetry()
 	}
 	return workflow.OK()
 }
