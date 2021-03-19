@@ -394,34 +394,36 @@ var _ = Describe("AtlasCluster", func() {
 	})
 
 	Describe("Create cluster, user, delete cluster and check secrets are removed", func() {
-		createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
-		By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
-			Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+		It("Should Succeed", func() {
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
-			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-				1800, interval).Should(BeTrue())
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
 
-			doCommonChecks()
-			checkAtlasState()
-		})
+				doCommonChecks()
+				checkAtlasState()
+			})
 
-		passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
-		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+			passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
+			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-		createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
-		By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
-			Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
-			Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
-		})
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+			})
 
-		By("Removing Atlas Cluster "+createdCluster.Name, func() {
-			Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-			Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
+			By("Removing Atlas Cluster "+createdCluster.Name, func() {
+				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
 
-			secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdCluster.Spec.Name, createdDBUser.Spec.Username))}
-			Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
+				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdCluster.Spec.Name, createdDBUser.Spec.Username))}
+				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
+			})
 		})
 	})
 })
