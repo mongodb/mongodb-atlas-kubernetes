@@ -441,9 +441,9 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
 				secret := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
-				Expect(secret.Name).To(Equal("dev-test-atlas-project-test-cluster-azure-new-user"))
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-azure-new-user")))
 				secret = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
-				Expect(secret.Name).To(Equal("dev-test-atlas-project-test-cluster-gcp-new-user"))
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-gcp-new-user")))
 
 				Expect(tryConnect(createdProject.ID(), *createdClusterAzure, *createdDBUser)).Should(Succeed())
 				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
