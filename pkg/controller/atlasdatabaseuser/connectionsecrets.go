@@ -34,6 +34,13 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 			requeue = true
 			continue
 		}
+		// Cluster may be not ready yet, so no connection urls - skipping
+		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
+		if cluster.ConnectionStrings == nil || cluster.ConnectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cluster.Name)
+			requeue = true
+			continue
+		}
 		password, err := dbUser.ReadPassword(k8sClient)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
