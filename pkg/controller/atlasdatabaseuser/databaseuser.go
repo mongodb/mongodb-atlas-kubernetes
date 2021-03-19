@@ -214,6 +214,21 @@ func userMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUse
 		return false, err
 	}
 
+	// performing some normalization of dates
+	if atlasSpec.DeleteAfterDate != "" {
+		atlasDeleteDate, err := timeutil.ParseISO8601(atlasSpec.DeleteAfterDate)
+		if err != nil {
+			return false, err
+		}
+		atlasSpec.DeleteAfterDate = timeutil.FormatISO8601(atlasDeleteDate)
+	}
+	if operatorSpec.DeleteAfterDate != "" {
+		operatorDeleteDate, err := timeutil.ParseISO8601(operatorSpec.DeleteAfterDate)
+		if err != nil {
+			return false, err
+		}
+		userMerged.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
+	}
 	d := cmp.Diff(*atlasSpec, userMerged, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Users differs from spec: %s", d)

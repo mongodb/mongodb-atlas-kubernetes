@@ -28,6 +28,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
 const (
@@ -310,7 +311,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 	})
 
 	// Note, that this test doesn't work with "DevMode=true" as requires the cluster to get created
-	Describe("Create a single user first and then the cluster", func() {
+	Describe("Check the reverse order of cluster-user creation (user - first, then - the cluster)", func() {
 		It("Should succeed", func() {
 			// Here we create a database user first - then the cluster
 			By("Creating database user", func() {
@@ -352,7 +353,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
-	Describe("Create a single user (watch, expiration)", func() {
+	Describe("Check the password Secret is watched", func() {
 		It("Should succeed", func() {
 			By("Creating clusters", func() {
 				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
@@ -463,6 +464,67 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
+	Describe("Check the user expiration", func() {
+		It("Should succeed", func() {
+			By("Creating a GCP cluster", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+			})
+
+			By("Creating the expired Database User - no user created in Atlas", func() {
+				before := time.Now().Add(time.Minute * -10).Format("2006-01-02T15:04:05")
+				createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).
+					WithPasswordSecret(UserPasswordSecret).
+					WithDeleteAfterDate(before)
+
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
+					10, interval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+
+				// no user in Atlas
+				_, _, err := atlasClient.DatabaseUsers.Get(context.Background(), createdDBUser.Spec.DatabaseName, createdProject.ID(), createdDBUser.Spec.Username)
+				Expect(err).To(HaveOccurred())
+			})
+			By("Fixing the Database User - setting the expiration to future", func() {
+				after := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
+				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
+
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkUserInAtlas(*createdDBUser)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+			By("Extending the expiration", func() {
+				after := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05")
+				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
+
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkUserInAtlas(*createdDBUser)
+			})
+			By("Emulating expiration of the User - connection secret must be removed", func() {
+				before := time.Now().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
+				createdDBUser = createdDBUser.WithDeleteAfterDate(before)
+
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
+					10, interval).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+		})
+	})
 })
 
 func buildPasswordSecret(name, password string) corev1.Secret {
@@ -491,6 +553,9 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	}
 	if user.X509Type == "" {
 		user.X509Type = "NONE"
+	}
+	if user.DeleteAfterDate != "" {
+		user.DeleteAfterDate = timeutil.FormatISO8601(timeutil.MustParseISO8601(user.DeleteAfterDate))
 	}
 	user.GroupID = projectID
 	user.Password = ""
