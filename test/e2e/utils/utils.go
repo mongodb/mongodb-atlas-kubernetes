@@ -30,6 +30,7 @@ func LoadUserClusterConfig(path string) AC {
 }
 
 func SaveToFile(path string, data []byte) {
+	os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	ioutil.WriteFile(path, data, os.ModePerm)
 }
 

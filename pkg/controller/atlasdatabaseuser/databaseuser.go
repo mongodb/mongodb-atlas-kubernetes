@@ -23,6 +23,9 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
+		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
+	}
 	// Try to find the user
 	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
@@ -62,6 +65,17 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
+func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
+	for _, s := range user.GetScopes(mdbv1.ClusterScopeType) {
+		var apiError *mongodbatlas.ErrorResponse
+		_, _, err := ctx.Client.Clusters.Get(context.Background(), projectID, s)
+		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+			return fmt.Errorf(`"scopes" field references cluster named "%s" but such cluster doesn't exist in Atlas'`, s)
+		}
+	}
+	return nil
+}
+
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
 	allClustersInProject, _, err := ctx.Client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
@@ -80,7 +94,7 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 
 	readyClusters := 0
 	for _, c := range clustersToCheck {
-		ready, err := cluserIsReady(ctx.Client, projectID, c)
+		ready, err := clusterIsReady(ctx.Client, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -98,14 +112,12 @@ func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, 
 	return workflow.OK()
 }
 
-func cluserIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
-	// TODO CLOUDP-83026 GET for clusters isn't working, we need the https://docs.atlas.mongodb.com/reference/api/clusters-check-operation-status/
-	_ = fmt.Sprintf("%v %v %v", client, projectID, clusterName)
-	if projectID == "xyz" {
-		// Cheating the linter
-		return false, errors.New("boo")
+func clusterIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
+	status, _, err := client.Clusters.Status(context.Background(), projectID, clusterName)
+	if err != nil {
+		return false, err
 	}
-	return true, nil
+	return status.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
 func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mongodbatlas.Cluster) []string {

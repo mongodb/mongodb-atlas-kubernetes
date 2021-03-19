@@ -26,11 +26,14 @@ type userInputs struct {
 	k8sFullProjectName string
 	projectPath        string
 	clusters           []utils.AC
+	users              []utils.DBUser
 }
 
-func NewUserInputs(keyName string) userInputs {
+// NewUsersInputs prepare users inputs
+func NewUserInputs(keyName string, users []utils.DBUser) userInputs {
 	uid := utils.GenUniqID()
-	return userInputs{
+
+	input := userInputs{
 		projectName:        uid,
 		projectID:          "",
 		keyName:            keyName,
@@ -39,6 +42,10 @@ func NewUserInputs(keyName string) userInputs {
 		k8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + uid,
 		projectPath:        DataFolder + uid + ".yaml",
 	}
+	for _, user := range users {
+		input.users = append(input.users, *user.WithProjectRef(input.k8sProjectName))
+	}
+	return input
 }
 
 func FilePathTo(name string) string {
@@ -74,6 +81,23 @@ func checkIfClusterExist(input userInputs) func() bool {
 	}
 }
 
+func checkIfUsersExist(input userInputs) func() bool {
+	return func() bool {
+		for _, user := range input.users {
+			if !mongocli.IsUserExist(user.Spec.Username, input.projectID) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func checkIfUserExist(username, projecID string) func() bool {
+	return func() bool {
+		return mongocli.IsUserExist(username, projecID)
+	}
+}
+
 func compareClustersSpec(requested utils.ClusterSpec, created mongodbatlas.Cluster) { // TODO
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
@@ -95,5 +119,25 @@ func SaveK8sResources(resources []string, ns string) {
 	for _, resource := range resources {
 		data := kube.GetYamlResource(resource, ns)
 		utils.SaveToFile("output/"+resource+".yaml", data)
+	}
+}
+
+func checkUsersAttributes(input userInputs) {
+	for _, user := range input.users {
+		atlasUser := mongocli.GetUser(user.Spec.Username, input.projectID)
+		// Required fields
+		ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+			"Username":     Equal(user.Spec.Username),
+			"GroupID":      Equal(input.projectID),
+			"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
+		}), "Users attributes should be the same as requested by the user")
+
+		for i, role := range atlasUser.Roles {
+			ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
+				"RoleName":       Equal(user.Spec.Roles[i].RoleName),
+				"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
+				"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
+			}), "Users roles attributes should be the same as requsted by the user")
+		}
 	}
 }
