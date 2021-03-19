@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
@@ -74,8 +76,10 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 	if err := removeStaleByScope(ctx, k8sClient, projectID, user); err != nil {
 		return err
 	}
-	if err := removeStaleByUserName(ctx, k8sClient, projectID, user); err != nil {
-		return err
+	// Performing the cleanup of old secrets only if the username has changed
+	if user.Status.UserName == user.Spec.Username {
+		// Note, that we pass the username from the status, not from the spec
+		return removeStaleSecretsByUserName(k8sClient, projectID, user.Status.UserName, user, ctx.Log)
 	}
 	return nil
 }
@@ -105,20 +109,25 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 	return nil
 }
 
-// removeStaleByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
-func removeStaleByUserName(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
-	if user.Status.UserName == user.Spec.Username {
-		return nil
-	}
-	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, user.Status.UserName)
+// removeStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
+func removeStaleSecretsByUserName(k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
+	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, userName)
 	if err != nil {
 		return err
 	}
-	for i, s := range secrets {
+	var lastError error
+	removed := 0
+	for i := range secrets {
 		if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
-			return err
+			log.Errorf("Failed to remove connection Secret: %v", err)
+			lastError = err
+		} else {
+			log.Debugw("Removed connection Secret", "secret", kube.ObjectKeyFromObject(&secrets[i]))
+			removed++
 		}
-		ctx.Log.Debugw("Removed connection Secret as the database user name has changed", "secretname", s.Name)
 	}
-	return nil
+	if removed > 0 {
+		log.Infof("Removed %d connection secrets", removed)
+	}
+	return lastError
 }

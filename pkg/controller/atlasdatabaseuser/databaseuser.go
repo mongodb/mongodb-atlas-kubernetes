@@ -4,36 +4,82 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
-
 	apiUser, err := dbUser.ToAtlas(r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
-	secret := &corev1.Secret{}
-	if err := r.Client.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+
+	if result := checkUserExpired(ctx, r.Client, project.ID(), dbUser); !result.IsOk() {
+		return result
 	}
-	currentPasswordResourceVersion := secret.ResourceVersion
 
 	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
+
+	if result := performUpdateInAtlas(ctx, r.Client, project, dbUser, apiUser); !result.IsOk() {
+		return result
+	}
+
+	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
+	if result := createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
+		return result
+	}
+
+	// We mark the status.Username only when everything is finished including connection secrets
+	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
+
+	return workflow.OK()
+}
+
+func checkUserExpired(ctx *workflow.Context, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	if dbUser.Spec.DeleteAfterDate == "" {
+		return workflow.OK()
+	}
+
+	deleteAfter, err := timeutil.ParseISO8601(dbUser.Spec.DeleteAfterDate)
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
+	}
+	if deleteAfter.Before(time.Now()) {
+		if err = removeStaleSecretsByUserName(k8sClient, projectID, dbUser.Spec.Username, dbUser, ctx.Log); err != nil {
+			return workflow.Terminate(workflow.Internal, err.Error())
+		}
+		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas")
+	}
+	return workflow.OK()
+}
+
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, apiUser *mongodbatlas.DatabaseUser) workflow.Result {
+	secret := &corev1.Secret{}
+	if err := k8sClient.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	currentPasswordResourceVersion := secret.ResourceVersion
+
+	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
+
 	// Try to find the user
 	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
@@ -66,18 +112,6 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
 	}
-
-	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
-		return result
-	}
-
-	if result := createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
-		return result
-	}
-
-	// We mark the status.Username only when everything is finished including connection secrets
-	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
-
 	return workflow.OK()
 }
 

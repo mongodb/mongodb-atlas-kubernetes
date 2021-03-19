@@ -33,7 +33,6 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -171,24 +170,8 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 
 	log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
 
-	secrets, err := connectionsecret.ListByUserName(r.Client, dbUser.Namespace, project.ID(), userName)
-	if err != nil {
-		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
-	}
-
-	for _, secret := range secrets {
-		// Solves the "Implicit memory aliasing in for loop" linter error
-		s := secret.DeepCopy()
-		err = r.Client.Delete(context.Background(), s)
-		if err != nil {
-			log.Errorf("Failed to remove connection Secret: %v", err)
-		} else {
-			log.Debugw("Removed connection Secret", "secret", kube.ObjectKeyFromObject(s))
-		}
-	}
-	if len(secrets) > 0 {
-		log.Infof("Removed %d connection secrets", len(secrets))
-	}
+	// We ignore the error as it will be printed by the function
+	_ = removeStaleSecretsByUserName(r.Client, project.ID(), userName, *dbUser, log)
 
 	return nil
 }
