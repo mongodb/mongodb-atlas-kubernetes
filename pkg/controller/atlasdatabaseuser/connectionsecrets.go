@@ -77,7 +77,7 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 		return err
 	}
 	// Performing the cleanup of old secrets only if the username has changed
-	if user.Status.UserName == user.Spec.Username {
+	if user.Status.UserName != user.Spec.Username {
 		// Note, that we pass the username from the status, not from the spec
 		return removeStaleSecretsByUserName(k8sClient, projectID, user.Status.UserName, user, ctx.Log)
 	}
