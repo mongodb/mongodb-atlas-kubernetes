@@ -1,4 +1,4 @@
-package utils
+package model
 
 import (
 	"path/filepath"
@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 type UserSpec v1.AtlasDatabaseUserSpec
@@ -59,11 +60,13 @@ func (s *DBUser) AddRole(role string, db string, collection string) *DBUser {
 	return s
 }
 
-func (s *DBUser) GetFilePath(ns string) string {
-	return filepath.Join("data", ns, "user", "user-"+s.ObjectMeta.Name+".yaml")
+func (s *DBUser) GetFilePath(projectName string) string {
+	// return filepath.Join("data", ns, "user", "user-"+s.ObjectMeta.Name+".yaml")
+	return filepath.Join(projectName, "user", "user-"+s.ObjectMeta.Name+".yaml")
 }
 
-func (s *DBUser) SaveConfigurationTo(ns string) {
-	yamlConf := JSONToYAMLConvert(s)
-	SaveToFile(s.GetFilePath(ns), yamlConf)
+func (s *DBUser) SaveConfigurationTo(folder string) {
+	folder = filepath.Dir(folder)
+	yamlConf := utils.JSONToYAMLConvert(s)
+	utils.SaveToFile(s.GetFilePath(folder), yamlConf)
 }

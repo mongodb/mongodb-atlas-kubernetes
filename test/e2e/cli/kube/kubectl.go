@@ -55,6 +55,15 @@ func GetStatusCondition(ns string, atlasname string) func() string {
 	}
 }
 
+func GetStatusPhase(ns string, args ...string) func() string {
+	return func() string {
+		args := append([]string{"get"}, args...)
+		args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
+		session := cli.Execute("kubectl", args...)
+		return string(session.Wait("1m").Out.Contents())
+	}
+}
+
 // GetProjectResource
 func GetProjectResource(namespace, rName string) v1.AtlasProject {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
@@ -117,17 +126,17 @@ func CreateNamespace(name string) *Buffer {
 	return session.Out
 }
 
-func CreateUserSecret(name, ns string) { // T ODO
-	secret, _ := password.Generate(10, 3, 3, false, false)
-	session := cli.Execute("kubectl", "create", "secret", "generic", name,
+func CreateUserSecret(name, ns string) {
+	secret, _ := password.Generate(10, 3, 0, false, false)
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", name,
 		"--from-literal=password="+secret,
 		"-n", ns,
 	)
 	EventuallyWithOffset(1, session.Wait()).Should(Say(name + " created"))
 }
 
-func CreateApiKeySecret(keyName, ns string) { // TODO ?
-	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
+func CreateApiKeySecret(keyName, ns string) { // TODO add ns
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+os.Getenv("MCLI_PUBLIC_API_KEY"),
 		"--from-literal=privateApiKey="+os.Getenv("MCLI_PRIVATE_API_KEY"),

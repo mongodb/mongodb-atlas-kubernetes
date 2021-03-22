@@ -1,4 +1,5 @@
 package main
+
 import (
 	"context"
 	"encoding/json"
@@ -25,12 +26,17 @@ var (
 	// related to DB
 	dbName         = "Ships"
 	collectionName = "ShipSpec"
-	port           = 8080
+	portDefault    = "8080"
 )
 
 func main() {
 	r := newRouter()
-	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
+	port := os.Getenv("PORT")
+	fmt.Print("Using port: " + port)
+	if port == "" {
+		port = portDefault
+	}
+	http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 }
 
 func newRouter() *mux.Router {
@@ -67,7 +73,7 @@ func postKeyValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ship := getShipFromRequest(r)
-	fmt.Fprintf(w, "got ship key: " +ship.Key+"\n")
+	fmt.Fprintf(w, "got ship key: "+ship.Key+"\n")
 	res, err := collection.InsertOne(ctx, ship)
 	if err != nil {
 		panic(err)
@@ -83,14 +89,13 @@ func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key":key})
+	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key": key})
 	if err != nil {
 		panic(err)
 	}
 	fmt.Fprintf(w, fmt.Sprintf("It is working. Deleted documents: %d", deleteResult.DeletedCount))
 }
 
-// TODO I will change it if req
 func getSecret() string {
 	return os.Getenv("CONNECTIONSTRING")
 }
@@ -123,7 +128,7 @@ func getMongoCollection(DbName string, CollectionName string) (*mongo.Collection
 }
 
 type ModelShip struct {
-	Key   string `json:"key"`
+	Key       string `json:"key"`
 	ShipModel string `json:"shipmodel,omitempty"`
 	Hp        int    `json:"hp,omitempty"`
 }
