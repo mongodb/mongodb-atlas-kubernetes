@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo"
@@ -172,10 +173,14 @@ func prepareControllers() {
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
+	// Note on the syncPeriod - decreasing this to a smaller time allows to test its work for the long-running tests
+	// (clusters, database users). The prod value is much higher
+	syncPeriod := time.Minute * 30
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:             scheme.Scheme,
 		Namespace:          namespace.Name,
 		MetricsBindAddress: "0",
+		SyncPeriod:         &syncPeriod,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
