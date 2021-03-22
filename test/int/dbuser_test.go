@@ -111,26 +111,15 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		}
 
 		if createdProject != nil && createdProject.ID() != "" {
-			if createdClusterGCP != nil {
-				By("Removing Atlas Cluster " + createdClusterGCP.Name)
-				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
+			list := mdbv1.AtlasClusterList{}
+			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
+
+			for i := range list.Items {
+				By("Removing Atlas Cluster " + list.Items[i].Name)
+				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
-			if createdClusterAWS != nil {
-				By("Removing Atlas Cluster " + createdClusterAWS.Name)
-				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-			}
-			if createdClusterAzure != nil {
-				By("Removing Atlas Cluster " + createdClusterAzure.Name)
-				Expect(k8sClient.Delete(context.Background(), createdClusterAzure)).To(Succeed())
-			}
-			if createdClusterGCP != nil {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
-			}
-			if createdClusterAWS != nil {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
-			}
-			if createdClusterAzure != nil {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAzure.Spec.Name), 600, interval).Should(BeTrue())
+			for i := range list.Items {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -338,9 +327,15 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				createdDBUser = createdDBUser.WithRole("read", "test", "somecollection")
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
-				// DatabaseUser will wait for the cluster to get created
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserWaitingForCluster()),
+				// DatabaseUser will wait for the cluster to get created.
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					1800, interval).Should(BeTrue())
+
+				expectedConditionsMatchers := testutil.MatchConditions(
+					status.TrueCondition(status.DatabaseUserReadyType),
+					status.TrueCondition(status.ReadyType),
+				)
+				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
 				checkUserInAtlas(*createdDBUser)
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
@@ -719,6 +714,8 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
 }
+
+//nolint
 func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
