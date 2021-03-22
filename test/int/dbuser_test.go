@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	DevMode             = false
+	DevMode             = true
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
@@ -464,7 +464,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
-	Describe("Check the user expiration", func() {
+	FDescribe("Check the user expiration", func() {
 		It("Should succeed", func() {
 			By("Creating a GCP cluster", func() {
 				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
@@ -520,6 +520,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
 					10, interval).Should(BeTrue())
+
+				expectedConditionsMatchers := testutil.MatchConditions(
+					status.FalseCondition(status.DatabaseUserReadyType),
+					status.FalseCondition(status.ReadyType),
+				)
+				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
