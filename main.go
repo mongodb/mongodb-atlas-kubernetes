@@ -20,6 +20,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -63,6 +64,7 @@ func main() {
 	config := parseConfiguration(logger.Sugar())
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
+	syncPeriod := time.Hour * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
@@ -71,6 +73,7 @@ func main() {
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
 		Namespace:              config.WatchedNamespaces,
+		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
