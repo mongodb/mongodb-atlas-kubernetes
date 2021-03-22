@@ -353,7 +353,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
-	FDescribe("Check the password Secret is watched", func() {
+	Describe("Check the password Secret is watched", func() {
 		It("Should succeed", func() {
 			By("Creating clusters", func() {
 				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
