@@ -427,6 +427,9 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
+
+			// prevent cleanup from failing due to cluster already deleted
+			createdCluster = nil
 		})
 	})
 })
