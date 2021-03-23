@@ -17,7 +17,7 @@ import (
 var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
 
 	var NortonSpec, NimnulSpec model.UserInputs
-	commonClusterName := "MegaCluster"
+	commonClusterName := "megacluster"
 
 	var _ = BeforeEach(func() {
 		By("User Install CRD, cluster wide Operator", func() {
@@ -59,7 +59,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 	})
 
-	prepareAndApplyConfiguration := func(spec model.UserInputs, name string) {
+	loadClustersAndApplyConfiguration := func(spec model.UserInputs, name string) model.UserInputs {
 		project := model.NewProject().
 			ProjectName(spec.ProjectName).
 			SecretRef(spec.KeyName).
@@ -79,17 +79,16 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 			kube.Apply(spec.ProjectPath, "-n", spec.Namespace)
 			kube.Apply(spec.Clusters[0].ClusterFileName(spec), "-n", spec.Namespace)
 		})
+		return spec
 	}
 
+	// (Consider Shared Clusters when E2E tests could conflict with each other)
 	It("Deploy cluster wide operator and create resources in each of them", func() {
-		// (Consider Shared Clusters when E2E tests could conflict with each other)
 		By("Users can create clusters with the same name", func() {
-			NortonSpec = model.NewUserInputs("norton-key", nil)
-			NimnulSpec = model.NewUserInputs("nimnul-key", nil)
 			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			prepareAndApplyConfiguration(NortonSpec, "norton")
+			NortonSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("norton-key", nil), "norton")
 			By("User 2 - Nimnul - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			prepareAndApplyConfiguration(NimnulSpec, "nimnul")
+			NimnulSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("nimnul-key", nil), "nimnul")
 		})
 
 		By("Wait creation projects/clusters", func() {
@@ -105,7 +104,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 			waitCluster(NimnulSpec, "1")
 		})
 
-		By("Check connection strings", func() { // TODO app(?)
+		By("Check connection strings", func() {
 			Eventually(kube.GetClusterResource(NortonSpec.Namespace, NortonSpec.Clusters[0].GetClusterNameResource()).
 				Status.ConnectionStrings.StandardSrv,
 			).ShouldNot(BeNil())
