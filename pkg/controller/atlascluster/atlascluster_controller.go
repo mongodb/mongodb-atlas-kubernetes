@@ -101,7 +101,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if csResult := ensureConnectionSecrets(context, ctx, r.Client, project, c); !csResult.IsOk() {
+	if csResult := ensureConnectionSecrets(ctx, r.Client, project, c); !csResult.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
 		return csResult.ReconcileResult(), nil
 	}

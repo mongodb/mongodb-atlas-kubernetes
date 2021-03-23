@@ -55,7 +55,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if err = createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); err != nil {
+	if err = CreateOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 

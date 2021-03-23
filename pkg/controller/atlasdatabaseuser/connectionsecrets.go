@@ -13,7 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) error {
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) error {
 	clusters, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		// TODO CLOUDP-84205 ignore the 404 exception in case no clusters exist by this time

@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
@@ -133,35 +133,29 @@ func clustersEqual(log *zap.SugaredLogger, clusterA mongodbatlas.Cluster, cluste
 	return d == ""
 }
 
-func ensureConnectionSecrets(ctx context.Context, wctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
-	dbUsers, _, err := wctx.Client.DatabaseUsers.List(ctx, project.ID(), &mongodbatlas.ListOptions{})
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
+func ensureConnectionSecrets(wctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
+	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 
-out:
-	for _, dbUser := range dbUsers {
-		for _, scope := range dbUser.Scopes {
-			if scope.Type == string(mdbv1.ClusterScopeType) && scope.Name == cluster.Name {
+	for _, dbUser := range databaseUsers.Items {
+		found := false
+
+		for _, scope := range dbUser.GetScopes(mdbv1.ClusterScopeType) {
+			if scope == cluster.Name {
+				found = true
 				break
 			}
 
-			continue out
+			continue
 		}
 
-		data := connectionsecret.ConnectionData{
-			DBUserName: dbUser.Username,
-			ConnURL:    cluster.ConnectionStrings.Standard,
-			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
-			Password:   dbUser.Password,
+		if !found {
+			continue
 		}
 
-		var secretName string
-		if secretName, err = connectionsecret.Ensure(k8sClient, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data); err != nil {
+		err := atlasdatabaseuser.CreateOrUpdateConnectionSecrets(wctx, k8sClient, *project, dbUser)
+		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
-
-		wctx.Log.Debugw("Ensured connection Secret up-to-date", "name", secretName)
 	}
 
 	return workflow.OK()

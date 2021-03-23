@@ -392,6 +392,40 @@ var _ = Describe("AtlasCluster", func() {
 			})
 		})
 	})
+
+	Describe("Create DBUser before cluster & check secrets", func() {
+		createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+		By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+			Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+				20, interval).Should(BeTrue())
+
+			checkUserInAtlas(createdProject.ID(), *createdDBUser)
+		})
+
+		createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+		By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+			Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+			Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				1800, interval).Should(BeTrue())
+
+			doCommonChecks()
+			checkAtlasState()
+		})
+
+		By("Checking connection Secrets", func() {
+			Eventually(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser), 90, interval).Should(Succeed())
+			validateSecret(k8sClient, *createdProject, *createdCluster, *createdDBUser)
+			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+
+			expectedSecretsInStatus := map[string]string{
+				"test-cluster-gcp": kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdCluster.Spec.Name, createdDBUser.Spec.Username)),
+			}
+			Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
+		})
+	})
 })
 
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {

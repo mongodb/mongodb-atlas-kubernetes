@@ -123,17 +123,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		removeControllersAndNamespace()
 	})
 
-	checkUserInAtlas := func(user mdbv1.AtlasDatabaseUser) {
-		By("Verifying Database User state in Atlas", func() {
-			atlasDBUser, _, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, createdProject.ID(), user.Spec.Username)
-			Expect(err).ToNot(HaveOccurred())
-			operatorDBUser, err := user.ToAtlas(k8sClient)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, createdProject.ID())))
-		})
-	}
-
 	connSecretname := func(suffix string) string {
 		return kube.NormalizeIdentifier(createdProject.Spec.Name) + suffix
 	}
@@ -148,7 +137,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
 
-				checkUserInAtlas(*createdDBUser)
+				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 
 				// TODO CLOUDP-83026 and CLOUDP-83098 remove Eventually in favor of Expect
 				Eventually(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser), 90, interval).Should(Succeed())
@@ -184,7 +173,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
 
-				checkUserInAtlas(*createdDBUser)
+				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
@@ -217,7 +206,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType)),
 					20, interval).Should(BeTrue())
 
-				checkUserInAtlas(*secondDBUser)
+				checkUserInAtlas(createdProject.ID(), *secondDBUser)
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -257,7 +246,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
-
 		})
 	})
 })
@@ -429,4 +417,15 @@ func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
 		}
 		return nonExisting == len(secretNames)
 	}
+}
+
+func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
+	By("Verifying Database User state in Atlas", func() {
+		atlasDBUser, _, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username)
+		Expect(err).ToNot(HaveOccurred())
+		operatorDBUser, err := user.ToAtlas(k8sClient)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, projectID)))
+	})
 }
