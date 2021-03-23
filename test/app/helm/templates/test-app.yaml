@@ -27,7 +27,7 @@ spec:
                 name: {{ .Values.secret }}
                 key: connectionString.standardSrv
           - name: "PORT"
-            value: {{ quote .Values.port }}
+            value: {{ quote .Values.nodePort }}
       volumes:
         - name: {{ .Values.secret }}
           secret:
@@ -45,5 +45,6 @@ spec:
     app: {{ .Release.Name }}
   ports:
     - protocol: TCP
-      port: {{ .Values.port }}
-      targetPort: {{ .Values.port }}
+      port: {{ .Values.nodePort }}
+      targetPort: {{ .Values.nodePort }}
+      nodePort: {{ .Values.nodePort }}

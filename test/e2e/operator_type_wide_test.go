@@ -59,7 +59,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 	})
 
-	prepareAndApplyConfiguration := func(spec model.UserInputs) {
+	prepareAndApplyConfiguration := func(spec model.UserInputs, name string) {
 		project := model.NewProject().
 			ProjectName(spec.ProjectName).
 			SecretRef(spec.KeyName).
@@ -67,13 +67,13 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		utils.SaveToFile(spec.ProjectPath, project)
 		spec.Clusters = append(spec.Clusters, model.LoadUserClusterConfig(ClusterSample))
 		spec.Clusters[0].Spec.Project.Name = spec.K8sProjectName
-		spec.Clusters[0].ObjectMeta.Name = "nimnul-cluster"
+		spec.Clusters[0].ObjectMeta.Name = name + "cluster"
 		utils.SaveToFile(
 			spec.Clusters[0].ClusterFileName(spec),
 			utils.JSONToYAMLConvert(spec.Clusters[0]),
 		)
 
-		By("Apply Nortons configuration", func() {
+		By("Apply "+name+" configuration", func() {
 			kube.CreateNamespace(spec.Namespace)
 			kube.CreateApiKeySecret(spec.KeyName, spec.Namespace)
 			kube.Apply(spec.ProjectPath, "-n", spec.Namespace)
@@ -87,9 +87,9 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 			NortonSpec = model.NewUserInputs("norton-key", nil)
 			NimnulSpec = model.NewUserInputs("nimnul-key", nil)
 			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			prepareAndApplyConfiguration(NortonSpec)
+			prepareAndApplyConfiguration(NortonSpec, "norton")
 			By("User 2 - Nimnul - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			prepareAndApplyConfiguration(NimnulSpec)
+			prepareAndApplyConfiguration(NimnulSpec, "nimnul")
 		})
 
 		By("Wait creation projects/clusters", func() {

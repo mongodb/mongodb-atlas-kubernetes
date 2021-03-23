@@ -31,7 +31,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 		"test-app-"+user.Spec.Username,
 		config.HELMTestAppPath,
 		"--set-string", "secret="+input.ProjectName+"-"+input.Clusters[0].Spec.Name+"-"+user.Spec.Username,
-		"--set-string", "port="+port,
+		"--set-string", "nodePort="+port,
 		"-n", input.Namespace,
 	)
 }

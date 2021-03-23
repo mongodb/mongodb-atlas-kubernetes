@@ -51,19 +51,20 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 
 	})
 
-	newData := func(description, path string, users []model.DBUser) (string, testDataProvider) {
+	// TODO remove portGroup (nodePort for the app)
+	newData := func(description, path string, users []model.DBUser, portGroup int) (string, testDataProvider, int) {
 		var data testDataProvider
 		data.description = description
 		data.confPath = path
 		Expect(users).ShouldNot(BeNil())
 		data.resources = model.NewUserInputs("my-atlas-key", users)
-		return data.description, data
+		return data.description, data, portGroup
 	}
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test testDataProvider) {
+		func(test testDataProvider, portGroup int) {
 			data = test
-			mainCycle(test.confPath, test.resources)
+			mainCycle(test.confPath, test.resources, portGroup)
 		},
 		Entry(newData("Trial - Simplest configuration with no backup and one Admin User",
 			"data/atlascluster_basic.yaml",
@@ -72,6 +73,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u1").
 					AddRole("readWriteAnyDatabase", "admin", ""),
 			},
+			30000,
 		)),
 		Entry(newData("Almost Production - Backup and 2 users, one Admin and one read-only",
 			"data/atlascluster_backup.yaml",
@@ -83,6 +85,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u2").
 					AddRole("readWrite", "testDB", ""),
 			},
+			30002,
 		)),
 		// Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
 		// 	append(
@@ -98,7 +101,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 	)
 })
 
-func mainCycle(clusterConfigurationFile string, resources model.UserInputs) {
+func mainCycle(clusterConfigurationFile string, resources model.UserInputs, portGroup int) {
 	By("Prepare namespaces and project configuration", func() {
 		kube.CreateNamespace(resources.Namespace)
 		By("Create project spec", func() {
@@ -173,13 +176,13 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs) {
 		// 	// send ddata
 		// 	// retrieve data
 		for i, user := range resources.Users { // TODO in parallel(?)
-			port := strconv.Itoa(i + 8000)
+			port := strconv.Itoa(i + portGroup)
 			helm.InstallTestApplication(resources, user, port)
 			waitTestApplication(resources.Namespace, "app=test-app-"+user.Spec.Username)
-			Expect(app.NewApp("http://localhost:" + port).Get("")).Should(Equal("It is working"))
+			Expect(app.NewApp(port).Get("")).Should(Equal("It is working"))
 			data := fmt.Sprintf("{\"key\":\"" + port + "\",\"shipmodel\":\"heavy\",\"hp\":150}")
-			Expect(app.NewApp("http://localhost:" + port).Post(data)).ShouldNot(HaveOccurred())
-			Expect(app.NewApp("http://localhost:" + port).Get("/mongo/" + port)).Should(ContainSubstring(data))
+			Expect(app.NewApp(port).Post(data)).ShouldNot(HaveOccurred())
+			Expect(app.NewApp(port).Get("/mongo/" + port)).Should(ContainSubstring(data))
 		}
 	})
 
@@ -203,9 +206,9 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs) {
 
 	By("Check user data still in the cluster", func() {
 		for i := range resources.Users { // TODO in parallel(?)
-			port := strconv.Itoa(i + 8000)
+			port := strconv.Itoa(i + portGroup)
 			data := fmt.Sprintf("{\"key\":\"" + port + "\",\"shipmodel\":\"heavy\",\"hp\":150}")
-			Expect(app.NewApp("http://localhost:" + port).Get("/mongo/" + port)).Should(ContainSubstring(data))
+			Expect(app.NewApp(port).Get("/mongo/" + port)).Should(ContainSubstring(data))
 		}
 	})
 

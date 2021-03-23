@@ -2,4 +2,4 @@
 name: test-app-user1
 secret: new-brand
 image: leori/test-app:v1
-port: "8000"
+nodePort: "30000"

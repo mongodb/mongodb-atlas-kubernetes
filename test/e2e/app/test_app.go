@@ -13,7 +13,7 @@ type App struct {
 
 func NewApp(uri string) *App {
 	return &App{
-		uri: uri,
+		uri: "http://localhost:" + uri,
 	}
 }
 
