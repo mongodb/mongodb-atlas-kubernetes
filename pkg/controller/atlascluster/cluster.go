@@ -152,9 +152,9 @@ func ensureConnectionSecrets(wctx *workflow.Context, k8sClient client.Client, pr
 			continue
 		}
 
-		err := atlasdatabaseuser.CreateOrUpdateConnectionSecrets(wctx, k8sClient, *project, dbUser)
-		if err != nil {
-			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+		result := atlasdatabaseuser.CreateOrUpdateConnectionSecrets(wctx, k8sClient, *project, dbUser)
+		if !result.IsOk() {
+			return result
 		}
 	}
 

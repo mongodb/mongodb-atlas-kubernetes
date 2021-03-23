@@ -60,8 +60,8 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	It("Deploy cluster wide operator and create resources in each of them", func() {
 		// (Consider Shared Clusters when E2E tests could conflict with each other)
 		By("Users can create clusters with the same name", func() {
-			NortonSpec = NewUserInputs("norton-key")
-			NimnulSpec = NewUserInputs("nimnul-key")
+			NortonSpec = NewUserInputs("norton-key", nil)
+			NimnulSpec = NewUserInputs("nimnul-key", nil)
 			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: "+commonClusterName, func() {
 				project := utils.NewProject().
 					ProjectName(NortonSpec.projectName).

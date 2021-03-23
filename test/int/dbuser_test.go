@@ -2,6 +2,7 @@ package int
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,6 +25,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
@@ -40,11 +42,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 	const interval = time.Second * 1
 
 	var (
-		connectionSecret  corev1.Secret
-		createdProject    *mdbv1.AtlasProject
-		createdClusterAWS *mdbv1.AtlasCluster
-		createdClusterGCP *mdbv1.AtlasCluster
-		createdDBUser     *mdbv1.AtlasDatabaseUser
+		connectionSecret    corev1.Secret
+		createdProject      *mdbv1.AtlasProject
+		createdClusterAWS   *mdbv1.AtlasCluster
+		createdClusterGCP   *mdbv1.AtlasCluster
+		createdClusterAzure *mdbv1.AtlasCluster
+		createdDBUser       *mdbv1.AtlasDatabaseUser
+		secondDBUser        *mdbv1.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
@@ -54,8 +58,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		connectionSecret = buildConnectionSecret("my-atlas-key")
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret))
 		passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
 		Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+
+		By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret2))
+		passwordSecret2 := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
+		Expect(k8sClient.Create(context.Background(), &passwordSecret2)).To(Succeed())
 
 		By("Creating the project", func() {
 			// adding whitespace to the name to check normalization for connection secrets names
@@ -71,20 +80,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
 				20, interval).Should(BeTrue())
 		})
-
-		By("Creating cluster", func() {
-			createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
-			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
-
-			createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
-			Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
-
-			Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-				1800, interval).Should(BeTrue())
-
-			Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-				500, interval).Should(BeTrue())
-		})
 	})
 
 	AfterEach(func() {
@@ -92,14 +87,25 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			// No tearDown in dev mode - projects and both clusters will stay in Atlas so it's easier to develop
 			// tests. Just rerun the test and the project + clusters in Atlas will be reused.
 			// We only need to wipe data in the databases.
-			dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
+			if createdClusterAWS != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterAWS, *createdDBUser)
+				if err == nil {
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
+				}
+			}
+			if createdClusterGCP != nil {
+				dbClient, err := mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
+				if err == nil {
+					_ = dbClient.Database("test").Collection("operatortest").Drop(context.Background())
+				}
+			}
 
-			dbClient, err = mongoClient(createdProject.ID(), *createdClusterGCP, *createdDBUser)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(dbClient.Database("test").Collection("operatortest").Drop(context.Background())).To(Succeed())
-
+			Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+			Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *createdDBUser), 20, interval).Should(BeTrue())
+			if secondDBUser != nil {
+				Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
+				Eventually(checkAtlasDatabaseUserRemoved(createdProject.ID(), *secondDBUser), 20, interval).Should(BeTrue())
+			}
 			return
 		}
 
@@ -107,13 +113,23 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			if createdClusterGCP != nil {
 				By("Removing Atlas Cluster " + createdClusterGCP.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterGCP)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
 			}
-
 			if createdClusterAWS != nil {
 				By("Removing Atlas Cluster " + createdClusterAWS.Name)
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAzure != nil {
+				By("Removing Atlas Cluster " + createdClusterAzure.Name)
+				Expect(k8sClient.Delete(context.Background(), createdClusterAzure)).To(Succeed())
+			}
+			if createdClusterGCP != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterGCP.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAWS != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+			}
+			if createdClusterAzure != nil {
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAzure.Spec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -127,21 +143,33 @@ var _ = Describe("AtlasDatabaseUser", func() {
 		return kube.NormalizeIdentifier(createdProject.Spec.Name) + suffix
 	}
 
-	Describe("Create/Update the db user", func() {
-		It("Should be created successfully", func() {
+	Describe("Create/Update two users, two clusters", func() {
+		It("They should be created successfully", func() {
+			By("Creating clusters", func() {
+				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					500, interval).Should(BeTrue())
+			})
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 
-				// TODO CLOUDP-83026 and CLOUDP-83098 remove Eventually in favor of Expect
-				Eventually(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser), 90, interval).Should(Succeed())
-				Eventually(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser), 90, interval).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -155,11 +183,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 				By("Checking connectivity to Clusters", func() {
 					// The user created lacks read/write roles
-					err := tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")()
+					err := tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 
-					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")()
+					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 				})
@@ -171,7 +199,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					80, interval).Should(BeTrue())
 
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 
@@ -188,25 +216,46 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 
 				By("Checking write permissions for Clusters", func() {
-					// TODO CLOUDP-83026 remove Eventually in favor of Expect
-					Eventually(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest"), 60, interval).Should(Succeed())
-					Eventually(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest"), 60, interval).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "operatortest")).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")).Should(Succeed())
 				})
 			})
-			By("Adding another user for GCP cluster only", func() {
-				passwordSecret := buildPasswordSecret(UserPasswordSecret2, DBUserPassword2)
-				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
-				secondDBUser := mdbv1.DefaultDBUser(namespace.Name, "second-db-user", createdProject.Name).
+			By("Adding second user for GCP cluster only (fails, wrong scope)", func() {
+				secondDBUser = mdbv1.DefaultDBUser(namespace.Name, "second-db-user", createdProject.Name).
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWrite", "someDB", "thisIsTheOnlyAllowedCollection").
-					WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name)
+					// Cluster doesn't exist
+					WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name+"-foo")
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType)),
+				Eventually(
+					testutil.WaitFor(
+						k8sClient,
+						secondDBUser,
+						status.
+							FalseCondition(status.DatabaseUserReadyType).
+							WithReason(string(workflow.DatabaseUserInvalidSpec)).
+							WithMessageRegexp("such cluster doesn't exist in Atlas"),
+					),
+					20,
+					interval,
+				).Should(BeTrue())
+			})
+			By("Fixing second user", func() {
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterGCP.Spec.Name)
+
+				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
+
+				// First we need to wait for "such cluster doesn't exist in Atlas" error to be gone
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges))),
 					20, interval).Should(BeTrue())
 
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
+					80, interval).Should(BeTrue())
+
 				checkUserInAtlas(createdProject.ID(), *secondDBUser)
+
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -218,14 +267,14 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				By("Checking write permissions for Clusters", func() {
 					// We still can write by the first user
-					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "testCollection")()).Should(Succeed())
-					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "testCollection")()).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *createdDBUser, "test", "testCollection")).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "testCollection")).Should(Succeed())
 
 					// The second user can eventually write to one collection only
-					Eventually(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser), 90, interval).Should(Succeed())
-					Eventually(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection"), 60, interval).Should(Succeed())
+					Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *secondDBUser)).Should(Succeed())
+					Expect(tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "someDB", "thisIsTheOnlyAllowedCollection")).Should(Succeed())
 
-					err := tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "test", "someNotAllowedCollection")()
+					err := tryWrite(createdProject.ID(), *createdClusterGCP, *secondDBUser, "test", "someNotAllowedCollection")
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(MatchRegexp("not authorized"))
 				})
@@ -245,6 +294,161 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+		})
+	})
+
+	// Note, that this test doesn't work with "DevMode=true" as requires the cluster to get created
+	Describe("Create a single user first and then the cluster", func() {
+		It("Should succeed", func() {
+			// Here we create a database user first - then the cluster
+			By("Creating database user", func() {
+				createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval).Should(BeTrue())
+
+				checkUserInAtlas(createdProject.ID(), *createdDBUser)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+				Expect(createdDBUser.Status.ConnectionSecrets).To(BeEmpty())
+			})
+			By("Creating cluster", func() {
+				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+				// We don't wait for the full cluster creation - only when it has started the process
+				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating))),
+					20, interval).Should(BeTrue())
+			})
+			By("Updating the database user while the cluster is being created", func() {
+				createdDBUser = createdDBUser.WithRole("read", "test", "somecollection")
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+				// DatabaseUser will wait for the cluster to get created
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserWaitingForCluster()),
+					1800, interval).Should(BeTrue())
+
+				checkUserInAtlas(createdProject.ID(), *createdDBUser)
+				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
+				By("Checking connection Secrets", func() {
+					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
+					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+					expectedSecretsInStatus := map[string]string{"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user")}
+					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
+				})
+			})
+		})
+	})
+	Describe("Create a single user (watch, expiration)", func() {
+		It("Should succeed", func() {
+			By("Creating clusters", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+			})
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			var connSecretInitial corev1.Secret
+			var pwdSecret corev1.Secret
+
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+
+				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &pwdSecret)).To(Succeed())
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(pwdSecret.ResourceVersion))
+			})
+
+			By("Breaking the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, expectedCondition), 20, interval).Should(BeTrue())
+			})
+			By("Fixing the password secret", func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
+				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				// We need to make sure that the new connection secret is different from the initial one
+				connSecretUpdated := validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(string(connSecretInitial.Data["password"])).To(Equal(DBUserPassword))
+				Expect(string(connSecretUpdated.Data["password"])).To(Equal("someNewPassw00rd"))
+
+				var updatedPwdSecret corev1.Secret
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKey(namespace.Name, UserPasswordSecret), &updatedPwdSecret)).To(Succeed())
+				Expect(updatedPwdSecret.ResourceVersion).NotTo(Equal(pwdSecret.ResourceVersion))
+				Expect(createdDBUser.Status.PasswordVersion).To(Equal(updatedPwdSecret.ResourceVersion))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+		})
+	})
+	Describe("Change database users (make sure all stale secrets are removed)", func() {
+		It("Should succeed", func() {
+			By("Creating GCP and Azure clusters", func() {
+				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterGCP)).ToNot(HaveOccurred())
+
+				createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name)
+				Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterGCP, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				Eventually(testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+			})
+			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+
+			By(fmt.Sprintf("Creating the Database User %s (no scopes)", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+				validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+			})
+			By("Changing the db user name - one stale secret is expected to be removed", func() {
+				createdDBUser = createdDBUser.WithAtlasUserName("new-user")
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+				secret := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-azure-new-user")))
+				secret = validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
+				Expect(secret.Name).To(Equal(connSecretname("-test-cluster-gcp-new-user")))
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterAzure, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).Should(Succeed())
+			})
+			By("Changing the scopes - one stale secret is expected to be removed", func() {
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.Name)
+				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+
+				Expect(tryConnect(createdProject.ID(), *createdClusterAzure, *createdDBUser)).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdClusterGCP, *createdDBUser)).ShouldNot(Succeed())
 			})
 		})
 	})
@@ -282,11 +486,9 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	return user
 }
 
-func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) func() error {
-	return func() error {
-		_, err := mongoClient(projectID, cluster, user)
-		return err
-	}
+func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) error {
+	_, err := mongoClient(projectID, cluster, user)
+	return err
 }
 
 func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
@@ -294,6 +496,10 @@ func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasD
 	defer cancel()
 	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.Name)
 	Expect(err).NotTo(HaveOccurred())
+
+	if c.ConnectionStrings == nil {
+		return nil, errors.New("Connection strings are not provided!")
+	}
 
 	cs, err := url.Parse(c.ConnectionStrings.StandardSrv)
 	Expect(err).NotTo(HaveOccurred())
@@ -316,41 +522,39 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) func() error {
-	return func() error {
-		dbClient, err := mongoClient(projectID, cluster, user)
-		Expect(err).NotTo(HaveOccurred())
-		defer func() {
-			if err = dbClient.Disconnect(context.Background()); err != nil {
-				panic(err)
-			}
-		}()
-
-		collection := dbClient.Database(dbName).Collection(collectionName)
-
-		p := Person{
-			Name: "Patrick",
-			Age:  32,
+func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) error {
+	dbClient, err := mongoClient(projectID, cluster, user)
+	Expect(err).NotTo(HaveOccurred())
+	defer func() {
+		if err = dbClient.Disconnect(context.Background()); err != nil {
+			panic(err)
 		}
+	}()
 
-		_, err = collection.InsertOne(context.Background(), p)
-		if err != nil {
-			return err
-		}
-		filter := bson.D{{Key: "name", Value: "Patrick"}}
+	collection := dbClient.Database(dbName).Collection(collectionName)
 
-		var s Person
-
-		err = collection.FindOne(context.Background(), filter).Decode(&s)
-		Expect(err).NotTo(HaveOccurred())
-		// Shouldn't return the error - by this step the roles should be propagated
-		Expect(s).To(Equal(p))
-		fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
-		return nil
+	p := Person{
+		Name: "Patrick",
+		Age:  32,
 	}
+
+	_, err = collection.InsertOne(context.Background(), p)
+	if err != nil {
+		return err
+	}
+	filter := bson.D{{Key: "name", Value: "Patrick"}}
+
+	var s Person
+
+	err = collection.FindOne(context.Background(), filter).Decode(&s)
+	Expect(err).NotTo(HaveOccurred())
+	// Shouldn't return the error - by this step the roles should be propagated
+	Expect(s).To(Equal(p))
+	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
+	return nil
 }
 
-func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) {
+func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
@@ -359,9 +563,12 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
+	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.Name)
+	Expect(err).NotTo(HaveOccurred())
+
 	expectedData := map[string][]byte{
-		"connectionString.standard":    []byte(buildConnectionURL(cluster.Status.ConnectionStrings.Standard, username, password)),
-		"connectionString.standardSrv": []byte(buildConnectionURL(cluster.Status.ConnectionStrings.StandardSrv, username, password)),
+		"connectionString.standard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
+		"connectionString.standardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
 		"username":                     []byte(username),
 		"password":                     []byte(password),
 	}
@@ -371,6 +578,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
+	return secret
 }
 
 func checkNumberOfConnectionSecrets(k8sClient client.Client, project mdbv1.AtlasProject, length int) {
@@ -428,4 +636,35 @@ func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 
 		Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, projectID)))
 	})
+}
+
+func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		d := a.(*mdbv1.AtlasDatabaseUser)
+		expectedConditionsMatchers := testutil.MatchConditions(
+			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
+			status.FalseCondition(status.ReadyType),
+		)
+		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+	}
+}
+
+func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		d := a.(*mdbv1.AtlasDatabaseUser)
+		// this is the first status that db user gets after update
+		userChangesApplied := testutil.MatchConditions(
+			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
+			status.FalseCondition(status.ReadyType),
+		)
+		// this is the status the db user gets to when tries to create connection secrets and sees that the cluster
+		// is not ready
+		waitingForCluster := testutil.MatchConditions(
+			status.FalseCondition(status.DatabaseUserReadyType).
+				WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
+				WithMessageRegexp("Waiting for clusters to get created/updated"),
+			status.FalseCondition(status.ReadyType),
+		)
+		Expect(d.Status.Conditions).To(Or(ConsistOf(waitingForCluster), ConsistOf(userChangesApplied)))
+	}
 }

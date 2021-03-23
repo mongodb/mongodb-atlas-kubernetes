@@ -358,3 +358,10 @@ func DefaultAWSCluster(namespace, projectName string) *AtlasCluster {
 		WithProviderName(ProviderAWS).
 		WithRegionName("US_WEST_2")
 }
+
+func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
+	return NewCluster(namespace, "test-cluster-azure-k8s", "test-cluster-azure").
+		WithProjectName(projectName).
+		WithProviderName(ProviderAzure).
+		WithRegionName("EUROPE_NORTH")
+}
