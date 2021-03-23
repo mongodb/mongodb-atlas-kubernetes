@@ -83,7 +83,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					AddRole("atlasAdmin", "admin", ""),
 				*model.NewDBUser("user2").
 					WithSecretRef("dbuser-secret-u2").
-					AddRole("readWrite", "testDB", ""),
+					AddRole("readWrite", "Ships", ""),
 			},
 			30002,
 		)),
