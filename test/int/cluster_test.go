@@ -395,6 +395,11 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create DBUser before cluster & check secrets", func() {
 		It("Should Succeed", func() {
+			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret), func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+			})
+
 			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
