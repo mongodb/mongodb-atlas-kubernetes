@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	DevMode             = true
+	DevMode             = false
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
@@ -401,7 +401,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 		})
 	})
-	FDescribe("Change database users (make sure all stale secrets are removed)", func() {
+	Describe("Change database users (make sure all stale secrets are removed)", func() {
 		It("Should succeed", func() {
 			By("Creating GCP and Azure clusters", func() {
 				createdClusterGCP = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
