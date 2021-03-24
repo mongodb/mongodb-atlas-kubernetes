@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/gomega/gbytes"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/app"
+	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
@@ -132,7 +132,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 	})
 
 	By("Create namespaced Operator\n", func() {
-		PrepareResoures(resources)
+		CopyKustomizeNamespaceOperator(resources)
 		// CreateCopyKustomizeNamespace(resources.namespace)
 		kube.Apply("-k", resources.GetOperatorFolder())
 		Eventually(
@@ -176,13 +176,19 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 		// 	// send ddata
 		// 	// retrieve data
 		for i, user := range resources.Users { // TODO in parallel(?)
+			// data
 			port := strconv.Itoa(i + portGroup)
+			key := port
+			data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+
 			helm.InstallTestApplication(resources, user, port)
 			waitTestApplication(resources.Namespace, "app=test-app-"+user.Spec.Username)
-			Expect(app.NewApp(port).Get("")).Should(Equal("It is working"))
-			data := fmt.Sprintf("{\"key\":\"" + port + "\",\"shipmodel\":\"heavy\",\"hp\":150}")
-			Expect(app.NewApp(port).Post(data)).ShouldNot(HaveOccurred())
-			Expect(app.NewApp(port).Get("/mongo/" + port)).Should(ContainSubstring(data))
+
+			app := appclient.NewTestAppClient(port)
+			Expect(app.Get("")).Should(Equal("It is working"))
+			Expect(app.Post(data)).ShouldNot(HaveOccurred())
+			// Expect(app.Get("/mongo/" + key)).Should(ContainSubstring(data))
+			Expect(app.Get("/mongo/" + key)).Should(Equal(data))
 		}
 	})
 
@@ -207,8 +213,11 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 	By("Check user data still in the cluster", func() {
 		for i := range resources.Users { // TODO in parallel(?)
 			port := strconv.Itoa(i + portGroup)
-			data := fmt.Sprintf("{\"key\":\"" + port + "\",\"shipmodel\":\"heavy\",\"hp\":150}")
-			Expect(app.NewApp(port).Get("/mongo/" + port)).Should(ContainSubstring(data))
+			key := port
+			data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+			app := appclient.NewTestAppClient(port)
+			// Expect(app.Get("/mongo/" + port)).Should(ContainSubstring(data))
+			Expect(app.Get("/mongo/" + port)).Should(Equal(data))
 		}
 	})
 
@@ -218,7 +227,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 		// - delete one user from the list,
 		// - check Atlas doesn't have the initial user and have the rest
 		By("Delete k8s resources")
-		Eventually(kube.Delete(resources.GetResourceFolder()+"/user/user-"+resources.Users[0].ObjectMeta.Name, "-n", resources.Namespace)).Should(Say("deleted"))
+		Eventually(kube.Delete(resources.GetResourceFolder()+"/user/user-"+resources.Users[0].ObjectMeta.Name+".yaml", "-n", resources.Namespace)).Should(Say("deleted"))
 		Eventually(checkIfUserExist(resources.Users[0].Spec.Username, resources.ProjectID)).Should(BeFalse())
 
 		// the rest users should be still there

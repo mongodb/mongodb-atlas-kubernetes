@@ -11,7 +11,7 @@ type App struct {
 	uri string
 }
 
-func NewApp(uri string) *App {
+func NewTestAppClient(uri string) *App {
 	return &App{
 		uri: "http://localhost:" + uri,
 	}

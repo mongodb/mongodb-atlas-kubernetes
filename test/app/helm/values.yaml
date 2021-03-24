@@ -1,5 +1,5 @@
 # application parameters
 name: test-app-user1
 secret: new-brand
-image: leori/test-app:v1
+image: mongodbinternal/test-app:v1
 nodePort: "30000"

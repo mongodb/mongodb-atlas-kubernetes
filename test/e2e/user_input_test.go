@@ -108,11 +108,6 @@ func checkUsersAttributes(input model.UserInputs) {
 	}
 }
 
-func PrepareResoures(input model.UserInputs) {
-	CopyKustomizeNamespaceOperator(input)
-	CopyTestAppForEachUser(input)
-}
-
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
 func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 	// fullPath := filepath.Join("data", input.projectName, "operator")
@@ -128,22 +123,4 @@ func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 			"- namespaced-config.yaml",
 	)
 	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
-}
-
-// each user has his own application?
-func CopyTestAppForEachUser(input model.UserInputs) {
-	fullPath := input.GetAppFolder()
-	for _, user := range input.Users {
-		os.MkdirAll(filepath.Join(fullPath, user.Spec.Username), os.ModePerm)
-		utils.CopyFile("../app/k8s/deployment.yaml", filepath.Join(fullPath, user.Spec.Username, "deployment.yaml"))
-		utils.CopyFile("../app/k8s/kustomization.yaml", filepath.Join(fullPath, user.Spec.Username, "kustomization.yaml"))
-		utils.CopyFile("../app/k8s/service.yaml", filepath.Join(fullPath, user.Spec.Username, "service.yaml"))
-		utils.SaveToFile(
-			filepath.Join(fullPath, user.Spec.Username, "deployment.json"),
-			model.NewPatchList().
-				PatchApplicationName(input.ProjectName).
-				PatchSecret(input.ProjectName+"-"+input.Clusters[0].Spec.Name+"-"+user.Spec.Username).
-				GetData(),
-		) // TODO several clusters()
-	}
 }

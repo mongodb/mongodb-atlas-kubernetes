@@ -73,7 +73,7 @@ func postKeyValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ship := getShipFromRequest(r)
-	fmt.Fprintf(w, "got ship key: "+ship.Key+"\n")
+	fmt.Fprintf(w, "got ship key: %s\n", ship.Key)
 	res, err := collection.InsertOne(ctx, ship)
 	if err != nil {
 		panic(err)

@@ -90,7 +90,7 @@ func GetK8sClusterStateName(ns, rName string) func() string {
 
 func DeleteNamespace(ns string) *Buffer {
 	session := cli.Execute("kubectl", "delete", "namespace", ns)
-	return session.Wait().Out
+	return session.Wait("2m").Out
 }
 
 func SwitchContext(name string) {
