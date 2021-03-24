@@ -14,6 +14,16 @@ The new job "Create Release" will be triggered and the following will be done:
 ## Edit the Release Notes and publish the release
 Follow the format of the previous release notes (two main sections: "Features" and "Bug Fixes"). Publish the release.
 
+## Synchronize configuration changes with the Helm Charts
+
+Create a PR to https://github.com/mongodb/helm-charts to update two Helm charts:
+* [atlas-operator-crds](https://github.com/mongodb/helm-charts/tree/main/charts/atlas-operator-crds)
+* [atlas-operator](https://github.com/mongodb/helm-charts/tree/main/charts/atlas-operator)
+  * `Chart.yaml` - update the `AppVersion` to the new Operator version and increment the minor digit for `version`
+  * any changes to `templates` configuration
+    
+Merge the PR - the chart will get released automatically.
+
 ## Create the Pull Request to publish the bundle to operatorhub.io
 
 All bundles/package manifests for Operators for operatorhub.io reside in `https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators`
