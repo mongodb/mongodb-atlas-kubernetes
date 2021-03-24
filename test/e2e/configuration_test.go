@@ -218,7 +218,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 		// - delete one user from the list,
 		// - check Atlas doesn't have the initial user and have the rest
 		By("Delete k8s resources")
-		Eventually(kube.Delete(resources.GetResourceFolder()+"/user/", "-n", resources.Namespace)).Should(Say("deleted"))
+		Eventually(kube.Delete(resources.GetResourceFolder()+"/user/user-"+resources.Users[0].ObjectMeta.Name, "-n", resources.Namespace)).Should(Say("deleted"))
 		Eventually(checkIfUserExist(resources.Users[0].Spec.Username, resources.ProjectID)).Should(BeFalse())
 
 		// the rest users should be still there
