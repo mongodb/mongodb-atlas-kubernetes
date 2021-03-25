@@ -32,7 +32,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.HELMTestAppPath,
-		"--set-string", fmt.Sprintf("secret=%s-%s-%s", input.ProjectName, input.Clusters[0].Spec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.ProjectName, input.Clusters[0].Spec.Name, user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 	)

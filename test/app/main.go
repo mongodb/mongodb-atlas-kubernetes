@@ -32,10 +32,10 @@ var (
 func main() {
 	r := newRouter()
 	port := os.Getenv("PORT")
-	fmt.Print("Using port: " + port)
 	if port == "" {
 		port = portDefault
 	}
+	fmt.Print("Using port: " + port)
 	http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 }
 

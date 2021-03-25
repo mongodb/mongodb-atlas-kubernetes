@@ -17,21 +17,14 @@ spec:
       containers:
       - name: test-app
         image: {{ .Values.image }}
-        volumeMounts:
-          - mountPath: /var/secrets/
-            name: {{ .Values.secret }}
         env:
           - name: "CONNECTIONSTRING"
             valueFrom:
               secretKeyRef:
-                name: {{ .Values.secret }}
+                name: {{ .Values.connectionSecret }}
                 key: connectionString.standardSrv
           - name: "PORT"
             value: {{ quote .Values.nodePort }}
-      volumes:
-        - name: {{ .Values.secret }}
-          secret:
-            secretName: {{ .Values.secret }}
 ---
 apiVersion: v1
 kind: Service
@@ -40,7 +33,7 @@ metadata:
   labels:
     app: {{ .Release.Name }}
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: {{ .Release.Name }}
   ports:
