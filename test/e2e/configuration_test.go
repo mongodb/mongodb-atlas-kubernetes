@@ -145,7 +145,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 		kube.CreateApiKeySecret(resources.KeyName, resources.Namespace)
 		kube.Apply(resources.ProjectPath, "-n", resources.Namespace)
 		kube.Apply(resources.Clusters[0].ClusterFileName(resources), "-n", resources.Namespace)
-		// kube.Apply("data"+"/"+resources.namespace+"/user/", "-n", resources.namespace)
+		kube.Apply(resources.GetResourceFolder()+"/user/", "-n", resources.Namespace)
 	})
 
 	By("Wait project creation", func() {
@@ -160,10 +160,6 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 	By("check cluster Attribute", func() {
 		cluster := mongocli.GetClustersInfo(resources.ProjectID, resources.Clusters[0].Spec.Name)
 		compareClustersSpec(resources.Clusters[0].Spec, cluster)
-	})
-
-	By("Create users", func() {
-		kube.Apply(resources.GetResourceFolder()+"/user/", "-n", resources.Namespace)
 	})
 
 	By("check database users Attibutes", func() {
@@ -187,7 +183,6 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 			app := appclient.NewTestAppClient(port)
 			Expect(app.Get("")).Should(Equal("It is working"))
 			Expect(app.Post(data)).ShouldNot(HaveOccurred())
-			// Expect(app.Get("/mongo/" + key)).Should(ContainSubstring(data))
 			Expect(app.Get("/mongo/" + key)).Should(Equal(data))
 		}
 	})
@@ -216,8 +211,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 			key := port
 			data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 			app := appclient.NewTestAppClient(port)
-			// Expect(app.Get("/mongo/" + port)).Should(ContainSubstring(data))
-			Expect(app.Get("/mongo/" + port)).Should(Equal(data))
+			Expect(app.Get("/mongo/" + key)).Should(Equal(data))
 		}
 	})
 
