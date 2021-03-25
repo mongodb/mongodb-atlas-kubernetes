@@ -15,42 +15,42 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
-func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (c *mongodbatlas.Cluster, _ workflow.Result) {
-	c, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.Name)
+func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
+	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
 		if resp == nil {
-			return c, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		if resp.StatusCode != http.StatusNotFound {
-			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		c, err = cluster.Spec.Cluster()
+		atlasCluster, err = cluster.Spec.Cluster()
 		if err != nil {
-			return c, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
-		c, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, c)
+		atlasCluster, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, atlasCluster)
 		if err != nil {
-			return c, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	switch c.StateName {
+	switch atlasCluster.StateName {
 	case "IDLE":
-		resultingCluster, err := mergedCluster(*c, cluster.Spec)
+		resultingCluster, err := MergedCluster(*atlasCluster, cluster.Spec)
 		if err != nil {
-			return c, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		if done := clustersEqual(ctx.Log, *c, resultingCluster); done {
-			return c, workflow.OK()
+		if done := ClustersEqual(ctx.Log, *atlasCluster, resultingCluster); done {
+			return atlasCluster, workflow.OK()
 		}
 
 		if cluster.Spec.Paused != nil {
-			if c.Paused == nil || *c.Paused != *cluster.Spec.Paused {
+			if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.Paused {
 				// paused is different from Atlas
 				// we need to first send a special (un)pause request before reconciling everything else
 				resultingCluster = mongodbatlas.Cluster{
@@ -64,23 +64,23 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 
 		resultingCluster = cleanupCluster(resultingCluster)
 
-		c, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, &resultingCluster)
+		atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, &resultingCluster)
 		if err != nil {
-			return c, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
+			return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 		}
 
-		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	case "CREATING":
-		return c, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return c, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return c, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", c.StateName))
+		return atlasCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", atlasCluster.StateName))
 	}
 }
 
@@ -99,9 +99,9 @@ func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
 	return cluster
 }
 
-// mergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
-func mergedCluster(cluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (result mongodbatlas.Cluster, err error) {
-	if err = compat.JSONCopy(&result, cluster); err != nil {
+// MergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
+func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (result mongodbatlas.Cluster, err error) {
+	if err = compat.JSONCopy(&result, atlasCluster); err != nil {
 		return
 	}
 
@@ -110,7 +110,7 @@ func mergedCluster(cluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (r
 	}
 
 	// TODO: might need to do this with other slices
-	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, cluster.ReplicationSpecs); err != nil {
+	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, atlasCluster.ReplicationSpecs); err != nil {
 		return
 	}
 
@@ -118,12 +118,21 @@ func mergedCluster(cluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (r
 		return
 	}
 
+	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
+	// "Don't specify this parameter when creating a multi-region cluster using the replicationSpec object or a Global
+	// Cluster with the replicationSpecs array."
+	// The problem is that Atlas API accepts the create/update request but then returns the 'ProviderSettings.RegionName' empty in GET request
+	// So we need to consider this while comparing (to avoid perpetual updates)
+	if len(result.ReplicationSpecs) > 0 && atlasCluster.ProviderSettings.RegionName == "" {
+		result.ProviderSettings.RegionName = ""
+	}
+
 	return
 }
 
-// clustersEqual compares two Atlas Clusters
-func clustersEqual(log *zap.SugaredLogger, clusterA mongodbatlas.Cluster, clusterB mongodbatlas.Cluster) bool {
-	d := cmp.Diff(clusterA, clusterB, cmpopts.EquateEmpty())
+// ClustersEqual compares two Atlas Clusters
+func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, clusterOperator mongodbatlas.Cluster) bool {
+	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Clusters are different: %s", d)
 	}
