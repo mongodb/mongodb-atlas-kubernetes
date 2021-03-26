@@ -47,9 +47,28 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
+	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
+	if result := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
 	// We mark the status.Username only when everything is finished including connection secrets
 	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
 
+	return workflow.OK()
+}
+
+func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	if dbUser.Spec.Username != dbUser.Status.UserName {
+		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
+
+		_, err := ctx.Client.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+		if err != nil {
+			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
+			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
+			ctx.Log.Errorf("Failed to remove user %s from Atlas: %s", dbUser.Status.UserName, err)
+		}
+	}
 	return workflow.OK()
 }
 

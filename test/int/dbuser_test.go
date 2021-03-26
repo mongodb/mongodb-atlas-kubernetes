@@ -428,12 +428,18 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
 			})
-			By("Changing the db user name - one stale secret is expected to be removed", func() {
+			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
+				oldName := createdDBUser.Spec.Username
 				createdDBUser = createdDBUser.WithAtlasUserName("new-user")
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					80, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+				checkUserInAtlas(*createdDBUser)
+				// Old user has been removed
+				_, _, err := atlasClient.DatabaseUsers.Get(context.Background(), createdDBUser.Spec.DatabaseName, createdProject.ID(), oldName)
+				Expect(err).To(HaveOccurred())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
 				secret := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
