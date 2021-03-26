@@ -25,6 +25,7 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 2000
+      serviceAccountName: operator
       containers:
       - command:
         - /manager
@@ -49,11 +50,11 @@ spec:
         imagePullPolicy: Always
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 500m
+            memory: 256Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 50Mi
         env:
           - name: OPERATOR_POD_NAME
             valueFrom:

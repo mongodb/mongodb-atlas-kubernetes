@@ -1,0 +1,43 @@
+#spring music test app
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: test-app
+        image: {{ .Values.image }}
+        env:
+          - name: "CONNECTIONSTRING"
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.connectionSecret }}
+                key: connectionString.standardSrv
+          - name: "PORT"
+            value: {{ quote .Values.nodePort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  type: NodePort
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.nodePort }}
+      targetPort: {{ .Values.nodePort }}
+      nodePort: {{ .Values.nodePort }}

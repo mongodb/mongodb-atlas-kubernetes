@@ -22,16 +22,16 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 	return &config
 }
 
-// LoadUserClusterConfig load configuration into object
-func LoadUserClusterConfig(path string) AC {
-	var config AC
-	ReadInYAMLFileAndConvert(path, &config)
-	return config
-}
-
-func SaveToFile(path string, data []byte) {
-	os.MkdirAll(filepath.Dir(path), os.ModePerm)
-	ioutil.WriteFile(path, data, os.ModePerm)
+func SaveToFile(path string, data []byte) error {
+	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, data, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func JSONToYAMLConvert(cnfg interface{}) []byte {
@@ -95,21 +95,6 @@ func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 
 func GenUniqID() string {
 	return uuid.NewRandom().String()
-}
-
-// CreateCopyKustomizeNamespace create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func CreateCopyKustomizeNamespace(namespace string) {
-	fullPath := filepath.Join("data", namespace)
-	os.Mkdir(fullPath, os.ModePerm)
-	CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
-	CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
-	data := []byte(
-		"namespace: " + namespace + "\n" +
-			"resources:" + "\n" +
-			"- crds.yaml" + "\n" +
-			"- namespaced-config.yaml",
-	)
-	SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
 }
 
 func CopyFile(source, target string) {

@@ -90,5 +90,6 @@ issues:
       linters:
         - errcheck
         - stylecheck
+        - noctx
   max-issues-per-linter: 0
   max-same-issues: 0
