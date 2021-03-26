@@ -62,7 +62,7 @@ var _ = Describe("AtlasCluster", func() {
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-			20, interval).Should(BeTrue())
+			ProjectCreationTimeout, interval).Should(BeTrue())
 	})
 
 	AfterEach(func() {

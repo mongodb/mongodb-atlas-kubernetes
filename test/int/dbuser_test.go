@@ -78,7 +78,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 		})
 	})
 
