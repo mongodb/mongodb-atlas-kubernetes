@@ -131,17 +131,29 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
-				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
-				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
+			// Atlas will add some defaults in case the Atlas Operator doesn't set them
+			replicationSpecsCheck := func(cluster *mongodbatlas.Cluster) {
+				Expect(cluster.ReplicationSpecs).To(HaveLen(1))
+				Expect(cluster.ReplicationSpecs[0].ID).NotTo(BeNil())
+				Expect(cluster.ReplicationSpecs[0].ZoneName).To(Equal("Zone 1"))
+				Expect(cluster.ReplicationSpecs[0].RegionsConfig).To(HaveLen(1))
+				Expect(cluster.ReplicationSpecs[0].RegionsConfig[createdCluster.Spec.ProviderSettings.RegionName]).NotTo(BeNil())
+			}
+
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					30*time.Minute, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
-				checkAtlasState()
+
+				singleNumShard := func(cluster *mongodbatlas.Cluster) {
+					Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(1)))
+				}
+				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
 
 			By("Updating ReplicationSpecs", func() {
@@ -149,9 +161,15 @@ var _ = Describe("AtlasCluster", func() {
 					NumShards: int64ptr(2),
 				})
 				createdCluster.Spec.ClusterType = "SHARDED"
+
 				performUpdate(40 * time.Minute)
 				doCommonStatusChecks()
-				checkAtlasState()
+
+				twoNumShard := func(cluster *mongodbatlas.Cluster) {
+					Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(2)))
+				}
+				// ReplicationSpecs has the same defaults but the number of shards has changed
+				checkAtlasState(replicationSpecsCheck, twoNumShard)
 			})
 		})
 	})
@@ -251,14 +269,26 @@ var _ = Describe("AtlasCluster", func() {
 					"US_WEST_2": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
 				}}}
 
-			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+			replicationSpecsCheckFunc := func(c *mongodbatlas.Cluster) {
+				cluster, err := createdCluster.Spec.Cluster()
+				Expect(err).NotTo(HaveOccurred())
+				expectedReplicationSpecs := cluster.ReplicationSpecs
+
+				// The ID field is added by Atlas - we don't have it in our specs
+				Expect(c.ReplicationSpecs[0].ID).NotTo(BeNil())
+				c.ReplicationSpecs[0].ID = ""
+				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
+				Expect(c.ReplicationSpecs).To(Equal(expectedReplicationSpecs))
+			}
+			By("Creating the Cluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1800, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
-				checkAtlasState()
+
+				checkAtlasState(replicationSpecsCheckFunc)
 			})
 		})
 	})
