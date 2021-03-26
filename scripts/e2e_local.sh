@@ -12,14 +12,14 @@ image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env
 export INPUT_IMAGE_URL="${image}"
 export INPUT_ENV=dev
 ./.github/actions/gen-install-scripts/entrypoint.sh
+# TODO temporary change line
+sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 docker build -t "${image}" .
 docker push "${image}"
 
 #bundles
-# TODO temporary change line
-sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD) #Registry is nessary
+bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_BUNDLES_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD) #Registry is nessary
 export BUNDLE_IMAGE="${bundle_image}"
 docker build -f bundle.Dockerfile -t "${bundle_image}" .
 docker push "${bundle_image}"

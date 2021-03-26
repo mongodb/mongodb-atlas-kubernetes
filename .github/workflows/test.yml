@@ -135,6 +135,12 @@ jobs:
         sudo apt-get install -y mongocli
         mongocli --version
 
+    - name: Install operator-sdk-v1.4.2
+      run: |
+        wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
+        chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
+        operator-sdk version
+
     - name: Run e2e test
       if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
       env:
