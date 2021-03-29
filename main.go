@@ -156,7 +156,7 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
-	watchedNamespace := os.Getenv("WATCHED_NAMESPACE")
+	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
 	if watchedNamespace != "" {
 		log.Infof("The Operator is watching the namespace %s", watchedNamespace)
 	}

@@ -8,7 +8,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -22,7 +21,6 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
-	secretNames := make(map[string]string)
 	requeue := false
 	for _, cluster := range clusters {
 		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
@@ -58,14 +56,12 @@ func createOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		ctx.Log.Debugw("Ensured connection Secret up-to-date", "secretname", secretName)
-		secretNames[cluster.Name] = secretName
 	}
 
 	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err.Error())
 	}
 
-	ctx.EnsureStatusOption(status.AtlasDatabaseUserSecretsOption(secretNames))
 	if requeue {
 		return workflow.InProgress(workflow.DatabaseUserConnectionSecretsNotCreated, "Waiting for clusters to get created/updated")
 	}

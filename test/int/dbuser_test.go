@@ -79,7 +79,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 		})
 	})
 
@@ -175,12 +175,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
-
-					expectedSecretsInStatus := map[string]string{
-						"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user"),
-						"test-cluster-gcp": connSecretname("-test-cluster-gcp-test-db-user"),
-					}
-					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 				By("Checking connectivity to Clusters", func() {
 					// The user created lacks read/write roles
@@ -208,12 +202,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
-
-					expectedSecretsInStatus := map[string]string{
-						"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user"),
-						"test-cluster-gcp": connSecretname("-test-cluster-gcp-test-db-user"),
-					}
-					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 
 				By("Checking write permissions for Clusters", func() {
@@ -261,8 +249,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					validateSecret(k8sClient, *createdProject, *createdClusterGCP, *secondDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 3)
-					expectedSecretsInStatus := map[string]string{"test-cluster-gcp": connSecretname("-test-cluster-gcp-second-db-user")}
-					Expect(secondDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 
 				By("Checking write permissions for Clusters", func() {
@@ -313,7 +299,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				checkUserInAtlas(*createdDBUser)
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
-				Expect(createdDBUser.Status.ConnectionSecrets).To(BeEmpty())
 			})
 			By("Creating cluster", func() {
 				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
@@ -342,8 +327,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				By("Checking connection Secrets", func() {
 					validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
-					expectedSecretsInStatus := map[string]string{"test-cluster-aws": connSecretname("-test-cluster-aws-test-db-user")}
-					Expect(createdDBUser.Status.ConnectionSecrets).To(Equal(expectedSecretsInStatus))
 				})
 			})
 		})

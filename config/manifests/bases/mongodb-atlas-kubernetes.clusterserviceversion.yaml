@@ -57,5 +57,4 @@ spec:
   maturity: alpha
   provider:
     name: MongoDB, Inc
-    url: https://github.com/mongodb/mongodb-atlas-kubernetes
   version: 0.0.0
