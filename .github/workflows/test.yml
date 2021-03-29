@@ -83,7 +83,7 @@ jobs:
       # uncomment the below for local testing
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REGISTRY: docker.io
-      DOCKER_BUNDLES_REPO: mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     strategy:
       fail-fast: false
@@ -159,7 +159,7 @@ jobs:
         MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
         MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
         MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-        BUNDLE_IMAGE: "{{ env.DOCKER_REGISTRY }}/{{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
+        BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
         K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
         K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
         TEST_NAME: "${{ matrix.test }}"
