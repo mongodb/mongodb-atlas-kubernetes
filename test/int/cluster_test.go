@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -46,7 +47,8 @@ var _ = Describe("AtlasCluster", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithIP("0.0.0.0/0"))
+
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -393,7 +395,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
-	Describe("Create DBUser before cluster & check secrets", func() {
+	FDescribe("Create DBUser before cluster & check secrets", func() {
 		It("Should Succeed", func() {
 			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret), func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
