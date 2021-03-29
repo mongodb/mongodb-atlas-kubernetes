@@ -31,7 +31,7 @@ func waitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
-func waitProject(input model.UserInputs, generation string) {
+func waitProject(input model.UserInputs, generation string) { //nolint:unparam // have cases only with generation=1
 	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
 	EventuallyWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	EventuallyWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")

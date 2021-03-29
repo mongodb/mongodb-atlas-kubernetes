@@ -67,7 +67,7 @@ var _ = Describe("[bundle-test] User can", func() {
 					ProjectName(userSpec.ProjectName).
 					SecretRef(userSpec.KeyName).
 					CompleteK8sConfig(userSpec.K8sProjectName),
-		 	)
+			)
 			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig(config.ClusterSample))
 			userSpec.Clusters[0].Spec.Project.Name = userSpec.K8sProjectName
 			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-bundle"
