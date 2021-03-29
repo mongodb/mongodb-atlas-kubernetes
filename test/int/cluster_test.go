@@ -24,7 +24,7 @@ import (
 const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
-	ClusterDevMode = false
+	ClusterDevMode = true
 )
 
 var _ = Describe("AtlasCluster", func() {
@@ -242,7 +242,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
-	Describe("Create/Update the cluster (more complex scenario)", func() {
+	FDescribe("Create/Update the cluster (more complex scenario)", func() {
 		It("Should be created", func() {
 			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 			createdCluster.Spec.ClusterType = mdbv1.TypeReplicaSet
@@ -280,10 +280,33 @@ var _ = Describe("AtlasCluster", func() {
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
 				Expect(c.ReplicationSpecs).To(Equal(expectedReplicationSpecs))
 			}
-			By("Creating the Cluster", func() {
+
+			// By("Creating the Cluster", func() {
+			//	Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
+			//
+			//	Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+			//		1800, interval).Should(BeTrue())
+			//
+			//	doCommonStatusChecks()
+			//
+			//	checkAtlasState(replicationSpecsCheckFunc)
+			// })
+
+			By("Updating the cluster (multiple operations)", func() {
+				delete(createdCluster.Spec.ReplicationSpecs[0].RegionsConfig, "US_WEST_2")
+				createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_WEST_1"] = mdbv1.RegionsConfig{AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)}
+				config := createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"]
+				// Note, that Atlas has strict requirements to priorities - they must start with 7 and be in descending order over the regions
+				config.Priority = int64ptr(5)
+				createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"] = config
+
+				createdCluster.Spec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
+
 				Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+				// performUpdate(80 * time.Minute)
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 					1800, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
@@ -485,7 +508,7 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
 					1800, interval).Should(BeTrue())
 
-				doCommonChecks()
+				doCommonStatusChecks()
 				checkAtlasState()
 			})
 
