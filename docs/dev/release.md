@@ -26,7 +26,9 @@ Merge the PR - the chart will get released automatically.
 
 ## Create the Pull Request to publish the bundle to operatorhub.io
 
-All bundles/package manifests for Operators for operatorhub.io reside in `https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators`
+All bundles/package manifests for Operators for operatorhub.io reside in:
+* `https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators` - for public Operators from operatorhub.io
+* `https://github.com/operator-framework/community-operators/tree/master/community-operators` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
 
 ### Fork/Update the community operators repository
 **(First time) Fork the repository**
@@ -51,35 +53,58 @@ git checkout master
 git merge upstream/master
 ```
 
-### Create a Pull Request to `upstream-community-operators` with a new bundle
-
-This is necessary for the Operator to appear on [operatorhub.io] site 
-```
-version=0.5.0
-mkdir <community-operators-repo>/upstream-community-operators/mongodb-atlas-kubernetes/${version}
-cp bundle.Dockerfile bundle/manifests bundle/metadata <community-operators-repo>/upstream-community-operators/mongodb-atlas-kubernetes/${version}
-cd <community-operators-repo>
-git checkout -b "mongodb-atlas-operator-${version}"
-git commit -m "MongoDB Atlas Operator ${version}" --signoff * 
-git push origin mongodb-atlas-operator-${version}
-```
-
-(note, that it's required that the PR consists of only one commit - you may need to do 
-`git rebase -i HEAD~2; git push origin +master` if you need to squash multiple commits into one and perform force push)
-
-Create the PR to the main repository and wait until CI jobs get green. 
-After the PR is approved and merged - it will soon get available on https://operatorhub.io
-
-Example PR: https://github.com/operator-framework/community-operators/pull/3281
-
 ### Create a Pull Request to `community-operators` with a new bundle
 
 This is necessary for the Operator to appear on "operators" tab in Openshift clusters
 
 ```
-# (from <community-operators-repo>)
-cp -r upstream-community-operators/mongodb-atlas-kubernetes/${version} community-operators/mongodb-atlas-kubernetes
-git add community-operators/mongodb-atlas-kubernetes/${version}
-git commit -m "[community] MongoDB Atlas Operator ${version}" --signoff community-operators/mongodb-atlas-kubernetes/${version}
+version=0.5.0
+mkdir <community-operators-repo>/community-operators/mongodb-atlas-kubernetes/${version}
+cp bundle.Dockerfile bundle/manifests bundle/metadata <community-operators-repo>/community-operators/mongodb-atlas-kubernetes/${version}
+cd <community-operators-repo>/community-operators/mongodb-atlas-kubernetes/${version}
+
+# replace the move instructions in the docker file
+sed -i .bak 's/COPY bundle\/manifests/COPY manifests/' bundle.Dockerfile
+sed -i .bak 's/COPY bundle\/metadata/COPY metadata/' bundle.Dockerfile
+sed -i .bak '/COPY bundle\/tests\/scorecard \/tests\/scorecard\//d' bundle.Dockerfile
+rm bundle.Dockerfile.bak
+
+# commit
+git checkout -b "mongodb-atlas-operator-community-${version}"
+git commit -m "MongoDB Atlas Operator ${version}" --signoff * 
+git push origin mongodb-atlas-operator-community-${version}
+```
+
+*(This should be automated in the future by the correct layout of kustomize configs)*
+Remove the following lines for `Deployment` from the CSV file and leave the `securityContext` empty:
+
+```
+          runAsNonRoot: true
+          runAsUser: 2000
+```
+
+Create the PR to the main repository and wait until CI jobs get green.
+
+(note, that it's required that the PR consists of only one commit - you may need to do
+`git rebase -i HEAD~2; git push origin +master` if you need to squash multiple commits into one and perform force push)
+
+See https://github.com/operator-framework/community-operators/pull/3343 as an example
+
+### Create a Pull Request to `upstream-community-operators` with a new bundle
+
+This is necessary for the Operator to appear on [operatorhub.io] site. 
+For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
+
+```
+# cd <community-operators-repo>
+cp -r community-operators/mongodb-atlas-kubernetes/${version} upstream-community-operators/mongodb-atlas-kubernetes
+git add upstream-community-operators/mongodb-atlas-kubernetes/${version}
+git checkout -b "mongodb-atlas-operator-community-${version}"
+git commit -m "[community] MongoDB Atlas Operator ${version}" --signoff upstream-community-operators/mongodb-atlas-kubernetes/${version}
+git push origin mongodb-atlas-operator-community-${version}
 git push
 ```
+
+Create the PR to the main repository and wait until CI jobs get green. 
+After the PR is approved and merged - it will soon get available on https://operatorhub.io
+Example PR: https://github.com/operator-framework/community-operators/pull/3281
