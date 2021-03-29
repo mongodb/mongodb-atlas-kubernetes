@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +43,7 @@ import (
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
+	watch.ResourceWatcher
 	Client      client.Client
 	Log         *zap.SugaredLogger
 	Scheme      *runtime.Scheme
@@ -65,6 +67,9 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	result := customresource.PrepareResource(r.Client, req, databaseUser, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
+	}
+	if databaseUser.Spec.PasswordSecret != nil {
+		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", log, *databaseUser.PasswordSecretObjectKey())
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log)
 
@@ -119,6 +124,12 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// Watch for changes to primary resource AtlasDatabaseUser & handle delete separately
 	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDatabaseUser{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
+	if err != nil {
+		return err
+	}
+
+	// Watch for DatabaseUser password Secrets
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}

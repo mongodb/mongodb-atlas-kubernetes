@@ -20,6 +20,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -63,6 +64,7 @@ func main() {
 	config := parseConfiguration(logger.Sugar())
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
+	syncPeriod := time.Hour * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
@@ -71,6 +73,7 @@ func main() {
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
 		Namespace:              config.WatchedNamespaces,
+		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -103,11 +106,12 @@ func main() {
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:      mgr.GetClient(),
-		Log:         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:      mgr.GetScheme(),
-		AtlasDomain: config.AtlasDomain,
-		OperatorPod: operatorPod,
+		Client:          mgr.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		OperatorPod:     operatorPod,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
@@ -152,7 +156,7 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
-	watchedNamespace := os.Getenv("WATCHED_NAMESPACE")
+	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
 	if watchedNamespace != "" {
 		log.Infof("The Operator is watching the namespace %s", watchedNamespace)
 	}

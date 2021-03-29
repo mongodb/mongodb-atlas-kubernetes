@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
+	"github.com/sethvargo/go-password/password"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
@@ -53,6 +55,15 @@ func GetStatusCondition(ns string, atlasname string) func() string {
 	}
 }
 
+func GetStatusPhase(ns string, args ...string) func() string {
+	return func() string {
+		args := append([]string{"get"}, args...)
+		args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
+		session := cli.Execute("kubectl", args...)
+		return string(session.Wait("1m").Out.Contents())
+	}
+}
+
 // GetProjectResource
 func GetProjectResource(namespace, rName string) v1.AtlasProject {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
@@ -79,7 +90,7 @@ func GetK8sClusterStateName(ns, rName string) func() string {
 
 func DeleteNamespace(ns string) *Buffer {
 	session := cli.Execute("kubectl", "delete", "namespace", ns)
-	return session.Wait().Out
+	return session.Wait("2m").Out
 }
 
 func SwitchContext(name string) {
@@ -111,12 +122,21 @@ func Delete(args ...string) *Buffer {
 
 func CreateNamespace(name string) *Buffer {
 	session := cli.Execute("kubectl", "create", "namespace", name)
-	ExpectWithOffset(1, session.Wait()).Should(Say("created"))
+	ExpectWithOffset(1, session.Wait()).Should(Say("created"), "Can't create namespace")
 	return session.Out
 }
 
-func CreateApiKeySecret(keyName, ns string) { // TODO ?
-	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
+func CreateUserSecret(name, ns string) {
+	secret, _ := password.Generate(10, 3, 0, false, false)
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", name,
+		"--from-literal=password="+secret,
+		"-n", ns,
+	)
+	EventuallyWithOffset(1, session.Wait()).Should(Say(name + " created"))
+}
+
+func CreateApiKeySecret(keyName, ns string) { // TODO add ns
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+os.Getenv("MCLI_PUBLIC_API_KEY"),
 		"--from-literal=privateApiKey="+os.Getenv("MCLI_PRIVATE_API_KEY"),

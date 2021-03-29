@@ -9,13 +9,15 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
 
-	var NortonSpec, NimnulSpec userInputs
-	commonClusterName := "MegaCluster"
+	var NortonSpec, NimnulSpec model.UserInputs
+	commonClusterName := "megacluster"
 
 	var _ = BeforeEach(func() {
 		By("User Install CRD, cluster wide Operator", func() {
@@ -23,7 +25,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),
 			)
 			Eventually(
-				kube.GetPodStatus(defaultOperatorNS),
+				kube.GetPodStatus(DefaultOperatorNS),
 				"5m", "3s",
 			).Should(Equal("Running"), "The operator should successfully run")
 		})
@@ -35,113 +37,95 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
-					kube.GetManagerLogs(defaultOperatorNS),
+					kube.GetManagerLogs(DefaultOperatorNS),
 				)
 				SaveK8sResources(
 					[]string{"deploy"},
-					defaultOperatorNS,
+					DefaultOperatorNS,
 				)
 				SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					NortonSpec.namespace,
+					NortonSpec.Namespace,
 				)
 				SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					NimnulSpec.namespace,
+					NimnulSpec.Namespace,
 				)
 			} else {
-				kube.Delete(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
-				kube.Delete(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
+				kube.Delete(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
+				kube.Delete(NimnulSpec.Clusters[0].ClusterFileName(NimnulSpec), "-n", NimnulSpec.Namespace)
 				// do not wait it
 			}
 		})
 	})
 
+	loadClustersAndApplyConfiguration := func(spec model.UserInputs, name string) model.UserInputs {
+		project := model.NewProject().
+			ProjectName(spec.ProjectName).
+			SecretRef(spec.KeyName).
+			CompleteK8sConfig(spec.K8sProjectName)
+		utils.SaveToFile(spec.ProjectPath, project)
+		spec.Clusters = append(spec.Clusters, model.LoadUserClusterConfig(ClusterSample))
+		spec.Clusters[0].Spec.Project.Name = spec.K8sProjectName
+		spec.Clusters[0].ObjectMeta.Name = name + "cluster"
+		utils.SaveToFile(
+			spec.Clusters[0].ClusterFileName(spec),
+			utils.JSONToYAMLConvert(spec.Clusters[0]),
+		)
+
+		By("Apply "+name+" configuration", func() {
+			kube.CreateNamespace(spec.Namespace)
+			kube.CreateApiKeySecret(spec.KeyName, spec.Namespace)
+			kube.Apply(spec.ProjectPath, "-n", spec.Namespace)
+			kube.Apply(spec.Clusters[0].ClusterFileName(spec), "-n", spec.Namespace)
+		})
+		return spec
+	}
+
+	// (Consider Shared Clusters when E2E tests could conflict with each other)
 	It("Deploy cluster wide operator and create resources in each of them", func() {
-		// (Consider Shared Clusters when E2E tests could conflict with each other)
 		By("Users can create clusters with the same name", func() {
-			NortonSpec = NewUserInputs("norton-key")
-			NimnulSpec = NewUserInputs("nimnul-key")
-			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: "+commonClusterName, func() {
-				project := utils.NewProject().
-					ProjectName(NortonSpec.projectName).
-					SecretRef(NortonSpec.keyName).
-					CompleteK8sConfig(NortonSpec.k8sProjectName)
-				utils.SaveToFile(FilePathTo(NortonSpec.projectName), project)
-				NortonSpec.clusters = append(NortonSpec.clusters, utils.LoadUserClusterConfig(ClusterSample))
-				NortonSpec.clusters[0].Spec.Project.Name = NortonSpec.k8sProjectName
-				NortonSpec.clusters[0].ObjectMeta.Name = "norton-cluster"
-				utils.SaveToFile(
-					NortonSpec.clusters[0].ClusterFileName(),
-					utils.JSONToYAMLConvert(NortonSpec.clusters[0]),
-				)
-
-				By("Apply Nortons configuration", func() {
-					kube.CreateNamespace(NortonSpec.namespace)
-					kube.CreateApiKeySecret(NortonSpec.keyName, NortonSpec.namespace)
-					kube.Apply(FilePathTo(NortonSpec.projectName), "-n", NortonSpec.namespace)
-					kube.Apply(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
-				})
-
-			})
-			By("User 2 - Nimnul - Creates configuration for a new Project and Cluster named: "+commonClusterName, func() {
-				project := utils.NewProject().
-					ProjectName(NimnulSpec.projectName).
-					SecretRef(NimnulSpec.keyName).
-					CompleteK8sConfig(NimnulSpec.k8sProjectName)
-				utils.SaveToFile(NimnulSpec.projectPath, project)
-				NimnulSpec.clusters = append(NimnulSpec.clusters, utils.LoadUserClusterConfig(ClusterSample))
-				NimnulSpec.clusters[0].Spec.Project.Name = NimnulSpec.k8sProjectName
-				NimnulSpec.clusters[0].ObjectMeta.Name = "nimnul-cluster"
-				utils.SaveToFile(
-					NimnulSpec.clusters[0].ClusterFileName(),
-					utils.JSONToYAMLConvert(NimnulSpec.clusters[0]),
-				)
-
-				By("Apply Nortons configuration", func() {
-					kube.CreateNamespace(NimnulSpec.namespace)
-					kube.CreateApiKeySecret(NimnulSpec.keyName, NimnulSpec.namespace)
-					kube.Apply(FilePathTo(NimnulSpec.projectName), "-n", NimnulSpec.namespace)
-					kube.Apply(NimnulSpec.clusters[0].ClusterFileName(), "-n", NimnulSpec.namespace)
-				})
-			})
+			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: " + commonClusterName)
+			NortonSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("norton-key", nil), "norton")
+			By("User 2 - Nimnul - Creates configuration for a new Project and Cluster named: " + commonClusterName)
+			NimnulSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("nimnul-key", nil), "nimnul")
 		})
 
 		By("Wait creation projects/clusters", func() {
 			// projects Norton
 			waitProject(NortonSpec, "1")
-			NortonSpec.projectID = kube.GetProjectResource(NortonSpec.namespace, NortonSpec.k8sFullProjectName).Status.ID
+			NortonSpec.ProjectID = kube.GetProjectResource(NortonSpec.Namespace, NortonSpec.K8sFullProjectName).Status.ID
 
 			// projects Nimnul
 			waitProject(NimnulSpec, "1")
-			NimnulSpec.projectID = kube.GetProjectResource(NimnulSpec.namespace, NimnulSpec.k8sFullProjectName).Status.ID
+			NimnulSpec.ProjectID = kube.GetProjectResource(NimnulSpec.Namespace, NimnulSpec.K8sFullProjectName).Status.ID
 
 			waitCluster(NortonSpec, "1")
 			waitCluster(NimnulSpec, "1")
 		})
 
-		By("Check connection strings", func() { // TODO app(?)
-			Eventually(kube.GetClusterResource(NortonSpec.namespace, NortonSpec.clusters[0].GetClusterNameResource()).
+		By("Check connection strings", func() {
+			Eventually(kube.GetClusterResource(NortonSpec.Namespace, NortonSpec.Clusters[0].GetClusterNameResource()).
 				Status.ConnectionStrings.StandardSrv,
 			).ShouldNot(BeNil())
 
-			Eventually(kube.GetClusterResource(NimnulSpec.namespace, NimnulSpec.clusters[0].GetClusterNameResource()).
+			Eventually(kube.GetClusterResource(NimnulSpec.Namespace, NimnulSpec.Clusters[0].GetClusterNameResource()).
 				Status.ConnectionStrings.StandardSrv,
 			).ShouldNot(BeNil())
 		})
 
 		By("Operator working with right cluster if one of the user update configuration", func() {
-			NortonSpec.clusters[0].Spec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
+			NortonSpec.Clusters[0].Spec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
 			utils.SaveToFile(
-				NortonSpec.clusters[0].ClusterFileName(),
-				utils.JSONToYAMLConvert(NortonSpec.clusters[0]),
+				NortonSpec.Clusters[0].ClusterFileName(NortonSpec),
+				utils.JSONToYAMLConvert(NortonSpec.Clusters[0]),
 			)
-			kube.Apply(NortonSpec.clusters[0].ClusterFileName(), "-n", NortonSpec.namespace)
+			kube.Apply(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
 			waitCluster(NortonSpec, "2")
 
 			By("Norton cluster has labels", func() {
 				Expect(
-					kube.GetClusterResource(NortonSpec.namespace, NortonSpec.clusters[0].GetClusterNameResource()).Spec.Labels[0],
+					kube.GetClusterResource(NortonSpec.Namespace, NortonSpec.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
 				).To(MatchFields(IgnoreExtras, Fields{
 					"Key":   Equal("something"),
 					"Value": Equal("awesome"),
@@ -150,7 +134,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 			By("Nimnul cluster does not have labels", func() {
 				Eventually(
-					kube.GetClusterResource(NimnulSpec.namespace, NimnulSpec.clusters[0].GetClusterNameResource()).Spec.Labels,
+					kube.GetClusterResource(NimnulSpec.Namespace, NimnulSpec.Clusters[0].GetClusterNameResource()).Spec.Labels,
 				).Should(BeNil())
 			})
 		})

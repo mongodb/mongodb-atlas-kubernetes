@@ -72,8 +72,9 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	if project.ConnectionSecretObjectKey() != nil {
+		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
+		// the projects once that secret is changed
 		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", log, *project.ConnectionSecretObjectKey())
-		// TODO CLOUDP-80516: the "global" connection secret also needs to be watched
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
 

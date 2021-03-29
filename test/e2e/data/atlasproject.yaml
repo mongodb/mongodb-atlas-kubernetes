@@ -6,3 +6,8 @@ spec:
   name: Test Atlas Operator Project
   connectionSecretRef:
     name: my-atlas-key
+  projectIpAccessList:
+    - ipAddress: "0.0.0.0/1"
+      comment: "Everyone has access. For the test purpose only."
+    - ipAddress: "128.0.0.0/1"
+      comment: "Everyone has access. For the test purpose only."
