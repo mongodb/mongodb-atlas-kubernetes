@@ -83,7 +83,7 @@ jobs:
       # uncomment the below for local testing
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REGISTRY: docker.io
-      DOCKER_BUNDLES_REPO: mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     strategy:
       fail-fast: false
