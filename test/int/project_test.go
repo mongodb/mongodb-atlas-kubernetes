@@ -22,6 +22,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 )
 
+const (
+	ProjectCreationTimeout = 30
+)
+
 var _ = Describe("AtlasProject", func() {
 	const interval = time.Second * 1
 
@@ -83,7 +87,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
 
@@ -100,7 +104,7 @@ var _ = Describe("AtlasProject", func() {
 
 			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
 			Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ProjectReadyType),
@@ -129,7 +133,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			// Updating (the existing project is expected to be read from Atlas)
 			By("Updating the project")
@@ -138,7 +142,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			Expect(testutil.ReadAtlasResource(k8sClient, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
@@ -168,10 +172,10 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 
 				Eventually(testutil.WaitFor(k8sClient, secondProject, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 			By("Breaking the Connection Secret", func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
@@ -181,9 +185,9 @@ var _ = Describe("AtlasProject", func() {
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
 				Eventually(testutil.WaitFor(k8sClient, createdProject, expectedCondition),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 				Eventually(testutil.WaitFor(k8sClient, secondProject, expectedCondition),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 			By("Fixing the Connection Secret", func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
@@ -191,9 +195,9 @@ var _ = Describe("AtlasProject", func() {
 
 				// Both projects are expected to recover
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 				Eventually(testutil.WaitFor(k8sClient, secondProject, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 		})
 	})
@@ -205,7 +209,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
 			checkExpiredAccessLists([]project.IPAccessList{})
@@ -220,7 +224,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
 			checkExpiredAccessLists([]project.IPAccessList{})
@@ -236,7 +240,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
 			checkExpiredAccessLists([]project.IPAccessList{expiredList})
@@ -255,7 +259,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.IPAccessListReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			ipAccessFailedCondition := status.FalseCondition(status.IPAccessListReadyType).
 				WithReason(string(workflow.ProjectIPNotCreatedInAtlas)).
@@ -281,7 +285,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 			By("Updating the IP Access List comment and delete date", func() {
 				// Just a note: Atlas doesn't allow to make the "permanent" entity "temporary". But it works the other way
@@ -290,7 +294,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
 				checkExpiredAccessLists([]project.IPAccessList{})
@@ -308,7 +312,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 			By("Updating the IP Access List IPAddress", func() {
 				twoDaysLater := time.Now().Add(time.Hour * 48).Format("2006-01-02T15:04:05Z")
@@ -319,7 +323,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
 				checkExpiredAccessLists([]project.IPAccessList{})
@@ -339,7 +343,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				20, interval).Should(BeTrue())
+				ProjectCreationTimeout, interval).Should(BeTrue())
 
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
@@ -356,7 +360,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.FalseCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
@@ -371,7 +375,7 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 		})
 	})
