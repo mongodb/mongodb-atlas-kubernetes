@@ -88,7 +88,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["cluster-ns", "cluster-wide"]
+        test: ["cluster-ns", "cluster-wide", "bundle-test"]
     steps:
 
     - name: Check out code
