@@ -23,7 +23,7 @@ var _ = Describe("[bundle-test] User can", func() {
 
 	var _ = BeforeEach(func() {
 		imageURL = os.Getenv("BUNDLE_IMAGE")
-		Expect(imageURL).ShouldNot(BeNil())
+		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
 	})
 	var _ = AfterEach(func() {
 		By("Atfer each.", func() {
