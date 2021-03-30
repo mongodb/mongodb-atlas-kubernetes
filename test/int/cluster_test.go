@@ -424,7 +424,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Checking connection Secrets", func() {
-				Eventually(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser), 90, interval).Should(Succeed())
+				Expect(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser), 90, interval).To(Succeed())
 				validateSecret(k8sClient, *createdProject, *createdCluster, *createdDBUser)
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
 
