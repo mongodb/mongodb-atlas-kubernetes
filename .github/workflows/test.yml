@@ -107,7 +107,11 @@ jobs:
         VERSION: ${{ steps.prepare.outputs.tag }}
         ENV: dev
 
-    - name: Push bundle-image
+    - name: Change path for the test
+      run: |
+        sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
+    - name: Push bundle-image for the test
       uses: docker/build-push-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
