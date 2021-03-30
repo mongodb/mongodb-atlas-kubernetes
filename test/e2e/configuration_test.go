@@ -86,17 +86,17 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			},
 			30002,
 		)),
-		// Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
-		// 	append(
-		// 		[]utils.DBUser{},
-		// 		*utils.NewDBUser("user1").
-		// 			WithSecretRef("dbuser-secret-u1").
-		// 			AddRole("atlasAdmin", "admin", ""),
-		// 		*utils.NewDBUser("user2").
-		// 			WithSecretRef("dbuser-secret-u2").
-		// 			AddRole("atlasAdmin", "admin", ""),
-		// 	),
-		// )), // TODO CLOUDP-83419
+		Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
+			[]model.DBUser{
+				*model.NewDBUser("user1").
+					WithSecretRef("dbuser-secret-u1").
+					AddRole("atlasAdmin", "admin", ""),
+				*model.NewDBUser("user2").
+					WithSecretRef("dbuser-secret-u2").
+					AddRole("atlasAdmin", "admin", ""),
+			},
+			30004,
+		)),
 	)
 })
 
@@ -132,7 +132,6 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 
 	By("Create namespaced Operator\n", func() {
 		CopyKustomizeNamespaceOperator(resources)
-		// CreateCopyKustomizeNamespace(resources.namespace)
 		kube.Apply("-k", resources.GetOperatorFolder())
 		Eventually(
 			kube.GetPodStatus(resources.Namespace),
