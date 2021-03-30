@@ -144,6 +144,10 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 
 func ensureConnectionSecrets(wctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
+	err := k8sClient.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
 
 	for _, dbUser := range databaseUsers.Items {
 		found := false
