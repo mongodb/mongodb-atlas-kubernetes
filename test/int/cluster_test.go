@@ -494,6 +494,23 @@ var _ = Describe("AtlasCluster", func() {
 
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
+
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Checking connection Secrets", func() {
+				Expect(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser), 90, interval).To(Succeed())
+				validateSecret(k8sClient, *createdProject, *createdCluster, *createdDBUser)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+			})
 		})
 	})
 
