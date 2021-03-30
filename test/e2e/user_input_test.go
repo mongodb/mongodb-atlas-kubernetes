@@ -72,13 +72,28 @@ func compareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
 			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
-			"RegionName":       Equal(requested.ProviderSettings.RegionName),
 		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
 			"StandardSrv": Not(BeEmpty()),
 		})),
 	}), "Cluster should be the same as requested by the user")
+
+	if len(requested.ReplicationSpecs) > 0 {
+		for i, replica := range requested.ReplicationSpecs {
+			for key, region := range replica.RegionsConfig {
+				// diffent type
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ElectableNodes).Should(PointTo(Equal(*region.ElectableNodes)), "Replica Spec: ElectableNodes is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].Priority).Should(PointTo(Equal(*region.Priority)), "Replica Spec: Priority is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ReadOnlyNodes).Should(PointTo(Equal(*region.ReadOnlyNodes)), "Replica Spec: ReadOnlyNodes is not the same")
+			}
+		}
+	} else {
+		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+			"RegionName": Equal(created.ProviderSettings.RegionName),
+		})), "Cluster should be the same as requested by the user: Region Name")
+	}
 }
 
 func SaveK8sResources(resources []string, ns string) {
@@ -110,9 +125,7 @@ func checkUsersAttributes(input model.UserInputs) {
 
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
 func CopyKustomizeNamespaceOperator(input model.UserInputs) {
-	// fullPath := filepath.Join("data", input.projectName, "operator")
 	fullPath := input.GetOperatorFolder()
-	// fullPath := filepath.Dir(projectPath)
 	os.Mkdir(fullPath, os.ModePerm)
 	utils.CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
 	utils.CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
