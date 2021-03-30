@@ -1,8 +1,6 @@
-# Labels to add to all resources and selectors.
-#commonLabels:
-#  app.kubernetes.io/component: controller
-#  app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-#  app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+#
+# This is the main source of config for Deployment that is reused by all the configurations in 'release' folder
+#
 
 resources:
 - ../manager
