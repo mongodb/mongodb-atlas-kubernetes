@@ -33,3 +33,17 @@ func ParseISO8601(dateTime string) (time.Time, error) {
 	}
 	return parse, err
 }
+
+// MustParseISO8601 returns time or panics. Mostly needed for tests.
+func MustParseISO8601(dateTime string) time.Time {
+	iso8601, err := ParseISO8601(dateTime)
+	if err != nil {
+		panic(err.Error())
+	}
+	return iso8601
+}
+
+// FormatISO8601 returns the ISO8601 string format for the dateTime.
+func FormatISO8601(dateTime time.Time) string {
+	return dateTime.Format("2006-01-02T15:04:05.999Z")
+}

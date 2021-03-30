@@ -60,6 +60,8 @@ func (r Result) WithRetry(retry time.Duration) Result {
 	return r
 }
 
+// WithoutRetry indicates that no retry must happen after the reconciliation is over. This should usually be used
+// in cases when retry won't fix the situation like when the spec is incorrect and requires the user to update it.
 func (r Result) WithoutRetry() Result {
 	r.requeueAfter = -1
 	return r
