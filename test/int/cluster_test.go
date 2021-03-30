@@ -395,7 +395,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
-	FDescribe("Create DBUser before cluster & check secrets", func() {
+	Describe("Create DBUser before cluster & check secrets", func() {
 		It("Should Succeed", func() {
 			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret), func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
@@ -424,9 +424,6 @@ var _ = Describe("AtlasCluster", func() {
 			})
 
 			By("Checking connection Secrets", func() {
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserWaitingForCluster()),
-					1800, interval).Should(BeTrue())
-
 				Eventually(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser), 90, interval).Should(Succeed())
 				validateSecret(k8sClient, *createdProject, *createdCluster, *createdDBUser)
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
