@@ -72,8 +72,9 @@ kubectl create secret generic the-user-password --from-literal="password=P@@swor
 ```
 
 **5.** Create an `AtlasDatabaseUser` Custom Resource
+
 In order to connect to an Atlas Cluster the database user needs to be created. `AtlasDatabaseUser` resource should reference
-the Kubernetes Secret created in the previous step.
+the password Kubernetes Secret created in the previous step.
 ```
 cat <<EOF | kubectl apply -f -
 apiVersion: atlas.mongodb.com/v1
