@@ -220,6 +220,7 @@ func (p *AtlasDatabaseUser) WithName(name string) *AtlasDatabaseUser {
 	p.Name = name
 	return p
 }
+
 func (p *AtlasDatabaseUser) WithAtlasUserName(name string) *AtlasDatabaseUser {
 	p.Spec.Username = name
 	return p
@@ -239,8 +240,14 @@ func (p *AtlasDatabaseUser) WithScope(scopeType ScopeType, name string) *AtlasDa
 	p.Spec.Scopes = append(p.Spec.Scopes, ScopeSpec{Name: name, Type: scopeType})
 	return p
 }
+
 func (p *AtlasDatabaseUser) ClearScopes() *AtlasDatabaseUser {
 	p.Spec.Scopes = make([]ScopeSpec, 0)
+	return p
+}
+
+func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser {
+	p.Spec.DeleteAfterDate = date
 	return p
 }
 

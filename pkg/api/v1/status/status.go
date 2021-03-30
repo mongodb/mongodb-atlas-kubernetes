@@ -38,6 +38,7 @@ type Common struct {
 func (c Common) GetConditions() []Condition {
 	return c.Conditions
 }
+
 func (c Common) GetObservedGeneration() int64 {
 	return c.ObservedGeneration
 }

@@ -1,15 +1,17 @@
-package utils
+package model
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	project "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 type ISpec interface {
 	ProjectName(string) ISpec
 	SecretRef(string) ISpec
-	// TODO WhiteIP
+	WithIpAccess(string, string) ISpec
 	CompleteK8sConfig(string) []byte
 }
 
@@ -19,6 +21,13 @@ type ap struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec            ProjectSpec        `json:"spec,omitempty"`
+}
+
+// LoadUserProjectConfig load configuration from file into object
+func LoadUserProjectConfig(path string) ap {
+	var config ap
+	utils.ReadInYAMLFileAndConvert(path, &config)
+	return config
 }
 
 func NewProject() ISpec {
@@ -35,6 +44,14 @@ func (s *ProjectSpec) SecretRef(name string) ISpec {
 	return s
 }
 
+func (s *ProjectSpec) WithIpAccess(ipAdress, comment string) ISpec {
+	access := project.NewIPAccessList().
+		WithIP(ipAdress).
+		WithComment(comment)
+	s.ProjectIPAccessList = append(s.ProjectIPAccessList, access)
+	return s
+}
+
 func (s ProjectSpec) CompleteK8sConfig(k8sname string) []byte {
 	var t ap
 	t.TypeMeta = metav1.TypeMeta{
@@ -45,6 +62,6 @@ func (s ProjectSpec) CompleteK8sConfig(k8sname string) []byte {
 		Name: k8sname,
 	}
 	t.Spec = s
-	yamlConf := JSONToYAMLConvert(t)
+	yamlConf := utils.JSONToYAMLConvert(t)
 	return yamlConf
 }

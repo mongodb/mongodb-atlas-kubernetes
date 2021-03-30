@@ -34,6 +34,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -179,7 +180,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 			}
 
 			if err != nil {
-				log.Errorw("cannot delete Atlas cluster", "error", err)
+				log.Errorw("Cannot delete Atlas cluster", "error", err)
 				time.Sleep(workflow.DefaultRetry)
 				continue
 			}
@@ -190,5 +191,17 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 		log.Error("Failed to delete Atlas cluster in time")
 	}()
+
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for i := range secrets {
+		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
+			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
+		}
+	}
+
 	return nil
 }

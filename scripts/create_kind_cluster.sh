@@ -25,6 +25,34 @@ containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
     endpoint = ["http://${reg_name}:${reg_port}"]
+nodes:
+- role: control-plane
+  # port forward 80 on the host to 80 on this node
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 30000
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30001
+    hostPort: 30001
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30002
+    hostPort: 30002
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30003
+    hostPort: 30003
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30004
+    hostPort: 30004
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30005
+    hostPort: 30005
+    listenAddress: "0.0.0.0"
+    protocol: TCP
 EOF
 
 # connect the registry to the cluster network
