@@ -33,4 +33,5 @@ const (
 	DatabaseUserStaleConnectionSecrets      ConditionReason = "DatabaseUserStaleConnectionSecrets"
 	DatabaseUserClustersAppliedChanges      ConditionReason = "ClustersAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
+	DatabaseUserExpired                     ConditionReason = "DatabaseUserExpired"
 )

@@ -4,36 +4,101 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
-
 	apiUser, err := dbUser.ToAtlas(r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
-	secret := &corev1.Secret{}
-	if err := r.Client.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+
+	if result := checkUserExpired(ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
+		return result
 	}
-	currentPasswordResourceVersion := secret.ResourceVersion
 
 	if err = validateScopes(ctx, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error())
 	}
+
+	if result := performUpdateInAtlas(ctx, r.Client, project, dbUser, apiUser); !result.IsOk() {
+		return result
+	}
+
+	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
+	if result := createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
+		return result
+	}
+
+	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
+	if result := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
+		return result
+	}
+
+	// We mark the status.Username only when everything is finished including connection secrets
+	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
+
+	return workflow.OK()
+}
+
+func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
+		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
+
+		_, err := ctx.Client.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+		if err != nil {
+			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
+			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
+			ctx.Log.Errorf("Failed to remove user %s from Atlas: %s", dbUser.Status.UserName, err)
+		}
+	}
+	return workflow.OK()
+}
+
+func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+	if dbUser.Spec.DeleteAfterDate == "" {
+		return workflow.OK()
+	}
+
+	deleteAfter, err := timeutil.ParseISO8601(dbUser.Spec.DeleteAfterDate)
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error()).WithoutRetry()
+	}
+	if deleteAfter.Before(time.Now()) {
+		if err = removeStaleSecretsByUserName(k8sClient, projectID, dbUser.Spec.Username, dbUser, log); err != nil {
+			return workflow.Terminate(workflow.Internal, err.Error())
+		}
+		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas").WithoutRetry()
+	}
+	return workflow.OK()
+}
+
+func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, apiUser *mongodbatlas.DatabaseUser) workflow.Result {
+	secret := &corev1.Secret{}
+	if err := k8sClient.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+	currentPasswordResourceVersion := secret.ResourceVersion
+
+	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
+
 	// Try to find the user
 	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
@@ -66,18 +131,6 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
 	}
-
-	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
-		return result
-	}
-
-	if result := createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
-		return result
-	}
-
-	// We mark the status.Username only when everything is finished including connection secrets
-	ctx.EnsureStatusOption(status.AtlasDatabaseUserNameOption(dbUser.Spec.Username))
-
 	return workflow.OK()
 }
 
@@ -180,6 +233,21 @@ func userMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUse
 		return false, err
 	}
 
+	// performing some normalization of dates
+	if atlasSpec.DeleteAfterDate != "" {
+		atlasDeleteDate, err := timeutil.ParseISO8601(atlasSpec.DeleteAfterDate)
+		if err != nil {
+			return false, err
+		}
+		atlasSpec.DeleteAfterDate = timeutil.FormatISO8601(atlasDeleteDate)
+	}
+	if operatorSpec.DeleteAfterDate != "" {
+		operatorDeleteDate, err := timeutil.ParseISO8601(operatorSpec.DeleteAfterDate)
+		if err != nil {
+			return false, err
+		}
+		userMerged.DeleteAfterDate = timeutil.FormatISO8601(operatorDeleteDate)
+	}
 	d := cmp.Diff(*atlasSpec, userMerged, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Users differs from spec: %s", d)

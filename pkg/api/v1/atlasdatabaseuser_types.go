@@ -244,6 +244,11 @@ func (p *AtlasDatabaseUser) ClearScopes() *AtlasDatabaseUser {
 	return p
 }
 
+func (p *AtlasDatabaseUser) WithDeleteAfterDate(date string) *AtlasDatabaseUser {
+	p.Spec.DeleteAfterDate = date
+	return p
+}
+
 func DefaultDBUser(namespace, username, projectName string) *AtlasDatabaseUser {
 	return NewDBUser(namespace, username, username, projectName).WithRole("clusterMonitor", "admin", "")
 }
