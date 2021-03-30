@@ -57,7 +57,7 @@ var _ = Describe("[bundle-test] User can", func() {
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("read", "Ships", ""),
+						AddRole("readWrite", "Ships", ""),
 				},
 			)
 
