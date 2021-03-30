@@ -9,12 +9,15 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
 func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
@@ -142,7 +145,7 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func ensureConnectionSecrets(wctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
+func ensureConnectionSecrets(k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := k8sClient.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
@@ -151,23 +154,37 @@ func ensureConnectionSecrets(wctx *workflow.Context, k8sClient client.Client, pr
 
 	for _, dbUser := range databaseUsers.Items {
 		found := false
-
-		for _, scope := range dbUser.GetScopes(mdbv1.ClusterScopeType) {
-			if scope == cluster.Name {
+		for _, c := range dbUser.Status.Conditions {
+			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
 				found = true
 				break
 			}
-
-			continue
 		}
 
 		if !found {
 			continue
 		}
 
-		result := atlasdatabaseuser.CreateOrUpdateConnectionSecrets(wctx, k8sClient, *project, dbUser)
-		if !result.IsOk() {
-			return result
+		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
+		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
+			continue
+		}
+
+		password, err := dbUser.ReadPassword(k8sClient)
+		if err != nil {
+			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
+		}
+
+		data := connectionsecret.ConnectionData{
+			DBUserName: dbUser.Spec.Username,
+			ConnURL:    cluster.ConnectionStrings.Standard,
+			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
+			Password:   password,
+		}
+
+		_, err = connectionsecret.Ensure(k8sClient, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data)
+		if err != nil {
+			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
 		}
 	}
 

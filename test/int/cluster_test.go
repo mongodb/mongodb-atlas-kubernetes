@@ -495,6 +495,16 @@ var _ = Describe("AtlasCluster", func() {
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
 
+			createdDBUserFakeScope := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).
+				WithPasswordSecret(UserPasswordSecret).
+				WithScope(mdbv1.ClusterScopeType, "fake-cluster")
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUserFakeScope)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUserFakeScope)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec))),
+					20, interval).Should(BeTrue())
+			})
+
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
