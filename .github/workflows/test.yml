@@ -115,6 +115,7 @@ jobs:
         repository: ${{ env.DOCKER_BUNDLES_REPO }}
         registry: ${{ env.DOCKER_REGISTRY }}
         tags: ${{ steps.prepare.outputs.tag }}
+        dockerfile: bundle.Dockerfile
 
     - name: Set properties
       id: properties
