@@ -98,14 +98,20 @@ Wait until the AtlasDatabaseUser resource gets to "ready" status (it will wait u
 kubectl get atlasdatabaseusers my-database-user -o=jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
 True
 ```
-### Step 4. Connect your application to the Atlas Cluster
+### Step 3. Connect your application to the Atlas Cluster
 
 The Atlas Operator will create a Kubernetes Secret with the information necessary to connect to the Atlas Cluster created
-in the previous step. It can be used by your application in the same Kubernetes Cluster to connect to 
-**1.** Create an `AtlasDatabaseUser` Resource
+in the previous step. An application in the same Kubernetes Cluster can mount and use the Secret: 
 
-### Step 3. Inspect Atlas Cluster Status
-You can use the following command to check the status of the Atlas Cluster Resource
 ```
-kubectl get atlasclusters -o yaml
+...
+containers:
+      - name: test-app
+        env:
+         - name: "CONNECTION_STRING"
+           valueFrom:
+             secretKeyRef:
+               name: test-atlas-operator-project-test-cluster-theuser
+               key: connectionString.standardSrv
+
 ```
