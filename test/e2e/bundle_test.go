@@ -107,6 +107,13 @@ var _ = Describe("[bundle-test] User can", func() {
 			checkUsersAttributes(userSpec)
 		})
 
+		By("Deploy application for user", func() {
+			// kube apply application
+			// send data
+			// retrieve data
+			checkUsersCanUseApplication(30000, userSpec)
+		})
+
 		By("Delete cluster", func() {
 			kube.Delete(userSpec.Clusters[0].ClusterFileName(userSpec), "-n", userSpec.Namespace)
 			Eventually(

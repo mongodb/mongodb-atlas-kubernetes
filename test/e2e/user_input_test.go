@@ -1,13 +1,17 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
+	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -110,9 +114,7 @@ func checkUsersAttributes(input model.UserInputs) {
 
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
 func CopyKustomizeNamespaceOperator(input model.UserInputs) {
-	// fullPath := filepath.Join("data", input.projectName, "operator")
 	fullPath := input.GetOperatorFolder()
-	// fullPath := filepath.Dir(projectPath)
 	os.Mkdir(fullPath, os.ModePerm)
 	utils.CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
 	utils.CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
@@ -123,4 +125,21 @@ func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 			"- namespaced-config.yaml",
 	)
 	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
+}
+
+func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
+	for i, user := range userSpec.Users { // TODO in parallel(?)/ingress
+		// data
+		port := strconv.Itoa(i + portGroup)
+		key := port
+		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+
+		helm.InstallTestApplication(userSpec, user, port)
+		waitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
+
+		app := appclient.NewTestAppClient(port)
+		Expect(app.Get("")).Should(Equal("It is working"))
+		Expect(app.Post(data)).ShouldNot(HaveOccurred())
+		Expect(app.Get("/mongo/" + key)).Should(Equal(data))
+	}
 }
