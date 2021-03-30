@@ -87,6 +87,10 @@ func TestClusterMatchesSpec(t *testing.T) {
 				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)}}},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
+		operatorCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+			NumShards: int64ptr(1),
+			ZoneName:  "zone1",
+		}}
 
 		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
 		assert.NoError(t, err)

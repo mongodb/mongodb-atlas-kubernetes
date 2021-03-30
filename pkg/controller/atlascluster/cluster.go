@@ -108,10 +108,10 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 	if err = compat.JSONCopy(&result, spec); err != nil {
 		return
 	}
-
-	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, spec.ReplicationSpecs); err != nil {
-		return
-	}
+	//
+	// if err = compat.JSONSliceMerge(&result.ReplicationSpecs, spec.ReplicationSpecs); err != nil {
+	//	return
+	//}
 
 	mergeRegionConfigs(result.ReplicationSpecs, spec.ReplicationSpecs)
 
