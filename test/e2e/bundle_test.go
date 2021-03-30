@@ -111,7 +111,7 @@ var _ = Describe("[bundle-test] User can", func() {
 			// kube apply application
 			// send data
 			// retrieve data
-			checkUsersCanUseApplication(30000, userSpec)
+			checkUsersCanUseApplication(30005, userSpec)
 		})
 
 		By("Delete cluster", func() {
