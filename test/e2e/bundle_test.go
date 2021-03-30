@@ -66,6 +66,7 @@ var _ = Describe("[bundle-test] User can", func() {
 				model.NewProject().
 					ProjectName(userSpec.ProjectName).
 					SecretRef(userSpec.KeyName).
+					WithIpAccess("0.0.0.0/0", "everyone").
 					CompleteK8sConfig(userSpec.K8sProjectName),
 			)
 			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig(config.ClusterSample))
