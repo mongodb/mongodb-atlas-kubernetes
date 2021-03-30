@@ -133,6 +133,11 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 // explicitly - but may make sense to refactor this later if more maps are added (and all follow the same logic).
 func mergeRegionConfigs(atlasSpecs []mongodbatlas.ReplicationSpec, operatorSpecs []mdbv1.ReplicationSpec) {
 	for i, operatorSpec := range operatorSpecs {
+		if len(operatorSpec.RegionsConfig) == 0 {
+			// Edge case: if the operator doesn't specify regions configs - Atlas will put the default ones. We shouldn't
+			// remove it in this case.
+			continue
+		}
 		atlasSpec := atlasSpecs[i]
 		for key := range atlasSpec.RegionsConfig {
 			if _, ok := operatorSpec.RegionsConfig[key]; !ok {
