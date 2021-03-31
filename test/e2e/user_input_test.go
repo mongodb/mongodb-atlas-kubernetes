@@ -1,13 +1,17 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
+	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -31,7 +35,7 @@ func waitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
-func waitProject(input model.UserInputs, generation string) {
+func waitProject(input model.UserInputs, generation string) { //nolint:unparam // have cases only with generation=1
 	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
 	EventuallyWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	EventuallyWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
@@ -136,4 +140,21 @@ func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 			"- namespaced-config.yaml",
 	)
 	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
+}
+
+func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
+	for i, user := range userSpec.Users { // TODO in parallel(?)/ingress
+		// data
+		port := strconv.Itoa(i + portGroup)
+		key := port
+		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+
+		helm.InstallTestApplication(userSpec, user, port)
+		waitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
+
+		app := appclient.NewTestAppClient(port)
+		Expect(app.Get("")).Should(Equal("It is working"))
+		Expect(app.Post(data)).ShouldNot(HaveOccurred())
+		Expect(app.Get("/mongo/" + key)).Should(Equal(data))
+	}
 }

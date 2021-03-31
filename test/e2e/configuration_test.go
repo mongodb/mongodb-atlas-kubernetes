@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
-	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
@@ -170,20 +169,7 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 		// kube apply application
 		// send data
 		// retrieve data
-		for i, user := range resources.Users { // TODO in parallel(?)
-			// data
-			port := strconv.Itoa(i + portGroup)
-			key := port
-			data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
-
-			helm.InstallTestApplication(resources, user, port)
-			waitTestApplication(resources.Namespace, "app=test-app-"+user.Spec.Username)
-
-			app := appclient.NewTestAppClient(port)
-			Expect(app.Get("")).Should(Equal("It is working"))
-			Expect(app.Post(data)).ShouldNot(HaveOccurred())
-			Expect(app.Get("/mongo/" + key)).Should(Equal(data))
-		}
+		checkUsersCanUseApplication(portGroup, resources)
 	})
 
 	By("Update cluster\n", func() {

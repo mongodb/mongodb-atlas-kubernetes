@@ -57,3 +57,7 @@ func (u *UserInputs) GetOperatorFolder() string {
 func (u *UserInputs) GetResourceFolder() string {
 	return filepath.Dir(u.ProjectPath)
 }
+
+func (u *UserInputs) GetUsersFolder() string {
+	return filepath.Join(u.GetResourceFolder(), "user")
+}
