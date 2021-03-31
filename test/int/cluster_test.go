@@ -25,7 +25,8 @@ import (
 const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
-	ClusterDevMode = false
+	ClusterDevMode       = false
+	ClusterUpdateTimeout = 3600
 )
 
 var _ = Describe("AtlasCluster", func() {
@@ -208,7 +209,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
@@ -287,7 +288,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 
@@ -304,10 +305,10 @@ var _ = Describe("AtlasCluster", func() {
 
 				createdCluster.Spec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
 
-				performUpdate(80 * time.Minute)
+				performUpdate(ClusterUpdateTimeout * time.Minute)
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 
@@ -359,7 +360,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
@@ -532,7 +533,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
@@ -553,7 +554,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
