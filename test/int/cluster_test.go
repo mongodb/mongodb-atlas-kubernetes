@@ -26,7 +26,7 @@ const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
 	ClusterDevMode       = false
-	ClusterUpdateTimeout = 3600
+	ClusterUpdateTimeout = 30 * time.Minute
 )
 
 var _ = Describe("AtlasCluster", func() {
@@ -133,7 +133,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(cluster *mongodbatlas.Cluster) {
@@ -178,7 +178,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & increase DiskSizeGB", func() {
 		It("Should Succeed", func() {
-			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -202,7 +202,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster & change it to GEOSHARDED", func() {
 		It("Should Succeed", func() {
-			expectedCluster := mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -305,7 +305,7 @@ var _ = Describe("AtlasCluster", func() {
 
 				createdCluster.Spec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
 
-				performUpdate(ClusterUpdateTimeout * time.Minute)
+				performUpdate(ClusterUpdateTimeout)
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 					ClusterUpdateTimeout, interval).Should(BeTrue())
@@ -317,7 +317,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
-	Describe("Create/Update the cluster", func() {
+	Describe("Create/Update the cluster (GCP)", func() {
 		It("Should fail, then be fixed", func() {
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name).WithAtlasName("")
 
@@ -354,7 +354,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
@@ -528,7 +528,7 @@ var _ = Describe("AtlasCluster", func() {
 			})
 			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
-			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
@@ -549,7 +549,7 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Create cluster, user, delete cluster and check secrets are removed", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
