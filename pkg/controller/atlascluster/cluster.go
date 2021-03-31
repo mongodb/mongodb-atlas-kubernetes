@@ -145,7 +145,7 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func ensureConnectionSecrets(k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
+func ensureConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := k8sClient.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
@@ -162,6 +162,7 @@ func ensureConnectionSecrets(k8sClient client.Client, project *mdbv1.AtlasProjec
 		}
 
 		if !found {
+			ctx.Log.Debugw("AtlasDatabaseUser not ready - not creating connection secret", "user.name", dbUser.Name)
 			continue
 		}
 

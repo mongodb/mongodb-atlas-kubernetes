@@ -504,6 +504,7 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(testutil.WaitFor(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec))),
 					20, interval).Should(BeTrue())
 			})
+			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
