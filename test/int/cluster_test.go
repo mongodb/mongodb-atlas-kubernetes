@@ -222,13 +222,13 @@ var _ = Describe("AtlasCluster", func() {
 						NumShards: int64ptr(1),
 						ZoneName:  "Zone 1",
 						RegionsConfig: map[string]mdbv1.RegionsConfig{
-							"EASTERN_US": {
+							"US_EAST_1": {
 								AnalyticsNodes: int64ptr(1),
 								ElectableNodes: int64ptr(2),
 								Priority:       int64ptr(7),
 								ReadOnlyNodes:  int64ptr(0),
 							},
-							"WESTERN_US": {
+							"US_WEST_1": {
 								AnalyticsNodes: int64ptr(0),
 								ElectableNodes: int64ptr(1),
 								Priority:       int64ptr(6),
