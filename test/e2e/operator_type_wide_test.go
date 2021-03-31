@@ -15,11 +15,10 @@ import (
 )
 
 var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
-
 	var NortonSpec, NimnulSpec model.UserInputs
 	commonClusterName := "megacluster"
 
-	var _ = BeforeEach(func() {
+	_ = BeforeEach(func() {
 		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kube.Apply(ConfigAll)).Should(
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),
@@ -31,7 +30,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 	})
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("Delete clusters", func() {
 			if CurrentGinkgoTestDescription().Failed {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))

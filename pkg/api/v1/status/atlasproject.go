@@ -12,6 +12,7 @@ func AtlasProjectIDOption(id string) AtlasProjectStatusOption {
 		s.ID = id
 	}
 }
+
 func AtlasProjectExpiredIPAccessOption(lists []project.IPAccessList) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.ExpiredIPAccessList = lists

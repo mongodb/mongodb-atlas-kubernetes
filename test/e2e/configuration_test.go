@@ -27,10 +27,9 @@ type testDataProvider struct {
 }
 
 var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func() {
-
 	var data testDataProvider
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
@@ -47,7 +46,6 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		} else {
 			Eventually(kube.DeleteNamespace(data.resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 		}
-
 	})
 
 	// TODO remove portGroup (nodePort for the app)

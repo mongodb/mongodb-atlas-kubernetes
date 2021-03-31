@@ -79,12 +79,15 @@ func TestClusterMatchesSpec(t *testing.T) {
 	t.Run("Clusters match when Atlas adds default ReplicationSpecs", func(t *testing.T) {
 		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
 		assert.NoError(t, err)
-		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{{
-			ID:        "id",
-			NumShards: int64ptr(1),
-			ZoneName:  "zone1",
-			RegionsConfig: map[string]mongodbatlas.RegionsConfig{
-				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)}}},
+		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
+			{
+				ID:        "id",
+				NumShards: int64ptr(1),
+				ZoneName:  "zone1",
+				RegionsConfig: map[string]mongodbatlas.RegionsConfig{
+					"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+				},
+			},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
 		operatorCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
@@ -101,12 +104,15 @@ func TestClusterMatchesSpec(t *testing.T) {
 	t.Run("Clusters don't match when Atlas adds default ReplicationSpecs and Operator overrides something", func(t *testing.T) {
 		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
 		assert.NoError(t, err)
-		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{{
-			ID:        "id",
-			NumShards: int64ptr(1),
-			ZoneName:  "zone1",
-			RegionsConfig: map[string]mongodbatlas.RegionsConfig{
-				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)}}},
+		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
+			{
+				ID:        "id",
+				NumShards: int64ptr(1),
+				ZoneName:  "zone1",
+				RegionsConfig: map[string]mongodbatlas.RegionsConfig{
+					"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+				},
+			},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
 		operatorCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
@@ -117,12 +123,15 @@ func TestClusterMatchesSpec(t *testing.T) {
 		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
 		assert.NoError(t, err)
 
-		expectedReplicationSpecs := []mongodbatlas.ReplicationSpec{{
-			ID:        "id",
-			NumShards: int64ptr(2),
-			ZoneName:  "zone5",
-			RegionsConfig: map[string]mongodbatlas.RegionsConfig{
-				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)}}},
+		expectedReplicationSpecs := []mongodbatlas.ReplicationSpec{
+			{
+				ID:        "id",
+				NumShards: int64ptr(2),
+				ZoneName:  "zone5",
+				RegionsConfig: map[string]mongodbatlas.RegionsConfig{
+					"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+				},
+			},
 		}
 		assert.Equal(t, expectedReplicationSpecs, merged.ReplicationSpecs)
 
@@ -167,6 +176,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 		assert.False(t, equal)
 	})
 }
+
 func int64ptr(i int64) *int64 {
 	return &i
 }

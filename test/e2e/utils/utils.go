@@ -2,10 +2,9 @@ package utils
 
 import (
 	"encoding/json"
-	"os"
-
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 
 	yaml "gopkg.in/yaml.v3"
