@@ -280,10 +280,31 @@ var _ = Describe("AtlasCluster", func() {
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
 				Expect(c.ReplicationSpecs).To(Equal(expectedReplicationSpecs))
 			}
+
 			By("Creating the Cluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					1800, interval).Should(BeTrue())
+
+				doCommonStatusChecks()
+
+				checkAtlasState(replicationSpecsCheckFunc)
+			})
+
+			By("Updating the cluster (multiple operations)", func() {
+				delete(createdCluster.Spec.ReplicationSpecs[0].RegionsConfig, "US_WEST_2")
+				createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_WEST_1"] = mdbv1.RegionsConfig{AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)}
+				config := createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"]
+				// Note, that Atlas has strict requirements to priorities - they must start with 7 and be in descending order over the regions
+				config.Priority = int64ptr(7)
+				createdCluster.Spec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"] = config
+
+				createdCluster.Spec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
+
+				performUpdate(80 * time.Minute)
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
 					1800, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
