@@ -495,7 +495,7 @@ var _ = Describe("AtlasCluster", func() {
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
 
-			createdDBUserFakeScope := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).
+			createdDBUserFakeScope := mdbv1.DefaultDBUser(namespace.Name, "test-db-user-fake-scope", createdProject.Name).
 				WithPasswordSecret(UserPasswordSecret).
 				WithScope(mdbv1.ClusterScopeType, "fake-cluster")
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUserFakeScope)), func() {
