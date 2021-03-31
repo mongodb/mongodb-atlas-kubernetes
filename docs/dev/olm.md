@@ -13,10 +13,11 @@ operator-sdk olm install
 
 ### Creating/Updating OLM bundles
 
-operator-sdk provides support for generating bundles:
+operator-sdk provides support for generating bundles (you can use the dev image here - copy the image from
+Github action `Prepare E2E configuration and image`):
 
 ```
-make bundle VERSION=0.3.0 IMG=mongodb/mongodb-atlas-kubernetes-operator:0.3.0
+make bundle VERSION=0.5.0 IMG=mongodb/mongodb-atlas-kubernetes-operator-prerelease:CLOUDP-82589-ensure-cluster-secrets-ae16708
 ```
 
 The following happens "under the hood":
@@ -37,9 +38,15 @@ The following happens "under the hood":
 
 As per https://sdk.operatorframework.io/docs/building-operators/golang/quickstart/:
 ```
-make bundle-build BUNDLE_IMG=antonlisovenko/test-bundle:v0.3.0
-make docker-push IMG=antonlisovenko/test-bundle:v0.3.0
-operator-sdk run bundle docker.io/antonlisovenko/test-bundle:v0.3.0
+make bundle-build BUNDLE_IMG=antonlisovenko/test-bundle:v0.5.0
+make docker-push IMG=antonlisovenko/test-bundle:v0.5.0
+operator-sdk run bundle docker.io/antonlisovenko/test-bundle:v0.5.0
+```
+
+### Removing the bundle
+
+```
+operator-sdk cleanup mongodb-atlas-kubernetes
 ```
 
 ### Full Output
