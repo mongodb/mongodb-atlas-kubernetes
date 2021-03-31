@@ -10,6 +10,11 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
+func init() {
+	logger, _ := zap.NewDevelopment()
+	zap.ReplaceGlobals(logger)
+}
+
 func TestClusterMatchesSpec(t *testing.T) {
 	t.Run("Clusters match (enums)", func(t *testing.T) {
 		atlasCluster := mongodbatlas.Cluster{
@@ -85,6 +90,10 @@ func TestClusterMatchesSpec(t *testing.T) {
 			},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
+		operatorCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+			NumShards: int64ptr(1),
+			ZoneName:  "zone1",
+		}}
 
 		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
 		assert.NoError(t, err)
@@ -123,6 +132,43 @@ func TestClusterMatchesSpec(t *testing.T) {
 					"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
 				},
 			},
+		}
+		assert.Equal(t, expectedReplicationSpecs, merged.ReplicationSpecs)
+
+		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		assert.False(t, equal)
+	})
+
+	t.Run("Clusters don't match - Operator removed the region", func(t *testing.T) {
+		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
+		assert.NoError(t, err)
+		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{{
+			ID:        "id",
+			NumShards: int64ptr(1),
+			ZoneName:  "zone1",
+			RegionsConfig: map[string]mongodbatlas.RegionsConfig{
+				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+				"US_WEST": {AnalyticsNodes: int64ptr(2), ElectableNodes: int64ptr(5), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)},
+			}},
+		}
+		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
+		operatorCluster.Spec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+			NumShards: int64ptr(1),
+			ZoneName:  "zone1",
+			RegionsConfig: map[string]mdbv1.RegionsConfig{
+				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+			}},
+		}
+
+		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		assert.NoError(t, err)
+
+		expectedReplicationSpecs := []mongodbatlas.ReplicationSpec{{
+			ID:        "id",
+			NumShards: int64ptr(1),
+			ZoneName:  "zone1",
+			RegionsConfig: map[string]mongodbatlas.RegionsConfig{
+				"US_EAST": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(3), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)}}},
 		}
 		assert.Equal(t, expectedReplicationSpecs, merged.ReplicationSpecs)
 

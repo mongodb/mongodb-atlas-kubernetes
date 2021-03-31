@@ -25,7 +25,7 @@ func GenKubeVersion(fullVersion string) string {
 // GetPodStatus status.phase
 func GetPodStatus(ns string) func() string {
 	return func() string {
-		session := cli.Execute("kubectl", "get", "pods", "-l", "control-plane=controller-manager", "-o", "jsonpath={.items[0].status.phase}", "-n", ns)
+		session := cli.Execute("kubectl", "get", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-o", "jsonpath={.items[0].status.phase}", "-n", ns)
 		return string(session.Wait("1m").Out.Contents())
 	}
 }
@@ -33,7 +33,7 @@ func GetPodStatus(ns string) func() string {
 // DescribeOperatorPod performs "kubectl describe" to get Operator pod information
 func DescribeOperatorPod(ns string) func() string {
 	return func() string {
-		session := cli.Execute("kubectl", "describe", "pods", "-l", "control-plane=controller-manager", "-n", ns)
+		session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
 		return string(session.Wait("1m").Out.Contents())
 	}
 }

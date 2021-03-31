@@ -114,14 +114,7 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 		return
 	}
 
-	// TODO: might need to do this with other slices
-	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, atlasCluster.ReplicationSpecs); err != nil {
-		return
-	}
-
-	if err = compat.JSONSliceMerge(&result.ReplicationSpecs, spec.ReplicationSpecs); err != nil {
-		return
-	}
+	mergeRegionConfigs(result.ReplicationSpecs, spec.ReplicationSpecs)
 
 	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
 	// "Don't specify this parameter when creating a multi-region cluster using the replicationSpec object or a Global
@@ -133,6 +126,26 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 	}
 
 	return
+}
+
+// mergeRegionConfigs removes replicationSpecs[i].RegionsConfigs[key] from Atlas Cluster that are absent in Operator.
+// Dev idea: this could have been added into some more generic method like `JSONCopy` or something wrapping it to make
+// sure any Atlas map get redundant keys removed. So far there's only one map in Cluster ('RegionsConfig') so we'll do this
+// explicitly - but may make sense to refactor this later if more maps are added (and all follow the same logic).
+func mergeRegionConfigs(atlasSpecs []mongodbatlas.ReplicationSpec, operatorSpecs []mdbv1.ReplicationSpec) {
+	for i, operatorSpec := range operatorSpecs {
+		if len(operatorSpec.RegionsConfig) == 0 {
+			// Edge case: if the operator doesn't specify regions configs - Atlas will put the default ones. We shouldn't
+			// remove it in this case.
+			continue
+		}
+		atlasSpec := atlasSpecs[i]
+		for key := range atlasSpec.RegionsConfig {
+			if _, ok := operatorSpec.RegionsConfig[key]; !ok {
+				delete(atlasSpec.RegionsConfig, key)
+			}
+		}
+	}
 }
 
 // ClustersEqual compares two Atlas Clusters

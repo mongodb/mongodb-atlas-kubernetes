@@ -1,13 +1,17 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
+	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -31,7 +35,7 @@ func waitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
-func waitProject(input model.UserInputs, generation string) {
+func waitProject(input model.UserInputs, generation string) { //nolint:unparam // have cases only with generation=1
 	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
 	EventuallyWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	EventuallyWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
@@ -72,13 +76,28 @@ func compareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
 			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
-			"RegionName":       Equal(requested.ProviderSettings.RegionName),
 		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
 			"StandardSrv": Not(BeEmpty()),
 		})),
 	}), "Cluster should be the same as requested by the user")
+
+	if len(requested.ReplicationSpecs) > 0 {
+		for i, replica := range requested.ReplicationSpecs {
+			for key, region := range replica.RegionsConfig {
+				// diffent type
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ElectableNodes).Should(PointTo(Equal(*region.ElectableNodes)), "Replica Spec: ElectableNodes is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].Priority).Should(PointTo(Equal(*region.Priority)), "Replica Spec: Priority is not the same")
+				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ReadOnlyNodes).Should(PointTo(Equal(*region.ReadOnlyNodes)), "Replica Spec: ReadOnlyNodes is not the same")
+			}
+		}
+	} else {
+		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+			"RegionName": Equal(created.ProviderSettings.RegionName),
+		})), "Cluster should be the same as requested by the user: Region Name")
+	}
 }
 
 func SaveK8sResources(resources []string, ns string) {
@@ -110,9 +129,7 @@ func checkUsersAttributes(input model.UserInputs) {
 
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
 func CopyKustomizeNamespaceOperator(input model.UserInputs) {
-	// fullPath := filepath.Join("data", input.projectName, "operator")
 	fullPath := input.GetOperatorFolder()
-	// fullPath := filepath.Dir(projectPath)
 	os.Mkdir(fullPath, os.ModePerm)
 	utils.CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
 	utils.CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
@@ -123,4 +140,21 @@ func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 			"- namespaced-config.yaml",
 	)
 	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
+}
+
+func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
+	for i, user := range userSpec.Users { // TODO in parallel(?)/ingress
+		// data
+		port := strconv.Itoa(i + portGroup)
+		key := port
+		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+
+		helm.InstallTestApplication(userSpec, user, port)
+		waitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
+
+		app := appclient.NewTestAppClient(port)
+		Expect(app.Get("")).Should(Equal("It is working"))
+		Expect(app.Post(data)).ShouldNot(HaveOccurred())
+		Expect(app.Get("/mongo/" + key)).Should(Equal(data))
+	}
 }
