@@ -86,7 +86,8 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			},
 			30002,
 		)),
-		Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
+		Entry(newData("Multiregion, Backup and 2 users",
+			"data/atlascluster_multiregion.yaml",
 			[]model.DBUser{
 				*model.NewDBUser("user1").
 					WithSecretRef("dbuser-secret-u1").

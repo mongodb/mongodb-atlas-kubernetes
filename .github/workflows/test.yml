@@ -174,7 +174,7 @@ jobs:
         go version
         go get github.com/onsi/ginkgo/ginkgo && \
         go get github.com/onsi/gomega/...
-        ginkgo --focus "${TEST_NAME}" -nodes=3 test/e2e/
+        ginkgo -focus "${TEST_NAME}" -nodes=5 -stream test/e2e/
 
     - name: Upload operator logs
       if: ${{ failure() }}
