@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -34,6 +35,7 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
@@ -45,6 +47,9 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+
+	// Set by the linker during link time.
+	version = "unknown"
 )
 
 func init() {
@@ -52,6 +57,8 @@ func init() {
 
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
+
+	atlas.ProductVersion = version
 }
 
 func main() {
@@ -62,6 +69,12 @@ func main() {
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 
 	config := parseConfiguration(logger.Sugar())
+
+	if config.Version {
+		fmt.Println(version)
+		return
+	}
+
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	syncPeriod := time.Hour * 3
@@ -140,6 +153,7 @@ type Config struct {
 	MetricsAddr          string
 	WatchedNamespaces    string
 	ProbeAddr            string
+	Version              bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -151,6 +165,7 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&config.Version, "version", false, "Display current version and exit")
 
 	flag.Parse()
 

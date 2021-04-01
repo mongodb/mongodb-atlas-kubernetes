@@ -11,11 +11,14 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-# Copy the go source
+# Copy the go source & git info
 COPY main.go main.go
+COPY .git/ .git/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o test main.go
+RUN PRODUCT_VERSION=$(git describe --tags --dirty --broken) && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+    go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o test main.go
 
 # Use distroless as minimal base image to package the test binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
