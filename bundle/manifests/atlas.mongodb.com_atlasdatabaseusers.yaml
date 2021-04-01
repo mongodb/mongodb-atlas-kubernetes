@@ -4,6 +4,10 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasdatabaseusers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -151,14 +155,16 @@ spec:
                   - type
                   type: object
                 type: array
-              connectionSecrets:
-                additionalProperties:
-                  type: string
-                type: object
+              name:
+                description: UserName is the current name of database user.
+                type: string
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of. The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
+              passwordVersion:
+                description: PasswordVersion is the 'ResourceVersion' of the password Secret that the Atlas Operator is aware of
+                type: string
             required:
             - conditions
             type: object
