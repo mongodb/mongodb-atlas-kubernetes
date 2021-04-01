@@ -185,10 +185,9 @@ spec:
                   - type
                   type: object
                 type: array
-              connectionSecrets:
-                additionalProperties:
-                  type: string
-                type: object
+              name:
+                description: UserName is the current name of database user.
+                type: string
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator
@@ -196,6 +195,10 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              passwordVersion:
+                description: PasswordVersion is the 'ResourceVersion' of the password
+                  Secret that the Atlas Operator is aware of
+                type: string
             required:
             - conditions
             type: object
