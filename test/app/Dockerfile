@@ -16,7 +16,7 @@ COPY main.go main.go
 COPY .git/ .git/
 
 # Build
-RUN PRODUCT_VERSION=$(git describe --tags --dirty --broken) && \
+RUN PRODUCT_VERSION=$(git describe --tags --broken) && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
     go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o test main.go
 
