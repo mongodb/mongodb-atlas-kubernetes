@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
@@ -56,7 +57,7 @@ func getKeyValue(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	filter := bson.M{"key": key}
 	var foundShip ModelShip
@@ -69,14 +70,14 @@ func postKeyValue(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Lets see\n")
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	ship := getShipFromRequest(r)
 	fmt.Fprintf(w, "got ship key: %s\n", ship.Key)
 	res, err := collection.InsertOne(ctx, ship)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	response, _ := json.Marshal(res)
@@ -87,11 +88,11 @@ func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key": key})
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	fmt.Fprintf(w, fmt.Sprintf("It is working. Deleted documents: %d", deleteResult.DeletedCount))
 }
@@ -105,11 +106,11 @@ func getMongoClient() (*mongo.Client, error) {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		panic(err)
+		log.Println(err)
 	}
 	fmt.Println("Successfully connected and pinged.")
 	return client, nil
