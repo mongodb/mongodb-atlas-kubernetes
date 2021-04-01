@@ -14,8 +14,11 @@ COPY main.go main.go
 COPY .git/ .git/
 COPY pkg/ pkg/
 
+ARG VERSION
+ENV PRODUCT_VERSION=${VERSION}
+
 # Build
-RUN PRODUCT_VERSION=$(git describe --tags) && \
+RUN if [ -z $PRODUCT_VERSION ]; then PRODUCT_VERSION=$(git describe --tags); fi; \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
     go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o manager main.go
 
