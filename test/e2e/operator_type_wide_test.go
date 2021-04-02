@@ -9,6 +9,7 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -32,7 +33,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	})
 
 	var _ = AfterEach(func() {
-		By("Delete clusters", func() {
+		By("AfterEach. clean-up", func() {
 			if CurrentGinkgoTestDescription().Failed {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
@@ -52,9 +53,8 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 					NimnulSpec.Namespace,
 				)
 			} else {
-				kube.Delete(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
-				kube.Delete(NimnulSpec.Clusters[0].ClusterFileName(NimnulSpec), "-n", NimnulSpec.Namespace)
-				// do not wait it
+				Eventually(kube.DeleteNamespace(NortonSpec.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+				Eventually(kube.DeleteNamespace(NimnulSpec.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 			}
 		})
 	})
@@ -137,6 +137,38 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 					kube.GetClusterResource(NimnulSpec.Namespace, NimnulSpec.Clusters[0].GetClusterNameResource()).Spec.Labels,
 				).Should(BeNil())
 			})
+		})
+
+		By("Delete clusters", func() {
+			kube.Delete(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
+			Eventually(
+				checkIfClusterExist(NortonSpec),
+				"10m", "1m",
+			).Should(BeFalse(), "Norton Cluster should be deleted from Atlas")
+
+			kube.Delete(NimnulSpec.Clusters[0].ClusterFileName(NimnulSpec), "-n", NimnulSpec.Namespace)
+			Eventually(
+				checkIfClusterExist(NimnulSpec),
+				"10m", "1m",
+			).Should(BeFalse(), "Nimnuls Cluster should be deleted from Atlas")
+		})
+
+		By("Delete project", func() {
+			kube.Delete(NortonSpec.ProjectPath, "-n", NortonSpec.Namespace)
+			Eventually(
+				func() bool {
+					return mongocli.IsProjectInfoExist(NortonSpec.ProjectID)
+				},
+				"5m", "20s",
+			).Should(BeFalse(), "Nortons Project should be deleted from Atlas")
+
+			kube.Delete(NimnulSpec.ProjectPath, "-n", NimnulSpec.Namespace)
+			Eventually(
+				func() bool {
+					return mongocli.IsProjectInfoExist(NimnulSpec.ProjectID)
+				},
+				"5m", "20s",
+			).Should(BeFalse(), "Nimnuls Project should be deleted from Atlas")
 		})
 	})
 })
