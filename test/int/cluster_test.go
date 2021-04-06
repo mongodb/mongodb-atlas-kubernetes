@@ -26,7 +26,7 @@ const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
 	ClusterDevMode       = false
-	ClusterUpdateTimeout = 30 * time.Minute
+	ClusterUpdateTimeout = 40 * time.Minute
 )
 
 var _ = Describe("AtlasCluster", func() {
