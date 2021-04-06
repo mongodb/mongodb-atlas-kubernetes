@@ -2,7 +2,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-system
 ---
 apiVersion: apiextensions.k8s.io/v1
@@ -11,6 +13,10 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasclusters.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -479,6 +485,10 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasdatabaseusers.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -658,10 +668,9 @@ spec:
                   - type
                   type: object
                 type: array
-              connectionSecrets:
-                additionalProperties:
-                  type: string
-                type: object
+              name:
+                description: UserName is the current name of database user.
+                type: string
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator
@@ -669,6 +678,10 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              passwordVersion:
+                description: PasswordVersion is the 'ResourceVersion' of the password
+                  Secret that the Atlas Operator is aware of
+                type: string
             required:
             - conditions
             type: object
@@ -690,6 +703,10 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasprojects.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
@@ -854,9 +871,23 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-operator
+  namespace: mongodb-atlas-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-leader-election-role
   namespace: mongodb-atlas-system
 rules:
@@ -886,6 +917,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-manager-role
 rules:
 - apiGroups:
@@ -964,16 +999,10 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: mongodb-atlas-metrics-reader
-rules:
-- nonResourceURLs:
-  - /metrics
-  verbs:
-  - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-proxy-role
 rules:
 - apiGroups:
@@ -992,6 +1021,10 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-leader-election-rolebinding
   namespace: mongodb-atlas-system
 roleRef:
@@ -1000,12 +1033,16 @@ roleRef:
   name: mongodb-atlas-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: mongodb-atlas-operator
   namespace: mongodb-atlas-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1013,12 +1050,16 @@ roleRef:
   name: mongodb-atlas-manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: mongodb-atlas-operator
   namespace: mongodb-atlas-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-proxy-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1026,14 +1067,16 @@ roleRef:
   name: mongodb-atlas-proxy-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: mongodb-atlas-operator
   namespace: mongodb-atlas-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-controller-manager-metrics-service
   namespace: mongodb-atlas-system
 spec:
@@ -1042,24 +1085,32 @@ spec:
     port: 8443
     targetPort: https
   selector:
-    control-plane: controller-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    control-plane: operator
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-operator
   namespace: mongodb-atlas-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+      app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+        app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
     spec:
       containers:
       - args:
@@ -1067,7 +1118,7 @@ spec:
         - --upstream=http://127.0.0.1:8080/
         - --logtostderr=true
         - --v=10
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.5.0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443
@@ -1088,7 +1139,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.4.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:0.5.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -1105,14 +1156,15 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 500m
+            memory: 256Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 50Mi
         securityContext:
           allowPrivilegeEscalation: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 2000
+      serviceAccountName: mongodb-atlas-operator
       terminationGracePeriodSeconds: 10

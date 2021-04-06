@@ -1,11 +1,10 @@
 package kube
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
-
-	"encoding/json"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"

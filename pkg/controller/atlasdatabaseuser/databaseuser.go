@@ -43,7 +43,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if result := createOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
+	if result := CreateOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -131,6 +131,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
 		return retryAfterUpdate
 	}
+
 	return workflow.OK()
 }
 

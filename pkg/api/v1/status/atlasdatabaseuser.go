@@ -10,6 +10,7 @@ func AtlasDatabaseUserPasswordVersion(passwordVersion string) AtlasDatabaseUserS
 		s.PasswordVersion = passwordVersion
 	}
 }
+
 func AtlasDatabaseUserNameOption(name string) AtlasDatabaseUserStatusOption {
 	return func(s *AtlasDatabaseUserStatus) {
 		s.UserName = name

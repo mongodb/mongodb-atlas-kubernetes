@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -24,7 +25,8 @@ import (
 const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
-	ClusterDevMode = false
+	ClusterDevMode       = false
+	ClusterUpdateTimeout = 3600
 )
 
 var _ = Describe("AtlasCluster", func() {
@@ -54,7 +56,7 @@ var _ = Describe("AtlasCluster", func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithIP("0.0.0.0/0"))
 		if ClusterDevMode {
 			// While developing tests we need to reuse the same project
 			createdProject.Spec.Name = "dev-test atlas-project"
@@ -207,7 +209,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), expectedCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
@@ -267,7 +269,8 @@ var _ = Describe("AtlasCluster", func() {
 				RegionsConfig: map[string]mdbv1.RegionsConfig{
 					"US_EAST_1": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(1), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)},
 					"US_WEST_2": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
-				}}}
+				},
+			}}
 
 			replicationSpecsCheckFunc := func(c *mongodbatlas.Cluster) {
 				cluster, err := createdCluster.Spec.Cluster()
@@ -285,7 +288,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 
@@ -302,10 +305,10 @@ var _ = Describe("AtlasCluster", func() {
 
 				createdCluster.Spec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
 
-				performUpdate(80 * time.Minute)
+				performUpdate(ClusterUpdateTimeout * time.Minute)
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 
@@ -357,7 +360,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()
@@ -497,6 +500,53 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
+	Describe("Create DBUser before cluster & check secrets", func() {
+		It("Should Succeed", func() {
+			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret), func() {
+				passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
+			})
+
+			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+					20, interval).Should(BeTrue())
+
+				checkUserInAtlas(createdProject.ID(), *createdDBUser)
+			})
+
+			createdDBUserFakeScope := mdbv1.DefaultDBUser(namespace.Name, "test-db-user-fake-scope", createdProject.Name).
+				WithPasswordSecret(UserPasswordSecret).
+				WithScope(mdbv1.ClusterScopeType, "fake-cluster")
+			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUserFakeScope)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDBUserFakeScope)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec))),
+					20, interval).Should(BeTrue())
+			})
+			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+
+			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
+			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					ClusterUpdateTimeout, interval).Should(BeTrue())
+
+				doCommonStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Checking connection Secrets", func() {
+				Expect(tryConnect(createdProject.ID(), *createdCluster, *createdDBUser)).To(Succeed())
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+				validateSecret(k8sClient, *createdProject, *createdCluster, *createdDBUser)
+			})
+		})
+	})
+
 	Describe("Create cluster, user, delete cluster and check secrets are removed", func() {
 		It("Should Succeed", func() {
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name)
@@ -504,7 +554,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					1800, interval).Should(BeTrue())
+					ClusterUpdateTimeout, interval).Should(BeTrue())
 
 				doCommonStatusChecks()
 				checkAtlasState()

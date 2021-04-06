@@ -3,7 +3,9 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: mongodb-atlas-controller-manager-metrics-service
 spec:
   ports:
@@ -11,6 +13,8 @@ spec:
     port: 8443
     targetPort: https
   selector:
-    control-plane: controller-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
 status:
   loadBalancer: {}

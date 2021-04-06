@@ -118,7 +118,6 @@ func getMongoClient() (*mongo.Client, error) {
 
 func getMongoCollection(DbName string, CollectionName string) (*mongo.Collection, error) {
 	client, err := getMongoClient()
-
 	if err != nil {
 		return nil, err
 	}

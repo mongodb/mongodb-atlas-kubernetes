@@ -46,6 +46,7 @@ func TestNormalizeIdentifier(t *testing.T) {
 		}
 	})
 }
+
 func TestNormalizeLabelValue(t *testing.T) {
 	t.Run("Valid Label Value", func(t *testing.T) {
 		successCases := []string{
