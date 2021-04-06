@@ -93,92 +93,106 @@ jobs:
         test: ["cluster-ns", "cluster-wide", "bundle-test"]
     steps:
 
-    - name: Check out code
-      uses: actions/checkout@v2.3.1
+      - name: Check out code
+        uses: actions/checkout@v2.3.1
 
-    - name: Prepare tag
-      id: prepare
-      uses: ./.github/actions/set-tag
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
 
-    - name: Generate configuration for the tests
-      uses: ./.github/actions/gen-install-scripts
-      with:
-        IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
-        VERSION: ${{ steps.prepare.outputs.tag }}
-        ENV: dev
+      - name: Generate configuration for the tests
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
+          ENV: dev
 
-    - name: Change path for the test
-      run: |
-        sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      - name: Change path for the test
+        run: |
+          sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
-    - name: Push bundle-image for the test
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ env.DOCKER_BUNDLES_REPO }}
-        registry: ${{ env.DOCKER_REGISTRY }}
-        tags: ${{ steps.prepare.outputs.tag }}
-        dockerfile: bundle.Dockerfile
+      - name: Push bundle-image for the test
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.DOCKER_BUNDLES_REPO }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          tags: ${{ steps.prepare.outputs.tag }}
+          dockerfile: bundle.Dockerfile
 
-    - name: Set properties
-      id: properties
-      run: |
-        version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
-        platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
-        echo "::set-output name=k8s_version::$version"
-        echo "::set-output name=k8s_platform::$platform"
+      - name: Set properties
+        id: properties
+        run: |
+          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
+          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
+          echo "::set-output name=k8s_version::$version"
+          echo "::set-output name=k8s_platform::$platform"
 
-    # run if platform = kind #TODO
-    - name: Create k8s Kind Cluster
-      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-      uses: helm/kind-action@v1.1.0
-      with:
-        version: v0.10.0
-        config: test/e2e/config/kind.yaml
-        node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
-        cluster_name: ${{ matrix.test }}
+      # run if platform = kind #TODO
+      - name: Create k8s Kind Cluster
+        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+        uses: helm/kind-action@v1.1.0
+        with:
+          version: v0.10.0
+          config: test/e2e/config/kind.yaml
+          node_image: kindest/node:${{ steps.properties.outputs.k8s_version }}
+          cluster_name: ${{ matrix.test }}
 
-    - name: Setup Go
-      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.15.6'
+      - name: Setup Go
+        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.6'
 
-    - name: Install MongoCLI
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y mongocli
-        mongocli --version
+      - name: Install MongoCLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mongocli
+          mongocli --version
 
-    - name: Install operator-sdk-v1.4.2
-      run: |
-        wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
-        chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
-        operator-sdk version
+      - name: Install operator-sdk-v1.4.2
+        run: |
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
+          chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
+          operator-sdk version
 
-    - name: Run e2e test
-      if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-      env:
-        MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-        MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-        MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
-        MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-        BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
-        K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
-        K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
-        TEST_NAME: "${{ matrix.test }}"
-      run: |
-        kubectl version
+      - name: Run e2e test
+        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+          BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
+          K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
+          K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
+          TEST_NAME: "${{ matrix.test }}"
+        run: |
+          kubectl version
 
-        go version
-        go get github.com/onsi/ginkgo/ginkgo && \
-        go get github.com/onsi/gomega/...
-        ginkgo --focus "${TEST_NAME}" -v -nodes=3 test/e2e/
+          go version
+          go get github.com/onsi/ginkgo/ginkgo && \
+          go get github.com/onsi/gomega/...
+          ginkgo -focus "${TEST_NAME}" -nodes=6 -stream -v test/e2e/
 
-    - name: Upload operator logs
-      if: ${{ failure() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: logs
-        path: test/e2e/output/**
+      - name: Upload operator logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: test/e2e/output/**
+
+  cleanup:
+    name: Cleanup atlas projects
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2.3.4
+
+      - name: CleanUp empty AtlasProjects older than one day
+        uses: ./.github/actions/cleanup
+        with:
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}

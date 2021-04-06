@@ -82,9 +82,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u2").
 					AddRole("readWrite", "Ships", ""),
 			},
-			30002,
+			30001,
 		)),
-		Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
+		Entry(newData("Multiregion, Backup and 2 users",
+			"data/atlascluster_multiregion.yaml",
 			[]model.DBUser{
 				*model.NewDBUser("user1").
 					WithSecretRef("dbuser-secret-u1").
@@ -93,7 +94,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u2").
 					AddRole("atlasAdmin", "admin", ""),
 			},
-			30004,
+			30003,
 		)),
 	)
 })
