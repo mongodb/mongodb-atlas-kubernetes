@@ -32,12 +32,13 @@ import (
 )
 
 const (
-	DevMode             = false
+	DevMode             = true
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
 	DBUserPassword2     = "H@lla#!"
-	DBUserUpdateTimeout = 100
+	// M2 clusters take longer time to apply changes
+	DBUserUpdateTimeout = 150
 )
 
 var _ = Describe("AtlasDatabaseUser", func() {
