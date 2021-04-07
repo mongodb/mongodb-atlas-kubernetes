@@ -349,6 +349,10 @@ func (c *AtlasCluster) WithInstanceSize(name string) *AtlasCluster {
 	c.Spec.ProviderSettings.InstanceSizeName = name
 	return c
 }
+func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
+	c.Spec.ProviderSettings.BackingProviderName = name
+	return c
+}
 
 // Lightweight makes the cluster work with small shared instance M2. This is useful for non-cluster tests (e.g.
 // database users) and saves some money for the company.
@@ -358,17 +362,20 @@ func (c *AtlasCluster) Lightweight() *AtlasCluster {
 	switch c.Spec.ProviderSettings.ProviderName {
 	case ProviderAWS:
 		{
-			c.WithRegionName("EU_WEST_1")
+			c.WithRegionName("US_EAST_1")
 		}
 	case ProviderAzure:
 		{
-			c.WithRegionName("EUROPE_NORTH")
+			c.WithRegionName("US_EAST_2")
 		}
 	case ProviderGCP:
 		{
-			c.WithRegionName("WESTERN_EUROPE")
+			c.WithRegionName("CENTRAL_US")
 		}
 	}
+	// Changing provider to tenant as this is shared now
+	c.WithBackingProvider(string(c.Spec.ProviderSettings.ProviderName))
+	c.WithProviderName(ProviderTenant)
 	return c
 }
 
