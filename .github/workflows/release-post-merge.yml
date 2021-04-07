@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      REDHAT_RELEASE_REGISTRY: scan.connect.redhat.com
+      REDHAT_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
+      REDHAT_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
     steps:
 
     - name: Print Env and Get version
@@ -38,7 +41,7 @@ jobs:
         set -x
         tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
 
-    - name: Push Atlas Operator to Registry
+    - name: Push Atlas Operator to Dockerhub
       uses: docker/build-push-action@v1
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
@@ -46,6 +49,25 @@ jobs:
         repository: ${{ env.DOCKER_RELEASE_REPO }}
         registry: ${{ env.DOCKER_REGISTRY }}
         tags: ${{ steps.tag.outputs.version }}
+
+    - name: Push Atlas Operator to RedHat Connect
+      uses: docker/build-push-action@v1
+      with:
+        username: unused
+        password: ${{ secrets.DOCKER_REDHAT_PASSWORD }}
+        repository: ${{ env.REDHAT_OPERATOR_REPO }}
+        registry: ${{ env.REDHAT_RELEASE_REGISTRY }}
+        tags: ${{ steps.tag.outputs.version }}
+
+    - name: Push Atlas Operator Bundle to RedHat Connect
+      uses: docker/build-push-action@v1
+      with:
+        username: unused
+        password: ${{ secrets.DOCKER_REDHAT_PASSWORD }}
+        repository: ${{ env.REDHAT_RELEASE_REPO }}
+        registry: ${{ env.REDHAT_BUNDLE_REPO }}
+        tags: ${{ steps.tag.outputs.version }}
+        dockerfile: bundle.Dockerfile
 
     - name: Create simple description
       uses: ./.github/actions/changelog

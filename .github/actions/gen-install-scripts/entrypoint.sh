@@ -38,6 +38,8 @@ echo "Created namespaced config"
 cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
+# get the current version so we could put it into the "replaces:"
+# TODO current_version=$(grep "name: mongodb-atlas-kubernetes.v0.5.0")
 operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 
 # We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
@@ -47,4 +49,13 @@ if [[ "${INPUT_ENV}" == "dev" ]]; then
 else
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
 fi
+
+# temporary - should be done by composing kustomize
+sed -i .bak '/runAsNonRoot: true/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+sed -i .bak '/runAsUser: 2000/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+# TODO
+sed -i .bak '/replaces: mongodb-atlas-kubernetes.v0.4.0/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+
+rm "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml.bak"
+
 operator-sdk bundle validate ./bundle
