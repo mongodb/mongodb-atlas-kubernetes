@@ -345,6 +345,33 @@ func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
 	return c
 }
 
+func (c *AtlasCluster) WithInstanceSize(name string) *AtlasCluster {
+	c.Spec.ProviderSettings.InstanceSizeName = name
+	return c
+}
+
+// Lightweight makes the cluster work with small shared instance M2. This is useful for non-cluster tests (e.g.
+// database users) and saves some money for the company.
+func (c *AtlasCluster) Lightweight() *AtlasCluster {
+	c.WithInstanceSize("M2")
+	// M2 is restricted to some set of regions only - we need to ensure them
+	switch c.Spec.ProviderSettings.ProviderName {
+	case ProviderAWS:
+		{
+			c.WithRegionName("EU_WEST_1")
+		}
+	case ProviderAzure:
+		{
+			c.WithRegionName("EUROPE_NORTH")
+		}
+	case ProviderGCP:
+		{
+			c.WithRegionName("WESTERN_EUROPE")
+		}
+	}
+	return c
+}
+
 func DefaultGCPCluster(namespace, projectName string) *AtlasCluster {
 	return NewCluster(namespace, "test-cluster-gcp-k8s", "test-cluster-gcp").
 		WithProjectName(projectName).
