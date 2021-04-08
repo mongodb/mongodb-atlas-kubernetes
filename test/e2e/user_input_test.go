@@ -98,6 +98,11 @@ func compareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 			"RegionName": Equal(created.ProviderSettings.RegionName),
 		})), "Cluster should be the same as requested by the user: Region Name")
 	}
+	if requested.ProviderSettings.ProviderName == "TENANT" {
+		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
+		})), "Cluster should be the same as requested by the user: Backking Provider Name")
+	}
 }
 
 func SaveK8sResources(resources []string, ns string) {

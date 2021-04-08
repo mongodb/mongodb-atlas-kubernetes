@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -22,4 +23,11 @@ func ExecuteCommand(reporter io.Writer, command string, args ...string) *gexec.S
 	cmd := exec.Command(command, args...)
 	session, _ := gexec.Start(cmd, reporter, reporter)
 	return session
+}
+
+func SessionShouldExit(session *gexec.Session) {
+	EventuallyWithOffset(
+		2,
+		func() int { return session.ExitCode() },
+	).ShouldNot(Equal(-1))
 }
