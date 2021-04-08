@@ -260,7 +260,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 					err := tryWrite(createdProject.ID(), *createdClusterAzure, *secondDBUser, "test", "someNotAllowedCollection")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("not authorized"))
+					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
 				})
 				By("Removing Second user", func() {
 					Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
