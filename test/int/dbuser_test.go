@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	DevMode             = true
+	DevMode             = false
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
