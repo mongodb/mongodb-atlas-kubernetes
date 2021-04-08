@@ -177,11 +177,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					// The user created lacks read/write roles
 					err := tryWrite(createdProject.ID(), *createdClusterAzure, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("not authorized"))
+					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
 
 					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("not authorized"))
+					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
 				})
 			})
 			By("Update database user - give readWrite permissions", func() {
