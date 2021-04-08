@@ -16,11 +16,19 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /
 COPY --from=builder /workspace/manager .
+
+LABEL name="MongoDB Atlas Operator" \
+      maintainer="support@mongodb.com" \
+      vendor="MongoDB" \
+      release="1" \
+      summary="MongoDB Atlas Operator Image" \
+      description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster"
+
 USER nonroot:nonroot
+
+COPY hack/licenses licenses
 
 ENTRYPOINT ["/manager"]

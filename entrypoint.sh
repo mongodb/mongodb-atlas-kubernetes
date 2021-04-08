@@ -20,23 +20,6 @@ cd -
 which kustomize
 kustomize version
 
-# all-in-one
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/allinone" > "${target_dir}/all-in-one.yaml"
-echo "Created all-in-one config"
-
-# clusterwide
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/clusterwide" > "${clusterwide_dir}/clusterwide-config.yaml"
-kustomize build "config/crd" > "${clusterwide_dir}/crds.yaml"
-echo "Created clusterwide config"
-
-# namespaced
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" > "${namespaced_dir}/namespaced-config.yaml"
-kustomize build "config/crd" > "${namespaced_dir}/crds.yaml"
-echo "Created namespaced config"
-
-# crds
-cp config/crd/bases/* "${crds_dir}"
-
 # CSV bundle
 # get the current version so we could put it into the "replaces:"
 current_version="$(yq r  bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml metadata.name)"

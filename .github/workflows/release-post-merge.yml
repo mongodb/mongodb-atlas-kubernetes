@@ -49,6 +49,7 @@ jobs:
         repository: ${{ env.DOCKER_RELEASE_REPO }}
         registry: ${{ env.DOCKER_REGISTRY }}
         tags: ${{ steps.tag.outputs.version }}
+        labels: version=${{ steps.tag.outputs.version }}
 
     - name: Push Atlas Operator to RedHat Connect
       uses: docker/build-push-action@v1
@@ -58,6 +59,7 @@ jobs:
         repository: ${{ env.REDHAT_OPERATOR_REPO }}
         registry: ${{ env.REDHAT_RELEASE_REGISTRY }}
         tags: ${{ steps.tag.outputs.version }}
+        labels: version=${{ steps.tag.outputs.version }}
 
     - name: Push Atlas Operator Bundle to RedHat Connect
       uses: docker/build-push-action@v1
