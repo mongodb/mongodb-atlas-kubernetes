@@ -164,12 +164,14 @@ jobs:
         MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
         MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
         MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+        IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
         BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
         K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
         K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
         TEST_NAME: "${{ matrix.test }}"
       run: |
         kubectl version
+        helm version
 
         go version
         go get github.com/onsi/ginkgo/ginkgo && \

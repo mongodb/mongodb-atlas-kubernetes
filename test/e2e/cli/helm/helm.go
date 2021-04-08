@@ -3,6 +3,7 @@ package kube
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -61,24 +62,36 @@ func UninstallCRDInNamespace(input model.UserInputs) {
 }
 
 func InstallKubernetesOperatorWide(input model.UserInputs) {
+	repo, tag := splitDockerImage()
 	Install(
 		"atlas-operator",
 		"mongodb/mongodb-atlas-operator",
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
+		"--set-string", fmt.Sprintf("image.repository=%s", repo),
+		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace", input.Namespace,
 		"--create-namespace",
 	)
 }
 
 func InstallKubernetesOperatorNS(input model.UserInputs) {
+	repo, tag := splitDockerImage()
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
+		"--set-string", fmt.Sprintf("image.repository=%s", repo),
+		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)
+}
+
+func splitDockerImage() (string, string) {
+	url := strings.Split(os.Getenv("IMAGE_URL"), ":")
+	Expect(len(url)).Should(Equal(2), "Can't split DOCKER IMAGE")
+	return url[0], url[1]
 }
 
 func UninstallKubernetesOperatorNS(input model.UserInputs) {

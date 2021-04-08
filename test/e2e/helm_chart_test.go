@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -15,6 +17,11 @@ import (
 
 var _ = Describe("HELM charts", func() {
 	var userSpec model.UserInputs
+
+	var _ = BeforeEach(func() {
+		imageURL := os.Getenv("IMAGE_URL")
+		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP IMAGE_URL")
+	})
 
 	var _ = AfterEach(func() {
 		By("Atfer each.", func() {
