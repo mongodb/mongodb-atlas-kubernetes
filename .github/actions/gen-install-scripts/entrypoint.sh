@@ -51,11 +51,10 @@ else
 fi
 
 # temporary - should be done by composing kustomize
-sed -i .bak '/runAsNonRoot: true/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-sed -i .bak '/runAsUser: 2000/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-sed -i .bak '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+sed -i  '/runAsNonRoot: true/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+sed -i  '/runAsUser: 2000/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+sed -i  '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
 echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
-rm "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml.bak"
 
 operator-sdk bundle validate ./bundle
