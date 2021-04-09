@@ -9,6 +9,7 @@ The MongoDB Atlas Operator provides a native integration between the Kubernetes 
 > into applications deployed to Kubernetes. More features like private endpoints, backup management, LDAP/X.509 authentication, etc. 
 > are yet to come.
 
+The full documentation for the Operator can be found [here](https://docs.atlas.mongodb.com/atlas-operator/)
 
 ## Quick Start guide
 ### Step 1. Deploy Kubernetes operator using all in one config file
