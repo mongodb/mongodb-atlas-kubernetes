@@ -19,26 +19,27 @@ import (
 )
 
 func waitCluster(input model.UserInputs, generation string) {
-	Eventually(kube.GetGeneration(input.Namespace, input.Clusters[0].GetClusterNameResource())).Should(Equal(generation))
-	Eventually(
-		kube.GetStatusCondition(input.Namespace, input.Clusters[0].GetClusterNameResource()),
+	EventuallyWithOffset(
+		1, kube.GetStatusCondition(input.Namespace, input.Clusters[0].GetClusterNameResource()),
 		"45m", "1m",
 	).Should(Equal("True"), "Kubernetes resource: Cluster status `Ready` should be True")
 
-	Eventually(kube.GetK8sClusterStateName(
+	ExpectWithOffset(
+		1, kube.GetGeneration(input.Namespace, input.Clusters[0].GetClusterNameResource()),
+	).Should(Equal(generation))
+	ExpectWithOffset(1, kube.GetK8sClusterStateName(
 		input.Namespace, input.Clusters[0].GetClusterNameResource()),
-		"45m", "1m",
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
-	Expect(
-		mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.Name),
+	ExpectWithOffset(
+		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.Name),
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
 func waitProject(input model.UserInputs, generation string) { //nolint:unparam // have cases only with generation=1
 	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
-	EventuallyWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
-	EventuallyWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
+	ExpectWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
+	ExpectWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }
 
 func waitTestApplication(ns, label string) {
@@ -158,8 +159,8 @@ func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
 		waitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
 
 		app := appclient.NewTestAppClient(port)
-		Expect(app.Get("")).Should(Equal("It is working"))
-		Expect(app.Post(data)).ShouldNot(HaveOccurred())
-		Expect(app.Get("/mongo/" + key)).Should(Equal(data))
+		ExpectWithOffset(1, app.Get("")).Should(Equal("It is working"))
+		ExpectWithOffset(1, app.Post(data)).ShouldNot(HaveOccurred())
+		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(data))
 	}
 }

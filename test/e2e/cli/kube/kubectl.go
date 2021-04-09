@@ -39,11 +39,9 @@ func DescribeOperatorPod(ns string) func() string {
 }
 
 // GetGeneration .status.observedGeneration
-func GetGeneration(ns, resourceName string) func() string {
-	return func() string {
-		session := cli.Execute("kubectl", "get", resourceName, "-n", ns, "-o", "jsonpath={.status.observedGeneration}")
-		return string(session.Wait("1m").Out.Contents())
-	}
+func GetGeneration(ns, resourceName string) string {
+	session := cli.Execute("kubectl", "get", resourceName, "-n", ns, "-o", "jsonpath={.status.observedGeneration}")
+	return string(session.Wait("1m").Out.Contents())
 }
 
 // GetStatusCondition .status.conditions.type=Ready.status
@@ -81,10 +79,8 @@ func GetClusterResource(namespace, rName string) v1.AtlasCluster {
 	return cluster
 }
 
-func GetK8sClusterStateName(ns, rName string) func() string {
-	return func() string {
-		return GetClusterResource(ns, rName).Status.StateName
-	}
+func GetK8sClusterStateName(ns, rName string) string {
+	return GetClusterResource(ns, rName).Status.StateName
 }
 
 func DeleteNamespace(ns string) *Buffer {
