@@ -41,7 +41,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	)
 }
 
-func InstallCRDToNamespace(input model.UserInputs) {
+func InstallCRD(input model.UserInputs) {
 	Install(
 		"mongodb-atlas-operator-crds",
 		"mongodb/mongodb-atlas-operator-crds",
@@ -50,21 +50,14 @@ func InstallCRDToNamespace(input model.UserInputs) {
 	)
 }
 
-func InstallCRD(ns string) {
-	Install(
-		"mongodb-atlas-operator-crds",
-		"mongodb/mongodb-atlas-operator-crds",
-	)
-}
-
-func UninstallCRDInNamespace(input model.UserInputs) {
+func UninstallCRD(input model.UserInputs) {
 	Uninstall("mongodb-atlas-operator-crds", input.Namespace)
 }
 
 func InstallKubernetesOperatorWide(input model.UserInputs) {
 	repo, tag := splitDockerImage()
 	Install(
-		"atlas-operator",
+		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
@@ -94,7 +87,7 @@ func splitDockerImage() (string, string) {
 	return url[0], url[1]
 }
 
-func UninstallKubernetesOperatorNS(input model.UserInputs) {
+func UninstallKubernetesOperator(input model.UserInputs) {
 	Uninstall("atlas-operator-"+input.Project.GetProjectName(), input.Namespace)
 }
 

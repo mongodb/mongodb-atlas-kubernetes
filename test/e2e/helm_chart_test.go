@@ -83,7 +83,7 @@ var _ = Describe("HELM charts", func() {
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
-			helm.InstallKubernetesOperatorNS(userSpec)
+			helm.InstallKubernetesOperatorWide(userSpec)
 		})
 		deployCluster(userSpec, 30007)
 	})
@@ -129,6 +129,6 @@ func deployCluster(userSpec model.UserInputs, appPort int) {
 	})
 
 	By("Delete HELM release", func() {
-		helm.UninstallKubernetesOperatorNS(userSpec)
+		helm.UninstallKubernetesOperator(userSpec)
 	})
 }
