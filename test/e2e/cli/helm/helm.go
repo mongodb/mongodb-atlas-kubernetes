@@ -141,14 +141,22 @@ func genSetStringForUsers(input model.UserInputs) []string {
 			roles = append(roles,
 				"--set", fmt.Sprintf("users[%d].roles[%d].databaseName=%s", i, k, returnNullIfEmpty(role.DatabaseName)),
 				"--set", fmt.Sprintf("users[%d].roles[%d].roleName=%s", i, k, returnNullIfEmpty(role.RoleName)),
-				"--set", fmt.Sprintf("users[%d].roles[%d].collectionName=%s", i, k, returnNullIfEmpty(role.CollectionName)),
 			)
+			if role.CollectionName != "" {
+				roles = append(roles,
+					"--set", fmt.Sprintf("users[%d].roles[%d].collectionName=%s", i, k, returnNullIfEmpty(role.CollectionName)),
+				)
+			}
 		}
 		args = append(args,
 			"--set", fmt.Sprintf("users[%d].username=%s", i, user.Spec.Username),
 			"--set", fmt.Sprintf("users[%d].password=%s", i, secret),
-			"--set", fmt.Sprintf("users[%d].databaseName=%s", i, returnNullIfEmpty(user.Spec.DatabaseName)),
 		)
+		if user.Spec.DatabaseName != "" {
+			args = append(args,
+				"--set", fmt.Sprintf("users[%d].databaseName=%s", i, returnNullIfEmpty(user.Spec.DatabaseName)),
+			)
+		}
 		args = append(args, roles...)
 	}
 	return args
