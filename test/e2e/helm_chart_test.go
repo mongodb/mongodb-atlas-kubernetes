@@ -49,7 +49,8 @@ var _ = Describe("HELM charts", func() {
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWrite", "Ships", ""),
+						AddRole("readWrite", "Ships", "").
+						WithAuthDatabase("admin"),
 				},
 			)
 			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
@@ -71,7 +72,8 @@ var _ = Describe("HELM charts", func() {
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", ""),
+						AddRole("readWrite", "Ships", "").
+						WithAuthDatabase("admin"),
 				},
 			)
 			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
