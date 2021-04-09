@@ -39,7 +39,7 @@ cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
 # get the current version so we could put it into the "replaces:"
-current_version="$(yq r  bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml metadata.name)"
+current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 
 # We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
