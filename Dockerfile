@@ -34,5 +34,5 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY hack/licenses licenses
 
-USER nonroot:nonroot
+USER 1001:0
 ENTRYPOINT ["/manager"]
