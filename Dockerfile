@@ -18,10 +18,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 FROM registry.access.redhat.com/ubi8/ubi
 
-RUN yum update \
-    --disableplugin=subscription-manager \
-    --disablerepo=* --enablerepo=ubi-8-appstream --enablerepo=ubi-8-baseos -y \
-    && rm -rf /var/cache/yum
+# RUN yum update \
+#     --disableplugin=subscription-manager \
+#     --disablerepo=* --enablerepo=ubi-8-appstream --enablerepo=ubi-8-baseos -y \
+#     && rm -rf /var/cache/yum
+
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 
 LABEL name="MongoDB Atlas Operator" \
       maintainer="support@mongodb.com" \
