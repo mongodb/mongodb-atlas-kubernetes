@@ -123,10 +123,13 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasProject{}, e.Object)
 		return nil
 	}
-
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
-
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
+
+	if customresource.ResourceShouldBeLeftInAtlas(project) {
+		log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+		return nil
+	}
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if err != nil {

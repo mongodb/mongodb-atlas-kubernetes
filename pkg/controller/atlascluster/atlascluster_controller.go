@@ -158,6 +158,28 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
 
+	if customresource.ResourceShouldBeLeftInAtlas(project) {
+		log.Infof("Not removing the Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	} else if err := r.deleteClusterFromAtlas(cluster, project, log); err != nil {
+		log.Error("Failed to remove cluster from Atlas: %s", err)
+	}
+
+	// We always remove the connection secrets even if the cluster is not removed from Atlas
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for i := range secrets {
+		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
+			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorDeploymentName, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
@@ -191,17 +213,5 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 		log.Error("Failed to delete Atlas cluster in time")
 	}()
-
-	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
-	if err != nil {
-		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
-	}
-
-	for i := range secrets {
-		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
-			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
-		}
-	}
-
 	return nil
 }
