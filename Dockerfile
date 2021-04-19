@@ -16,12 +16,10 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
-FROM registry.access.redhat.com/ubi8/ubi
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
-RUN yum update \
-    --disableplugin=subscription-manager \
-    --disablerepo=* --enablerepo=ubi-8-appstream --enablerepo=ubi-8-baseos -y \
-    && rm -rf /var/cache/yum
+RUN microdnf update -y && rm -rf /var/cache/yum
+RUN microdnf install httpd -y && microdnf clean all
 
 LABEL name="MongoDB Atlas Operator" \
       maintainer="support@mongodb.com" \
