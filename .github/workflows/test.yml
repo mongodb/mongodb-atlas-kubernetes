@@ -148,7 +148,7 @@ jobs:
       - name: Install MongoCLI
         run: |
           wget https://github.com/mongodb/mongocli/releases/download/v1.14.0/mongocli_1.14.0_linux_x86_64.deb -O mongocli.deb
-          dpkg -i mongocli.deb
+          sudo dpkg -i mongocli.deb
           mongocli --version
 
       - name: Install operator-sdk-v1.4.2
