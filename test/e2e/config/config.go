@@ -6,4 +6,5 @@ const (
 	ClusterSample     = "data/atlascluster_basic.yaml"
 	DataFolder        = "data"
 	DefaultOperatorNS = "mongodb-atlas-system"
+	AtlasURL          = "https://cloud-qa.mongodb.com"
 )

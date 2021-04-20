@@ -59,13 +59,9 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	})
 
 	loadClustersAndApplyConfiguration := func(spec model.UserInputs, name string) model.UserInputs {
-		project := model.NewProject().
-			ProjectName(spec.ProjectName).
-			SecretRef(spec.KeyName).
-			CompleteK8sConfig(spec.K8sProjectName)
-		utils.SaveToFile(spec.ProjectPath, project)
+		utils.SaveToFile(spec.ProjectPath, spec.Project.ConvertByte())
 		spec.Clusters = append(spec.Clusters, model.LoadUserClusterConfig(ClusterSample))
-		spec.Clusters[0].Spec.Project.Name = spec.K8sProjectName
+		spec.Clusters[0].Spec.Project.Name = spec.Project.GetK8sMetaName()
 		spec.Clusters[0].ObjectMeta.Name = name + "cluster"
 		utils.SaveToFile(
 			spec.Clusters[0].ClusterFileName(spec),
