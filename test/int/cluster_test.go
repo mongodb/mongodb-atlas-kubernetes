@@ -591,20 +591,27 @@ var _ = Describe("AtlasCluster", func() {
 
 	Describe("Deleting the cluster (not cleaning Atlas)", func() {
 		It("Should Succeed", func() {
-			By(`Creating the project with retention policy "keep" first`, func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
-				createdProject.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
-				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+			By(`Creating the cluster with retention policy "keep" first`, func() {
+				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-					ProjectCreationTimeout, interval).Should(BeTrue())
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					30*time.Minute, interval).Should(BeTrue())
 			})
-			By("Deleting the project", func() {
-				Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-				time.Sleep(10 * time.Second)
-				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
-				createdProject = nil
+			By("Deleting the cluster - stays in Atlas", func() {
+				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
+				time.Sleep(5 * time.Minute)
+				Expect(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name)()).Should(BeFalse())
 			})
+			By("Deleting the cluster in Atlas manually", func() {
+				// We need to remove the cluster in Atlas manually to let project get removed
+				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.ID(), createdCluster.Spec.Name)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
+				createdCluster = nil
+			})
+
 		})
 	})
 })
