@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	ProjectCreationTimeout = 30
+	ProjectCreationTimeout = 40
 )
 
 var _ = Describe("AtlasProject", func() {
