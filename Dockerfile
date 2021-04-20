@@ -18,7 +18,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 
-RUN microdnf update -y && rm -rf /var/cache/yum
+RUN microdnf install yum &&\
+    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical &&\
+    yum clean all &&\
+    microdnf remove yum &&\
+    microdnf clean all
 
 #FROM registry.access.redhat.com/ubi8/ubi
 #
