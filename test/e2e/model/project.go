@@ -8,52 +8,23 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-type ISpec interface {
-	ProjectName(string) ISpec
-	SecretRef(string) ISpec
-	WithIpAccess(string, string) ISpec
-	CompleteK8sConfig(string) []byte
-}
-
 type ProjectSpec v1.AtlasProjectSpec
 
-type ap struct {
+type AP struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec            ProjectSpec        `json:"spec,omitempty"`
 }
 
 // LoadUserProjectConfig load configuration from file into object
-func LoadUserProjectConfig(path string) ap {
-	var config ap
+func LoadUserProjectConfig(path string) AP {
+	var config AP
 	utils.ReadInYAMLFileAndConvert(path, &config)
 	return config
 }
 
-func NewProject() ISpec {
-	return &ProjectSpec{}
-}
-
-func (s *ProjectSpec) ProjectName(name string) ISpec {
-	s.Name = name
-	return s
-}
-
-func (s *ProjectSpec) SecretRef(name string) ISpec {
-	s.ConnectionSecret = &v1.ResourceRef{Name: name}
-	return s
-}
-
-func (s *ProjectSpec) WithIpAccess(ipAdress, comment string) ISpec {
-	access := project.NewIPAccessList().
-		WithIP(ipAdress).
-		WithComment(comment)
-	s.ProjectIPAccessList = append(s.ProjectIPAccessList, access)
-	return s
-}
-
-func (s ProjectSpec) CompleteK8sConfig(k8sname string) []byte {
-	var t ap
+func NewProject(k8sname string) *AP {
+	var t AP
 	t.TypeMeta = metav1.TypeMeta{
 		APIVersion: "atlas.mongodb.com/v1",
 		Kind:       "AtlasProject",
@@ -61,7 +32,36 @@ func (s ProjectSpec) CompleteK8sConfig(k8sname string) []byte {
 	t.ObjectMeta = &metav1.ObjectMeta{
 		Name: k8sname,
 	}
-	t.Spec = s
-	yamlConf := utils.JSONToYAMLConvert(t)
+	return &t
+}
+
+func (p *AP) ProjectName(name string) *AP {
+	p.Spec.Name = name
+	return p
+}
+
+func (p *AP) SecretRef(name string) *AP {
+	p.Spec.ConnectionSecret = &v1.ResourceRef{Name: name}
+	return p
+}
+
+func (p *AP) WithIpAccess(ipAdress, comment string) *AP {
+	access := project.NewIPAccessList().
+		WithIP(ipAdress).
+		WithComment(comment)
+	p.Spec.ProjectIPAccessList = append(p.Spec.ProjectIPAccessList, access)
+	return p
+}
+
+func (p *AP) GetK8sMetaName() string {
+	return p.ObjectMeta.Name
+}
+
+func (p *AP) GetProjectName() string {
+	return p.Spec.Name
+}
+
+func (p *AP) ConvertByte() []byte {
+	yamlConf := utils.JSONToYAMLConvert(p)
 	return yamlConf
 }
