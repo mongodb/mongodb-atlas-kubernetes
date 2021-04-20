@@ -16,7 +16,7 @@ import (
 
 const (
 	ResourcePolicyAnnotation = "mongodb.com/atlas-resource-policy"
-	resourcePolicyKeep       = "keep"
+	ResourcePolicyKeep       = "keep"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
@@ -52,7 +52,7 @@ func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomR
 // ResourceShouldBeLeftInAtlas returns 'true' if the resource should not be removed from Atlas on K8s resource removal.
 func ResourceShouldBeLeftInAtlas(resource mdbv1.AtlasCustomResource) bool {
 	if v, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
-		return v == resourcePolicyKeep
+		return v == ResourcePolicyKeep
 	}
 	return false
 }

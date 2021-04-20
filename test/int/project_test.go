@@ -13,6 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -121,6 +123,25 @@ var _ = Describe("AtlasProject", func() {
 			var apiError *mongodbatlas.ErrorResponse
 			Expect(errors.As(err, &apiError)).To(BeTrue(), "Error occurred: "+err.Error())
 			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
+		})
+	})
+
+	Describe("Deleting the project (not cleaning Atlas)", func() {
+		It("Should Succeed", func() {
+			By(`Creating the project with retention policy "keep" first`, func() {
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+				createdProject.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+			})
+			By("Deleting the project", func() {
+				Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+				time.Sleep(10 * time.Second)
+				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
+				createdProject = nil
+			})
 		})
 	})
 

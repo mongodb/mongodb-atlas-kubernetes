@@ -158,8 +158,8 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
 
-	if customresource.ResourceShouldBeLeftInAtlas(project) {
-		log.Infof("Not removing the Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	if customresource.ResourceShouldBeLeftInAtlas(cluster) {
+		log.Infof("Not removing Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 	} else if err := r.deleteClusterFromAtlas(cluster, project, log); err != nil {
 		log.Error("Failed to remove cluster from Atlas: %s", err)
 	}
