@@ -87,7 +87,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 
 .PHONY: deploy
 deploy: run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-	@ act -j deploy -s KUBE_CONFIG_DATA='$(shell kind get kubeconfig | yq r - -j)'
+	@ act -j deploy -s KUBE_CONFIG_DATA='$(shell kind get kubeconfig | yq eval -j )'
 
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
