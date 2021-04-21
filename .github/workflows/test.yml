@@ -90,7 +90,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["cluster-ns", "cluster-wide", "bundle-test"]
+        test: ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
     steps:
 
       - name: Check out code
@@ -147,8 +147,8 @@ jobs:
 
       - name: Install MongoCLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mongocli
+          wget https://github.com/mongodb/mongocli/releases/download/v1.14.0/mongocli_1.14.0_linux_x86_64.deb -O mongocli.deb
+          sudo dpkg -i mongocli.deb
           mongocli --version
 
       - name: Install operator-sdk-v1.4.2
@@ -164,17 +164,19 @@ jobs:
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
           TEST_NAME: "${{ matrix.test }}"
         run: |
           kubectl version
+          helm version
 
           go version
           go get github.com/onsi/ginkgo/ginkgo && \
           go get github.com/onsi/gomega/...
-          ginkgo -focus "${TEST_NAME}" -nodes=6 -stream -v test/e2e/
+          ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}

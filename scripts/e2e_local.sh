@@ -28,4 +28,5 @@ export MCLI_OPS_MANAGER_URL="https://cloud-qa.mongodb.com/"
 export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
-ginkgo -focus "${focus_key}" -stream -nodes=6 -x -v test/e2e/
+export IMAGE_URL="${image}" #for helm chart
+ginkgo -focus "${focus_key}" -nodes=3 -stream -v test/e2e/
