@@ -533,6 +533,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 					time.Sleep(1 * time.Minute)
 					Expect(checkAtlasDatabaseUserRemoved(createdProject.Status.ID, *createdDBUser)()).Should(BeFalse())
+
+					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 				})
 			})
 		})

@@ -603,6 +603,8 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
 				time.Sleep(5 * time.Minute)
 				Expect(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name)()).Should(BeFalse())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
 			By("Deleting the cluster in Atlas manually", func() {
 				// We need to remove the cluster in Atlas manually to let project get removed
