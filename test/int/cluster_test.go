@@ -25,7 +25,7 @@ import (
 const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
-	ClusterDevMode       = true
+	ClusterDevMode       = false
 	ClusterUpdateTimeout = 40 * time.Minute
 )
 
@@ -200,7 +200,7 @@ var _ = Describe("AtlasCluster", func() {
 		})
 	})
 
-	FDescribe("Create cluster & change it to GEOSHARDED", func() {
+	Describe("Create cluster & change it to GEOSHARDED", func() {
 		It("Should Succeed", func() {
 			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
