@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -70,12 +69,9 @@ func main() {
 
 	config := parseConfiguration(logger.Sugar())
 
-	if config.Version {
-		fmt.Println(version)
-		return
-	}
-
 	ctrl.SetLogger(zapr.NewLogger(logger))
+
+	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
 
 	syncPeriod := time.Hour * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -153,7 +149,6 @@ type Config struct {
 	MetricsAddr          string
 	WatchedNamespaces    string
 	ProbeAddr            string
-	Version              bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -165,7 +160,6 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&config.Version, "version", false, "Display current version and exit")
 
 	flag.Parse()
 
