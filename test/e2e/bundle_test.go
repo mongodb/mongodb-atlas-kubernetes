@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[bundle-test] User can", func() {
+var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 	var userSpec model.UserInputs
 	var imageURL string
 
@@ -60,17 +60,12 @@ var _ = Describe("[bundle-test] User can", func() {
 						AddRole("readWrite", "Ships", ""),
 				},
 			)
-
 			utils.SaveToFile(
 				userSpec.ProjectPath,
-				model.NewProject().
-					ProjectName(userSpec.ProjectName).
-					SecretRef(userSpec.KeyName).
-					WithIpAccess("0.0.0.0/0", "everyone").
-					CompleteK8sConfig(userSpec.K8sProjectName),
+				userSpec.Project.ConvertByte(),
 			)
 			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig(config.ClusterSample))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.K8sProjectName
+			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
 			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-bundle"
 			utils.SaveToFile(
 				userSpec.Clusters[0].ClusterFileName(userSpec),

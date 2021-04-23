@@ -1,0 +1,12 @@
+name: 'cleanup'
+description: 'Delete empty(!) PROJECTs which live more then 1 days'
+inputs:
+  ATLAS_PUBLIC_KEY:
+    description: "Atlas public key"
+    required: true
+  ATLAS_PRIVATE_KEY:
+    description: "Atlas private key"
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

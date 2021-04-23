@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_RELEASE_REGISTRY: quay.io
+      QUAY_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
     steps:
       - name: Print Env and Get version
         id: tag
@@ -46,6 +49,15 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
+
+      - name: Push Atlas Operator to Registry
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ env.QUAY_ROBOT_NAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+          repository: ${{ env.QUAY_OPERATOR_REPO }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          tags: ${{ steps.tag.outputs.version }}
 
       - name: Create simple description
         uses: ./.github/actions/changelog

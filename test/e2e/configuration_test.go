@@ -82,9 +82,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u2").
 					AddRole("readWrite", "Ships", ""),
 			},
-			30002,
+			30001,
 		)),
-		Entry(newData("Multiregion, Backup and 2 users", "data/atlascluster_multiregion.yaml",
+		Entry(newData("Multiregion, Backup and 2 users",
+			"data/atlascluster_multiregion.yaml",
 			[]model.DBUser{
 				*model.NewDBUser("user1").
 					WithSecretRef("dbuser-secret-u1").
@@ -93,7 +94,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					WithSecretRef("dbuser-secret-u2").
 					AddRole("atlasAdmin", "admin", ""),
 			},
-			30004,
+			30003,
 		)),
 	)
 })
@@ -102,17 +103,12 @@ func mainCycle(clusterConfigurationFile string, resources model.UserInputs, port
 	By("Prepare namespaces and project configuration", func() {
 		kube.CreateNamespace(resources.Namespace)
 		By("Create project spec", func() {
-			project := model.NewProject().
-				ProjectName(resources.ProjectName).
-				SecretRef(resources.KeyName).
-				WithIpAccess("0.0.0.0/0", "everyone").
-				CompleteK8sConfig(resources.K8sProjectName)
 			GinkgoWriter.Write([]byte(resources.ProjectPath + "\n"))
-			utils.SaveToFile(resources.ProjectPath, project)
+			utils.SaveToFile(resources.ProjectPath, resources.Project.ConvertByte())
 		})
 		By("Create cluster spec", func() {
 			resources.Clusters = append(resources.Clusters, model.LoadUserClusterConfig(clusterConfigurationFile))
-			resources.Clusters[0].Spec.Project.Name = resources.K8sProjectName
+			resources.Clusters[0].Spec.Project.Name = resources.Project.GetK8sMetaName()
 			resources.Clusters[0].Spec.ProviderSettings.InstanceSizeName = "M10"
 			utils.SaveToFile(
 				resources.Clusters[0].ClusterFileName(resources),
