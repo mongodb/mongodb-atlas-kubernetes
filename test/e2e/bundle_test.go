@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
@@ -19,6 +20,7 @@ import (
 
 var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 	var userSpec model.UserInputs
+	// var data model.TestDataProvider
 	var imageURL string
 
 	var _ = BeforeEach(func() {
@@ -33,11 +35,11 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(config.DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					"default",
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					userSpec.Namespace,
 				)
@@ -85,35 +87,35 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 		})
 
 		By("Wait project creation", func() {
-			waitProject(userSpec, "1")
+			actions.WaitProject(userSpec, "1")
 			userSpec.ProjectID = kube.GetProjectResource(userSpec.Namespace, userSpec.K8sFullProjectName).Status.ID
 		})
 
 		By("Wait cluster creation", func() {
-			waitCluster(userSpec, "1")
+			actions.WaitCluster(userSpec, "1")
 		})
 
 		By("Check attributes", func() {
 			uCluster := mongocli.GetClustersInfo(userSpec.ProjectID, userSpec.Clusters[0].Spec.Name)
-			compareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
+			actions.CompareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
 		})
 
 		By("check database users Attibutes", func() {
-			Eventually(checkIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
-			checkUsersAttributes(userSpec)
+			Eventually(actions.CheckIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
+			actions.CheckUsersAttributes(userSpec)
 		})
 
 		By("Deploy application for user", func() {
 			// kube apply application
 			// send data
 			// retrieve data
-			checkUsersCanUseApplication(30005, userSpec)
+			actions.CheckUsersCanUseApplication(30005, userSpec)
 		})
 
 		By("Delete cluster", func() {
 			kube.Delete(userSpec.Clusters[0].ClusterFileName(userSpec), "-n", userSpec.Namespace)
 			Eventually(
-				checkIfClusterExist(userSpec),
+				actions.CheckIfClusterExist(userSpec),
 				"10m", "1m",
 			).Should(BeFalse(), "Cluster should be deleted from Atlas")
 		})

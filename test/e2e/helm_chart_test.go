@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
@@ -31,11 +32,11 @@ var _ = Describe("HELM charts", func() {
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(config.DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					"default",
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					userSpec.Namespace,
 				)
@@ -96,26 +97,26 @@ func deployCluster(userSpec model.UserInputs, appPort int) {
 		helm.InstallCluster(userSpec)
 	})
 	By("Wait creation until is done", func() {
-		waitProject(userSpec, "1")
+		actions.WaitProject(userSpec, "1")
 		userSpec.ProjectID = kube.GetProjectResource(userSpec.Namespace, userSpec.K8sFullProjectName).Status.ID
-		waitCluster(userSpec, "1")
+		actions.WaitCluster(userSpec, "1")
 	})
 
 	By("Check attributes", func() {
 		uCluster := mongocli.GetClustersInfo(userSpec.ProjectID, userSpec.Clusters[0].Spec.Name)
-		compareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
+		actions.CompareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
 	})
 
 	By("check database users Attibutes", func() {
-		Eventually(checkIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
-		checkUsersAttributes(userSpec)
+		Eventually(actions.CheckIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
+		actions.CheckUsersAttributes(userSpec)
 	})
 
 	By("Deploy application for user", func() {
 		// kube apply application
 		// send data
 		// retrieve data
-		checkUsersCanUseApplication(appPort, userSpec)
+		actions.CheckUsersCanUseApplication(appPort, userSpec)
 	})
 
 	By("Check project, cluster does not exist", func() {

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -39,15 +40,15 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					DefaultOperatorNS,
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					NortonSpec.Namespace,
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					NimnulSpec.Namespace,
 				)
@@ -88,15 +89,15 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 		By("Wait creation projects/clusters", func() {
 			// projects Norton
-			waitProject(NortonSpec, "1")
+			actions.WaitProject(NortonSpec, "1")
 			NortonSpec.ProjectID = kube.GetProjectResource(NortonSpec.Namespace, NortonSpec.K8sFullProjectName).Status.ID
 
 			// projects Nimnul
-			waitProject(NimnulSpec, "1")
+			actions.WaitProject(NimnulSpec, "1")
 			NimnulSpec.ProjectID = kube.GetProjectResource(NimnulSpec.Namespace, NimnulSpec.K8sFullProjectName).Status.ID
 
-			waitCluster(NortonSpec, "1")
-			waitCluster(NimnulSpec, "1")
+			actions.WaitCluster(NortonSpec, "1")
+			actions.WaitCluster(NimnulSpec, "1")
 		})
 
 		By("Check connection strings", func() {
@@ -116,7 +117,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				utils.JSONToYAMLConvert(NortonSpec.Clusters[0]),
 			)
 			kube.Apply(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
-			waitCluster(NortonSpec, "2")
+			actions.WaitCluster(NortonSpec, "2")
 
 			By("Norton cluster has labels", func() {
 				Expect(
@@ -137,13 +138,13 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		By("Delete clusters", func() {
 			kube.Delete(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
 			Eventually(
-				checkIfClusterExist(NortonSpec),
+				actions.CheckIfClusterExist(NortonSpec),
 				"10m", "1m",
 			).Should(BeFalse(), "Norton Cluster should be deleted from Atlas")
 
 			kube.Delete(NimnulSpec.Clusters[0].ClusterFileName(NimnulSpec), "-n", NimnulSpec.Namespace)
 			Eventually(
-				checkIfClusterExist(NimnulSpec),
+				actions.CheckIfClusterExist(NimnulSpec),
 				"10m", "1m",
 			).Should(BeFalse(), "Nimnuls Cluster should be deleted from Atlas")
 		})
