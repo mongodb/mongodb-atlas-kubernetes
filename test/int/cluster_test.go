@@ -156,6 +156,8 @@ var _ = Describe("AtlasCluster", func() {
 					Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(1)))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
+
+				testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
 			})
 
 			By("Updating ReplicationSpecs", func() {
@@ -336,8 +338,10 @@ var _ = Describe("AtlasCluster", func() {
 					60,
 					interval,
 				).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdCluster, "Warning", string(workflow.Internal), "name is invalid because must be set")
 
 				lastGeneration++
+
 			})
 
 			By("Fixing the cluster", func() {

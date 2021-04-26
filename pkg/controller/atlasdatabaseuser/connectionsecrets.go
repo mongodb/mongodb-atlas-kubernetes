@@ -2,9 +2,11 @@ package atlasdatabaseuser
 
 import (
 	"context"
+	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -14,13 +16,17 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
+
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	clusters, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
 	requeue := false
+	secrets := make([]string, 0)
+
 	for _, cluster := range clusters {
 		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
 		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
@@ -54,8 +60,11 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cluster.Name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
+		secrets = append(secrets, secretName)
 		ctx.Log.Debugw("Ensured connection Secret up-to-date", "secretname", secretName)
 	}
+
+	recorder.Eventf(&dbUser, "Normal", ConnectionSecretsEnsuredEvent, "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
 
 	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err.Error())

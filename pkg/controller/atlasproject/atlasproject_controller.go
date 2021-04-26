@@ -59,10 +59,12 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context
@@ -109,12 +111,15 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
 	if result = r.ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
 }

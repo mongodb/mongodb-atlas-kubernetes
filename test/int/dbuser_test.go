@@ -19,6 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -346,6 +348,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", "Ready", "")
+
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 
 				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -359,6 +363,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, expectedCondition), 20, interval).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdDBUser, "Warning", string(workflow.Internal), "the 'password' field is empty")
 			})
 			By("Fixing the password secret", func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
@@ -405,6 +410,9 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
+					"Connection Secrets were created/updated: dev-test-atlas-project-test-cluster-aws-test-db-user, dev-test-atlas-project-test-cluster-azure-test-db-user")
+
 				validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
 				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
 			})
