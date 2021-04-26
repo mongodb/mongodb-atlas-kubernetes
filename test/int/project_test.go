@@ -140,7 +140,9 @@ var _ = Describe("AtlasProject", func() {
 				Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
 				time.Sleep(10 * time.Second)
 				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
-				createdProject = nil
+			})
+			By("Manually deleting the project from Atlas", func() {
+				_, _ = atlasClient.Projects.Delete(context.Background(), createdProject.ID())
 			})
 		})
 	})
