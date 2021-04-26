@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -49,6 +50,7 @@ type AtlasClusterReconciler struct {
 	Scheme                 *runtime.Scheme
 	AtlasDomain            string
 	OperatorDeploymentName client.ObjectKey
+	EventRecorder          record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -68,7 +70,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
-	defer statushandler.Update(ctx, r.Client, cluster)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {

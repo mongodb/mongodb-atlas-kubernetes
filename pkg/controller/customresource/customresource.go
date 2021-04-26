@@ -39,7 +39,7 @@ func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomR
 	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
 
 	ctx := workflow.NewContext(log, updatedConditions)
-	statushandler.Update(ctx, client, resource)
+	statushandler.Update(ctx, client, nil, resource)
 
 	return ctx
 }

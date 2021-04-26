@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -46,10 +47,11 @@ import (
 type AtlasProjectReconciler struct {
 	Client client.Client
 	watch.ResourceWatcher
-	Log         *zap.SugaredLogger
-	Scheme      *runtime.Scheme
-	AtlasDomain string
-	OperatorPod client.ObjectKey
+	Log           *zap.SugaredLogger
+	Scheme        *runtime.Scheme
+	AtlasDomain   string
+	OperatorPod   client.ObjectKey
+	EventRecorder record.EventRecorder
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -81,11 +83,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	// This update will make sure the status is always updated in case of any errors or successful result
-	defer statushandler.Update(ctx, r.Client, project)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
+		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
