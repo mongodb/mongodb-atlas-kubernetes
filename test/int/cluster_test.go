@@ -157,7 +157,9 @@ var _ = Describe("AtlasCluster", func() {
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 
-				testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
+				// For some reasons there are some race conditions, so the event may not be found...
+				f := func() { testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "") }
+				Eventually(f, 20*time.Second, interval).Should(Succeed())
 			})
 
 			By("Updating ReplicationSpecs", func() {
@@ -572,7 +574,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					80, interval).Should(BeTrue())
+					100, interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Cluster "+createdCluster.Name, func() {

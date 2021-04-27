@@ -410,11 +410,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
-				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
-					"Connection Secrets were created/updated: dev-test-atlas-project-test-cluster-aws-test-db-user, dev-test-atlas-project-test-cluster-azure-test-db-user")
 
-				validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
-				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+				s1 := validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
+				s2 := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
+					fmt.Sprintf("Connection Secrets were created/updated: %s, %s", s1.Name, s2.Name))
+
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
 				oldName := createdDBUser.Spec.Username

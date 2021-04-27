@@ -64,7 +64,9 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		ctx.Log.Debugw("Ensured connection Secret up-to-date", "secretname", secretName)
 	}
 
-	recorder.Eventf(&dbUser, "Normal", ConnectionSecretsEnsuredEvent, "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	if len(secrets) > 0 {
+		recorder.Eventf(&dbUser, "Normal", ConnectionSecretsEnsuredEvent, "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	}
 
 	if err := cleanupStaleSecrets(ctx, k8sClient, project.ID(), dbUser); err != nil {
 		return workflow.Terminate(workflow.DatabaseUserStaleConnectionSecrets, err.Error())

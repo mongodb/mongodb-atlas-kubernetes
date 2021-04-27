@@ -205,7 +205,9 @@ func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, 
 		secrets = append(secrets, secretName)
 	}
 
-	r.EventRecorder.Eventf(clusterResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	if len(secrets) > 0 {
+		r.EventRecorder.Eventf(clusterResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	}
 
 	return workflow.OK()
 }
