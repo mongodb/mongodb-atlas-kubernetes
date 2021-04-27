@@ -143,6 +143,7 @@ var _ = Describe("AtlasProject", func() {
 			})
 			By("Manually deleting the project from Atlas", func() {
 				_, _ = atlasClient.Projects.Delete(context.Background(), createdProject.ID())
+				createdProject = nil
 			})
 		})
 	})
