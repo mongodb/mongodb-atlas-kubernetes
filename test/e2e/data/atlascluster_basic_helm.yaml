@@ -1,9 +1,9 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasCluster
 metadata:
-  name: atlascluster-basic
+  name: atlascluster-basic-helm
 spec:
-  name: cluster-basic
+  name: atlascluster-basic-helm
   projectRef:
     name: my-project
   providerSettings:
