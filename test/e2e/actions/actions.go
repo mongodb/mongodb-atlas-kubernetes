@@ -16,6 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
+
 func UpdateCluster(newData *model.TestDataProvider) {
 	var generation int
 	By("Update cluster\n", func() {
@@ -38,10 +39,8 @@ func UpdateCluster(newData *model.TestDataProvider) {
 	})
 }
 
-func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) { // TODO model should already be updated
-	// TODO get new update data from the file (data.updsata)
+func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) {
 	By("Load new cluster config", func() {
-		// for
 		data.Resources.Clusters = []model.AC{} // TODO for range
 		GinkgoWriter.Write([]byte(data.ConfUpdatePaths[0]))
 		data.Resources.Clusters = append(data.Resources.Clusters, model.LoadUserClusterConfig(data.ConfUpdatePaths[0]))
@@ -68,7 +67,7 @@ func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) { // TODO model
 func activateCluster(data *model.TestDataProvider, paused bool) {
 	data.Resources.Clusters[0].Spec.Paused = &paused
 	UpdateCluster(data)
-	By("Check additional cluster field ")
+	By("Check additional cluster field `paused`\n")
 	uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
 	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.Paused))
 }

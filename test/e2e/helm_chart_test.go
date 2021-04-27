@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("HELM charts", func() {
-	var userSpec model.UserInputs
+	var data model.TestDataProvider
 
 	var _ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
@@ -38,55 +38,52 @@ var _ = Describe("HELM charts", func() {
 				)
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					userSpec.Namespace,
+					data.Resources.Namespace,
 				)
 			}
 		})
 	})
 	It("[helm-ns] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
-			userSpec = model.NewUserInputs(
-				"only-key",
+			data = model.NewTestDataProvider(
+				[]string{"data/atlascluster_basic_helm.yaml"},
+				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWrite", "Ships", "").
-						WithAuthDatabase("admin"),
+						AddRole("readWrite", "Ships", ""),
 				},
+				30006,
+				[]func(*model.TestDataProvider){},
 			)
-			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
-			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-helm" // helm template has equal ObjectMeta.Name and Spec.Name
-			userSpec.Clusters[0].Spec.Name = "cluster-from-helm"
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
-			helm.InstallKubernetesOperatorNS(userSpec)
+			helm.InstallKubernetesOperatorNS(data.Resources)
 		})
-		deployCluster(userSpec, 30006)
+		deployCluster(data.Resources, 30006)
 	})
 
 	It("[helm-wide] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
-			userSpec = model.NewUserInputs(
-				"only-key",
+			data = model.NewTestDataProvider(
+				[]string{"data/atlascluster_basic_helm.yaml"},
+				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
 						AddRole("readWrite", "Ships", "").
 						WithAuthDatabase("admin"),
 				},
+				30007,
+				[]func(*model.TestDataProvider){},
 			)
-			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
-			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide" // helm template has equal ObjectMeta.Name and Spec.Name
-			userSpec.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
-			helm.InstallKubernetesOperatorWide(userSpec)
+			helm.InstallKubernetesOperatorWide(data.Resources)
 		})
-		deployCluster(userSpec, 30007)
+		deployCluster(data.Resources, 30007)
 	})
 
 })

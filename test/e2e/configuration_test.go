@@ -81,24 +81,24 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			),
 		),
 		Entry("Multiregion, Backup and 2 users",
-		model.NewTestDataProvider(
-			[]string{"data/atlascluster_multiregion.yaml"},
-			[]string{"data/atlascluster_multiregion_update.yaml"},
-			[]model.DBUser{
-				*model.NewDBUser("user1").
-					WithSecretRef("dbuser-secret-u1").
-					AddRole("atlasAdmin", "admin", ""),
-				*model.NewDBUser("user2").
-					WithSecretRef("dbuser-secret-u2").
-					AddRole("atlasAdmin", "admin", ""),
-			},
-			30003,
-			[]func(*model.TestDataProvider){
-				actions.SuspendCluster,
-				actions.ReactivateCluster,
-				actions.DeleteFirstUser,
-			},
-		)),
+			model.NewTestDataProvider(
+				[]string{"data/atlascluster_multiregion.yaml"},
+				[]string{"data/atlascluster_multiregion_update.yaml"},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddRole("atlasAdmin", "admin", ""),
+					*model.NewDBUser("user2").
+						WithSecretRef("dbuser-secret-u2").
+						AddRole("atlasAdmin", "admin", ""),
+				},
+				30003,
+				[]func(*model.TestDataProvider){
+					actions.SuspendCluster,
+					actions.ReactivateCluster,
+					actions.DeleteFirstUser,
+				},
+			)),
 	)
 })
 

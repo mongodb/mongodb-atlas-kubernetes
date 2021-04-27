@@ -1,4 +1,4 @@
-// diffrent ways to deploy operator
+// different ways to deploy operator
 package actions
 
 import (
@@ -28,7 +28,6 @@ func CopyKustomizeNamespaceOperator(input model.UserInputs) {
 	)
 	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
 }
-
 
 func DeployNamespacedOperatorKuber(data *model.TestDataProvider) {
 	By("Create namespaced Operator\n", func() {
