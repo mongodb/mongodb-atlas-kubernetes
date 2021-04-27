@@ -35,9 +35,11 @@ func logEvent(ctx *workflow.Context, eventRecorder record.EventRecorder, resourc
 	reason := string(ctx.LastCondition().Type)
 	msg := ""
 	if ctx.LastCondition().Reason != "" {
-		eventType = "Warning"
 		reason = ctx.LastCondition().Reason
 		msg = ctx.LastCondition().Message
+	}
+	if ctx.LastConditionWarn() {
+		eventType = "Warning"
 	}
 	eventRecorder.Event(resource, eventType, reason, msg)
 }
