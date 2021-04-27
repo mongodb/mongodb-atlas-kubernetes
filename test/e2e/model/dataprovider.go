@@ -16,7 +16,8 @@ func NewTestDataProvider(initClusterConfigs []string, updateClusterConfig []stri
 	data.Resources = NewUserInputs("my-atlas-key", users)
 	data.Actions = actions
 	data.PortGroup = portGroup
+	for i := range initClusterConfigs {
+		data.Resources.Clusters = append(data.Resources.Clusters, LoadUserClusterConfig(data.ConfPaths[i]))
+	}
 	return data
 }
-
-// func GetNew

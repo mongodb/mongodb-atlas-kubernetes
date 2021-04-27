@@ -157,7 +157,6 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 			utils.SaveToFile(data.Resources.ProjectPath, data.Resources.Project.ConvertByte())
 		})
 		By("Create cluster spec", func() {
-			data.Resources.Clusters = append(data.Resources.Clusters, model.LoadUserClusterConfig(data.ConfPaths[0]))
 			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
 			utils.SaveToFile(
 				data.Resources.Clusters[0].ClusterFileName(data.Resources),
@@ -204,5 +203,33 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 
 	By("Deploy application for user", func() {
 		CheckUsersCanUseApplication(data.PortGroup, data.Resources)
+	})
+}
+
+func DeleteDBUsersApps(data *model.TestDataProvider) {
+	By("Delete dbusers applications", func() {
+		for _, user := range data.Resources.Users {
+			helm.Uninstall("test-app-"+user.Spec.Username, data.Resources.Namespace)
+		}
+	})
+}
+
+func DeleteUserResources(data *model.TestDataProvider) {
+	By("Delete cluster", func() {
+		kube.Delete(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
+		Eventually(
+			CheckIfClusterExist(data.Resources),
+			"10m", "1m",
+		).Should(BeFalse(), "Cluster should be deleted from Atlas")
+	})
+
+	By("Delete project", func() {
+		kube.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+		Eventually(
+			func() bool {
+				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+			},
+			"5m", "20s",
+		).Should(BeFalse(), "Project should be deleted from Atlas")
 	})
 }

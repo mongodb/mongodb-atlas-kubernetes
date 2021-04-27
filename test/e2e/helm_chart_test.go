@@ -61,7 +61,7 @@ var _ = Describe("HELM charts", func() {
 			helm.AddMongoDBRepo()
 			helm.InstallKubernetesOperatorNS(data.Resources)
 		})
-		deployCluster(data.Resources, 30006)
+		deployCluster(data.Resources, data.PortGroup)
 	})
 
 	It("[helm-wide] User can deploy operator namespaces by using HELM", func() {
@@ -83,7 +83,7 @@ var _ = Describe("HELM charts", func() {
 			helm.AddMongoDBRepo()
 			helm.InstallKubernetesOperatorWide(data.Resources)
 		})
-		deployCluster(data.Resources, 30007)
+		deployCluster(data.Resources, data.PortGroup)
 	})
 
 })
@@ -126,7 +126,7 @@ func deployCluster(userSpec model.UserInputs, appPort int) {
 		).Should(BeFalse(), "Project and cluster should be deleted from Atlas")
 	})
 
-	By("Delete HELM release", func() {
+	By("Delete HELM releases", func() {
 		helm.UninstallKubernetesOperator(userSpec)
 	})
 }

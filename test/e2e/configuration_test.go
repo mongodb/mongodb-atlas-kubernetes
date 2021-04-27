@@ -9,7 +9,6 @@ import (
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
-	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 
@@ -35,6 +34,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				data.Resources.Namespace,
 			)
 		} else {
+			actions.DeleteDBUsersApps(&data)
 			Eventually(kube.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 		}
 	})
@@ -116,22 +116,7 @@ func mainCycle(data model.TestDataProvider) {
 			check(&data)
 		}
 	})
-
-	By("Delete cluster", func() {
-		kube.Delete(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
-		Eventually(
-			actions.CheckIfClusterExist(data.Resources),
-			"10m", "1m",
-		).Should(BeFalse(), "Cluster should be deleted from Atlas")
-	})
-
-	By("Delete project", func() {
-		kube.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
-		Eventually(
-			func() bool {
-				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
-			},
-			"5m", "20s",
-		).Should(BeFalse(), "Project should be deleted from Atlas")
+	By("Delete User Resources", func() {
+		actions.DeleteUserResources(&data)
 	})
 }
