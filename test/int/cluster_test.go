@@ -156,10 +156,6 @@ var _ = Describe("AtlasCluster", func() {
 					Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(1)))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
-
-				// For some reasons there are some race conditions, so the event may not be found...
-				f := func() { testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "") }
-				Eventually(f, 20*time.Second, interval).Should(Succeed())
 			})
 
 			By("Updating ReplicationSpecs", func() {
@@ -356,6 +352,13 @@ var _ = Describe("AtlasCluster", func() {
 
 				doCommonStatusChecks()
 				checkAtlasState()
+
+				// This is something strange - the event is not shown right away - we need to wait for some time...
+				// testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
+				Eventually(func() bool {
+					testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
+					return true
+				}, 10*time.Second, interval).Should(BeTrue())
 			})
 		})
 
