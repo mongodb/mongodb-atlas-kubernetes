@@ -78,6 +78,10 @@ var _ = Describe("HELM charts", func() {
 				30007,
 				[]func(*model.TestDataProvider){},
 			)
+			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+			// TODO helm template has equal ObjectMeta.Name and Spec.Name
+			data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
+			data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
