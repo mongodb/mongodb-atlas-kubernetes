@@ -42,7 +42,18 @@ func WaitProject(input model.UserInputs, generation string) {
 }
 
 func WaitTestApplication(ns, label string) {
-	EventuallyWithOffset(1, kube.GetStatusPhase(ns, "pods", "-l", label)).Should(Equal("Running"), "Test application should be running")
+	// temp
+	isAppRunning := func() func() bool {
+		return func() bool {
+			status := kube.GetStatusPhase(ns, "pods", "-l", label)
+			if status == "Running" {
+				return true
+			}
+			kube.DescribeTestApp(label, ns)
+			return false
+		}
+	}
+	EventuallyWithOffset(1, isAppRunning(), "2m", "10s").Should(BeTrue(), "Test application should be running")
 }
 
 func CheckIfClusterExist(input model.UserInputs) func() bool {
