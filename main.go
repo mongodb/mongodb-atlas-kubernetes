@@ -34,6 +34,7 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
@@ -45,6 +46,9 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+
+	// Set by the linker during link time.
+	version = "unknown"
 )
 
 func init() {
@@ -52,6 +56,8 @@ func init() {
 
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
+
+	atlas.ProductVersion = version
 }
 
 func main() {
@@ -62,7 +68,10 @@ func main() {
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 
 	config := parseConfiguration(logger.Sugar())
+
 	ctrl.SetLogger(zapr.NewLogger(logger))
+
+	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
 
 	syncPeriod := time.Hour * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
