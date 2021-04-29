@@ -51,9 +51,10 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					NimnulData.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(NortonData.Resources)
+				actions.SaveTestAppLogs(NimnulData.Resources)
 			} else {
-				Eventually(kube.DeleteNamespace(NortonData.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
-				Eventually(kube.DeleteNamespace(NimnulData.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+				actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 			}
 		})
 	})
@@ -62,6 +63,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	It("Deploy cluster wide operator and create resources in each of them", func() {
 		By("Users can create clusters with the same name", func() {
 			NortonData = model.NewTestDataProvider(
+				"norton-wide",
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -74,6 +76,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				[]func(*model.TestDataProvider){},
 			)
 			NimnulData = model.NewTestDataProvider(
+				"nimnul-wide",
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -124,8 +127,6 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 
 		By("Delete Norton/Nimnul Resources", func() {
-			actions.DeleteDBUsersApps(&NortonData)
-			actions.DeleteDBUsersApps(&NimnulData)
 			actions.DeleteUserResources(&NortonData)
 			actions.DeleteUserResources(&NimnulData)
 		})

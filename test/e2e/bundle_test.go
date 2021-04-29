@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
@@ -41,9 +40,9 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(data.Resources)
 			} else {
-				actions.DeleteDBUsersApps(&data)
-				Eventually(kube.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})
 	})
@@ -54,6 +53,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
+				"bundle-wide",
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -75,22 +75,5 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 		By("Delete user resources(project/cluster)", func() {
 			actions.DeleteUserResources(&data)
 		})
-		// By("Delete cluster", func() {
-		// 	kube.Delete(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
-		// 	Eventually(
-		// 		actions.CheckIfClusterExist(data.Resources),
-		// 		"10m", "1m",
-		// 	).Should(BeFalse(), "Cluster should be deleted from Atlas")
-		// })
-
-		// By("Delete project", func() {
-		// 	kube.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
-		// 	Eventually(
-		// 		func() bool {
-		// 			return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
-		// 		},
-		// 		"5m", "20s",
-		// 	).Should(BeFalse(), "Project should be deleted from Atlas")
-		// })
 	})
 })

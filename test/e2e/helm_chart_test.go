@@ -40,12 +40,14 @@ var _ = Describe("HELM charts", func() {
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(data.Resources)
 			}
 		})
 	})
 	It("[helm-ns] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
+				"helm-ns-",
 				[]string{"data/atlascluster_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -68,6 +70,7 @@ var _ = Describe("HELM charts", func() {
 	It("[helm-wide] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
+				"helm-wide",
 				[]string{"data/atlascluster_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{

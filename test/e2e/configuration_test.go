@@ -5,8 +5,6 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/onsi/gomega/gbytes"
-
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 
@@ -19,23 +17,23 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 	var data model.TestDataProvider // TODO check it
 
 	_ = AfterEach(func() {
-
+		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentGinkgoTestDescription().Failed {
-			GinkgoWriter.Write([]byte("Resources wasn't clean\n"))
+			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 			utils.SaveToFile(
 				"output/operator-logs.txt",
 				kube.GetManagerLogs(data.Resources.Namespace),
 			)
+			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(
 				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 				data.Resources.Namespace,
 			)
 		} else {
-			actions.DeleteDBUsersApps(&data)
-			Eventually(kube.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 		}
 	})
 
@@ -46,6 +44,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		},
 		Entry("Trial - Simplest configuration with no backup and one Admin User",
 			model.NewTestDataProvider(
+				"operator-ns-trial",
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -61,6 +60,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		),
 		Entry("Almost Production - Backup and 2 users, one Admin and one read-only",
 			model.NewTestDataProvider(
+				"operator-ns-prodlike",
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update.yaml"},
 				[]model.DBUser{
@@ -82,6 +82,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		),
 		Entry("Multiregion, Backup and 2 users",
 			model.NewTestDataProvider(
+				"operator-ns-multiregion",
 				[]string{"data/atlascluster_multiregion.yaml"},
 				[]string{"data/atlascluster_multiregion_update.yaml"},
 				[]model.DBUser{
@@ -98,7 +99,8 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 					actions.ReactivateCluster,
 					actions.DeleteFirstUser,
 				},
-			)),
+			),
+		),
 	)
 })
 
@@ -113,6 +115,7 @@ func mainCycle(data model.TestDataProvider) {
 
 	By("Additional check for the current data set", func() {
 		for _, check := range data.Actions {
+			// Expect(true).Should(BeFalse()) //TODO DELETE IT
 			check(&data)
 		}
 	})

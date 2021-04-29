@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -13,6 +14,7 @@ import (
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -120,6 +122,19 @@ func SaveK8sResources(resources []string, ns string) {
 	for _, resource := range resources {
 		data := kube.GetYamlResource(resource, ns)
 		utils.SaveToFile("output/"+resource+".yaml", data)
+	}
+}
+
+func SaveTestAppLogs(input model.UserInputs) {
+	for _, user := range input.Users {
+		utils.SaveToFile(
+			fmt.Sprintf("output/testapp-describe-%s.txt", user.Spec.Username),
+			kube.DescribeTestApp(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+		)
+		utils.SaveToFile(
+			fmt.Sprintf("output/testapp-logs-%s.txt", user.Spec.Username),
+			kube.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+		)
 	}
 }
 
@@ -243,4 +258,13 @@ func DeleteUserResources(data *model.TestDataProvider) {
 			"5m", "20s",
 		).Should(BeFalse(), "Project should be deleted from Atlas")
 	})
+}
+
+func AfterEachFinalCleanup(datas []model.TestDataProvider) {
+	for _, data := range datas {
+		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
+		DeleteDBUsersApps(&data)
+		Expect(kube.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
+	}
 }
