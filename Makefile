@@ -74,8 +74,9 @@ e2e: run-kind ## Run e2e test. Command `make e2e focus=cluster-ns` run cluster-n
 	./scripts/e2e_local.sh $(focus)
 
 .PHONY: manager
+manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
 manager: generate fmt vet ## Build manager binary
-	go build -o bin/manager main.go
+	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" main.go
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
@@ -86,8 +87,8 @@ uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 .PHONY: deploy
-deploy: run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-	@ act -j deploy -s KUBE_CONFIG_DATA='$(shell kind get kubeconfig | yq eval -j )'
+deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+	@./scripts/deploy.sh
 
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')

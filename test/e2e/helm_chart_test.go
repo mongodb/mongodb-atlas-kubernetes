@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
@@ -16,7 +17,7 @@ import (
 )
 
 var _ = Describe("HELM charts", func() {
-	var userSpec model.UserInputs
+	var data model.TestDataProvider
 
 	var _ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
@@ -31,91 +32,95 @@ var _ = Describe("HELM charts", func() {
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(config.DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					"default",
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					userSpec.Namespace,
+					data.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(data.Resources)
 			}
 		})
 	})
 	It("[helm-ns] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
-			userSpec = model.NewUserInputs(
-				"only-key",
+			data = model.NewTestDataProvider(
+				"helm-ns",
+				[]string{"data/atlascluster_basic_helm.yaml"},
+				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
 						AddRole("readWrite", "Ships", "").
 						WithAuthDatabase("admin"),
 				},
+				30006,
+				[]func(*model.TestDataProvider){},
 			)
-			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
-			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-helm" // helm template has equal ObjectMeta.Name and Spec.Name
-			userSpec.Clusters[0].Spec.Name = "cluster-from-helm"
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
-			helm.InstallKubernetesOperatorNS(userSpec)
+			helm.InstallKubernetesOperatorNS(data.Resources)
 		})
-		deployCluster(userSpec, 30006)
+		deployCluster(data.Resources, data.PortGroup)
 	})
 
 	It("[helm-wide] User can deploy operator namespaces by using HELM", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
-			userSpec = model.NewUserInputs(
-				"only-key",
+			data = model.NewTestDataProvider(
+				"helm-wide",
+				[]string{"data/atlascluster_basic_helm.yaml"},
+				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
 						AddRole("readWrite", "Ships", "").
 						WithAuthDatabase("admin"),
 				},
+				30007,
+				[]func(*model.TestDataProvider){},
 			)
-			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig("data/atlascluster_basic_helm.yaml"))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
-			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide" // helm template has equal ObjectMeta.Name and Spec.Name
-			userSpec.Clusters[0].Spec.Name = "cluster-from-helm-wide"
+			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+			// TODO helm template has equal ObjectMeta.Name and Spec.Name
+			data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
+			data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 		})
 		By("User use helm for deploying operator", func() {
 			helm.AddMongoDBRepo()
-			helm.InstallKubernetesOperatorWide(userSpec)
+			helm.InstallKubernetesOperatorWide(data.Resources)
 		})
-		deployCluster(userSpec, 30007)
+		deployCluster(data.Resources, data.PortGroup)
 	})
 
 })
 
 func deployCluster(userSpec model.UserInputs, appPort int) {
 	By("User deploy cluster by helm", func() {
-		kube.CreateApiKeySecret(userSpec.KeyName, userSpec.Namespace)
 		helm.InstallCluster(userSpec)
 	})
 	By("Wait creation until is done", func() {
-		waitProject(userSpec, "1")
+		actions.WaitProject(userSpec, "1")
 		userSpec.ProjectID = kube.GetProjectResource(userSpec.Namespace, userSpec.K8sFullProjectName).Status.ID
-		waitCluster(userSpec, "1")
+		actions.WaitCluster(userSpec, "1")
 	})
 
 	By("Check attributes", func() {
 		uCluster := mongocli.GetClustersInfo(userSpec.ProjectID, userSpec.Clusters[0].Spec.Name)
-		compareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
+		actions.CompareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
 	})
 
 	By("check database users Attibutes", func() {
-		Eventually(checkIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
-		checkUsersAttributes(userSpec)
+		Eventually(actions.CheckIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
+		actions.CheckUsersAttributes(userSpec)
 	})
 
 	By("Deploy application for user", func() {
 		// kube apply application
 		// send data
 		// retrieve data
-		checkUsersCanUseApplication(appPort, userSpec)
+		actions.CheckUsersCanUseApplication(appPort, userSpec)
 	})
 
 	By("Check project, cluster does not exist", func() {
@@ -128,7 +133,7 @@ func deployCluster(userSpec model.UserInputs, appPort int) {
 		).Should(BeFalse(), "Project and cluster should be deleted from Atlas")
 	})
 
-	By("Delete HELM release", func() {
+	By("Delete HELM releases", func() {
 		helm.UninstallKubernetesOperator(userSpec)
 	})
 }

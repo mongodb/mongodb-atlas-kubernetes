@@ -20,7 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -156,6 +158,19 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
+	if customresource.ResourceShouldBeLeftInAtlas(dbUser) {
+		log.Infof("Not removing Atlas database user from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	} else if err := r.deleteUserFromAtlas(dbUser, project, log); err != nil {
+		log.Error("Failed to remove database user from Atlas: %s", err)
+	}
+
+	// We ignore the error as it will be printed by the function
+	_ = removeStaleSecretsByUserName(r.Client, project.ID(), dbUser.Spec.Username, *dbUser, log)
+
+	return nil
+}
+
+func (r AtlasDatabaseUserReconciler) deleteUserFromAtlas(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
 	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
@@ -167,15 +182,28 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	userName := dbUser.Spec.Username
-	_, err = atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), userName)
-	if err != nil {
-		return fmt.Errorf("cannot delete Database User in Atlas: %w", err)
-	}
 
-	log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
+	go func() {
+		timeout := time.Now().Add(workflow.DefaultTimeout)
 
-	// We ignore the error as it will be printed by the function
-	_ = removeStaleSecretsByUserName(r.Client, project.ID(), userName, *dbUser, log)
+		for time.Now().Before(timeout) {
+			_, err = atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), userName)
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
+				log.Info("Database user doesn't exist or is already deleted")
+				return
+			}
+
+			if err != nil {
+				log.Errorw("Cannot delete Atlas database user", "error", err)
+				time.Sleep(workflow.DefaultRetry)
+				continue
+			}
+
+			log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
+			return
+		}
+	}()
 
 	return nil
 }

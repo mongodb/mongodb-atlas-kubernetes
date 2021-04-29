@@ -14,6 +14,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
+const (
+	ResourcePolicyAnnotation = "mongodb.com/atlas-resource-policy"
+	ResourcePolicyKeep       = "keep"
+)
+
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
 func PrepareResource(client client.Client, request reconcile.Request, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
 	err := client.Get(context.Background(), request.NamespacedName, resource)
@@ -42,4 +47,12 @@ func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomR
 	statushandler.Update(ctx, client, nil, resource)
 
 	return ctx
+}
+
+// ResourceShouldBeLeftInAtlas returns 'true' if the resource should not be removed from Atlas on K8s resource removal.
+func ResourceShouldBeLeftInAtlas(resource mdbv1.AtlasCustomResource) bool {
+	if v, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
+		return v == ResourcePolicyKeep
+	}
+	return false
 }
