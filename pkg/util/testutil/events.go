@@ -15,6 +15,7 @@ func EventExists(k8sClient client.Client, createdResource mdbv1.AtlasCustomResou
 	eventList := corev1.EventList{}
 	gomega.Expect(k8sClient.List(context.Background(), &eventList, client.MatchingFieldsSelector{
 		Selector: fields.AndSelectors(
+			fields.OneTermEqualSelector("metadata.namespace", createdResource.GetNamespace()),
 			fields.OneTermEqualSelector("involvedObject.name", createdResource.GetName()),
 			fields.OneTermEqualSelector("reason", expectedReason),
 			fields.OneTermEqualSelector("type", expectedType),

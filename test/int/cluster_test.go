@@ -354,11 +354,11 @@ var _ = Describe("AtlasCluster", func() {
 				checkAtlasState()
 
 				// This is something strange - the event is not shown right away - we need to wait for some time...
-				// testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
-				Eventually(func() bool {
-					testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
-					return true
-				}, 1*time.Minute, interval).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
+				// Eventually(func() bool {
+				//	testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
+				//	return true
+				// }, 1*time.Minute, interval).Should(BeTrue())
 			})
 		})
 
