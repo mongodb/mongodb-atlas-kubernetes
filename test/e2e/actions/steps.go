@@ -261,10 +261,10 @@ func DeleteUserResources(data *model.TestDataProvider) {
 }
 
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
-	for _, data := range datas {
+	for i := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
-		DeleteDBUsersApps(&data)
-		Expect(kube.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		DeleteDBUsersApps(&datas[i])
+		Expect(kube.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }
