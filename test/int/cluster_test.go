@@ -358,7 +358,7 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(func() bool {
 					testutil.EventExists(k8sClient, createdCluster, "Normal", "Ready", "")
 					return true
-				}, 10*time.Second, interval).Should(BeTrue())
+				}, 1*time.Minute, interval).Should(BeTrue())
 			})
 		})
 
