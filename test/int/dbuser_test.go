@@ -40,7 +40,7 @@ const (
 	UserPasswordSecret2 = "second-user-password-secret"
 	DBUserPassword2     = "H@lla#!"
 	// M2 clusters take longer time to apply changes
-	DBUserUpdateTimeout = 150
+	DBUserUpdateTimeout = 170
 )
 
 var _ = Describe("AtlasDatabaseUser", func() {
