@@ -9,12 +9,18 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-# Copy the go source
+# Copy the go source & git info
 COPY main.go main.go
+COPY .git/ .git/
 COPY pkg/ pkg/
 
+ARG VERSION
+ENV PRODUCT_VERSION=${VERSION}
+
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+RUN if [ -z $PRODUCT_VERSION ]; then PRODUCT_VERSION=$(git describe --tags); fi; \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+    go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

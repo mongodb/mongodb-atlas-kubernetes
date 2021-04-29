@@ -1,12 +1,12 @@
-package e2e_test
+package actions
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -14,11 +14,12 @@ import (
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-func waitCluster(input model.UserInputs, generation string) {
+func WaitCluster(input model.UserInputs, generation string) {
 	EventuallyWithOffset(
 		1, kube.GetStatusCondition(input.Namespace, input.Clusters[0].GetClusterNameResource()),
 		"45m", "1m",
@@ -36,23 +37,34 @@ func waitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
-func waitProject(input model.UserInputs, generation string) { //nolint:unparam // have cases only with generation=1
+func WaitProject(input model.UserInputs, generation string) {
 	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName)).Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
 	ExpectWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	ExpectWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }
 
-func waitTestApplication(ns, label string) {
-	EventuallyWithOffset(1, kube.GetStatusPhase(ns, "pods", "-l", label)).Should(Equal("Running"), "Test application should be running")
+func WaitTestApplication(ns, label string) {
+	// temp
+	isAppRunning := func() func() bool {
+		return func() bool {
+			status := kube.GetStatusPhase(ns, "pods", "-l", label)
+			if status == "Running" {
+				return true
+			}
+			kube.DescribeTestApp(label, ns)
+			return false
+		}
+	}
+	EventuallyWithOffset(1, isAppRunning(), "2m", "10s").Should(BeTrue(), "Test application should be running")
 }
 
-func checkIfClusterExist(input model.UserInputs) func() bool {
+func CheckIfClusterExist(input model.UserInputs) func() bool {
 	return func() bool {
 		return mongocli.IsClusterExist(input.ProjectID, input.Clusters[0].Spec.Name)
 	}
 }
 
-func checkIfUsersExist(input model.UserInputs) func() bool {
+func CheckIfUsersExist(input model.UserInputs) func() bool {
 	return func() bool {
 		for _, user := range input.Users {
 			if !mongocli.IsUserExist(user.Spec.Username, input.ProjectID) {
@@ -63,13 +75,13 @@ func checkIfUsersExist(input model.UserInputs) func() bool {
 	}
 }
 
-func checkIfUserExist(username, projecID string) func() bool {
+func CheckIfUserExist(username, projecID string) func() bool {
 	return func() bool {
 		return mongocli.IsUserExist(username, projecID)
 	}
 }
 
-func compareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
+func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
@@ -113,7 +125,20 @@ func SaveK8sResources(resources []string, ns string) {
 	}
 }
 
-func checkUsersAttributes(input model.UserInputs) {
+func SaveTestAppLogs(input model.UserInputs) {
+	for _, user := range input.Users {
+		utils.SaveToFile(
+			fmt.Sprintf("output/testapp-describe-%s.txt", user.Spec.Username),
+			kube.DescribeTestApp(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+		)
+		utils.SaveToFile(
+			fmt.Sprintf("output/testapp-logs-%s.txt", user.Spec.Username),
+			kube.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+		)
+	}
+}
+
+func CheckUsersAttributes(input model.UserInputs) {
 	for _, user := range input.Users {
 		atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
 		// Required fields
@@ -133,22 +158,7 @@ func checkUsersAttributes(input model.UserInputs) {
 	}
 }
 
-// CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func CopyKustomizeNamespaceOperator(input model.UserInputs) {
-	fullPath := input.GetOperatorFolder()
-	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile("../../deploy/namespaced/crds.yaml", filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile("../../deploy/namespaced/namespaced-config.yaml", filepath.Join(fullPath, "namespaced-config.yaml"))
-	data := []byte(
-		"namespace: " + input.Namespace + "\n" +
-			"resources:" + "\n" +
-			"- crds.yaml" + "\n" +
-			"- namespaced-config.yaml",
-	)
-	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
-}
-
-func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
+func CheckUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
 	for i, user := range userSpec.Users { // TODO in parallel(?)/ingress
 		// data
 		port := strconv.Itoa(i + portGroup)
@@ -156,11 +166,105 @@ func checkUsersCanUseApplication(portGroup int, userSpec model.UserInputs) {
 		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 
 		helm.InstallTestApplication(userSpec, user, port)
-		waitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
+		WaitTestApplication(userSpec.Namespace, "app=test-app-"+user.Spec.Username)
 
 		app := appclient.NewTestAppClient(port)
 		ExpectWithOffset(1, app.Get("")).Should(Equal("It is working"))
 		ExpectWithOffset(1, app.Post(data)).ShouldNot(HaveOccurred())
 		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(data))
+	}
+}
+
+func PrepareUsersConfigurations(data *model.TestDataProvider) {
+	By("Prepare namespaces and project configuration", func() {
+		kube.CreateNamespace(data.Resources.Namespace)
+		By("Create project spec", func() {
+			GinkgoWriter.Write([]byte(data.Resources.ProjectPath + "\n"))
+			utils.SaveToFile(data.Resources.ProjectPath, data.Resources.Project.ConvertByte())
+		})
+		By("Create cluster spec", func() {
+			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+			utils.SaveToFile(
+				data.Resources.Clusters[0].ClusterFileName(data.Resources),
+				utils.JSONToYAMLConvert(data.Resources.Clusters[0]),
+			)
+		})
+		By("Create dbuser spec", func() {
+			Expect(data.Resources.Users).ShouldNot(BeNil())
+			for _, user := range data.Resources.Users {
+				user.SaveConfigurationTo(data.Resources.ProjectPath)
+				kube.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+			}
+		})
+	})
+}
+
+func DeployUserResourcesAction(data *model.TestDataProvider) {
+	By("Create users resources", func() {
+		kube.CreateApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
+		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
+		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
+	})
+
+	By("Wait project creation", func() {
+		WaitProject(data.Resources, "1")
+		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
+	})
+
+	By("Wait cluster creation", func() {
+		WaitCluster(data.Resources, "1")
+	})
+
+	By("check cluster Attribute", func() {
+		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
+	})
+
+	By("check database users Attibutes", func() {
+		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
+		CheckUsersAttributes(data.Resources)
+	})
+
+	By("Deploy application for user", func() {
+		CheckUsersCanUseApplication(data.PortGroup, data.Resources)
+	})
+}
+
+func DeleteDBUsersApps(data *model.TestDataProvider) {
+	By("Delete dbusers applications", func() {
+		for _, user := range data.Resources.Users {
+			helm.Uninstall("test-app-"+user.Spec.Username, data.Resources.Namespace)
+		}
+	})
+}
+
+func DeleteUserResources(data *model.TestDataProvider) {
+	By("Delete cluster", func() {
+		kube.Delete(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
+		Eventually(
+			CheckIfClusterExist(data.Resources),
+			"10m", "1m",
+		).Should(BeFalse(), "Cluster should be deleted from Atlas")
+	})
+
+	By("Delete project", func() {
+		kube.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+		Eventually(
+			func() bool {
+				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+			},
+			"5m", "20s",
+		).Should(BeFalse(), "Project should be deleted from Atlas")
+	})
+}
+
+func AfterEachFinalCleanup(datas []model.TestDataProvider) {
+	for i := range datas {
+		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
+		DeleteDBUsersApps(&datas[i])
+		Expect(kube.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }

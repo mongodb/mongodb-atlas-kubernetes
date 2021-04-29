@@ -16,8 +16,10 @@ pre-commit install # from the root of the project
 1. Copy the default Github Actions environment for local run: `cp .env.sample .env`
 1. Update the .actrc - specify your Atlas connectivity data (orgId, keys)
 1. Build and deploy the Operator into the K8s cluster: `make deploy`
-1. Create an AtlasProject: `kubectl apply -f config/samples/atlasproject.yaml` (note, that the secret `my-atlas-key` is
+1. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are
  created during running `make deploy`)
+1. Create an AtlasCluster: `kubectl apply -f config/samples/atlas_v1_atlascluster.yaml`
+1. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
    
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
 

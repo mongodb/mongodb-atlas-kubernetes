@@ -21,7 +21,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.6'
+          go-version: "1.15.6"
       - run: go version
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ "AtlasProject", "AtlasCluster", "AtlasDatabaseUser" ]
+        test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
     steps:
       - uses: actions/checkout@v2.3.4
 
@@ -58,22 +58,23 @@ jobs:
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0 # required for tags
 
-    - name: Check out code
-      uses: actions/checkout@v2.3.1
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
 
-    - name: Prepare tag
-      id: prepare
-      uses: ./.github/actions/set-tag
-
-    - name: Push Atlas Operator to Registry
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ env.DOCKER_REPO }}
-        registry: ${{ env.DOCKER_REGISTRY }}
-        tags: ${{ steps.prepare.outputs.tag }}
+      - name: Push Atlas Operator to Registry
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.DOCKER_REPO }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          tags: ${{ steps.prepare.outputs.tag }}
 
   e2e:
     name: E2E tests
@@ -90,11 +91,11 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
+        test:
+          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
     steps:
-
       - name: Check out code
-        uses: actions/checkout@v2.3.1
+        uses: actions/checkout@v2.3.4
 
       - name: Prepare tag
         id: prepare
@@ -143,7 +144,7 @@ jobs:
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.6'
+          go-version: "1.15.6"
 
       - name: Install MongoCLI
         run: |
@@ -190,7 +191,6 @@ jobs:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/checkout@v2.3.4
 
       - name: CleanUp empty AtlasProjects older than one day
