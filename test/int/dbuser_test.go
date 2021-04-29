@@ -19,6 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -509,6 +511,31 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+		})
+		Describe("Deleting the db user (not cleaning Atlas)", func() {
+			It("Should Succeed", func() {
+				By(`Creating the db user with retention policy "keep" first`, func() {
+					createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+					Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+					Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+						30*time.Minute, interval).Should(BeTrue())
+
+					createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+					createdDBUser.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+					Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+					Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+						DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				})
+				By("Deleting the db user - stays in Atlas", func() {
+					Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+
+					time.Sleep(1 * time.Minute)
+					Expect(checkAtlasDatabaseUserRemoved(createdProject.Status.ID, *createdDBUser)()).Should(BeFalse())
+
+					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+				})
 			})
 		})
 	})
