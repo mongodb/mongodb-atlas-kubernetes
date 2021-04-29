@@ -52,13 +52,11 @@ func GetStatusCondition(ns string, atlasname string) func() string {
 	}
 }
 
-func GetStatusPhase(ns string, args ...string) func() string {
-	return func() string {
-		args := append([]string{"get"}, args...)
-		args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
-		session := cli.Execute("kubectl", args...)
-		return string(session.Wait("1m").Out.Contents())
-	}
+func GetStatusPhase(ns string, args ...string) string {
+	args = append([]string{"get"}, args...)
+	args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
+	session := cli.Execute("kubectl", args...)
+	return string(session.Wait("1m").Out.Contents())
 }
 
 // GetProjectResource
@@ -144,6 +142,17 @@ func GetManagerLogs(ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
+}
+
+func GetTestAppLogs(label, ns string) []byte {
+	session := cli.ExecuteWithoutWriter("kubectl", "logs", "-l", label, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
+}
+
+func DescribeTestApp(label, ns string) []byte {
+	session := cli.Execute("kubectl", "describe", "pods", "-l", label, "-n", ns)
+	return session.Wait("1m").Out.Contents()
 }
 
 func GetYamlResource(resource string, ns string) []byte {

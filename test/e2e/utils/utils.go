@@ -10,6 +10,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 
 	"github.com/pborman/uuid"
+	"github.com/sethvargo/go-password/password"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
@@ -94,6 +95,11 @@ func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 
 func GenUniqID() string {
 	return uuid.NewRandom().String()
+}
+
+func GenID() string {
+	id, _ := password.Generate(10, 3, 0, true, true)
+	return id
 }
 
 func CopyFile(source, target string) {

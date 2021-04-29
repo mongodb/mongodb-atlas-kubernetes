@@ -6,19 +6,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
-	var userSpec model.UserInputs
+	var data model.TestDataProvider
 	var imageURL string
 
 	var _ = BeforeEach(func() {
@@ -33,99 +32,48 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(config.DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					"default",
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					userSpec.Namespace,
+					data.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(data.Resources)
 			} else {
-				Eventually(kube.DeleteNamespace(userSpec.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})
 	})
 
 	It("User can install", func() {
-		Eventually(cli.Execute("operator-sdk", "olm", "install"), "5m").Should(gexec.Exit(0))
+		Eventually(cli.Execute("operator-sdk", "olm", "install", "--version", "v0.17.0"), "3m").Should(gexec.Exit(0)) // TODO remove version param https://jira.mongodb.org/browse/CLOUDP-88736
 		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL), "5m").Should(gexec.Exit(0))
 
 		By("User creates configuration for a new Project and Cluster", func() {
-			userSpec = model.NewUserInputs(
-				"only-key",
+			data = model.NewTestDataProvider(
+				"bundle-wide",
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
 						AddRole("readWrite", "Ships", ""),
 				},
+				30005,
+				[]func(*model.TestDataProvider){},
 			)
-			utils.SaveToFile(
-				userSpec.ProjectPath,
-				userSpec.Project.ConvertByte(),
-			)
-			userSpec.Clusters = append(userSpec.Clusters, model.LoadUserClusterConfig(config.ClusterSample))
-			userSpec.Clusters[0].Spec.Project.Name = userSpec.Project.GetK8sMetaName()
-			userSpec.Clusters[0].ObjectMeta.Name = "cluster-from-bundle"
-			utils.SaveToFile(
-				userSpec.Clusters[0].ClusterFileName(userSpec),
-				utils.JSONToYAMLConvert(userSpec.Clusters[0]),
-			)
+			Expect(len(data.Resources.Users)).Should(Equal(1))
+			actions.PrepareUsersConfigurations(&data)
 		})
 
 		By("Apply configuration", func() {
-			kube.CreateNamespace(userSpec.Namespace)
-			kube.CreateApiKeySecret(userSpec.KeyName, userSpec.Namespace)
-			kube.Apply(userSpec.GetResourceFolder(), "-n", userSpec.Namespace)
-			for _, user := range userSpec.Users {
-				user.SaveConfigurationTo(userSpec.ProjectPath)
-				kube.CreateUserSecret(user.Spec.PasswordSecret.Name, userSpec.Namespace)
-			}
-			kube.Apply(userSpec.GetResourceFolder()+"/user/", "-n", userSpec.Namespace)
+			actions.DeployUserResourcesAction(&data)
 		})
 
-		By("Wait project creation", func() {
-			waitProject(userSpec, "1")
-			userSpec.ProjectID = kube.GetProjectResource(userSpec.Namespace, userSpec.K8sFullProjectName).Status.ID
-		})
-
-		By("Wait cluster creation", func() {
-			waitCluster(userSpec, "1")
-		})
-
-		By("Check attributes", func() {
-			uCluster := mongocli.GetClustersInfo(userSpec.ProjectID, userSpec.Clusters[0].Spec.Name)
-			compareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
-		})
-
-		By("check database users Attibutes", func() {
-			Eventually(checkIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
-			checkUsersAttributes(userSpec)
-		})
-
-		By("Deploy application for user", func() {
-			// kube apply application
-			// send data
-			// retrieve data
-			checkUsersCanUseApplication(30005, userSpec)
-		})
-
-		By("Delete cluster", func() {
-			kube.Delete(userSpec.Clusters[0].ClusterFileName(userSpec), "-n", userSpec.Namespace)
-			Eventually(
-				checkIfClusterExist(userSpec),
-				"10m", "1m",
-			).Should(BeFalse(), "Cluster should be deleted from Atlas")
-		})
-
-		By("Delete project", func() {
-			kube.Delete(userSpec.ProjectPath, "-n", userSpec.Namespace)
-			Eventually(
-				func() bool {
-					return mongocli.IsProjectInfoExist(userSpec.ProjectID)
-				},
-				"5m", "20s",
-			).Should(BeFalse(), "Project should be deleted from Atlas")
+		By("Delete user resources(project/cluster)", func() {
+			actions.DeleteUserResources(&data)
 		})
 	})
 })

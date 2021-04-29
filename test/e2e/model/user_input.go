@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"path/filepath"
 
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -20,16 +21,16 @@ type UserInputs struct {
 }
 
 // NewUsersInputs prepare users inputs
-func NewUserInputs(keyName string, users []DBUser) UserInputs {
-	uid := utils.GenUniqID()
+func NewUserInputs(keyTestPrefix string, users []DBUser) UserInputs {
+	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, utils.GenID())
 	input := UserInputs{
 		ProjectID:          "",
-		KeyName:            keyName,
-		Namespace:          "ns-" + uid,
-		K8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + uid,
-		ProjectPath:        filepath.Join(DataFolder, uid, "resources", uid+".yaml"),
+		KeyName:            keyTestPrefix,
+		Namespace:          "ns-" + projectName,
+		K8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + projectName,
+		ProjectPath:        filepath.Join(DataFolder, projectName, "resources", projectName+".yaml"),
 	}
-	input.Project = NewProject("k-"+uid).ProjectName(uid).SecretRef(keyName).WithIpAccess("0.0.0.0/0", "everyone")
+	input.Project = NewProject("k-"+projectName).ProjectName(projectName).SecretRef(keyTestPrefix).WithIpAccess("0.0.0.0/0", "everyone")
 	for _, user := range users {
 		input.Users = append(input.Users, *user.WithProjectRef(input.Project.GetK8sMetaName()))
 	}
