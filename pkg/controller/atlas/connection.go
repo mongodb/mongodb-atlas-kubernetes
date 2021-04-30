@@ -7,8 +7,6 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 const (
@@ -26,14 +24,13 @@ type Connection struct {
 
 // ReadConnection reads Atlas API connection parameters from AtlasProject Secret or from the default Operator one if the
 // former is not specified
-func ReadConnection(log *zap.SugaredLogger, kubeClient client.Client, operatorDeployment client.ObjectKey, projectOverrideSecretRef *client.ObjectKey) (Connection, error) {
+func ReadConnection(log *zap.SugaredLogger, kubeClient client.Client, operatorAPISecret client.ObjectKey, projectOverrideSecretRef *client.ObjectKey) (Connection, error) {
 	if projectOverrideSecretRef != nil {
 		// TODO is it possible that part of connection (like orgID is still in the Operator level secret and needs to get merged?)
 		log.Infof("Reading Atlas API credentials from the AtlasProject Secret %s", projectOverrideSecretRef)
 		return readAtlasConnectionFromSecret(kubeClient, *projectOverrideSecretRef)
 	}
 
-	operatorAPISecret := kube.ObjectKey(operatorDeployment.Namespace, operatorDeployment.Name+"-api-key")
 	log.Debugf("AtlasProject connection Secret is not specified - using the Operator one: %v", operatorAPISecret)
 	return readAtlasConnectionFromSecret(kubeClient, operatorAPISecret)
 }

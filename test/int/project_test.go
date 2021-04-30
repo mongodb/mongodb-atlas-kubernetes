@@ -82,7 +82,7 @@ var _ = Describe("AtlasProject", func() {
 		Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 	}
 
-	Describe("Creating the project", func() {
+	FDescribe("Creating the project", func() {
 		It("Should Succeed", func() {
 			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
