@@ -189,7 +189,7 @@ func prepareControllers() {
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator"),
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -197,7 +197,7 @@ func prepareControllers() {
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator"),
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -206,7 +206,7 @@ func prepareControllers() {
 		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator"),
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
