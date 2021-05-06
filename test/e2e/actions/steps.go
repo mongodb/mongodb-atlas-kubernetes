@@ -139,21 +139,30 @@ func SaveTestAppLogs(input model.UserInputs) {
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
-	for _, user := range input.Users {
-		atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
-		// Required fields
-		ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
-			"Username":     Equal(user.Spec.Username),
-			"GroupID":      Equal(input.ProjectID),
-			"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
-		}), "Users attributes should be the same as requested by the user")
+	for _, cluster := range input.Clusters {
+		for _, user := range input.Users {
+			EventuallyWithOffset(1, mongocli.IsUserExist(user.Spec.Username, input.ProjectID), "7m", "10s").Should(BeTrue())
+			uResourceName := fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", cluster.ObjectMeta.Name, user.Spec.Username)
+			EventuallyWithOffset(
+				1, kube.GetStatusCondition(input.Namespace, uResourceName),
+				"45m", "1m",
+			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
 
-		for i, role := range atlasUser.Roles {
-			ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
-				"RoleName":       Equal(user.Spec.Roles[i].RoleName),
-				"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
-				"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
-			}), "Users roles attributes should be the same as requsted by the user")
+			atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
+			// Required fields
+			ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+				"Username":     Equal(user.Spec.Username),
+				"GroupID":      Equal(input.ProjectID),
+				"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
+			}), "Users attributes should be the same as requested by the user")
+
+			for i, role := range atlasUser.Roles {
+				ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
+					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
+					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
+					"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
+				}), "Users roles attributes should be the same as requsted by the user")
+			}
 		}
 	}
 }

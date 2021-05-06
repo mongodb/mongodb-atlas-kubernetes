@@ -115,7 +115,6 @@ func mainCycle(data model.TestDataProvider) {
 
 	By("Additional check for the current data set", func() {
 		for _, check := range data.Actions {
-			// Expect(true).Should(BeFalse()) //TODO DELETE IT
 			check(&data)
 		}
 	})

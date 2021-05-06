@@ -8,7 +8,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-// TODO PRIVATE?
 type UserInputs struct {
 	ProjectID          string
 	KeyName            string
