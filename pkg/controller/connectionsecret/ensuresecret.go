@@ -27,7 +27,8 @@ type ConnectionData struct {
 	DBUserName, ConnURL, SrvConnURL, Password string
 }
 
-// Ensure creates or updates the connection Secret for the specific cluster and db user.
+// Ensure creates or updates the connection Secret for the specific cluster and db user. Returns the name of the Secret
+// created.
 func Ensure(client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) (string, error) {
 	var getError error
 	s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{

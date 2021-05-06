@@ -89,14 +89,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	operatorPod := operatorDeploymentObjectKey()
+	operatorDeployment := operatorDeploymentObjectKey()
 
 	if err = (&atlascluster.AtlasClusterReconciler{
 		Client:                 mgr.GetClient(),
 		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		Scheme:                 mgr.GetScheme(),
 		AtlasDomain:            config.AtlasDomain,
-		OperatorDeploymentName: operatorPod,
+		OperatorDeploymentName: operatorDeployment,
+		EventRecorder:          mgr.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
@@ -108,7 +109,8 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		AtlasDomain:     config.AtlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     operatorPod,
+		OperatorPod:     operatorDeployment,
+		EventRecorder:   mgr.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
@@ -120,7 +122,8 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		AtlasDomain:     config.AtlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     operatorPod,
+		OperatorPod:     operatorDeployment,
+		EventRecorder:   mgr.GetEventRecorderFor("AtlasDatabaseUser"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)

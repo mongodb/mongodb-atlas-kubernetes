@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -45,20 +46,23 @@ import (
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	watch.ResourceWatcher
-	Client      client.Client
-	Log         *zap.SugaredLogger
-	Scheme      *runtime.Scheme
-	AtlasDomain string
-	OperatorPod client.ObjectKey
+	Client        client.Client
+	Log           *zap.SugaredLogger
+	Scheme        *runtime.Scheme
+	AtlasDomain   string
+	OperatorPod   client.ObjectKey
+	EventRecorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdatabaseusers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=create;update;patch;delete
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context
@@ -75,7 +79,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	ctx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log)
 
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
-	defer statushandler.Update(ctx, r.Client, databaseUser)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, databaseUser)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(databaseUser, project); !result.IsOk() {

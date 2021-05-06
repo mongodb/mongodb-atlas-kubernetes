@@ -189,6 +189,7 @@ func prepareControllers() {
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ResourceWatcher: watch.NewResourceWatcher(),
+		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
 		OperatorPod:     kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
@@ -197,6 +198,7 @@ func prepareControllers() {
 		Client:                 k8sManager.GetClient(),
 		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		AtlasDomain:            "https://cloud-qa.mongodb.com",
+		EventRecorder:          k8sManager.GetEventRecorderFor("AtlasCluster"),
 		OperatorDeploymentName: kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
@@ -205,6 +207,7 @@ func prepareControllers() {
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher: watch.NewResourceWatcher(),
 		OperatorPod:     kube.ObjectKey(namespace.Name, "atlas-operator"),
 	}).SetupWithManager(k8sManager)

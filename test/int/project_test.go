@@ -98,6 +98,8 @@ var _ = Describe("AtlasProject", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
+
+			testutil.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
 		})
 		It("Should fail if Secret is wrong", func() {
 			expectedProject := mdbv1.DefaultProject(namespace.Name, "non-existent-secret")
@@ -115,6 +117,7 @@ var _ = Describe("AtlasProject", func() {
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.ID()).To(BeEmpty())
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
+			testutil.EventExists(k8sClient, createdProject, "Warning", string(workflow.AtlasCredentialsNotProvided), "Secret .* not found")
 
 			// Atlas
 			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), expectedProject.Spec.Name)

@@ -338,8 +338,10 @@ var _ = Describe("AtlasCluster", func() {
 					60,
 					interval,
 				).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdCluster, "Warning", string(workflow.Internal), "name is invalid because must be set")
 
 				lastGeneration++
+
 			})
 
 			By("Fixing the cluster", func() {
@@ -570,7 +572,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					80, interval).Should(BeTrue())
+					100, interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Cluster "+createdCluster.Name, func() {

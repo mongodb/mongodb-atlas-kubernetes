@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -49,13 +50,16 @@ type AtlasClusterReconciler struct {
 	Scheme                 *runtime.Scheme
 	AtlasDomain            string
 	OperatorDeploymentName client.ObjectKey
+	EventRecorder          record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlascluster", req.NamespacedName)
@@ -68,7 +72,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
-	defer statushandler.Update(ctx, r.Client, cluster)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {
@@ -102,7 +106,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if csResult := ensureConnectionSecrets(ctx, r.Client, project, c); !csResult.IsOk() {
+	if csResult := r.ensureConnectionSecrets(ctx, project, c, cluster); !csResult.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
 		return csResult.ReconcileResult(), nil
 	}

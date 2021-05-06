@@ -43,7 +43,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if result := CreateOrUpdateConnectionSecrets(ctx, r.Client, project, dbUser); !result.IsOk() {
+	if result := CreateOrUpdateConnectionSecrets(ctx, r.Client, r.EventRecorder, project, dbUser); !result.IsOk() {
 		return result
 	}
 
