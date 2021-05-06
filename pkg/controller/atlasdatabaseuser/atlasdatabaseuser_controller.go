@@ -46,12 +46,12 @@ import (
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	watch.ResourceWatcher
-	Client        client.Client
-	Log           *zap.SugaredLogger
-	Scheme        *runtime.Scheme
-	AtlasDomain   string
-	OperatorPod   client.ObjectKey
-	EventRecorder record.EventRecorder
+	Client          client.Client
+	Log             *zap.SugaredLogger
+	Scheme          *runtime.Scheme
+	AtlasDomain     string
+	GlobalAPISecret client.ObjectKey
+	EventRecorder   record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
@@ -87,7 +87,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -171,7 +171,7 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 }
 
 func (r AtlasDatabaseUserReconciler) deleteUserFromAtlas(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}

@@ -89,15 +89,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	operatorDeployment := operatorDeploymentObjectKey()
-
 	if err = (&atlascluster.AtlasClusterReconciler{
-		Client:                 mgr.GetClient(),
-		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		Scheme:                 mgr.GetScheme(),
-		AtlasDomain:            config.AtlasDomain,
-		OperatorDeploymentName: operatorDeployment,
-		EventRecorder:          mgr.GetEventRecorderFor("AtlasCluster"),
+		Client:          mgr.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		GlobalAPISecret: config.GlobalAPISecret,
+		EventRecorder:   mgr.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
@@ -109,7 +107,7 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		AtlasDomain:     config.AtlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     operatorDeployment,
+		GlobalAPISecret: config.GlobalAPISecret,
 		EventRecorder:   mgr.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
@@ -122,7 +120,7 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		AtlasDomain:     config.AtlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     operatorDeployment,
+		GlobalAPISecret: config.GlobalAPISecret,
 		EventRecorder:   mgr.GetEventRecorderFor("AtlasDatabaseUser"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
@@ -152,19 +150,25 @@ type Config struct {
 	MetricsAddr          string
 	WatchedNamespaces    string
 	ProbeAddr            string
+	GlobalAPISecret      client.ObjectKey
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
 func parseConfiguration(log *zap.SugaredLogger) Config {
+	var globalAPISecretName string
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com", "the Atlas URL domain name (no slash in the end).")
 	flag.StringVar(&config.MetricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&config.ProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&globalAPISecretName, "global-api-secret-name", "", "The name of the Secret that contains Atlas API keys. "+
+		"It is used by the Operator if AtlasProject configuration doesn't contain API key reference. Defaults to <deployment_name>-api-key.")
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 
 	flag.Parse()
+
+	config.GlobalAPISecret = operatorGlobalKeySecretOrDefault(globalAPISecretName)
 
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
@@ -176,18 +180,23 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	return config
 }
 
-func operatorDeploymentObjectKey() client.ObjectKey {
-	operatorPodName := os.Getenv("OPERATOR_POD_NAME")
-	if operatorPodName == "" {
-		log.Fatal(`"OPERATOR_POD_NAME" environment variable must be set!`)
+func operatorGlobalKeySecretOrDefault(secretNameOverride string) client.ObjectKey {
+	secretName := secretNameOverride
+	if secretName == "" {
+		operatorPodName := os.Getenv("OPERATOR_POD_NAME")
+		if operatorPodName == "" {
+			log.Fatal(`"OPERATOR_POD_NAME" environment variable must be set!`)
+		}
+		deploymentName, err := kube.ParseDeploymentNameFromPodName(operatorPodName)
+		if err != nil {
+			log.Fatalf(`Failed to get Operator Deployment name from "OPERATOR_POD_NAME" environment variable: %s`, err.Error())
+		}
+		secretName = deploymentName + "-api-key"
 	}
 	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
 	if operatorNamespace == "" {
 		log.Fatal(`"OPERATOR_NAMESPACE" environment variable must be set!`)
 	}
-	deploymentName, err := kube.ParseDeploymentNameFromPodName(operatorPodName)
-	if err != nil {
-		log.Fatalf(`Failed to get Operator Deployment name from "OPERATOR_POD_NAME" environment variable: %s`, err.Error())
-	}
-	return client.ObjectKey{Namespace: operatorNamespace, Name: deploymentName}
+
+	return client.ObjectKey{Namespace: operatorNamespace, Name: secretName}
 }

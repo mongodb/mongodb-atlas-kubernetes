@@ -47,11 +47,11 @@ import (
 type AtlasProjectReconciler struct {
 	Client client.Client
 	watch.ResourceWatcher
-	Log           *zap.SugaredLogger
-	Scheme        *runtime.Scheme
-	AtlasDomain   string
-	OperatorPod   client.ObjectKey
-	EventRecorder record.EventRecorder
+	Log             *zap.SugaredLogger
+	Scheme          *runtime.Scheme
+	AtlasDomain     string
+	GlobalAPISecret client.ObjectKey
+	EventRecorder   record.EventRecorder
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -87,7 +87,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
@@ -138,7 +138,7 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		return nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}
