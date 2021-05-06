@@ -50,7 +50,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWriteAnyDatabase", "admin", ""),
+						AddRole(model.RoleReadWriteAnyDatabase, "admin", ""),
 				},
 				30000,
 				[]func(*model.TestDataProvider){
@@ -66,10 +66,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("admin").
 						WithSecretRef("dbuser-admin-secret-u1").
-						AddRole("atlasAdmin", "admin", ""),
+						AddRole(model.RoleAdmin, "admin", ""),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", ""),
+						AddRole(model.RoleReadWrite, "Ships", ""),
 				},
 				30001,
 				[]func(*model.TestDataProvider){
@@ -88,10 +88,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("atlasAdmin", "admin", ""),
+						AddRole(model.RoleAdmin, "admin", ""),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("atlasAdmin", "admin", ""),
+						AddRole(model.RoleAdmin, "admin", ""),
 				},
 				30003,
 				[]func(*model.TestDataProvider){

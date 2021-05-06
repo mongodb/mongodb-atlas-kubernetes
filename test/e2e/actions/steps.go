@@ -139,12 +139,17 @@ func SaveTestAppLogs(input model.UserInputs) {
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
+	userDBResourceName := func(clusterName string, user model.DBUser) string { // user name helmkind or kube-test-kind
+		if user.ObjectMeta.Name[0:2] == "k-" {
+			return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s", user.ObjectMeta.Name)
+		}
+		return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", clusterName, user.Spec.Username)
+	}
 	for _, cluster := range input.Clusters {
 		for _, user := range input.Users {
 			EventuallyWithOffset(1, mongocli.IsUserExist(user.Spec.Username, input.ProjectID), "7m", "10s").Should(BeTrue())
-			uResourceName := fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", cluster.ObjectMeta.Name, user.Spec.Username)
 			EventuallyWithOffset(
-				1, kube.GetStatusCondition(input.Namespace, uResourceName),
+				1, kube.GetStatusCondition(input.Namespace, userDBResourceName(cluster.ObjectMeta.Name, user)),
 				"45m", "1m",
 			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
 

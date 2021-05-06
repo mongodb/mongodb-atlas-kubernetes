@@ -47,7 +47,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 			WithAuthDatabase("admin").
 			WithProjectRef(data.Resources.Project.GetK8sMetaName()).
 			WithSecretRef("new-user-secret").
-			AddRole("dbAdmin", "Ships", "")
+			AddRole(model.RoleAdmin, "Ships", "")
 		data.Resources.Users = append(data.Resources.Users, newUser)
 		helm.UpgradeAtlasClusterChart(data.Resources)
 		CheckUsersAttributes(data.Resources)

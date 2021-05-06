@@ -18,6 +18,30 @@ type DBUser struct {
 	Spec UserSpec `json:"spec,omitempty"`
 }
 
+type UserRoleType string
+
+// type UserRoleList struct {
+// 	RoleAdmin                UserRoleType
+// 	RoleReadWrite            UserRoleType
+// 	RoleReadWriteAnyDatabase UserRoleType
+// 	RoleRead                 UserRoleType
+// }
+
+// var UserRole = UserRoleList{
+// 	RoleAdmin:                "dbAdmin",
+// 	RoleReadWrite:            "readWrite",
+// 	RoleReadWriteAnyDatabase: "readWriteAnyDatabase",
+// 	RoleRead:                 "read",
+// }
+
+const (
+	// roles names
+	RoleAdmin                UserRoleType = "dbAdmin"
+	RoleReadWrite            UserRoleType = "readWrite"
+	RoleReadWriteAnyDatabase UserRoleType = "readWriteAnyDatabase"
+	RoleRead                 UserRoleType = "read"
+)
+
 func NewDBUser(userName string) *DBUser {
 	return &DBUser{
 		TypeMeta: metav1.TypeMeta{
@@ -51,9 +75,9 @@ func (s *DBUser) WithSecretRef(name string) *DBUser {
 	return s
 }
 
-func (s *DBUser) AddRole(role string, db string, collection string) *DBUser {
+func (s *DBUser) AddRole(role UserRoleType, db string, collection string) *DBUser {
 	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
-		RoleName:       role,
+		RoleName:       string(role),
 		DatabaseName:   db,
 		CollectionName: collection,
 	})
@@ -61,7 +85,6 @@ func (s *DBUser) AddRole(role string, db string, collection string) *DBUser {
 }
 
 func (s *DBUser) GetFilePath(projectName string) string {
-	// return filepath.Join("data", ns, "user", "user-"+s.ObjectMeta.Name+".yaml")
 	return filepath.Join(projectName, "user", "user-"+s.ObjectMeta.Name+".yaml")
 }
 
