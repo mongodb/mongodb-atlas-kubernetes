@@ -20,20 +20,6 @@ type DBUser struct {
 
 type UserRoleType string
 
-// type UserRoleList struct {
-// 	RoleAdmin                UserRoleType
-// 	RoleReadWrite            UserRoleType
-// 	RoleReadWriteAnyDatabase UserRoleType
-// 	RoleRead                 UserRoleType
-// }
-
-// var UserRole = UserRoleList{
-// 	RoleAdmin:                "dbAdmin",
-// 	RoleReadWrite:            "readWrite",
-// 	RoleReadWriteAnyDatabase: "readWriteAnyDatabase",
-// 	RoleRead:                 "read",
-// }
-
 const (
 	// roles names
 	RoleAdmin                UserRoleType = "dbAdmin"

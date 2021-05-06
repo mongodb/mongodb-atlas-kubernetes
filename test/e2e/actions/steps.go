@@ -139,7 +139,6 @@ func SaveTestAppLogs(input model.UserInputs) {
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
-
 	userDBResourceName := func(clusterName string, user model.DBUser) string { // user name helmkind or kube-test-kind
 		if input.KeyName[0:4] == "helm" {
 			return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", clusterName, user.Spec.Username)
