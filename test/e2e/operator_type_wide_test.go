@@ -69,7 +69,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", "").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30008,
@@ -82,7 +82,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", "").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30009,

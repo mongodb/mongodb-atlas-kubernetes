@@ -18,6 +18,19 @@ type DBUser struct {
 	Spec UserSpec `json:"spec,omitempty"`
 }
 
+type UserCustomRoleType string
+
+const (
+	// build-in dbroles
+	RoleBuildInAdmin        string = "atlasAdmin"
+	RoleBuildInReadWriteAny string = "readWriteAnyDatabase"
+	RoleBuildInReadAny      string = "readAnyDatabase"
+
+	RoleCustomAdmin     UserCustomRoleType = "dbAdmin"
+	RoleCustomReadWrite UserCustomRoleType = "readWrite"
+	RoleCustomRead      UserCustomRoleType = "read"
+)
+
 func NewDBUser(userName string) *DBUser {
 	return &DBUser{
 		TypeMeta: metav1.TypeMeta{
@@ -51,17 +64,48 @@ func (s *DBUser) WithSecretRef(name string) *DBUser {
 	return s
 }
 
-func (s *DBUser) AddRole(role string, db string, collection string) *DBUser {
+func (s *DBUser) AddBuildInAdminRole() *DBUser {
 	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
-		RoleName:       role,
+		RoleName:       RoleBuildInAdmin,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddBuildInReadAnyRole() *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       RoleBuildInReadAny,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddBuildInReadWriteRole() *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       RoleBuildInReadWriteAny,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddCustomRole(role UserCustomRoleType, db string, collection string) *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       string(role),
 		DatabaseName:   db,
 		CollectionName: collection,
 	})
 	return s
 }
 
+func (s *DBUser) DeleteAllRoles() *DBUser {
+	s.Spec.Roles = []v1.RoleSpec{}
+	return s
+}
+
 func (s *DBUser) GetFilePath(projectName string) string {
-	// return filepath.Join("data", ns, "user", "user-"+s.ObjectMeta.Name+".yaml")
 	return filepath.Join(projectName, "user", "user-"+s.ObjectMeta.Name+".yaml")
 }
 

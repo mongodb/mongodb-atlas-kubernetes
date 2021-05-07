@@ -104,6 +104,7 @@ func GetVersionOutput() {
 }
 
 func GetUser(userName, projectID string) mongodbatlas.DatabaseUser {
+	EventuallyWithOffset(1, IsUserExist(userName, projectID), "7m", "10s").Should(BeTrue(), "User doesn't exist")
 	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--projectId", projectID, "-o", "json")
 	cli.SessionShouldExit(session)
 	output := session.Out.Contents()

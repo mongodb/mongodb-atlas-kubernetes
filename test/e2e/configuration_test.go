@@ -50,7 +50,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWriteAnyDatabase", "admin", ""),
+						AddBuildInAdminRole(),
 				},
 				30000,
 				[]func(*model.TestDataProvider){
@@ -66,10 +66,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("admin").
 						WithSecretRef("dbuser-admin-secret-u1").
-						AddRole("atlasAdmin", "admin", ""),
+						AddBuildInAdminRole(),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", ""),
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", ""),
 				},
 				30001,
 				[]func(*model.TestDataProvider){
@@ -88,10 +88,10 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("atlasAdmin", "admin", ""),
+						AddBuildInAdminRole(),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("atlasAdmin", "admin", ""),
+						AddBuildInAdminRole(),
 				},
 				30003,
 				[]func(*model.TestDataProvider){
@@ -115,7 +115,6 @@ func mainCycle(data model.TestDataProvider) {
 
 	By("Additional check for the current data set", func() {
 		for _, check := range data.Actions {
-			// Expect(true).Should(BeFalse()) //TODO DELETE IT
 			check(&data)
 		}
 	})

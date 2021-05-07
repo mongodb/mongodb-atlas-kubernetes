@@ -139,21 +139,35 @@ func SaveTestAppLogs(input model.UserInputs) {
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
-	for _, user := range input.Users {
-		atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
-		// Required fields
-		ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
-			"Username":     Equal(user.Spec.Username),
-			"GroupID":      Equal(input.ProjectID),
-			"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
-		}), "Users attributes should be the same as requested by the user")
+	userDBResourceName := func(clusterName string, user model.DBUser) string { // user name helmkind or kube-test-kind
+		if input.KeyName[0:4] == "helm" {
+			return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", clusterName, user.Spec.Username)
+		}
+		return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s", user.ObjectMeta.Name)
+	}
+	for _, cluster := range input.Clusters {
+		for _, user := range input.Users {
+			EventuallyWithOffset(1, mongocli.IsUserExist(user.Spec.Username, input.ProjectID), "7m", "10s").Should(BeTrue())
+			EventuallyWithOffset(
+				1, kube.GetStatusCondition(input.Namespace, userDBResourceName(cluster.ObjectMeta.Name, user)),
+				"7m", "1m",
+			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
 
-		for i, role := range atlasUser.Roles {
-			ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
-				"RoleName":       Equal(user.Spec.Roles[i].RoleName),
-				"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
-				"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
-			}), "Users roles attributes should be the same as requsted by the user")
+			atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
+			// Required fields
+			ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+				"Username":     Equal(user.Spec.Username),
+				"GroupID":      Equal(input.ProjectID),
+				"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
+			}), "Users attributes should be the same as requested by the user")
+
+			for i, role := range atlasUser.Roles {
+				ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
+					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
+					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
+					"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
+				}), "Users roles attributes should be the same as requsted by the user")
+			}
 		}
 	}
 }

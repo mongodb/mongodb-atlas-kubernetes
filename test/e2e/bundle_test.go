@@ -59,7 +59,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWrite", "Ships", ""),
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", ""),
 				},
 				30005,
 				[]func(*model.TestDataProvider){},
