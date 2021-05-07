@@ -74,7 +74,7 @@ var _ = Describe("HELM charts", func() {
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole(model.RoleReadWrite, "Ships", "").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30006,
@@ -97,7 +97,7 @@ var _ = Describe("HELM charts", func() {
 					[]model.DBUser{
 						*model.NewDBUser("reader2").
 							WithSecretRef("dbuser-secret-u2").
-							AddRole(model.RoleReadWrite, "Ships", "").
+							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 							WithAuthDatabase("admin"),
 					},
 					30007,

@@ -18,14 +18,17 @@ type DBUser struct {
 	Spec UserSpec `json:"spec,omitempty"`
 }
 
-type UserRoleType string
+type UserCustomRoleType string
 
 const (
-	// roles names
-	RoleAdmin                UserRoleType = "dbAdmin"
-	RoleReadWrite            UserRoleType = "readWrite"
-	RoleReadWriteAnyDatabase UserRoleType = "readWriteAnyDatabase"
-	RoleRead                 UserRoleType = "read"
+	// build-in dbroles
+	RoleBuildInAdmin        string = "atlasAdmin"
+	RoleBuildInReadWriteAny string = "readWriteAnyDatabase"
+	RoleBuildInReadAny      string = "readAnyDatabase"
+
+	RoleCustomAdmin     UserCustomRoleType = "dbAdmin"
+	RoleCustomReadWrite UserCustomRoleType = "readWrite"
+	RoleCustomRead      UserCustomRoleType = "read"
 )
 
 func NewDBUser(userName string) *DBUser {
@@ -61,12 +64,44 @@ func (s *DBUser) WithSecretRef(name string) *DBUser {
 	return s
 }
 
-func (s *DBUser) AddRole(role UserRoleType, db string, collection string) *DBUser {
+func (s *DBUser) AddBuildInAdminRole() *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       RoleBuildInAdmin,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddBuildInReadAnyRole() *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       RoleBuildInReadAny,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddBuildInReadWriteRole() *DBUser {
+	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+		RoleName:       RoleBuildInReadWriteAny,
+		DatabaseName:   "admin",
+		CollectionName: "",
+	})
+	return s
+}
+
+func (s *DBUser) AddCustomRole(role UserCustomRoleType, db string, collection string) *DBUser {
 	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
 		RoleName:       string(role),
 		DatabaseName:   db,
 		CollectionName: collection,
 	})
+	return s
+}
+
+func (s *DBUser) DeleteAllRoles() *DBUser {
+	s.Spec.Roles = []v1.RoleSpec{}
 	return s
 }
 
