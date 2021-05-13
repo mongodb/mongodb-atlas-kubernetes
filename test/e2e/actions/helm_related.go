@@ -62,3 +62,19 @@ func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 		CheckUsersAttributes(data.Resources)
 	})
 }
+
+// HelmUpgradeChartVersions upgrade chart version of crd, operator, and
+func HelmUpgradeChartVersions(data *model.TestDataProvider) {
+	By("User update helm chart (used main-branch)", func() {
+		generation, _ := strconv.Atoi(kube.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
+		helm.UpgradeOperatorChart(data.Resources)
+		helm.UpgradeAtlasClusterChartDev(data.Resources)
+
+		By("Wait updating")
+		WaitCluster(data.Resources, strconv.Itoa(generation+1))
+
+		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		CompareClustersSpec(data.Resources.Clusters[0].Spec, updatedCluster)
+		CheckUsersAttributes(data.Resources)
+	})
+}
