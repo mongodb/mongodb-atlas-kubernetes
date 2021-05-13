@@ -97,3 +97,11 @@ func (r Result) ReconcileResult() reconcile.Result {
 	}
 	return reconcile.Result{RequeueAfter: r.requeueAfter}
 }
+
+func (r Result) Reason() ConditionReason {
+	return r.reason
+}
+
+func (r Result) Message() string {
+	return r.message
+}

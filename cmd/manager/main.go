@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -44,11 +46,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	dbaasv1beta1 "github.com/RHEcosystemAppEng/dbaas-operator/api/v1beta1"
+
+	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasconnection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinstance"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinventory"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/dbaasprovider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	// +kubebuilder:scaffold:imports
@@ -63,6 +72,11 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
+
+	utilruntime.Must(dbaas.AddToScheme(scheme))
+
+	utilruntime.Must(dbaasv1beta1.AddToScheme(scheme))
+
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -103,6 +117,7 @@ func main() {
 			},
 		})
 	}
+	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version.Version)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -128,6 +143,69 @@ func main() {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
+	globalPredicatesWithAnnotations := []predicate.Predicate{
+		watch.CommonPredicatesWithAnnotations(),                   // ignore spurious changes. status changes etc but allow annotation changes
+		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
+	}
+
+	cfg := mgr.GetConfig()
+	clientset, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to create clientset")
+		os.Exit(1)
+	}
+
+	if err = (&dbaasprovider.DBaaSProviderReconciler{
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		Log:       logger.Named("controllers").Named("DBaaSProvider").Sugar(),
+		Clientset: clientset,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "DBaaSProvider")
+		os.Exit(1)
+	}
+
+	if err = (&atlasinventory.MongoDBAtlasInventoryReconciler{
+		Client:          mgr.GetClient(),
+		Log:             logger.Named("controllers").Named("MongoDBAtlasInventory").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		GlobalAPISecret: config.GlobalAPISecret,
+		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasInventory"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasInventory")
+		os.Exit(1)
+	}
+
+	if err = (&atlasconnection.MongoDBAtlasConnectionReconciler{
+		Client:          mgr.GetClient(),
+		Clientset:       clientset,
+		Log:             logger.Named("controllers").Named("MongoDBAtlasConnection").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		GlobalAPISecret: config.GlobalAPISecret,
+		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasConnection"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasConnection")
+		os.Exit(1)
+	}
+
+	if err = (&atlasinstance.MongoDBAtlasInstanceReconciler{
+		Client:          mgr.GetClient(),
+		Clientset:       clientset,
+		Log:             logger.Named("controllers").Named("MongoDBAtlasInstance").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		GlobalAPISecret: config.GlobalAPISecret,
+		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasInstance"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasInstance")
+		os.Exit(1)
+	}
+
 	if err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:           mgr.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
@@ -135,7 +213,7 @@ func main() {
 		AtlasDomain:      config.AtlasDomain,
 		GlobalAPISecret:  config.GlobalAPISecret,
 		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalPredicates: globalPredicates,
+		GlobalPredicates: globalPredicatesWithAnnotations,
 		EventRecorder:    mgr.GetEventRecorderFor("AtlasDeployment"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDeployment")
@@ -197,6 +275,7 @@ type Config struct {
 	GlobalAPISecret      client.ObjectKey
 	LogLevel             string
 	LogEncoder           string
+	SyncPeriod           time.Duration
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -236,6 +315,12 @@ func parseConfiguration() Config {
 		config.Namespace = watchedNamespace
 	}
 
+	syncPeriodMin, _ := strconv.Atoi(os.Getenv("SYNC_PERIOD_MIN"))
+	if syncPeriodMin <= 0 {
+		syncPeriodMin = 180 // default to 180 minutes (3 hours)
+		setupLog.Info("SYNC_PERIOD_MIN is missing. Default " + strconv.Itoa(syncPeriodMin) + " is used")
+	}
+	config.SyncPeriod = time.Minute * time.Duration(syncPeriodMin)
 	return config
 }
 

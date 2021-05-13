@@ -46,11 +46,22 @@ const (
 	DeploymentNotUpdatedInAtlas           ConditionReason = "DeploymentNotUpdatedInAtlas"
 	DeploymentCreating                    ConditionReason = "DeploymentCreating"
 	DeploymentUpdating                    ConditionReason = "DeploymentUpdating"
+	DeploymentDeleting                    ConditionReason = "DeploymentDeleting"
+	DeploymentDeleted                     ConditionReason = "DeploymentDeleted"
 	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
 	DeploymentAdvancedOptionsReady        ConditionReason = "DeploymentAdvancedOptionsReady"
+	DeploymentAdvancedOptionsAreNotReady  ConditionReason = "DeploymentAdvancedOptionsAreNotReady"
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
+	ClusterNotCreatedInAtlas              ConditionReason = "ClusterNotCreatedInAtlas"
+	ClusterNotUpdatedInAtlas              ConditionReason = "ClusterNotUpdatedInAtlas"
+	ClusterCreating                       ConditionReason = "ClusterCreating"
+	ClusterUpdating                       ConditionReason = "ClusterUpdating"
+	ClusterDeleting                       ConditionReason = "ClusterDeleting"
+	ClusterDeleted                        ConditionReason = "ClusterDeleted"
+	ClusterConnectionSecretsNotCreated    ConditionReason = "ClusterConnectionSecretsNotCreated"
+	ClusterAdvancedOptionsAreNotReady     ConditionReason = "ClusterAdvancedOptionsAreNotReady"
 )
 
 // Atlas Database User reasons
@@ -70,4 +81,37 @@ const (
 	TeamInvalidSpec       ConditionReason = "TeamInvalidSpec"
 	TeamUsersNotReady     ConditionReason = "TeamUsersNotReady"
 	TeamDoesNotExist      ConditionReason = "TeamDoesNotExist"
+)
+
+// MongoDBAtlasInventory reasons
+const (
+	MongoDBAtlasInventorySyncOK              ConditionReason = "SyncOK"
+	MongoDBAtlasInventoryInputError          ConditionReason = "InputError"
+	MongoDBAtlasInventoryBackendError        ConditionReason = "BackendError"
+	MongoDBAtlasInventoryEndpointUnreachable ConditionReason = "EndpointUnreachable"
+	MongoDBAtlasInventoryAuthenticationError ConditionReason = "AuthenticationError"
+)
+
+// MongoDBAtlasConnection reasons
+const (
+	MongoDBAtlasConnectionReady               ConditionReason = "Ready"
+	MongoDBAtlasConnectionAtlasUnreachable    ConditionReason = "Unreachable"
+	MongoDBAtlasConnectionInventoryNotReady   ConditionReason = "InventoryNotReady"
+	MongoDBAtlasConnectionInventoryNotFound   ConditionReason = "InventoryNotFound"
+	MongoDBAtlasConnectionInstanceIDNotFound  ConditionReason = "InstanceIDNotFound"
+	MongoDBAtlasConnectionBackendError        ConditionReason = "BackendError"
+	MongoDBAtlasConnectionAuthenticationError ConditionReason = "AuthenticationError"
+	MongoDBAtlasConnectionInprogress          ConditionReason = "Inprogress"
+)
+
+// MongoDBAtlasInstance reasons
+const (
+	MongoDBAtlasInstanceReady               ConditionReason = "Ready"
+	MongoDBAtlasInstanceAtlasUnreachable    ConditionReason = "Unreachable"
+	MongoDBAtlasInstanceInventoryNotFound   ConditionReason = "InventoryNotFound"
+	MongoDBAtlasInstanceNotReady            ConditionReason = "InstanceNotReady"
+	MongoDBAtlasInstanceClusterNotFound     ConditionReason = "AtlasClusterNotFound"
+	MongoDBAtlasInstanceBackendError        ConditionReason = "BackendError"
+	MongoDBAtlasInstanceAuthenticationError ConditionReason = "AuthenticationError"
+	MongoDBAtlasInstanceInprogress          ConditionReason = "Inprogress"
 )

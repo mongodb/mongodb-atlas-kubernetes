@@ -8,4 +8,7 @@ resources:
   - atlas_v1_atlasbackuppolicy.yaml
   - atlas_v1_atlasbackupschedule.yaml
   - atlas_v1_atlasteam.yaml
+  - dbaas_v1beta1_atlasconnection.yaml
+  - dbaas_v1beta1_atlasinventory.yaml
+  - dbaas_v1beta1_atlasinstance.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

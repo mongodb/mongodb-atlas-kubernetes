@@ -68,6 +68,12 @@ const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
 )
 
+// MongoDBAtlasConnection condition types
+// MongoDBAtlasInstanceInventoryUpdateFail condition reason
+const (
+	MongoDBAtlasInstanceInventoryUpdateFail string = "Fail to update inventory"
+)
+
 // Condition describes the state of an Atlas Custom Resource at a certain point.
 type Condition struct {
 	// Type of Atlas Custom Resource condition.

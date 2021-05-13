@@ -1,0 +1,14 @@
+apiVersion: dbaas.redhat.com/v1beta1
+kind: MongoDBAtlasInstance
+metadata:
+  name: test-instance
+spec:
+  inventoryRef:
+    name: test-inventory
+    namespace:  mongodb-atlas-system
+  provisioningParameters:
+    name: my-atlas-cluster-free
+    plan: FREETRIAL
+    cloudProvider: AWS
+    regions: us-east-1
+    machineType: M0

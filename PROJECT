@@ -1,6 +1,6 @@
 domain: mongodb.com
 layout:
-- go.kubebuilder.io/v2
+- go.kubebuilder.io/v3
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
@@ -15,7 +15,33 @@ resources:
   group: atlas
   kind: AtlasDeployment
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
-  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: redhat.com
+  group: dbaas
+  kind: MongoDBAtlasConnection
+  path: github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: redhat.com
+  group: dbaas
+  kind: MongoDBAtlasInventory
+  path: github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: redhat.com
+  group: dbaas
+  kind: MongoDBAtlasInstance
+  path: github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas
+  version: v1beta1
 - api:
     crdVersion: v1
     namespaced: true

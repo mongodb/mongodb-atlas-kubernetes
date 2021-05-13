@@ -28,6 +28,11 @@ if [ -z "${VERSION+x}" ]; then
 	exit 1
 fi
 
+if [ -z "${CONTAINER_ENGINE+x}" ]; then
+	echo "CONTAINER_ENGINE is not set"
+	exit 1
+fi
+
 rm -f "${CATALOG_DIR}"/operator.yaml
 rm -f "${CATALOG_DIR}"/channel.yaml
 rm -f "$(dirname "${CATALOG_DIR}")"/atlas-catalog.Dockerfile
@@ -59,4 +64,4 @@ echo "Validating catalog..."
 opm validate "${CATALOG_DIR}"
 echo "Catalog is valid"
 echo "Building catalog image"
-cd "$(dirname "${CATALOG_DIR}")" && docker build . -f atlas-catalog.Dockerfile -t "${CATALOG_IMAGE}"
+cd "$(dirname "${CATALOG_DIR}")" && ${CONTAINER_ENGINE} build . -f atlas-catalog.Dockerfile -t "${CATALOG_IMAGE}"

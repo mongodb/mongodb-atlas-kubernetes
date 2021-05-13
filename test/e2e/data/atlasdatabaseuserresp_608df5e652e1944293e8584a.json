@@ -1,0 +1,27 @@
+{
+    "awsIAMType":"NONE",
+    "databaseName":"admin",
+    "groupId":"608df5e652e1944293e8584a",
+    "labels":[
+       
+    ],
+    "ldapAuthType":"NONE",
+    "links":[
+       {
+          "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/608df5e652e1944293e8584a/databaseUsers/admin/testuser123",
+          "rel":"self"
+       }
+    ],
+    "roles":[
+       {
+          "databaseName":"admin",
+          "roleName":"readWriteAnyDatabase"
+       }
+    ],
+    "scopes":[
+       
+    ],
+    "username":"testuser123",
+    "x509Type":"NONE"
+ }
+ 

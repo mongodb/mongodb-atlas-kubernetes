@@ -19,13 +19,13 @@ spec:
       serviceAccountName: operator
       containers:
         - command:
-            - /manager
+          - /manager
           args:
-            - "--leader-elect"
-            - "--health-probe-bind-address=:8081"
-            - "--metrics-bind-address=127.0.0.1:8080"
-            - "--log-level=info"
-            - "--log-encoder=json"
+          - "--leader-elect"
+          - "--health-probe-bind-address=:8081"
+          - "--metrics-bind-address=127.0.0.1:8080"
+          - "--log-level=info"
+          - "--log-encoder=json"
           image: controller:latest
           name: manager
           securityContext:
@@ -46,7 +46,7 @@ spec:
           resources:
             limits:
               cpu: 500m
-              memory: 256Mi
+              memory: 768Mi
             requests:
               cpu: 100m
               memory: 50Mi
@@ -59,4 +59,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: SYNC_PERIOD_MIN
+              value: "180"
       terminationGracePeriodSeconds: 10
