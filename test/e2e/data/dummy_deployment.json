@@ -1,0 +1,82 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "operator",
+    "namespace": "dbaas-operators",
+    "labels": {
+      "olm.owner": "mongodb-atlas-kubernetes.v0.0.0",
+      "olm.owner.kind": "ClusterServiceVersion",
+      "olm.owner.namespace": "dbaas-operators"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "template": {
+      "metadata": {
+        "labels": null
+      },
+      "spec": {
+        "serviceAccountName": "operator",
+        "containers": [
+          {
+            "command": [
+              "/manager"
+            ],
+            "image": "controller:latest",
+            "name": "manager",
+            "securityContext": {
+              "allowPrivilegeEscalation": false
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/healthz",
+                "port": 8081
+              },
+              "initialDelaySeconds": 15,
+              "periodSeconds": 20
+            },
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/readyz",
+                "port": 8081
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 10
+            },
+            "imagePullPolicy": "Always",
+            "resources": {
+              "limits": {
+                "cpu": "500m",
+                "memory": "256Mi"
+              },
+              "requests": {
+                "cpu": "100m",
+                "memory": "50Mi"
+              }
+            },
+            "env": [
+              {
+                "name": "OPERATOR_POD_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "OPERATOR_NAMESPACE",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.namespace"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "terminationGracePeriodSeconds": 10
+      }
+    }
+  }
+}

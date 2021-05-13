@@ -1,0 +1,24 @@
+{
+   "links":[
+      {
+         "href":"$BASEURL/groups?pageNum=1&itemsPerPage=100",
+         "rel":"self"
+      }
+   ],
+   "results":[
+      {
+         "clusterCount":0,
+         "created":"2021-06-02T14:43:11Z",
+         "id":"611521839f76ee7b6501dd2b",
+         "links":[
+            {
+               "href":"$BASEURL/groups/611521839f76ee7b6501dd2b",
+               "rel":"self"
+            }
+         ],
+         "name":"Project 3",
+         "orgId":"605b7e573fb20e3bdff80417"
+      }
+   ],
+   "totalCount":1
+}

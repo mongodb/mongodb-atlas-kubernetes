@@ -1,0 +1,10 @@
+apiVersion: dbaas.redhat.com/v1alpha1
+kind: MongoDBAtlasConnection
+metadata:
+  name: test-connection
+  namespace: my-namespace
+spec:
+  inventoryRef:
+    name: test-inventory
+    namespace: mongodb-atlas-system
+  instanceID: 606b2ffbc9a90e310e642482

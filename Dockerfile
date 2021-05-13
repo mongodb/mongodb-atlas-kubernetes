@@ -5,6 +5,9 @@ WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
+# Copy DBaaSProvider config
+COPY config/dbaasprovider/dbaas_provider.yaml dbaas_provider.yaml
+
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
@@ -50,6 +53,8 @@ LABEL name="MongoDB Atlas Operator" \
 WORKDIR /
 COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
+COPY --from=builder /workspace/dbaas_provider.yaml .
 
-USER 1001:0
+USER nonroot:nonroot
+
 ENTRYPOINT ["/manager"]

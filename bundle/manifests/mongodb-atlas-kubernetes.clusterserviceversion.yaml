@@ -104,44 +104,72 @@ metadata:
               }
             ]
           }
+        },
+        {
+          "apiVersion": "dbaas.redhat.com/v1alpha1",
+          "kind": "MongoDBAtlasConnection",
+          "metadata": {
+            "name": "test-connection",
+            "namespace": "my-namespace"
+          },
+          "spec": {
+            "instanceID": "606b2ffbc9a90e310e642482",
+            "inventoryRef": {
+              "name": "test-inventory",
+              "namespace": "mongodb-atlas-system"
+            }
+          }
+        },
+        {
+          "apiVersion": "dbaas.redhat.com/v1alpha1",
+          "kind": "MongoDBAtlasInventory",
+          "metadata": {
+            "name": "test-inventory"
+          },
+          "spec": {
+            "credentialsRef": {
+              "name": "my-atlas-key",
+              "namespace": "mongodb-atlas-system"
+            }
+          }
         }
       ]
     capabilities: Basic Install
     categories: Database
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
-    operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: mongodb-atlas-kubernetes.v1.0.0
+    operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+  name: mongodb-atlas-kubernetes.v0.7.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
-        displayName: Atlas Backup Policy
-        kind: AtlasBackupPolicy
-        name: atlasbackuppolicies.atlas.mongodb.com
-        version: v1
-      - description: AtlasBackupSchedule is the Schema for the atlasbackupschedules API
-        displayName: Atlas Backup Schedule
-        kind: AtlasBackupSchedule
-        name: atlasbackupschedules.atlas.mongodb.com
-        version: v1
-      - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
-        displayName: Atlas Database User
-        kind: AtlasDatabaseUser
-        name: atlasdatabaseusers.atlas.mongodb.com
-        version: v1
-      - description: AtlasDeployment is the Schema for the atlasclusters API
-        displayName: Atlas Deployment
-        kind: AtlasDeployment
-        name: atlasdeployments.atlas.mongodb.com
-        version: v1
-      - description: AtlasProject is the Schema for the atlasprojects API
-        displayName: Atlas Project
-        kind: AtlasProject
-        name: atlasprojects.atlas.mongodb.com
-        version: v1
+    - description: AtlasCluster is the Schema for the atlasclusters API
+      displayName: Atlas Cluster
+      kind: AtlasCluster
+      name: atlasclusters.atlas.mongodb.com
+      version: v1
+    - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
+      displayName: Atlas Database User
+      kind: AtlasDatabaseUser
+      name: atlasdatabaseusers.atlas.mongodb.com
+      version: v1
+    - description: AtlasProject is the Schema for the atlasprojects API
+      displayName: Atlas Project
+      kind: AtlasProject
+      name: atlasprojects.atlas.mongodb.com
+      version: v1
+    - description: MongoDBAtlasConnection is the Schema for the MongoDBAtlasConnections API
+      displayName: Mongo DBAtlas Connection
+      kind: MongoDBAtlasConnection
+      name: mongodbatlasconnections.dbaas.redhat.com
+      version: v1alpha1
+    - description: MongoDBAtlasInventory is the Schema for the MongoDBAtlasInventory API
+      displayName: Mongo DBAtlas Inventory
+      kind: MongoDBAtlasInventory
+      name: mongodbatlasinventories.dbaas.redhat.com
+      version: v1alpha1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas —
     the only multi-cloud document database service that gives you the versatility you need to build sophisticated and resilient applications that can adapt to changing customer demands and market trends.
@@ -258,127 +286,170 @@ spec:
   install:
     spec:
       clusterPermissions:
-        - rules:
-            - apiGroups:
-                - ""
-              resources:
-                - events
-              verbs:
-                - create
-                - patch
-            - apiGroups:
-                - ""
-              resources:
-                - secrets
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackuppolicies
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackuppolicies/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackupschedules
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackupschedules/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasdatabaseusers
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasdatabaseusers/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasdeployments
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasdeployments/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasprojects
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasprojects/status
-              verbs:
-                - get
-                - patch
-                - update
-          serviceAccountName: mongodb-atlas-operator
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasclusters
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasclusters/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasdatabaseusers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasdatabaseusers/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasprojects
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - atlas.mongodb.com
+          resources:
+          - atlasprojects/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - dbaasproviders
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - dbaasproviders/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - mongodbatlasconnections
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - mongodbatlasconnections/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - mongodbatlasinventories
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - mongodbatlasinventories/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator
           spec:

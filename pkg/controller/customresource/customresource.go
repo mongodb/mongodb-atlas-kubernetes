@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -24,17 +25,23 @@ const (
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
 func PrepareResource(client client.Client, request reconcile.Request, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) workflow.Result {
-	err := client.Get(context.Background(), request.NamespacedName, resource)
+	return GetResource(client, request.Namespace, request.Name, resource, log)
+}
+
+// GetResource queries the Custom Resource key and populates the 'resource' pointer.
+func GetResource(client client.Client, namespace, name string, resource client.Object, log *zap.SugaredLogger) workflow.Result {
+	key := types.NamespacedName{Namespace: namespace, Name: name}
+	err := client.Get(context.Background(), key, resource)
 	if err != nil {
 		if apiErrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
-			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
+			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", key)
 			return workflow.TerminateSilently().WithoutRetry()
 		}
 		// Error reading the object - requeue the request. Note, that we don't intend to update resource status
 		// as most of all it will fail as well.
-		log.Errorf("Failed to query object %s: %s", request.NamespacedName, err)
+		log.Errorf("Failed to query object %s: %s", key, err)
 		return workflow.TerminateSilently()
 	}
 

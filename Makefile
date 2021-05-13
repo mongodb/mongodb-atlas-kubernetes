@@ -152,10 +152,13 @@ rm -rf $$TMP_DIR ;\
 endef
 
 .PHONY: bundle
-bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
+bundle: manifests kustomize ## Generate bundle manifests and metadata, update security context for OpenShift, then validate generated files.
 	operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	sed -i .bak '/runAsNonRoot: true/d' "./bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+	sed -i .bak '/runAsUser: 1000380001/d' "./bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+	rm ./bundle/manifests/*.bak
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
@@ -171,17 +174,25 @@ bundle-build: ## Build the bundle image.
 bundle-push: bundle bundle-build ## Publish the bundle image
 	docker push $(BUNDLE_IMG)
 
+# A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
+# These images MUST exist in a registry and be pull-able.
+BUNDLE_IMGS ?= $(BUNDLE_IMG)
+
 .PHONY: catalog-build
 CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
 #catalog-build: IMG=
-catalog-build: ## bundle bundle-push ## Build file-based bundle
-	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
-	CATALOG_DIR=$(CATALOG_DIR) \
-	CHANNEL=$(DEFAULT_CHANNEL) \
-	CATALOG_IMAGE=$(CATALOG_IMAGE) \
-	BUNDLE_IMAGE=$(BUNDLE_IMG) \
-	VERSION=$(VERSION) \
-	./scripts/build_catalog.sh
+catalog-build: opm ## bundle bundle-push ## Build file-based bundle
+	ifneq ($(origin CATALOG_BASE_IMG), undefined)
+		$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMAGE) --bundles $(BUNDLE_IMGS) --from-index $(CATALOG_BASE_IMG)
+	else
+		$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
+		CATALOG_DIR=$(CATALOG_DIR) \
+		CHANNEL=$(DEFAULT_CHANNEL) \
+		CATALOG_IMAGE=$(CATALOG_IMAGE) \
+		BUNDLE_IMAGE=$(BUNDLE_IMG) \
+		VERSION=$(VERSION) \
+		./scripts/build_catalog.sh
+	endif
 
 .PHONY: catalog-push
 catalog-push:
@@ -247,3 +258,20 @@ post-install-hook:
 .PHONY: x509-cert
 x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 	go run scripts/create_x509.go
+
+.PHONY: opm
+OPM = ./bin/opm
+opm: ## Download opm locally if necessary.
+ifeq (,$(wildcard $(OPM)))
+ifeq (,$(shell which opm 2>/dev/null))
+	@{ \
+	set -e ;\
+	mkdir -p $(dir $(OPM)) ;\
+	OS=$(shell go env GOOS) && ARCH=$(shell go env GOARCH) && \
+	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/$${OS}-$${ARCH}-opm ;\
+	chmod +x $(OPM) ;\
+	}
+else
+OPM = $(shell which opm)
+endif
+endif

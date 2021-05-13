@@ -1,0 +1,26 @@
+[
+    {
+       "instanceID":"70b7a72f4877d05880c487ef",
+       "name":"testb",
+       "instanceInfo":{
+          "connectionStringsStandardSrv":"mongodb+srv://testb.fffff.mongodb.net",
+          "instanceSizeName":"M10",
+          "projectID":"608df5e652e1944293e8584a",
+          "projectName":"Project 1",
+          "providerName":"AWS",
+          "regionName":"US_EAST_1"
+       }
+    },
+    {
+       "instanceID":"60b7a72f4877d05880c487d2",
+       "name":"testa",
+       "instanceInfo":{
+          "connectionStringsStandardSrv":"mongodb+srv://testa.ccccc.mongodb.net",
+          "instanceSizeName":"M10",
+          "projectID":"60b798fea37f9f09acc1a154",
+          "projectName":"Project 2",
+          "providerName":"AWS",
+          "regionName":"US_EAST_1"
+       }
+    }
+ ]

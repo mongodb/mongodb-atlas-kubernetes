@@ -19,7 +19,6 @@ type Writer interface {
 // Status is a generic status for any Custom Resource managed by Atlas Operator
 type Status interface {
 	GetConditions() []Condition
-
 	GetObservedGeneration() int64
 }
 

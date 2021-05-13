@@ -1,0 +1,12 @@
+{
+   "links":[
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/611521839f76ee7b6501dd2b/clusters?pageNum=1&itemsPerPage=100",
+         "rel":"self"
+      }
+   ],
+   "results":[
+      
+   ],
+   "totalCount":0
+}
