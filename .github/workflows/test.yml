@@ -163,6 +163,7 @@ jobs:
         with:
           repository: mongodb/helm-charts
           path: my-charts
+          ref: dev
 
       - name: Run e2e test
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
