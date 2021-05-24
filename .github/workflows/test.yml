@@ -92,7 +92,7 @@ jobs:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
-          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
+          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
     steps:
       - name: Check out code
         uses: actions/checkout@v2.3.4
@@ -157,6 +157,13 @@ jobs:
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
+
+      - name: Checkout helm charts repo
+        uses: actions/checkout@v2
+        with:
+          repository: mongodb/helm-charts
+          path: my-charts
+          ref: dev
 
       - name: Run e2e test
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}

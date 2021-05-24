@@ -55,7 +55,7 @@ var _ = Describe("HELM charts", func() {
 			data = test
 			By("User use helm for deploying namespaces operator", func() {
 				helm.AddMongoDBRepo()
-				helm.InstallKubernetesOperatorNS(data.Resources)
+				helm.InstallK8sOperatorNS(data.Resources)
 			})
 
 			deployCluster(&data)
@@ -109,10 +109,47 @@ var _ = Describe("HELM charts", func() {
 			})
 			By("User use helm for deploying operator", func() {
 				helm.AddMongoDBRepo()
-				helm.InstallKubernetesOperatorWide(data.Resources)
+				helm.InstallK8sOperatorWide(data.Resources)
 			})
 			deployCluster(&data)
 			deleteClusterAndOperator(&data)
+		})
+	})
+
+	Describe("[helm-update] HELM charts.", func() {
+		It("User deploy operator and later deploy new version of the Atlas operator", func() {
+			By("User creates configuration for a new Project, Cluster, DBUser", func() {
+				data = model.NewTestDataProvider(
+					"helm-upgrade",
+					[]string{"data/atlascluster_basic_helm.yaml"},
+					[]string{},
+					[]model.DBUser{
+						*model.NewDBUser("admin").
+							WithSecretRef("dbuser-secret-u2").
+							AddBuildInAdminRole().
+							WithAuthDatabase("admin"),
+					},
+					30010,
+					[]func(*model.TestDataProvider){},
+				)
+				// helm template has equal ObjectMeta.Name and Spec.Name
+				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-upgrade"
+				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-upgrade"
+			})
+			By("User use helm for last release of operator and deploy his resouces", func() {
+				helm.AddMongoDBRepo()
+				helm.InstallLatestReleaseOperatorNS(data.Resources)
+				deployCluster(&data)
+			})
+			By("User update new released operator", func() {
+				backup := true
+				data.Resources.Clusters[0].Spec.ProviderBackupEnabled = &backup
+				actions.HelmUpgradeChartVersions(&data)
+				actions.CheckUsersCanUseOldApp(&data)
+			})
+			By("Delete Resources", func() {
+				deleteClusterAndOperator(&data)
+			})
 		})
 	})
 })
@@ -138,7 +175,7 @@ func deployCluster(data *model.TestDataProvider) {
 	})
 
 	By("Deploy application for user", func() {
-		actions.CheckUsersCanUseApplication(data.PortGroup, data.Resources)
+		actions.CheckUsersCanUseApp(data)
 	})
 }
 
