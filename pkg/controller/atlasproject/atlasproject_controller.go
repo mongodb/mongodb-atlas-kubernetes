@@ -134,7 +134,7 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
 	if project.Status.ID == "" {
-		log.Infof("Project does not exist, nothing to remove")
+		log.Infof("Project does not exist in Atlas, nothing to remove")
 		return nil
 	}
 
