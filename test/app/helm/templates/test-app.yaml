@@ -22,7 +22,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: {{ .Values.connectionSecret }}
-                key: connectionString.standardSrv
+                key: connectionStringStandardSrv
           - name: "PORT"
             value: {{ quote .Values.nodePort }}
 ---

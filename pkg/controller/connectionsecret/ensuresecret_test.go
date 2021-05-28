@@ -84,10 +84,10 @@ func validateSecret(t *testing.T, fakeClient client.Client, namespace, projectNa
 	assert.NoError(t, err)
 
 	expectedData := map[string][]byte{
-		"connectionString.standard":    []byte(buildConnectionURL(data.ConnURL, data.DBUserName, data.Password)),
-		"connectionString.standardSrv": []byte(buildConnectionURL(data.SrvConnURL, data.DBUserName, data.Password)),
-		"username":                     []byte(data.DBUserName),
-		"password":                     []byte(data.Password),
+		"connectionStringStandard":    []byte(buildConnectionURL(data.ConnURL, data.DBUserName, data.Password)),
+		"connectionStringStandardSrv": []byte(buildConnectionURL(data.SrvConnURL, data.DBUserName, data.Password)),
+		"username":                    []byte(data.DBUserName),
+		"password":                    []byte(data.Password),
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   projectID,
