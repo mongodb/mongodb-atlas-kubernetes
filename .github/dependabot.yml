@@ -7,7 +7,7 @@ updates:
       day: tuesday
     reviewers:
       - "antonlisovenko"
-      - "vasilevp"
+      - "fabritsius"
       - "leo-ri"
   - package-ecosystem: github-actions
     directory: "/"
@@ -16,5 +16,5 @@ updates:
       day: tuesday
     reviewers:
       - "antonlisovenko"
-      - "vasilevp"
+      - "fabritsius"
       - "leo-ri"
