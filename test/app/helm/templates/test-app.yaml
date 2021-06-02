@@ -17,12 +17,10 @@ spec:
       containers:
       - name: test-app
         image: {{ .Values.image }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.connectionSecret }}
         env:
-          - name: "CONNECTIONSTRING"
-            valueFrom:
-              secretKeyRef:
-                name: {{ .Values.connectionSecret }}
-                key: connectionString.standardSrv
           - name: "PORT"
             value: {{ quote .Values.nodePort }}
 ---
