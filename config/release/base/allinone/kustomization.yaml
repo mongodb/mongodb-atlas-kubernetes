@@ -9,6 +9,6 @@ commonLabels:
   app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
 
 resources:
-- ../../../managerwithproxy
+- ../../../manager
 - ../../../crd
 - ../../../rbac/clusterwide
