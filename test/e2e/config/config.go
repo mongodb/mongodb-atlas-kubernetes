@@ -8,4 +8,5 @@ const (
 	DefaultOperatorNS  = "mongodb-atlas-system"
 	AtlasURL           = "https://cloud-qa.mongodb.com"
 	TestAppLabelPrefix = "app=test-app-"
+	ActrcPath          = "../../.actrc"
 )
