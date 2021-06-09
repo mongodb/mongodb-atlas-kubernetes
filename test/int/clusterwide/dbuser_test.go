@@ -28,7 +28,7 @@ const (
 	ProjectCreationTimeout = 40
 )
 
-var _ = Describe("ClusterWideIntegration", func() {
+var _ = Describe("ClusterWide", func() {
 	const interval = time.Second * 1
 
 	var (
@@ -93,7 +93,7 @@ var _ = Describe("ClusterWideIntegration", func() {
 		}
 	})
 
-	FDescribe("Create user and cluster in different namespaces", func() {
+	Describe("Create user and cluster in different namespaces", func() {
 		It("Should Succeed", func() {
 			clusterNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-cluster"}}
 			Expect(k8sClient.Create(context.Background(), &clusterNS)).ToNot(HaveOccurred())
