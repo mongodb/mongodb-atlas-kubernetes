@@ -42,7 +42,7 @@ func NewDBUser(userName string) *DBUser {
 		},
 		Spec: UserSpec{
 			Username: userName,
-			Project: v1.ResourceRef{
+			Project: v1.ResourceRefNamespaced{
 				Name: "my-project",
 			},
 		},
