@@ -119,6 +119,11 @@ var _ = Describe("ClusterWideIntegration", func() {
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 				DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+			By("Removing the cluster", func() {
+				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+			})
 		})
 	})
 })
