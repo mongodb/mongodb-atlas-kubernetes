@@ -9,7 +9,7 @@ require (
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/mongodb-forks/digest v1.0.2
-	github.com/onsi/ginkgo v1.16.1
+	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.11.0
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
