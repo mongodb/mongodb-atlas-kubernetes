@@ -43,7 +43,7 @@ const (
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
-	Project ResourceRef `json:"projectRef"`
+	Project ResourceRefNamespaced `json:"projectRef"`
 
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -280,7 +280,11 @@ type AtlasClusterList struct {
 }
 
 func (c AtlasCluster) AtlasProjectObjectKey() client.ObjectKey {
-	return kube.ObjectKey(c.Namespace, c.Spec.Project.Name)
+	ns := c.Namespace
+	if c.Spec.Project.Namespace != "" {
+		ns = c.Spec.Project.Namespace
+	}
+	return kube.ObjectKey(ns, c.Spec.Project.Name)
 }
 
 func (c *AtlasCluster) GetStatus() status.Status {
@@ -324,7 +328,7 @@ func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
 }
 
 func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
-	c.Spec.Project = ResourceRef{Name: projectName}
+	c.Spec.Project = ResourceRefNamespaced{Name: projectName}
 	return c
 }
 

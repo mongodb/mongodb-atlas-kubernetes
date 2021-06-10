@@ -14,6 +14,15 @@ type ResourceRef struct {
 	Name string `json:"name"`
 }
 
+// ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+type ResourceRefNamespaced struct {
+	// Name is the name of the Kubernetes Resource
+	Name string `json:"name"`
+
+	// Namespace is the namespace of the Kubernetes Resource
+	Namespace string `json:"namespace"`
+}
+
 // LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
 type LabelSpec struct {
 	// +kubebuilder:validation:MaxLength:=255
