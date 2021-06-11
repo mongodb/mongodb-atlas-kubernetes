@@ -54,6 +54,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
+				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{

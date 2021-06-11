@@ -138,6 +138,21 @@ func CreateApiKeySecret(keyName, ns string) { // TODO add ns
 	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
 }
 
+func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
+	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
+		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
+		"--from-literal=publicApiKey="+public,
+		"--from-literal=privateApiKey="+private,
+		"-n", ns,
+	)
+	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
+}
+
+func DeleteApiKeySecret(keyName, ns string) {
+	session := cli.Execute("kubectl", "delete", "secret", keyName, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
 func GetManagerLogs(ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
