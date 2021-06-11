@@ -44,7 +44,6 @@ func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (
 	if err != nil {
 		return "", "", err
 	}
-
 	createAccessRequest := formAccessRequest(access)
 	_, _, err = a.Client.WhitelistAPIKeys.Create(context.Background(), a.OrgID, newKey.ID, createAccessRequest)
 	if err != nil {
@@ -54,7 +53,7 @@ func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (
 }
 
 func formAccessRequest(access []string) []*mongodbatlas.WhitelistAPIKeysReq {
-	createRequest := make([]*mongodbatlas.WhitelistAPIKeysReq, 1)
+	createRequest := make([]*mongodbatlas.WhitelistAPIKeysReq, 0)
 	var req *mongodbatlas.WhitelistAPIKeysReq
 	for _, item := range access {
 		if strings.Contains(item, "/") {

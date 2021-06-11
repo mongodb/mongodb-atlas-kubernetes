@@ -106,8 +106,8 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		),
 		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup",
 			model.NewTestDataProvider(
-				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.0/1", "128.0.0.0/1"}),
+				"operator-ns-product-owner",
+				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update_remove_backup.yaml"},
 				[]model.DBUser{
