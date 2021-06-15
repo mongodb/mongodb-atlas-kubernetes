@@ -5,7 +5,8 @@ const (
 	ClusterSample      = "data/atlascluster_basic.yaml"
 	DataFolder         = "data"
 	DefaultOperatorNS  = "mongodb-atlas-system"
-	AtlasURL           = "https://cloud-qa.mongodb.com"
+	AtlasHost          = "https://cloud-qa.mongodb.com"
+	AtlasAPIURL        = AtlasHost + "/api/atlas/v1.0/"
 	TestAppLabelPrefix = "app=test-app-"
 	// HELM related path
 	HelmTestAppPath             = "../app/helm/"

@@ -43,7 +43,7 @@ func checkUpEnvironment() {
 	K8sVersion = os.Getenv("K8S_VERSION")
 	Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 	mongocli.GetVersionOutput()
-	// additional checks
+
 	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty(), "Please, setup MCLI_ORG_ID environment variable")
 	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PUBLIC_API_KEY environment variable")
 	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PRIVATE_API_KEY environment variable")

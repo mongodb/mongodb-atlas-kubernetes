@@ -9,11 +9,11 @@ type TestDataProvider struct {
 	PortGroup       int                       // ports for the test application starts from _
 }
 
-func NewTestDataProvider(keyTestPrefix string, initClusterConfigs []string, updateClusterConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
+func NewTestDataProvider(keyTestPrefix string, r *AtlasKeyType, initClusterConfigs []string, updateClusterConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
 	var data TestDataProvider
 	data.ConfPaths = initClusterConfigs
 	data.ConfUpdatePaths = updateClusterConfig
-	data.Resources = NewUserInputs(keyTestPrefix, users)
+	data.Resources = NewUserInputs(keyTestPrefix, users, r)
 	data.Actions = actions
 	data.PortGroup = portGroup
 	for i := range initClusterConfigs {

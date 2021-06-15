@@ -79,7 +79,7 @@ func InstallK8sOperatorWide(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace", input.Namespace,
@@ -92,7 +92,7 @@ func InstallLatestReleaseOperatorNS(input model.UserInputs) {
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)
@@ -103,7 +103,7 @@ func InstallK8sOperatorNS(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
@@ -179,7 +179,7 @@ func UpgradeOperatorChart(input model.UserInputs) {
 	Upgrade(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		config.HelmOperatorChartPath,
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"-n", input.Namespace,
