@@ -97,7 +97,7 @@ jobs:
           ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
         include:
           - k8s: "latest-openshift"
-            test: ["openshift"]
+            test: "openshift"
 
     steps:
       - name: Check out code
@@ -189,6 +189,8 @@ jobs:
           TEST_NAME: "${{ matrix.test }}"
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
+          OPENSHIFT_PASS: ${{ secrets.OPENSHIFT_PASS }}
         run: |
           kubectl version
           helm version
