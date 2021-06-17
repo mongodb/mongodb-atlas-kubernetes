@@ -115,6 +115,6 @@ containers:
            valueFrom:
              secretKeyRef:
                name: test-atlas-operator-project-test-cluster-theuser
-               key: connectionString.standardSrv
+               key: connectionStringStandardSrv
 
 ```

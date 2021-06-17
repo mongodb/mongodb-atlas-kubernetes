@@ -65,12 +65,13 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		By("Users can create clusters with the same name", func() {
 			NortonData = model.NewTestDataProvider(
 				"norton-wide",
+				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", "").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30008,
@@ -78,12 +79,13 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 			)
 			NimnulData = model.NewTestDataProvider(
 				"nimnul-wide",
+				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
-						AddRole("readWrite", "Ships", "").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30009,

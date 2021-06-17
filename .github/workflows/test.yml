@@ -28,7 +28,7 @@ jobs:
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
 
-  int-test-project:
+  int-test:
     name: Integration tests
     runs-on: ubuntu-latest
     strategy:
@@ -50,6 +50,29 @@ jobs:
           ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           TEST_NAME: ${{ matrix.test }}
+          TEST_PATH: ./test/int
+          PARALLEL_NODES: 8
+
+  int-test-clusterwide:
+    name: Integration tests (Clusterwide)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      - name: Run testing
+        uses: ./.github/actions/int-test
+        with:
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          TEST_NAME: "ClusterWide"
+          TEST_PATH: ./test/int/clusterwide
+          PARALLEL_NODES: 1
 
   prepare-e2e:
     name: Prepare E2E configuration and image
@@ -94,7 +117,7 @@ jobs:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
-          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
+          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
         include:
           - k8s: "latest-openshift"
             test: "openshift"
@@ -175,6 +198,13 @@ jobs:
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
+
+      - name: Checkout helm charts repo
+        uses: actions/checkout@v2
+        with:
+          repository: mongodb/helm-charts
+          path: my-charts
+          ref: dev
 
       - name: Run e2e test
         env:

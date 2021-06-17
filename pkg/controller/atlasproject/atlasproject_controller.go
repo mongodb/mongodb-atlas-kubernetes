@@ -133,6 +133,11 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
+	if project.Status.ID == "" {
+		log.Infof("Project does not exist in Atlas, nothing to remove")
+		return nil
+	}
+
 	if customresource.ResourceShouldBeLeftInAtlas(project) {
 		log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 		return nil
@@ -155,7 +160,7 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
-				log.Infow("Project doesn't exist or is already deleted", "projectID", project.Status.ID)
+				log.Infow("Project is already deleted", "projectID", project.Status.ID)
 				return
 			}
 
