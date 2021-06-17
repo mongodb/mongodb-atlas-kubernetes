@@ -3,8 +3,8 @@ name: Test
 on:
   push:
     branches:
-    paths:
-      - '!docs/**'
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 jobs:
