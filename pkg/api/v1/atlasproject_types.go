@@ -53,9 +53,6 @@ type AtlasProjectSpec struct {
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
 	// +optional
 	ProjectIPAccessList []project.IPAccessList `json:"projectIpAccessList,omitempty"`
-
-	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
-	PrivateEndpoints []project.PrivateEndpoint `json:"privateEndpoints,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

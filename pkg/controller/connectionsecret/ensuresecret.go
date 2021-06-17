@@ -17,8 +17,8 @@ const (
 	ProjectLabelKey string = "atlas.mongodb.com/project-id"
 	ClusterLabelKey string = "atlas.mongodb.com/cluster-name"
 
-	connectionSecretStdKey    string = "connectionStringStandard"
-	connectionSecretStdSrvKey string = "connectionStringStandardSrv"
+	connectionSecretStdKey    string = "connectionString.standard"
+	connectionSecretStdSrvKey string = "connectionString.standardSrv"
 	userNameKey               string = "username"
 	passwordKey               string = "password"
 )

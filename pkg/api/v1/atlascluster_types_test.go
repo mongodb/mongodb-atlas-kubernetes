@@ -8,8 +8,6 @@ import (
 	"github.com/fatih/structtag"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 )
 
 var (
@@ -53,7 +51,7 @@ func TestEnums(t *testing.T) {
 	}
 	operatorCluster := AtlasClusterSpec{
 		ProviderSettings: &ProviderSettingsSpec{
-			ProviderName: provider.ProviderAWS,
+			ProviderName: ProviderAWS,
 		},
 		ClusterType: TypeGeoSharded,
 	}

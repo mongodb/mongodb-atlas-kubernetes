@@ -50,19 +50,18 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 	})
 
 	It("User can install", func() {
-		Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
+		Eventually(cli.Execute("operator-sdk", "olm", "install", "--version", "v0.17.0"), "3m").Should(gexec.Exit(0)) // TODO remove version param https://jira.mongodb.org/browse/CLOUDP-88736
 		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL), "5m").Should(gexec.Exit(0))
 
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", ""),
+						AddRole("readWrite", "Ships", ""),
 				},
 				30005,
 				[]func(*model.TestDataProvider){},

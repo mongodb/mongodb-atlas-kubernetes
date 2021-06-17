@@ -98,11 +98,7 @@ func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSecret() string {
-	if val, ok := os.LookupEnv("connectionStringStandardSrv"); ok {
-		return val
-	}
-	// Before the Operator 0.6.0 is released we need to "failback" to the previous env variable name in our tests
-	return os.Getenv("connectionString.standardSrv")
+	return os.Getenv("CONNECTIONSTRING")
 }
 
 func getMongoClient() (*mongo.Client, error) {

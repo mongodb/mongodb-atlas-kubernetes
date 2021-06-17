@@ -4,7 +4,6 @@ import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -29,10 +28,6 @@ var _ = Describe("HELM charts", func() {
 
 	var _ = AfterEach(func() {
 		By("Atfer each.", func() {
-			GinkgoWriter.Write([]byte("\n"))
-			GinkgoWriter.Write([]byte("===============================================\n"))
-			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
-			GinkgoWriter.Write([]byte("===============================================\n"))
 			if CurrentGinkgoTestDescription().Failed {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
@@ -51,151 +46,96 @@ var _ = Describe("HELM charts", func() {
 			}
 		})
 	})
-
-	DescribeTable("[helm-ns] Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider) {
-			data = test
-			By("User use helm for deploying namespaces operator", func() {
-				helm.AddMongoDBRepo()
-				helm.InstallK8sOperatorNS(data.Resources)
-			})
-
-			deployCluster(&data)
-			By("Additional check for the current data set", func() {
-				for _, check := range data.Actions {
-					check(&data)
-				}
-			})
-			deleteClusterAndOperator(&data)
-		},
-		Entry("Several actions with helm update",
-			model.NewTestDataProvider(
+	It("[helm-ns] User can deploy operator namespaces by using HELM", func() {
+		By("User creates configuration for a new Project and Cluster", func() {
+			data = model.NewTestDataProvider(
 				"helm-ns",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						AddRole("readWrite", "Ships", "").
 						WithAuthDatabase("admin"),
 				},
 				30006,
-				[]func(*model.TestDataProvider){
-					actions.HelmDefaultUpgradeResouces,
-					actions.HelmUpgradeUsersRoleAddAdminUser,
-					actions.HelmUpgradeDeleteFirstUser,
+				[]func(*model.TestDataProvider){},
+			)
+		})
+		By("User use helm for deploying operator", func() {
+			helm.AddMongoDBRepo()
+			helm.InstallKubernetesOperatorNS(data.Resources)
+		})
+		deployCluster(data.Resources, data.PortGroup)
+	})
+
+	It("[helm-wide] User can deploy operator namespaces by using HELM", func() {
+		By("User creates configuration for a new Project and Cluster", func() {
+			data = model.NewTestDataProvider(
+				"helm-wide",
+				[]string{"data/atlascluster_basic_helm.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddRole("readWrite", "Ships", "").
+						WithAuthDatabase("admin"),
 				},
-			),
-		),
-	)
-
-	Describe("[helm-wide] HELM charts.", func() {
-		It("User can deploy operator namespaces by using HELM", func() {
-			By("User creates configuration for a new Project and Cluster", func() {
-				data = model.NewTestDataProvider(
-					"helm-wide",
-					model.NewEmptyAtlasKeyType().UseDefaultKey(),
-					[]string{"data/atlascluster_basic_helm.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("reader2").
-							WithSecretRef("dbuser-secret-u2").
-							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-							WithAuthDatabase("admin"),
-					},
-					30007,
-					[]func(*model.TestDataProvider){},
-				)
-				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
-				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
-			})
-			By("User use helm for deploying operator", func() {
-				helm.AddMongoDBRepo()
-				helm.InstallK8sOperatorWide(data.Resources)
-			})
-			deployCluster(&data)
-			deleteClusterAndOperator(&data)
+				30007,
+				[]func(*model.TestDataProvider){},
+			)
+			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+			// TODO helm template has equal ObjectMeta.Name and Spec.Name
+			data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
+			data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 		})
+		By("User use helm for deploying operator", func() {
+			helm.AddMongoDBRepo()
+			helm.InstallKubernetesOperatorWide(data.Resources)
+		})
+		deployCluster(data.Resources, data.PortGroup)
 	})
 
-	Describe("[helm-update] HELM charts.", func() {
-		It("User deploy operator and later deploy new version of the Atlas operator", func() {
-			By("User creates configuration for a new Project, Cluster, DBUser", func() {
-				data = model.NewTestDataProvider(
-					"helm-upgrade",
-					model.NewEmptyAtlasKeyType().UseDefaultKey(),
-					[]string{"data/atlascluster_basic_helm.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("admin").
-							WithSecretRef("dbuser-secret-u2").
-							AddBuildInAdminRole().
-							WithAuthDatabase("admin"),
-					},
-					30010,
-					[]func(*model.TestDataProvider){},
-				)
-				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-upgrade"
-				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-upgrade"
-			})
-			By("User use helm for last release of operator and deploy his resouces", func() {
-				helm.AddMongoDBRepo()
-				helm.InstallLatestReleaseOperatorNS(data.Resources)
-				deployCluster(&data)
-			})
-			By("User update new released operator", func() {
-				backup := true
-				data.Resources.Clusters[0].Spec.ProviderBackupEnabled = &backup
-				actions.HelmUpgradeChartVersions(&data)
-				actions.CheckUsersCanUseOldApp(&data)
-			})
-			By("Delete Resources", func() {
-				deleteClusterAndOperator(&data)
-			})
-		})
-	})
 })
 
-func deployCluster(data *model.TestDataProvider) {
+func deployCluster(userSpec model.UserInputs, appPort int) {
 	By("User deploy cluster by helm", func() {
-		helm.InstallCluster(data.Resources)
+		helm.InstallCluster(userSpec)
 	})
 	By("Wait creation until is done", func() {
-		actions.WaitProject(data.Resources, "1")
-		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
-		actions.WaitCluster(data.Resources, "1")
+		actions.WaitProject(userSpec, "1")
+		userSpec.ProjectID = kube.GetProjectResource(userSpec.Namespace, userSpec.K8sFullProjectName).Status.ID
+		actions.WaitCluster(userSpec, "1")
 	})
 
 	By("Check attributes", func() {
-		uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
-		actions.CompareClustersSpec(data.Resources.Clusters[0].Spec, uCluster)
+		uCluster := mongocli.GetClustersInfo(userSpec.ProjectID, userSpec.Clusters[0].Spec.Name)
+		actions.CompareClustersSpec(userSpec.Clusters[0].Spec, uCluster)
 	})
 
 	By("check database users Attibutes", func() {
-		Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		actions.CheckUsersAttributes(data.Resources)
+		Eventually(actions.CheckIfUsersExist(userSpec), "2m", "10s").Should(BeTrue())
+		actions.CheckUsersAttributes(userSpec)
 	})
 
 	By("Deploy application for user", func() {
-		actions.CheckUsersCanUseApp(data)
+		// kube apply application
+		// send data
+		// retrieve data
+		actions.CheckUsersCanUseApplication(appPort, userSpec)
 	})
-}
 
-func deleteClusterAndOperator(data *model.TestDataProvider) {
 	By("Check project, cluster does not exist", func() {
-		helm.Uninstall(data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
+		helm.Uninstall(userSpec.Clusters[0].Spec.Name, userSpec.Namespace)
 		Eventually(
 			func() bool {
-				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+				return mongocli.IsProjectInfoExist(userSpec.ProjectID)
 			},
 			"5m", "20s",
 		).Should(BeFalse(), "Project and cluster should be deleted from Atlas")
 	})
 
 	By("Delete HELM releases", func() {
-		helm.UninstallKubernetesOperator(data.Resources)
+		helm.UninstallKubernetesOperator(userSpec)
 	})
 }

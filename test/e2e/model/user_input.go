@@ -9,7 +9,6 @@ import (
 )
 
 type UserInputs struct {
-	AtlasKeyAccessType AtlasKeyType
 	ProjectID          string
 	KeyName            string
 	Namespace          string
@@ -21,10 +20,9 @@ type UserInputs struct {
 }
 
 // NewUsersInputs prepare users inputs
-func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserInputs {
+func NewUserInputs(keyTestPrefix string, users []DBUser) UserInputs {
 	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, utils.GenID())
 	input := UserInputs{
-		AtlasKeyAccessType: *r,
 		ProjectID:          "",
 		KeyName:            keyTestPrefix,
 		Namespace:          "ns-" + projectName,

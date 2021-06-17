@@ -3,8 +3,6 @@ package kube
 import (
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/gomega"
@@ -14,7 +12,6 @@ import (
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 // GenKubeVersion
@@ -34,30 +31,13 @@ func Install(args ...string) {
 	EventuallyWithOffset(1, session.Wait()).Should(Say("STATUS: deployed"), "HELM. Can't install release")
 }
 
-func Upgrade(args ...string) {
-	args = append([]string{"upgrade"}, args...)
-	session := cli.Execute("helm", args...)
-	EventuallyWithOffset(1, session.Wait()).Should(Say("STATUS: deployed"), "HELM. Can't upgrade release")
-}
-
 func InstallTestApplication(input model.UserInputs, user model.DBUser, port string) {
 	Install(
 		"test-app-"+user.Spec.Username,
-		config.HelmTestAppPath,
+		config.HELMTestAppPath,
 		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.Name, user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
-	)
-}
-
-func RestartTestApplication(input model.UserInputs, user model.DBUser, port string) {
-	Upgrade(
-		"test-app-"+user.Spec.Username,
-		config.HelmTestAppPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.Name, user.Spec.Username),
-		"--set-string", fmt.Sprintf("nodePort=%s", port),
-		"-n", input.Namespace,
-		"--recreate-pods",
 	)
 }
 
@@ -74,12 +54,12 @@ func UninstallCRD(input model.UserInputs) {
 	Uninstall("mongodb-atlas-operator-crds", input.Namespace)
 }
 
-func InstallK8sOperatorWide(input model.UserInputs) {
+func InstallKubernetesOperatorWide(input model.UserInputs) {
 	repo, tag := splitDockerImage()
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace", input.Namespace,
@@ -87,23 +67,12 @@ func InstallK8sOperatorWide(input model.UserInputs) {
 	)
 }
 
-func InstallLatestReleaseOperatorNS(input model.UserInputs) {
-	Install(
-		"atlas-operator-"+input.Project.GetProjectName(),
-		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
-		"--namespace="+input.Namespace,
-		"--create-namespace",
-	)
-}
-
-func InstallK8sOperatorNS(input model.UserInputs) {
+func InstallKubernetesOperatorNS(input model.UserInputs) {
 	repo, tag := splitDockerImage()
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
+		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasURL),
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
@@ -128,79 +97,12 @@ func AddMongoDBRepo() {
 }
 
 // chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
-func PrepareHelmChartValuesFile(input model.UserInputs) {
-	type usersType struct {
-		model.UserSpec
-		Password string `json:"password,omitempty"`
-	}
-	type values struct {
-		Project model.ProjectSpec `json:"project,omitempty"`
-		Mongodb model.ClusterSpec `json:"mongodb,omitempty"`
-		Users   []usersType       `json:"users,omitempty"`
-	}
-	convertType := func(user model.DBUser) usersType {
-		var newUser usersType
-		newUser.DatabaseName = user.Spec.DatabaseName
-		newUser.Labels = user.Spec.Labels
-		newUser.Roles = user.Spec.Roles
-		newUser.Scopes = user.Spec.Scopes
-		newUser.PasswordSecret = user.Spec.PasswordSecret
-		newUser.Username = user.Spec.Username
-		newUser.DeleteAfterDate = user.Spec.DeleteAfterDate
-		return newUser
-	}
-	newValues := values{input.Project.Spec, input.Clusters[0].Spec, []usersType{}}
-	for i := range input.Users {
-		secret, _ := password.Generate(10, 3, 0, false, false)
-		currentUser := convertType(input.Users[i])
-		currentUser.Password = secret
-		newValues.Users = append(newValues.Users, currentUser)
-	}
-	utils.SaveToFile(
-		pathToAtlasClusterValuesFile(input),
-		utils.JSONToYAMLConvert(newValues),
-	)
-}
-
 func InstallCluster(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
-	Install(args...)
-}
-
-func UpgradeAtlasClusterChart(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
-	Upgrade(prepareHelmChartArgs(input, "mongodb/atlas-cluster")...)
-}
-
-func UpgradeOperatorChart(input model.UserInputs) {
-	repo, tag := splitDockerImage()
-	packageChart(config.HelmCRDChartPath, filepath.Join(config.HelmOperatorChartPath, "charts"))
-	Upgrade(
-		"atlas-operator-"+input.Project.GetProjectName(),
-		config.HelmOperatorChartPath,
-		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
-		"--set-string", fmt.Sprintf("image.repository=%s", repo),
-		"--set-string", fmt.Sprintf("image.tag=%s", tag),
-		"-n", input.Namespace,
-		"--wait", "--timeout", "5m",
-	)
-}
-
-func UpgradeAtlasClusterChartDev(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
-	Upgrade(prepareHelmChartArgs(input, config.HelmAtlasResourcesChartPath)...)
-}
-
-func packageChart(sPath, dPath string) {
-	session := cli.Execute("helm", "package", sPath, "-d", dPath)
-	cli.SessionShouldExit(session)
-}
-
-func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
-	args := []string{
+	// TODO input can have more than one ipadresses/users (need generate args here)
+	var args []string
+	args = append(args,
 		input.Clusters[0].Spec.Name,
-		chartName,
+		"mongodb/atlas-cluster",
 		"--set-string", fmt.Sprintf("atlas.orgId=%s", os.Getenv("MCLI_ORG_ID")),
 		"--set-string", fmt.Sprintf("atlas.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
 		"--set-string", fmt.Sprintf("atlas.privateApiKey=%s", os.Getenv("MCLI_PRIVATE_API_KEY")),
@@ -208,29 +110,55 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 
 		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),
-		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
+		"--set-string", fmt.Sprintf("project.projectIpAccessList[0].ipAddress=%s,project.projectIpAccessList[0].comment=%s",
+			input.Project.Spec.ProjectIPAccessList[0].IPAddress, input.Project.Spec.ProjectIPAccessList[0].Comment),
 
-		"-f", pathToAtlasClusterValuesFile(input),
-		"--namespace=" + input.Namespace,
+		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
+		"--set-string", fmt.Sprintf("mongodb.providerSettings.providerName=%s", input.Clusters[0].Spec.ProviderSettings.ProviderName),
+		"--set-string", fmt.Sprintf("mongodb.providerSettings.regionName=%s", input.Clusters[0].Spec.ProviderSettings.RegionName),
+		"--set-string", fmt.Sprintf("mongodb.providerSettings.backingProviderName=%s", input.Clusters[0].Spec.ProviderSettings.BackingProviderName),
+		"--namespace="+input.Namespace,
 		"--create-namespace",
-		"--set", fmt.Sprintf("mongodb.providerSettings.backingProviderName=%s", returnNullIfEmpty(input.Clusters[0].Spec.ProviderSettings.BackingProviderName)),
+	)
+	args = append(args, genSetStringForUsers(input)...)
+	Install(args...)
+}
+
+func genSetStringForUsers(input model.UserInputs) []string {
+	// var args []string
+	args := make([]string, 0)
+	for i, user := range input.Users {
+		var roles []string
+		secret, _ := password.Generate(10, 3, 0, false, false)
+		for k, role := range user.Spec.Roles {
+			roles = append(roles,
+				"--set", fmt.Sprintf("users[%d].roles[%d].databaseName=%s", i, k, returnNullIfEmpty(role.DatabaseName)),
+				"--set", fmt.Sprintf("users[%d].roles[%d].roleName=%s", i, k, returnNullIfEmpty(role.RoleName)),
+			)
+			if role.CollectionName != "" {
+				roles = append(roles,
+					"--set", fmt.Sprintf("users[%d].roles[%d].collectionName=%s", i, k, returnNullIfEmpty(role.CollectionName)),
+				)
+			}
+		}
+		args = append(args,
+			"--set", fmt.Sprintf("users[%d].username=%s", i, user.Spec.Username),
+			"--set", fmt.Sprintf("users[%d].password=%s", i, secret),
+		)
+		if user.Spec.DatabaseName != "" {
+			args = append(args,
+				"--set", fmt.Sprintf("users[%d].databaseName=%s", i, returnNullIfEmpty(user.Spec.DatabaseName)),
+			)
+		}
+		args = append(args, roles...)
 	}
-	// if input.Clusters[0].Spec.ProviderSettings.BackingProviderName == "" {
-	// 	args = append(args, "--set", "mongodb.providerSettings.backingProviderName=null") // TODO check
-	// }
 	return args
 }
 
-// returnNullIfEmpty if empty. HELM chart uses --set key
+// rerunNull if empty. req for the HELM chart
 func returnNullIfEmpty(line string) string {
 	if line == "" {
 		return "null"
 	}
 	return line
-}
-
-// pathToAtlasClusterValuesFile generate path to values file (HELM chart)
-// values for the  atlas-cluster helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
-func pathToAtlasClusterValuesFile(input model.UserInputs) string {
-	return path.Join(input.ProjectPath, "values.yaml")
 }

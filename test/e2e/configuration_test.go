@@ -49,13 +49,12 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		Entry("Trial - Simplest configuration with no backup and one Admin User",
 			model.NewTestDataProvider(
 				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
+						AddRole("readWriteAnyDatabase", "admin", ""),
 				},
 				30000,
 				[]func(*model.TestDataProvider){
@@ -63,19 +62,18 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only",
+		Entry("Almost Production - Backup and 2 users, one Admin and one read-only",
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("admin").
 						WithSecretRef("dbuser-admin-secret-u1").
-						AddBuildInAdminRole(),
+						AddRole("atlasAdmin", "admin", ""),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", ""),
+						AddRole("readWrite", "Ships", ""),
 				},
 				30001,
 				[]func(*model.TestDataProvider){
@@ -86,42 +84,24 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Multiregion, Backup and 2 DBUsers",
+		Entry("Multiregion, Backup and 2 users",
 			model.NewTestDataProvider(
 				"operator-ns-multiregion",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_multiregion.yaml"},
 				[]string{"data/atlascluster_multiregion_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
+						AddRole("atlasAdmin", "admin", ""),
 					*model.NewDBUser("user2").
 						WithSecretRef("dbuser-secret-u2").
-						AddBuildInAdminRole(),
+						AddRole("atlasAdmin", "admin", ""),
 				},
 				30003,
 				[]func(*model.TestDataProvider){
 					actions.SuspendCluster,
 					actions.ReactivateCluster,
 					actions.DeleteFirstUser,
-				},
-			),
-		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup",
-			model.NewTestDataProvider(
-				"operator-ns-product-owner",
-				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
-				[]string{"data/atlascluster_backup.yaml"},
-				[]string{"data/atlascluster_backup_update_remove_backup.yaml"},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
-				30010,
-				[]func(*model.TestDataProvider){
-					actions.UpdateClusterFromUpdateConfig,
 				},
 			),
 		),
@@ -139,6 +119,7 @@ func mainCycle(data model.TestDataProvider) {
 
 	By("Additional check for the current data set", func() {
 		for _, check := range data.Actions {
+			// Expect(true).Should(BeFalse()) //TODO DELETE IT
 			check(&data)
 		}
 	})

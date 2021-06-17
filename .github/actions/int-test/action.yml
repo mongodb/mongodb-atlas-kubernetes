@@ -13,9 +13,6 @@ inputs:
   TEST_NAME:
     description: "The name of the test to run"
     required: true
-  TEST_PATH:
-    description: "The path of the test to run"
-    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'

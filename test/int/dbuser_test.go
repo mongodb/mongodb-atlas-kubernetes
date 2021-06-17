@@ -668,10 +668,10 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{
-		"connectionStringStandard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
-		"connectionStringStandardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
-		"username":                    []byte(username),
-		"password":                    []byte(password),
+		"connectionString.standard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
+		"connectionString.standardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
+		"username":                     []byte(username),
+		"password":                     []byte(password),
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),

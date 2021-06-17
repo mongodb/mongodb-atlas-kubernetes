@@ -21,8 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -31,6 +29,15 @@ import (
 func init() {
 	SchemeBuilder.Register(&AtlasCluster{}, &AtlasClusterList{})
 }
+
+type ProviderName string
+
+const (
+	ProviderAWS    ProviderName = "AWS"
+	ProviderGCP    ProviderName = "GCP"
+	ProviderAzure  ProviderName = "AZURE"
+	ProviderTenant ProviderName = "TENANT"
+)
 
 type ClusterType string
 
@@ -43,7 +50,7 @@ const (
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
-	Project ResourceRefNamespaced `json:"projectRef"`
+	Project ResourceRef `json:"projectRef"`
 
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -189,7 +196,7 @@ type ProviderSettingsSpec struct {
 
 	// Cloud service provider on which Atlas provisions the hosts.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
-	ProviderName provider.ProviderName `json:"providerName"`
+	ProviderName ProviderName `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
 	// The region you choose can affect network latency for clients accessing your databases.
@@ -280,11 +287,7 @@ type AtlasClusterList struct {
 }
 
 func (c AtlasCluster) AtlasProjectObjectKey() client.ObjectKey {
-	ns := c.Namespace
-	if c.Spec.Project.Namespace != "" {
-		ns = c.Spec.Project.Namespace
-	}
-	return kube.ObjectKey(ns, c.Spec.Project.Name)
+	return kube.ObjectKey(c.Namespace, c.Spec.Project.Name)
 }
 
 func (c *AtlasCluster) GetStatus() status.Status {
@@ -328,11 +331,11 @@ func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
 }
 
 func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
-	c.Spec.Project = ResourceRefNamespaced{Name: projectName}
+	c.Spec.Project = ResourceRef{Name: projectName}
 	return c
 }
 
-func (c *AtlasCluster) WithProviderName(name provider.ProviderName) *AtlasCluster {
+func (c *AtlasCluster) WithProviderName(name ProviderName) *AtlasCluster {
 	c.Spec.ProviderSettings.ProviderName = name
 	return c
 }
@@ -357,42 +360,42 @@ func (c *AtlasCluster) Lightweight() *AtlasCluster {
 	c.WithInstanceSize("M2")
 	// M2 is restricted to some set of regions only - we need to ensure them
 	switch c.Spec.ProviderSettings.ProviderName {
-	case provider.ProviderAWS:
+	case ProviderAWS:
 		{
 			c.WithRegionName("US_EAST_1")
 		}
-	case provider.ProviderAzure:
+	case ProviderAzure:
 		{
 			c.WithRegionName("US_EAST_2")
 		}
-	case provider.ProviderGCP:
+	case ProviderGCP:
 		{
 			c.WithRegionName("CENTRAL_US")
 		}
 	}
 	// Changing provider to tenant as this is shared now
 	c.WithBackingProvider(string(c.Spec.ProviderSettings.ProviderName))
-	c.WithProviderName(provider.ProviderTenant)
+	c.WithProviderName(ProviderTenant)
 	return c
 }
 
 func DefaultGCPCluster(namespace, projectName string) *AtlasCluster {
 	return NewCluster(namespace, "test-cluster-gcp-k8s", "test-cluster-gcp").
 		WithProjectName(projectName).
-		WithProviderName(provider.ProviderGCP).
+		WithProviderName(ProviderGCP).
 		WithRegionName("EASTERN_US")
 }
 
 func DefaultAWSCluster(namespace, projectName string) *AtlasCluster {
 	return NewCluster(namespace, "test-cluster-aws-k8s", "test-cluster-aws").
 		WithProjectName(projectName).
-		WithProviderName(provider.ProviderAWS).
+		WithProviderName(ProviderAWS).
 		WithRegionName("US_WEST_2")
 }
 
 func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 	return NewCluster(namespace, "test-cluster-azure-k8s", "test-cluster-azure").
 		WithProjectName(projectName).
-		WithProviderName(provider.ProviderAzure).
+		WithProviderName(ProviderAzure).
 		WithRegionName("EUROPE_NORTH")
 }
