@@ -160,8 +160,7 @@ func prepareControllers() {
 
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test",
-			// TODO name namespace by the name of the project and include the creation date/time to perform GC
+			Namespace:    "test",
 			GenerateName: "test",
 		},
 	}

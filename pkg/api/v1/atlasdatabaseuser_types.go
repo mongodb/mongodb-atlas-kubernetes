@@ -50,7 +50,7 @@ const (
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
 type AtlasDatabaseUserSpec struct {
 	// Project is a reference to AtlasProject resource the user belongs to
-	Project ResourceRef `json:"projectRef"`
+	Project ResourceRefNamespaced `json:"projectRef"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin
@@ -129,7 +129,11 @@ type ScopeSpec struct {
 }
 
 func (p AtlasDatabaseUser) AtlasProjectObjectKey() client.ObjectKey {
-	return kube.ObjectKey(p.Namespace, p.Spec.Project.Name)
+	ns := p.Namespace
+	if p.Spec.Project.Namespace != "" {
+		ns = p.Spec.Project.Namespace
+	}
+	return kube.ObjectKey(ns, p.Spec.Project.Name)
 }
 
 func (p AtlasDatabaseUser) PasswordSecretObjectKey() *client.ObjectKey {
@@ -208,7 +212,7 @@ func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUs
 		},
 		Spec: AtlasDatabaseUserSpec{
 			Username:       dbUserName,
-			Project:        ResourceRef{Name: projectName},
+			Project:        ResourceRefNamespaced{Name: projectName},
 			PasswordSecret: &ResourceRef{},
 			Roles:          []RoleSpec{},
 			Scopes:         []ScopeSpec{},

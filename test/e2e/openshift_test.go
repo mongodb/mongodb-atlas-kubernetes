@@ -64,12 +64,13 @@ var _ = Describe("[openshift] UserLogin", func() {
 			// TODO need for the next task
 			t = model.NewTestDataProvider(
 				"operator-ns-trial",
+				model.NewEmptyAtlasKeyType().UseDefaultKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
-						AddRole("readWriteAnyDatabase", "admin", ""),
+						AddBuildInAdminRole(),
 				},
 				30000,
 				[]func(*model.TestDataProvider){
