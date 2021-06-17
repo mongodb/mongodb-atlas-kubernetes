@@ -12,7 +12,7 @@ const (
 	atlasOperatorLoc  = "[data-test=\"mongodb-atlas-kubernetes-community-operators-openshift-marketplace\"]"
 	installConfirmLoc = "[data-test-id=\"operator-install-btn\"]"
 	installButtonLoc  = "[data-test=\"install-operator\"]"
-	// succesIcon        = "[data-test=\"success-icon\"]"
+	succesIcon        = "[data-test=\"success-icon\"]"
 )
 
 type MarketPage struct {
@@ -40,14 +40,20 @@ func (m *MarketPage) Search(name string) *MarketPage {
 	return m
 }
 
-func (m *MarketPage) InstallAtlasOperator() {
+func (m *MarketPage) ChooseProviderType(providerLocator string) *MarketPage {
+	m.P.Check(providerLocator)
+	return m
+}
+
+func (m *MarketPage) InstallAtlasOperator() *MarketPage {
 	m.P.Click(atlasOperatorLoc)
 	m.P.Click(installConfirmLoc)
 	m.P.Click(installButtonLoc)
 	t := new(float64)
 	*t = timeout
-	_, err := m.P.WaitForSelector(searchLoc, playwright.PageWaitForSelectorOptions{
+	_, err := m.P.WaitForSelector(succesIcon, playwright.PageWaitForSelectorOptions{
 		Timeout: t,
 	})
 	Expect(err).ShouldNot(HaveOccurred())
+	return m
 }

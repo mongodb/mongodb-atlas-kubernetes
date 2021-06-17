@@ -13,23 +13,15 @@ type CatalogSource struct {
 }
 
 type CatalogSourceSpec struct {
-	SourceType     string             `json:"sourceType"`
-	Image          string             `json:"image"`
-	DisplayName    string             `json:"displayName"`
-	Publisher      string             `json:"publisher"`
-	UpdateStrategy UpdateStrategyType `json:"updateStrategy,omitempty"`
-}
-
-type UpdateStrategyType struct {
-	RegistryPoll RegistryPollType `json:"registryPoll,omitempty"`
-}
-
-type RegistryPollType struct {
-	Interval string `json:"interval,omitempty"`
+	SourceType  string `json:"sourceType"`
+	Image       string `json:"image"`
+	DisplayName string `json:"displayName"`
+	Publisher   string `json:"publisher"`
 }
 
 func NewCatalogSource(imageURL string) CatalogSource {
 	name := strings.Split(imageURL, ":")[1]
+	name = strings.ToLower(name)
 	return CatalogSource{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "operators.coreos.com/v1alpha1",
@@ -44,11 +36,6 @@ func NewCatalogSource(imageURL string) CatalogSource {
 			Image:       imageURL,
 			DisplayName: name,
 			Publisher:   name,
-			UpdateStrategy: UpdateStrategyType{
-				RegistryPollType{
-					Interval: "30m",
-				},
-			},
 		},
 	}
 }
