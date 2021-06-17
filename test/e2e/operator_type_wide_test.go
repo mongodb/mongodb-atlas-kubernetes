@@ -20,6 +20,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	commonClusterName := "megacluster"
 
 	_ = BeforeEach(func() {
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kube.Apply(ConfigAll)).Should(
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),

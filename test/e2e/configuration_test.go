@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
@@ -16,6 +17,9 @@ import (
 var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func() {
 	var data model.TestDataProvider // TODO check it
 
+	_ = BeforeEach(func() {
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+	})
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
