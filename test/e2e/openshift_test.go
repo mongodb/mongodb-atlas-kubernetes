@@ -55,11 +55,6 @@ var _ = Describe("[openshift] UserLogin", func() {
 	})
 
 	It("User can deploy Atlas Kubernetes operator from openshift", func() {
-
-		By("Lock environment", func() {
-			kube.CreateNamespace(lockNamespace)
-			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
-		})
 		By("user resources", func() {
 			// TODO need for the next task
 			t = model.NewTestDataProvider(
@@ -94,6 +89,11 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		oc.Login(code)
 		oc.Apply(path)
+
+		By("Lock environment", func() {
+			kube.CreateNamespace(lockNamespace)
+			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
+		})
 
 		By("delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
