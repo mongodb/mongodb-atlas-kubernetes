@@ -24,7 +24,7 @@ const (
 	lockNamespace = "lock-test"
 )
 
-var _ = Describe("[OpenShift] UserLogin", func() {
+var _ = Describe("[openshift] UserLogin", func() {
 	var s utils.Secrets
 	var t model.TestDataProvider
 	var operatorTag string

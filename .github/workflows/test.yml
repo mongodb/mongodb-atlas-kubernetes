@@ -3,6 +3,8 @@ name: Test
 on:
   push:
     branches:
+    paths:
+      - '!docs/**'
   workflow_dispatch:
 
 jobs:
@@ -93,6 +95,10 @@ jobs:
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
           ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
+        include:
+          - k8s: "latest-openshift"
+            test: ["openshift"]
+
     steps:
       - name: Check out code
         uses: actions/checkout@v2.3.4
@@ -130,7 +136,6 @@ jobs:
           echo "::set-output name=k8s_version::$version"
           echo "::set-output name=k8s_platform::$platform"
 
-      # run if platform = kind #TODO
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: helm/kind-action@v1.1.0
@@ -141,10 +146,23 @@ jobs:
           cluster_name: ${{ matrix.test }}
 
       - name: Setup Go
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: actions/setup-go@v2
         with:
           go-version: "1.15.6"
+
+      - name: Download tools for openshift ui tests
+        if: ${{ steps.properties.outputs.k8s_platform == 'openshift' && !env.ACT }}
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz
+          tar xvf opm.tar.gz
+          chmod +x opm && sudo mv opm /usr/local/bin/opm
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz
+          tar xvf openshift.tar.gz
+          chmod +x oc && sudo mv oc /usr/local/bin/oc
+
+          opm version
+          oc version
+          podman --version
 
       - name: Install MongoCLI
         run: |
@@ -159,7 +177,6 @@ jobs:
           operator-sdk version
 
       - name: Run e2e test
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
@@ -170,11 +187,13 @@ jobs:
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
           TEST_NAME: "${{ matrix.test }}"
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           kubectl version
           helm version
-
           go version
+
           go get github.com/onsi/ginkgo/ginkgo && \
           go get github.com/onsi/gomega/...
           ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
