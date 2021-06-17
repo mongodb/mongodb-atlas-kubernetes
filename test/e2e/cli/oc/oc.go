@@ -10,7 +10,7 @@ func Version() {
 }
 
 func Login(code string) {
-	session := cli.Execute("oc", "login", "--token="+code, "--server=https://api.openshift.mongokubernetes.com:6443")
+	session := cli.ExecuteWithoutWriter("oc", "login", "--token="+code, "--server=https://api.openshift.mongokubernetes.com:6443", "--insecure-skip-tls-verify")
 	session.Wait("2m")
 }
 
