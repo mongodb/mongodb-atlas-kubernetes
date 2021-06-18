@@ -18,3 +18,8 @@ func Apply(path string) {
 	session := cli.Execute("oc", "apply", "-f", path)
 	session.Wait("2m")
 }
+
+func Delete(path string) {
+	session := cli.Execute("oc", "delete", "-f", path)
+	session.Wait("2m")
+}

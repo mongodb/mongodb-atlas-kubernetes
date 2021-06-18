@@ -99,11 +99,14 @@ var _ = Describe("[openshift] UserLogin", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
 		})
-		By("final screenshot", func() {
+		By("final screenshot, clean", func() {
 			_, err := page.Screenshot(playwright.PageScreenshotOptions{
 				Path: playwright.String("oshift.png"),
 			})
 			Expect(err).ShouldNot(HaveOccurred())
+
+			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
+			oc.Delete(path)
 		})
 	})
 })
