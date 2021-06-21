@@ -45,7 +45,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		Entry("Trial - Simplest configuration with no backup and one Admin User",
 			model.NewTestDataProvider(
 				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -62,7 +62,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only",
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update.yaml"},
 				[]model.DBUser{
@@ -85,7 +85,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		Entry("Multiregion, Backup and 2 DBUsers",
 			model.NewTestDataProvider(
 				"operator-ns-multiregion",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_multiregion.yaml"},
 				[]string{"data/atlascluster_multiregion_update.yaml"},
 				[]model.DBUser{
@@ -118,6 +118,23 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				30010,
 				[]func(*model.TestDataProvider){
 					actions.UpdateClusterFromUpdateConfig,
+				},
+			),
+		),
+		Entry("Trial - Global connection",
+			model.NewTestDataProvider(
+				"operator-ns-trial-global",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				30011,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
 				},
 			),
 		),

@@ -244,29 +244,51 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 	})
 }
 
+// createConnectionAtlasKey create connection: global or project level
+func createConnectionAtlasKey(data *model.TestDataProvider) {
+	By("Change resources depends on AtlasKey and create key", func() {
+		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			kube.CreateApiKeySecret(config.DefaultOperatorGlobalKey, data.Resources.Namespace)
+		} else {
+			kube.CreateApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
+		}
+	})
+}
+
+func createConnectionAtlasKeyFrom(data *model.TestDataProvider, public, private string) {
+	By("Change resources depends on AtlasKey and create key", func() {
+		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			kube.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+		} else {
+			kube.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+		}
+	})
+}
+
+func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
+	if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
+		aClient, err := a.AClient()
+		Expect(err).ShouldNot(HaveOccurred())
+		public, private, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(public).ShouldNot(BeEmpty())
+		Expect(private).ShouldNot(BeEmpty())
+
+		kube.DeleteApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
+		createConnectionAtlasKeyFrom(data, public, private)
+	}
+}
+
 func DeployUserResourcesAction(data *model.TestDataProvider) {
 	By("Create users resources", func() {
-		kube.CreateApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
+		createConnectionAtlasKey(data)
 		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
-
 		By("Wait project creation and get projectID", func() {
 			WaitProject(data.Resources, "1")
 			data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
 			Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
-
-		if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
-			aClient, err := a.AClient()
-			Expect(err).ShouldNot(HaveOccurred())
-			public, private, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(public).ShouldNot(BeEmpty())
-			Expect(private).ShouldNot(BeEmpty())
-
-			kube.DeleteApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
-			kube.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
-		}
-
+		recreateAtlasKeyIfNeed(data)
 		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
 		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})

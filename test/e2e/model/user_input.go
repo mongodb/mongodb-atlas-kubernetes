@@ -31,7 +31,11 @@ func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserIn
 		K8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + projectName,
 		ProjectPath:        filepath.Join(DataFolder, projectName, "resources", projectName+".yaml"),
 	}
-	input.Project = NewProject("k-"+projectName).ProjectName(projectName).SecretRef(keyTestPrefix).WithIpAccess("0.0.0.0/0", "everyone")
+	input.Project = NewProject("k-"+projectName).ProjectName(projectName).WithIpAccess("0.0.0.0/0", "everyone")
+	if !r.GlobalLevelKey {
+		input.Project = input.Project.SecretRef(keyTestPrefix)
+	}
+
 	for _, user := range users {
 		input.Users = append(input.Users, *user.WithProjectRef(input.Project.GetK8sMetaName()))
 	}
