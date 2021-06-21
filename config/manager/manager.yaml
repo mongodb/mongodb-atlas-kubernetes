@@ -18,7 +18,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 2000
+        runAsUser: 1000380001
       serviceAccountName: operator
       containers:
       - command:

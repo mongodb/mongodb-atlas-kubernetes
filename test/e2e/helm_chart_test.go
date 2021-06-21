@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
@@ -23,6 +24,7 @@ var _ = Describe("HELM charts", func() {
 	var _ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP IMAGE_URL")
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 
 	var _ = AfterEach(func() {

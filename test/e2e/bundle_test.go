@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 
 	"github.com/onsi/gomega/gexec"
 
@@ -23,6 +24,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 	var _ = BeforeEach(func() {
 		imageURL = os.Getenv("BUNDLE_IMAGE")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	var _ = AfterEach(func() {
 		By("Atfer each.", func() {
