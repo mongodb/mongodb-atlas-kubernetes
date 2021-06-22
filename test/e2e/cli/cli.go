@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
+	. "github.com/onsi/gomega/gbytes"
 )
 
 func Execute(command string, args ...string) *gexec.Session {
@@ -29,5 +31,15 @@ func SessionShouldExit(session *gexec.Session) {
 	EventuallyWithOffset(
 		2,
 		func() int { return session.ExitCode() },
+		"3m",
+		"5s",
 	).ShouldNot(Equal(-1))
+}
+
+func GetSessionExitMsg(session *gexec.Session) *Buffer {
+	SessionShouldExit(session)
+	if session.ExitCode() != 0 {
+		return session.Err
+	}
+	return session.Out
 }

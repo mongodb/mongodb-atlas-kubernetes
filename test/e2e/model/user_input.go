@@ -57,3 +57,7 @@ func (u *UserInputs) GetResourceFolder() string {
 func (u *UserInputs) GetUsersFolder() string {
 	return filepath.Join(u.GetResourceFolder(), "user")
 }
+
+func (u *UserInputs) GetServiceCatalogSourceFolder() string {
+	return filepath.Join(DataFolder, u.Project.Spec.Name, "catalog")
+}

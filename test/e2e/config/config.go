@@ -10,7 +10,7 @@ const (
 	AtlasHost                = "https://cloud-qa.mongodb.com"
 	AtlasAPIURL              = AtlasHost + "/api/atlas/v1.0/"
 	TestAppLabelPrefix       = "app=test-app-"
-
+	ActrcPath          = "../../.actrc"
 	// HELM related path
 	HelmTestAppPath             = "../app/helm/"
 	HelmOperatorChartPath       = "../../my-charts/charts/atlas-operator"
