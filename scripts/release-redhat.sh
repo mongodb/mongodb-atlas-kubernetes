@@ -13,7 +13,7 @@ sed -i .bak 's/COPY bundle\/metadata/COPY metadata/' "${version}/bundle.Dockerfi
 sed -i .bak '/COPY bundle\/tests\/scorecard \/tests\/scorecard\//d' "${version}/bundle.Dockerfile"
 # temporary - should be done during generation phase
 sed -i .bak '/runAsNonRoot: true/d' "${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-sed -i .bak '/runAsUser: 2000/d' "${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+sed -i .bak '/runAsUser: 1000380001/d' "${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
 rm "${version}/bundle.Dockerfile.bak"
 rm "${version}/mongodb-atlas-kubernetes.clusterserviceversion.yaml.bak"
 
