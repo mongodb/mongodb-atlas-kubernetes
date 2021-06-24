@@ -59,7 +59,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 			// TODO need for the next task
 			t = model.NewTestDataProvider(
 				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
 				[]model.DBUser{

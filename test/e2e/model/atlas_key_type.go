@@ -18,8 +18,9 @@ const (
 )
 
 type AtlasKeyType struct {
-	DefaultFullAccessKey bool
-	Roles                []AtlasRoles
+	GlobalLevelKey       bool         // if true, tests create "<operator-deployment-name>-api-key"
+	DefaultFullAccessKey bool         // use full access key provided with github secrets
+	Roles                []AtlasRoles // specify role for non default
 	Whitelist            []string
 }
 
@@ -39,8 +40,13 @@ func (a *AtlasKeyType) GetRole() []AtlasRoles {
 	return a.Roles
 }
 
-func (a *AtlasKeyType) UseDefaultKey() *AtlasKeyType {
+func (a *AtlasKeyType) UseDefaulFullAccess() *AtlasKeyType {
 	a.DefaultFullAccessKey = true
+	return a
+}
+
+func (a *AtlasKeyType) CreateAsGlobalLevelKey() *AtlasKeyType {
+	a.GlobalLevelKey = true
 	return a
 }
 

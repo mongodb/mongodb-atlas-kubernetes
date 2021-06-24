@@ -71,7 +71,7 @@ var _ = Describe("HELM charts", func() {
 		Entry("Several actions with helm update",
 			model.NewTestDataProvider(
 				"helm-ns",
-				model.NewEmptyAtlasKeyType().UseDefaultKey(),
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -95,7 +95,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project and Cluster", func() {
 				data = model.NewTestDataProvider(
 					"helm-wide",
-					model.NewEmptyAtlasKeyType().UseDefaultKey(),
+					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{
@@ -125,7 +125,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project, Cluster, DBUser", func() {
 				data = model.NewTestDataProvider(
 					"helm-upgrade",
-					model.NewEmptyAtlasKeyType().UseDefaultKey(),
+					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{
