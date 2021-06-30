@@ -75,7 +75,14 @@ var (
 	namespace         corev1.Namespace
 	cfg               *rest.Config
 	managerCancelFunc context.CancelFunc
+	atlasDomain       string
 )
+
+func init() {
+	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
+		atlasDomain = "https://cloud-qa.mongodb.com"
+	}
+}
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -155,7 +162,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	withDigest := httputil.Digest(publicKey, privateKey)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
 	Expect(err).ToNot(HaveOccurred())
-	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
 	Expect(err).ToNot(HaveOccurred())
 
 	return aClient, atlas.Connection{
@@ -200,7 +207,7 @@ func prepareControllers() {
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		AtlasDomain:     atlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
 		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
@@ -210,7 +217,7 @@ func prepareControllers() {
 	err = (&atlascluster.AtlasClusterReconciler{
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		AtlasDomain:     atlasDomain,
 		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(k8sManager)
@@ -219,7 +226,7 @@ func prepareControllers() {
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		AtlasDomain:     atlasDomain,
 		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher: watch.NewResourceWatcher(),
 		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
