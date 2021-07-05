@@ -19,6 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
 	"go.mongodb.org/mongo-driver/mongo"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -38,7 +42,7 @@ const (
 	UserPasswordSecret2 = "second-user-password-secret"
 	DBUserPassword2     = "H@lla#!"
 	// M2 clusters take longer time to apply changes
-	DBUserUpdateTimeout = 150
+	DBUserUpdateTimeout = 170
 )
 
 var _ = Describe("AtlasDatabaseUser", func() {
@@ -346,6 +350,8 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", "Ready", "")
+
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 
 				connSecretInitial = validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
@@ -359,6 +365,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, expectedCondition), 20, interval).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdDBUser, "Warning", string(workflow.Internal), "the 'password' field is empty")
 			})
 			By("Fixing the password secret", func() {
 				passwordSecret := buildPasswordSecret(UserPasswordSecret, "someNewPassw00rd")
@@ -405,8 +412,13 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 2)
-				validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
-				validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+
+				s1 := validateSecret(k8sClient, *createdProject, *createdClusterAWS, *createdDBUser)
+				s2 := validateSecret(k8sClient, *createdProject, *createdClusterAzure, *createdDBUser)
+
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
+					fmt.Sprintf("Connection Secrets were created/updated: %s, %s", s1.Name, s2.Name))
+
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
 				oldName := createdDBUser.Spec.Username
@@ -509,6 +521,31 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+		})
+		Describe("Deleting the db user (not cleaning Atlas)", func() {
+			It("Should Succeed", func() {
+				By(`Creating the db user with retention policy "keep" first`, func() {
+					createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+					Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+					Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+						30*time.Minute, interval).Should(BeTrue())
+
+					createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+					createdDBUser.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+					Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+					Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+						DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+				})
+				By("Deleting the db user - stays in Atlas", func() {
+					Expect(k8sClient.Delete(context.Background(), createdDBUser)).To(Succeed())
+
+					time.Sleep(1 * time.Minute)
+					Expect(checkAtlasDatabaseUserRemoved(createdProject.Status.ID, *createdDBUser)()).Should(BeFalse())
+
+					checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+				})
 			})
 		})
 	})
@@ -622,6 +659,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
 	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
+	fmt.Printf("!! Secret: %v (%v)\n", kube.ObjectKey(project.Namespace, secretName), secret.Namespace+"/"+secret.Name)
 
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
@@ -630,10 +668,10 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{
-		"connectionString.standard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
-		"connectionString.standardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
-		"username":                     []byte(username),
-		"password":                     []byte(password),
+		"connectionStringStandard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
+		"connectionStringStandardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
+		"username":                    []byte(username),
+		"password":                    []byte(password),
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
@@ -641,6 +679,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
+	fmt.Printf("!! Secret 2: %v \n", secret.Namespace+"/"+secret.Name)
 	return secret
 }
 

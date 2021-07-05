@@ -52,13 +52,11 @@ func GetStatusCondition(ns string, atlasname string) func() string {
 	}
 }
 
-func GetStatusPhase(ns string, args ...string) func() string {
-	return func() string {
-		args := append([]string{"get"}, args...)
-		args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
-		session := cli.Execute("kubectl", args...)
-		return string(session.Wait("1m").Out.Contents())
-	}
+func GetStatusPhase(ns string, args ...string) string {
+	args = append([]string{"get"}, args...)
+	args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
+	session := cli.Execute("kubectl", args...)
+	return string(session.Wait("1m").Out.Contents())
 }
 
 // GetProjectResource
@@ -115,9 +113,15 @@ func Delete(args ...string) *Buffer {
 	return session.Wait("10m").Out
 }
 
+func DeleteResource(rType, name, ns string) {
+	session := cli.Execute("kubectl", "delete", rType, name, "-n", ns)
+	cli.SessionShouldExit(session)
+}
+
 func CreateNamespace(name string) *Buffer {
 	session := cli.Execute("kubectl", "create", "namespace", name)
-	ExpectWithOffset(1, session.Wait()).Should(Say("created"), "Can't create namespace")
+	result := cli.GetSessionExitMsg(session)
+	ExpectWithOffset(1, result).Should(SatisfyAny(Say("created"), Say("already exists")), "Can't create namespace")
 	return session.Out
 }
 
@@ -140,14 +144,58 @@ func CreateApiKeySecret(keyName, ns string) { // TODO add ns
 	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
 }
 
+func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
+	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
+		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
+		"--from-literal=publicApiKey="+public,
+		"--from-literal=privateApiKey="+private,
+		"-n", ns,
+	)
+	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
+}
+
+func DeleteApiKeySecret(keyName, ns string) {
+	session := cli.Execute("kubectl", "delete", "secret", keyName, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
 func GetManagerLogs(ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
 }
 
+func GetTestAppLogs(label, ns string) []byte {
+	session := cli.ExecuteWithoutWriter("kubectl", "logs", "-l", label, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
+}
+
+func DescribeTestApp(label, ns string) []byte {
+	session := cli.Execute("kubectl", "describe", "pods", "-l", label, "-n", ns)
+	return session.Wait("1m").Out.Contents()
+}
+
 func GetYamlResource(resource string, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "get", resource, "-o", "yaml", "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
+}
+
+func CreateConfigMapWithLiterals(configName string, ns string, keys ...string) {
+	args := append([]string{"create", "configmap", configName, "-n", ns}, keys...)
+	session := cli.Execute("kubectl", args...)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
+func HasConfigMap(configName, ns string) bool {
+	session := cli.Execute("kubectl", "get", "configmap", configName, "-n", ns)
+	cli.SessionShouldExit(session)
+	return session.ExitCode() == 0
+}
+
+func GetResourceCreationTimestamp(resource, name, ns string) []byte {
+	session := cli.Execute("kubectl", "get", resource, name, "-n", ns, "-o", "jsonpath={.metadata.creationTimestamp}")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
 }

@@ -13,6 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -336,8 +338,10 @@ var _ = Describe("AtlasCluster", func() {
 					60,
 					interval,
 				).Should(BeTrue())
+				testutil.EventExists(k8sClient, createdCluster, "Warning", string(workflow.Internal), "name is invalid because must be set")
 
 				lastGeneration++
+
 			})
 
 			By("Fixing the cluster", func() {
@@ -568,7 +572,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					80, interval).Should(BeTrue())
+					100, interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Cluster "+createdCluster.Name, func() {
@@ -584,6 +588,34 @@ var _ = Describe("AtlasCluster", func() {
 
 			// prevent cleanup from failing due to cluster already deleted
 			createdCluster = nil
+		})
+	})
+
+	Describe("Deleting the cluster (not cleaning Atlas)", func() {
+		It("Should Succeed", func() {
+			By(`Creating the cluster with retention policy "keep" first`, func() {
+				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					30*time.Minute, interval).Should(BeTrue())
+			})
+			By("Deleting the cluster - stays in Atlas", func() {
+				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
+				time.Sleep(5 * time.Minute)
+				Expect(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name)()).Should(BeFalse())
+
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			})
+			By("Deleting the cluster in Atlas manually", func() {
+				// We need to remove the cluster in Atlas manually to let project get removed
+				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.ID(), createdCluster.Spec.Name)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
+				createdCluster = nil
+			})
+
 		})
 	})
 })

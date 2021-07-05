@@ -13,6 +13,12 @@ inputs:
   TEST_NAME:
     description: "The name of the test to run"
     required: true
+  TEST_PATH:
+    description: "The path of the test to run"
+    required: true
+  PARALLEL_NODES:
+    description: "Count of ginkgo nodes"
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'

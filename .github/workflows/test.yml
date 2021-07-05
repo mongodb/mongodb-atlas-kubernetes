@@ -3,6 +3,8 @@ name: Test
 on:
   push:
     branches:
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 jobs:
@@ -21,18 +23,18 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.6'
+          go-version: "1.15.6"
       - run: go version
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)
 
-  int-test-project:
+  int-test:
     name: Integration tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        test: [ "AtlasProject", "AtlasCluster", "AtlasDatabaseUser" ]
+        test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
     steps:
       - uses: actions/checkout@v2.3.4
 
@@ -48,6 +50,29 @@ jobs:
           ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           TEST_NAME: ${{ matrix.test }}
+          TEST_PATH: ./test/int
+          PARALLEL_NODES: 8
+
+  int-test-clusterwide:
+    name: Integration tests (Clusterwide)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      - name: Run testing
+        uses: ./.github/actions/int-test
+        with:
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          TEST_NAME: "ClusterWide"
+          TEST_PATH: ./test/int/clusterwide
+          PARALLEL_NODES: 1
 
   prepare-e2e:
     name: Prepare E2E configuration and image
@@ -58,22 +83,23 @@ jobs:
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0 # required for tags
 
-    - name: Check out code
-      uses: actions/checkout@v2.3.1
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
 
-    - name: Prepare tag
-      id: prepare
-      uses: ./.github/actions/set-tag
-
-    - name: Push Atlas Operator to Registry
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ env.DOCKER_REPO }}
-        registry: ${{ env.DOCKER_REGISTRY }}
-        tags: ${{ steps.prepare.outputs.tag }}
+      - name: Push Atlas Operator to Registry
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.DOCKER_REPO }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          tags: ${{ steps.prepare.outputs.tag }}
 
   e2e:
     name: E2E tests
@@ -90,11 +116,15 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
-        test: ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide"]
-    steps:
+        test:
+          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
+        include:
+          - k8s: "latest-openshift"
+            test: "openshift"
 
+    steps:
       - name: Check out code
-        uses: actions/checkout@v2.3.1
+        uses: actions/checkout@v2.3.4
 
       - name: Prepare tag
         id: prepare
@@ -112,6 +142,7 @@ jobs:
           sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
       - name: Push bundle-image for the test
+        if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -129,7 +160,6 @@ jobs:
           echo "::set-output name=k8s_version::$version"
           echo "::set-output name=k8s_platform::$platform"
 
-      # run if platform = kind #TODO
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: helm/kind-action@v1.1.0
@@ -140,10 +170,23 @@ jobs:
           cluster_name: ${{ matrix.test }}
 
       - name: Setup Go
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: actions/setup-go@v2
         with:
-          go-version: '1.15.6'
+          go-version: "1.15.6"
+
+      - name: Download tools for openshift ui tests
+        if: ${{ steps.properties.outputs.k8s_platform == 'openshift' && !env.ACT }}
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz
+          tar xvf opm.tar.gz
+          chmod +x opm && sudo mv opm /usr/local/bin/opm
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz
+          tar xvf openshift.tar.gz
+          chmod +x oc && sudo mv oc /usr/local/bin/oc
+
+          opm version
+          oc version
+          podman --version
 
       - name: Install MongoCLI
         run: |
@@ -157,8 +200,14 @@ jobs:
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
+      - name: Checkout helm charts repo
+        uses: actions/checkout@v2
+        with:
+          repository: mongodb/helm-charts
+          path: my-charts
+          ref: dev
+
       - name: Run e2e test
-        if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
@@ -169,11 +218,15 @@ jobs:
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
           TEST_NAME: "${{ matrix.test }}"
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
+          OPENSHIFT_PASS: ${{ secrets.OPENSHIFT_PASS }}
         run: |
           kubectl version
           helm version
-
           go version
+
           go get github.com/onsi/ginkgo/ginkgo && \
           go get github.com/onsi/gomega/...
           ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
@@ -190,7 +243,6 @@ jobs:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/checkout@v2.3.4
 
       - name: CleanUp empty AtlasProjects older than one day

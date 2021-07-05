@@ -7,6 +7,8 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
@@ -25,7 +27,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 		}
 		operatorCluster := mdbv1.AtlasClusterSpec{
 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
-				ProviderName: mdbv1.ProviderAWS,
+				ProviderName: provider.ProviderAWS,
 			},
 			ClusterType: mdbv1.TypeGeoSharded,
 		}

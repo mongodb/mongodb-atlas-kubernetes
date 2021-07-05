@@ -30,4 +30,7 @@ type AtlasProjectStatus struct {
 	// The list of IP Access List entries that are expired due to 'deleteAfterDate' being less than the current date.
 	// Note, that this field is updated by the Atlas Operator only after specification changes
 	ExpiredIPAccessList []project.IPAccessList `json:"expiredIpAccessList,omitempty"`
+
+	// The list of private endpoints configured for current project
+	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
 }

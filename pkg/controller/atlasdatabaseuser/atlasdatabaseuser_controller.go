@@ -20,10 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -43,20 +46,23 @@ import (
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	watch.ResourceWatcher
-	Client      client.Client
-	Log         *zap.SugaredLogger
-	Scheme      *runtime.Scheme
-	AtlasDomain string
-	OperatorPod client.ObjectKey
+	Client          client.Client
+	Log             *zap.SugaredLogger
+	Scheme          *runtime.Scheme
+	AtlasDomain     string
+	GlobalAPISecret client.ObjectKey
+	EventRecorder   record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdatabaseusers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=create;update;patch;delete
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context
@@ -73,7 +79,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	ctx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log)
 
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
-	defer statushandler.Update(ctx, r.Client, databaseUser)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, databaseUser)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(databaseUser, project); !result.IsOk() {
@@ -81,7 +87,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -152,7 +158,20 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if customresource.ResourceShouldBeLeftInAtlas(dbUser) {
+		log.Infof("Not removing Atlas database user from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	} else if err := r.deleteUserFromAtlas(dbUser, project, log); err != nil {
+		log.Error("Failed to remove database user from Atlas: %s", err)
+	}
+
+	// We ignore the error as it will be printed by the function
+	_ = removeStaleSecretsByUserName(r.Client, project.ID(), dbUser.Spec.Username, *dbUser, log)
+
+	return nil
+}
+
+func (r AtlasDatabaseUserReconciler) deleteUserFromAtlas(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}
@@ -163,15 +182,28 @@ func (r AtlasDatabaseUserReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	userName := dbUser.Spec.Username
-	_, err = atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), userName)
-	if err != nil {
-		return fmt.Errorf("cannot delete Database User in Atlas: %w", err)
-	}
 
-	log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
+	go func() {
+		timeout := time.Now().Add(workflow.DefaultTimeout)
 
-	// We ignore the error as it will be printed by the function
-	_ = removeStaleSecretsByUserName(r.Client, project.ID(), userName, *dbUser, log)
+		for time.Now().Before(timeout) {
+			_, err = atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), userName)
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
+				log.Info("Database user doesn't exist or is already deleted")
+				return
+			}
+
+			if err != nil {
+				log.Errorw("Cannot delete Atlas database user", "error", err)
+				time.Sleep(workflow.DefaultRetry)
+				continue
+			}
+
+			log.Infow("Started DatabaseUser deletion process in Atlas", "projectID", project.ID(), "userName", userName)
+			return
+		}
+	}()
 
 	return nil
 }

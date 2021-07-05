@@ -8,18 +8,19 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
-	var NortonSpec, NimnulSpec model.UserInputs
+	var NortonData, NimnulData model.TestDataProvider
 	commonClusterName := "megacluster"
 
 	_ = BeforeEach(func() {
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kube.Apply(ConfigAll)).Should(
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),
@@ -39,88 +40,82 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 					"output/operator-logs.txt",
 					kube.GetManagerLogs(DefaultOperatorNS),
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"deploy"},
 					DefaultOperatorNS,
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					NortonSpec.Namespace,
+					NortonData.Resources.Namespace,
 				)
-				SaveK8sResources(
+				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
-					NimnulSpec.Namespace,
+					NimnulData.Resources.Namespace,
 				)
+				actions.SaveTestAppLogs(NortonData.Resources)
+				actions.SaveTestAppLogs(NimnulData.Resources)
 			} else {
-				Eventually(kube.DeleteNamespace(NortonSpec.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
-				Eventually(kube.DeleteNamespace(NimnulSpec.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+				actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 			}
 		})
 	})
 
-	loadClustersAndApplyConfiguration := func(spec model.UserInputs, name string) model.UserInputs {
-		utils.SaveToFile(spec.ProjectPath, spec.Project.ConvertByte())
-		spec.Clusters = append(spec.Clusters, model.LoadUserClusterConfig(ClusterSample))
-		spec.Clusters[0].Spec.Project.Name = spec.Project.GetK8sMetaName()
-		spec.Clusters[0].ObjectMeta.Name = name + "cluster"
-		utils.SaveToFile(
-			spec.Clusters[0].ClusterFileName(spec),
-			utils.JSONToYAMLConvert(spec.Clusters[0]),
-		)
-
-		By("Apply "+name+" configuration", func() {
-			kube.CreateNamespace(spec.Namespace)
-			kube.CreateApiKeySecret(spec.KeyName, spec.Namespace)
-			kube.Apply(spec.ProjectPath, "-n", spec.Namespace)
-			kube.Apply(spec.Clusters[0].ClusterFileName(spec), "-n", spec.Namespace)
-		})
-		return spec
-	}
-
 	// (Consider Shared Clusters when E2E tests could conflict with each other)
 	It("Deploy cluster wide operator and create resources in each of them", func() {
 		By("Users can create clusters with the same name", func() {
-			By("User 1 - Norton - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			NortonSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("norton-key", nil), "norton")
-			By("User 2 - Nimnul - Creates configuration for a new Project and Cluster named: " + commonClusterName)
-			NimnulSpec = loadClustersAndApplyConfiguration(model.NewUserInputs("nimnul-key", nil), "nimnul")
+			NortonData = model.NewTestDataProvider(
+				"norton-wide",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				},
+				30008,
+				[]func(*model.TestDataProvider){},
+			)
+			NimnulData = model.NewTestDataProvider(
+				"nimnul-wide",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				},
+				30009,
+				[]func(*model.TestDataProvider){},
+			)
+			NortonData.Resources.Clusters[0].ObjectMeta.Name = "norton-cluster"
+			NortonData.Resources.Clusters[0].Spec.Name = commonClusterName
+			NimnulData.Resources.Clusters[0].ObjectMeta.Name = "nimnul-cluster"
+			NimnulData.Resources.Clusters[0].Spec.Name = commonClusterName
 		})
 
-		By("Wait creation projects/clusters", func() {
-			// projects Norton
-			waitProject(NortonSpec, "1")
-			NortonSpec.ProjectID = kube.GetProjectResource(NortonSpec.Namespace, NortonSpec.K8sFullProjectName).Status.ID
-
-			// projects Nimnul
-			waitProject(NimnulSpec, "1")
-			NimnulSpec.ProjectID = kube.GetProjectResource(NimnulSpec.Namespace, NimnulSpec.K8sFullProjectName).Status.ID
-
-			waitCluster(NortonSpec, "1")
-			waitCluster(NimnulSpec, "1")
-		})
-
-		By("Check connection strings", func() {
-			Eventually(kube.GetClusterResource(NortonSpec.Namespace, NortonSpec.Clusters[0].GetClusterNameResource()).
-				Status.ConnectionStrings.StandardSrv,
-			).ShouldNot(BeNil())
-
-			Eventually(kube.GetClusterResource(NimnulSpec.Namespace, NimnulSpec.Clusters[0].GetClusterNameResource()).
-				Status.ConnectionStrings.StandardSrv,
-			).ShouldNot(BeNil())
+		By("Deploy users resorces", func() {
+			actions.PrepareUsersConfigurations(&NortonData)
+			actions.PrepareUsersConfigurations(&NimnulData)
+			actions.DeployUserResourcesAction(&NortonData)
+			actions.DeployUserResourcesAction(&NimnulData)
 		})
 
 		By("Operator working with right cluster if one of the user update configuration", func() {
-			NortonSpec.Clusters[0].Spec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
+			NortonData.Resources.Clusters[0].Spec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
 			utils.SaveToFile(
-				NortonSpec.Clusters[0].ClusterFileName(NortonSpec),
-				utils.JSONToYAMLConvert(NortonSpec.Clusters[0]),
+				NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources),
+				utils.JSONToYAMLConvert(NortonData.Resources.Clusters[0]),
 			)
-			kube.Apply(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
-			waitCluster(NortonSpec, "2")
+			kube.Apply(NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources), "-n", NortonData.Resources.Namespace)
+			actions.WaitCluster(NortonData.Resources, "2")
 
 			By("Norton cluster has labels", func() {
 				Expect(
-					kube.GetClusterResource(NortonSpec.Namespace, NortonSpec.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
+					kube.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
 				).To(MatchFields(IgnoreExtras, Fields{
 					"Key":   Equal("something"),
 					"Value": Equal("awesome"),
@@ -129,41 +124,14 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 			By("Nimnul cluster does not have labels", func() {
 				Eventually(
-					kube.GetClusterResource(NimnulSpec.Namespace, NimnulSpec.Clusters[0].GetClusterNameResource()).Spec.Labels,
+					kube.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels,
 				).Should(BeNil())
 			})
 		})
 
-		By("Delete clusters", func() {
-			kube.Delete(NortonSpec.Clusters[0].ClusterFileName(NortonSpec), "-n", NortonSpec.Namespace)
-			Eventually(
-				checkIfClusterExist(NortonSpec),
-				"10m", "1m",
-			).Should(BeFalse(), "Norton Cluster should be deleted from Atlas")
-
-			kube.Delete(NimnulSpec.Clusters[0].ClusterFileName(NimnulSpec), "-n", NimnulSpec.Namespace)
-			Eventually(
-				checkIfClusterExist(NimnulSpec),
-				"10m", "1m",
-			).Should(BeFalse(), "Nimnuls Cluster should be deleted from Atlas")
-		})
-
-		By("Delete project", func() {
-			kube.Delete(NortonSpec.ProjectPath, "-n", NortonSpec.Namespace)
-			Eventually(
-				func() bool {
-					return mongocli.IsProjectInfoExist(NortonSpec.ProjectID)
-				},
-				"5m", "20s",
-			).Should(BeFalse(), "Nortons Project should be deleted from Atlas")
-
-			kube.Delete(NimnulSpec.ProjectPath, "-n", NimnulSpec.Namespace)
-			Eventually(
-				func() bool {
-					return mongocli.IsProjectInfoExist(NimnulSpec.ProjectID)
-				},
-				"5m", "20s",
-			).Should(BeFalse(), "Nimnuls Project should be deleted from Atlas")
+		By("Delete Norton/Nimnul Resources", func() {
+			actions.DeleteUserResources(&NortonData)
+			actions.DeleteUserResources(&NimnulData)
 		})
 	})
 })

@@ -160,8 +160,7 @@ func prepareControllers() {
 
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test",
-			// TODO name namespace by the name of the project and include the creation date/time to perform GC
+			Namespace:    "test",
 			GenerateName: "test",
 		},
 	}
@@ -189,15 +188,17 @@ func prepareControllers() {
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     kube.ObjectKey(namespace.Name, "atlas-operator"),
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client:                 k8sManager.GetClient(),
-		Log:                    logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:            "https://cloud-qa.mongodb.com",
-		OperatorDeploymentName: kube.ObjectKey(namespace.Name, "atlas-operator"),
+		Client:          k8sManager.GetClient(),
+		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -205,8 +206,9 @@ func prepareControllers() {
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher: watch.NewResourceWatcher(),
-		OperatorPod:     kube.ObjectKey(namespace.Name, "atlas-operator"),
+		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -44,18 +45,21 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	Client                 client.Client
-	Log                    *zap.SugaredLogger
-	Scheme                 *runtime.Scheme
-	AtlasDomain            string
-	OperatorDeploymentName client.ObjectKey
+	Client          client.Client
+	Log             *zap.SugaredLogger
+	Scheme          *runtime.Scheme
+	AtlasDomain     string
+	GlobalAPISecret client.ObjectKey
+	EventRecorder   record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlascluster", req.NamespacedName)
@@ -68,7 +72,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
-	defer statushandler.Update(ctx, r.Client, cluster)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {
@@ -76,7 +80,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorDeploymentName, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
@@ -102,7 +106,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if csResult := ensureConnectionSecrets(ctx, r.Client, project, c); !csResult.IsOk() {
+	if csResult := r.ensureConnectionSecrets(ctx, project, c, cluster); !csResult.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
 		return csResult.ReconcileResult(), nil
 	}
@@ -158,7 +162,29 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorDeploymentName, project.ConnectionSecretObjectKey())
+	if customresource.ResourceShouldBeLeftInAtlas(cluster) {
+		log.Infof("Not removing Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	} else if err := r.deleteClusterFromAtlas(cluster, project, log); err != nil {
+		log.Error("Failed to remove cluster from Atlas: %s", err)
+	}
+
+	// We always remove the connection secrets even if the cluster is not removed from Atlas
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
+	if err != nil {
+		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
+	}
+
+	for i := range secrets {
+		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
+			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}
@@ -191,17 +217,5 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 		log.Error("Failed to delete Atlas cluster in time")
 	}()
-
-	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
-	if err != nil {
-		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
-	}
-
-	for i := range secrets {
-		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
-			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
-		}
-	}
-
 	return nil
 }

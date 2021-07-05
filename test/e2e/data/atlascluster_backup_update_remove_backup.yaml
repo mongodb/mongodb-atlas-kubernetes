@@ -1,0 +1,13 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: atlascluster-backup
+spec:
+  name: cluster-backup
+  projectRef:
+    name: my-project
+  providerBackupEnabled: false
+  providerSettings:
+    instanceSizeName: M10
+    providerName: AWS
+    regionName: US_EAST_1

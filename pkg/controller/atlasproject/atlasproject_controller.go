@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -46,10 +47,11 @@ import (
 type AtlasProjectReconciler struct {
 	Client client.Client
 	watch.ResourceWatcher
-	Log         *zap.SugaredLogger
-	Scheme      *runtime.Scheme
-	AtlasDomain string
-	OperatorPod client.ObjectKey
+	Log             *zap.SugaredLogger
+	Scheme          *runtime.Scheme
+	AtlasDomain     string
+	GlobalAPISecret client.ObjectKey
+	EventRecorder   record.EventRecorder
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -57,10 +59,12 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasprojects/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context
@@ -81,11 +85,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	// This update will make sure the status is always updated in case of any errors or successful result
-	defer statushandler.Update(ctx, r.Client, project)
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
-		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
+		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -107,12 +111,15 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
 	if result = r.ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
 }
@@ -123,12 +130,20 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasProject{}, e.Object)
 		return nil
 	}
-
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
-
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.OperatorPod, project.ConnectionSecretObjectKey())
+	if project.Status.ID == "" {
+		log.Infof("Project does not exist in Atlas, nothing to remove")
+		return nil
+	}
+
+	if customresource.ResourceShouldBeLeftInAtlas(project) {
+		log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+		return nil
+	}
+
+	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
 	}
@@ -145,7 +160,7 @@ func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
 			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
-				log.Infow("Project doesn't exist or is already deleted", "projectID", project.Status.ID)
+				log.Infow("Project is already deleted", "projectID", project.Status.ID)
 				return
 			}
 

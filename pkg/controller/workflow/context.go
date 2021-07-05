@@ -29,6 +29,10 @@ type Context struct {
 	// This is the condition happened the last (most of all it contains the most important information that needs
 	// to be logged)
 	lastCondition *status.Condition
+
+	// lastConditionWarn indicates if the last "terminal" condition was expected (for example wait for some resource)
+	// or unexpected (any errors)
+	lastConditionWarn bool
 }
 
 func NewContext(log *zap.SugaredLogger, conditions []status.Condition) *Context {
@@ -50,6 +54,10 @@ func (c Context) LastCondition() *status.Condition {
 	return c.lastCondition
 }
 
+func (c Context) LastConditionWarn() bool {
+	return c.lastConditionWarn
+}
+
 func (c *Context) EnsureStatusOption(option status.Option) *Context {
 	c.status.EnsureOption(option)
 	return c
@@ -68,6 +76,7 @@ func (c *Context) SetConditionFromResult(conditionType status.ConditionType, res
 		Reason:  string(result.reason),
 		Message: result.message,
 	})
+	c.lastConditionWarn = result.warning
 	return c
 }
 

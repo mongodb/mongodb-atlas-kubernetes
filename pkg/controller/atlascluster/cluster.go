@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -158,13 +159,14 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func ensureConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster) workflow.Result {
+func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster, clusterResource *mdbv1.AtlasCluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
-	err := k8sClient.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
+	secrets := make([]string, 0)
 	for _, dbUser := range databaseUsers.Items {
 		found := false
 		for _, c := range dbUser.Status.Conditions {
@@ -184,7 +186,7 @@ func ensureConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, pro
 			continue
 		}
 
-		password, err := dbUser.ReadPassword(k8sClient)
+		password, err := dbUser.ReadPassword(r.Client)
 		if err != nil {
 			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
 		}
@@ -196,10 +198,15 @@ func ensureConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, pro
 			Password:   password,
 		}
 
-		_, err = connectionsecret.Ensure(k8sClient, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data)
+		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
 		}
+		secrets = append(secrets, secretName)
+	}
+
+	if len(secrets) > 0 {
+		r.EventRecorder.Eventf(clusterResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
 	}
 
 	return workflow.OK()

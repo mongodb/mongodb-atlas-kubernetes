@@ -61,6 +61,22 @@ nodes:
     hostPort: 30007
     listenAddress: "0.0.0.0"
     protocol: TCP
+  - containerPort: 30008
+    hostPort: 30008
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30009
+    hostPort: 30009
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30010
+    hostPort: 30010
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 30011
+    hostPort: 30011
+    listenAddress: "0.0.0.0"
+    protocol: TCP
 EOF
 
 # connect the registry to the cluster network
