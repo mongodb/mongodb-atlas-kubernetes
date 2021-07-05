@@ -31,11 +31,9 @@ func GetPodStatus(ns string) func() string {
 }
 
 // DescribeOperatorPod performs "kubectl describe" to get Operator pod information
-func DescribeOperatorPod(ns string) func() string {
-	return func() string {
-		session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
-		return string(session.Wait("1m").Out.Contents())
-	}
+func DescribeOperatorPod(ns string) string {
+	session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
+	return string(session.Wait("1m").Out.Contents())
 }
 
 // GetGeneration .status.observedGeneration
