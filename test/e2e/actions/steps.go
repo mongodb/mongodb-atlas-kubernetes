@@ -128,7 +128,8 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 func SaveK8sResources(resources []string, ns string) {
 	for _, resource := range resources {
 		data := kube.GetYamlResource(resource, ns)
-		utils.SaveToFile("output/"+resource+".yaml", data)
+		path := fmt.Sprintf("output/%s/%s.yaml", ns, resource)
+		utils.SaveToFile(path, data)
 	}
 }
 
@@ -292,7 +293,7 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
 		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})
-
+	
 	By("Wait cluster creation", func() {
 		WaitCluster(data.Resources, "1")
 	})
