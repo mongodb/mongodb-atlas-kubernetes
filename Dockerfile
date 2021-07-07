@@ -22,11 +22,28 @@ RUN if [ -z $PRODUCT_VERSION ]; then PRODUCT_VERSION=$(git describe --tags); fi;
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
     go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+RUN microdnf install yum &&\
+    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical &&\
+    yum clean all &&\
+    microdnf remove yum &&\
+    microdnf clean all
+
+#FROM registry.access.redhat.com/ubi8/ubi
+#
+#RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+
+LABEL name="MongoDB Atlas Operator" \
+      maintainer="support@mongodb.com" \
+      vendor="MongoDB" \
+      release="1" \
+      summary="MongoDB Atlas Operator Image" \
+      description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster"
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER nonroot:nonroot
+COPY hack/licenses licenses
 
+USER 1001:0
 ENTRYPOINT ["/manager"]
