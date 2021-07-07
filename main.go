@@ -99,45 +99,50 @@ func main() {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
-	if err = (&atlascluster.AtlasClusterReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasCluster"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
-		os.Exit(1)
+	if !config.DisableAtlasClusterReconciler {
+		if err = (&atlascluster.AtlasClusterReconciler{
+			Client:           mgr.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+			Scheme:           mgr.GetScheme(),
+			AtlasDomain:      config.AtlasDomain,
+			GlobalAPISecret:  config.GlobalAPISecret,
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    mgr.GetEventRecorderFor("AtlasCluster"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
+			os.Exit(1)
+		}
+	}
+	if !config.DisableAtlasProjectReconciler {
+		if err = (&atlasproject.AtlasProjectReconciler{
+			Client:           mgr.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
+			Scheme:           mgr.GetScheme(),
+			AtlasDomain:      config.AtlasDomain,
+			ResourceWatcher:  watch.NewResourceWatcher(),
+			GlobalAPISecret:  config.GlobalAPISecret,
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
+			os.Exit(1)
+		}
 	}
 
-	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
-		os.Exit(1)
-	}
-
-	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
-		os.Exit(1)
+	if !config.DisableAtlasDatabaseUserReconciler {
+		if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
+			Client:           mgr.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+			Scheme:           mgr.GetScheme(),
+			AtlasDomain:      config.AtlasDomain,
+			ResourceWatcher:  watch.NewResourceWatcher(),
+			GlobalAPISecret:  config.GlobalAPISecret,
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
@@ -165,6 +170,10 @@ type Config struct {
 	WatchedNamespaces    map[string]bool
 	ProbeAddr            string
 	GlobalAPISecret      client.ObjectKey
+	// Allow to granularly disable reconcilers. all Disable* flags are false if not set, for a backward compatibility
+	DisableAtlasClusterReconciler      bool
+	DisableAtlasProjectReconciler      bool
+	DisableAtlasDatabaseUserReconciler bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -195,6 +204,19 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 
 	if len(config.WatchedNamespaces) == 1 {
 		config.Namespace = watchedNamespace
+	}
+
+	if val, ok := os.LookupEnv("DISABLE_ATLAS_CLUSTER_RECONCILER"); ok && val == "true" {
+		config.DisableAtlasClusterReconciler = true
+		log.Infof("The AtlasClusterReconciler is disabled by the DISABLE_ATLAS_CLUSTER_RECONCILER configuration flag")
+	}
+	if val, ok := os.LookupEnv("DISABLE_ATLAS_PROJECT_RECONCILER"); ok && val == "true" {
+		config.DisableAtlasProjectReconciler = true
+		log.Infof("The AtlasProjectReconciler is disabled by the DISABLE_ATLAS_PROJECT_RECONCILER configuration flag")
+	}
+	if val, ok := os.LookupEnv("DISABLE_ATLAS_DATABASE_USER_RECONCILER"); ok && val == "true" {
+		config.DisableAtlasDatabaseUserReconciler = true
+		log.Infof("The AtlasDatabaseUserReconciler is disabled by the DISABLE_ATLAS_DATABASE_USER_RECONCILER configuration flag")
 	}
 
 	return config
