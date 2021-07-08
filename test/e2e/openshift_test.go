@@ -27,7 +27,7 @@ const (
 var _ = Describe("[openshift] UserLogin", func() {
 	var s utils.Secrets
 	var t model.TestDataProvider
-	var operatorTag string
+	var operatorTag, path string
 	var pw *playwright.Playwright
 	var browser playwright.Browser
 	var page playwright.Page
@@ -50,6 +50,10 @@ var _ = Describe("[openshift] UserLogin", func() {
 	})
 
 	AfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			makeScreenshot(page, "error")
+			oc.Delete(path)
+		}
 		closeBrowser(pw, browser, page)
 		kube.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
 	})
@@ -58,7 +62,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 		By("user resources", func() {
 			// TODO need for the next task
 			t = model.NewTestDataProvider(
-				"operator-ns-trial",
+				"operator-in-openshift",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -73,26 +77,29 @@ var _ = Describe("[openshift] UserLogin", func() {
 				},
 			)
 		})
-		By("prepare custom catalog for openshift")
-		indexCatalogName := opm.AddIndex(s["BUNDLE_IMAGE"])
-		podman.Login(s["DOCKER_REGISTRY"], s["DOCKER_USERNAME"], s["DOCKER_PASSWORD"])
-		podman.PushIndexCatalog(indexCatalogName)
+		By("Login into openshift", func() {
+			pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"])
+			code := pom.NavigateTokenPage(page).GetCode()
+			Expect(code).ShouldNot(BeEmpty())
 
-		data := utils.JSONToYAMLConvert(model.NewCatalogSource(indexCatalogName))
-		path := t.Resources.GetServiceCatalogSourceFolder() + "/catalog-" + operatorTag + ".yaml" // TODO temp. need review/refactor > working with ALL resources paths
-		utils.SaveToFile(path, data)
-
-		// now get oc login line
-		pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"])
-		code := pom.NavigateTokenPage(page).GetCode()
-		Expect(code).ShouldNot(BeEmpty())
-
-		oc.Login(code)
-		oc.Apply(path)
+			oc.Login(code)
+		})
 
 		By("Lock environment", func() {
 			kube.CreateNamespace(lockNamespace)
 			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
+		})
+
+		By("Prepare custom catalog for openshift", func() {
+			indexCatalogName := opm.AddIndex(s["BUNDLE_IMAGE"])
+			podman.Login(s["DOCKER_REGISTRY"], s["DOCKER_USERNAME"], s["DOCKER_PASSWORD"])
+			podman.PushIndexCatalog(indexCatalogName)
+
+			data := utils.JSONToYAMLConvert(model.NewCatalogSource(indexCatalogName))
+			path = t.Resources.GetServiceCatalogSourceFolder() + "/catalog-" + operatorTag + ".yaml" // TODO temp. need review/refactor > working with ALL resources paths
+			utils.SaveToFile(path, data)
+
+			oc.Apply(path)
 		})
 
 		By("delete installed operator, install new one", func() {
@@ -100,16 +107,23 @@ var _ = Describe("[openshift] UserLogin", func() {
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
 		})
 		By("final screenshot, clean", func() {
-			_, err := page.Screenshot(playwright.PageScreenshotOptions{
-				Path: playwright.String("oshift.png"),
-			})
-			Expect(err).ShouldNot(HaveOccurred())
-
+			makeScreenshot(page, "install")
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
+			makeScreenshot(page, "delete")
 			oc.Delete(path)
 		})
 	})
 })
+
+// makeScreenshot used only for the final screenshot
+func makeScreenshot(page playwright.Page, name string) {
+	path := fmt.Sprintf("output/openshift/%s.png", name)
+	utils.SaveToFile(path, []byte{})
+	_, err := page.Screenshot(playwright.PageScreenshotOptions{
+		Path: playwright.String(path),
+	})
+	Expect(err).ShouldNot(HaveOccurred())
+}
 
 func prepareBrowser() (*playwright.Playwright, playwright.Browser, playwright.Page) {
 	pw, err := playwright.Run()

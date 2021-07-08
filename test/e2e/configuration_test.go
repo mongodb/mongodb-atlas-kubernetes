@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -28,7 +30,11 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		if CurrentGinkgoTestDescription().Failed {
 			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 			utils.SaveToFile(
-				"output/operator-logs.txt",
+				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
+				[]byte(kube.DescribeOperatorPod(data.Resources.Namespace)),
+			)
+			utils.SaveToFile(
+				fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
 				kube.GetManagerLogs(data.Resources.Namespace),
 			)
 			actions.SaveTestAppLogs(data.Resources)
