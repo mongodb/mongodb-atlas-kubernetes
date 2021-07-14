@@ -20,6 +20,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -29,6 +30,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -74,16 +76,26 @@ func main() {
 	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
 
 	syncPeriod := time.Hour * 3
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	managerOpts := ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
-		Namespace:              config.WatchedNamespaces,
 		SyncPeriod:             &syncPeriod,
-	})
+	}
+
+	//Allow watching multiple namespaces.
+	//https://github.com/mongodb/mongodb-atlas-kubernetes/issues/270
+	if namespaces := strings.Split(config.WatchedNamespaces, ","); len(namespaces) > 1 {
+		logger.Info("watching multiple namespaces", zap.Strings("namespaces", namespaces))
+		managerOpts.NewCache = cache.MultiNamespacedCacheBuilder(namespaces)
+	} else {
+		managerOpts.Namespace = config.WatchedNamespaces
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
