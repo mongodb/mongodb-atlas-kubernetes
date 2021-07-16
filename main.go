@@ -91,8 +91,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// globalPredicates should be used for general controller Predicates
+	// that should be applied to all controllers in order to limit the
+	// resources they receive events for.
 	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(),                                  // ignore spurious changes status changes etc.
+		watch.CommonPredicates(),                                  // ignore spurious changes. status changes etc.
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
