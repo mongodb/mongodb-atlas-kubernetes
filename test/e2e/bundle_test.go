@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -31,7 +32,11 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 			if CurrentGinkgoTestDescription().Failed {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
-					"output/operator-logs.txt",
+					fmt.Sprintf("output/%s/operatorDecribe.txt", config.DefaultOperatorNS),
+					[]byte(kube.DescribeOperatorPod(config.DefaultOperatorNS)),
+				)
+				utils.SaveToFile(
+					fmt.Sprintf("output/%s/operator-logs.txt", config.DefaultOperatorNS),
 					kube.GetManagerLogs(config.DefaultOperatorNS),
 				)
 				actions.SaveK8sResources(

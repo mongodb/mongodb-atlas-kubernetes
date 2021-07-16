@@ -15,7 +15,7 @@ mkdir -p "${crds_dir}"
 controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
-
+./scripts/split_roles_yaml.sh
 
 which kustomize
 kustomize version
@@ -47,14 +47,20 @@ channel="beta"
 if [[ "${INPUT_ENV}" == "dev" ]]; then
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
+  # change manager image (redhat regisry)
+  cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL_REDHAT}" && cd -
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
 fi
+echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml // TODO recheck
+
+# add additional LABELs to bundle.Docker file
+label="LABEL com.redhat.openshift.versions=\"v4.5-v4.7\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
+sed -i "/FROM scratch/a $label" bundle.Dockerfile
 
 # temporary - should be done by composing kustomize
-sed -i  '/runAsNonRoot: true/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-sed -i  '/runAsUser: 2000/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-sed -i  '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
-echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
+# sed -i  '/runAsNonRoot: true/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+# sed -i  '/runAsUser: 2000/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+# sed -i  '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+# echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 operator-sdk bundle validate ./bundle

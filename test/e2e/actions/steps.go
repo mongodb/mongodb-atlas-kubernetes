@@ -293,7 +293,7 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
 		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})
-	
+
 	By("Wait cluster creation", func() {
 		WaitCluster(data.Resources, "1")
 	})
