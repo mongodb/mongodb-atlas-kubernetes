@@ -5,6 +5,7 @@ name: Lint
 on:
   push:
     branches:
+      - '**'
   workflow_dispatch:
 
 jobs:

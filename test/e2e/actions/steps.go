@@ -136,11 +136,11 @@ func SaveK8sResources(resources []string, ns string) {
 func SaveTestAppLogs(input model.UserInputs) {
 	for _, user := range input.Users {
 		utils.SaveToFile(
-			fmt.Sprintf("output/testapp-describe-%s.txt", user.Spec.Username),
+			fmt.Sprintf("output/%s/testapp-describe-%s.txt", input.Namespace, user.Spec.Username),
 			kube.DescribeTestApp(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 		utils.SaveToFile(
-			fmt.Sprintf("output/testapp-logs-%s.txt", user.Spec.Username),
+			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
 			kube.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 	}
