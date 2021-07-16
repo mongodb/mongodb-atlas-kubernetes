@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -47,11 +48,12 @@ import (
 type AtlasProjectReconciler struct {
 	Client client.Client
 	watch.ResourceWatcher
-	Log             *zap.SugaredLogger
-	Scheme          *runtime.Scheme
-	AtlasDomain     string
-	GlobalAPISecret client.ObjectKey
-	EventRecorder   record.EventRecorder
+	Log              *zap.SugaredLogger
+	Scheme           *runtime.Scheme
+	AtlasDomain      string
+	GlobalAPISecret  client.ObjectKey
+	GlobalPredicates []predicate.Predicate
+	EventRecorder    record.EventRecorder
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -187,13 +189,13 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasProject & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
 
 	// Watch for Connection Secrets
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources), r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}

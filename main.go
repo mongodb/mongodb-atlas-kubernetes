@@ -20,6 +20,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-logr/zapr"
@@ -32,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
@@ -81,7 +83,7 @@ func main() {
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
-		Namespace:              config.WatchedNamespaces,
+		Namespace:              "",
 		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
@@ -89,39 +91,47 @@ func main() {
 		os.Exit(1)
 	}
 
+	globalPredicates := []predicate.Predicate{
+		watch.CommonPredicates(),                                  // ignore spurious changes status changes etc.
+		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
+	}
+
 	if err = (&atlascluster.AtlasClusterReconciler{
-		Client:          mgr.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("AtlasCluster"),
+		Client:           mgr.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Scheme:           mgr.GetScheme(),
+		AtlasDomain:      config.AtlasDomain,
+		GlobalAPISecret:  config.GlobalAPISecret,
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    mgr.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
 		os.Exit(1)
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:          mgr.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("AtlasProject"),
+		Client:           mgr.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:           mgr.GetScheme(),
+		AtlasDomain:      config.AtlasDomain,
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalAPISecret:  config.GlobalAPISecret,
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:          mgr.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		Client:           mgr.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:           mgr.GetScheme(),
+		AtlasDomain:      config.AtlasDomain,
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalAPISecret:  config.GlobalAPISecret,
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
@@ -148,7 +158,7 @@ type Config struct {
 	AtlasDomain          string
 	EnableLeaderElection bool
 	MetricsAddr          string
-	WatchedNamespaces    string
+	WatchedNamespaces    map[string]bool
 	ProbeAddr            string
 	GlobalAPISecret      client.ObjectKey
 }
@@ -173,10 +183,12 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
 	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
-	if watchedNamespace != "" {
-		log.Infof("The Operator is watching the namespace %s", watchedNamespace)
+	namespaceMap := make(map[string]bool)
+	log.Infof("The Operator is watching the namespace %s", watchedNamespace)
+	for _, namespace := range strings.Split(watchedNamespace, ",") {
+		namespaceMap[namespace] = true
 	}
-	config.WatchedNamespaces = watchedNamespace
+
 	return config
 }
 
