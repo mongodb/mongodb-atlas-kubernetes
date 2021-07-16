@@ -51,7 +51,7 @@ else
   cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL_REDHAT}" && cd -
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
 fi
-echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml // TODO recheck
+echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 # add additional LABELs to bundle.Docker file
 label="LABEL com.redhat.openshift.versions=\"v4.5-v4.7\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
