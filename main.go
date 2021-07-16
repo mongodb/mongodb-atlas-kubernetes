@@ -96,7 +96,7 @@ func main() {
 	}
 
 	if err = builder.ControllerManagedBy(mgr).
-		For(&mdbv1.AtlasCluster{}, builder.WithPredicates(config.WatchedNamespaces)).
+		For(&mdbv1.AtlasCluster{}, builder.WithPredicates(watch.CommonPredicates(), config.WatchedNamespaces)).
 		Complete(&atlascluster.AtlasClusterReconciler{
 			Client:          mgr.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
@@ -110,7 +110,7 @@ func main() {
 	}
 
 	if err = builder.ControllerManagedBy(mgr).
-		For(&mdbv1.AtlasProject{}, builder.WithPredicates(config.WatchedNamespaces)).
+		For(&mdbv1.AtlasProject{}, builder.WithPredicates(watch.CommonPredicates(), config.WatchedNamespaces)).
 		Complete(&atlasproject.AtlasProjectReconciler{
 			Client:          mgr.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
@@ -125,7 +125,7 @@ func main() {
 	}
 
 	if err = builder.ControllerManagedBy(mgr).
-		For(&mdbv1.AtlasDatabaseUser{}, builder.WithPredicates(config.WatchedNamespaces)).
+		For(&mdbv1.AtlasDatabaseUser{}, builder.WithPredicates(watch.CommonPredicates(), config.WatchedNamespaces)).
 		Complete(&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 			Client:          mgr.GetClient(),
 			Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
