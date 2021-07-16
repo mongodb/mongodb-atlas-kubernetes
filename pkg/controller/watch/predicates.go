@@ -3,6 +3,7 @@ package watch
 import (
 	"reflect"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -33,4 +34,18 @@ func DeleteOnly() predicate.Funcs {
 			return false
 		},
 	}
+}
+
+func SelectNamespacesPredicate(namespaceMap map[string]bool) predicate.Funcs {
+	return predicate.NewPredicateFuncs(func(object client.Object) bool {
+		if _, ok := namespaceMap[""]; ok {
+			return true
+		}
+
+		if _, ok := namespaceMap[object.GetNamespace()]; ok {
+			return true
+		}
+
+		return false
+	})
 }

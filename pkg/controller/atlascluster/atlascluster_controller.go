@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -45,12 +46,13 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
-	Client          client.Client
-	Log             *zap.SugaredLogger
-	Scheme          *runtime.Scheme
-	AtlasDomain     string
-	GlobalAPISecret client.ObjectKey
-	EventRecorder   record.EventRecorder
+	Client           client.Client
+	Log              *zap.SugaredLogger
+	Scheme           *runtime.Scheme
+	AtlasDomain      string
+	GlobalAPISecret  client.ObjectKey
+	GlobalPredicates []predicate.Predicate
+	EventRecorder    record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
@@ -135,7 +137,7 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasCluster & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}

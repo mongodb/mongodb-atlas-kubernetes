@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -46,12 +47,13 @@ import (
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	watch.ResourceWatcher
-	Client          client.Client
-	Log             *zap.SugaredLogger
-	Scheme          *runtime.Scheme
-	AtlasDomain     string
-	GlobalAPISecret client.ObjectKey
-	EventRecorder   record.EventRecorder
+	Client           client.Client
+	Log              *zap.SugaredLogger
+	Scheme           *runtime.Scheme
+	AtlasDomain      string
+	GlobalAPISecret  client.ObjectKey
+	EventRecorder    record.EventRecorder
+	GlobalPredicates []predicate.Predicate
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
@@ -128,13 +130,13 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasDatabaseUser & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDatabaseUser{}}, &watch.EventHandlerWithDelete{Controller: r}, watch.CommonPredicates())
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDatabaseUser{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
 
 	// Watch for DatabaseUser password Secrets
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources), r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
