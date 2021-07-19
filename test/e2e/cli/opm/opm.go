@@ -12,7 +12,7 @@ import (
 // Version print version
 func Version() {
 	session := cli.Execute("opm", "version")
-	session.Wait(10)
+	session.Wait()
 }
 
 func AddIndex(bundleImage string) string {

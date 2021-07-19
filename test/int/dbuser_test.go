@@ -476,7 +476,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
-					10, interval).Should(BeTrue())
+					15, interval).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 

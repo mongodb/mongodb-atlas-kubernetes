@@ -515,8 +515,7 @@ var _ = Describe("AtlasCluster", func() {
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					20, interval).Should(BeTrue())
+				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))).Should(BeTrue())
 
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})

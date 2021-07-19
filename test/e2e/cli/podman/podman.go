@@ -9,7 +9,7 @@ import (
 
 func Version() {
 	session := cli.Execute("podman", "version")
-	session.Wait(10)
+	session.Wait()
 }
 
 func Login(registry, user, pass string) {
