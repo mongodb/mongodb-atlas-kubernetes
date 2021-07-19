@@ -32,7 +32,7 @@ const (
 )
 
 var _ = Describe("AtlasCluster", func() {
-	const interval = time.Second * 1
+	const interval = PollingInterval
 
 	var (
 		connectionSecret corev1.Secret

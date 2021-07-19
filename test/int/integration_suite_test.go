@@ -56,6 +56,12 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
+const (
+	EventuallyTimeout   = 60 * time.Second
+	ConsistentlyTimeout = 1 * time.Second
+	PollingInterval     = 10 * time.Second
+)
+
 var (
 	// This variable is "global" - as is visible only on the first ginkgo node
 	testEnv *envtest.Environment
@@ -70,6 +76,12 @@ var (
 	cfg               *rest.Config
 	managerCancelFunc context.CancelFunc
 )
+
+var _ = BeforeSuite(func() {
+	SetDefaultEventuallyTimeout(EventuallyTimeout)
+	SetDefaultEventuallyPollingInterval(PollingInterval)
+	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
+})
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -164,6 +176,7 @@ func prepareControllers() {
 			GenerateName: "test",
 		},
 	}
+
 	By("Creating the namespace " + namespace.Name)
 	Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 

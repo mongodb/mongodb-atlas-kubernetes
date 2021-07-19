@@ -29,7 +29,7 @@ const (
 )
 
 var _ = Describe("AtlasProject", func() {
-	const interval = time.Second * 1
+	const interval = PollingInterval
 
 	var (
 		connectionSecret corev1.Secret
