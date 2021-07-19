@@ -90,11 +90,6 @@ func TestAPIs(t *testing.T) {
 // The first function starts the envtest (done only once by the 1st node). The second function is called on each of
 // the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
 var _ = SynchronizedBeforeSuite(func() []byte {
-	By("set default timeouts")
-	SetDefaultEventuallyTimeout(EventuallyTimeout)
-	SetDefaultEventuallyPollingInterval(PollingInterval)
-	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
-
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
@@ -136,6 +131,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(k8sClient).ToNot(BeNil())
 
 	atlasClient, connection = prepareAtlasClient()
+	defaultTimeouts()
 })
 
 var _ = SynchronizedAfterSuite(func() {
@@ -144,6 +140,12 @@ var _ = SynchronizedAfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+
+func defaultTimeouts() {
+	SetDefaultEventuallyTimeout(EventuallyTimeout)
+	SetDefaultEventuallyPollingInterval(PollingInterval)
+	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
+}
 
 func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	orgID, publicKey, privateKey := os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")

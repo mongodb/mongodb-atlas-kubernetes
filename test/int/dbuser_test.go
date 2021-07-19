@@ -47,10 +47,10 @@ const (
 
 var _ = Describe("AtlasDatabaseUser", func() {
 	const (
-		interval = PollingInterval
+		interval      = PollingInterval
 		intervalShort = time.Second * 2
 	)
-	
+
 	var (
 		connectionSecret    corev1.Secret
 		createdProject      *mdbv1.AtlasProject
