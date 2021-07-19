@@ -468,7 +468,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 
 			By("Creating the expired Database User - no user created in Atlas", func() {
-				before := time.Now().Add(time.Minute * -10).Format("2006-01-02T15:04:05")
+				before := time.Now().UTC().Add(time.Minute * -10).Format("2006-01-02T15:04:05")
 				createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).
 					WithPasswordSecret(UserPasswordSecret).
 					WithDeleteAfterDate(before)
@@ -485,7 +485,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(err).To(HaveOccurred())
 			})
 			By("Fixing the Database User - setting the expiration to future", func() {
-				after := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
+				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
@@ -497,7 +497,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Extending the expiration", func() {
-				after := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05")
+				after := time.Now().UTC().Add(time.Hour * 30).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
@@ -507,7 +507,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
 			By("Emulating expiration of the User - connection secret must be removed", func() {
-				before := time.Now().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
+				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(before)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
