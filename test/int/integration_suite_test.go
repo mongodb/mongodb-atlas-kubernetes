@@ -77,12 +77,6 @@ var (
 	managerCancelFunc context.CancelFunc
 )
 
-var _ = BeforeSuite(func() {
-	SetDefaultEventuallyTimeout(EventuallyTimeout)
-	SetDefaultEventuallyPollingInterval(PollingInterval)
-	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
-})
-
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -96,6 +90,11 @@ func TestAPIs(t *testing.T) {
 // The first function starts the envtest (done only once by the 1st node). The second function is called on each of
 // the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
 var _ = SynchronizedBeforeSuite(func() []byte {
+	By("set default timeouts")
+	SetDefaultEventuallyTimeout(EventuallyTimeout)
+	SetDefaultEventuallyPollingInterval(PollingInterval)
+	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},

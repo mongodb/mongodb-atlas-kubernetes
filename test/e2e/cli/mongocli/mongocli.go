@@ -101,7 +101,7 @@ func GetClusterStateName(projectID string, clusterName string) string {
 
 func GetVersionOutput() {
 	session := cli.Execute("mongocli", "--version")
-	session.Wait(10)
+	session.Wait()
 }
 
 func GetUser(userName, projectID string) mongodbatlas.DatabaseUser {
