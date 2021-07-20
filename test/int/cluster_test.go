@@ -32,7 +32,10 @@ const (
 )
 
 var _ = Describe("AtlasCluster", func() {
-	const interval = PollingInterval
+	const (
+		interval      = PollingInterval
+		intervalShort = time.Second * 2
+	)
 
 	var (
 		connectionSecret corev1.Secret
@@ -66,7 +69,7 @@ var _ = Describe("AtlasCluster", func() {
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-			ProjectCreationTimeout, interval).Should(BeTrue())
+			ProjectCreationTimeout, intervalShort).Should(BeTrue())
 	})
 
 	AfterEach(func() {
@@ -527,7 +530,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUserFakeScope)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec))),
-					20, interval).Should(BeTrue())
+					20, intervalShort).Should(BeTrue())
 			})
 			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
