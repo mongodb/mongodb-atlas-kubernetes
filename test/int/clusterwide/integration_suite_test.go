@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -105,29 +106,42 @@ var _ = BeforeSuite(func(done Done) {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	// globalPredicates should be used for general controller Predicates
+	// that should be applied to all controllers in order to limit the
+	// resources they receive events for.
+	globalPredicates := []predicate.Predicate{
+		watch.CommonPredicates(), // ignore spurious changes. status changes etc.
+		watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
+			namespace.Name: true,
+		}),
+	}
+
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client:          k8sManager.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:     atlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain:      atlasDomain,
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client:        k8sManager.GetClient(),
-		Log:           logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:   atlasDomain,
-		EventRecorder: k8sManager.GetEventRecorderFor("AtlasCluster"),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain:      atlasDomain,
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:          k8sManager.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:     atlasDomain,
-		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		ResourceWatcher: watch.NewResourceWatcher(),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain:      atlasDomain,
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+		ResourceWatcher:  watch.NewResourceWatcher(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

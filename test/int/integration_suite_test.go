@@ -37,6 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -198,38 +199,50 @@ func prepareControllers() {
 	syncPeriod := time.Minute * 30
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:             scheme.Scheme,
-		Namespace:          namespace.Name,
 		MetricsBindAddress: "0",
 		SyncPeriod:         &syncPeriod,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	// globalPredicates should be used for general controller Predicates
+	// that should be applied to all controllers in order to limit the
+	// resources they receive events for.
+	globalPredicates := []predicate.Predicate{
+		watch.CommonPredicates(), // ignore spurious changes. status changes etc.
+		watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
+			namespace.Name: true,
+		}),
+	}
+
 	err = (&atlasproject.AtlasProjectReconciler{
-		Client:          k8sManager.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:     atlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
-		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
+		AtlasDomain:      atlasDomain,
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlascluster.AtlasClusterReconciler{
-		Client:          k8sManager.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:     atlasDomain,
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
-		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasCluster"),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		AtlasDomain:      atlasDomain,
+		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:          k8sManager.GetClient(),
-		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:     atlasDomain,
-		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		AtlasDomain:      atlasDomain,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates: globalPredicates,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

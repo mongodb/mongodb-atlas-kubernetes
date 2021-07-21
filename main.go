@@ -80,10 +80,10 @@ func main() {
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
 		Port:                   9443,
+		Namespace:              config.Namespace,
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
-		Namespace:              "",
 		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
@@ -161,6 +161,7 @@ type Config struct {
 	AtlasDomain          string
 	EnableLeaderElection bool
 	MetricsAddr          string
+	Namespace            string
 	WatchedNamespaces    map[string]bool
 	ProbeAddr            string
 	GlobalAPISecret      client.ObjectKey
@@ -186,10 +187,14 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	// dev note: we pass the watched namespace as the env variable to use the Kubernetes Downward API. Unfortunately
 	// there is no way to use it for container arguments
 	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
-	namespaceMap := make(map[string]bool)
-	log.Infof("The Operator is watching the namespace %s", watchedNamespace)
+	config.WatchedNamespaces = make(map[string]bool)
 	for _, namespace := range strings.Split(watchedNamespace, ",") {
-		namespaceMap[namespace] = true
+		log.Infof("The Operator is watching the namespace %s", namespace)
+		config.WatchedNamespaces[namespace] = true
+	}
+
+	if len(config.WatchedNamespaces) == 1 {
+		config.Namespace = watchedNamespace
 	}
 
 	return config

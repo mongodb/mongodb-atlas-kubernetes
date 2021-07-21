@@ -195,7 +195,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for Connection Secrets
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources), r.GlobalPredicates...)
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}
