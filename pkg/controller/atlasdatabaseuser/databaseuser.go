@@ -48,7 +48,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	}
 
 	// We need to remove the old Atlas User right after all the connection secrets are ensured if username has changed.
-	if result, _ := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
+	if result := handleUserNameChange(ctx, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -58,20 +58,23 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 	return workflow.OK()
 }
 
-func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.AtlasDatabaseUser) (workflow.Result, bool) {
-	changed := false
+func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.Username != dbUser.Status.UserName && dbUser.Status.UserName != "" {
 		ctx.Log.Infow("'spec.username' has changed - removing the old user from Atlas", "newUserName", dbUser.Spec.Username, "oldUserName", dbUser.Status.UserName)
-		changed = true
 
-		_, err := ctx.Client.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
-		if err != nil {
+		deleteAttempts := 3
+		for i := 1; i <= deleteAttempts; i++ {
+			_, err := ctx.Client.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			if err == nil {
+				break
+			}
+
 			// There may be some rare errors due to the databaseName change or maybe the user has already been removed - this
 			// is not-critical (the stale connection secret has already been removed) and we shouldn't retry to avoid infinite retries
-			ctx.Log.Errorf("Failed to remove user %s from Atlas: %s", dbUser.Status.UserName, err)
+			ctx.Log.Errorf("Failed to remove user %s from Atlas (attempt %d/%d): %s", dbUser.Status.UserName, i, deleteAttempts, err)
 		}
 	}
-	return workflow.OK(), changed
+	return workflow.OK()
 }
 
 func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
