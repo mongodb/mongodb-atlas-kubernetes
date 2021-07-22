@@ -14,6 +14,7 @@ import (
 const (
 	EventuallyTimeout   = 60 * time.Second
 	ConsistentlyTimeout = 1 * time.Second
+	PollingInterval     = 10 * time.Second
 )
 
 var (
@@ -30,6 +31,7 @@ func TestE2e(t *testing.T) {
 var _ = BeforeSuite(func() {
 	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
+	SetDefaultEventuallyPollingInterval(PollingInterval)
 	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
 	checkUpEnvironment()
 	GinkgoWriter.Write([]byte("========================End of Before==============================\n"))

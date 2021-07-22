@@ -6,7 +6,7 @@ import (
 
 func Version() {
 	session := cli.Execute("oc", "version")
-	session.Wait(10)
+	session.Wait()
 }
 
 func Login(code string) {

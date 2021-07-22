@@ -42,11 +42,14 @@ const (
 	UserPasswordSecret2 = "second-user-password-secret"
 	DBUserPassword2     = "H@lla#!"
 	// M2 clusters take longer time to apply changes
-	DBUserUpdateTimeout = 170
+	DBUserUpdateTimeout = time.Minute * 4
 )
 
 var _ = Describe("AtlasDatabaseUser", func() {
-	const interval = time.Second * 1
+	const (
+		interval      = PollingInterval
+		intervalShort = time.Second * 2
+	)
 
 	var (
 		connectionSecret    corev1.Secret
@@ -229,7 +232,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 							WithMessageRegexp("such cluster doesn't exist in Atlas"),
 					),
 					20,
-					interval,
+					intervalShort,
 				).Should(BeTrue())
 			})
 			By("Fixing second user", func() {
@@ -239,7 +242,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				// First we need to wait for "such cluster doesn't exist in Atlas" error to be gone
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges))),
-					20, interval).Should(BeTrue())
+					20, intervalShort).Should(BeTrue())
 
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
 					DBUserUpdateTimeout, interval).Should(BeTrue())
@@ -307,7 +310,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				// We don't wait for the full cluster creation - only when it has started the process
 				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating))),
-					20, interval).Should(BeTrue())
+					20, intervalShort).Should(BeTrue())
 			})
 			By("Updating the database user while the cluster is being created", func() {
 				createdDBUser = createdDBUser.WithRole("read", "test", "somecollection")
@@ -468,7 +471,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 			})
 
 			By("Creating the expired Database User - no user created in Atlas", func() {
-				before := time.Now().Add(time.Minute * -10).Format("2006-01-02T15:04:05")
+				before := time.Now().UTC().Add(time.Minute * -10).Format("2006-01-02T15:04:05")
 				createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).
 					WithPasswordSecret(UserPasswordSecret).
 					WithDeleteAfterDate(before)
@@ -476,7 +479,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
-					10, interval).Should(BeTrue())
+					15, intervalShort).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
@@ -485,7 +488,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(err).To(HaveOccurred())
 			})
 			By("Fixing the Database User - setting the expiration to future", func() {
-				after := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
+				after := time.Now().UTC().Add(time.Hour * 10).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
@@ -497,7 +500,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Extending the expiration", func() {
-				after := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05")
+				after := time.Now().UTC().Add(time.Hour * 30).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(after)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
@@ -507,12 +510,12 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
 			By("Emulating expiration of the User - connection secret must be removed", func() {
-				before := time.Now().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
+				before := time.Now().UTC().Add(time.Minute * -5).Format("2006-01-02T15:04:05")
 				createdDBUser = createdDBUser.WithDeleteAfterDate(before)
 
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired))),
-					10, interval).Should(BeTrue())
+					20, intervalShort).Should(BeTrue())
 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.FalseCondition(status.DatabaseUserReadyType),

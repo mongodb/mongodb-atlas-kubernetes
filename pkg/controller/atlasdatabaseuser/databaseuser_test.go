@@ -3,6 +3,7 @@ package atlasdatabaseuser
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,7 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
@@ -65,8 +68,9 @@ func TestCheckUserExpired(t *testing.T) {
 		_, err = connectionsecret.Ensure(fakeClient, "testNs", "project2", "dsfsdf234234sdfdsf23423", "cluster1", data)
 		assert.NoError(t, err)
 
-		before := time.Now().Add(time.Minute * -1).Format("2006-01-02T15:04:05")
-		result := checkUserExpired(zap.S(), fakeClient, "603e7bf38a94956835659ae5", *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(before))
+		before := time.Now().UTC().Add(time.Minute * -1).Format("2006-01-02T15:04:05.999Z")
+		user := *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(before)
+		result := checkUserExpired(zap.S(), fakeClient, "603e7bf38a94956835659ae5", user)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, reconcile.Result{}, result.ReconcileResult())
 
@@ -95,6 +99,19 @@ func TestCheckUserExpired(t *testing.T) {
 		secretName := fmt.Sprintf("%s-%s-%s", "project1", "cluster1", kube.NormalizeIdentifier(data.DBUserName))
 		err = fakeClient.Get(context.Background(), kube.ObjectKey("testNs", secretName), &secret)
 		assert.NoError(t, err)
+	})
+}
+
+func TestHandleUserNameChange(t *testing.T) {
+	t.Run("Only one user after name change", func(t *testing.T) {
+		user := *mdbv1.DefaultDBUser("ns", "theuser", "project1")
+		user.Spec.Username = "differentuser"
+		user.Status.UserName = "theuser"
+		ctx := workflow.NewContext(zap.S(), []status.Condition{})
+		ctx.Client = *mongodbatlas.NewClient(&http.Client{})
+		result, userChanged := handleUserNameChange(ctx, "", user)
+		assert.True(t, userChanged)
+		assert.True(t, result.IsOk())
 	})
 }
 

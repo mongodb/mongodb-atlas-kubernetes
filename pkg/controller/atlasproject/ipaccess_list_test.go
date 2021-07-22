@@ -45,8 +45,8 @@ func TestValidateSingleIPAccessList(t *testing.T) {
 
 func TestFilterActiveIPAccessLists(t *testing.T) {
 	t.Run("One expired, one active", func(t *testing.T) {
-		dateBefore := time.Now().Add(time.Hour * -1).Format("2006-01-02T15:04:05")
-		dateAfter := time.Now().Add(time.Hour * 5).Format("2006-01-02T15:04:05")
+		dateBefore := time.Now().UTC().Add(time.Hour * -1).Format("2006-01-02T15:04:05.999Z")
+		dateAfter := time.Now().UTC().Add(time.Hour * 5).Format("2006-01-02T15:04:05.999Z")
 		ipAccessExpired := project.IPAccessList{DeleteAfterDate: dateBefore}
 		ipAccessActive := project.IPAccessList{DeleteAfterDate: dateAfter}
 		active, expired := filterActiveIPAccessLists([]project.IPAccessList{ipAccessActive, ipAccessExpired})
