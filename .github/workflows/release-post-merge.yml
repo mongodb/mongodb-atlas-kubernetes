@@ -57,19 +57,20 @@ jobs:
         uses: docker/build-push-action@v1
         with:
           username: unused
-          password: ${{ secrets.DOCKER_REDHAT_PASSWORD }}
+          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
           repository: ${{ env.REDHAT_OPERATOR_REPO }}
           registry: ${{ env.REDHAT_RELEASE_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
           labels: version=${{ steps.tag.outputs.version }}
+          build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Push Atlas Operator Bundle to RedHat Connect
         uses: docker/build-push-action@v1
         with:
           username: unused
-          password: ${{ secrets.DOCKER_REDHAT_PASSWORD }}
-          repository: ${{ env.REDHAT_RELEASE_REPO }}
-          registry: ${{ env.REDHAT_BUNDLE_REPO }}
+          password: ${{ secrets.REDHAT_REGISTRY_BUNDLES_PASSWORD }}
+          repository: ${{ env.REDHAT_BUNDLE_REPO }}
+          registry: ${{ env.REDHAT_RELEASE_REGISTRY}}
           tags: ${{ steps.tag.outputs.version }}
           dockerfile: bundle.Dockerfile
 
@@ -81,6 +82,7 @@ jobs:
           repository: ${{ env.QUAY_OPERATOR_REPO }}
           registry: ${{ env.DOCKER_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
+          build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Create simple description
         uses: ./.github/actions/changelog
