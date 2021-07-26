@@ -4,6 +4,9 @@ inputs:
   IMAGE_URL:
     description: "Operator image"
     required: true
+  IMAGE_URL_REDHAT:
+    description: "Operator image for configure bundles"
+    required: false
   VERSION:
     description: "Version of the Operator"
     required: true

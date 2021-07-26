@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      REDHAT_RELEASE_REGISTRY: scan.connect.redhat.com
+      REDHAT_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
+      REDHAT_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
       QUAY_RELEASE_REGISTRY: quay.io
       QUAY_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
@@ -50,7 +53,35 @@ jobs:
           tags: ${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
-      - name: Push Atlas Operator to Registry
+      - name: Push Atlas Operator to RedHat Connect
+        uses: docker/build-push-action@v1
+        with:
+          username: unused
+          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
+          repository: ${{ env.REDHAT_OPERATOR_REPO }}
+          registry: ${{ env.REDHAT_RELEASE_REGISTRY }}
+          tags: ${{ steps.tag.outputs.version }}
+          labels: version=${{ steps.tag.outputs.version }}
+          build_args: VERSION=${{ steps.tag.outputs.tag }}
+
+      - name: Wait image in RedHhat registry
+        with:
+          version: ${{ steps.tag.outputs.version }}
+          timeout: 60
+        run: |
+          ./scripts/github-actions/await_image_push.sh "$version" "$timeout"
+
+      - name: Push Atlas Operator Bundle to RedHat Connect
+        uses: docker/build-push-action@v1
+        with:
+          username: unused
+          password: ${{ secrets.REDHAT_REGISTRY_BUNDLES_PASSWORD }}
+          repository: ${{ env.REDHAT_BUNDLE_REPO }}
+          registry: ${{ env.REDHAT_RELEASE_REGISTRY}}
+          tags: ${{ steps.tag.outputs.version }}
+          dockerfile: bundle.Dockerfile
+
+      - name: Push Atlas Operator to Quay Registry
         uses: docker/build-push-action@v1
         with:
           username: ${{ env.QUAY_ROBOT_NAME }}
@@ -58,6 +89,7 @@ jobs:
           repository: ${{ env.QUAY_OPERATOR_REPO }}
           registry: ${{ env.DOCKER_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
+          build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Create simple description
         uses: ./.github/actions/changelog

@@ -2,6 +2,8 @@ FROM golang:1.15
 
 ENV KUBECTL_VERSION 1.18.12
 
+RUN go get github.com/mikefarah/yq
+
 # Install
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
     chmod +x /usr/bin/kubectl
