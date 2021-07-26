@@ -184,11 +184,11 @@ var _ = Describe("AtlasDatabaseUser", func() {
 					// The user created lacks read/write roles
 					err := tryWrite(createdProject.ID(), *createdClusterAzure, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
+					Expect(err.Error()).To(MatchRegexp("not authorized on test to execute command")) // TODO check this is the same "user is not allowed"
 
 					err = tryWrite(createdProject.ID(), *createdClusterAWS, *createdDBUser, "test", "operatortest")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
+					Expect(err.Error()).To(MatchRegexp("not authorized on test to execute command")) // TODO check this is the same "user is not allowed"
 				})
 			})
 			By("Update database user - give readWrite permissions", func() {
@@ -267,7 +267,7 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 					err := tryWrite(createdProject.ID(), *createdClusterAzure, *secondDBUser, "test", "someNotAllowedCollection")
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(MatchRegexp("user is not allowed"))
+					Expect(err.Error()).To(MatchRegexp("not authorized on test to execute command")) // TODO check this is the same "user is not allowed"
 				})
 				By("Removing Second user", func() {
 					Expect(k8sClient.Delete(context.Background(), secondDBUser)).To(Succeed())
