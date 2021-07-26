@@ -66,10 +66,10 @@ jobs:
 
       - name: Wait image in RedHhat registry
         with:
-          version: ${{ steps.tag.outputs.version }}
+          image: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ steps.tag.outputs.version }}
           timeout: 60
         run: |
-          ./scripts/github-actions/await_image_push.sh "$version" "$timeout"
+          ./scripts/github-actions/await_image_push.sh "$image" "$timeout"
 
       - name: Push Atlas Operator Bundle to RedHat Connect
         uses: docker/build-push-action@v1
