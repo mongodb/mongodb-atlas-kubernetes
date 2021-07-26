@@ -7,7 +7,6 @@ spec:
   projectRef:
     name: my-project
   providerSettings:
-    instanceSizeName: M2
-    providerName: TENANT
+    instanceSizeName: M10
+    providerName: AWS
     regionName: US_EAST_1
-    backingProviderName: AWS
