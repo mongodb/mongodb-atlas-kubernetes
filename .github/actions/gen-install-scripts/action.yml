@@ -1,7 +1,7 @@
 name: 'create all-in-one files'
 description: 'Generate installation kustomized configs in one file `all-in-one`'
 inputs:
-  IMAGE_URL:
+  IMAGE_URL_DOCKER:
     description: "Operator image"
     required: true
   IMAGE_URL_REDHAT:
