@@ -105,7 +105,7 @@ var _ = Describe("ClusterWide", func() {
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-			createdClusterAWS = mdbv1.DefaultAWSCluster(clusterNS.Name, createdProject.Name).Lightweight()
+			createdClusterAWS = mdbv1.DefaultAWSCluster(clusterNS.Name, createdProject.Name)
 			// The project namespace is different from the cluster one - need to specify explicitly
 			createdClusterAWS.Spec.Project.Namespace = namespace.Name
 
