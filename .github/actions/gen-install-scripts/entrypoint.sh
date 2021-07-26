@@ -39,6 +39,8 @@ cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
 operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
+# get the current version so we could put it into the "replaces:"
+current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 
 # We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
 channel="beta"
@@ -50,6 +52,9 @@ else
   echo  "${INPUT_IMAGE_URL_REDHAT}"
   cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL_REDHAT}" && cd -
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
+  # add replaces
+  sed -i  '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+  echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 fi
 
 # add additional LABELs to bundle.Docker file
