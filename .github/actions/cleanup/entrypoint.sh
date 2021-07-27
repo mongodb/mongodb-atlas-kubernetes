@@ -2,7 +2,7 @@
 
 # For Deleting empty(!) PROJECTs which live more then 1 days
 
-set -e
+set -eou pipefail
 
 BASE_URL="https://cloud-qa.mongodb.com/api/atlas/v1.0"
 
@@ -15,6 +15,11 @@ delete_project() {
 }
 
 projects=$(get_projects)
+if [[ $projects == *"error"* ]]; then
+    echo "Error: $projects"
+    exit 1
+fi
+
 echo "${projects}"
 now=$(date '+%s')
 for elkey in $(echo "$projects" | jq '.results | keys | .[]'); do

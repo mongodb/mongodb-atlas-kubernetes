@@ -161,3 +161,9 @@ stop-kind: ## Stop the local kind cluster
 .PHONY: log
 log: ## View manager logs
 	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas-system -f
+
+.PHONY: clean-atlas
+clean-atlas: export INPUT_ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
+clean-atlas: export INPUT_ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
+clean-atlas: ## Clean Atlas organization
+	bash .github/actions/cleanup/entrypoint.sh
