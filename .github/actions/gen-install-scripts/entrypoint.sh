@@ -13,9 +13,9 @@ mkdir -p "${crds_dir}"
 
 # Generate configuration and save it to `all-in-one`
 controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
+cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL_DOCKER}"
 cd -
-
+./scripts/split_roles_yaml.sh
 
 which kustomize
 kustomize version
@@ -39,12 +39,26 @@ cp config/crd/bases/* "${crds_dir}"
 
 # CSV bundle
 operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
+# get the current version so we could put it into the "replaces:"
+current_version="$(yq e '.metadata.name' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml)"
 
 # We pass the version only for non-dev deployments (it's ok to have "0.0.0" for dev)
 channel="beta"
 if [[ "${INPUT_ENV}" == "dev" ]]; then
+  echo "build dev purpose"
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --default-channel="${channel}" --channels="${channel}"
 else
+  echo "build release version"
+  echo  "${INPUT_IMAGE_URL_REDHAT}"
+  cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL_REDHAT}" && cd -
   kustomize build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version "${INPUT_VERSION}" --default-channel="${channel}" --channels="${channel}"
+  # add replaces
+  sed -i  '/replaces:*+/d' "bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
+  echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 fi
+
+# add additional LABELs to bundle.Docker file
+label="LABEL com.redhat.openshift.versions=\"v4.5-v4.7\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
+sed -i "/FROM scratch/a $label" bundle.Dockerfile
+
 operator-sdk bundle validate ./bundle

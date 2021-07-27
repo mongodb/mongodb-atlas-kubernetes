@@ -52,8 +52,8 @@ var _ = Describe("[openshift] UserLogin", func() {
 	AfterEach(func() {
 		if CurrentGinkgoTestDescription().Failed {
 			makeScreenshot(page, "error")
-			oc.Delete(path)
 		}
+		oc.Delete(path) // we delete it all the time, because of shared space
 		closeBrowser(pw, browser, page)
 		kube.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
 	})

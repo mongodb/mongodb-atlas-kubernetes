@@ -16,9 +16,6 @@ spec:
     metadata:
       labels:
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000380001
       serviceAccountName: operator
       containers:
       - command:

@@ -9,7 +9,7 @@ org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 # this is the format how it's pushed by act -j build-push
 image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)
 
-export INPUT_IMAGE_URL="${image}"
+export INPUT_IMAGE_URL_DOCKER="${image}"
 export INPUT_ENV=dev
 ./.github/actions/gen-install-scripts/entrypoint.sh
 # TODO temporary change line

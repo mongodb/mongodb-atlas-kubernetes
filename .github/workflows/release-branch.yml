@@ -10,7 +10,6 @@ on:
         description: "Release version:"
         required: true
 
-
 jobs:
   create-release-branch:
     name: Create Release
@@ -19,6 +18,7 @@ jobs:
       VERSION: ${{ github.event.inputs.version }}
       TAG: v${{ github.event.inputs.version }}
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      REDHAT_RELEASE_FULL_REPO: registry.connect.redhat.com/mongodb/mongodb-atlas-kubernetes-operator
     steps:
 
     - name: Check out code into the Go module directory
@@ -29,7 +29,8 @@ jobs:
     - name: Create deploy configurations
       uses: ./.github/actions/gen-install-scripts
       with:
-        IMAGE_URL: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        IMAGE_URL_DOCKER: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        IMAGE_URL_REDHAT: ${{ env.REDHAT_RELEASE_FULL_REPO }}:${{ env.VERSION }}
         VERSION: ${{ env.VERSION }}
         ENV: prod
 
@@ -64,4 +65,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: antonlisovenko,vasilevp,leo-ri
+        REVIEWERS: jasonmimick,priyolahiri,fabritsius,leo-ri
