@@ -191,7 +191,7 @@ func deleteClusterAndOperator(data *model.TestDataProvider) {
 			func() bool {
 				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
 			},
-			"5m", "20s",
+			"7m", "20s",
 		).Should(BeFalse(), "Project and cluster should be deleted from Atlas")
 	})
 
