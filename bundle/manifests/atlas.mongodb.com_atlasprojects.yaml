@@ -50,6 +50,32 @@ spec:
               name:
                 description: Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
                 type: string
+              privateEndpoints:
+                description: PrivateEndpoints is a list of Private Endpoints configured for the current Project.
+                items:
+                  properties:
+                    id:
+                      description: Unique identifier of the private endpoint you created in your AWS VPC or Azure Vnet.
+                      type: string
+                    ip:
+                      description: Private IP address of the private endpoint network interface you created in your Azure VNet.
+                      type: string
+                    provider:
+                      description: Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS or AZURE.
+                      enum:
+                      - AWS
+                      - GCP
+                      - AZURE
+                      - TENANT
+                      type: string
+                    region:
+                      description: Cloud provider region for which you want to create the private endpoint service.
+                      type: string
+                  required:
+                  - provider
+                  - region
+                  type: object
+                type: array
               projectIpAccessList:
                 description: ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
                 items:
@@ -131,6 +157,38 @@ spec:
                 description: ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of. The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
+              privateEndpoints:
+                description: The list of private endpoints configured for current project
+                items:
+                  description: PrivateEndpoint connection strings. Each object describes the connection strings you can use to connect to this cluster through a private endpoint. Atlas returns this parameter only if you deployed a private endpoint to all regions to which you deployed this cluster's nodes.
+                  properties:
+                    connectionString:
+                      description: Private-endpoint-aware mongodb:// connection string for this private endpoint.
+                      type: string
+                    endpoints:
+                      description: Private endpoint through which you connect to Atlas when you use connectionStrings.privateEndpoint[n].connectionString or connectionStrings.privateEndpoint[n].srvConnectionString.
+                      items:
+                        description: Endpoint through which you connect to Atlas
+                        properties:
+                          endpointId:
+                            description: Unique identifier of the private endpoint.
+                            type: string
+                          providerName:
+                            description: Cloud provider to which you deployed the private endpoint. Atlas returns AWS or AZURE.
+                            type: string
+                          region:
+                            description: Region to which you deployed the private endpoint.
+                            type: string
+                        type: object
+                      type: array
+                    srvConnectionString:
+                      description: Private-endpoint-aware mongodb+srv:// connection string for this private endpoint.
+                      type: string
+                    type:
+                      description: "Type of MongoDB process that you connect to with the connection strings \n Atlas returns: \n • MONGOD for replica sets, or \n • MONGOS for sharded clusters"
+                      type: string
+                  type: object
+                type: array
             required:
             - conditions
             type: object
