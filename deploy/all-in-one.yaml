@@ -172,8 +172,12 @@ spec:
                   name:
                     description: Name is the name of the Kubernetes Resource
                     type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates
@@ -569,8 +573,12 @@ spec:
                   name:
                     description: Name is the name of the Kubernetes Resource
                     type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
               roles:
                 description: Roles is an array of this user's roles and the databases
@@ -926,6 +934,13 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -1115,9 +1130,9 @@ spec:
       containers:
       - args:
         - --atlas-domain=https://cloud.mongodb.com
+        - --leader-elect
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
-        - --leader-elect
         command:
         - /manager
         env:
@@ -1129,7 +1144,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.5.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:0.6.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -1153,8 +1168,5 @@ spec:
             memory: 50Mi
         securityContext:
           allowPrivilegeEscalation: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 2000
       serviceAccountName: mongodb-atlas-operator
       terminationGracePeriodSeconds: 10
