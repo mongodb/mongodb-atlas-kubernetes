@@ -596,7 +596,7 @@ var _ = Describe("AtlasCluster", func() {
 	Describe("Deleting the cluster (not cleaning Atlas)", func() {
 		It("Should Succeed", func() {
 			By(`Creating the cluster with retention policy "keep" first`, func() {
-				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
 				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
