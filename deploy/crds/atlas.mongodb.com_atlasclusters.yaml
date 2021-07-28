@@ -161,8 +161,12 @@ spec:
                   name:
                     description: Name is the name of the Kubernetes Resource
                     type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates
