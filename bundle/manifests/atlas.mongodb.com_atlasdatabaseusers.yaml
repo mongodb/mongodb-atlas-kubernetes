@@ -75,8 +75,12 @@ spec:
                   name:
                     description: Name is the name of the Kubernetes Resource
                     type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
               roles:
                 description: Roles is an array of this user's roles and the databases / collections on which the roles apply. A role allows the user to perform particular actions on the specified database.
