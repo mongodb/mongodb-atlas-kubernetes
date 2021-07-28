@@ -64,23 +64,6 @@ jobs:
           labels: version=${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
-      - name: Wait image in RedHhat registry
-        env:
-          IMAGE: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ steps.tag.outputs.version }}
-          TIMEOUT: 60
-        run: |
-          ./scripts/github-actions/await_image_push.sh "$IMAGE" "$TIMEOUT"
-
-      - name: Push Atlas Operator Bundle to RedHat Connect
-        uses: docker/build-push-action@v1
-        with:
-          username: unused
-          password: ${{ secrets.REDHAT_REGISTRY_BUNDLES_PASSWORD }}
-          repository: ${{ env.REDHAT_BUNDLE_REPO }}
-          registry: ${{ env.REDHAT_RELEASE_REGISTRY}}
-          tags: ${{ steps.tag.outputs.version }}
-          dockerfile: bundle.Dockerfile
-
       - name: Push Atlas Operator to Quay Registry
         uses: docker/build-push-action@v1
         with:
@@ -118,3 +101,21 @@ jobs:
           asset_path: ./atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
+
+      - name: Wait image in RedHhat registry
+        env:
+          IMAGE: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ steps.tag.outputs.version }}
+          TIMEOUT: 60
+        run: |
+          chmod +x ./scripts/github-actions/await_image_push.sh
+          ./scripts/github-actions/await_image_push.sh "$IMAGE" "$TIMEOUT"
+
+      - name: Push Atlas Operator Bundle to RedHat Connect
+        uses: docker/build-push-action@v1
+        with:
+          username: unused
+          password: ${{ secrets.REDHAT_REGISTRY_BUNDLES_PASSWORD }}
+          repository: ${{ env.REDHAT_BUNDLE_REPO }}
+          registry: ${{ env.REDHAT_RELEASE_REGISTRY}}
+          tags: ${{ steps.tag.outputs.version }}
+          dockerfile: bundle.Dockerfile
