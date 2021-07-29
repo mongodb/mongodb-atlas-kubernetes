@@ -70,7 +70,7 @@ jobs:
           username: ${{ env.QUAY_ROBOT_NAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
           repository: ${{ env.QUAY_OPERATOR_REPO }}
-          registry: ${{ env.DOCKER_REGISTRY }}
+          registry: ${{ env.QUAY_RELEASE_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
