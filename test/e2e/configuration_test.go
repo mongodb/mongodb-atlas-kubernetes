@@ -92,12 +92,12 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Multiregion, Backup and 2 DBUsers",
+		Entry("Multiregion AWS, Backup and 2 DBUsers",
 			model.NewTestDataProvider(
-				"operator-ns-multiregion",
+				"operator-ns-multiregion-aws",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_multiregion.yaml"},
-				[]string{"data/atlascluster_multiregion_update.yaml"},
+				[]string{"data/atlascluster_multiregion_aws.yaml"},
+				[]string{"data/atlascluster_multiregion_aws_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
@@ -110,6 +110,40 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]func(*model.TestDataProvider){
 					actions.SuspendCluster,
 					actions.ReactivateCluster,
+					actions.DeleteFirstUser,
+				},
+			),
+		),
+		Entry("Multiregion Azure, Backup and 1 DBUser",
+			model.NewTestDataProvider(
+				"operator-multiregion-azure",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_multiregion_azure.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				30012,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
+				},
+			),
+		),
+		Entry("Multiregion GCP, Backup and 1 DBUser",
+			model.NewTestDataProvider(
+				"operator-multiregion-gcp",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_multiregion_gcp.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				30013,
+				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
 				},
 			),

@@ -1,0 +1,27 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: atlascluster-multiregion-aws
+spec:
+  name: cluster-multiregion-aws
+  projectRef:
+    name: my-project
+  providerBackupEnabled: false
+  clusterType: REPLICASET
+  providerSettings:
+    instanceSizeName: M20
+    providerName: AWS
+  replicationSpecs:
+  - numShards: 1
+    zoneName: US-Zone
+    regionsConfig:
+      US_EAST_1:
+        analyticsNodes: 0
+        electableNodes: 1
+        priority: 6
+        readOnlyNodes: 0
+      US_WEST_2:
+        analyticsNodes: 0
+        electableNodes: 2
+        priority: 7
+        readOnlyNodes: 0
