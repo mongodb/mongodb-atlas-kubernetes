@@ -20,6 +20,7 @@ type ResourceRefNamespaced struct {
 	Name string `json:"name"`
 
 	// Namespace is the namespace of the Kubernetes Resource
+	// +optional
 	Namespace string `json:"namespace"`
 }
 

@@ -8,10 +8,9 @@ cp -r bundle.Dockerfile bundle/manifests bundle/metadata "${RH_COMMUNITY_REPO_PA
 cd "${RH_COMMUNITY_REPO_PATH}/community-operators/mongodb-atlas-kubernetes/"
 
 # replace the move instructions in the docker file
-sed -i .bak 's/COPY bundle\/manifests/COPY manifests/' "${version}/bundle.Dockerfile"
-sed -i .bak 's/COPY bundle\/metadata/COPY metadata/' "${version}/bundle.Dockerfile"
-sed -i .bak '/COPY bundle\/tests\/scorecard \/tests\/scorecard\//d' "${version}/bundle.Dockerfile"
-rm "${version}/bundle.Dockerfile.bak"
+sed -i 's/COPY bundle\/manifests/COPY manifests/' "${version}/bundle.Dockerfile"
+sed -i 's/COPY bundle\/metadata/COPY metadata/' "${version}/bundle.Dockerfile"
+sed -i 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${version}/bundle.Dockerfile"
 
 # commit
 git checkout -b "mongodb-atlas-operator-community-${version}"
