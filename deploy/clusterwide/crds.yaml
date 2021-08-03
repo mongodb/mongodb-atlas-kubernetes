@@ -164,7 +164,6 @@ spec:
                     type: string
                 required:
                 - name
-                - namespace
                 type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates
@@ -561,7 +560,6 @@ spec:
                     type: string
                 required:
                 - name
-                - namespace
                 type: object
               roles:
                 description: Roles is an array of this user's roles and the databases

@@ -133,7 +133,6 @@ spec:
                     type: string
                 required:
                 - name
-                - namespace
                 type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates if the cluster uses Cloud Backups for backups.
