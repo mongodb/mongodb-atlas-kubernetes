@@ -20,9 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
-      REDHAT_RELEASE_REGISTRY: scan.connect.redhat.com
-      REDHAT_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
-      REDHAT_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
+      REDHAT_SCAN_RELEASE_REGISTRY: scan.connect.redhat.com
+      REDHAT_SCAN_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
+      REDHAT_SCAN_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
+      REDHAT_RELEASE_REGISTRY: registry.connect.redhat.com
+      REDHAT_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
       QUAY_RELEASE_REGISTRY: quay.io
       QUAY_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
@@ -68,8 +70,8 @@ jobs:
         with:
           username: unused
           password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
-          repository: ${{ env.REDHAT_OPERATOR_REPO }}
-          registry: ${{ env.REDHAT_RELEASE_REGISTRY }}
+          repository: ${{ env.REDHAT_SCAN_OPERATOR_REPO }}
+          registry: ${{ env.REDHAT_SCAN_RELEASE_REGISTRY }}
           tags: ${{ steps.tag.outputs.version }}
           labels: version=${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
@@ -112,20 +114,4 @@ jobs:
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
 
-      - name: Wait image in RedHhat registry
-        env:
-          IMAGE: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ steps.tag.outputs.version }}
-          TIMEOUT: 60
-        run: |
-          chmod +x ./scripts/github-actions/await_image_push.sh
-          ./scripts/github-actions/await_image_push.sh "$IMAGE" "$TIMEOUT"
-
-      - name: Push Atlas Operator Bundle to RedHat Connect
-        uses: docker/build-push-action@v1
-        with:
-          username: unused
-          password: ${{ secrets.REDHAT_REGISTRY_BUNDLES_PASSWORD }}
-          repository: ${{ env.REDHAT_BUNDLE_REPO }}
-          registry: ${{ env.REDHAT_RELEASE_REGISTRY}}
-          tags: ${{ steps.tag.outputs.version }}
-          dockerfile: bundle.Dockerfile
+# TODO RedHad autopublish does not work. need to push bundles manually for now
