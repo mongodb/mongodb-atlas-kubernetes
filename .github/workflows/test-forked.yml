@@ -234,7 +234,6 @@ jobs:
           OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
           OPENSHIFT_PASS: ${{ secrets.OPENSHIFT_PASS }}
         run: |
-          kubectl version
           helm version
           go version
 
