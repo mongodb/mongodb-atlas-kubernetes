@@ -60,7 +60,14 @@ var (
 	atlasClient *mongodbatlas.Client
 	connection  atlas.Connection
 	namespace   corev1.Namespace
+	atlasDomain string
 )
+
+func init() {
+	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
+		atlasDomain = "https://cloud-qa.mongodb.com"
+	}
+}
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -101,7 +108,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		AtlasDomain:     atlasDomain,
 		ResourceWatcher: watch.NewResourceWatcher(),
 		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasProject"),
 	}).SetupWithManager(k8sManager)
@@ -110,7 +117,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = (&atlascluster.AtlasClusterReconciler{
 		Client:        k8sManager.GetClient(),
 		Log:           logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:   "https://cloud-qa.mongodb.com",
+		AtlasDomain:   atlasDomain,
 		EventRecorder: k8sManager.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
@@ -118,7 +125,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 		Client:          k8sManager.GetClient(),
 		Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:     "https://cloud-qa.mongodb.com",
+		AtlasDomain:     atlasDomain,
 		EventRecorder:   k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher: watch.NewResourceWatcher(),
 	}).SetupWithManager(k8sManager)
@@ -152,7 +159,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	withDigest := httputil.Digest(publicKey, privateKey)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
 	Expect(err).ToNot(HaveOccurred())
-	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL("https://cloud-qa.mongodb.com/api/atlas/v1.0/"))
+	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
 	Expect(err).ToNot(HaveOccurred())
 
 	return aClient, atlas.Connection{
