@@ -105,7 +105,7 @@ func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
 	return cluster
 }
 
-// MergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
+// MergedCluster will return the result of merging AtlasClusterSpec with Atlas Clustersdfsdf
 func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (result mongodbatlas.Cluster, err error) {
 	if err = compat.JSONCopy(&result, atlasCluster); err != nil {
 		return
