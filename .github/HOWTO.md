@@ -10,9 +10,16 @@ Tools for successfully running pipeline locally:
 Put the file `.actrc` to the root project folder with used secrets in GitHub
 
 ```
+# Update this data with your cloud-qa custom data
+-s ATLAS_ORG_ID=<id>
+-s ATLAS_PUBLIC_KEY=<public_key>
+-s ATLAS_PRIVATE_KEY=<private_key>
+# Openshift test
+-s OPENSHIFT_USER=<username>
+-s OPENSHIFT_PASS=<password>
 # Push to Docker Registry
--s DOCKER_USERNAME=username
--s DOCKER_PASSWORD=password
+-s DOCKER_USERNAME=<username>
+-s DOCKER_PASSWORD=<password>
 -s DOCKER_REPO=owner/repo_name
 -s DOCKER_REGISTRY=docker.io
 -s KUBE_CONFIG_DATA=<copy of kubeconfig>
