@@ -6,7 +6,6 @@ updates:
       interval: weekly
       day: tuesday
     reviewers:
-      - "antonlisovenko"
       - "fabritsius"
       - "leo-ri"
   - package-ecosystem: github-actions
@@ -15,6 +14,5 @@ updates:
       interval: weekly
       day: tuesday
     reviewers:
-      - "antonlisovenko"
       - "fabritsius"
       - "leo-ri"
