@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/zapr v0.4.0
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.6
-	github.com/mongodb-forks/digest v1.0.2
+	github.com/mongodb-forks/digest v1.0.3
 	github.com/mxschmitt/playwright-go v0.1100.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0
