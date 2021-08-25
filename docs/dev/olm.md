@@ -2,7 +2,7 @@
 
 One of the features that operator-sdk provides is support for [OLM](https://olm.operatorframework.io/docs/getting-started/) and bundles that it uses.
 
-OLM is an "Operator Lifecycle Manager" developed by RedHat. It's shipped together with Openshift but can be installed 
+OLM is an "Operator Lifecycle Manager" developed by RedHat. It's shipped together with Openshift but can be installed
 to "vanilla" clusters as well. When installed it provides the way to see, install (both from CLI and UI), upgrade Operators from the catalog.
 
 ### Installing OLM to K8s
@@ -23,14 +23,14 @@ make bundle VERSION=0.5.0 IMG=mongodb/mongodb-atlas-kubernetes-operator-prerelea
 The following happens "under the hood":
 
 1. `operator-sdk generate kustomize manifests -q --apis-dir=pkg/api`  - generates the `config/manifests` folder that contains
-   the "base" for `ClusterServiceVersion` that will be generated in the end bundle. This contains some data like "description", 
-   "keywords", "installModes" which describe the Operator. Also the "customresourcedefinitions" is filled based on the APIs 
+   the "base" for `ClusterServiceVersion` that will be generated in the end bundle. This contains some data like "description",
+   "keywords", "installModes" which describe the Operator. Also the "customresourcedefinitions" is filled based on the APIs
    used (`--apis-dir=pkg/api` overrides this location from the default `api`). This base file can be edited manually if necessary.
-2. `$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests` - takes the `default` (which points to the 
+2. `$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests` - takes the `default` (which points to the
    "/release/prod/allinone" configuration), `samples` and `scorecard` configs and passed them all to
 3. `operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)` which generates the final `bundle` directory
     with CRDs, and CSV
-   
+
 ### Deploying the bundle
 
 *Important! Deploying the bundle must happen on "bare" Kind cluster, not the one started with local registry support
@@ -38,9 +38,9 @@ The following happens "under the hood":
 
 As per https://sdk.operatorframework.io/docs/building-operators/golang/quickstart/:
 ```
-make bundle-build BUNDLE_IMG=antonlisovenko/test-bundle:v0.5.0
-make docker-push IMG=antonlisovenko/test-bundle:v0.5.0
-operator-sdk run bundle docker.io/antonlisovenko/test-bundle:v0.5.0
+make bundle-build BUNDLE_IMG=$USERNAME/test-bundle:v0.5.0
+make docker-push IMG=$USERNAME/test-bundle:v0.5.0
+operator-sdk run bundle docker.io/$USERNAME/test-bundle:v0.5.0
 ```
 
 ### Removing the bundle
@@ -69,13 +69,13 @@ INFO[0000] Could not find optional dependencies file     bundle-dir=bundle conta
 INFO[0000] All validation tests have completed successfully
 
 
-➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ make bundle-build BUNDLE_IMG=antonlisovenko/test-bundle:v0.4.0
+➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ make bundle-build BUNDLE_IMG=$USERNAME/test-bundle:v0.4.0
 
 
-➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ make docker-push IMG=antonlisovenko/test-bundle:v0.4.0
+➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ make docker-push IMG=$USERNAME/test-bundle:v0.4.0
 
-➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ operator-sdk run bundle docker.io/antonlisovenko/test-bundle:v0.4.0
-INFO[0010] Successfully created registry pod: docker-io-antonlisovenko-test-bundle-v0-4-0
+➜  mongodb-atlas-kubernetes git:(CLOUDP-81621_olm_bundle) ✗ operator-sdk run bundle docker.io/$USERNAME/test-bundle:v0.4.0
+INFO[0010] Successfully created registry pod: docker-io-$USERNAME-test-bundle-v0-4-0
 INFO[0010] Created CatalogSource: mongodb-atlas-kubernetes-catalog
 INFO[0010] OperatorGroup "operator-sdk-og" created
 INFO[0010] Created Subscription: mongodb-atlas-kubernetes-v0-4-0-sub
