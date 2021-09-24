@@ -1,5 +1,7 @@
 name: Clean Atlas organization
-
+# local run sample:
+# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch"}' > payload.json | act -j cleanup-all -e payload.json
+# ^ command will clean branch organization with name `CLOUDP-smth`
 on:
   workflow_dispatch:
 

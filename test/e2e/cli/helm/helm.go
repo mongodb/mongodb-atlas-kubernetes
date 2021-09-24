@@ -2,13 +2,17 @@ package kube
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 	"github.com/sethvargo/go-password/password"
 
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
@@ -21,6 +25,28 @@ import (
 func GetVersionOutput() {
 	session := cli.Execute("helm", "version")
 	ExpectWithOffset(1, session).Should(Say("version.BuildInfo"), "Please, install HELM")
+}
+
+func matchHelmSearch(match string) string {
+	session := cli.Execute("helm", "search", "repo", "mongodb")
+	EventuallyWithOffset(1, session, "5m", "10s").Should(gexec.Exit(0))
+	content := session.Out.Contents()
+
+	Expect(regexp.MustCompile(match).Match(content)).Should(BeTrue())
+	version := regexp.MustCompile(match).FindStringSubmatch(string(content))
+	Expect(version).Should(HaveLen(2))
+	GinkgoWriter.Write([]byte(fmt.Sprintf("Found version %s for match %s", version[1], match)))
+	return version[1]
+}
+
+func GetChartVersion(name string) string {
+	match := fmt.Sprintf("%s[\\s ]+([\\d.]+)", name)
+	return matchHelmSearch(match)
+}
+
+func GetAppVersion(name string) string {
+	match := fmt.Sprintf("%s[\\s ]+[\\d.]+[\\s ]+([\\d.]+)", name)
+	return matchHelmSearch(match)
 }
 
 func Uninstall(name string, ns string) {
@@ -127,8 +153,31 @@ func AddMongoDBRepo() {
 	cli.SessionShouldExit(session)
 }
 
+func PrepareHelmChartValuesFile(input model.UserInputs, installFromPackage bool) {
+	var version string
+	if installFromPackage {
+		GinkgoWriter.Write([]byte("install from package get version from there"))
+		data, _ := ioutil.ReadFile(filepath.Join(config.HelmAtlasResourcesChartPath, "Chart.yaml"))
+		match := "version:[\\s ]+([\\d.]+)"
+		r, err := regexp.Compile(match)
+		Expect(err).ShouldNot(HaveOccurred())
+		version = r.FindStringSubmatch(string(data))[1]
+	} else {
+		version = GetChartVersion("atlas-cluster")
+	}
+
+	GinkgoWriter.Write([]byte(version))
+	if version == "0.1.6" { // TODO need smth better
+		GinkgoWriter.Write([]byte("old version of atlas-cluster chart"))
+		PrepareHelmChartValuesFileVersion05(input)
+	} else {
+		GinkgoWriter.Write([]byte("new version of atlas-cluster chart"))
+		PrepareHelmChartValuesFileVersion06(input)
+	}
+}
+
 // chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
-func PrepareHelmChartValuesFile(input model.UserInputs) {
+func PrepareHelmChartValuesFileVersion05(input model.UserInputs) {
 	type usersType struct {
 		model.UserSpec
 		Password string `json:"password,omitempty"`
@@ -162,15 +211,48 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 	)
 }
 
-func InstallCluster(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
-	Install(args...)
+// chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
+func PrepareHelmChartValuesFileVersion06(input model.UserInputs) {
+	type usersType struct {
+		model.UserSpec
+		Password string `json:"password,omitempty"`
+	}
+	type values struct {
+		Project  model.ProjectSpec   `json:"project,omitempty"`
+		Clusters []model.ClusterSpec `json:"clusters,omitempty"`
+		Users    []usersType         `json:"users,omitempty"`
+	}
+	convertType := func(user model.DBUser) usersType {
+		var newUser usersType
+		newUser.DatabaseName = user.Spec.DatabaseName
+		newUser.Labels = user.Spec.Labels
+		newUser.Roles = user.Spec.Roles
+		newUser.Scopes = user.Spec.Scopes
+		newUser.PasswordSecret = user.Spec.PasswordSecret
+		newUser.Username = user.Spec.Username
+		newUser.DeleteAfterDate = user.Spec.DeleteAfterDate
+		return newUser
+	}
+	newValues := values{input.Project.Spec, []model.ClusterSpec{}, []usersType{}}
+	for i := range input.Clusters {
+		newValues.Clusters = append(newValues.Clusters, input.Clusters[i].Spec)
+	}
+	for i := range input.Users {
+		secret, _ := password.Generate(10, 3, 0, false, false)
+		currentUser := convertType(input.Users[i])
+		currentUser.Password = secret
+		newValues.Users = append(newValues.Users, currentUser)
+	}
+	utils.SaveToFile(
+		pathToAtlasClusterValuesFile(input),
+		utils.JSONToYAMLConvert(newValues),
+	)
 }
 
-func UpgradeAtlasClusterChart(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
-	Upgrade(prepareHelmChartArgs(input, "mongodb/atlas-cluster")...)
+func InstallCluster(input model.UserInputs) {
+	PrepareHelmChartValuesFile(input, false)
+	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
+	Install(args...)
 }
 
 func UpgradeOperatorChart(input model.UserInputs) {
@@ -187,8 +269,13 @@ func UpgradeOperatorChart(input model.UserInputs) {
 	)
 }
 
+func UpgradeAtlasClusterChart(input model.UserInputs) {
+	PrepareHelmChartValuesFile(input, false)
+	Upgrade(prepareHelmChartArgs(input, "mongodb/atlas-cluster")...)
+}
+
 func UpgradeAtlasClusterChartDev(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input)
+	PrepareHelmChartValuesFile(input, true)
 	Upgrade(prepareHelmChartArgs(input, config.HelmAtlasResourcesChartPath)...)
 }
 
@@ -215,9 +302,6 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 		"--create-namespace",
 		"--set", fmt.Sprintf("mongodb.providerSettings.backingProviderName=%s", returnNullIfEmpty(input.Clusters[0].Spec.ProviderSettings.BackingProviderName)),
 	}
-	// if input.Clusters[0].Spec.ProviderSettings.BackingProviderName == "" {
-	// 	args = append(args, "--set", "mongodb.providerSettings.backingProviderName=null") // TODO check
-	// }
 	return args
 }
 
