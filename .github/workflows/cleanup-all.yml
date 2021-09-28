@@ -1,0 +1,18 @@
+name: Clean Atlas organization
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup-all:
+    name: Cleanup atlas empty projects, and terminate cluster
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: CleanUp empty AtlasProjects older than one day
+        uses: ./.github/actions/cleanup
+        with:
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          CLEAN_ALL: "true"
