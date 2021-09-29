@@ -439,6 +439,44 @@ spec:
                     interfaceEndpointId:
                       description: Unique identifier of the AWS or Azure Private Link
                         Interface Endpoint.
+                  description: PrivateEndpoint connection strings. Each object describes
+                    the connection strings you can use to connect to this cluster
+                    through a private endpoint. Atlas returns this parameter only
+                    if you deployed a private endpoint to all regions to which you
+                    deployed this cluster's nodes.
+                  properties:
+                    connectionString:
+                      description: Private-endpoint-aware mongodb:// connection string
+                        for this private endpoint.
+                      type: string
+                    endpoints:
+                      description: Private endpoint through which you connect to Atlas
+                        when you use connectionStrings.privateEndpoint[n].connectionString
+                        or connectionStrings.privateEndpoint[n].srvConnectionString.
+                      items:
+                        description: Endpoint through which you connect to Atlas
+                        properties:
+                          endpointId:
+                            description: Unique identifier of the private endpoint.
+                            type: string
+                          providerName:
+                            description: Cloud provider to which you deployed the
+                              private endpoint. Atlas returns AWS or AZURE.
+                            type: string
+                          region:
+                            description: Region to which you deployed the private
+                              endpoint.
+                            type: string
+                        type: object
+                      type: array
+                    srvConnectionString:
+                      description: Private-endpoint-aware mongodb+srv:// connection
+                        string for this private endpoint.
+                      type: string
+                    type:
+                      description: "Type of MongoDB process that you connect to with
+                        the connection strings \n Atlas returns: \n • MONGOD for replica
+                        sets, or \n • MONGOS for sharded clusters"
                       type: string
                     provider:
                       description: Cloud provider for which you want to retrieve a

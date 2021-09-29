@@ -181,19 +181,11 @@ spec:
     - Replica Set
     - Cluster
   links:
-<<<<<<< HEAD
     - name: MongoDB Atlas Kubernetes
       url: https://github.com/mongodb/mongodb-atlas-kubernetes
   maintainers:
     - email: support@mongodb.com
       name: MongoDB, Inc
-=======
-  - name: MongoDB Atlas Kubernetes
-    url: https://github.com/mongodb/mongodb-atlas-kubernetes
-  maintainers:
-  - email: support@mongodb.com
-    name: MongoDB, Inc
->>>>>>> 0a3385f (Integrate Atlas Operator with Red Hat DBaaS)
   maturity: beta
   provider:
     name: MongoDB, Inc
