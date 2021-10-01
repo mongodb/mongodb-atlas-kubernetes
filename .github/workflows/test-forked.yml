@@ -21,12 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
+        ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Cache multiple paths
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      # - name: Cache multiple paths
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ~/go/pkg/mod
+      #     key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
 
       - name: Setup Go
         uses: actions/setup-go@v2
@@ -43,15 +44,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
+        test: ["AtlasProject"]
+        # test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
     steps:
-      - uses: actions/checkout@v2.3.4
+      # - uses: actions/checkout@v2.3.4
 
-      - name: Cache multiple paths
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      # - name: Cache multiple paths
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ~/go/pkg/mod
+      #     key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
       - name: Run testing
         uses: ./.github/actions/int-test
         with:
@@ -67,13 +70,13 @@ jobs:
     needs: allowed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.4
+      # - uses: actions/checkout@v2.3.4
 
-      - name: Cache multiple paths
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      # - name: Cache multiple paths
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ~/go/pkg/mod
+      #     key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
       - name: Run testing
         uses: ./.github/actions/int-test
         with:
@@ -94,9 +97,9 @@ jobs:
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 0 # required for tags
+        # uses: actions/checkout@v2.3.4
+        # with:
+        #   fetch-depth: 0 # required for tags
 
       - name: Prepare tag
         id: prepare
@@ -140,8 +143,8 @@ jobs:
             test: "openshift"
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2.3.4
+      # - name: Check out code
+      #   uses: actions/checkout@v2.3.4
 
       - name: Prepare tag
         id: prepare
@@ -218,10 +221,10 @@ jobs:
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
-      - name: Checkout helm charts repo
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+      # - name: Checkout helm charts repo
+      #   uses: actions/checkout@v2
+      #   with:
+      #     submodules: recursive
 
       - name: Run e2e test
         env:
@@ -258,7 +261,7 @@ jobs:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.4
+      # - uses: actions/checkout@v2.3.4
 
       - name: CleanUp empty AtlasProjects older than one day
         uses: ./.github/actions/cleanup
