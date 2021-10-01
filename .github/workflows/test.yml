@@ -3,14 +3,14 @@ name: Test
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
   pull_request:
     branches:
-      - '**'
+      - "**"
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
   workflow_dispatch:
 
 jobs:
@@ -137,7 +137,14 @@ jobs:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
-          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
+          [
+            "cluster-ns",
+            "cluster-wide",
+            "bundle-test",
+            "helm-ns",
+            "helm-wide",
+            "helm-update",
+          ]
         include:
           - k8s: "latest-openshift"
             test: "openshift"
@@ -224,9 +231,7 @@ jobs:
       - name: Checkout helm charts repo
         uses: actions/checkout@v2
         with:
-          repository: mongodb/helm-charts
-          path: my-charts
-          ref: dev
+          submodules: recursive
 
       - name: Run e2e test
         env:
