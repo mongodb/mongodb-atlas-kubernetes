@@ -55,6 +55,5 @@ COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
 COPY --from=builder /workspace/dbaas_provider.yaml .
 
-USER nonroot:nonroot
-
+USER 1001:0
 ENTRYPOINT ["/manager"]
