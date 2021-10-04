@@ -260,7 +260,6 @@ jobs:
 
   cleanup:
     name: Cleanup atlas projects
-    needs: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4

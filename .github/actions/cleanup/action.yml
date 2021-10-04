@@ -7,6 +7,10 @@ inputs:
   ATLAS_PRIVATE_KEY:
     description: "Atlas private key"
     required: true
+  CLEAN_ALL:
+    description: "Terminate clusters. Actions accept only strings. Please choose 'true'/'false'"
+    default: "false"
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
