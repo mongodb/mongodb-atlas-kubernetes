@@ -56,7 +56,6 @@ var _ = Describe("HELM charts", func() {
 		func(test model.TestDataProvider) {
 			data = test
 			By("User use helm for deploying namespaces operator", func() {
-				helm.AddMongoDBRepo()
 				helm.InstallK8sOperatorNS(data.Resources)
 			})
 
@@ -112,7 +111,6 @@ var _ = Describe("HELM charts", func() {
 				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
-				helm.AddMongoDBRepo()
 				helm.InstallK8sOperatorWide(data.Resources)
 			})
 			deployCluster(&data)
@@ -141,7 +139,7 @@ var _ = Describe("HELM charts", func() {
 				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-upgrade"
 				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-upgrade"
 			})
-			By("User use helm for last release of operator and deploy his resouces", func() {
+			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()
 				helm.InstallLatestReleaseOperatorNS(data.Resources)
 				deployCluster(&data)
