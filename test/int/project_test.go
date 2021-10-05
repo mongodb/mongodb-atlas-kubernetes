@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -148,6 +149,74 @@ var _ = Describe("AtlasProject", func() {
 				_, _ = atlasClient.Projects.Delete(context.Background(), createdProject.ID())
 				createdProject = nil
 			})
+		})
+	})
+
+	Describe("Deleting the project twice", func() {
+		It("Should Succeed", func() {
+			By(`Creating the project`, func() {
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+			})
+			By("Deleting the project", func() {
+				Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+				Eventually(checkAtlasProjectRemoved(createdProject.Status.ID)).Should(BeTrue())
+				time.Sleep(1 * time.Minute)
+				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeTrue())
+				createdProject = nil
+			})
+		})
+	})
+
+	Describe("Deleting the project several times", func() {
+		// Should show that deleted project wasn't created again (depends on Atlas)
+		It("Should Succeed", func() {
+			const totalProject = 10
+			var wg sync.WaitGroup
+			wg.Add(totalProject)
+			createdProjects := make([]*mdbv1.AtlasProject, totalProject)
+			projectPrefix := fmt.Sprintf("project-%s", namespace.Name)
+
+			By("Creating global key", func() {
+				globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
+				Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
+			})
+
+			for i := 0; i < totalProject; i++ {
+				go func(i int) {
+					defer GinkgoRecover()
+					defer wg.Done()
+					projectName := fmt.Sprintf("%s-%v", projectPrefix, i)
+
+					By(fmt.Sprintf("Creating several projects: %s", projectName))
+					createdProjects[i] = mdbv1.DefaultProject(namespace.Name, "").WithAtlasName(projectName).WithName(projectName)
+					Expect(k8sClient.Create(context.Background(), createdProjects[i])).ShouldNot(HaveOccurred())
+					fmt.Printf("%+v", createdProjects[i])
+
+					Eventually(testutil.WaitFor(k8sClient, createdProjects[i], status.TrueCondition(status.ReadyType)),
+						"5m", "2s").Should(BeTrue())
+
+					By(fmt.Sprintf("Deleting the project: %s", projectName))
+
+					Expect(k8sClient.Delete(context.Background(), createdProjects[i])).Should(Succeed())
+					fmt.Printf("%+v", createdProjects[i])
+					fmt.Printf("%v=======================NAME: %s\n", i, projectName)
+					fmt.Printf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)
+					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 1*time.Minute, 5*time.Second).Should(BeTrue())
+
+					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
+					time.Sleep(1 * time.Minute)
+					fmt.Printf("%+v", createdProjects[i])
+					fmt.Printf("%v=======================NAME: %s\n", i, projectName)
+					fmt.Printf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)
+					Expect(checkAtlasProjectRemoved(createdProjects[i].Status.ID)()).Should(BeTrue())
+				}(i)
+			}
+			wg.Wait()
+			createdProject = nil
 		})
 	})
 
