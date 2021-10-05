@@ -102,7 +102,31 @@ func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
 	cluster.ReplicationFactor = nil
 	cluster.ReplicationSpec = nil
 	cluster.ConnectionStrings = nil
+	cluster = removeOutdatedFields(&cluster, nil)
+
 	return cluster
+}
+
+// removeOutdatedFields unsets fields which are should be empty based on flags
+func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas.Cluster) mongodbatlas.Cluster {
+	if lookAt == nil {
+		lookAt = removeFrom
+	}
+
+	result := *removeFrom
+	if lookAt.AutoScaling != nil && lookAt.AutoScaling.Compute != nil {
+		if *lookAt.AutoScaling.Compute.Enabled {
+			result.ProviderSettings.InstanceSizeName = ""
+		} else {
+			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
+		}
+
+		if lookAt.AutoScaling.DiskGBEnabled != nil && *lookAt.AutoScaling.DiskGBEnabled {
+			result.DiskSizeGB = nil
+		}
+	}
+
+	return result
 }
 
 // MergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
@@ -151,6 +175,9 @@ func mergeRegionConfigs(atlasSpecs []mongodbatlas.ReplicationSpec, operatorSpecs
 
 // ClustersEqual compares two Atlas Clusters
 func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, clusterOperator mongodbatlas.Cluster) bool {
+	clusterAtlas = removeOutdatedFields(&clusterAtlas, &clusterOperator)
+	clusterOperator = removeOutdatedFields(&clusterOperator, nil)
+
 	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Clusters are different: %s", d)

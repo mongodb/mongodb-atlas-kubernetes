@@ -258,6 +258,7 @@ var _ = Describe("AtlasCluster", func() {
 					Enabled:          boolptr(true),
 					ScaleDownEnabled: boolptr(true),
 				},
+				DiskGBEnabled: boolptr(false),
 			}
 			createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
 				Compute: &mdbv1.ComputeSpec{
@@ -276,6 +277,7 @@ var _ = Describe("AtlasCluster", func() {
 					"US_WEST_2": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
 				},
 			}}
+			createdCluster.Spec.DiskSizeGB = intptr(10)
 
 			replicationSpecsCheckFunc := func(c *mongodbatlas.Cluster) {
 				cluster, err := createdCluster.Spec.Cluster()
@@ -318,6 +320,30 @@ var _ = Describe("AtlasCluster", func() {
 				doCommonStatusChecks()
 
 				checkAtlasState(replicationSpecsCheckFunc)
+			})
+
+			By("Disable cluster and disk AutoScaling", func() {
+				createdCluster.Spec.AutoScaling = &mdbv1.AutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled:          boolptr(false),
+						ScaleDownEnabled: boolptr(false),
+					},
+					DiskGBEnabled: boolptr(false),
+				}
+
+				performUpdate(ClusterUpdateTimeout)
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterUpdatingFunc()),
+					ClusterUpdateTimeout, interval).Should(BeTrue())
+
+				doCommonStatusChecks()
+
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					cluster, err := createdCluster.Spec.Cluster()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.AutoScaling.Compute).To(Equal(cluster.AutoScaling.Compute))
+				})
 			})
 		})
 	})
@@ -443,37 +469,6 @@ var _ = Describe("AtlasCluster", func() {
 				doCommonStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(c.ProviderBackupEnabled).To(Equal(createdCluster.Spec.ProviderBackupEnabled))
-				})
-			})
-
-			By("Setting AutoScaling.Compute.Enabled to false (should fail)", func() {
-				createdCluster.Spec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
-					Compute: &mdbv1.ComputeSpec{
-						Enabled: boolptr(false),
-					},
-				}
-
-				Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
-				Eventually(
-					testutil.WaitFor(
-						k8sClient,
-						createdCluster,
-						status.
-							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
-							WithMessageRegexp("INVALID_ATTRIBUTE"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
-
-				lastGeneration++
-
-				By("Fixing the Cluster", func() {
-					createdCluster.Spec.ProviderSettings.AutoScaling = nil
-					performUpdate(20 * time.Minute)
-					doCommonStatusChecks()
-					checkAtlasState()
 				})
 			})
 
