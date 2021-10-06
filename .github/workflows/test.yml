@@ -231,6 +231,10 @@ jobs:
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
+      - name: Remove dependencies from Atlas Chart
+        run: |
+          yq eval 'del(.dependencies)' helm-charts/charts/atlas-operator/Chart.yaml -i
+
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
