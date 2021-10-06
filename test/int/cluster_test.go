@@ -569,7 +569,7 @@ var _ = Describe("AtlasCluster", func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					100, interval).Should(BeTrue())
+					DBUserUpdateTimeout, interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Cluster "+createdCluster.Name, func() {
