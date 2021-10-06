@@ -27,8 +27,8 @@ Merge the PR - the chart will get released automatically.
 ## Create the Pull Request to publish the bundle to operatorhub.io
 
 All bundles/package manifests for Operators for operatorhub.io reside in:
-* `https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators` - for public Operators from operatorhub.io
-* `https://github.com/operator-framework/community-operators/tree/master/community-operators` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
+* `https://github.com/k8s-operatorhub/community-operators` - for public Operators from operatorhub.io
+* `https://github.com/redhat-openshift-ecosystem/community-operators-prod` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
 
 ### Fork/Update the community operators repositories
 
