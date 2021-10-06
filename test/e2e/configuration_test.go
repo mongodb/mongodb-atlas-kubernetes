@@ -20,6 +20,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 	var data model.TestDataProvider // TODO check it
 
 	_ = BeforeEach(func() {
+		Expect(true).Should(BeFalse())
 		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	_ = AfterEach(func() {
