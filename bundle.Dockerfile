@@ -1,7 +1,7 @@
 FROM scratch
 
 # RH OLM annotations
-LABEL com.redhat.openshift.versions="v4.5-v4.8"
+LABEL com.redhat.openshift.versions="v4.5,v4.6"
 LABEL com.redhat.delivery.backport=true
 LABEL com.redhat.delivery.operator.bundle=true
 
