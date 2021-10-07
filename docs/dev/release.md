@@ -27,45 +27,73 @@ Merge the PR - the chart will get released automatically.
 ## Create the Pull Request to publish the bundle to operatorhub.io
 
 All bundles/package manifests for Operators for operatorhub.io reside in:
-* `https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators` - for public Operators from operatorhub.io
-* `https://github.com/operator-framework/community-operators/tree/master/community-operators` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
+* `https://github.com/k8s-operatorhub/community-operators` - for public Operators from operatorhub.io
+* `https://github.com/redhat-openshift-ecosystem/community-operators-prod` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
 
-### Fork/Update the community operators repository
-**(First time) Fork the repository**
+### Fork/Update the community operators repositories
+
+**(First time only) Fork 2 separate repositories**
+
+#### 1. OperatorHub
+
 Fork the following repo into your own:
+  https://github.com/k8s-operatorhub/community-operators
 
-    https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators
-
-Make sure you clone the *fork* and not *upstream*.
+Clone the *fork* and not *upstream* to your maching.
 
 Add the upstream repository as a remote one
-
 ```bash
-git remote add upstream git@github.com:operator-framework/community-operators.git
+git remote add upstream git@github.com/k8s-operatorhub/community-operators.git
 ```
 
-**(Not the first time) Update the forked repository**
-Pull changes from the upstream:
+Assign the path to the repo to `RH_COMMUNITY_OPERATORHUB_REPO_PATH` env variable.
 
+#### 2. Openshift
+
+Fork the following repo into your own:
+  https://github.com/redhat-openshift-ecosystem/community-operators-prod
+
+Clone the *fork* and not *upstream* to your maching.
+
+Add the upstream repository as a remote one
 ```bash
-git fetch upstream
-git checkout master
-git merge upstream/master
+git remote add upstream git@github.com/redhat-openshift-ecosystem/community-operators-prod.git
 ```
 
-### Create a Pull Request to `community-operators` with a new bundle
+Assign the path to the repo to `RH_COMMUNITY_OPENSHIFT_REPO_PATH` env variable.
+
+### Create a Pull Request for `operatorhub` with a new bundle
+
+This is necessary for the Operator to appear on [operatorhub.io] site.
+This step should be done after the previous PR is approved and merged.
+
+Ensure you have the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
+pointing to the directory where `operatorhub-operator` repository was cloned in the previous step.
+
+For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
+
+Invoke:
+```
+./scripts/release-redhat.sh <version>
+```
+
+Create the PR to the main repository and wait until CI jobs get green. 
+After the PR is approved and merged - it will soon get available on https://operatorhub.io
+Example PR: https://github.com/k8s-operatorhub/community-operators/pull/69
+
+### Create a Pull Request for `openshift` with a new bundle
 
 This is necessary for the Operator to appear on "operators" tab in Openshift clusters
 
-Ensure you have the `RH_COMMUNITY_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
-pointing to the directory where `community-operator` repository was cloned in the previous step.
+Ensure you have the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
+pointing to the directory where `community-operators-prod` repository was cloned in the previous step.
 
 *(This is temporary, to be fixed)
 Change the `mongodb-atlas-kubernetes.clusterserviceversion.yaml` file and change the `replaces:` setting the previous version
 
 Invoke the following script:
 ```
-./scripts/release-redhat.sh <version>
+./scripts/release-redhat-openshift.sh <version>
 ```
 
 Create the PR to the main repository and wait until CI jobs get green.
@@ -74,20 +102,4 @@ Create the PR to the main repository and wait until CI jobs get green.
 `git rebase -i HEAD~2; git push origin +mongodb-atlas-operator-community-<version>` if you need to squash multiple commits into one and perform force push)
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
-See https://github.com/operator-framework/community-operators/pull/3343 as an example
-
-### Create a Pull Request to `upstream-community-operators` with a new bundle
-
-This is necessary for the Operator to appear on [operatorhub.io] site.
-This step should be done after the previous PR is approved and merged.
-
-For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
-
-Invoke:
-```
-./scripts/release-redhat-upstream.sh <version>
-```
-
-Create the PR to the main repository and wait until CI jobs get green. 
-After the PR is approved and merged - it will soon get available on https://operatorhub.io
-Example PR: https://github.com/operator-framework/community-operators/pull/3281
+See https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/98 as an example
