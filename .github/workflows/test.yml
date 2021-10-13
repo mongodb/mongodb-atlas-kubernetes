@@ -137,7 +137,14 @@ jobs:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
-          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
+          [
+            "cluster-ns",
+            "cluster-wide",
+            "bundle-test",
+            "helm-ns",
+            "helm-wide",
+            "helm-update",
+          ]
         include:
           - k8s: "latest-openshift"
             test: "openshift"
@@ -145,6 +152,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2.3.4
+        with:
+          # Make sure we also get the helm-charts submodule!
+          submodules: recursive
 
       - name: Prepare tag
         id: prepare
@@ -198,10 +208,10 @@ jobs:
       - name: Download tools for openshift ui tests
         if: ${{ steps.properties.outputs.k8s_platform == 'openshift' && !env.ACT }}
         run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz -q
           tar xvf opm.tar.gz
           chmod +x opm && sudo mv opm /usr/local/bin/opm
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
           tar xvf openshift.tar.gz
           chmod +x oc && sudo mv oc /usr/local/bin/oc
 
@@ -211,22 +221,19 @@ jobs:
 
       - name: Install MongoCLI
         run: |
-          wget https://github.com/mongodb/mongocli/releases/download/v1.14.0/mongocli_1.14.0_linux_x86_64.deb -O mongocli.deb
+          wget https://github.com/mongodb/mongocli/releases/download/v1.14.0/mongocli_1.14.0_linux_x86_64.deb -O mongocli.deb -q
           sudo dpkg -i mongocli.deb
           mongocli --version
 
       - name: Install operator-sdk-v1.4.2
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
-      - name: Checkout helm charts repo
-        uses: actions/checkout@v2
-        with:
-          repository: mongodb/helm-charts
-          path: my-charts
-          ref: dev
+      - name: Remove dependencies from Atlas Chart
+        run: |
+          yq eval 'del(.dependencies)' helm-charts/charts/atlas-operator/Chart.yaml -i
 
       - name: Run e2e test
         env:

@@ -87,10 +87,18 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 	)
 }
 
+// chartLocation returns the absolute location of a chart.
+// This is required when installing helm charts from the submodule,
+// as the tests run with `test/e2e` as their working directory.
+func chartLocation(chartName string) string {
+	workspace := os.Getenv("GITHUB_WORKSPACE")
+	return path.Join(workspace, "helm-charts", "charts", chartName)
+}
+
 func InstallCRD(input model.UserInputs) {
 	Install(
 		"mongodb-atlas-operator-crds",
-		"mongodb/mongodb-atlas-operator-crds",
+		chartLocation("atlas-operator-crds"),
 		"--namespace", input.Namespace,
 		"--create-namespace",
 	)
@@ -101,18 +109,23 @@ func UninstallCRD(input model.UserInputs) {
 }
 
 func InstallK8sOperatorWide(input model.UserInputs) {
+	InstallCRD(input)
 	repo, tag := splitDockerImage()
+
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
-		"mongodb/mongodb-atlas-operator",
+		chartLocation("atlas-operator"),
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
+		"--set", "mongodb-atlas-operator-crds.enabled=false",
 		"--namespace", input.Namespace,
 		"--create-namespace",
 	)
 }
 
+// InstallLatestReleaseOperatorNS install latest released version of the
+// Atlas Operator from Helm charts repo.
 func InstallLatestReleaseOperatorNS(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
@@ -124,22 +137,32 @@ func InstallLatestReleaseOperatorNS(input model.UserInputs) {
 	)
 }
 
+// InstallK8sOperatorNS installs the operator from `helm-charts` directory.
+// It is expected that this directory already exists.
 func InstallK8sOperatorNS(input model.UserInputs) {
+	InstallCRD(input)
 	repo, tag := splitDockerImage()
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
-		"mongodb/mongodb-atlas-operator",
+		chartLocation("atlas-operator"),
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
+		"--set", "mongodb-atlas-operator-crds.enabled=false",
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)
 }
 
+// splitDockerImage returns the image name and tag.
+// It splits on the rightmost ":" character to allow for ports
+// to be defined in the image name (like `localhost:5000`).
 func splitDockerImage() (string, string) {
-	url := strings.Split(os.Getenv("IMAGE_URL"), ":")
+	imageUrl := os.Getenv("IMAGE_URL")
+	// make sure we split on the tag, not on the port ":"
+	sepIdx := strings.LastIndex(imageUrl, ":")
+	url := []string{imageUrl[:sepIdx], imageUrl[sepIdx+1:]}
 	Expect(len(url)).Should(Equal(2), "Can't split DOCKER IMAGE")
 	return url[0], url[1]
 }
@@ -249,10 +272,16 @@ func PrepareHelmChartValuesFileVersion06(input model.UserInputs) {
 	)
 }
 
+// InstallCluster install the Atlas Cluster Helm Chart from submodule.
 func InstallCluster(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, false)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
+	PrepareHelmChartValuesFile(input, true)
+	args := prepareHelmChartArgs(input, chartLocation("atlas-cluster"))
 	Install(args...)
+}
+
+func UpgradeAtlasClusterChart(input model.UserInputs) {
+	PrepareHelmChartValuesFile(input, true)
+	Upgrade(prepareHelmChartArgs(input, chartLocation("atlas-cluster"))...)
 }
 
 func UpgradeOperatorChart(input model.UserInputs) {
@@ -267,11 +296,6 @@ func UpgradeOperatorChart(input model.UserInputs) {
 		"-n", input.Namespace,
 		"--wait", "--timeout", "5m",
 	)
-}
-
-func UpgradeAtlasClusterChart(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, false)
-	Upgrade(prepareHelmChartArgs(input, "mongodb/atlas-cluster")...)
 }
 
 func UpgradeAtlasClusterChartDev(input model.UserInputs) {
