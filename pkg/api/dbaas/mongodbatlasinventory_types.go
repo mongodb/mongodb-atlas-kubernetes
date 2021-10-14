@@ -52,7 +52,11 @@ func init() {
 
 func (p *MongoDBAtlasInventory) ConnectionSecretObjectKey() *client.ObjectKey {
 	if p.Spec.CredentialsRef != nil {
-		key := kube.ObjectKey(p.Spec.CredentialsRef.Namespace, p.Spec.CredentialsRef.Name)
+		ns := p.Spec.CredentialsRef.Namespace
+		if len(ns) == 0 {
+			ns = p.Namespace
+		}
+		key := kube.ObjectKey(ns, p.Spec.CredentialsRef.Name)
 		return &key
 	}
 	return nil
