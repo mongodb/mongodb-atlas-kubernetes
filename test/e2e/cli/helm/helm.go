@@ -108,7 +108,7 @@ func UninstallCRD(input model.UserInputs) {
 	Uninstall("mongodb-atlas-operator-crds", input.Namespace)
 }
 
-func InstallK8sOperatorWide(input model.UserInputs) {
+func InstallOperatorWideSubmodule(input model.UserInputs) {
 	InstallCRD(input)
 	repo, tag := splitDockerImage()
 
@@ -124,9 +124,9 @@ func InstallK8sOperatorWide(input model.UserInputs) {
 	)
 }
 
-// InstallLatestReleaseOperatorNS install latest released version of the
+// InstallOperatorNamespacedReleased install latest released version of the
 // Atlas Operator from Helm charts repo.
-func InstallLatestReleaseOperatorNS(input model.UserInputs) {
+func InstallOperatorNamespacedReleased(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
@@ -137,9 +137,9 @@ func InstallLatestReleaseOperatorNS(input model.UserInputs) {
 	)
 }
 
-// InstallK8sOperatorNS installs the operator from `helm-charts` directory.
+// InstallOperatorNamespacedSubmodule installs the operator from `helm-charts` directory.
 // It is expected that this directory already exists.
-func InstallK8sOperatorNS(input model.UserInputs) {
+func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 	InstallCRD(input)
 	repo, tag := splitDockerImage()
 	Install(
@@ -199,7 +199,7 @@ func PrepareHelmChartValuesFile(input model.UserInputs, installFromPackage bool)
 	}
 }
 
-// chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
+// chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml app version 0.5
 func PrepareHelmChartValuesFileVersion05(input model.UserInputs) {
 	type usersType struct {
 		model.UserSpec
@@ -234,7 +234,7 @@ func PrepareHelmChartValuesFileVersion05(input model.UserInputs) {
 	)
 }
 
-// chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
+// chart values https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml app version 0.6
 func PrepareHelmChartValuesFileVersion06(input model.UserInputs) {
 	type usersType struct {
 		model.UserSpec
@@ -272,10 +272,17 @@ func PrepareHelmChartValuesFileVersion06(input model.UserInputs) {
 	)
 }
 
-// InstallCluster install the Atlas Cluster Helm Chart from submodule.
-func InstallCluster(input model.UserInputs) {
+// InstallClusterSubmodule install the Atlas Cluster Helm Chart from submodule.
+func InstallClusterSubmodule(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input, true)
 	args := prepareHelmChartArgs(input, chartLocation("atlas-cluster"))
+	Install(args...)
+}
+
+// InstallClusterRelease from repo
+func InstallClusterRelease(input model.UserInputs) {
+	PrepareHelmChartValuesFile(input, true)
+	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
 	Install(args...)
 }
 
