@@ -147,7 +147,7 @@ var _ = Describe("HELM charts", func() {
 			})
 			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()
-				helm.InstallOperatorNamespacedReleased(data.Resources)
+				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
 				helm.InstallClusterRelease(data.Resources)
 				waitClusterWithChecks(&data)
 			})

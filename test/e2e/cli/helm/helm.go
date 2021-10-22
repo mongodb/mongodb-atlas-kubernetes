@@ -124,9 +124,9 @@ func InstallOperatorWideSubmodule(input model.UserInputs) {
 	)
 }
 
-// InstallOperatorNamespacedReleased install latest released version of the
+// InstallOperatorNamespacedFromLatestRelease install latest released version of the
 // Atlas Operator from Helm charts repo.
-func InstallOperatorNamespacedReleased(input model.UserInputs) {
+func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
