@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	EventuallyTimeout   = 60 * time.Second
+	EventuallyTimeout   = 100 * time.Second
 	ConsistentlyTimeout = 1 * time.Second
 	PollingInterval     = 10 * time.Second
 )

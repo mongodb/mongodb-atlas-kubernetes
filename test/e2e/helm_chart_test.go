@@ -56,10 +56,13 @@ var _ = Describe("HELM charts", func() {
 		func(test model.TestDataProvider) {
 			data = test
 			By("User use helm for deploying namespaces operator", func() {
-				helm.InstallK8sOperatorNS(data.Resources)
+				helm.InstallOperatorNamespacedSubmodule(data.Resources)
 			})
+			By("User deploy cluster by helm", func() {
+				helm.InstallClusterSubmodule(data.Resources)
+			})
+			waitClusterWithChecks(&data)
 
-			deployCluster(&data)
 			By("Additional check for the current data set", func() {
 				for _, check := range data.Actions {
 					check(&data)
@@ -111,9 +114,12 @@ var _ = Describe("HELM charts", func() {
 				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
-				helm.InstallK8sOperatorWide(data.Resources)
+				helm.InstallOperatorWideSubmodule(data.Resources)
 			})
-			deployCluster(&data)
+			By("User deploy cluster by helm", func() {
+				helm.InstallClusterSubmodule(data.Resources)
+			})
+			waitClusterWithChecks(&data)
 			deleteClusterAndOperator(&data)
 		})
 	})
@@ -141,8 +147,9 @@ var _ = Describe("HELM charts", func() {
 			})
 			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()
-				helm.InstallLatestReleaseOperatorNS(data.Resources)
-				deployCluster(&data)
+				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
+				helm.InstallClusterRelease(data.Resources)
+				waitClusterWithChecks(&data)
 			})
 			By("User update new released operator", func() {
 				backup := true
@@ -157,10 +164,7 @@ var _ = Describe("HELM charts", func() {
 	})
 })
 
-func deployCluster(data *model.TestDataProvider) {
-	By("User deploy cluster by helm", func() {
-		helm.InstallCluster(data.Resources)
-	})
+func waitClusterWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
 		actions.WaitProject(data.Resources, "1")
 		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
