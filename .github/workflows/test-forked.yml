@@ -138,7 +138,15 @@ jobs:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
-          ["cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update"]
+          [
+            "cluster-ns",
+            "cluster-wide",
+            "bundle-test",
+            "helm-ns",
+            "helm-wide",
+            "helm-update",
+            "multinamespaced",
+          ]
         include:
           - k8s: "latest-openshift"
             test: "openshift"
@@ -149,6 +157,8 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
+          # Make sure we also get the helm-charts submodule!
+          submodules: recursive
 
       - name: Prepare tag
         id: prepare

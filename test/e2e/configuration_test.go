@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
-	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
@@ -187,7 +187,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 
 func mainCycle(data model.TestDataProvider) {
 	actions.PrepareUsersConfigurations(&data)
-	actions.DeployNamespacedOperatorKuber(&data)
+	deploy.NamespacedOperator(&data)
 
 	By("Deploy User Resouces", func() {
 		actions.DeployUserResourcesAction(&data)

@@ -1,9 +1,15 @@
 package config
 
 const (
-	ConfigAll = "../../deploy/" // Released generated files
 
-	// ClusterSample      = "data/atlascluster_basic.yaml"
+	// Kubernetes configuration samples for users in deploy directory
+	DefaultDeployConfig              = "../../deploy/" // Released generated files
+	DefaultClusterWideCRDConfig      = "../../deploy/clusterwide/crds.yaml"
+	DefaultClusterWideOperatorConfig = "../../deploy/clusterwide/clusterwide-config.yaml"
+	DefaultNamespacedCRDConfig       = "../../deploy/namespaced/crds.yaml"
+	DefaultNamespacedOperatorConfig  = "../../deploy/namespaced/namespaced-config.yaml"
+
+	// Default names/path for tests coordinates
 	DataFolder               = "data"
 	DefaultOperatorNS        = "mongodb-atlas-system"
 	DefaultOperatorName      = "mongodb-atlas-operator"

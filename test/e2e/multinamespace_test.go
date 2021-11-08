@@ -1,0 +1,157 @@
+package e2e_test
+
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	. "github.com/onsi/gomega/gbytes"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+)
+
+var _ = Describe("[multinamespaced] Users can use clusterwide configuration with limitation to watch only particular namespaces", func() {
+	var listData []model.TestDataProvider
+	var watchedNamespace []string
+
+	_ = BeforeEach(func() {
+		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+	})
+
+	var _ = AfterEach(func() {
+		By("AfterEach. clean-up", func() {
+			if CurrentGinkgoTestDescription().Failed {
+				GinkgoWriter.Write([]byte("Resources wasn't clean"))
+				utils.SaveToFile(
+					"output/operator-logs.txt",
+					kube.GetManagerLogs(config.DefaultOperatorNS),
+				)
+				actions.SaveK8sResources(
+					[]string{"deploy"},
+					config.DefaultOperatorNS,
+				)
+				for _, data := range listData {
+					actions.SaveK8sResources(
+						[]string{"atlasprojects"},
+						data.Resources.Namespace,
+					)
+				}
+			}
+		})
+	})
+
+	// (Consider Shared Clusters when E2E tests could conflict with each other)
+	It("Deploy cluster multinamespaced operator and create resources in each of them", func() {
+
+		By("Set up test data configuration", func() {
+			watched1 := model.NewTestDataProvider(
+				"multinamestace-watched1",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{},
+				30013,
+				[]func(*model.TestDataProvider){},
+			)
+			watchedGlobal := model.NewTestDataProvider(
+				"multinamestace-watched-global",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{},
+				30013,
+				[]func(*model.TestDataProvider){},
+			)
+			notWatched := model.NewTestDataProvider(
+				"multinamestace-notwatched",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{},
+				30013,
+				[]func(*model.TestDataProvider){},
+			)
+			notWatchedGlobal := model.NewTestDataProvider(
+				"multinamestace-notwatched",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_basic.yaml"},
+				[]string{},
+				[]model.DBUser{},
+				30013,
+				[]func(*model.TestDataProvider){},
+			)
+			listData = []model.TestDataProvider{watched1, watchedGlobal, notWatched, notWatchedGlobal}
+			watchedNamespace = []string{watched1.Resources.Namespace, watchedGlobal.Resources.Namespace}
+		})
+		By("User Install CRD, cluster multinamespace Operator", func() {
+			for i := range listData {
+				actions.PrepareUsersConfigurations(&listData[i])
+			}
+			deploy.MultiNamespaceOperator(&listData[0], watchedNamespace)
+			kube.CreateApiKeySecret(config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
+		})
+		By("Check if operator working as expected: watched/not watched namespaces", func() {
+			crdsFile := listData[0].Resources.GetOperatorFolder() + "/crds.yaml"
+			for i := range listData {
+				testFlow(&listData[i], crdsFile, watchedNamespace)
+			}
+		})
+	})
+})
+
+func testFlow(data *model.TestDataProvider, crdsFile string, watchedNamespece []string) {
+	isWatchedNamespace := func(target string, list []string) bool {
+		for _, item := range list {
+			if item == target {
+				return true
+			}
+		}
+		return false
+	}
+	if isWatchedNamespace(data.Resources.Namespace, watchedNamespece) {
+		watchedFlow(data, crdsFile)
+	} else {
+		notWatchedFlow(data, crdsFile)
+	}
+}
+
+func watchedFlow(data *model.TestDataProvider, crdsFile string) {
+	By("Deploy users resorces", func() {
+		if !data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			actions.CreateConnectionAtlasKey(data)
+		}
+		kube.Apply(crdsFile, "-n", data.Resources.Namespace)
+		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+	})
+	By("Check if projects were deployed", func() {
+		Eventually(
+			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.K8sFullProjectName), "3m", "10s").
+			Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True. Watched namespace")
+	})
+	By("Get IDs for deletion", func() {
+		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
+	})
+	By("Delete Resources", func() {
+		actions.DeleteUserResourcesProject(data)
+	})
+}
+
+func notWatchedFlow(data *model.TestDataProvider, crdsFile string) {
+	By("Deploy users resorces", func() {
+		if !data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			actions.CreateConnectionAtlasKey(data)
+		}
+		kube.Apply(crdsFile, "-n", data.Resources.Namespace)
+		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+	})
+	By("Check if projects were deployed", func() {
+		Eventually(
+			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.K8sFullProjectName), "3m", "10s").
+			Should(BeEmpty(), "Kubernetes resource: Project status `Ready` should be False. NOT Watched namespace")
+	})
+}

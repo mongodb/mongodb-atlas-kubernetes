@@ -235,18 +235,19 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 				utils.JSONToYAMLConvert(data.Resources.Clusters[0]),
 			)
 		})
-		By("Create dbuser spec", func() {
-			Expect(data.Resources.Users).ShouldNot(BeNil())
-			for _, user := range data.Resources.Users {
-				user.SaveConfigurationTo(data.Resources.ProjectPath)
-				kube.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
-			}
-		})
+		if len(data.Resources.Users) > 0 {
+			By("Create dbuser spec", func() {
+				for _, user := range data.Resources.Users {
+					user.SaveConfigurationTo(data.Resources.ProjectPath)
+					kube.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+				}
+			})
+		}
 	})
 }
 
-// createConnectionAtlasKey create connection: global or project level
-func createConnectionAtlasKey(data *model.TestDataProvider) {
+// CreateConnectionAtlasKey create connection: global or project level
+func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
 			kube.CreateApiKeySecret(config.DefaultOperatorGlobalKey, data.Resources.Namespace)
@@ -280,9 +281,10 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	}
 }
 
-func DeployUserResourcesAction(data *model.TestDataProvider) {
-	By("Create users resources", func() {
-		createConnectionAtlasKey(data)
+// DeployProject deploy project, prepare keys for working with that project
+func DeployProject(data *model.TestDataProvider) {
+	By("Create users resources: keys, project", func() {
+		CreateConnectionAtlasKey(data)
 		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
 		By("Wait project creation and get projectID", func() {
 			WaitProject(data.Resources, "1")
@@ -293,6 +295,11 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
 		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})
+}
+
+// DeployUserResourcesAction deploy all user resources, wait, and check results
+func DeployUserResourcesAction(data *model.TestDataProvider) {
+	DeployProject(data)
 
 	By("Wait cluster creation", func() {
 		WaitCluster(data.Resources, "1")
@@ -322,6 +329,11 @@ func DeleteDBUsersApps(data *model.TestDataProvider) {
 }
 
 func DeleteUserResources(data *model.TestDataProvider) {
+	DeleteUserResourcesCluster(data)
+	DeleteUserResourcesProject(data)
+}
+
+func DeleteUserResourcesCluster(data *model.TestDataProvider) {
 	By("Delete cluster", func() {
 		kube.Delete(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
 		Eventually(
@@ -329,7 +341,9 @@ func DeleteUserResources(data *model.TestDataProvider) {
 			"10m", "1m",
 		).Should(BeFalse(), "Cluster should be deleted from Atlas")
 	})
+}
 
+func DeleteUserResourcesProject(data *model.TestDataProvider) {
 	By("Delete project", func() {
 		kube.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
 		Eventually(
