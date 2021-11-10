@@ -1,7 +1,7 @@
 # Please push to mongodbinternal/test-app:v1
 
 # Build the manager binary
-FROM golang:1.15 as builder
+FROM golang:1.16 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
