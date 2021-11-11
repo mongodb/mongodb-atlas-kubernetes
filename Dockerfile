@@ -27,7 +27,6 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4-205.1626828526
 RUN microdnf install yum &&\
     yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical &&\
     yum clean all &&\
-    microdnf remove yum &&\
     microdnf clean all
 
 #FROM registry.access.redhat.com/ubi8/ubi
