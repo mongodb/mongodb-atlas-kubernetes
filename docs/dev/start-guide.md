@@ -1,6 +1,6 @@
 # Onboarding to Atlas Operator
 
-1. Install Go (1.15)
+1. Install Go (1.16)
 1. Install dependencies 
 ```
 # on Mac
