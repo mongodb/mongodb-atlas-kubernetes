@@ -1,5 +1,6 @@
 # Build the manager binary
-FROM golang:1.16 as builder
+# fix: Could not pull base image: toomanyrequests: You have reached your pull rate limit. You may increase the limit by authenticating and upgrading: https://www.docker.com/increase-rate-limit
+FROM quay.io/bitnami/golang:1.16 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
