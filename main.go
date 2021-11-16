@@ -189,6 +189,7 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	watchedNamespace := os.Getenv("WATCH_NAMESPACE")
 	config.WatchedNamespaces = make(map[string]bool)
 	for _, namespace := range strings.Split(watchedNamespace, ",") {
+		namespace = strings.TrimSpace(namespace)
 		log.Infof("The Operator is watching the namespace %s", namespace)
 		config.WatchedNamespaces[namespace] = true
 	}
