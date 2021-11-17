@@ -110,6 +110,15 @@ func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...st
 	}
 }
 
+func (p *AtlasProject) IsDeletionFinalizerPresent() bool {
+	for _, finalizer := range p.GetFinalizers() {
+		if finalizer == GetFinalizerName() {
+			return true
+		}
+	}
+	return false
+}
+
 // ************************************ Builder methods *************************************************
 
 func NewProject(namespace, name, nameInAtlas string) *AtlasProject {
