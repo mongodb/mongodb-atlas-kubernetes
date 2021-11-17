@@ -673,6 +673,8 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	expectedData := map[string][]byte{
 		"connectionStringStandard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
 		"connectionStringStandardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
+		"connectionStringPrivate":     []byte(buildConnectionURL(c.ConnectionStrings.Private, username, password)),
+		"connectionStringPrivateSrv":  []byte(buildConnectionURL(c.ConnectionStrings.PrivateSrv, username, password)),
 		"username":                    []byte(username),
 		"password":                    []byte(password),
 	}
