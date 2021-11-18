@@ -110,7 +110,17 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if project.GetDeletionTimestamp() != nil {
+	if project.GetDeletionTimestamp().IsZero() {
+		if !project.IsDeletionFinalizerPresent() {
+			log.Debugw("Add deletion finalizer", "name", mdbv1.GetFinalizerName())
+			if err := r.addDeletionFinalizer(context, project); err != nil {
+				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+				return result.ReconcileResult(), nil
+			}
+		}
+	}
+
+	if !project.GetDeletionTimestamp().IsZero() {
 		if project.IsDeletionFinalizerPresent() {
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
@@ -118,20 +128,19 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			}
 
 			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
+				err = fmt.Errorf("failed to remove deletion finalizer from %s: %w", project.Name, err)
+				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+				return result.ReconcileResult(), nil
+			}
+
+			if err = r.removeDeletionFinalizer(context, project); err != nil {
+				err = fmt.Errorf("failed to remove deletion finalizer from %s: %w", project.Name, err)
 				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
 				return result.ReconcileResult(), nil
 			}
 		}
-	}
 
-	if !project.IsDeletionFinalizerPresent() {
-		log.Debugw("Add deletion finalizer", "name", mdbv1.GetFinalizerName())
-		project.Finalizers = append(project.Finalizers, mdbv1.GetFinalizerName())
-		if err := r.Client.Update(context, project); err != nil {
-			log.Errorf("failed to add deletion finalizer for %s: %w", project.Name, err)
-			ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
-			return result.ReconcileResult(), nil
-		}
+		return result.ReconcileResult(), nil
 	}
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
@@ -165,10 +174,14 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 		return err
 	}
 
-	if err := r.removeDeletionFinalizer(ctx, project); err != nil {
-		return err
-	}
+	return nil
+}
 
+func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	p.Finalizers = append(p.GetFinalizers(), mdbv1.GetFinalizerName())
+	if err := r.Client.Update(ctx, p); err != nil {
+		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
+	}
 	return nil
 }
 
