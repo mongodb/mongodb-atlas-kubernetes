@@ -128,13 +128,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			}
 
 			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
-				err = fmt.Errorf("failed to remove deletion finalizer from %s: %w", project.Name, err)
 				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
 				return result.ReconcileResult(), nil
 			}
 
 			if err = r.removeDeletionFinalizer(context, project); err != nil {
-				err = fmt.Errorf("failed to remove deletion finalizer from %s: %w", project.Name, err)
 				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
 				return result.ReconcileResult(), nil
 			}
@@ -166,15 +164,10 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 	var apiError *mongodbatlas.ErrorResponse
 	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 		log.Infow("Project is already deleted", "projectID", project.Status.ID)
-		err = nil
+		return nil
 	}
 
-	if err != nil {
-		log.Errorw("cannot delete Atlas project", "error", err)
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
