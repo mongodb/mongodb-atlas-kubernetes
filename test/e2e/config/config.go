@@ -24,4 +24,8 @@ const (
 	HelmOperatorChartPath       = "../../helm-charts/charts/atlas-operator"
 	HelmCRDChartPath            = "../../helm-charts/charts/atlas-operator-crds"
 	HelmAtlasResourcesChartPath = "../../helm-charts/charts/atlas-cluster"
+
+	// AWS Tags for test
+	TagName = "atlas-operator-test"
+	TagBusy = "busy"
 )
