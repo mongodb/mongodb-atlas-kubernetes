@@ -6,7 +6,7 @@ The MongoDB Atlas Operator provides a native integration between the Kubernetes 
 
 > Current Status: *trial version*. The Operator gives users the ability to provision
 > Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information
-> into applications deployed to Kubernetes. More features like private endpoints, backup management, LDAP/X.509 authentication, etc. 
+> into applications deployed to Kubernetes. More features like private endpoints, backup management, LDAP/X.509 authentication, etc.
 > are yet to come.
 
 The full documentation for the Operator can be found [here](https://docs.atlas.mongodb.com/atlas-operator/)
@@ -31,7 +31,7 @@ kubectl create secret generic mongodb-atlas-operator-api-key \
 
 **2.** Create an `AtlasProject` Custom Resource
 
-The `AtlasProject` CustomResource represents Atlas Projects in our Kubernetes cluster. You need to specify 
+The `AtlasProject` CustomResource represents Atlas Projects in our Kubernetes cluster. You need to specify
 `projectIpAccessList` with the IP addresses or CIDR blocks of any hosts that will connect to the Atlas Cluster.
 ```
 cat <<EOF | kubectl apply -f -
@@ -104,7 +104,7 @@ True
 ### Step 3. Connect your application to the Atlas Cluster
 
 The Atlas Operator will create a Kubernetes Secret with the information necessary to connect to the Atlas Cluster created
-in the previous step. An application in the same Kubernetes Cluster can mount and use the Secret: 
+in the previous step. An application in the same Kubernetes Cluster can mount and use the Secret:
 
 ```
 ...
@@ -118,3 +118,9 @@ containers:
                key: connectionStringStandardSrv
 
 ```
+
+## How to Contribute
+
+Please file issues before filing PRs. For PRs to be accepted, contributors must sign our [CLA](https://www.mongodb.com/legal/contributor-agreement).
+
+Reviewers, please ensure that the CLA has been signed by referring to [the contributors tool](https://contributors.corp.mongodb.com/) (internal link).
