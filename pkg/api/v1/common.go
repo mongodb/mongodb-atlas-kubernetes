@@ -30,7 +30,3 @@ type LabelSpec struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-
-func GetFinalizerName() string {
-	return "mongodbatlas/finalizer"
-}

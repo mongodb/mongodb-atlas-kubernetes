@@ -111,8 +111,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
 	if project.GetDeletionTimestamp().IsZero() {
-		if !project.IsDeletionFinalizerPresent() {
-			log.Debugw("Add deletion finalizer", "name", mdbv1.GetFinalizerName())
+		if !isDeletionFinalizerPresent(project) {
+			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
 			if err := r.addDeletionFinalizer(context, project); err != nil {
 				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
 				return result.ReconcileResult(), nil
@@ -121,14 +121,15 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	if !project.GetDeletionTimestamp().IsZero() {
-		if project.IsDeletionFinalizerPresent() {
+		if isDeletionFinalizerPresent(project) {
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 				return result.ReconcileResult(), nil
 			}
 
 			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
-				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 
@@ -170,22 +171,6 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 	return err
 }
 
-func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
-	p.Finalizers = append(p.GetFinalizers(), mdbv1.GetFinalizerName())
-	if err := r.Client.Update(ctx, p); err != nil {
-		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
-	}
-	return nil
-}
-
-func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
-	p.Finalizers = removeString(p.GetFinalizers(), mdbv1.GetFinalizerName())
-	if err := r.Client.Update(ctx, p); err != nil {
-		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
-	}
-	return nil
-}
-
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	c, err := controller.New("AtlasProject", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -204,6 +189,35 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 	return nil
+}
+
+func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	p.Finalizers = append(p.GetFinalizers(), getFinalizerName())
+	if err := r.Client.Update(ctx, p); err != nil {
+		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
+	}
+	return nil
+}
+
+func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	p.Finalizers = removeString(p.GetFinalizers(), getFinalizerName())
+	if err := r.Client.Update(ctx, p); err != nil {
+		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
+	}
+	return nil
+}
+
+func getFinalizerName() string {
+	return "mongodbatlas/finalizer"
+}
+
+func isDeletionFinalizerPresent(project *mdbv1.AtlasProject) bool {
+	for _, finalizer := range project.GetFinalizers() {
+		if finalizer == getFinalizerName() {
+			return true
+		}
+	}
+	return false
 }
 
 func removeString(slice []string, s string) (result []string) {
