@@ -114,7 +114,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		if !isDeletionFinalizerPresent(project) {
 			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
 			if err := r.addDeletionFinalizer(context, project); err != nil {
-				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -134,7 +135,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			}
 
 			if err = r.removeDeletionFinalizer(context, project); err != nil {
-				ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -164,7 +166,7 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 	_, err = atlasClient.Projects.Delete(ctx, project.Status.ID)
 	var apiError *mongodbatlas.ErrorResponse
 	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
-		log.Infow("Project is already deleted", "projectID", project.Status.ID)
+		log.Infow("Project does not exist", "projectID", project.Status.ID)
 		return nil
 	}
 
