@@ -60,15 +60,15 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	if srvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
-	if data.PvtConnURL == "" {
-		pvtConnURL = ""
-	} else if pvtConnURL, err = AddCredentialsToConnectionURL(data.PvtConnURL, data.DBUserName, data.Password); err != nil {
-		return err
+	if data.PvtConnURL != "" {
+		if pvtConnURL, err = AddCredentialsToConnectionURL(data.PvtConnURL, data.DBUserName, data.Password); err != nil {
+			return err
+		}
 	}
-	if data.PvtSrvConnURL == "" {
-		pvtSrvConnURL = ""
-	} else if pvtSrvConnURL, err = AddCredentialsToConnectionURL(data.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
-		return err
+	if data.PvtSrvConnURL != "" {
+		if pvtSrvConnURL, err = AddCredentialsToConnectionURL(data.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
+			return err
+		}
 	}
 
 	secret.Labels = map[string]string{ProjectLabelKey: projectID, ClusterLabelKey: kube.NormalizeLabelValue(clusterName)}
