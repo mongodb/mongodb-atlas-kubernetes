@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -30,7 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -111,6 +110,40 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
+	if project.GetDeletionTimestamp().IsZero() {
+		if !isDeletionFinalizerPresent(project) {
+			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
+			if err := r.addDeletionFinalizer(context, project); err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+				return result.ReconcileResult(), nil
+			}
+		}
+	}
+
+	if !project.GetDeletionTimestamp().IsZero() {
+		if isDeletionFinalizerPresent(project) {
+			if customresource.ResourceShouldBeLeftInAtlas(project) {
+				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+				return result.ReconcileResult(), nil
+			}
+
+			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+				return result.ReconcileResult(), nil
+			}
+
+			if err = r.removeDeletionFinalizer(context, project); err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+				return result.ReconcileResult(), nil
+			}
+		}
+
+		return result.ReconcileResult(), nil
+	}
+
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
 	ctx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
@@ -126,60 +159,18 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func (r *AtlasProjectReconciler) Delete(e event.DeleteEvent) error {
-	project, ok := e.Object.(*mdbv1.AtlasProject)
-	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasProject{}, e.Object)
-		return nil
-	}
+func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
-	if project.Status.ID == "" {
-		log.Infof("Project does not exist in Atlas, nothing to remove")
+	_, err = atlasClient.Projects.Delete(ctx, project.Status.ID)
+	var apiError *mongodbatlas.ErrorResponse
+	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+		log.Infow("Project does not exist", "projectID", project.Status.ID)
 		return nil
 	}
 
-	if customresource.ResourceShouldBeLeftInAtlas(project) {
-		log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
-		return nil
-	}
-
-	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
-	if err != nil {
-		return err
-	}
-
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
-	if err != nil {
-		return fmt.Errorf("cannot build Atlas client: %w", err)
-	}
-
-	go func() {
-		timeout := time.Now().Add(workflow.DefaultTimeout)
-
-		for time.Now().Before(timeout) {
-			_, err = atlasClient.Projects.Delete(context.Background(), project.Status.ID)
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
-				log.Infow("Project is already deleted", "projectID", project.Status.ID)
-				return
-			}
-
-			if err != nil {
-				log.Errorw("cannot delete Atlas project", "error", err)
-				time.Sleep(workflow.DefaultRetry)
-				continue
-			}
-
-			log.Infow("Successfully deleted Atlas project", "projectID", project.Status.ID)
-			return
-		}
-
-		log.Errorw("Failed to delete Atlas project in time", "projectID", project.Status.ID)
-	}()
-
-	return nil
+	return err
 }
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -189,7 +180,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasProject & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
@@ -200,4 +191,43 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 	return nil
+}
+
+func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	p.Finalizers = append(p.GetFinalizers(), getFinalizerName())
+	if err := r.Client.Update(ctx, p); err != nil {
+		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
+	}
+	return nil
+}
+
+func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	p.Finalizers = removeString(p.GetFinalizers(), getFinalizerName())
+	if err := r.Client.Update(ctx, p); err != nil {
+		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
+	}
+	return nil
+}
+
+func getFinalizerName() string {
+	return "mongodbatlas/finalizer"
+}
+
+func isDeletionFinalizerPresent(project *mdbv1.AtlasProject) bool {
+	for _, finalizer := range project.GetFinalizers() {
+		if finalizer == getFinalizerName() {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return result
 }

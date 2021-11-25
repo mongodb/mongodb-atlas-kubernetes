@@ -197,3 +197,8 @@ func GetResourceCreationTimestamp(resource, name, ns string) []byte {
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
 }
+
+func Annotate(resource, annotation, ns string) {
+	session := cli.Execute("kubectl", "annotate", resource, annotation, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
