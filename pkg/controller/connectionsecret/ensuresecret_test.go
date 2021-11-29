@@ -86,6 +86,8 @@ func validateSecret(t *testing.T, fakeClient client.Client, namespace, projectNa
 	expectedData := map[string][]byte{
 		"connectionStringStandard":    []byte(buildConnectionURL(data.ConnURL, data.DBUserName, data.Password)),
 		"connectionStringStandardSrv": []byte(buildConnectionURL(data.SrvConnURL, data.DBUserName, data.Password)),
+		"connectionStringPrivate":     []byte(buildConnectionURL(data.PvtConnURL, data.DBUserName, data.Password)),
+		"connectionStringPrivateSrv":  []byte(buildConnectionURL(data.PvtSrvConnURL, data.DBUserName, data.Password)),
 		"username":                    []byte(data.DBUserName),
 		"password":                    []byte(data.Password),
 	}
@@ -109,9 +111,11 @@ func buildConnectionURL(connURL, userName, password string) string {
 
 func dataForSecret() ConnectionData {
 	return ConnectionData{
-		DBUserName: "admin",
-		ConnURL:    "mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin",
-		SrvConnURL: "mongodb+srv://mongodb.example.com:27017/?authSource=admin",
-		Password:   "m@gick%",
+		DBUserName:    "admin",
+		ConnURL:       "mongodb://mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin",
+		SrvConnURL:    "mongodb+srv://mongodb.example.com:27017/?authSource=admin",
+		PvtConnURL:    "mongodb://mongodb0-pri.example.com:27017,mongodb1-pri.example.com:27017/?authSource=admin",
+		PvtSrvConnURL: "mongodb+srv://mongodb-pri.example.com:27017/?authSource=admin",
+		Password:      "m@gick%",
 	}
 }
