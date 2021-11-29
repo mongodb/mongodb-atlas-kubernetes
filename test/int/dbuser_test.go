@@ -702,6 +702,10 @@ func checkNumberOfConnectionSecrets(k8sClient client.Client, project mdbv1.Atlas
 }
 
 func buildConnectionURL(connURL, userName, password string) string {
+	if connURL == "" {
+		return ""
+	}
+
 	u, err := connectionsecret.AddCredentialsToConnectionURL(connURL, userName, password)
 	Expect(err).NotTo(HaveOccurred())
 	return u
