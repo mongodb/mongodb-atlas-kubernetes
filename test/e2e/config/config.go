@@ -19,11 +19,12 @@ const (
 	TestAppLabelPrefix       = "app=test-app-"
 	ActrcPath                = "../../.actrc"
 
-	// HELM related path
-	HelmTestAppPath             = "../app/helm/"
-	HelmOperatorChartPath       = "../../helm-charts/charts/atlas-operator"
-	HelmCRDChartPath            = "../../helm-charts/charts/atlas-operator-crds"
-	HelmAtlasResourcesChartPath = "../../helm-charts/charts/atlas-cluster"
+	// HELM relative path
+	TestAppHelmChartPath          = "../app/helm/"
+	AtlasOperatorHelmChartPath    = "../../helm-charts/charts/atlas-operator"
+	AtlasOperatorCRDHelmChartPath = "../../helm-charts/charts/atlas-operator-crds"
+	AtlasClusterHelmChartPath     = "../../helm-charts/charts/atlas-cluster"
+	HelmChartDirectory            = "../../helm-charts/charts"
 
 	// AWS Tags for test
 	TagName = "atlas-operator-test"
