@@ -19,6 +19,12 @@ func AtlasProjectExpiredIPAccessOption(lists []project.IPAccessList) AtlasProjec
 	}
 }
 
+func AtlasProjectPrivateEnpointOption(privateEndpoints []PrivateEndpoint) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.PrivateEndpoints = privateEndpoints
+	}
+}
+
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	Common `json:",inline"`
