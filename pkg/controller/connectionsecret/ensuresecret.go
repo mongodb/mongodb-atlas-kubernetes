@@ -19,12 +19,14 @@ const (
 
 	connectionSecretStdKey    string = "connectionStringStandard"
 	connectionSecretStdSrvKey string = "connectionStringStandardSrv"
+	connectionSecretPvtKey    string = "connectionStringPrivate"
+	connectionSecretPvtSrvKey string = "connectionStringPrivateSrv"
 	userNameKey               string = "username"
 	passwordKey               string = "password"
 )
 
 type ConnectionData struct {
-	DBUserName, ConnURL, SrvConnURL, Password string
+	DBUserName, ConnURL, SrvConnURL, PvtConnURL, PvtSrvConnURL, Password string
 }
 
 // Ensure creates or updates the connection Secret for the specific cluster and db user. Returns the name of the Secret
@@ -50,7 +52,7 @@ func Ensure(client client.Client, namespace, projectName, projectID, clusterName
 }
 
 func fillSecret(secret *corev1.Secret, projectID string, clusterName string, data ConnectionData) error {
-	var connURL, srvConnURL string
+	var connURL, srvConnURL, pvtConnURL, pvtSrvConnURL string
 	var err error
 	if connURL, err = AddCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
 		return err
@@ -58,12 +60,24 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	if srvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
+	if data.PvtConnURL != "" {
+		if pvtConnURL, err = AddCredentialsToConnectionURL(data.PvtConnURL, data.DBUserName, data.Password); err != nil {
+			return err
+		}
+	}
+	if data.PvtSrvConnURL != "" {
+		if pvtSrvConnURL, err = AddCredentialsToConnectionURL(data.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
+			return err
+		}
+	}
 
 	secret.Labels = map[string]string{ProjectLabelKey: projectID, ClusterLabelKey: kube.NormalizeLabelValue(clusterName)}
 
 	secret.Data = map[string][]byte{
 		connectionSecretStdKey:    []byte(connURL),
 		connectionSecretStdSrvKey: []byte(srvConnURL),
+		connectionSecretPvtKey:    []byte(pvtConnURL),
+		connectionSecretPvtSrvKey: []byte(pvtSrvConnURL),
 		userNameKey:               []byte(data.DBUserName),
 		passwordKey:               []byte(data.Password),
 	}

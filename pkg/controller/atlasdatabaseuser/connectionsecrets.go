@@ -51,10 +51,12 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		data := connectionsecret.ConnectionData{
-			DBUserName: dbUser.Spec.Username,
-			ConnURL:    cluster.ConnectionStrings.Standard,
-			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
-			Password:   password,
+			DBUserName:    dbUser.Spec.Username,
+			ConnURL:       cluster.ConnectionStrings.Standard,
+			SrvConnURL:    cluster.ConnectionStrings.StandardSrv,
+			PvtConnURL:    cluster.ConnectionStrings.Private,
+			PvtSrvConnURL: cluster.ConnectionStrings.PrivateSrv,
+			Password:      password,
 		}
 		var secretName string
 		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cluster.Name, data); err != nil {
