@@ -84,7 +84,7 @@ func ReactivateCluster(data *model.TestDataProvider) {
 
 func DeleteFirstUser(data *model.TestDataProvider) {
 	By("User can delete Database User", func() {
-		// data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		// data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
 		// since it is could be several users, we should
 		// - delete k8s resource
 		// - delete one user from the list,

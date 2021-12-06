@@ -167,7 +167,7 @@ var _ = Describe("HELM charts", func() {
 func waitClusterWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
 		actions.WaitProject(data.Resources, "1")
-		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
 		actions.WaitCluster(data.Resources, "1")
 	})
 

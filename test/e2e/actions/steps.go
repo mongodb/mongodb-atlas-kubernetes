@@ -45,9 +45,9 @@ func WaitCluster(input model.UserInputs, generation string) {
 }
 
 func WaitProject(input model.UserInputs, generation string) {
-	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.K8sFullProjectName), "3m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
-	ExpectWithOffset(1, kube.GetGeneration(input.Namespace, input.K8sFullProjectName)).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
-	ExpectWithOffset(1, kube.GetProjectResource(input.Namespace, input.K8sFullProjectName).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
+	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.GetAtlasProjectFullKubeName()), "3m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
+	ExpectWithOffset(1, kube.GetGeneration(input.Namespace, input.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
+	ExpectWithOffset(1, kube.GetProjectResource(input.Namespace, input.GetAtlasProjectFullKubeName()).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }
 
 func WaitTestApplication(ns, label string) {
@@ -282,42 +282,50 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 }
 
 // DeployProject deploy project, prepare keys for working with that project
-func DeployProject(data *model.TestDataProvider) {
+func DeployProject(data *model.TestDataProvider, generation string) {
 	By("Create users resources: keys, project", func() {
 		CreateConnectionAtlasKey(data)
 		kube.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
 		By("Wait project creation and get projectID", func() {
-			WaitProject(data.Resources, "1")
-			data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+			WaitProject(data.Resources, generation)
+			data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
 			Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
 		recreateAtlasKeyIfNeed(data)
+	})
+}
+
+func DeployCluster(data *model.TestDataProvider, generation string) {
+	By("Create cluster", func() {
 		kube.Apply(data.Resources.Clusters[0].ClusterFileName(data.Resources), "-n", data.Resources.Namespace)
+	})
+	By("Wait cluster creation", func() {
+		WaitCluster(data.Resources, "1")
+	})
+	By("check cluster Attribute", func() {
+		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
+	})
+}
+
+func DeployUsers(data *model.TestDataProvider) {
+	By("create users", func() {
 		kube.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
+	})
+	By("check database users Attibutes", func() {
+		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
+		CheckUsersAttributes(data.Resources)
+	})
+	By("Deploy application for user", func() {
+		CheckUsersCanUseApp(data)
 	})
 }
 
 // DeployUserResourcesAction deploy all user resources, wait, and check results
 func DeployUserResourcesAction(data *model.TestDataProvider) {
-	DeployProject(data)
-
-	By("Wait cluster creation", func() {
-		WaitCluster(data.Resources, "1")
-	})
-
-	By("check cluster Attribute", func() {
-		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
-		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
-	})
-
-	By("check database users Attibutes", func() {
-		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		CheckUsersAttributes(data.Resources)
-	})
-
-	By("Deploy application for user", func() {
-		CheckUsersCanUseApp(data)
-	})
+	DeployProject(data, "1")
+	DeployCluster(data, "1")
+	DeployUsers(data)
 }
 
 func DeleteDBUsersApps(data *model.TestDataProvider) {

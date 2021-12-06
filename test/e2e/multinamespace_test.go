@@ -129,11 +129,11 @@ func watchedFlow(data *model.TestDataProvider, crdsFile string) {
 	})
 	By("Check if projects were deployed", func() {
 		Eventually(
-			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.K8sFullProjectName), "3m", "10s").
+			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()), "3m", "10s").
 			Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True. Watched namespace")
 	})
 	By("Get IDs for deletion", func() {
-		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
 		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
 	})
 	By("Delete Resources", func() {
@@ -151,7 +151,7 @@ func notWatchedFlow(data *model.TestDataProvider, crdsFile string) {
 	})
 	By("Check if projects were deployed", func() {
 		Eventually(
-			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.K8sFullProjectName), "3m", "10s").
+			kube.GetStatusCondition(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()), "3m", "10s").
 			Should(BeEmpty(), "Kubernetes resource: Project status `Ready` should be False. NOT Watched namespace")
 	})
 }

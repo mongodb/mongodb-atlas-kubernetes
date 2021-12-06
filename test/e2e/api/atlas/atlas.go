@@ -65,3 +65,12 @@ func formAccessRequest(access []string) []*mongodbatlas.WhitelistAPIKeysReq {
 	}
 	return createRequest
 }
+
+// groupID, cloudProvider string, listOptions *ListOptions
+func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.PrivateEndpointConnection, error) {
+	enpointsList, _, err := a.Client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return enpointsList, nil
+}

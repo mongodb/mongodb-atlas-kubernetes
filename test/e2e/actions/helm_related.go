@@ -21,7 +21,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 		data.Resources.Clusters[0].Spec.ProviderBackupEnabled = &enabled
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
-		data.Resources.Users[0].Spec.Project.Name = data.Resources.K8sFullProjectName
+		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
 		generation, _ := strconv.Atoi(kube.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
 		helm.UpgradeAtlasClusterChart(data.Resources)
 
@@ -70,9 +70,9 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 		helm.UpgradeOperatorChart(data.Resources)
 
 		// TODO temporary.
-		kube.Annotate(data.Resources.K8sFullProjectName, "helm.sh/hook-", data.Resources.Namespace)
-		kube.Annotate(data.Resources.K8sFullProjectName, "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
-		kube.Annotate(data.Resources.K8sFullProjectName, "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
+		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
+		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
+		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
 
 		helm.UpgradeAtlasClusterChartDev(data.Resources)
 
