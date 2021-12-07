@@ -119,16 +119,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 				return result.ReconcileResult(), nil
 			}
 		}
-	}
-
-	if !project.GetDeletionTimestamp().IsZero() {
+	} else {
 		if isDeletionFinalizerPresent(project) {
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
-				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
-				return result.ReconcileResult(), nil
-			}
-
-			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
+				log.Infof("Deleting only AtlasProject Kubernetes Resource as '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+			} else if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				ctx.SetConditionFromResult(status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
