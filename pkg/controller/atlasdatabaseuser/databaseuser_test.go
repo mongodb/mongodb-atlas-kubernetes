@@ -90,7 +90,7 @@ func TestCheckUserExpired(t *testing.T) {
 		// Create a connection secret
 		_, err := connectionsecret.Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
-		after := time.Now().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
+		after := time.Now().UTC().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
 		result := checkUserExpired(zap.S(), fakeClient, "603e7bf38a94956835659ae5", *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(after))
 		assert.True(t, result.IsOk())
 
