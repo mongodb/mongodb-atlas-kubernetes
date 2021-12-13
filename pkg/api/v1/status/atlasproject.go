@@ -1,6 +1,8 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+)
 
 // +k8s:deepcopy-gen=false
 
@@ -19,7 +21,7 @@ func AtlasProjectExpiredIPAccessOption(lists []project.IPAccessList) AtlasProjec
 	}
 }
 
-func AtlasProjectPrivateEnpointOption(privateEndpoints []PrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectPrivateEnpointOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.PrivateEndpoints = privateEndpoints
 	}
