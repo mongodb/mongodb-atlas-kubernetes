@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -23,7 +24,12 @@ func ListByUserName(k8sClient client.Client, namespace, projectID, userName stri
 func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName string) ([]corev1.Secret, error) {
 	secrets := corev1.SecretList{}
 	var result []corev1.Secret
-	if err := k8sClient.List(context.Background(), &secrets, client.InNamespace(namespace)); err != nil {
+	opts := &client.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			CredLabelKey: CredLabelVal,
+		}),
+	}
+	if err := k8sClient.List(context.Background(), &secrets, client.InNamespace(namespace), opts); err != nil {
 		return nil, err
 	}
 
