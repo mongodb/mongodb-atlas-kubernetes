@@ -45,7 +45,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 }
 
 func WaitProject(input model.UserInputs, generation string) {
-	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.GetAtlasProjectFullKubeName()), "3m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
+	EventuallyWithOffset(1, kube.GetStatusCondition(input.Namespace, input.GetAtlasProjectFullKubeName()), "5m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be True")
 	ExpectWithOffset(1, kube.GetGeneration(input.Namespace, input.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	ExpectWithOffset(1, kube.GetProjectResource(input.Namespace, input.GetAtlasProjectFullKubeName()).Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }

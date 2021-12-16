@@ -12,10 +12,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-const (
-	vpcID = "vpc-097de88bae21b8f2e"
-)
-
 // NOTES
 // Feature unavailable in Free and Shared-Tier Clusters
 // This feature is not available for M0 free clusters, M2, and M5 clusters.
@@ -52,60 +48,58 @@ var _ = Describe("[privatelink-aws] UserLogin", func() { // TODO probably it wil
 			// actions.DeployCluster(&userData, "1")
 			// actions.DeployUsers(&userData)
 
-			// Eventually(IsStatusPEUpdated(&userData.Resources)).Should(BeTrue())
-			// project := kube.GetProjectResource(userData.Resources.GetAtlasProjectFullKubeName(), userData.Resources.Namespace)
-			// for _, pelist := range project.Status.PrivateEndpoints {
-			// 	for _, peitem := range pelist.Endpoints {
-			// 		Expect(peitem.EndpointID).ShouldNot(BeEmpty())
-			// 	}
-			// } // TODO if implemented, get status instead
-
+			// TODO if implemented, check conditions statuses too + change Eventually >> Expect
+			Eventually(AllPEndpointUpdated(&userData.Resources)).Should(BeTrue())
 		})
-		By("Request Private Link by passing region and provider", func() {
-
-		})
-		// TODO get Service Name of PE
-		serviceName := "com.amazonaws.vpce.eu-west-2.vpce-svc-0ce0c4e9a5d1f6472"
-		// TODO create private link on AWS side
 		By("Create VPC, subnet, Endpoint. Sample", func() {
-
-			// TODO this is for sample. will be removed later
 			session := aws.SessionAWS("eu-west-2")
-			testID := "id-test-ksjs03jk"
-
-			subnetID, err := session.CreateSubnet(vpcID, "10.0.0.0/28", testID)
+			vpcID, err := session.GetVPCID()
 			Expect(err).ShouldNot(HaveOccurred())
-			getStatusSubnet := func(subnetID string) string {
-				r, err := session.DescribeSubnetStatus(subnetID)
-				if err != nil {
-					return ""
+			subnetID, err := session.GetSubnetID() // subnetID := "subnet-01db67bf8e8c7a87b"
+			Expect(err).ShouldNot(HaveOccurred())
+			project := kube.GetProjectResource(userData.Resources.Namespace, userData.Resources.GetAtlasProjectFullKubeName())
+			for i, peitem := range project.Status.PrivateEndpoints {
+				serviceName := peitem.ServiceName
+				Expect(serviceName).ShouldNot(BeEmpty())
+				GinkgoWriter.Write([]byte("Subnet is available: " + subnetID))
+
+				privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, serviceName, userData.Resources.Project.GetK8sMetaName())
+				Expect(err).ShouldNot(HaveOccurred())
+				getStatusPE := func(privateEndpointID string) string {
+					r, err := session.DescribePrivateEndpointStatus(privateEndpointID)
+					if err != nil {
+						return ""
+					}
+					return r
 				}
-				return r
-			}
-			Eventually(getStatusSubnet(subnetID)).Should(Equal("available"))
-			GinkgoWriter.Write([]byte("Subnet is available: " + subnetID))
+				Eventually(getStatusPE(privateEndpointID)).Should(Equal("pendingAcceptance"))
 
-			privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, serviceName, testID)
-			Expect(err).ShouldNot(HaveOccurred())
-			getStatusPE := func(privateEndpointID string) string {
-				r, err := session.DescribePrivateEndpointStatus(privateEndpointID)
-				if err != nil {
-					return ""
-				}
-				return r
-			}
-			Eventually(getStatusPE(privateEndpointID)).Should(Equal("pendingAcceptance"))
+				By("Update PE ID from AWS", func() {
+					userData.Resources.Project.UpdatePrivateLinkByOrder(i, privateEndpointID)
+					actions.PrepareUsersConfigurations(&userData)
+					actions.DeployProject(&userData, "3")
+					Eventually(getStatusPE(privateEndpointID)).Should(Equal("available"))
+				})
 
-			err = session.DeletePrivateLink(privateEndpointID)
-			Expect(err).ShouldNot(HaveOccurred())
+				By("Delete PE from AWS", func() {
+					err = session.DeletePrivateLink(privateEndpointID)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					status, err := session.DescribePrivateEndpointStatus(privateEndpointID)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(status).Should(Equal("rejected"))
+				})
+			}
 		})
-		// TODO attach private link id to atlas
-		// TODO check atlas status
+		By("Delete Resources, Project with PEService", func() {
+			// actions.DeleteUserResources(&userData)
+			actions.DeleteUserResourcesProject(&userData)
+		})
 		// TODO test app block
 	})
 })
 
-func IsStatusPEUpdated(input *model.UserInputs) func() bool {
+func AllPEndpointUpdated(input *model.UserInputs) func() bool {
 	return func() bool {
 		result := kube.GetProjectResource(input.Namespace, input.GetAtlasProjectFullKubeName())
 		return len(result.Status.PrivateEndpoints) == len(result.Spec.PrivateEndpoints)

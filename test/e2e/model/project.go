@@ -69,11 +69,28 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 	return p
 }
 
-func (p *AProject) UpdatePrivateLinkID(id string) *AProject {
-	link := project.PrivateEndpoint{
-		ID: id,
+func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
+	p.Spec.PrivateEndpoints[i].ID = id
+	return p
+}
+
+func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, id string) *AProject {
+	for i, peItem := range p.Spec.PrivateEndpoints {
+		if (peItem.Provider == provider) && (peItem.Region == region) {
+			p.Spec.PrivateEndpoints[i].ID = id
+		}
 	}
-	p.Spec.PrivateEndpoints = append(p.Spec.PrivateEndpoints, link)
+	return p
+}
+
+func (p *AProject) DeletePrivateLink(id string) *AProject {
+	var peList []project.PrivateEndpoint
+	for _, peItem := range p.Spec.PrivateEndpoints {
+		if peItem.ID != id {
+			peList = append(peList, peItem)
+		}
+	}
+	p.Spec.PrivateEndpoints = peList
 	return p
 }
 
