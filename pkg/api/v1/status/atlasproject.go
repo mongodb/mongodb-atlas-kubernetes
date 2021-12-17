@@ -21,9 +21,40 @@ func AtlasProjectExpiredIPAccessOption(lists []project.IPAccessList) AtlasProjec
 	}
 }
 
-func AtlasProjectPrivateEnpointOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectAddPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
-		s.PrivateEndpoints = privateEndpoints
+		s.PrivateEndpoints = append(s.PrivateEndpoints, privateEndpoints...)
+	}
+}
+
+func AtlasProjectUpdatePrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		for _, updatedPE := range privateEndpoints {
+			for statusIdx := range s.PrivateEndpoints {
+				if updatedPE.ServiceResourceID == s.PrivateEndpoints[statusIdx].ServiceResourceID {
+					if updatedPE.ServiceName != "" {
+						s.PrivateEndpoints[statusIdx].ServiceName = updatedPE.ServiceName
+					}
+					if updatedPE.InterfaceEndpointID != "" {
+						s.PrivateEndpoints[statusIdx].InterfaceEndpointID = updatedPE.InterfaceEndpointID
+					}
+				}
+			}
+		}
+	}
+}
+
+func AtlasProjectRemoveOldPrivateEnpointOption(currentPrivateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		result := []ProjectPrivateEndpoint{}
+		for _, currentPE := range currentPrivateEndpoints {
+			for _, statusPE := range s.PrivateEndpoints {
+				if statusPE.ServiceResourceID != "" && currentPE.ServiceResourceID == statusPE.ServiceResourceID {
+					result = append(result, statusPE)
+				}
+			}
+		}
+		s.PrivateEndpoints = result
 	}
 }
 

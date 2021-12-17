@@ -11,4 +11,10 @@ type ProjectPrivateEndpoint struct {
 	ServiceName string `json:"serviceName,omitempty"`
 	// Unique identifier of the AWS or Azure PrivateLink connection.
 	ServiceResourceID string `json:"serviceResourceId,omitempty"`
+	// Unique identifier of the AWS or Azure PrivateLink Interface Endpoint.
+	InterfaceEndpointID string `json:"interfaceEndpointId,omitempty"`
+}
+
+func (pe ProjectPrivateEndpoint) Identifier() interface{} {
+	return string(pe.Provider) + pe.Region
 }

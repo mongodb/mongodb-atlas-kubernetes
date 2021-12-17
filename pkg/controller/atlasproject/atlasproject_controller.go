@@ -128,7 +128,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 				return result.ReconcileResult(), nil
 			}
 
-			if err = DeleteAllPrivateEndpoints(atlasClient, projectID, log); err != nil {
+			if err = DeleteAllPrivateEndpoints(atlasClient, projectID, project.Status.PrivateEndpoints, log); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				ctx.SetConditionFromResult(status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
@@ -164,10 +164,9 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointServiceReadyType), "")
+	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil

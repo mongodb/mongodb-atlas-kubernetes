@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"regexp"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -17,149 +16,190 @@ import (
 )
 
 func (r *AtlasProjectReconciler) ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	peList := project.Spec.DeepCopy().PrivateEndpoints
-	result, atlasPEs := createOrDeletePEInAtlas(ctx, projectID, peList, ctx.Log)
+	specPEs := project.Spec.DeepCopy().PrivateEndpoints
+	statusPEs := project.Status.DeepCopy().PrivateEndpoints
+
+	result := createOrDeletePEInAtlas(ctx, projectID, specPEs, statusPEs)
 	if !result.IsOk() {
 		return result
 	}
 
-	peStatus := convertToStatus(atlasPEs)
-	ctx.Log.Debugw("Private Endpoints Status", "status", peStatus)
-
-	ctx.EnsureStatusOption(status.AtlasProjectPrivateEnpointOption(peStatus))
 	return workflow.OK()
 }
 
-func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, operatorPrivateEndpoints []project.PrivateEndpoint, log *zap.SugaredLogger) (result workflow.Result, atlasPrivateEndpoints []AtlasProjectPrivateEndpoint) {
-	provider := "AWS"
-	atlasPrivateEndpoints, err := getAtlasPrivateEndpoint(ctx.Client, projectID, provider)
+func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, specPEs []project.PrivateEndpoint, statusPEs []status.ProjectPrivateEndpoint) (result workflow.Result) {
+	log := ctx.Log
+
+	atlasPeConnections, err := getAllPrivateEndpoints(ctx.Client, projectID)
 	if err != nil {
-		workflow.Terminate(workflow.ProjectPrivateEndpointNotCreatedInAtlas, err.Error())
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+	ctx.EnsureStatusOption(status.AtlasProjectRemoveOldPrivateEnpointOption(convertToStatus(atlasPeConnections)))
 
-	endpointsToCreate := set.Difference(operatorPrivateEndpoints, atlasPrivateEndpoints)
-	endpointsToUpdate := set.Intersection(operatorPrivateEndpoints, atlasPrivateEndpoints)
-	endpointsToDelete := set.Difference(atlasPrivateEndpoints, operatorPrivateEndpoints)
-
-	endpointsToCreate = filterOutCreatingEndpoints(endpointsToCreate, atlasPrivateEndpoints, log)
+	endpointsToCreate := set.Difference(specPEs, statusPEs)
+	endpointsToUpdate := set.Intersection(specPEs, statusPEs)
+	endpointsToDelete := set.Difference(statusPEs, specPEs)
 
 	log.Debugw("Items to create", "difference", endpointsToCreate)
 	log.Debugw("Items to update", "difference", endpointsToUpdate)
 	log.Debugw("Items to delete", "difference", endpointsToDelete)
 
-	if result := deletePrivateEndpointsFromAtlas(ctx.Client, projectID, provider, endpointsToDelete, log); !result.IsOk() {
-		return result, nil
+	if result := deletePrivateEndpointsFromAtlas(ctx.Client, projectID, endpointsToDelete, log); !result.IsOk() {
+		return result
 	}
 
-	if result := createPeServiceInAtlas(ctx.Client, projectID, endpointsToCreate); !result.IsOk() {
-		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
-		return result, nil
-	}
-	ctx.SetConditionTrue(status.PrivateEndpointServiceReadyType)
+	result, newConnections := createPeServiceInAtlas(ctx.Client, projectID, endpointsToCreate, log)
+	ctx.EnsureStatusOption(status.AtlasProjectAddPrivateEnpointsOption(convertToStatus(newConnections)))
 
-	if len(endpointsToUpdate) != 0 {
-		if result := createPrivateEndpointInAtlas(ctx.Client, projectID, endpointsToUpdate); !result.IsOk() {
-			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
-			return result, nil
-		}
-
-		ctx.SetConditionTrue(status.PrivateEndpointReadyType)
-	}
-
-	return workflow.OK(), atlasPrivateEndpoints
-}
-
-type AtlasProjectPrivateEndpoint mongodbatlas.PrivateEndpointConnection
-
-func (pe AtlasProjectPrivateEndpoint) Identifier() interface{} {
-	return pe.ProviderName + pe.Region
-}
-
-func getAtlasPrivateEndpoint(client mongodbatlas.Client, projectID string, provider string) (result []AtlasProjectPrivateEndpoint, err error) {
-	atlasPeConnections, _, err := client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
+	atlasPeConnections, err = getAllPrivateEndpoints(ctx.Client, projectID)
 	if err != nil {
-		return nil, err
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	// Making a new slice with synonyms as Atlas IP Access list to enable usage of 'Identifiable'
-	result = make([]AtlasProjectPrivateEndpoint, len(atlasPeConnections))
-	for i, r := range atlasPeConnections {
-		result[i] = AtlasProjectPrivateEndpoint(r)
+	ctx.EnsureStatusOption(status.AtlasProjectUpdatePrivateEnpointsOption(convertToStatus(atlasPeConnections)))
+	if len(atlasPeConnections) != 0 {
+		if allEnpointsAreAvailable(atlasPeConnections) {
+			ctx.SetConditionTrue(status.PrivateEndpointServiceReadyType)
+		} else {
+			result = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready")
+			ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
+			return result
+		}
 	}
 
-	return fillProviderAndRegion(result), nil
-}
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
+		return result
+	}
 
-func createPeServiceInAtlas(client mongodbatlas.Client, projectID string, endpointsToCreate []set.Identifiable) workflow.Result {
-	result := workflow.OK()
-	for _, item := range endpointsToCreate {
-		pe := item.(project.PrivateEndpoint)
-
-		if _, _, err := client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
-			ProviderName: string(pe.Provider),
-			Region:       pe.Region,
-		}); err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+	result, updatedConnections := createPrivateEndpointInAtlas(ctx.Client, projectID, endpointsToUpdate, log)
+	ctx.EnsureStatusOption(status.AtlasProjectUpdatePrivateEnpointsOption(convertToStatus(updatedConnections)))
+	log.Debugw("Updated Private Enpoints", "updatedConnections", updatedConnections)
+	for _, pair := range endpointsToUpdate {
+		operatorPeService := pair[0].(project.PrivateEndpoint)
+		statusPeService := pair[1].(status.ProjectPrivateEndpoint)
+		log.Debugw("Pair Vals", "operatorPeService.ID", operatorPeService.ID)
+		if operatorPeService.ID == "" {
+			continue
 		}
 
-		result = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is creating")
+		interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, string(operatorPeService.Provider), statusPeService.ServiceResourceID, operatorPeService.ID)
+		if err != nil {
+			return workflow.InProgress(workflow.Internal, err.Error())
+		}
+
+		log.Debugw("Interface Endpoint", "interfaceEndpoint", interfaceEndpoint)
+		if interfaceEndpoint.AWSConnectionStatus == "AVAILABLE" || interfaceEndpoint.AzureStatus == "AVAILABLE" {
+			ctx.SetConditionTrue(status.PrivateEndpointReadyType)
+			continue
+		}
+
+		result = workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
+		ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
 	}
 
 	return result
 }
 
-func createPrivateEndpointInAtlas(client mongodbatlas.Client, projectID string, endpointsToUpdate [][]set.Identifiable) workflow.Result {
+func allEnpointsAreAvailable(atlasPeConnections []mongodbatlas.PrivateEndpointConnection) bool {
+	for _, conn := range atlasPeConnections {
+		if conn.Status != "AVAILABLE" {
+			return false
+		}
+	}
+
+	return true
+}
+
+func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (result []mongodbatlas.PrivateEndpointConnection, err error) {
+	providers := []string{"AWS", "AZURE"}
+	for _, provider := range providers {
+		atlasPeConnections, _, err := client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, atlasPeConnections...)
+	}
+
+	return
+}
+
+func createPeServiceInAtlas(client mongodbatlas.Client, projectID string, endpointsToCreate []set.Identifiable, log *zap.SugaredLogger) (workflow.Result, []mongodbatlas.PrivateEndpointConnection) {
 	result := workflow.OK()
+	newConnections := []mongodbatlas.PrivateEndpointConnection{}
+	for _, item := range endpointsToCreate {
+		pe := item.(project.PrivateEndpoint)
+
+		conn, resp, err := client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
+			ProviderName: string(pe.Provider),
+			Region:       pe.Region,
+		})
+		log.Debug("Reply from Atlas", "resp", resp, "err", err, "conn", conn)
+		if err != nil {
+			conn = &mongodbatlas.PrivateEndpointConnection{}
+		}
+		conn.ProviderName = string(pe.Provider)
+		conn.Region = pe.Region
+		newConnections = append(newConnections, *conn)
+		result = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is creating")
+	}
+
+	return result, newConnections
+}
+
+func createPrivateEndpointInAtlas(client mongodbatlas.Client, projectID string, endpointsToUpdate [][]set.Identifiable, log *zap.SugaredLogger) (workflow.Result, []mongodbatlas.PrivateEndpointConnection) {
+	result := workflow.OK()
+	updatedConnections := []mongodbatlas.PrivateEndpointConnection{}
 	for _, pair := range endpointsToUpdate {
 		operatorPeService := pair[0].(project.PrivateEndpoint)
-		atlasPeService := pair[1].(AtlasProjectPrivateEndpoint)
+		statusPeService := pair[1].(status.ProjectPrivateEndpoint)
 
-		if operatorPeService.ID != "" {
-			_, _, err := client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(operatorPeService.Provider), atlasPeService.ID, &mongodbatlas.InterfaceEndpointConnection{
+		log.Debugw("Pair CREATE", "operatorPeService", operatorPeService, "statusPeService", statusPeService)
+		if operatorPeService.ID != "" && statusPeService.InterfaceEndpointID == "" {
+			interfaceConn, _, err := client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(operatorPeService.Provider), statusPeService.ServiceResourceID, &mongodbatlas.InterfaceEndpointConnection{
 				ID: operatorPeService.ID,
 			})
-			if err != nil {
-				return workflow.InProgress(workflow.ProjectPrivateEndpointNotCreatedInAtlas, err.Error())
+			updatedConnections = append(updatedConnections, mongodbatlas.PrivateEndpointConnection{
+				ID:               statusPeService.ServiceResourceID,
+				PrivateEndpoints: []string{operatorPeService.ID},
+			})
+			log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
+			if interfaceConn == nil {
+				return workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, err.Error()), nil
 			}
 
 			result = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is creating")
 		}
 	}
 
-	return result
+	return result, updatedConnections
 }
 
-func DeleteAllPrivateEndpoints(client mongodbatlas.Client, projectID string, log *zap.SugaredLogger) error {
-	provider := "AWS"
-	atlasPrivateEndpoints, err := getAtlasPrivateEndpoint(client, projectID, provider)
-	if err != nil {
-		return err
-	}
-
-	allEndpoints := set.Difference(atlasPrivateEndpoints, []AtlasProjectPrivateEndpoint{})
-
-	if result := deletePrivateEndpointsFromAtlas(client, projectID, provider, allEndpoints, log); !result.IsOk() {
+func DeleteAllPrivateEndpoints(client mongodbatlas.Client, projectID string, statusPEs []status.ProjectPrivateEndpoint, log *zap.SugaredLogger) error {
+	endpointsToDelete := set.Difference(statusPEs, []status.ProjectPrivateEndpoint{})
+	if result := deletePrivateEndpointsFromAtlas(client, projectID, endpointsToDelete, log); !result.IsOk() {
 		return errors.New("failed to delete Private Endpoints from Atlas")
 	}
 
 	return nil
 }
 
-func deletePrivateEndpointsFromAtlas(client mongodbatlas.Client, projectID string, provider string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) workflow.Result {
+func deletePrivateEndpointsFromAtlas(client mongodbatlas.Client, projectID string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) workflow.Result {
 	result := workflow.OK()
 	for _, item := range listsToRemove {
-		log.Debugw("item to delete", "l", item)
-		peService := item.(AtlasProjectPrivateEndpoint)
-		if len(peService.PrivateEndpoints) != 0 {
-			for _, endpointID := range peService.PrivateEndpoints {
-				if _, err := client.PrivateEndpoints.DeleteOnePrivateEndpoint(context.Background(), projectID, provider, peService.ID, endpointID); err != nil {
-					return workflow.Terminate(workflow.ProjectPrivateEndpointNotCreatedInAtlas, "failed to delete Private Endpoint")
-				}
+		peService := item.(status.ProjectPrivateEndpoint)
+		provider := string(peService.Provider)
+		if peService.InterfaceEndpointID != "" {
+			if _, err := client.PrivateEndpoints.DeleteOnePrivateEndpoint(context.Background(), projectID, provider, peService.ServiceResourceID, peService.InterfaceEndpointID); err != nil {
+				return workflow.Terminate(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "failed to delete Private Endpoint")
 			}
+
+			return workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting")
 		}
 
-		if _, err := client.PrivateEndpoints.Delete(context.Background(), projectID, provider, peService.ID); err != nil {
-			return workflow.Terminate(workflow.ProjectPrivateEndpointNotCreatedInAtlas, "failed to delete Private Endpoint Service")
+		if _, err := client.PrivateEndpoints.Delete(context.Background(), projectID, provider, peService.ServiceResourceID); err != nil {
+			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, "failed to delete Private Endpoint Service")
 		}
 		log.Debugw("Removed Private Endpoint Service from Atlas as it's not specified in current AtlasProject", "id", item.Identifier())
 		result = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint is deleting")
@@ -167,83 +207,23 @@ func deletePrivateEndpointsFromAtlas(client mongodbatlas.Client, projectID strin
 	return result
 }
 
-func fillProviderAndRegion(atlasPeConnections []AtlasProjectPrivateEndpoint) (result []AtlasProjectPrivateEndpoint) {
-	awsRegex := regexp.MustCompile(`^com\.(\w+).vpce\.([\w-]+)\.`)
-	for _, conn := range atlasPeConnections {
-		// try to parse AWS
-		matches := awsRegex.FindStringSubmatch(conn.EndpointServiceName)
-		if len(matches) != 3 {
-			continue
-		}
-
-		if matches[1] == "amazonaws" {
-			conn.ProviderName = "AWS"
-			conn.Region = matches[2]
-			result = append(result, conn)
-		}
-	}
-
-	return result
-}
-
-func filterOutCreatingEndpoints(endpointsToCreate []set.Identifiable, atlasPrivateEndpoints []AtlasProjectPrivateEndpoint, log *zap.SugaredLogger) (result []set.Identifiable) {
-	log.Debugw("Endpoints to match", "endpointsToCreate", endpointsToCreate, "atlasPrivateEndpoints", atlasPrivateEndpoints)
-	matchedPeServicePairs := matchAtlasPE(endpointsToCreate, atlasPrivateEndpoints)
-	for _, item := range matchedPeServicePairs {
-		log.Debugw("Matched PE service pair", "operator", item.operator, "atlas", item.atlas)
-		if item.atlas == nil {
-			result = append(result, *item.operator)
-		}
-	}
-
-	return result
-}
-
-func matchAtlasPE(operatorServices []set.Identifiable, atlasPrivateEndpoints []AtlasProjectPrivateEndpoint) (result []operatorAtlasServicePair) {
-	for i := range operatorServices {
-		operatorServices := operatorServices[i]
-		found := false
-		for j := range atlasPrivateEndpoints {
-			atlasService := atlasPrivateEndpoints[j]
-			if endpointsMatch(operatorServices, atlasService) {
-				found = true
-				result = append(result, operatorAtlasServicePair{
-					operator: &operatorServices,
-					atlas:    &atlasService,
-				})
-
-				break
-			}
-		}
-
-		if !found {
-			result = append(result, operatorAtlasServicePair{
-				operator: &operatorServices,
-				atlas:    nil,
-			})
-		}
-	}
-
-	return result
-}
-
-type operatorAtlasServicePair struct {
-	operator *set.Identifiable
-	atlas    *AtlasProjectPrivateEndpoint
-}
-
-func endpointsMatch(endpoint1 set.Identifiable, endpoint2 set.Identifiable) bool {
-	return endpoint1.Identifier() == endpoint2.Identifier()
-}
-
-func convertToStatus(peList []AtlasProjectPrivateEndpoint) (result []status.ProjectPrivateEndpoint) {
+func convertToStatus(peList []mongodbatlas.PrivateEndpointConnection) (result []status.ProjectPrivateEndpoint) {
 	for _, endpoint := range peList {
-		result = append(result, status.ProjectPrivateEndpoint{
+		pe := status.ProjectPrivateEndpoint{
 			Provider:          provider.ProviderName(endpoint.ProviderName),
 			Region:            endpoint.Region,
 			ServiceName:       endpoint.EndpointServiceName,
 			ServiceResourceID: endpoint.ID,
-		})
+		}
+
+		if len(endpoint.InterfaceEndpoints) != 0 {
+			pe.InterfaceEndpointID = endpoint.InterfaceEndpoints[0] // AWS
+		}
+		if len(endpoint.PrivateEndpoints) != 0 {
+			pe.InterfaceEndpointID = endpoint.PrivateEndpoints[0] // AZURE
+		}
+
+		result = append(result, pe)
 	}
 
 	return result
