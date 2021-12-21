@@ -10,9 +10,9 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
@@ -100,10 +100,14 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 		// 				AddBuildInAdminRole(),
 		// 		},
 		// 		40000,
-		// 		[]func(*model.TestDataProvider){
-		// 			actions.DeleteFirstUser,
-		// 		},
+		// 		[]func(*model.TestDataProvider){},
 		// 	),
+		// 	[]privateEndpoint{
+		// 		{
+		// 			provider: "Azure",
+		// 			region:   "northeurope",
+		// 		},
+		// 	},
 		// ),
 	)
 })
@@ -112,73 +116,82 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(&userData)
 		deploy.NamespacedOperator(&userData)
-		actions.DeployProject(&userData, "1")
+		actions.DeployProjectAndWait(&userData, "1")
 	})
+
 	By("Create Private Link and the rest users resources", func() {
 		for _, pe := range requstedPE {
 			userData.Resources.Project.WithPrivateLink(provider.ProviderName(pe.provider), pe.region)
 		}
 		actions.PrepareUsersConfigurations(&userData)
 		actions.DeployProject(&userData, "2")
-		// actions.DeployCluster(&userData, "1")
-		// actions.DeployUsers(&userData)
-
-		Eventually(kube.GetProjectPEndpointServiceStatus(&userData)).Should(Equal("True"), "Atlasproject status.conditions are not True")
-		Expect(AllPEndpointUpdated(&userData)).Should(BeTrue(), "Error: Was created a different amount of endpoints")
 	})
+
+	By("Check if project statuses are updating, get project ID", func() {
+		Eventually(kube.GetProjectPEndpointServiceStatus(&userData), "15m", "10s").Should(Equal("True"),
+			"Atlasproject status.conditions are not True")
+		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"),
+			"Atlasproject status.conditions are not True")
+		Expect(AllPEndpointUpdated(&userData)).Should(BeTrue(),
+			"Error: Was created a different amount of endpoints")
+		actions.UpdateProjectID(&userData) // TODO move
+	})
+
 	By("Create Endpoint in requested Cloud Provider", func() {
-		session := aws.SessionAWS("eu-west-2")
-		vpcID, err := session.GetVPCID()
-		Expect(err).ShouldNot(HaveOccurred())
-		subnetID, err := session.GetSubnetID()
-		Expect(err).ShouldNot(HaveOccurred())
 		project, err := kube.GetProjectResource(&userData)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		for i, peitem := range project.Status.PrivateEndpoints {
-			serviceName := peitem.ServiceName
-			Expect(serviceName).ShouldNot(BeEmpty())
-			GinkgoWriter.Write([]byte("Subnet is available: " + subnetID))
-
-			privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, serviceName, userData.Resources.Project.GetK8sMetaName())
+		for _, peitem := range project.Status.PrivateEndpoints {
+			cloudTest := cloud.CreatePEActions(peitem)
+			privateLinkID, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
 			Expect(err).ShouldNot(HaveOccurred())
-			getStatusPE := func(privateEndpointID string) func() string {
-				return func() string {
-					r, err := session.DescribePrivateEndpointStatus(privateEndpointID)
-					if err != nil {
-						return ""
-					}
-					return r
-				}
-			}
+			Expect(privateLinkID).ShouldNot(BeEmpty())
 			Eventually(
-				kube.GetProjectPEndpointServiceStatus(&userData),
-			).Should(Equal("True"))
-			Eventually(getStatusPE(privateEndpointID)).Should(Equal("pendingAcceptance"))
-
-			By("Update PE ID from AWS", func() {
-				userData.Resources.Project.UpdatePrivateLinkByOrder(i, privateEndpointID)
-				actions.PrepareUsersConfigurations(&userData)
-				actions.DeployProject(&userData, "3")
-				Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status is not 'True'")
-				Eventually(
-					kube.GetProjectPEndpointStatus(&userData),
-				).Should(Equal("True"))
-				Eventually(getStatusPE(privateEndpointID)).Should(Equal("available"))
-			})
-
-			By("Delete PE from AWS", func() {
-				err = session.DeletePrivateLink(privateEndpointID)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				status, err := session.DescribePrivateEndpointStatus(privateEndpointID)
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(status).Should(Equal("rejected"))
-			})
+				func() bool {
+					return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
+				},
+			).Should(BeTrue())
+			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID)
 		}
 	})
+
+	By("Deploy Changed Projects", func() {
+		actions.PrepareUsersConfigurations(&userData)
+		actions.DeployProjectAndWait(&userData, "3")
+	})
+
+	By("Check statuses", func() {
+		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"))
+		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status is not 'True'")
+
+		project, err := kube.GetProjectResource(&userData)
+		Expect(err).ShouldNot(HaveOccurred())
+		for _, peitem := range project.Status.PrivateEndpoints {
+			cloudTest := cloud.CreatePEActions(peitem)
+			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			Expect(privateEndpointID).ShouldNot(BeEmpty())
+			Eventually(
+				func() bool {
+					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
+				},
+			).Should(BeTrue())
+		}
+	})
+
+	By("Delete PE from Clouds", func() {
+		project, err := kube.GetProjectResource(&userData)
+		Expect(err).ShouldNot(HaveOccurred())
+		for _, peitem := range project.Status.PrivateEndpoints {
+			cloudTest := cloud.CreatePEActions(peitem)
+			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			Expect(privateEndpointID).ShouldNot(BeEmpty())
+
+			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+			Expect(err).ShouldNot(HaveOccurred())
+		}
+	})
+
 	By("Delete Resources, Project with PEService", func() {
-		// actions.DeleteUserResources(&userData)
 		actions.DeleteUserResourcesProject(&userData)
 	})
 }

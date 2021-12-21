@@ -48,7 +48,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 }
 
 func WaitProject(data *model.TestDataProvider, generation string) {
-	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "10m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "5m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
 	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	atlasProject, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
@@ -288,8 +288,21 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	}
 }
 
-// DeployProject deploy project, prepare keys for working with that project
 func DeployProject(data *model.TestDataProvider, generation string) {
+	By("Create users resources: keys, project", func() {
+		CreateConnectionAtlasKey(data)
+		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
+	})
+}
+
+func UpdateProjectID(data *model.TestDataProvider) {
+	atlasProject, err := kube.GetProjectResource(data)
+	Expect(err).Should(BeNil(), "Error has Occurred")
+	data.Resources.ProjectID = atlasProject.Status.ID
+	Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
+}
+
+func DeployProjectAndWait(data *model.TestDataProvider, generation string) {
 	By("Create users resources: keys, project", func() {
 		CreateConnectionAtlasKey(data)
 		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
@@ -332,7 +345,7 @@ func DeployUsers(data *model.TestDataProvider) {
 
 // DeployUserResourcesAction deploy all user resources, wait, and check results
 func DeployUserResourcesAction(data *model.TestDataProvider) {
-	DeployProject(data, "1")
+	DeployProjectAndWait(data, "1")
 	DeployCluster(data, "1")
 	DeployUsers(data)
 }

@@ -204,3 +204,13 @@ func getError(err error) error {
 	}
 	return err
 }
+
+func (s sessionAWS) GetFuncPrivateEndpointStatus(privateEndpointID string) func() string {
+	return func() string {
+		r, err := s.DescribePrivateEndpointStatus(privateEndpointID)
+		if err != nil {
+			return ""
+		}
+		return r
+	}
+}

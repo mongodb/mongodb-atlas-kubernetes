@@ -83,6 +83,15 @@ func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, i
 	return p
 }
 
+func (p *AProject) GetPrivateIDByProviderRegion(provider provider.ProviderName, region string) string {
+	for i, peItem := range p.Spec.PrivateEndpoints {
+		if (peItem.Provider == provider) && (peItem.Region == region) {
+			return p.Spec.PrivateEndpoints[i].ID
+		}
+	}
+	return ""
+}
+
 func (p *AProject) DeletePrivateLink(id string) *AProject {
 	var peList []project.PrivateEndpoint
 	for _, peItem := range p.Spec.PrivateEndpoints {
