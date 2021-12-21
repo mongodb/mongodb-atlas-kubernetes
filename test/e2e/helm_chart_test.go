@@ -9,8 +9,10 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -24,7 +26,7 @@ var _ = Describe("HELM charts", func() {
 	var _ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP IMAGE_URL")
-		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 
 	var _ = AfterEach(func() {
@@ -37,7 +39,7 @@ var _ = Describe("HELM charts", func() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
-					kube.GetManagerLogs(config.DefaultOperatorNS),
+					kubecli.GetManagerLogs(config.DefaultOperatorNS),
 				)
 				actions.SaveK8sResources(
 					[]string{"deploy"},
@@ -166,8 +168,10 @@ var _ = Describe("HELM charts", func() {
 
 func waitClusterWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
-		actions.WaitProject(data.Resources, "1")
-		data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
+		actions.WaitProject(data, "1")
+		resource, err := kube.GetProjectResource(data)
+		Expect(err).Should(BeNil())
+		data.Resources.ProjectID = resource.Status.ID
 		actions.WaitCluster(data.Resources, "1")
 	})
 

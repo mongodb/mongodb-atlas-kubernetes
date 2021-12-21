@@ -9,7 +9,7 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -20,13 +20,13 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 	commonClusterName := "megacluster"
 
 	_ = BeforeEach(func() {
-		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		By("User Install CRD, cluster wide Operator", func() {
-			Eventually(kube.Apply(DefaultDeployConfig)).Should(
+			Eventually(kubecli.Apply(DefaultDeployConfig)).Should(
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),
 			)
 			Eventually(
-				kube.GetPodStatus(DefaultOperatorNS),
+				kubecli.GetPodStatus(DefaultOperatorNS),
 				"5m", "3s",
 			).Should(Equal("Running"), "The operator should successfully run")
 		})
@@ -38,7 +38,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
-					kube.GetManagerLogs(DefaultOperatorNS),
+					kubecli.GetManagerLogs(DefaultOperatorNS),
 				)
 				actions.SaveK8sResources(
 					[]string{"deploy"},
@@ -110,12 +110,12 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources),
 				utils.JSONToYAMLConvert(NortonData.Resources.Clusters[0]),
 			)
-			kube.Apply(NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources), "-n", NortonData.Resources.Namespace)
+			kubecli.Apply(NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources), "-n", NortonData.Resources.Namespace)
 			actions.WaitCluster(NortonData.Resources, "2")
 
 			By("Norton cluster has labels", func() {
 				Expect(
-					kube.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
+					kubecli.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
 				).To(MatchFields(IgnoreExtras, Fields{
 					"Key":   Equal("something"),
 					"Value": Equal("awesome"),
@@ -124,7 +124,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 			By("Nimnul cluster does not have labels", func() {
 				Eventually(
-					kube.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels,
+					kubecli.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels,
 				).Should(BeNil())
 			})
 		})

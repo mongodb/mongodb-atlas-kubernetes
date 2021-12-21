@@ -11,7 +11,7 @@ import (
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -24,7 +24,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 	var _ = BeforeEach(func() {
 		imageURL = os.Getenv("BUNDLE_IMAGE")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
-		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	var _ = AfterEach(func() {
 		By("Atfer each.", func() {
@@ -32,7 +32,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
-					kube.GetManagerLogs(config.DefaultOperatorNS),
+					kubecli.GetManagerLogs(config.DefaultOperatorNS),
 				)
 				actions.SaveK8sResources(
 					[]string{"deploy"},

@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kustomize"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -81,9 +81,9 @@ func prepareMultiNamespaceOperatorResources(input model.UserInputs, watchedNames
 func NamespacedOperator(data *model.TestDataProvider) {
 	prepareNamespaceOperatorResources(data.Resources)
 	By("Deploy namespaced Operator\n", func() {
-		kube.Apply("-k", data.Resources.GetOperatorFolder())
+		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
 		Eventually(
-			kube.GetPodStatus(data.Resources.Namespace),
+			kubecli.GetPodStatus(data.Resources.Namespace),
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})
@@ -92,9 +92,9 @@ func NamespacedOperator(data *model.TestDataProvider) {
 func ClusterWideOperator(data *model.TestDataProvider) {
 	prepareWideOperatorResources(data.Resources)
 	By("Deploy clusterwide Operator \n", func() {
-		kube.Apply("-k", data.Resources.GetOperatorFolder())
+		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
 		Eventually(
-			kube.GetPodStatus(config.DefaultOperatorNS),
+			kubecli.GetPodStatus(config.DefaultOperatorNS),
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})
@@ -105,9 +105,9 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 	By("Deploy multinamespaced Operator \n", func() {
 		kustomOperatorPath := data.Resources.GetOperatorFolder() + "/final.yaml"
 		utils.SaveToFile(kustomOperatorPath, kustomize.Build(data.Resources.GetOperatorFolder()))
-		kube.Apply(kustomOperatorPath)
+		kubecli.Apply(kustomOperatorPath)
 		Eventually(
-			kube.GetPodStatus(config.DefaultOperatorNS),
+			kubecli.GetPodStatus(config.DefaultOperatorNS),
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})

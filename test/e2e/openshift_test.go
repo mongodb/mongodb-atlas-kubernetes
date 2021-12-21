@@ -8,7 +8,7 @@ import (
 	"github.com/mxschmitt/playwright-go"
 
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/oc"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/opm"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/podman"
@@ -55,7 +55,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 		}
 		oc.Delete(path) // we delete it all the time, because of shared space
 		closeBrowser(pw, browser, page)
-		kube.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
+		kubecli.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
 	})
 
 	It("User can deploy Atlas Kubernetes operator from openshift", func() {
@@ -86,7 +86,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 		})
 
 		By("Lock environment", func() {
-			kube.CreateNamespace(lockNamespace)
+			kubecli.CreateNamespace(lockNamespace)
 			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
 		})
 
@@ -155,12 +155,12 @@ func prepareSecrets(testKeys []string) utils.Secrets {
 func hasLock() func() bool { // timeout 40
 	return func() bool {
 		layout := "2006-01-02T15:04:05Z"
-		if kube.HasConfigMap(lockNamespace, lockNamespace) {
-			createTime, err := time.Parse(layout, string(kube.GetResourceCreationTimestamp("configmap", lockNamespace, lockNamespace)))
+		if kubecli.HasConfigMap(lockNamespace, lockNamespace) {
+			createTime, err := time.Parse(layout, string(kubecli.GetResourceCreationTimestamp("configmap", lockNamespace, lockNamespace)))
 			Expect(err).ShouldNot(HaveOccurred())
 
 			if time.Since(createTime).Minutes() > 10 { // TODO next task: change 10 to 40(?) if confg is ready
-				kube.DeleteResource("configmap", lockNamespace, lockNamespace)
+				kubecli.DeleteResource("configmap", lockNamespace, lockNamespace)
 				return false
 			}
 			return true

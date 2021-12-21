@@ -10,7 +10,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -20,7 +20,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 	var data model.TestDataProvider // TODO check it
 
 	_ = BeforeEach(func() {
-		Eventually(kube.GetVersionOutput()).Should(Say(K8sVersion))
+		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
@@ -31,11 +31,11 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 			utils.SaveToFile(
 				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-				[]byte(kube.DescribeOperatorPod(data.Resources.Namespace)),
+				[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
 			)
 			utils.SaveToFile(
 				fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-				kube.GetManagerLogs(data.Resources.Namespace),
+				kubecli.GetManagerLogs(data.Resources.Namespace),
 			)
 			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(

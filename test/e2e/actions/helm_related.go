@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -22,7 +22,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
-		generation, _ := strconv.Atoi(kube.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
+		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
 		helm.UpgradeAtlasClusterChart(data.Resources)
 
 		By("Wait project creation", func() {
@@ -66,13 +66,13 @@ func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 // HelmUpgradeChartVersions upgrade chart version of crd, operator, and
 func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 	By("User update helm chart (used main-branch)", func() {
-		generation, _ := strconv.Atoi(kube.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
+		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
 		helm.UpgradeOperatorChart(data.Resources)
 
 		// TODO temporary.
-		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
-		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
-		kube.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
+		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
+		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
+		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
 
 		helm.UpgradeAtlasClusterChartDev(data.Resources)
 
