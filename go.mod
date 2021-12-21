@@ -3,7 +3,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.42.14
+	github.com/aws/aws-sdk-go v1.42.24
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-logr/zapr v0.4.0
