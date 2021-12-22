@@ -8,7 +8,6 @@ import (
 
 type gcpAction struct{}
 
-// func (aws *awsAction) createPrivateLink(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
 func (gcp *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
 	fmt.Print("NOT IMPLEMENTED create GCP LINK")
 	return "some test", nil

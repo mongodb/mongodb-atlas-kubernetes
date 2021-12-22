@@ -15,6 +15,5 @@ func GetProjectResource(data *model.TestDataProvider) (v1.AtlasProject, error) {
 	if err != nil {
 		return v1.AtlasProject{}, err
 	}
-	// ExpectWithOffset(1, json.Unmarshal(rawData, &project)).ShouldNot(HaveOccurred())
 	return project, nil
 }

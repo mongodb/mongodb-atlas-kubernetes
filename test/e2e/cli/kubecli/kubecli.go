@@ -49,15 +49,6 @@ func GetStatusCondition(statusType, ns string, atlasname string) string {
 	return string(session.Wait("1m").Out.Contents())
 }
 
-// GetStatusCondition .status.conditions.type=Ready.status
-// func GetStatusCondition(statusType, ns string, atlasname string) func() string {
-// 	return func() string {
-// 		jsonpath := fmt.Sprintf("jsonpath={.status.conditions[?(@.type=='%s')].status}", statusType)
-// 		session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", jsonpath)
-// 		return string(session.Wait("1m").Out.Contents())
-// 	}
-// }
-
 func GetStatusPhase(ns string, args ...string) string {
 	args = append([]string{"get"}, args...)
 	args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
@@ -70,14 +61,6 @@ func GetProjectResource(namespace, rName string) []byte {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
 	return session.Wait("1m").Out.Contents()
 }
-
-// func GetProjectResource(namespace, rName string) v1.AtlasProject {
-// 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
-// 	output := session.Wait("1m").Out.Contents()
-// 	var project v1.AtlasProject
-// 	ExpectWithOffset(1, json.Unmarshal(output, &project)).ShouldNot(HaveOccurred())
-// 	return project
-// }
 
 // GetClusterResource
 func GetClusterResource(namespace, rName string) v1.AtlasCluster {

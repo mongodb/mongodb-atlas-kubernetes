@@ -88,27 +88,6 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				},
 			},
 		),
-		// Entry("Test: User has project which was updated with Azure PrivateEndpoint",
-		// 	model.NewTestDataProvider(
-		// 		"operator-plink-azure-1",
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{
-		// 		{
-		// 			provider: "Azure",
-		// 			region:   "northeurope",
-		// 		},
-		// 	},
-		// ),
 	)
 })
 

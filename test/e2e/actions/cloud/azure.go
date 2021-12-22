@@ -8,7 +8,6 @@ import (
 
 type azureAction struct{}
 
-// func (aws *awsAction) createPrivateLink(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
 func (azure *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
 	fmt.Print("NOT IMPLEMENTED create AZURE LINK")
 	return "some test", nil
