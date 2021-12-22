@@ -65,10 +65,8 @@ func (in *AtlasProjectStatus) DeepCopyInto(out *AtlasProjectStatus) {
 	}
 	if in.PrivateEndpoints != nil {
 		in, out := &in.PrivateEndpoints, &out.PrivateEndpoints
-		*out = make([]PrivateEndpoint, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
+		*out = make([]ProjectPrivateEndpoint, len(*in))
+		copy(*out, *in)
 	}
 }
 
