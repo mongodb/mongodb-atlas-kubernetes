@@ -13,11 +13,10 @@ type UserInputs struct {
 	ProjectID          string
 	KeyName            string
 	Namespace          string
-	K8sFullProjectName string
 	ProjectPath        string
 	Clusters           []AC
 	Users              []DBUser
-	Project            *AP
+	Project            *AProject
 }
 
 // NewUsersInputs prepare users inputs
@@ -28,7 +27,6 @@ func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserIn
 		ProjectID:          "",
 		KeyName:            keyTestPrefix,
 		Namespace:          "ns-" + projectName,
-		K8sFullProjectName: "atlasproject.atlas.mongodb.com/k-" + projectName,
 		ProjectPath:        filepath.Join(DataFolder, projectName, "resources", projectName+".yaml"),
 	}
 	input.Project = NewProject("k-"+projectName).ProjectName(projectName).WithIpAccess("0.0.0.0/0", "everyone")
@@ -60,4 +58,8 @@ func (u *UserInputs) GetUsersFolder() string {
 
 func (u *UserInputs) GetServiceCatalogSourceFolder() string {
 	return filepath.Join(DataFolder, u.Project.Spec.Name, "catalog")
+}
+
+func (u *UserInputs) GetAtlasProjectFullKubeName() string {
+	return fmt.Sprintf("atlasproject/%s", u.Project.ObjectMeta.Name)
 }

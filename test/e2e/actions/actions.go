@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kube"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -24,8 +24,8 @@ func UpdateCluster(newData *model.TestDataProvider) {
 			newData.Resources.Clusters[0].ClusterFileName(newData.Resources),
 			utils.JSONToYAMLConvert(newData.Resources.Clusters[0]),
 		)
-		generation, _ = strconv.Atoi(kube.GetGeneration(newData.Resources.Namespace, newData.Resources.Clusters[0].GetClusterNameResource()))
-		kube.Apply(newData.Resources.Clusters[0].ClusterFileName(newData.Resources), "-n", newData.Resources.Namespace)
+		generation, _ = strconv.Atoi(kubecli.GetGeneration(newData.Resources.Namespace, newData.Resources.Clusters[0].GetClusterNameResource()))
+		kubecli.Apply(newData.Resources.Clusters[0].ClusterFileName(newData.Resources), "-n", newData.Resources.Namespace)
 		generation++
 	})
 
@@ -84,13 +84,13 @@ func ReactivateCluster(data *model.TestDataProvider) {
 
 func DeleteFirstUser(data *model.TestDataProvider) {
 	By("User can delete Database User", func() {
-		// data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.K8sFullProjectName).Status.ID
+		// data.Resources.ProjectID = kube.GetProjectResource(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName()).Status.ID
 		// since it is could be several users, we should
 		// - delete k8s resource
 		// - delete one user from the list,
 		// - check Atlas doesn't have the initial user and have the rest
 		By("Delete k8s resources")
-		Eventually(kube.Delete(data.Resources.GetResourceFolder()+"/user/user-"+data.Resources.Users[0].ObjectMeta.Name+".yaml", "-n", data.Resources.Namespace)).Should(Say("deleted"))
+		Eventually(kubecli.Delete(data.Resources.GetResourceFolder()+"/user/user-"+data.Resources.Users[0].ObjectMeta.Name+".yaml", "-n", data.Resources.Namespace)).Should(Say("deleted"))
 		Eventually(CheckIfUserExist(data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)).Should(BeFalse())
 
 		// the rest users should be still there

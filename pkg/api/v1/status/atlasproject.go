@@ -32,5 +32,5 @@ type AtlasProjectStatus struct {
 	ExpiredIPAccessList []project.IPAccessList `json:"expiredIpAccessList,omitempty"`
 
 	// The list of private endpoints configured for current project
-	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
+	PrivateEndpoints []ProjectPrivateEndpoint `json:"privateEndpoints,omitempty"`
 }

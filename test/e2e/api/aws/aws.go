@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,6 +26,26 @@ func SessionAWS(region string) sessionAWS { // eu-west-2
 	}
 	svc := ec2.New(session)
 	return sessionAWS{svc}
+}
+
+func (s sessionAWS) GetVPCID() (string, error) {
+	input := &ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("tag:Name"),
+			Values: []*string{
+				aws.String(config.TagName),
+			},
+		}},
+	}
+	result, err := s.ec2.DescribeVpcs(input)
+	if err != nil {
+		return "", getError(err)
+	}
+	if len(result.Vpcs) < 1 {
+		return "", errors.New("Can not find VPC")
+	}
+	fmt.Println(result)
+	return *result.Vpcs[0].VpcId, nil
 }
 
 func (s sessionAWS) CreateVPC(testID string) (string, error) {
@@ -69,6 +90,26 @@ func (s sessionAWS) DeleteVPC(vpcID string) error {
 		return getError(err)
 	}
 	return nil
+}
+
+func (s sessionAWS) GetSubnetID() (string, error) {
+	input := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("tag:Name"),
+			Values: []*string{
+				aws.String(config.TagName),
+			},
+		}},
+	}
+	result, err := s.ec2.DescribeSubnets(input)
+	if err != nil {
+		return "", getError(err)
+	}
+	if len(result.Subnets) < 1 {
+		return "", errors.New("Can not find Subnet")
+	}
+	fmt.Println(result)
+	return *result.Subnets[0].SubnetId, nil
 }
 
 func (s sessionAWS) CreateSubnet(vpcID, cidr, testID string) (string, error) {
@@ -162,4 +203,14 @@ func getError(err error) error {
 		return aerr
 	}
 	return err
+}
+
+func (s sessionAWS) GetFuncPrivateEndpointStatus(privateEndpointID string) func() string {
+	return func() string {
+		r, err := s.DescribePrivateEndpointStatus(privateEndpointID)
+		if err != nil {
+			return ""
+		}
+		return r
+	}
 }

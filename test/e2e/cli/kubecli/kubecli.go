@@ -13,7 +13,7 @@ import (
 	"github.com/sethvargo/go-password/password"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
 
 // GenKubeVersion
@@ -43,11 +43,10 @@ func GetGeneration(ns, resourceName string) string {
 }
 
 // GetStatusCondition .status.conditions.type=Ready.status
-func GetStatusCondition(ns string, atlasname string) func() string {
-	return func() string {
-		session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
-		return string(session.Wait("1m").Out.Contents())
-	}
+func GetStatusCondition(statusType, ns string, atlasname string) string {
+	jsonpath := fmt.Sprintf("jsonpath={.status.conditions[?(@.type=='%s')].status}", statusType)
+	session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", jsonpath)
+	return string(session.Wait("1m").Out.Contents())
 }
 
 func GetStatusPhase(ns string, args ...string) string {
@@ -58,12 +57,9 @@ func GetStatusPhase(ns string, args ...string) string {
 }
 
 // GetProjectResource
-func GetProjectResource(namespace, rName string) v1.AtlasProject {
+func GetProjectResource(namespace, rName string) []byte {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
-	output := session.Wait("1m").Out.Contents()
-	var project v1.AtlasProject
-	ExpectWithOffset(1, json.Unmarshal(output, &project)).ShouldNot(HaveOccurred())
-	return project
+	return session.Wait("1m").Out.Contents()
 }
 
 // GetClusterResource
@@ -129,7 +125,8 @@ func CreateUserSecret(name, ns string) {
 		"--from-literal=password="+secret,
 		"-n", ns,
 	)
-	EventuallyWithOffset(1, session.Wait()).Should(Say(name + " created"))
+	result := cli.GetSessionExitMsg(session)
+	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(name+" created"), Say("already exists")), "Can't create user secret"+name)
 }
 
 func CreateApiKeySecret(keyName, ns string) { // TODO add ns
@@ -139,17 +136,19 @@ func CreateApiKeySecret(keyName, ns string) { // TODO add ns
 		"--from-literal=privateApiKey="+os.Getenv("MCLI_PRIVATE_API_KEY"),
 		"-n", ns,
 	)
-	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
+	result := cli.GetSessionExitMsg(session)
+	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
 }
 
 func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
-	session := cli.Execute("kubectl", "create", "secret", "generic", keyName,
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+public,
 		"--from-literal=privateApiKey="+private,
 		"-n", ns,
 	)
-	EventuallyWithOffset(1, session.Wait()).Should(Say(keyName + " created"))
+	result := cli.GetSessionExitMsg(session)
+	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
 }
 
 func DeleteApiKeySecret(keyName, ns string) {
@@ -180,6 +179,12 @@ func GetYamlResource(resource string, ns string) []byte {
 	return session.Out.Contents()
 }
 
+func GetJsonResource(resource string, ns string) []byte {
+	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "json")
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
+}
+
 func CreateConfigMapWithLiterals(configName string, ns string, keys ...string) {
 	args := append([]string{"create", "configmap", configName, "-n", ns}, keys...)
 	session := cli.Execute("kubectl", args...)
@@ -201,4 +206,10 @@ func GetResourceCreationTimestamp(resource, name, ns string) []byte {
 func Annotate(resource, annotation, ns string) {
 	session := cli.Execute("kubectl", "annotate", resource, annotation, "-n", ns, "--overwrite=true")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
+func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
+	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "jsonpath={.status.privateEndpoints}")
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	return session.Out.Contents()
 }
