@@ -128,9 +128,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 				return result.ReconcileResult(), nil
 			}
 
-			if err = DeleteAllPrivateEndpoints(atlasClient, projectID, project.Status.PrivateEndpoints, log); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
+				ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 

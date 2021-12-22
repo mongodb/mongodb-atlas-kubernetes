@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"errors"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -176,13 +175,16 @@ func createPrivateEndpointInAtlas(client mongodbatlas.Client, projectID string, 
 	return result, updatedConnections
 }
 
-func DeleteAllPrivateEndpoints(client mongodbatlas.Client, projectID string, statusPEs []status.ProjectPrivateEndpoint, log *zap.SugaredLogger) error {
-	endpointsToDelete := set.Difference(statusPEs, []status.ProjectPrivateEndpoint{})
-	if result := deletePrivateEndpointsFromAtlas(client, projectID, endpointsToDelete, log); !result.IsOk() {
-		return errors.New("failed to delete Private Endpoints from Atlas")
+func DeleteAllPrivateEndpoints(ctx *workflow.Context, client mongodbatlas.Client, projectID string, statusPE []status.ProjectPrivateEndpoint, log *zap.SugaredLogger) workflow.Result {
+	atlasPeConnections, err := getAllPrivateEndpoints(ctx.Client, projectID)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+	ctx.EnsureStatusOption(status.AtlasProjectRemoveOldPrivateEnpointOption(convertToStatus(atlasPeConnections)))
 
-	return nil
+	endpointsToDelete := set.Difference(statusPE, []status.ProjectPrivateEndpoint{})
+	log.Debugw("List of endpoints to delete", "endpointsToDelete", endpointsToDelete, atlasPeConnections)
+	return deletePrivateEndpointsFromAtlas(client, projectID, endpointsToDelete, log)
 }
 
 func deletePrivateEndpointsFromAtlas(client mongodbatlas.Client, projectID string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) workflow.Result {
