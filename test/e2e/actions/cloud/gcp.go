@@ -8,22 +8,22 @@ import (
 
 type gcpAction struct{}
 
-func (gcp *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
+func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
 	fmt.Print("NOT IMPLEMENTED create GCP LINK")
-	return "some test", nil
+	return "some test", "IP if req", nil
 }
 
-func (gcp *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
+func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
 	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
 	return nil
 }
 
-func (gcp *gcpAction) statusPrivateEndpointPending(region, privateID string) bool {
+func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID string) bool {
 	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
 	return true
 }
 
-func (gcp *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
+func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
 	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
 	return true
 }

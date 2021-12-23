@@ -8,7 +8,7 @@ import (
 )
 
 type CloudActions interface {
-	createPrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) (string, error)
+	createPrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) (string, string, error)
 	deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) error
 	statusPrivateEndpointPending(region, privateID string) bool
 	statusPrivateEndpointAvailable(region, privateID string) bool
@@ -23,7 +23,7 @@ func CreatePEActions(pe status.ProjectPrivateEndpoint) PEActions {
 	return PEActions{PrivateEndpoint: pe}
 }
 
-func (peActions *PEActions) CreatePrivateEndpoint(name string) (string, error) {
+func (peActions *PEActions) CreatePrivateEndpoint(name string) (string, string, error) {
 	switch peActions.PrivateEndpoint.Provider {
 	case provider.ProviderAWS:
 		peActions.CloudActions = &awsAction{}
@@ -35,7 +35,7 @@ func (peActions *PEActions) CreatePrivateEndpoint(name string) (string, error) {
 		peActions.CloudActions = &gcpAction{}
 		return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
 	}
-	return "", errors.New("Check Provider")
+	return "", "", errors.New("Check Provider")
 }
 
 func (peActions *PEActions) DeletePrivateEndpoint(name string) error {

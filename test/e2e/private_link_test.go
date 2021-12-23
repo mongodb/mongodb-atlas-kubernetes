@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -13,6 +14,7 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	azure "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/azure"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
@@ -67,9 +69,30 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 			data = test
 			privateFlow(test, pe)
 		},
-		Entry("Test: User has project which was updated with AWS PrivateEndpoint",
+		// Entry("Test: User has project which was updated with AWS PrivateEndpoint",
+		// 	model.NewTestDataProvider(
+		// 		"operator-plink-aws-1",
+		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+		// 		[]string{"data/atlascluster_backup.yaml"},
+		// 		[]string{},
+		// 		[]model.DBUser{
+		// 			*model.NewDBUser("user1").
+		// 				WithSecretRef("dbuser-secret-u1").
+		// 				AddBuildInAdminRole(),
+		// 		},
+		// 		40000,
+		// 		[]func(*model.TestDataProvider){},
+		// 	),
+		// 	[]privateEndpoint{
+		// 		{
+		// 			provider: "AWS",
+		// 			region:   "eu-west-2",
+		// 		},
+		// 	},
+		// ),
+		Entry("Test: User has project which was updated with Azure PrivateEndpoint",
 			model.NewTestDataProvider(
-				"operator-plink-aws-1",
+				"operator-plink-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -81,17 +104,25 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			),
-			[]privateEndpoint{
-				{
-					provider: "AWS",
-					region:   "eu-west-2",
-				},
-			},
+			[]privateEndpoint{{
+				provider: "AZURE",
+				region:   "northeurope",
+			}},
 		),
 	)
 })
 
 func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) {
+	By("Setup", func() {
+		os.Getenv("")
+	})
+	By("TETS", func() {
+		subscriptionID := ""
+		test := azure.SessionAzure(subscriptionID)
+		Expect(test.GetSessionSubscriptionID())
+		panic("finish test")
+	})
+
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(&userData)
 		deploy.NamespacedOperator(&userData)
@@ -140,8 +171,8 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"))
-		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status is not 'True'")
+		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
+		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
 		project, err := kube.GetProjectResource(&userData)
 		Expect(err).ShouldNot(HaveOccurred())
