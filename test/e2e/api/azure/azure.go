@@ -134,3 +134,24 @@ func (s *sessionAzure) GetPEIPAddress(resourceGroup, networkInterface string) (s
 
 	return *conf.PrivateIPAddress, nil
 }
+
+func (s *sessionAzure) GetPrivateEndpointStatus(resourceGroupName, endpointName string) (string, error) {
+	networkClient := network.NewPrivateEndpointsClient(s.SubscriptionID)
+	networkClient.Authorizer = s.Authorizer
+	ep, err := networkClient.Get(context.Background(), resourceGroupName, endpointName, "")
+	if err != nil {
+		return "", errors.New("Can not get network: " + err.Error())
+	}
+	status := (*ep.PrivateEndpointProperties.ManualPrivateLinkServiceConnections)[0].PrivateLinkServiceConnectionState.Status
+	return *status, nil
+}
+
+func (s *sessionAzure) GetFuncPrivateEndpointStatus(resourceGroupName, privateEndpointID string) func() string {
+	return func() string {
+		r, err := s.GetPrivateEndpointStatus(resourceGroupName, privateEndpointID)
+		if err != nil {
+			return ""
+		}
+		return r
+	}
+}

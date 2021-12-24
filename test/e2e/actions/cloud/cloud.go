@@ -57,7 +57,7 @@ func (peActions *PEActions) IsStatusPrivateEndpointPending(privateID string) boo
 	switch peActions.PrivateEndpoint.Provider {
 	case provider.ProviderAWS:
 		peActions.CloudActions = &awsAction{}
-		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)
+		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID) // privateID for AWS or PEname for AZURE
 	case provider.ProviderAzure:
 		peActions.CloudActions = &azureAction{}
 		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)

@@ -11,19 +11,22 @@ import (
 
 type azureAction struct{}
 
-func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	session := azure.SessionAzure(subscriptionID, config.TagName)
-
+var (
 	// TODO get from Azure
-	resourceGroup := "svet-test"
-	vpc := "svet-test-vpc"
-	subnetName := "default"
+	resourceGroup = "svet-test"
+	vpc           = "svet-test-vpc"
+	subnetName    = "default"
+)
+
+func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
+	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
 
 	session.DisableNetworkPolicies(resourceGroup, vpc, subnetName)
-	session.CreatePrivateEndpoint("northeurope", "svet-test", privatelinkName, pe.ServiceResourceID)
-
-	return "ID", "IP", nil
+	id, ip, err := session.CreatePrivateEndpoint(pe.Region, resourceGroup, privatelinkName, pe.ServiceResourceID)
+	if err != nil {
+		return "", "", err
+	}
+	return id, ip, nil
 }
 
 func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
@@ -31,12 +34,22 @@ func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEn
 	return nil
 }
 
-func (azureAction *azureAction) statusPrivateEndpointPending(region, privateID string) bool {
-	fmt.Print("NOT IMPLEMENTED delete AZURE LINK")
-	return true
+func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelinkName string) bool {
+	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	status, err := session.GetPrivateEndpointStatus(resourceGroup, privatelinkName)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	return (status == "Pending")
 }
 
-func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privateID string) bool {
-	fmt.Print("NOT IMPLEMENTED delete AZURE LINK")
-	return true
+func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privatelinkName string) bool {
+	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	status, err := session.GetPrivateEndpointStatus(resourceGroup, privatelinkName)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	return (status == "Approved")
 }
