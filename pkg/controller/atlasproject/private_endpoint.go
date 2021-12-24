@@ -212,17 +212,23 @@ func deletePrivateEndpointsFromAtlas(client mongodbatlas.Client, projectID strin
 func convertToStatus(peList []mongodbatlas.PrivateEndpointConnection) (result []status.ProjectPrivateEndpoint) {
 	for _, endpoint := range peList {
 		pe := status.ProjectPrivateEndpoint{
-			Provider:          provider.ProviderName(endpoint.ProviderName),
-			Region:            endpoint.Region,
-			ServiceName:       endpoint.EndpointServiceName,
-			ServiceResourceID: endpoint.ID,
+			Provider: provider.ProviderName(endpoint.ProviderName),
+			Region:   endpoint.Region,
 		}
 
-		if len(endpoint.InterfaceEndpoints) != 0 {
-			pe.InterfaceEndpointID = endpoint.InterfaceEndpoints[0] // AWS
-		}
-		if len(endpoint.PrivateEndpoints) != 0 {
-			pe.InterfaceEndpointID = endpoint.PrivateEndpoints[0] // AZURE
+		switch pe.Provider {
+		case provider.ProviderAWS:
+			pe.ServiceName = endpoint.EndpointServiceName
+			pe.ServiceResourceID = endpoint.ID
+			if len(endpoint.InterfaceEndpoints) != 0 {
+				pe.InterfaceEndpointID = endpoint.InterfaceEndpoints[0]
+			}
+		case provider.ProviderAzure:
+			pe.ServiceName = endpoint.PrivateLinkServiceName
+			pe.ServiceResourceID = endpoint.PrivateLinkServiceResourceID
+			if len(endpoint.PrivateEndpoints) != 0 {
+				pe.InterfaceEndpointID = endpoint.PrivateEndpoints[0]
+			}
 		}
 
 		result = append(result, pe)
