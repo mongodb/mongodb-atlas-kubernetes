@@ -60,7 +60,7 @@ func (peActions *PEActions) IsStatusPrivateEndpointPending(privateID string) boo
 		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID) // privateID for AWS or PEname for AZURE
 	case provider.ProviderAzure:
 		peActions.CloudActions = &azureAction{}
-		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)
+		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID) // privaID for AWS = PrivateID, for AZURE = privateEndpoint Name
 	case provider.ProviderGCP:
 		peActions.CloudActions = &gcpAction{}
 		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)

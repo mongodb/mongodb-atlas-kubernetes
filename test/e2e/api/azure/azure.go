@@ -91,8 +91,15 @@ func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpoint
 	return *pe.ID, ip, nil
 }
 
-func (s sessionAzure) DeletePrivateEndpoint() {
-	// TODO
+func (s sessionAzure) DeletePrivateEndpoint(resourceGroupName, endpointName string) error {
+	networkClient := network.NewPrivateEndpointsClient(s.SubscriptionID)
+	networkClient.Authorizer = s.Authorizer
+
+	_, err := networkClient.Delete(context.Background(), resourceGroupName, endpointName)
+	if err != nil {
+		return errors.New("cannot delete endpoint: " + err.Error())
+	}
+	return nil
 }
 
 // disable network policies for Private Endpoints: https://docs.microsoft.com/en-us/azure/private-link/disable-private-endpoint-network-policy

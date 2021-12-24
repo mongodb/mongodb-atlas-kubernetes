@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"fmt"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -14,9 +13,9 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	azure "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/azure"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
@@ -37,6 +36,8 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
+		checkUpAWSEnviroment()
+		checkUpAzureEnviroment()
 	})
 
 	_ = AfterEach(func() {
@@ -69,27 +70,27 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 			data = test
 			privateFlow(test, pe)
 		},
-		// Entry("Test: User has project which was updated with AWS PrivateEndpoint",
-		// 	model.NewTestDataProvider(
-		// 		"operator-plink-aws-1",
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "eu-west-2",
-		// 		},
-		// 	},
-		// ),
+		Entry("Test: User has project which was updated with AWS PrivateEndpoint",
+			model.NewTestDataProvider(
+				"operator-plink-aws-1",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+			},
+		),
 		Entry("Test: User has project which was updated with Azure PrivateEndpoint",
 			model.NewTestDataProvider(
 				"operator-plink-azure-1",
@@ -113,16 +114,6 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 })
 
 func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) {
-	By("Setup", func() {
-		os.Getenv("")
-	})
-	By("TETS", func() {
-		subscriptionID := ""
-		test := azure.SessionAzure(subscriptionID)
-		Expect(test.GetSessionSubscriptionID())
-		panic("finish test")
-	})
-
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(&userData)
 		deploy.NamespacedOperator(&userData)
@@ -144,7 +135,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 			"Atlasproject status.conditions are not True")
 		Expect(AllPEndpointUpdated(&userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
-		actions.UpdateProjectID(&userData) // TODO move
+		actions.UpdateProjectID(&userData)
 	})
 
 	By("Create Endpoint in requested Cloud Provider", func() {
@@ -153,7 +144,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest := cloud.CreatePEActions(peitem)
-			privateLinkID, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
+			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(privateLinkID).ShouldNot(BeEmpty())
 			Eventually(
@@ -161,7 +152,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 					return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
 				},
 			).Should(BeTrue())
-			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID)
+			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID, ip)
 		}
 	})
 

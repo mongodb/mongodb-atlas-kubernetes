@@ -3,6 +3,7 @@ package cloud
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/azure"
@@ -30,13 +31,14 @@ func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEn
 }
 
 func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	fmt.Print("NOT IMPLEMENTED delete AZURE LINK")
-	return nil
+	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	err := session.DeletePrivateEndpoint(resourceGroup, path.Base(privatelinkName))
+	return err
 }
 
 func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelinkName string) bool {
 	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
-	status, err := session.GetPrivateEndpointStatus(resourceGroup, privatelinkName)
+	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)
 		return false
@@ -46,7 +48,7 @@ func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelink
 
 func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privatelinkName string) bool {
 	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
-	status, err := session.GetPrivateEndpointStatus(resourceGroup, privatelinkName)
+	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)
 		return false
