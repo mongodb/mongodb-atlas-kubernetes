@@ -17,7 +17,7 @@ type sessionAWS struct {
 	ec2 *ec2.EC2
 }
 
-func SessionAWS(region string) sessionAWS { // eu-west-2
+func SessionAWS(region string) sessionAWS {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
