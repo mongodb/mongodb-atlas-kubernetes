@@ -157,9 +157,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	if len(project.Spec.ProjectIPAccessList) != 0 {
-		ctx.SetConditionTrue(status.IPAccessListReadyType)
-	}
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
