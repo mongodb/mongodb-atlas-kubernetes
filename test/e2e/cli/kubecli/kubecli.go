@@ -98,6 +98,7 @@ func Apply(args ...string) *Buffer {
 	}
 	session := cli.Execute("kubectl", args...)
 	EventuallyWithOffset(1, session).ShouldNot(Say("error"))
+	EventuallyWithOffset(1, session).ShouldNot(Say("invalid"))
 	return session.Wait().Out
 }
 

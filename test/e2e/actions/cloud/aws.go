@@ -10,24 +10,24 @@ import (
 
 type awsAction struct{}
 
-func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, error) {
+func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
 	fmt.Print("create AWS LINK")
 	session := aws.SessionAWS(pe.Region)
 	vpcID, err := session.GetVPCID()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	subnetID, err := session.GetSubnetID()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, pe.ServiceName, privatelinkName)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return privateEndpointID, nil
+	return privateEndpointID, "", nil
 }
 
 func (awsAction *awsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkID string) error {

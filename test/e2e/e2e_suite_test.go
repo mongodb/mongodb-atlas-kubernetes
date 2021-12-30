@@ -48,3 +48,15 @@ func checkUpEnvironment() {
 	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty(), "Please, setup MCLI_OPS_MANAGER_URL environment variable")
 	mongocli.GetVersionOutput()
 }
+
+func checkUpAWSEnviroment() {
+	Expect(os.Getenv("AWS_ACCESS_KEY_ID")).ShouldNot(BeEmpty(), "Please, setup AWS_ACCESS_KEY_ID environment variable for test with AWS")
+	Expect(os.Getenv("AWS_SECRET_ACCESS_KEY")).ShouldNot(BeEmpty(), "Please, setup AWS_SECRET_ACCESS_KEY environment variable for test with AWS")
+}
+
+func checkUpAzureEnviroment() {
+	Expect(os.Getenv("AZURE_CLIENT_ID")).ShouldNot(BeEmpty(), "Please, setup AZURE_CLIENT_ID environment variable for test with Azure")
+	Expect(os.Getenv("AZURE_TENANT_ID")).ShouldNot(BeEmpty(), "Please, setup AZURE_TENANT_ID environment variable for test with Azure")
+	Expect(os.Getenv("AZURE_CLIENT_SECRET")).ShouldNot(BeEmpty(), "Please, setup AZURE_CLIENT_SECRET environment variable for test with Azure")
+	Expect(os.Getenv("AZURE_SUBSCRIPTION_ID")).ShouldNot(BeEmpty(), "Please, setup AZURE_SUBSCRIPTION_ID environment variable for test with Azure")
+}

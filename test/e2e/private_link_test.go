@@ -13,8 +13,9 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
@@ -35,6 +36,8 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
+		checkUpAWSEnviroment()
+		checkUpAzureEnviroment()
 	})
 
 	_ = AfterEach(func() {
@@ -88,6 +91,25 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				},
 			},
 		),
+		Entry("Test: User has project which was updated with Azure PrivateEndpoint",
+			model.NewTestDataProvider(
+				"operator-plink-azure-1",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{{
+				provider: "AZURE",
+				region:   "northeurope",
+			}},
+		),
 	)
 })
 
@@ -113,7 +135,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 			"Atlasproject status.conditions are not True")
 		Expect(AllPEndpointUpdated(&userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
-		actions.UpdateProjectID(&userData) // TODO move
+		actions.UpdateProjectID(&userData)
 	})
 
 	By("Create Endpoint in requested Cloud Provider", func() {
@@ -122,7 +144,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest := cloud.CreatePEActions(peitem)
-			privateLinkID, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
+			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(privateLinkID).ShouldNot(BeEmpty())
 			Eventually(
@@ -130,7 +152,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 					return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
 				},
 			).Should(BeTrue())
-			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID)
+			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID, ip)
 		}
 	})
 
@@ -140,8 +162,8 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"))
-		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status is not 'True'")
+		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
+		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
 		project, err := kube.GetProjectResource(&userData)
 		Expect(err).ShouldNot(HaveOccurred())
