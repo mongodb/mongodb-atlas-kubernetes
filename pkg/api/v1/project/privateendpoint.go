@@ -27,3 +27,8 @@ func (i PrivateEndpoint) ToAtlas() (*mongodbatlas.PrivateEndpoint, error) {
 	err := compat.JSONCopy(result, i)
 	return result, err
 }
+
+// Identifier is required to satisfy "Identifiable" iterface
+func (i PrivateEndpoint) Identifier() interface{} {
+	return string(i.Provider) + i.Region
+}

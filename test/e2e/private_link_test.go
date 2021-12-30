@@ -60,8 +60,6 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				[]string{"deploy", "atlasprojects"},
 				data.Resources.Namespace,
 			)
-		} else {
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 		}
 	})
 

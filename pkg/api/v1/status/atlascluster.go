@@ -82,6 +82,10 @@ type Endpoint struct {
 
 	// Region to which you deployed the private endpoint.
 	Region string `json:"region,omitempty"`
+
+	// Private IP address of the private endpoint network interface you created in your Azure VNet.
+	// +optional
+	IP string `json:"ip,omitempty"`
 }
 
 // +k8s:deepcopy-gen=false

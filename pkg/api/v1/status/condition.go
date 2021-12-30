@@ -33,8 +33,10 @@ const (
 
 // AtlasProject condition types
 const (
-	ProjectReadyType      ConditionType = "ProjectReady"
-	IPAccessListReadyType ConditionType = "IPAccessListReady"
+	ProjectReadyType                ConditionType = "ProjectReady"
+	IPAccessListReadyType           ConditionType = "IPAccessListReady"
+	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
+	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
 )
 
 // AtlasCluster condition types
