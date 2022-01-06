@@ -166,7 +166,6 @@ spec:
                     type: string
                 required:
                 - name
-                - namespace
                 type: object
               providerBackupEnabled:
                 description: Applicable only for M10+ clusters. Flag that indicates
@@ -400,6 +399,10 @@ spec:
                             properties:
                               endpointId:
                                 description: Unique identifier of the private endpoint.
+                                type: string
+                              ip:
+                                description: Private IP address of the private endpoint
+                                  network interface you created in your Azure VNet.
                                 type: string
                               providerName:
                                 description: Cloud provider to which you deployed
