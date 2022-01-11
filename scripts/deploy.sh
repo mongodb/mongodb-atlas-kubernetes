@@ -4,7 +4,11 @@ set -eou pipefail
 
 kubectl version
 
-image="localhost:5000/mongodb-atlas-kubernetes-operator"
+if [[ -z "${REGISTRY:-}" ]]; then
+  REGISTRY="localhost:5000"
+fi
+
+image="${REGISTRY}/mongodb-atlas-kubernetes-operator"
 docker build -t "${image}" .
 docker push "${image}"
 

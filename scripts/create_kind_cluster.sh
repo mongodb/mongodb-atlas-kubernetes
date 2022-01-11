@@ -2,6 +2,11 @@
 # sample from https://kind.sigs.k8s.io/docs/user/local-registry/
 set -o errexit
 
+if [[ "${USE_KIND:-}" = "false" ]]; then
+  echo "skipping creation of kind cluster"
+  exit 0
+fi
+
 if [[ "$(kind get clusters | grep -x kind)" = "kind" ]]; then
   echo "kind cluster already exists"
   exit 0
