@@ -100,7 +100,9 @@ func TestAPIs(t *testing.T) {
 var _ = SynchronizedBeforeSuite(func() []byte {
 	By("bootstrapping test environment")
 
+	useExistingCluster := true
 	testEnv = &envtest.Environment{
+		UseExistingCluster:       &useExistingCluster,
 		AttachControlPlaneOutput: true,
 		KubeAPIServerFlags:       []string{"--authorization-mode=RBAC"},
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
