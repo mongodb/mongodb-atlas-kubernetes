@@ -64,10 +64,7 @@ jobs:
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
 
       - name: Setup Kind Cluster
-        run: |
-            curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
-            chmod +x ./kind
-            ./kind create cluster
+        uses: engineerd/setup-kind@v0.5.0
 
       - name: Run testing
         uses: ./.github/actions/int-test
