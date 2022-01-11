@@ -56,6 +56,10 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
+.PHONY: unit-test
+unit-test:
+	go test -race -cover ./pkg/...
+
 .PHONY: int-test
 int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
 int-test: export ATLAS_ORG_ID=$(shell grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
