@@ -3,7 +3,7 @@ FROM golang:1.17
 ENV KUBECTL_VERSION 1.18.12
 ENV GO111MODULE on
 
-RUN go install github.com/mikefarah/yq@v4.16.2
+RUN go get github.com/mikefarah/yq/v4
 
 # Install
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o /usr/bin/kubectl && \
