@@ -62,10 +62,6 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Setup Kind Cluster
-        uses: engineerd/setup-kind@v0.5.0
-
       - name: Run testing
         uses: ./.github/actions/int-test
         with:
@@ -142,14 +138,14 @@ jobs:
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
           [
-            "cluster-ns",
-            "cluster-wide",
-            "bundle-test",
-            "helm-ns",
-            "helm-wide",
-            "helm-update",
-            "multinamespaced",
-            "privatelink-aws",
+              "cluster-ns",
+              "cluster-wide",
+              "bundle-test",
+              "helm-ns",
+              "helm-wide",
+              "helm-update",
+              "multinamespaced",
+              "privatelink-aws",
           ]
         include:
           - k8s: "latest-openshift"
@@ -262,8 +258,8 @@ jobs:
           helm version
           go version
 
-          go get github.com/onsi/ginkgo/ginkgo && \
-          go get github.com/onsi/gomega/...
+          go install github.com/onsi/ginkgo/ginkgo && \
+          go install github.com/onsi/gomega/...
           ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
 
       - name: Upload operator logs

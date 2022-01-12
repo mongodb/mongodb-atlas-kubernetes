@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -93,52 +92,27 @@ func TestAPIs(t *testing.T) {
 		[]Reporter{printer.NewlineReporter{}})
 }
 
-// SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
-// http://onsi.github.io/ginkgo/#parallel-specs
-// The first function starts the envtest (done only once by the 1st node). The second function is called on each of
-// the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
-var _ = SynchronizedBeforeSuite(func() []byte {
+// BeforeSuite runs once per node. Each node sets up its own environment. This is required
+// as the config created when calling testEnv.Start() needs to be shared within the node.
+var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
-
-	useExistingCluster := true
 	testEnv = &envtest.Environment{
-		UseExistingCluster:       &useExistingCluster,
-		AttachControlPlaneOutput: true,
-		KubeAPIServerFlags:       []string{"--authorization-mode=RBAC"},
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
 
-	cfg, err := testEnv.Start()
+	var err error
+	cfg, err = testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
 	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
-	return []byte(cfg.Host)
-}, func(data []byte) {
-	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
-		var err error
-		// For the existing cluster we read the kubeconfig
-		cfg, err = config.GetConfig()
-		if err != nil {
-			panic("Failed to read the config for existing cluster")
-		}
-	} else {
-		// This is the host that was serialized on the 1st node by the function above.
-		host := string(data)
-		// copied from Environment.Start()
-		cfg = &rest.Config{
-			Host: host,
-			// gotta go fast during tests -- we don't really care about overwhelming our test API server
-			QPS:   1000.0,
-			Burst: 2000.0,
-		}
-	}
 
-	err := mdbv1.AddToScheme(scheme.Scheme)
+	err = mdbv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// It's recommended to construct the client directly for tests
 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
+	// we want to use the same cfg as this will be configured with all the auth settings required to access the env.
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
@@ -147,8 +121,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	defaultTimeouts()
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
+var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())

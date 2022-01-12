@@ -7,8 +7,8 @@ RUN curl -Lo setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/
     mkdir -p /usr/local/kubebuilder/bin && \
     /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder"
 
-RUN go get github.com/onsi/ginkgo/ginkgo && \
-    go get github.com/onsi/gomega/...
+RUN go install github.com/onsi/ginkgo/ginkgo && \
+    go install github.com/onsi/gomega/...
 
 COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
