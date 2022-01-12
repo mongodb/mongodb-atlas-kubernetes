@@ -30,5 +30,5 @@ event_*.json
 
 # any custom files created by developers and not intended for public use should start with "my-"
 my-*
-
+tags
 testbin/
