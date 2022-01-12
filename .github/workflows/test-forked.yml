@@ -260,7 +260,7 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/ginkgo && \
+          go install github.com/onsi/ginkgo/ginkgo@1.16.5 && \
           go install github.com/onsi/gomega/...
           ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
 
