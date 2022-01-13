@@ -1,4 +1,4 @@
-FROM golang:1.16
+FROM golang:1.17
 
 ENV KUBECTL_VERSION 1.18.12
 ENV GO111MODULE on
@@ -15,7 +15,7 @@ RUN cd /usr/local/bin &&\
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     cd $CONTROLLER_GEN_TMP_DIR && \
     go mod init tmp && \
-    go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
+    go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
     rm -rf $CONTROLLER_GEN_TMP_DIR && \
     CONTROLLER_GEN=${GOBIN}/controller-gen
 
