@@ -130,7 +130,8 @@ func prepareBrowser() (*playwright.Playwright, playwright.Browser, playwright.Pa
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch playwright: %v", err))
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: playwright.Bool(false),
-		Args:     []string{"--ignore-certificate-errors", "--headless"},
+		// Args:     []string{"--ignore-certificate-errors", "--headless"},
+		Args:     []string{"--ignore-certificate-errors"},
 	}) // , "--headless"
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch Chromium: %v", err))
 	page, err := browser.NewPage()

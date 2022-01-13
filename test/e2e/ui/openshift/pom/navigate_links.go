@@ -1,7 +1,7 @@
 package pom
 
 const (
-	baseURL                  = "https://console-openshift-console.apps.openshift.mongokubernetes.com"
+	baseURL                  = "https://console-openshift-console.apps.kubeteam-oshift.2g12.p1.openshiftapps.com/"
 	loginEndPoint            = "/auth/login"
 	dashboardEndPoint        = "/dashboards"
 	operatorHubEndPoint      = "/operatorhub"
@@ -25,5 +25,5 @@ func InstalledOperatorLink() string {
 }
 
 func TokenPageLink() string {
-	return "https://oauth-openshift.apps.openshift.mongokubernetes.com/oauth/token/request"
+	return "https://oauth-openshift.apps.kubeteam-oshift.2g12.p1.openshiftapps.com/oauth/token/request"
 }
