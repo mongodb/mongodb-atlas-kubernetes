@@ -166,7 +166,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	log.Debugw("AtlasAccess", "results", atlasAccess.Results)
 	allReady := true
 	for _, ipAccessList := range atlasAccess.Results {
-		ipStatus, err := GetIpAccessListStatus(ctx.Client, ipAccessList)
+		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
 		if err != nil {
 			log.Errorf("error from resource: %s", err)
 			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
@@ -174,7 +174,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 		log.Debugw("IPAccessList", "ipStatus", ipStatus)
 
-		if ipStatus.Status != string(IpAccessListActive) {
+		if ipStatus.Status != string(IPAccessListActive) {
 			allReady = false
 			break
 		}

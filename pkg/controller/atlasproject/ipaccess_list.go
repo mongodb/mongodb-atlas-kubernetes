@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -137,39 +138,40 @@ func deleteIPAccessFromAtlas(client mongodbatlas.Client, projectID string, lists
 	return nil
 }
 
-// https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
-type IpAccessListStatusType string
+type IPAccessListStatusType string
 
 const (
-	IpAccessListActive  IpAccessListStatusType = "ACTIVE"
-	IpAccessListFailed  IpAccessListStatusType = "FAILED"
-	IpAccessListPending IpAccessListStatusType = "PENDING"
+	IPAccessListActive  IPAccessListStatusType = "ACTIVE"
+	IPAccessListFailed  IPAccessListStatusType = "FAILED"
+	IPAccessListPending IPAccessListStatusType = "PENDING"
 )
 
-type IpAccessListStatus struct {
+type IPAccessListStatus struct {
 	Status string `json:"STATUS"`
 }
 
 func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
 	if accessList.IPAddress != "" {
-		return accessList.IPAddress
+		return url.QueryEscape(accessList.IPAddress)
 	}
 	if accessList.CIDRBlock != "" {
-		return accessList.CIDRBlock
+		return url.QueryEscape(accessList.CIDRBlock)
 	}
-	return accessList.AwsSecurityGroup
+	return url.QueryEscape(accessList.AwsSecurityGroup)
 }
 
-func GetIpAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IpAccessListStatus, error) {
+// GetIPAccessListStatus returns the status of an individual project ip access list. The documentation can be found
+// here https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
+func GetIPAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IPAccessListStatus, error) {
 	urlStr := fmt.Sprintf("groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
 	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
 	if err != nil {
-		return IpAccessListStatus{}, err
+		return IPAccessListStatus{}, err
 	}
-	ipAccessListStatus := IpAccessListStatus{}
+	ipAccessListStatus := IPAccessListStatus{}
 	_, err = client.Do(context.Background(), req, &ipAccessListStatus)
 	if err != nil {
-		return IpAccessListStatus{}, err
+		return IPAccessListStatus{}, err
 	}
 	return ipAccessListStatus, nil
 }
