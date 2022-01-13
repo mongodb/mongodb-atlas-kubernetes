@@ -13,14 +13,15 @@ RUN go mod download
 COPY main.go main.go
 COPY .git/ .git/
 COPY pkg/ pkg/
+COPY Makefile Makefile
+COPY config/ config/
+COPY hack/ hack/
+
 
 ARG VERSION
 ENV PRODUCT_VERSION=${VERSION}
 
-# Build
-RUN if [ -z $PRODUCT_VERSION ]; then PRODUCT_VERSION=$(git describe --tags); fi; \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
-    go build -a -ldflags="-X main.version=$PRODUCT_VERSION" -o manager main.go
+RUN make manager
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4-205.1626828526
 
@@ -41,7 +42,7 @@ LABEL name="MongoDB Atlas Operator" \
       description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster"
 
 WORKDIR /
-COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
 
 USER 1001:0
