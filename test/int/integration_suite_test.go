@@ -17,13 +17,17 @@ limitations under the License.
 package int
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo"
@@ -35,7 +39,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -99,6 +102,7 @@ func TestAPIs(t *testing.T) {
 // the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
 var _ = SynchronizedBeforeSuite(func() []byte {
 	By("bootstrapping test environment")
+
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
@@ -107,8 +111,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
+	var b bytes.Buffer
+	e := gob.NewEncoder(&b)
+	err = e.Encode(*cfg)
+	Expect(err).NotTo(HaveOccurred())
+
 	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
-	return []byte(cfg.Host)
+	return b.Bytes()
 }, func(data []byte) {
 	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
 		var err error
@@ -118,15 +127,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			panic("Failed to read the config for existing cluster")
 		}
 	} else {
-		// This is the host that was serialized on the 1st node by the function above.
-		host := string(data)
-		// copied from Environment.Start()
-		cfg = &rest.Config{
-			Host: host,
-			// gotta go fast during tests -- we don't really care about overwhelming our test API server
-			QPS:   1000.0,
-			Burst: 2000.0,
-		}
+		d := gob.NewDecoder(bytes.NewReader(data))
+		err := d.Decode(&cfg)
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	err := mdbv1.AddToScheme(scheme.Scheme)
