@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -153,12 +153,40 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	if result = r.ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
+	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.SetConditionTrue(status.IPAccessListReadyType)
-	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+
+	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error()).ReconcileResult(), nil
+	}
+	log.Debugw("AtlasAccess", "results", atlasAccess.Results)
+	allReady := true
+	for _, ipAccessList := range atlasAccess.Results {
+		ipStatus, err := GetIpAccessListStatus(ctx.Client, ipAccessList)
+		if err != nil {
+			log.Errorf("error from resource: %s", err)
+			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
+		}
+
+		log.Debugw("IPAccessList", "ipStatus", ipStatus)
+
+		if ipStatus.Status != string(IpAccessListActive) {
+			allReady = false
+			break
+		}
+	}
+
+	if allReady {
+		ctx.SetConditionTrue(status.IPAccessListReadyType)
+		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+	} else {
+		log.Infof("Not all the Atlas IpAccessLists have reached the ACIVE state, requeuing reconciliation.")
+		ctx.SetConditionFalse(status.IPAccessListReadyType)
+		return reconcile.Result{Requeue: true}, nil
+	}
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
 		return result.ReconcileResult(), nil

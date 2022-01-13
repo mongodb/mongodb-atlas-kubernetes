@@ -3,6 +3,8 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -33,7 +35,10 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
-func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+// ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
+// state of the IP Access list specified in the project CR. Any Access Lists which exist
+// in Atlas but are not specified in the CR are deleted.
+func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
@@ -84,9 +89,9 @@ func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operato
 		atlasAccessLists[i] = atlasProjectIPAccessList(r)
 	}
 
-	difference := set.Difference(atlasAccessLists, operatorIPAccessLists)
+	accessListsToDelete := set.Difference(atlasAccessLists, operatorIPAccessLists)
 
-	if err := deleteIPAccessFromAtlas(client, projectID, difference, log); err != nil {
+	if err := deleteIPAccessFromAtlas(client, projectID, accessListsToDelete, log); err != nil {
 		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
 	}
 
@@ -96,14 +101,24 @@ func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operato
 	return workflow.OK()
 }
 
-func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
+// operatorToAtlasIPAccessList converts the ipAccessList specified in the project CR to the format
+// expected by the Atlas API.
+func operatorToAtlasIPAccessList(ipAccessLists []project.IPAccessList) ([]*mongodbatlas.ProjectIPAccessList, workflow.Result) {
 	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
 	for i, list := range ipAccessLists {
 		atlasFormat, err := list.ToAtlas()
 		if err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return nil, workflow.Terminate(workflow.Internal, err.Error())
 		}
 		operatorAccessLists[i] = atlasFormat
+	}
+	return operatorAccessLists, workflow.OK()
+}
+
+func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
+	operatorAccessLists, status := operatorToAtlasIPAccessList(ipAccessLists)
+	if !status.IsOk() {
+		return status
 	}
 
 	if _, _, err := client.ProjectIPAccessList.Create(context.Background(), projectID, operatorAccessLists); err != nil {
@@ -120,6 +135,33 @@ func deleteIPAccessFromAtlas(client mongodbatlas.Client, projectID string, lists
 		log.Debugw("Removed IPAccessList from Atlas as it's not specified in current AtlasProject", "id", l.Identifier())
 	}
 	return nil
+}
+
+// https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
+type IpAccessListStatusType string
+
+const (
+	IpAccessListActive  IpAccessListStatusType = "ACTIVE"
+	IpAccessListFailed  IpAccessListStatusType = "FAILED"
+	IpAccessListPending IpAccessListStatusType = "PENDING"
+)
+
+type IpAccessListStatus struct {
+	Status string `json:"STATUS"`
+}
+
+func GetIpAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IpAccessListStatus, error) {
+	urlStr := fmt.Sprintf("groups/%s/accessList/%s/status", accessList.GroupID, accessList.IPAddress)
+	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
+	if err != nil {
+		return IpAccessListStatus{}, err
+	}
+	ipAccessListStatus := IpAccessListStatus{}
+	_, err = client.Do(context.Background(), req, &ipAccessListStatus)
+	if err != nil {
+		return IpAccessListStatus{}, err
+	}
+	return ipAccessListStatus, nil
 }
 
 func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IPAccessList, []project.IPAccessList) {
