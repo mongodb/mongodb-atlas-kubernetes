@@ -24,9 +24,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"testing"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo"
