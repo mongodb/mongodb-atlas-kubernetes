@@ -150,8 +150,18 @@ type IpAccessListStatus struct {
 	Status string `json:"STATUS"`
 }
 
+func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
+	if accessList.IPAddress != "" {
+		return accessList.IPAddress
+	}
+	if accessList.CIDRBlock != "" {
+		return accessList.CIDRBlock
+	}
+	return accessList.AwsSecurityGroup
+}
+
 func GetIpAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IpAccessListStatus, error) {
-	urlStr := fmt.Sprintf("groups/%s/accessList/%s/status", accessList.GroupID, accessList.IPAddress)
+	urlStr := fmt.Sprintf("groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
 	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
 	if err != nil {
 		return IpAccessListStatus{}, err
