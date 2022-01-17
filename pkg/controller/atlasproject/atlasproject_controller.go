@@ -173,18 +173,19 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		}
 
 		log.Debugw("IPAccessList", "ipStatus", ipStatus)
-
 		if ipStatus.Status != string(IPAccessListActive) {
 			allReady = false
+			log.Infof("IPAccessList %v is not ready", ipAccessList)
 			break
 		}
 	}
 
 	if allReady {
+		log.Debugf("Setting condition to %s", status.IPAccessListReadyType)
 		ctx.SetConditionTrue(status.IPAccessListReadyType)
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	} else {
-		log.Infof("Not all the Atlas IpAccessLists have reached the ACIVE state, requeuing reconciliation.")
+		log.Infof("Not all the Atlas IP Access Lists have reached the ACIVE state, requeuing reconciliation.")
 		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return reconcile.Result{Requeue: true}, nil
 	}
