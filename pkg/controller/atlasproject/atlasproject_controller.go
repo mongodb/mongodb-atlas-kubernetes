@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -153,12 +154,24 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	if result = r.ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
+	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.SetConditionTrue(status.IPAccessListReadyType)
-	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+
+	allReady, result := r.allIPAccessListsAreReady(context, ctx, projectID)
+	if !result.IsOk() {
+		ctx.SetConditionFalse(status.IPAccessListReadyType)
+		return result.ReconcileResult(), nil
+	}
+
+	if allReady {
+		ctx.SetConditionTrue(status.IPAccessListReadyType)
+		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+	} else {
+		ctx.SetConditionFalse(status.IPAccessListReadyType)
+		return reconcile.Result{Requeue: true}, nil
+	}
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -167,6 +180,25 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
+}
+
+// allIPAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
+func (r *AtlasProjectReconciler) allIPAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
+	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return false, workflow.Terminate(workflow.Internal, err.Error())
+	}
+	for _, ipAccessList := range atlasAccess.Results {
+		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
+		if err != nil {
+			return false, workflow.Terminate(workflow.Internal, err.Error())
+		}
+		if ipStatus.Status != string(IPAccessListActive) {
+			r.Log.Infof("IP Access List %v is not active", ipAccessList)
+			return false, workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
+		}
+	}
+	return true, workflow.OK()
 }
 
 func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {

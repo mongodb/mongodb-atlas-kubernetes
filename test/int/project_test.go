@@ -504,8 +504,10 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 // This allows the test to fail fast instead by timeout if there are any troubles.
 func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
 	c := a.(*mdbv1.AtlasProject)
-	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
-	Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
+
+	if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType); ok {
+		Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+	}
 }
 
 // validateNoErrorsIPAccessListDuringUpdate performs check that no problems happen to IP Access list during the update.
