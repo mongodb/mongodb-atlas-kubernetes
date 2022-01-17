@@ -16,9 +16,8 @@ import (
 const (
 	ProjectLabelKey string = "atlas.mongodb.com/project-id"
 	ClusterLabelKey string = "atlas.mongodb.com/cluster-name"
-	// nolint:gosec
-	CredLabelKey = "atlas.mongodb.com/type"
-	CredLabelVal = "credentials"
+	CredLabelKey           = "atlas.mongodb.com/type"
+	CredLabelVal           = "credentials"
 
 	connectionSecretStdKey    string = "connectionStringStandard"
 	connectionSecretStdSrvKey string = "connectionStringStandardSrv"
