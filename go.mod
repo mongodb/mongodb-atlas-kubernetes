@@ -3,12 +3,12 @@ module github.com/mongodb/mongodb-atlas-kubernetes
 go 1.16
 
 require (
-	github.com/Azure/azure-sdk-for-go v60.3.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.10
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
-	github.com/aws/aws-sdk-go v1.42.25
+	github.com/aws/aws-sdk-go v1.42.35
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.0
 	github.com/golang/snappy v0.0.2 // indirect
