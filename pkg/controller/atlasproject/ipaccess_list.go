@@ -150,6 +150,9 @@ type IPAccessListStatus struct {
 	Status string `json:"STATUS"`
 }
 
+// getAccessListEntry returns the identifier for the accessList. It should be exactly one of IPAddress, CIDRBlock
+// or AwsSecurityGroup. This function assumes that the accessList is already validated and has only one of these
+// fields populated.
 func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
 	if accessList.IPAddress != "" {
 		return url.QueryEscape(accessList.IPAddress)
