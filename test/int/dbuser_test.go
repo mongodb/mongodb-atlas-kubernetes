@@ -681,6 +681,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
 		"atlas.mongodb.com/cluster-name": cluster.Spec.Name,
+		"atlas.mongodb.com/type": project.Spec.ConnectionSecret.Name,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))

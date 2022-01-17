@@ -55,6 +55,9 @@ var _ = Describe("AtlasCluster", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-atlas-key",
 				Namespace: namespace.Name,
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
+				},
 			},
 			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 		}
