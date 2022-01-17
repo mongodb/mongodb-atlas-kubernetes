@@ -159,7 +159,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	allReady, result := r.allIpAccessListsAreReady(context, ctx, projectID)
+	allReady, result := r.allIPAccessListsAreReady(context, ctx, projectID)
 	if !result.IsOk() {
 		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return result.ReconcileResult(), nil
@@ -184,8 +184,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-// allIpAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
-func (r *AtlasProjectReconciler) allIpAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
+// allIPAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
+func (r *AtlasProjectReconciler) allIPAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
 	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return false, workflow.Terminate(workflow.Internal, err.Error())
