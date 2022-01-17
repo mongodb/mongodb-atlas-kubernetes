@@ -26,7 +26,7 @@ import (
 
 // tag for test resources "atlas-operator-test" (config.Tag)
 
-// AWS NOTES: reserved VPC in eu-west-2, eu-south-1 (due to limitation no more 4 VPC per region)
+// AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
 
 type privateEndpoint struct {
 	provider string
@@ -136,7 +136,7 @@ var _ = Describe("[privatelink] UserLogin", func() {
 				},
 				{
 					provider: "AWS",
-					region:   "eu-south-1",
+					region:   "us-east-1",
 				},
 			},
 		),
@@ -161,7 +161,7 @@ var _ = Describe("[privatelink] UserLogin", func() {
 				},
 				{
 					provider: "AWS",
-					region:   "eu-south-1",
+					region:   "us-east-1",
 				},
 				{
 					provider: "AZURE",
