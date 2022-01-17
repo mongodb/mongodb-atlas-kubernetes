@@ -138,14 +138,14 @@ jobs:
         k8s: ["v1.18.15-kind"] # <K8sGitVersion>-<Platform>
         test:
           [
-              "cluster-ns",
-              "cluster-wide",
-              "bundle-test",
-              "helm-ns",
-              "helm-wide",
-              "helm-update",
-              "multinamespaced",
-              "privatelink-aws",
+            "cluster-ns",
+            "cluster-wide",
+            "bundle-test",
+            "helm-ns",
+            "helm-wide",
+            "helm-update",
+            "multinamespaced",
+            "privatelink",
           ]
         include:
           - k8s: "latest-openshift"

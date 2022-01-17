@@ -41,8 +41,8 @@ func (awsAction *awsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoi
 	if err != nil {
 		return err
 	}
-	if status != "deleting" {
-		return errors.New("AWS PE status is NOT 'deleting'. Actual status: " + status)
+	if status != "deleting" && status != "deleted" {
+		return errors.New("AWS PE status is NOT 'deleting'/'deleted'. Actual status: " + status)
 	}
 	return nil
 }

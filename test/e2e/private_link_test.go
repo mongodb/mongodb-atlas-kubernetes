@@ -26,12 +26,14 @@ import (
 
 // tag for test resources "atlas-operator-test" (config.Tag)
 
+// AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
+
 type privateEndpoint struct {
 	provider string
 	region   string
 }
 
-var _ = Describe("[privatelink-aws] UserLogin", func() {
+var _ = Describe("[privatelink] UserLogin", func() {
 	var data model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -46,20 +48,25 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentGinkgoTestDescription().Failed {
-			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-				[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
-			)
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-				kubecli.GetManagerLogs(data.Resources.Namespace),
-			)
-			actions.SaveTestAppLogs(data.Resources)
-			actions.SaveK8sResources(
-				[]string{"deploy", "atlasprojects"},
-				data.Resources.Namespace,
-			)
+			By("Save logs to output directory ", func() {
+				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
+				utils.SaveToFile(
+					fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
+					[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
+				)
+				utils.SaveToFile(
+					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
+					kubecli.GetManagerLogs(data.Resources.Namespace),
+				)
+				actions.SaveTestAppLogs(data.Resources)
+				actions.SaveK8sResources(
+					[]string{"deploy", "atlasprojects"},
+					data.Resources.Namespace,
+				)
+			})
+			By("Clean Cloud", func() {
+				DeleteAllPrivateEndpoints(&data)
+			})
 		}
 	})
 
@@ -68,9 +75,9 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 			data = test
 			privateFlow(test, pe)
 		},
-		Entry("Test: User has project which was updated with AWS PrivateEndpoint",
+		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint",
 			model.NewTestDataProvider(
-				"operator-plink-aws-1",
+				"privatelink-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -89,9 +96,9 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				},
 			},
 		),
-		Entry("Test: User has project which was updated with Azure PrivateEndpoint",
+		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint",
 			model.NewTestDataProvider(
-				"operator-plink-azure-1",
+				"privatelink-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -107,6 +114,60 @@ var _ = Describe("[privatelink-aws] UserLogin", func() {
 				provider: "AZURE",
 				region:   "northeurope",
 			}},
+		),
+		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint",
+			model.NewTestDataProvider(
+				"privatelink-aws-2",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+				{
+					provider: "AWS",
+					region:   "us-east-1",
+				},
+			},
+		),
+		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint",
+			model.NewTestDataProvider(
+				"privatelink-aws-azure",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+				{
+					provider: "AWS",
+					region:   "us-east-1",
+				},
+				{
+					provider: "AZURE",
+					region:   "northeurope",
+				},
+			},
 		),
 	)
 })
@@ -142,7 +203,7 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest := cloud.CreatePEActions(peitem)
-			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(userData.Resources.ProjectID)
+			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(privateLinkID).ShouldNot(BeEmpty())
 			Eventually(
@@ -178,21 +239,26 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 	})
 
 	By("Delete PE from Clouds", func() {
-		project, err := kube.GetProjectResource(&userData)
-		Expect(err).ShouldNot(HaveOccurred())
-		for _, peitem := range project.Status.PrivateEndpoints {
-			cloudTest := cloud.CreatePEActions(peitem)
-			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-			Expect(privateEndpointID).ShouldNot(BeEmpty())
-
-			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-			Expect(err).ShouldNot(HaveOccurred())
-		}
+		DeleteAllPrivateEndpoints(&userData)
 	})
 
 	By("Delete Resources, Project with PEService", func() {
 		actions.DeleteUserResourcesProject(&userData)
 	})
+}
+
+// DeleteAllPrivateEndpoints Specific for the current suite  - delete all requested Private Endpoints by test data
+func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
+	project, err := kube.GetProjectResource(data)
+	Expect(err).ShouldNot(HaveOccurred())
+	for _, peitem := range project.Status.PrivateEndpoints {
+		cloudTest := cloud.CreatePEActions(peitem)
+		privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+		Expect(privateEndpointID).ShouldNot(BeEmpty())
+
+		err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+		Expect(err).ShouldNot(HaveOccurred())
+	}
 }
 
 func AllPEndpointUpdated(data *model.TestDataProvider) bool {

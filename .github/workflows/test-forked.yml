@@ -146,6 +146,7 @@ jobs:
             "helm-wide",
             "helm-update",
             "multinamespaced",
+            "privatelink",
           ]
         include:
           - k8s: "latest-openshift"
