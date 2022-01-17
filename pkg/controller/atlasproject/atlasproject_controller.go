@@ -159,25 +159,10 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error()).ReconcileResult(), nil
-	}
-	log.Debugw("AtlasAccess", "results", atlasAccess.Results)
-	allReady := true
-	for _, ipAccessList := range atlasAccess.Results {
-		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
-		if err != nil {
-			log.Errorf("error from resource: %s", err)
-			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
-		}
-
-		log.Debugw("IPAccessList", "ipStatus", ipStatus)
-		if ipStatus.Status != string(IPAccessListActive) {
-			allReady = false
-			log.Infof("IPAccessList %v is not ready", ipAccessList)
-			break
-		}
+	allReady, result := r.allIpAccessListsAreReady(context, ctx, projectID)
+	if !result.IsOk() {
+		ctx.SetConditionFalse(status.IPAccessListReadyType)
+		return result.ReconcileResult(), nil
 	}
 
 	if allReady {
@@ -197,6 +182,25 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil
+}
+
+// allIpAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
+func (r *AtlasProjectReconciler) allIpAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
+	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return false, workflow.Terminate(workflow.Internal, err.Error())
+	}
+	for _, ipAccessList := range atlasAccess.Results {
+		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
+		if err != nil {
+			return false, workflow.Terminate(workflow.Internal, err.Error())
+		}
+		if ipStatus.Status != string(IPAccessListActive) {
+			r.Log.Infof("IP Access List %v is not active", ipAccessList)
+			return false, workflow.Terminate(workflow.Internal, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
+		}
+	}
+	return true, workflow.OK()
 }
 
 func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
