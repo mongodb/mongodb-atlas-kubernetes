@@ -197,7 +197,7 @@ func (r *AtlasProjectReconciler) allIpAccessListsAreReady(context context.Contex
 		}
 		if ipStatus.Status != string(IPAccessListActive) {
 			r.Log.Infof("IP Access List %v is not active", ipAccessList)
-			return false, workflow.Terminate(workflow.Internal, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
+			return false, workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
 		}
 	}
 	return true, workflow.OK()
