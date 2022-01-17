@@ -505,7 +505,9 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
 	c := a.(*mdbv1.AtlasProject)
 	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
-	Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
+	if ok {
+		Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType)), fmt.Sprintf("Unexpected condition: %v", condition))
+	}
 }
 
 // validateNoErrorsIPAccessListDuringUpdate performs check that no problems happen to IP Access list during the update.
