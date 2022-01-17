@@ -139,6 +139,12 @@ func CreateApiKeySecret(keyName, ns string) { // TODO add ns
 	)
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
+
+	session = cli.ExecuteWithoutWriter("kubectl", "label", "secret", keyName, "atlas.mongodb.com/type=credentials", "-n", ns, "--overwrite")
+	result = cli.GetSessionExitMsg(session)
+
+	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
+	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
 func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
