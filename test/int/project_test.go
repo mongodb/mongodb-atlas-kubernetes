@@ -506,7 +506,7 @@ func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
 	c := a.(*mdbv1.AtlasProject)
 
 	if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType); ok {
-		Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType)), fmt.Sprintf("Unexpected condition: %v", condition))
+		Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
 	}
 }
 
