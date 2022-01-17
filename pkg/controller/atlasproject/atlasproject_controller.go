@@ -166,11 +166,9 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	if allReady {
-		log.Debugf("Setting condition to %s", status.IPAccessListReadyType)
 		ctx.SetConditionTrue(status.IPAccessListReadyType)
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	} else {
-		log.Infof("Not all the Atlas IP Access Lists have reached the ACIVE state, requeuing reconciliation.")
 		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return reconcile.Result{Requeue: true}, nil
 	}
