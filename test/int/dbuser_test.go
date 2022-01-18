@@ -559,6 +559,9 @@ func buildPasswordSecret(name, password string) corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace.Name,
+			Labels: map[string]string{
+				"atlas.mongodb.com/type": "credentials",
+			},
 		},
 		StringData: map[string]string{"password": password},
 	}
