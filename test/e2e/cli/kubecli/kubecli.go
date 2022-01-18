@@ -137,7 +137,7 @@ func CreateUserSecret(name, ns string) {
 	for k, v := range labels {
 		session = cli.ExecuteWithoutWriter("kubectl", "label", "secret", name, fmt.Sprintf("%s=%s", k, v), "-n", ns)
 		result = cli.GetSessionExitMsg(session)
-		Eventually(result).Should(SatisfyAny(Say("secret/"+name+" labeled")))
+		Eventually(result).Should(SatisfyAny(Say("secret/" + name + " labeled")))
 	}
 }
 
