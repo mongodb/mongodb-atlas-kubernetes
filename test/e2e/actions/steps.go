@@ -95,13 +95,7 @@ func CheckIfUserExist(username, projecID string) func() bool {
 
 func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
-		"MongoURI":            Not(BeEmpty()),
-		"MongoURIWithOptions": Not(BeEmpty()),
 		"Name":                Equal(requested.Name),
-		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
-			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
-			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
-		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
 			"StandardSrv": Not(BeEmpty()),
