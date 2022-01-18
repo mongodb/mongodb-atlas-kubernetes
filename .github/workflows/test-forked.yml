@@ -48,6 +48,11 @@ jobs:
       matrix:
         test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
+
       - uses: actions/checkout@v2.4.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
@@ -73,6 +78,11 @@ jobs:
     needs: allowed
     runs-on: ubuntu-latest
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
+
       - uses: actions/checkout@v2.4.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
@@ -153,6 +163,11 @@ jobs:
             test: "openshift"
 
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
+
       - name: Check out code
         uses: actions/checkout@v2.4.0
         with:
