@@ -246,7 +246,9 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 			By("Create dbuser spec", func() {
 				for _, user := range data.Resources.Users {
 					user.SaveConfigurationTo(data.Resources.ProjectPath)
-					kubecli.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+					kubecli.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace, map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					})
 				}
 			})
 		}
