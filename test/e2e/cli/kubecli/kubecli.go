@@ -120,10 +120,7 @@ func CreateNamespace(name string) *Buffer {
 	return session.Out
 }
 
-func CreateUserSecret(name, ns string, labels map[string]string) {
-	if labels == nil {
-		labels = map[string]string{}
-	}
+func CreateUserSecret(name, ns string) {
 	secret, _ := password.Generate(10, 3, 0, false, false)
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", name,
 		"--from-literal=password="+secret,
@@ -131,6 +128,10 @@ func CreateUserSecret(name, ns string, labels map[string]string) {
 	)
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(name+" created"), Say("already exists")), "Can't create user secret"+name)
+
+	labels := map[string]string{
+		"atlas.mongodb.com/type": "credentials",
+	}
 
 	// apply all labels to the secret
 	for k, v := range labels {
