@@ -82,7 +82,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 			code := pom.NavigateTokenPage(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"]).GetCode()
 			Expect(code).ShouldNot(BeEmpty())
 
-			oc.Login(code)
+			oc.Login(code, pom.ServerAPI())
 		})
 
 		By("Lock environment", func() {

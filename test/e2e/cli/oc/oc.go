@@ -2,6 +2,8 @@ package oc
 
 import (
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 )
 
 func Version() {
@@ -9,9 +11,9 @@ func Version() {
 	session.Wait()
 }
 
-func Login(code string) {
-	session := cli.ExecuteWithoutWriter("oc", "login", "--token="+code, "--server=https://api.openshift.mongokubernetes.com:6443", "--insecure-skip-tls-verify")
-	session.Wait("2m")
+func Login(code, serverAPI string) {
+	session := cli.ExecuteWithoutWriter("oc", "login", "--token="+code, "--server="+serverAPI, "--insecure-skip-tls-verify")
+	EventuallyWithOffset(1, session).Should(Say("Logged into"), "Can not login to "+serverAPI)
 }
 
 func Apply(path string) {
