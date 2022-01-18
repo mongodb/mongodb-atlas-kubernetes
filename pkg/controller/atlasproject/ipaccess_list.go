@@ -3,6 +3,9 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -33,7 +36,10 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 
-func (r *AtlasProjectReconciler) ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+// ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
+// state of the IP Access list specified in the project CR. Any Access Lists which exist
+// in Atlas but are not specified in the CR are deleted.
+func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
@@ -84,9 +90,9 @@ func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operato
 		atlasAccessLists[i] = atlasProjectIPAccessList(r)
 	}
 
-	difference := set.Difference(atlasAccessLists, operatorIPAccessLists)
+	accessListsToDelete := set.Difference(atlasAccessLists, operatorIPAccessLists)
 
-	if err := deleteIPAccessFromAtlas(client, projectID, difference, log); err != nil {
+	if err := deleteIPAccessFromAtlas(client, projectID, accessListsToDelete, log); err != nil {
 		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
 	}
 
@@ -96,14 +102,24 @@ func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operato
 	return workflow.OK()
 }
 
-func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
+// operatorToAtlasIPAccessList converts the ipAccessList specified in the project CR to the format
+// expected by the Atlas API.
+func operatorToAtlasIPAccessList(ipAccessLists []project.IPAccessList) ([]*mongodbatlas.ProjectIPAccessList, workflow.Result) {
 	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
 	for i, list := range ipAccessLists {
 		atlasFormat, err := list.ToAtlas()
 		if err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
+			return nil, workflow.Terminate(workflow.Internal, err.Error())
 		}
 		operatorAccessLists[i] = atlasFormat
+	}
+	return operatorAccessLists, workflow.OK()
+}
+
+func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
+	operatorAccessLists, status := operatorToAtlasIPAccessList(ipAccessLists)
+	if !status.IsOk() {
+		return status
 	}
 
 	if _, _, err := client.ProjectIPAccessList.Create(context.Background(), projectID, operatorAccessLists); err != nil {
@@ -120,6 +136,47 @@ func deleteIPAccessFromAtlas(client mongodbatlas.Client, projectID string, lists
 		log.Debugw("Removed IPAccessList from Atlas as it's not specified in current AtlasProject", "id", l.Identifier())
 	}
 	return nil
+}
+
+type IPAccessListStatusType string
+
+const (
+	IPAccessListActive  IPAccessListStatusType = "ACTIVE"
+	IPAccessListFailed  IPAccessListStatusType = "FAILED"
+	IPAccessListPending IPAccessListStatusType = "PENDING"
+)
+
+type IPAccessListStatus struct {
+	Status string `json:"STATUS"`
+}
+
+// getAccessListEntry returns the identifier for the accessList. It should be exactly one of IPAddress, CIDRBlock
+// or AwsSecurityGroup. This function assumes that the accessList is already validated and has only one of these
+// fields populated.
+func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
+	if accessList.IPAddress != "" {
+		return url.QueryEscape(accessList.IPAddress)
+	}
+	if accessList.CIDRBlock != "" {
+		return url.QueryEscape(accessList.CIDRBlock)
+	}
+	return url.QueryEscape(accessList.AwsSecurityGroup)
+}
+
+// GetIPAccessListStatus returns the status of an individual project ip access list. The documentation can be found
+// here https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
+func GetIPAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IPAccessListStatus, error) {
+	urlStr := fmt.Sprintf("groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
+	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
+	if err != nil {
+		return IPAccessListStatus{}, err
+	}
+	ipAccessListStatus := IPAccessListStatus{}
+	_, err = client.Do(context.Background(), req, &ipAccessListStatus)
+	if err != nil {
+		return IPAccessListStatus{}, err
+	}
+	return ipAccessListStatus, nil
 }
 
 func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IPAccessList, []project.IPAccessList) {

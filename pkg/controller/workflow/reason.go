@@ -17,6 +17,7 @@ const (
 	ProjectIPNotCreatedInAtlas              ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
+	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
 )
 
 // Atlas Cluster reasons
