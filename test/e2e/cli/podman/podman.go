@@ -13,7 +13,7 @@ func Version() {
 }
 
 func Login(registry, user, pass string) {
-	session := cli.Execute("podman", "login", "-u", user, "-p", pass, registry)
+	session := cli.ExecuteWithoutWriter("podman", "login", "-u", user, "-p", pass, registry)
 	Eventually(session, "2m", "10s").Should(gexec.Exit(0))
 }
 

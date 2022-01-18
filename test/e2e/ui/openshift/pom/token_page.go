@@ -31,6 +31,12 @@ func NavigateTokenPage(page playwright.Page) *TokenPage {
 	}
 }
 
+func (e *TokenPage) With(user, password string) *TokenPage {
+	return &TokenPage{
+		NewLogin(e.P).With(user, password).P,
+	}
+}
+
 func (e *TokenPage) GetCode() string {
 	e.P.WaitForSelector(displayCodeButton)
 	e.P.Click(displayCodeButton)

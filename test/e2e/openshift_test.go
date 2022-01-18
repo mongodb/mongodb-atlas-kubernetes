@@ -78,8 +78,8 @@ var _ = Describe("[openshift] UserLogin", func() {
 			)
 		})
 		By("Login into openshift", func() {
-			pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"])
-			code := pom.NavigateTokenPage(page).GetCode()
+			pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"]).WaitLoad()
+			code := pom.NavigateTokenPage(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"]).GetCode()
 			Expect(code).ShouldNot(BeEmpty())
 
 			oc.Login(code)
@@ -129,8 +129,7 @@ func prepareBrowser() (*playwright.Playwright, playwright.Browser, playwright.Pa
 	pw, err := playwright.Run()
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch playwright: %v", err))
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
-		// Args:     []string{"--ignore-certificate-errors", "--headless"},
+		Headless: playwright.Bool(true),
 		Args:     []string{"--ignore-certificate-errors"},
 	}) // , "--headless"
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch Chromium: %v", err))
