@@ -2,13 +2,14 @@ package actions
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"os"
-	"strconv"
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	a "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
@@ -324,7 +325,6 @@ func DeployCluster(data *model.TestDataProvider, generation string) {
 	})
 	By("check cluster Attribute", func() {
 		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
-
 
 		GinkgoWriter.Write([]byte(fmt.Sprintf("CLUSTER: %+v", cluster)))
 		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
