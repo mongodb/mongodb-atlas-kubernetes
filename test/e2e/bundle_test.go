@@ -51,7 +51,7 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 
 	It("User can install", func() {
 		Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL), "5m").Should(gexec.Exit(0))
+		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--timeout", "5m"), "5m").Should(gexec.Exit(0))
 
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
