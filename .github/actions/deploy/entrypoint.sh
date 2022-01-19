@@ -19,7 +19,7 @@ cd - && kustomize build --load-restrictor LoadRestrictionsNone config/release/de
 # Ensuring the Atlas credentials Secret
 kubectl delete secrets my-atlas-key --ignore-not-found -n "${ns}"
 kubectl create secret generic my-atlas-key --from-literal="orgId=${INPUT_ATLAS_ORG_ID}" --from-literal="publicApiKey=${INPUT_ATLAS_PUBLIC_KEY}" --from-literal="privateApiKey=${INPUT_ATLAS_PRIVATE_KEY}" -n "${ns}"
-# kubectl label secret my-atlas-key atlas.mongodb.com/type=credentials
+kubectl label secret my-atlas-key atlas.mongodb.com/type=credentials
 
 label="app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator"
 # Wait for the Operator to start

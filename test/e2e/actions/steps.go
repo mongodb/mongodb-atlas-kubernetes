@@ -97,6 +97,7 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
+		"Name":                Equal(requested.Name),
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
 			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
@@ -325,15 +326,6 @@ func DeployCluster(data *model.TestDataProvider, generation string) {
 	})
 	By("check cluster Attribute", func() {
 		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
-
-		GinkgoWriter.Write([]byte(fmt.Sprintf("CLUSTER: %+v", cluster)))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
-		GinkgoWriter.Write([]byte(fmt.Sprintf("data.Resources.Clusters[0].Spec: %+v", data.Resources.Clusters[0].Spec)))
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
 	})
 }
