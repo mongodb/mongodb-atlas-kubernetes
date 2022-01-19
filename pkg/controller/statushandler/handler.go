@@ -1,6 +1,7 @@
 package statushandler
 
 import (
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,6 +19,10 @@ func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder recor
 	resource.UpdateStatus(ctx.Conditions(), ctx.StatusOptions()...)
 
 	if err := patchUpdateStatus(kubeClient, resource); err != nil {
+		// if the resource has been deleted, it will not be possible to update the status.
+		if apiErrors.IsNotFound(err) {
+			return
+		}
 		// Implementation logic: we deliberately don't return the 'error' to avoid cumbersome handling logic as the
 		// failed update of the status is not something that should block reconciliation
 		ctx.Log.Errorf("Failed to update status: %s", err)
