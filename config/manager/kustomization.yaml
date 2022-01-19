@@ -7,4 +7,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: controller
-  newName: localhost:5000/mongodb-atlas-kubernetes-operator
+  newName: 268558157000.dkr.ecr.us-east-1.amazonaws.com/chatton/mongodb-atlas-kubernetes-operator
+  newTag: CLOUDP-107930_add_label_selector_to_watch_secrets-b1ec61e

@@ -2,14 +2,13 @@ package actions
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"os"
+	"strconv"
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	a "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
@@ -95,7 +94,12 @@ func CheckIfUserExist(username, projecID string) func() bool {
 
 func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
-		"Name": Equal(requested.Name),
+		"MongoURI":            Not(BeEmpty()),
+		"MongoURIWithOptions": Not(BeEmpty()),
+		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
+			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
+			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
+		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
 			"StandardSrv": Not(BeEmpty()),
@@ -320,6 +324,16 @@ func DeployCluster(data *model.TestDataProvider, generation string) {
 	})
 	By("check cluster Attribute", func() {
 		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+
+
+		GinkgoWriter.Write([]byte(fmt.Sprintf("CLUSTER: %+v", cluster)))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("========================")))
+		GinkgoWriter.Write([]byte(fmt.Sprintf("data.Resources.Clusters[0].Spec: %+v", data.Resources.Clusters[0].Spec)))
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
 	})
 }

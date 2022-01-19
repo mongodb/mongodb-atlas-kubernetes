@@ -199,7 +199,7 @@ spec:
     spec:
       containers:
       - args:
-        - --atlas-domain=https://cloud.mongodb.com
+        - --atlas-domain=https://cloud-qa.mongodb.com
         - --leader-elect
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
@@ -214,7 +214,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.7.0
+        image: 268558157000.dkr.ecr.us-east-1.amazonaws.com/chatton/mongodb-atlas-kubernetes-operator:CLOUDP-107930_add_label_selector_to_watch_secrets-b1ec61e
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
