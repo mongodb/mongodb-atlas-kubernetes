@@ -1,11 +1,13 @@
 package statushandler
 
 import (
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 // Update performs the update (in the form of patch) for the Atlas Custom Resource status.
@@ -18,6 +20,10 @@ func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder recor
 	resource.UpdateStatus(ctx.Conditions(), ctx.StatusOptions()...)
 
 	if err := patchUpdateStatus(kubeClient, resource); err != nil {
+		if apiErrors.IsNotFound(err) {
+			ctx.Log.Infof("The resource %s no longer exists, not updating the status", kube.ObjectKey(resource.GetNamespace(), resource.GetName()))
+			return
+		}
 		// Implementation logic: we deliberately don't return the 'error' to avoid cumbersome handling logic as the
 		// failed update of the status is not something that should block reconciliation
 		ctx.Log.Errorf("Failed to update status: %s", err)
