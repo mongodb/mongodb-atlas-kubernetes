@@ -126,18 +126,17 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		if isDeletionFinalizerPresent(project) {
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
-				return result.ReconcileResult(), nil
-			}
+			} else {
+				if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
+					ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+					return result.ReconcileResult(), nil
+				}
 
-			if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
-				ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
-				return result.ReconcileResult(), nil
-			}
-
-			if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.ClusterReadyType, result)
-				return result.ReconcileResult(), nil
+				if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
+					result = workflow.Terminate(workflow.Internal, err.Error())
+					ctx.SetConditionFromResult(status.ClusterReadyType, result)
+					return result.ReconcileResult(), nil
+				}
 			}
 
 			if err = r.removeDeletionFinalizer(context, project); err != nil {
