@@ -1,0 +1,6 @@
+---
+schema: olm.channel
+package: mongodb-atlas-kubernetes
+name: TARGET_CHANNEL
+entries:
+  - name: mongodb-atlas-kubernetes.vTARGET_VERSION

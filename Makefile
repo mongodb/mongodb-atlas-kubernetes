@@ -31,11 +31,16 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= controller-bundle:$(VERSION)
+BUNDLE_IMG ?= quay.io/mongodb/mongodb-atlas-controller-bundle:$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-
+IMG ?= mongodb-atlas-controller:latest
+REGISTRY ?= quay.io
+BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb/mongodb-atlas-operator-bundle
+OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb/mongodb-atlas-operator
+CATALOG_REGISTRY ?= $(REGISTRY)/mongodb/mongodb-atals-catalog
+OPERATOR_IMAGE ?= ${OPERATOR_REGISTRY}:${VERSION}
+CATALOG_IMAGE ?= ${CATALOG_REGISTRY}:${VERSION}
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -146,9 +151,33 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
+.PHONY: image
+image: manager ## Build the operator image
+	docker build -t $(OPERATOR_IMAGE) .
+	docker push $(OPERATOR_IMAGE)
+
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+.PHONY: bundle-push
+bundle-push: bundle bundle-build ## Publish the bundle image
+	docker push $(BUNDLE_IMG)
+
+CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
+catalog-build: ## bundle bundle-push ## Build file-based bundle
+	CATALOG_DIR=$(CATALOG_DIR) \
+	    CHANNEL=$(DEFAULT_CHANNEL) \
+	    CATALOG_IMAGE=$(CATALOG_IMAGE) \
+	    BUNDLE_IMAGE=$(BUNDLE_IMG) \
+	    VERSION=$(VERSION) \
+	    ./scripts/build_catalog.sh
+
+catalog-push:
+	docker push $(CATALOG_IMAGE)
+
+deploy-olm: bundle-build catalog-build
+
 
 docker-push: ## Push the docker image
 	docker push ${IMG}
