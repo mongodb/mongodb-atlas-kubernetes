@@ -93,7 +93,7 @@ func main() {
 			SelectorsByObject: cache.SelectorsByObject{
 				&corev1.Secret{}: {
 					Label: labels.SelectorFromSet(labels.Set{
-						connectionsecret.CredLabelKey: connectionsecret.CredLabelVal,
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 					}),
 				},
 			},

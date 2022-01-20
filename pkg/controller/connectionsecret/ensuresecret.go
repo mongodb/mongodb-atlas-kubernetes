@@ -16,7 +16,7 @@ import (
 const (
 	ProjectLabelKey string = "atlas.mongodb.com/project-id"
 	ClusterLabelKey string = "atlas.mongodb.com/cluster-name"
-	CredLabelKey           = "atlas.mongodb.com/type"
+	TypeLabelKey           = "atlas.mongodb.com/type"
 	CredLabelVal           = "credentials"
 
 	connectionSecretStdKey    string = "connectionStringStandard"
@@ -74,7 +74,7 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	}
 
 	secret.Labels = map[string]string{
-		CredLabelKey:    CredLabelVal,
+		TypeLabelKey:    CredLabelVal,
 		ProjectLabelKey: projectID,
 		ClusterLabelKey: kube.NormalizeLabelValue(clusterName),
 	}

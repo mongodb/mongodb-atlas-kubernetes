@@ -35,4 +35,4 @@ testbin/
 
 # don't include generated files from e2e tests
 test/e2e/data/operator-*
-test/e2e/output/ns-operator*
+test/e2e/output/

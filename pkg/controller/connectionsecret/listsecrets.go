@@ -26,7 +26,7 @@ func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName
 	var result []corev1.Secret
 	opts := &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			CredLabelKey: CredLabelVal,
+			TypeLabelKey: CredLabelVal,
 		}),
 	}
 	if err := k8sClient.List(context.Background(), &secrets, client.InNamespace(namespace), opts); err != nil {

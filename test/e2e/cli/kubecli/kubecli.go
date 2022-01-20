@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -130,7 +132,7 @@ func CreateUserSecret(name, ns string) {
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(name+" created"), Say("already exists")), "Can't create user secret"+name)
 
 	labels := map[string]string{
-		"atlas.mongodb.com/type": "credentials",
+		connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 	}
 
 	// apply all labels to the secret
@@ -151,7 +153,7 @@ func CreateApiKeySecret(keyName, ns string) {
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
 
-	session = cli.ExecuteWithoutWriter("kubectl", "label", "secret", keyName, "atlas.mongodb.com/type=credentials", "-n", ns, "--overwrite")
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
 	result = cli.GetSessionExitMsg(session)
 
 	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
@@ -168,7 +170,7 @@ func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TOD
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
 
-	session = cli.ExecuteWithoutWriter("kubectl", "label", "secret", keyName, "atlas.mongodb.com/type=credentials", "-n", ns, "--overwrite")
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
 	result = cli.GetSessionExitMsg(session)
 
 	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
