@@ -1,9 +1,10 @@
 package oc
 
 import (
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
 
 func Version() {

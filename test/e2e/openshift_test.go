@@ -43,7 +43,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		operatorTag = strings.Split(s["BUNDLE_IMAGE"], ":")[1]
 		operatorTag = strings.ToLower(operatorTag)
-		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "Could not get a credential. Please, set up BUNDLE_IMAGE environment variable")
+		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "Could not get a image name. Please, set up BUNDLE_IMAGE environment variable")
 		Expect(operatorTag).ShouldNot(BeEmpty())
 
 		pw, browser, page = prepareBrowser()
@@ -88,6 +88,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 		By("Lock environment", func() {
 			kubecli.CreateNamespace(lockNamespace)
 			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
+			kubecli.CreateConfigMapWithLiterals(lockNamespace, lockNamespace)
 		})
 
 		By("Prepare custom catalog for openshift", func() {
@@ -104,12 +105,13 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		By("delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
+			makeScreenshot(page, "deleted")
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
+			makeScreenshot(page, "install")
 		})
 		By("final screenshot, clean", func() {
-			makeScreenshot(page, "install")
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
-			makeScreenshot(page, "delete")
+			makeScreenshot(page, "final")
 			oc.Delete(path)
 		})
 	})

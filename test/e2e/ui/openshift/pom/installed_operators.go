@@ -53,13 +53,13 @@ func (iop *InstalledOperatorsPage) SearchByLabel(smth string) *InstalledOperator
 
 func (iop *InstalledOperatorsPage) EditAOSubscription() {
 	// TODO doesnt work w/o search
-	iop.P.Click(actionOperatorMenu)
-	iop.P.Click(editSubscriptionOperator)
+	Expect(iop.P.Click(actionOperatorMenu)).ShouldNot(HaveOccurred(), "Could not Click on "+actionOperatorMenu)
+	Expect(iop.P.Click(editSubscriptionOperator)).ShouldNot(HaveOccurred(), "Could not Click on "+editSubscriptionOperator)
 }
 
 func (iop *InstalledOperatorsPage) DeleteAOperator() {
 	// TODO doesnt work w/o search
-	iop.P.Click(actionOperatorMenu)
-	iop.P.Click(deleteOperator)
-	ConfirmAction(iop.P)
+	Expect(iop.P.Click(actionOperatorMenu)).ShouldNot(HaveOccurred(), "Could not Click on "+actionOperatorMenu)
+	Expect(iop.P.Click(deleteOperator)).ShouldNot(HaveOccurred(), "Could not Click on "+deleteOperator)
+	Expect(ConfirmAction(iop.P)).ShouldNot(HaveOccurred(), "Could not Click on "+deleteOperator)
 }

@@ -38,7 +38,10 @@ func (e *TokenPage) With(user, password string) *TokenPage {
 }
 
 func (e *TokenPage) GetCode() string {
-	e.P.WaitForSelector(displayCodeButton)
+	e.P.WaitForSelector(displayCodeButton, playwright.PageWaitForSelectorOptions{
+		State:   playwright.WaitForSelectorStateAttached,
+		Timeout: playwright.Float(timeoutShort),
+	})
 	e.P.Click(displayCodeButton)
 	code, err := e.P.InnerText(codeField)
 	Expect(err).ShouldNot(HaveOccurred())
