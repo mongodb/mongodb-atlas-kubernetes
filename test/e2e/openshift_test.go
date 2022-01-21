@@ -106,6 +106,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		By("delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
+
 			pagereport.MakeScreenshot(page, "deleted")
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
 			pagereport.MakeScreenshot(page, "installed")

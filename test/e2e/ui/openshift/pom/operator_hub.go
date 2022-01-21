@@ -12,8 +12,7 @@ const (
 	searchLoc         = "[data-test=search-operatorhub]"
 	installConfirmLoc = "[data-test-id=\"operator-install-btn\"]"
 	installButtonLoc  = "[data-test=\"install-operator\"]"
-	// succesIcon        = "[data-test=\"success-icon\"]"
-	viewOperatorLoc = "text=\"View Operator\""
+	viewOperatorLoc   = "text=\"View Operator\""
 )
 
 type MarketPage struct {
