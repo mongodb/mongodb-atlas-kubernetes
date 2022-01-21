@@ -10,8 +10,8 @@ const (
 	filterButtonLoc    = "[data-test-id=dropdown-button]"
 	filterNameTypeLoc  = "#NAME-link"
 	filterLabelTypeLoc = "#LABEL-link"
+	filterClear        = "text=\"Clear all filters\""
 	// operator table group
-	// operatorsList            = "ReactVirtualized__VirtualGrid__innerScrollContainer"
 	actionOperatorMenu       = "[data-test-id=kebab-button]"
 	editSubscriptionOperator = "[data-test-action=\"Edit Subscription\"]"
 	deleteOperator           = "[data-test-action=\"Uninstall Operator\"]"
@@ -41,6 +41,7 @@ func (iop *InstalledOperatorsPage) SearchByName(smth string) *InstalledOperators
 	iop.P.Click(filterButtonLoc)
 	iop.P.Click(filterNameTypeLoc)
 	iop.P.Type(searchInputLoc, smth)
+	iop.P.WaitForSelector(filterClear)
 	return iop
 }
 
@@ -48,6 +49,7 @@ func (iop *InstalledOperatorsPage) SearchByLabel(smth string) *InstalledOperator
 	iop.P.Click(filterButtonLoc)
 	iop.P.Click(filterLabelTypeLoc)
 	iop.P.Type(searchInputLoc, smth)
+	iop.P.WaitForSelector(filterClear)
 	return iop
 }
 

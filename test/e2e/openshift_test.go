@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/podman"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/ui/openshift/pom"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/ui/openshift/pom/pagereport"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -51,7 +52,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 	AfterEach(func() {
 		if CurrentGinkgoTestDescription().Failed {
-			makeScreenshot(page, "error")
+			pagereport.MakeScreenshot(page, "error")
 		}
 		oc.Delete(path) // we delete it all the time, because of shared space
 		closeBrowser(pw, browser, page)
@@ -105,27 +106,17 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		By("delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
-			makeScreenshot(page, "deleted")
+			pagereport.MakeScreenshot(page, "deleted")
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
-			makeScreenshot(page, "install")
+			pagereport.MakeScreenshot(page, "installed")
 		})
 		By("final screenshot, clean", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
-			makeScreenshot(page, "final")
+			pagereport.MakeScreenshot(page, "final")
 			oc.Delete(path)
 		})
 	})
 })
-
-// makeScreenshot used only for the final screenshot
-func makeScreenshot(page playwright.Page, name string) {
-	path := fmt.Sprintf("output/openshift/%s.png", name)
-	utils.SaveToFile(path, []byte{})
-	_, err := page.Screenshot(playwright.PageScreenshotOptions{
-		Path: playwright.String(path),
-	})
-	Expect(err).ShouldNot(HaveOccurred())
-}
 
 func prepareBrowser() (*playwright.Playwright, playwright.Browser, playwright.Page) {
 	pw, err := playwright.Run()

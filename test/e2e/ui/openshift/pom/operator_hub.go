@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	timeoutShort      = 60000
-	timeout           = 300000
 	searchLoc         = "[data-test=search-operatorhub]"
 	installConfirmLoc = "[data-test-id=\"operator-install-btn\"]"
 	installButtonLoc  = "[data-test=\"install-operator\"]"
