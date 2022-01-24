@@ -153,7 +153,7 @@ func hasLock() func() bool {
 			createTime, err := time.Parse(layout, string(kubecli.GetResourceCreationTimestamp("configmap", lockNamespace, lockNamespace)))
 			Expect(err).ShouldNot(HaveOccurred())
 
-			if time.Since(createTime).Minutes() > 10 { // TODO next task: change 10 to 40(?) if confg is ready
+			if time.Since(createTime).Minutes() > 15 { // TODO usually takes from 9 to 11 minutes
 				kubecli.DeleteResource("configmap", lockNamespace, lockNamespace)
 				return false
 			}
