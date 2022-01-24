@@ -1,0 +1,37 @@
+{
+   "clusterCount":0,
+   "created":"2021-12-21T15:41:07Z",
+   "id":"groupid123",
+   "links":[
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123",
+         "rel":"self"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/containers",
+         "rel":"http://cloud.mongodb.com/containers"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/clusters",
+         "rel":"http://cloud.mongodb.com/clusters"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/databaseUsers",
+         "rel":"http://cloud.mongodb.com/databaseUsers"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/peers",
+         "rel":"http://cloud.mongodb.com/peers"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/processes",
+         "rel":"http://cloud.mongodb.com/processes"
+      },
+      {
+         "href":"https://cloud.mongodb.com/api/atlas/v1.0/groups/groupid123/whitelist",
+         "rel":"http://cloud.mongodb.com/whitelist"
+      }
+   ],
+   "name":"myproject",
+   "orgId":"orgid123"
+}

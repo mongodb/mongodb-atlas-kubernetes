@@ -122,6 +122,26 @@ metadata:
         },
         {
           "apiVersion": "dbaas.redhat.com/v1alpha1",
+          "kind": "MongoDBAtlasInstance",
+          "metadata": {
+            "name": "test-instance"
+          },
+          "spec": {
+            "cloudProvider": "aws",
+            "cloudRegion": "US_EAST_1",
+            "inventoryRef": {
+              "name": "test-inventory",
+              "namespace": "mongodb-atlas-system"
+            },
+            "name": "my-cluster-free",
+            "otherInstanceParams": {
+              "instanceSizeName": "M0",
+              "projectName": "my-atlas-project-free"
+            }
+          }
+        },
+        {
+          "apiVersion": "dbaas.redhat.com/v1alpha1",
           "kind": "MongoDBAtlasInventory",
           "metadata": {
             "name": "test-inventory"
@@ -166,6 +186,12 @@ spec:
       displayName: Mongo DBAtlas Connection
       kind: MongoDBAtlasConnection
       name: mongodbatlasconnections.dbaas.redhat.com
+      version: v1alpha1
+    - description: MongoDBAtlasInstance is the Schema for the MongoDBAtlasInstance
+        API
+      displayName: Mongo DBAtlas Instance
+      kind: MongoDBAtlasInstance
+      name: mongodbatlasinstances.dbaas.redhat.com
       version: v1alpha1
     - description: MongoDBAtlasInventory is the Schema for the MongoDBAtlasInventory
         API
@@ -423,6 +449,26 @@ spec:
         - apiGroups:
           - dbaas.redhat.com
           resources:
+          - mongodbatlasinstances
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
+          - mongodbatlasinstances/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - dbaas.redhat.com
+          resources:
           - mongodbatlasinventories
           verbs:
           - create
@@ -440,18 +486,6 @@ spec:
           - get
           - patch
           - update
-        - apiGroups:
-          - authentication.k8s.io
-          resources:
-          - tokenreviews
-          verbs:
-          - create
-        - apiGroups:
-          - authorization.k8s.io
-          resources:
-          - subjectaccessreviews
-          verbs:
-          - create
         serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator

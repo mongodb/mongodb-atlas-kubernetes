@@ -13,21 +13,24 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: mongodbatlasconnections.dbaas.redhat.com
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: atlasclusters.atlas.mongodb.com
 spec:
-  group: dbaas.redhat.com
+  group: atlas.mongodb.com
   names:
-    kind: MongoDBAtlasConnection
-    listKind: MongoDBAtlasConnectionList
-    plural: mongodbatlasconnections
-    singular: mongodbatlasconnection
+    kind: AtlasCluster
+    listKind: AtlasClusterList
+    plural: atlasclusters
+    singular: atlascluster
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1
     schema:
       openAPIV3Schema:
-        description: MongoDBAtlasConnection is the Schema for the MongoDBAtlasConnections
-          API
+        description: AtlasCluster is the Schema for the atlasclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -42,116 +45,434 @@ spec:
           metadata:
             type: object
           spec:
-            description: DBaaSConnectionSpec defines the desired state of DBaaSConnection
+            description: AtlasClusterSpec defines the desired state of AtlasCluster
             properties:
-              instanceID:
-                description: The ID of the instance to connect to, as seen in the
-                  Status of the referenced DBaaSInventory
-                type: string
-              inventoryRef:
-                description: A reference to the relevant DBaaSInventory CR
+              autoScaling:
+                description: Collection of settings that configures auto-scaling information
+                  for the cluster. If you specify the autoScaling object, you must
+                  also specify the providerSettings.autoScaling object.
                 properties:
-                  name:
-                    description: The name for object of known type
-                    type: string
-                  namespace:
-                    description: The namespace where object of known type is stored
+                  autoIndexingEnabled:
+                    description: Flag that indicates whether autopilot mode for Performance
+                      Advisor is enabled. The default is false.
+                    type: boolean
+                  compute:
+                    description: Collection of settings that configure how a cluster
+                      might scale its cluster tier and whether the cluster can scale
+                      down.
+                    properties:
+                      enabled:
+                        description: Flag that indicates whether cluster tier auto-scaling
+                          is enabled. The default is false.
+                        type: boolean
+                      maxInstanceSize:
+                        description: 'Maximum instance size to which your cluster
+                          can automatically scale (such as M40). Atlas requires this
+                          parameter if "autoScaling.compute.enabled" : true.'
+                        type: string
+                      minInstanceSize:
+                        description: 'Minimum instance size to which your cluster
+                          can automatically scale (such as M10). Atlas requires this
+                          parameter if "autoScaling.compute.scaleDownEnabled" : true.'
+                        type: string
+                      scaleDownEnabled:
+                        description: 'Flag that indicates whether the cluster tier
+                          may scale down. Atlas requires this parameter if "autoScaling.compute.enabled"
+                          : true.'
+                        type: boolean
+                    type: object
+                  diskGBEnabled:
+                    description: Flag that indicates whether disk auto-scaling is
+                      enabled. The default is true.
+                    type: boolean
+                type: object
+              biConnector:
+                description: Configuration of BI Connector for Atlas on this cluster.
+                  The MongoDB Connector for Business Intelligence for Atlas (BI Connector)
+                  is only available for M10 and larger clusters.
+                properties:
+                  enabled:
+                    description: Flag that indicates whether or not BI Connector for
+                      Atlas is enabled on the cluster.
+                    type: boolean
+                  readPreference:
+                    description: Source from which the BI Connector for Atlas reads
+                      data. Each BI Connector for Atlas read preference contains a
+                      distinct combination of readPreference and readPreferenceTags
+                      options.
                     type: string
                 type: object
+              clusterType:
+                description: Type of the cluster that you want to create. The parameter
+                  is required if replicationSpecs are set or if Global Clusters are
+                  deployed.
+                enum:
+                - REPLICASET
+                - SHARDED
+                - GEOSHARDED
+                type: string
+              diskSizeGB:
+                description: Capacity, in gigabytes, of the host's root volume. Increase
+                  this number to add capacity, up to a maximum possible value of 4096
+                  (i.e., 4 TB). This value must be a positive integer. The parameter
+                  is required if replicationSpecs are configured.
+                maximum: 4096
+                minimum: 0
+                type: integer
+              encryptionAtRestProvider:
+                description: Cloud service provider that offers Encryption at Rest.
+                enum:
+                - AWS
+                - GCP
+                - AZURE
+                - NONE
+                type: string
+              labels:
+                description: Collection of key-value pairs that tag and categorize
+                  the cluster. Each key and value has a maximum length of 255 characters.
+                items:
+                  description: LabelSpec contains key-value pairs that tag and categorize
+                    the Cluster/DBUser
+                  properties:
+                    key:
+                      maxLength: 255
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - key
+                  - value
+                  type: object
+                type: array
+              mongoDBMajorVersion:
+                description: Version of the cluster to deploy.
+                type: string
+              name:
+                description: Name of the cluster as it appears in Atlas. After Atlas
+                  creates the cluster, you can't change its name.
+                type: string
+              numShards:
+                description: Positive integer that specifies the number of shards
+                  to deploy for a sharded cluster. The parameter is required if replicationSpecs
+                  are configured
+                maximum: 50
+                minimum: 1
+                type: integer
+              paused:
+                description: Flag that indicates whether the cluster should be paused.
+                type: boolean
+              pitEnabled:
+                description: Flag that indicates the cluster uses continuous cloud
+                  backups.
+                type: boolean
+              projectRef:
+                description: Project is a reference to AtlasProject resource the cluster
+                  belongs to
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              providerBackupEnabled:
+                description: Applicable only for M10+ clusters. Flag that indicates
+                  if the cluster uses Cloud Backups for backups.
+                type: boolean
+              providerSettings:
+                description: Configuration for the provisioned hosts on which MongoDB
+                  runs. The available options are specific to the cloud service provider.
+                properties:
+                  autoScaling:
+                    description: Range of instance sizes to which your cluster can
+                      scale.
+                    properties:
+                      autoIndexingEnabled:
+                        description: Flag that indicates whether autopilot mode for
+                          Performance Advisor is enabled. The default is false.
+                        type: boolean
+                      compute:
+                        description: Collection of settings that configure how a cluster
+                          might scale its cluster tier and whether the cluster can
+                          scale down.
+                        properties:
+                          enabled:
+                            description: Flag that indicates whether cluster tier
+                              auto-scaling is enabled. The default is false.
+                            type: boolean
+                          maxInstanceSize:
+                            description: 'Maximum instance size to which your cluster
+                              can automatically scale (such as M40). Atlas requires
+                              this parameter if "autoScaling.compute.enabled" : true.'
+                            type: string
+                          minInstanceSize:
+                            description: 'Minimum instance size to which your cluster
+                              can automatically scale (such as M10). Atlas requires
+                              this parameter if "autoScaling.compute.scaleDownEnabled"
+                              : true.'
+                            type: string
+                          scaleDownEnabled:
+                            description: 'Flag that indicates whether the cluster
+                              tier may scale down. Atlas requires this parameter if
+                              "autoScaling.compute.enabled" : true.'
+                            type: boolean
+                        type: object
+                      diskGBEnabled:
+                        description: Flag that indicates whether disk auto-scaling
+                          is enabled. The default is true.
+                        type: boolean
+                    type: object
+                  backingProviderName:
+                    description: 'Cloud service provider on which the host for a multi-tenant
+                      cluster is provisioned. This setting only works when "providerSetting.providerName"
+                      : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.'
+                    enum:
+                    - AWS
+                    - GCP
+                    - AZURE
+                    type: string
+                  diskIOPS:
+                    description: Disk IOPS setting for AWS storage. Set only if you
+                      selected AWS as your cloud service provider.
+                    format: int64
+                    type: integer
+                  diskTypeName:
+                    description: Type of disk if you selected Azure as your cloud
+                      service provider.
+                    type: string
+                  encryptEBSVolume:
+                    description: Flag that indicates whether the Amazon EBS encryption
+                      feature encrypts the host's root volume for both data at rest
+                      within the volume and for data moving between the volume and
+                      the cluster.
+                    type: boolean
+                  instanceSizeName:
+                    description: Atlas provides different cluster tiers, each with
+                      a default storage capacity and RAM size. The cluster you select
+                      is used for all the data-bearing hosts in your cluster tier.
+                    type: string
+                  providerName:
+                    description: Cloud service provider on which Atlas provisions
+                      the hosts.
+                    enum:
+                    - AWS
+                    - GCP
+                    - AZURE
+                    - TENANT
+                    type: string
+                  regionName:
+                    description: Physical location of your MongoDB cluster. The region
+                      you choose can affect network latency for clients accessing
+                      your databases.
+                    type: string
+                  volumeType:
+                    description: Disk IOPS setting for AWS storage. Set only if you
+                      selected AWS as your cloud service provider.
+                    enum:
+                    - STANDARD
+                    - PROVISIONED
+                    type: string
+                required:
+                - instanceSizeName
+                - providerName
+                type: object
+              replicationSpecs:
+                description: Configuration for cluster regions.
+                items:
+                  description: ReplicationSpec represents a configuration for cluster
+                    regions
+                  properties:
+                    numShards:
+                      description: Number of shards to deploy in each specified zone.
+                        The default value is 1.
+                      format: int64
+                      type: integer
+                    regionsConfig:
+                      additionalProperties:
+                        description: RegionsConfig describes the region’s priority
+                          in elections and the number and type of MongoDB nodes Atlas
+                          deploys to the region.
+                        properties:
+                          analyticsNodes:
+                            description: The number of analytics nodes for Atlas to
+                              deploy to the region. Analytics nodes are useful for
+                              handling analytic data such as reporting queries from
+                              BI Connector for Atlas. Analytics nodes are read-only,
+                              and can never become the primary. If you do not specify
+                              this option, no analytics nodes are deployed to the
+                              region.
+                            format: int64
+                            type: integer
+                          electableNodes:
+                            description: Number of electable nodes for Atlas to deploy
+                              to the region. Electable nodes can become the primary
+                              and can facilitate local reads.
+                            format: int64
+                            type: integer
+                          priority:
+                            description: Election priority of the region. For regions
+                              with only replicationSpecs[n].regionsConfig.<region>.readOnlyNodes,
+                              set this value to 0.
+                            format: int64
+                            type: integer
+                          readOnlyNodes:
+                            description: Number of read-only nodes for Atlas to deploy
+                              to the region. Read-only nodes can never become the
+                              primary, but can facilitate local-reads.
+                            format: int64
+                            type: integer
+                        type: object
+                      description: Configuration for a region. Each regionsConfig
+                        object describes the region's priority in elections and the
+                        number and type of MongoDB nodes that Atlas deploys to the
+                        region.
+                      type: object
+                    zoneName:
+                      description: Name for the zone in a Global Cluster. Don't provide
+                        this value if clusterType is not GEOSHARDED.
+                      type: string
+                  type: object
+                type: array
             required:
-            - instanceID
-            - inventoryRef
+            - name
+            - projectRef
+            - providerSettings
             type: object
           status:
-            description: DBaaSConnectionStatus defines the observed state of DBaaSConnection
+            description: AtlasClusterStatus defines the observed state of AtlasCluster.
             properties:
               conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource. --- This struct is intended for direct
-                    use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{     // Represents the observations of a
-                    foo's current state.     // Known .status.conditions.type are:
-                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
-                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
-                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
-                    \n     // other fields }"
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
                   properties:
                     lastTransitionTime:
-                      description: lastTransitionTime is the last time the condition
-                        transitioned from one status to another. This should be when
-                        the underlying condition changed.  If that is not known, then
-                        using the time when the API field changed is acceptable.
+                      description: Last time the condition transitioned from one status
+                        to another.
                       format: date-time
                       type: string
                     message:
-                      description: message is a human readable message indicating
-                        details about the transition. This may be an empty string.
-                      maxLength: 32768
+                      description: A human readable message indicating details about
+                        the transition.
                       type: string
-                    observedGeneration:
-                      description: observedGeneration represents the .metadata.generation
-                        that the condition was set based upon. For instance, if .metadata.generation
-                        is currently 12, but the .status.conditions[x].observedGeneration
-                        is 9, the condition is out of date with respect to the current
-                        state of the instance.
-                      format: int64
-                      minimum: 0
-                      type: integer
                     reason:
-                      description: reason contains a programmatic identifier indicating
-                        the reason for the condition's last transition. Producers
-                        of specific condition types may define expected values and
-                        meanings for this field, and whether the values are considered
-                        a guaranteed API. The value should be a CamelCase string.
-                        This field may not be empty.
-                      maxLength: 1024
-                      minLength: 1
-                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      description: The reason for the condition's last transition.
                       type: string
                     status:
-                      description: status of the condition, one of True, False, Unknown.
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
+                      description: Status of the condition, one of True, False, Unknown.
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        --- Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
-                      maxLength: 316
-                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      description: Type of Atlas Custom Resource condition.
                       type: string
                   required:
-                  - lastTransitionTime
-                  - message
-                  - reason
                   - status
                   - type
                   type: object
                 type: array
-              connectionInfoRef:
-                description: A ConfigMap holding non-sensitive information needed
-                  for connecting to the DB instance
+              connectionStrings:
+                description: ConnectionStrings is a set of connection strings that
+                  your applications use to connect to this cluster.
                 properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                  private:
+                    description: Network-peering-endpoint-aware mongodb:// connection
+                      strings for each interface VPC endpoint you configured to connect
+                      to this cluster. Atlas returns this parameter only if you created
+                      a network peering connection to this cluster.
+                    type: string
+                  privateEndpoint:
+                    description: Private endpoint connection strings. Each object
+                      describes the connection strings you can use to connect to this
+                      cluster through a private endpoint. Atlas returns this parameter
+                      only if you deployed a private endpoint to all regions to which
+                      you deployed this cluster's nodes.
+                    items:
+                      description: PrivateEndpoint connection strings. Each object
+                        describes the connection strings you can use to connect to
+                        this cluster through a private endpoint. Atlas returns this
+                        parameter only if you deployed a private endpoint to all regions
+                        to which you deployed this cluster's nodes.
+                      properties:
+                        connectionString:
+                          description: Private-endpoint-aware mongodb:// connection
+                            string for this private endpoint.
+                          type: string
+                        endpoints:
+                          description: Private endpoint through which you connect
+                            to Atlas when you use connectionStrings.privateEndpoint[n].connectionString
+                            or connectionStrings.privateEndpoint[n].srvConnectionString.
+                          items:
+                            description: Endpoint through which you connect to Atlas
+                            properties:
+                              endpointId:
+                                description: Unique identifier of the private endpoint.
+                                type: string
+                              ip:
+                                description: Private IP address of the private endpoint
+                                  network interface you created in your Azure VNet.
+                                type: string
+                              providerName:
+                                description: Cloud provider to which you deployed
+                                  the private endpoint. Atlas returns AWS or AZURE.
+                                type: string
+                              region:
+                                description: Region to which you deployed the private
+                                  endpoint.
+                                type: string
+                            type: object
+                          type: array
+                        srvConnectionString:
+                          description: Private-endpoint-aware mongodb+srv:// connection
+                            string for this private endpoint.
+                          type: string
+                        type:
+                          description: "Type of MongoDB process that you connect to
+                            with the connection strings \n Atlas returns: \n • MONGOD
+                            for replica sets, or \n • MONGOS for sharded clusters"
+                          type: string
+                      type: object
+                    type: array
+                  privateSrv:
+                    description: Network-peering-endpoint-aware mongodb+srv:// connection
+                      strings for each interface VPC endpoint you configured to connect
+                      to this cluster. Atlas returns this parameter only if you created
+                      a network peering connection to this cluster. Use this URI format
+                      if your driver supports it. If it doesn't, use connectionStrings.private.
+                    type: string
+                  standard:
+                    description: Public mongodb:// connection string for this cluster.
+                    type: string
+                  standardSrv:
+                    description: Public mongodb+srv:// connection string for this
+                      cluster.
                     type: string
                 type: object
-              credentialsRef:
-                description: Secret holding the credentials needed for accessing the
-                  DB instance
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                type: object
+              mongoDBVersion:
+                description: MongoDBVersion is the version of MongoDB the cluster
+                  runs, in <major version>.<minor version> format.
+                type: string
+              mongoURIUpdated:
+                description: MongoURIUpdated is a timestamp in ISO 8601 date and time
+                  format in UTC when the connection string was last updated. The connection
+                  string changes if you update any of the other values.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
+              stateName:
+                description: 'StateName is the current state of the cluster. The possible
+                  states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'
+                type: string
+            required:
+            - conditions
             type: object
         type: object
     served: true
@@ -164,7 +485,6 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -172,21 +492,28 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: mongodbatlasinventories.dbaas.redhat.com
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: atlasdatabaseusers.atlas.mongodb.com
 spec:
-  group: dbaas.redhat.com
+  group: atlas.mongodb.com
   names:
-    kind: MongoDBAtlasInventory
-    listKind: MongoDBAtlasInventoryList
-    plural: mongodbatlasinventories
-    singular: mongodbatlasinventory
+    kind: AtlasDatabaseUser
+    listKind: AtlasDatabaseUserList
+    plural: atlasdatabaseusers
+    singular: atlasdatabaseuser
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.name
+      name: Name
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
-        description: MongoDBAtlasInventory is the Schema for the MongoDBAtlasInventory
-          API
+        description: AtlasDatabaseUser is the Schema for the Atlas Database User API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -201,122 +528,411 @@ spec:
           metadata:
             type: object
           spec:
-            description: DBaaSInventorySpec defines the Inventory Spec to be used
-              by provider operators
+            description: AtlasDatabaseUserSpec defines the desired state of Database
+              User in Atlas
             properties:
-              credentialsRef:
-                description: The Secret containing the provider-specific connection
-                  credentials to use with its API endpoint. The format of the Secret
-                  is specified in the provider’s operator in its DBaaSProvider CR
-                  (CredentialFields key). It is recommended to place the Secret in
-                  a namespace with limited accessibility.
+              databaseName:
+                default: admin
+                description: DatabaseName is a Database against which Atlas authenticates
+                  the user. Default value is 'admin'.
+                type: string
+              deleteAfterDate:
+                description: DeleteAfterDate is a timestamp in ISO 8601 date and time
+                  format in UTC after which Atlas deletes the user. The specified
+                  date must be in the future and within one week.
+                type: string
+              labels:
+                description: Labels is an array containing key-value pairs that tag
+                  and categorize the database user. Each key and value has a maximum
+                  length of 255 characters.
+                items:
+                  description: LabelSpec contains key-value pairs that tag and categorize
+                    the Cluster/DBUser
+                  properties:
+                    key:
+                      maxLength: 255
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - key
+                  - value
+                  type: object
+                type: array
+              passwordSecretRef:
+                description: PasswordSecret is a reference to the Secret keeping the
+                  user password.
                 properties:
                   name:
-                    description: The name for object of known type
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              projectRef:
+                description: Project is a reference to AtlasProject resource the user
+                  belongs to
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
                     type: string
                   namespace:
-                    description: The namespace where object of known type is stored
+                    description: Namespace is the namespace of the Kubernetes Resource
                     type: string
+                required:
+                - name
                 type: object
+              roles:
+                description: Roles is an array of this user's roles and the databases
+                  / collections on which the roles apply. A role allows the user to
+                  perform particular actions on the specified database.
+                items:
+                  description: RoleSpec allows the user to perform particular actions
+                    on the specified database. A role on the admin database can include
+                    privileges that apply to the other databases as well.
+                  properties:
+                    collectionName:
+                      description: CollectionName is a collection for which the role
+                        applies.
+                      type: string
+                    databaseName:
+                      description: DatabaseName is a database on which the user has
+                        the specified role. A role on the admin database can include
+                        privileges that apply to the other databases.
+                      type: string
+                    roleName:
+                      description: RoleName is a name of the role. This value can
+                        either be a built-in role or a custom role.
+                      type: string
+                  required:
+                  - databaseName
+                  - roleName
+                  type: object
+                minItems: 1
+                type: array
+              scopes:
+                description: Scopes is an array of clusters and Atlas Data Lakes that
+                  this user has access to.
+                items:
+                  description: ScopeSpec if present a database user only have access
+                    to the indicated resource (Cluster or Atlas Data Lake) if none
+                    is given then it has access to all. It's highly recommended to
+                    restrict the access of the database users only to a limited set
+                    of resources.
+                  properties:
+                    name:
+                      description: Name is a name of the cluster or Atlas Data Lake
+                        that the user has access to.
+                      type: string
+                    type:
+                      description: Type is a type of resource that the user has access
+                        to.
+                      enum:
+                      - CLUSTER
+                      - DATA_LAKE
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
+              username:
+                description: Username is a username for authenticating to MongoDB.
+                type: string
             required:
-            - credentialsRef
+            - passwordSecretRef
+            - projectRef
+            - roles
+            - username
             type: object
           status:
-            description: DBaaSInventoryStatus defines the Inventory status to be used
-              by provider operators
+            description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:
               conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource. --- This struct is intended for direct
-                    use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{     // Represents the observations of a
-                    foo's current state.     // Known .status.conditions.type are:
-                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
-                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
-                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
-                    \n     // other fields }"
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
                   properties:
                     lastTransitionTime:
-                      description: lastTransitionTime is the last time the condition
-                        transitioned from one status to another. This should be when
-                        the underlying condition changed.  If that is not known, then
-                        using the time when the API field changed is acceptable.
+                      description: Last time the condition transitioned from one status
+                        to another.
                       format: date-time
                       type: string
                     message:
-                      description: message is a human readable message indicating
-                        details about the transition. This may be an empty string.
-                      maxLength: 32768
+                      description: A human readable message indicating details about
+                        the transition.
                       type: string
-                    observedGeneration:
-                      description: observedGeneration represents the .metadata.generation
-                        that the condition was set based upon. For instance, if .metadata.generation
-                        is currently 12, but the .status.conditions[x].observedGeneration
-                        is 9, the condition is out of date with respect to the current
-                        state of the instance.
-                      format: int64
-                      minimum: 0
-                      type: integer
                     reason:
-                      description: reason contains a programmatic identifier indicating
-                        the reason for the condition's last transition. Producers
-                        of specific condition types may define expected values and
-                        meanings for this field, and whether the values are considered
-                        a guaranteed API. The value should be a CamelCase string.
-                        This field may not be empty.
-                      maxLength: 1024
-                      minLength: 1
-                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      description: The reason for the condition's last transition.
                       type: string
                     status:
-                      description: status of the condition, one of True, False, Unknown.
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
+                      description: Status of the condition, one of True, False, Unknown.
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        --- Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
-                      maxLength: 316
-                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      description: Type of Atlas Custom Resource condition.
                       type: string
                   required:
-                  - lastTransitionTime
-                  - message
-                  - reason
                   - status
                   - type
                   type: object
                 type: array
-              instances:
-                description: A list of instances returned from querying the DB provider
+              name:
+                description: UserName is the current name of database user.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
+              passwordVersion:
+                description: PasswordVersion is the 'ResourceVersion' of the password
+                  Secret that the Atlas Operator is aware of
+                type: string
+            required:
+            - conditions
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: atlasprojects.atlas.mongodb.com
+spec:
+  group: atlas.mongodb.com
+  names:
+    kind: AtlasProject
+    listKind: AtlasProjectList
+    plural: atlasprojects
+    singular: atlasproject
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.name
+      name: Name
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: AtlasProject is the Schema for the atlasprojects API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AtlasProjectSpec defines the desired state of Project in
+              Atlas
+            properties:
+              connectionSecretRef:
+                description: ConnectionSecret is the name of the Kubernetes Secret
+                  which contains the information about the way to connect to Atlas
+                  (organization ID, API keys). The default Operator connection configuration
+                  will be used if not provided.
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              name:
+                description: Name is the name of the Project that is created in Atlas
+                  by the Operator if it doesn't exist yet.
+                type: string
+              privateEndpoints:
+                description: PrivateEndpoints is a list of Private Endpoints configured
+                  for the current Project.
                 items:
                   properties:
-                    instanceID:
-                      description: A provider-specific identifier for this instance
-                        in the database service. It may contain one or more pieces
-                        of information used by the provider operator to identify the
-                        instance on the database service.
+                    id:
+                      description: Unique identifier of the private endpoint you created
+                        in your AWS VPC or Azure Vnet.
                       type: string
-                    instanceInfo:
-                      additionalProperties:
-                        type: string
-                      description: Any other provider-specific information related
-                        to this instance
-                      type: object
-                    name:
-                      description: The name of this instance in the database service
+                    ip:
+                      description: Private IP address of the private endpoint network
+                        interface you created in your Azure VNet.
+                      type: string
+                    provider:
+                      description: Cloud provider for which you want to retrieve a
+                        private endpoint service. Atlas accepts AWS or AZURE.
+                      enum:
+                      - AWS
+                      - GCP
+                      - AZURE
+                      - TENANT
+                      type: string
+                    region:
+                      description: Cloud provider region for which you want to create
+                        the private endpoint service.
                       type: string
                   required:
-                  - instanceID
+                  - provider
+                  - region
                   type: object
                 type: array
+              projectIpAccessList:
+                description: ProjectIPAccessList allows to enable the IP Access List
+                  for the Project. See more information at https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+                items:
+                  properties:
+                    awsSecurityGroup:
+                      description: Unique identifier of AWS security group in this
+                        access list entry.
+                      type: string
+                    cidrBlock:
+                      description: Range of IP addresses in CIDR notation in this
+                        access list entry.
+                      type: string
+                    comment:
+                      description: Comment associated with this access list entry.
+                      type: string
+                    deleteAfterDate:
+                      description: Timestamp in ISO 8601 date and time format in UTC
+                        after which Atlas deletes the temporary access list entry.
+                      type: string
+                    ipAddress:
+                      description: Entry using an IP address in this access list entry.
+                      type: string
+                  type: object
+                type: array
+            required:
+            - name
+            type: object
+          status:
+            description: AtlasProjectStatus defines the observed state of AtlasProject
+            properties:
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              expiredIpAccessList:
+                description: The list of IP Access List entries that are expired due
+                  to 'deleteAfterDate' being less than the current date. Note, that
+                  this field is updated by the Atlas Operator only after specification
+                  changes
+                items:
+                  properties:
+                    awsSecurityGroup:
+                      description: Unique identifier of AWS security group in this
+                        access list entry.
+                      type: string
+                    cidrBlock:
+                      description: Range of IP addresses in CIDR notation in this
+                        access list entry.
+                      type: string
+                    comment:
+                      description: Comment associated with this access list entry.
+                      type: string
+                    deleteAfterDate:
+                      description: Timestamp in ISO 8601 date and time format in UTC
+                        after which Atlas deletes the temporary access list entry.
+                      type: string
+                    ipAddress:
+                      description: Entry using an IP address in this access list entry.
+                      type: string
+                  type: object
+                type: array
+              id:
+                description: The ID of the Atlas Project
+                type: string
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
+              privateEndpoints:
+                description: The list of private endpoints configured for current
+                  project
+                items:
+                  properties:
+                    id:
+                      description: Unique identifier for AWS or AZURE Private Link
+                        Connection.
+                      type: string
+                    interfaceEndpointId:
+                      description: Unique identifier of the AWS or Azure Private Link
+                        Interface Endpoint.
+                      type: string
+                    provider:
+                      description: Cloud provider for which you want to retrieve a
+                        private endpoint service. Atlas accepts AWS or AZURE.
+                      type: string
+                    region:
+                      description: Cloud provider region for which you want to create
+                        the private endpoint service.
+                      type: string
+                    serviceName:
+                      description: Name of the AWS or Azure Private Link Service that
+                        Atlas manages.
+                      type: string
+                    serviceResourceId:
+                      description: Unique identifier of the Azure Private Link Service
+                        (for AWS the same as ID).
+                      type: string
+                  required:
+                  - provider
+                  - region
+                  type: object
+                type: array
+            required:
+            - conditions
             type: object
         type: object
     served: true
@@ -342,7 +958,7 @@ metadata:
     app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasbackuppolicies.atlas.mongodb.com
 spec:
-  group: atlas.mongodb.com
+  group: dbaas.redhat.com
   names:
     kind: AtlasBackupPolicy
     listKind: AtlasBackupPolicyList
@@ -350,7 +966,7 @@ spec:
     singular: atlasbackuppolicy
   scope: Namespaced
   versions:
-  - name: v1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
@@ -726,31 +1342,70 @@ spec:
             description: AtlasDatabaseUserStatus defines the observed state of AtlasProject
             properties:
               conditions:
-                description: Conditions is the list of statuses showing the current
-                  state of the Atlas Custom Resource
                 items:
-                  description: Condition describes the state of an Atlas Custom Resource
-                    at a certain point.
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    type FooStatus struct{     // Represents the observations of a
+                    foo's current state.     // Known .status.conditions.type are:
+                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
+                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
+                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
+                    \n     // other fields }"
                   properties:
                     lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition.
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
                       type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
                     reason:
-                      description: The reason for the condition's last transition.
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                       type: string
                     status:
-                      description: Status of the condition, one of True, False, Unknown.
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
                       type: string
                     type:
-                      description: Type of Atlas Custom Resource condition.
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
                   required:
+                  - lastTransitionTime
+                  - message
+                  - reason
                   - status
                   - type
                   type: object
@@ -796,7 +1451,7 @@ metadata:
     app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
   name: atlasdeployments.atlas.mongodb.com
 spec:
-  group: atlas.mongodb.com
+  group: dbaas.redhat.com
   names:
     kind: AtlasDeployment
     listKind: AtlasDeploymentList
@@ -1047,10 +1702,10 @@ spec:
                 description: Backup schedule for the AtlasDeployment
                 properties:
                   name:
-                    description: Name is the name of the Kubernetes Resource
+                    description: The name for object of known type
                     type: string
                   namespace:
-                    description: Namespace is the namespace of the Kubernetes Resource
+                    description: The namespace where object of known type is stored
                     type: string
                 required:
                 - name
@@ -1504,31 +2159,70 @@ spec:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
               conditions:
-                description: Conditions is the list of statuses showing the current
-                  state of the Atlas Custom Resource
                 items:
-                  description: Condition describes the state of an Atlas Custom Resource
-                    at a certain point.
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    type FooStatus struct{     // Represents the observations of a
+                    foo's current state.     // Known .status.conditions.type are:
+                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
+                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
+                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
+                    \n     // other fields }"
                   properties:
                     lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition.
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
                       type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
                     reason:
-                      description: The reason for the condition's last transition.
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                       type: string
                     status:
-                      description: Status of the condition, one of True, False, Unknown.
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
                       type: string
                     type:
-                      description: Type of Atlas Custom Resource condition.
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
                   required:
+                  - lastTransitionTime
+                  - message
+                  - reason
                   - status
                   - type
                   type: object
@@ -1631,7 +2325,8 @@ spec:
                   states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'
                 type: string
             required:
-            - conditions
+            - instanceID
+            - phase
             type: object
         type: object
     served: true
@@ -1651,28 +2346,21 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  labels:
-    app.kubernetes.io/component: controller
-    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
-    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-  name: atlasprojects.atlas.mongodb.com
+  name: mongodbatlasinventories.dbaas.redhat.com
 spec:
-  group: atlas.mongodb.com
+  group: dbaas.redhat.com
   names:
-    kind: AtlasProject
-    listKind: AtlasProjectList
-    plural: atlasprojects
-    singular: atlasproject
+    kind: MongoDBAtlasInventory
+    listKind: MongoDBAtlasInventoryList
+    plural: mongodbatlasinventories
+    singular: mongodbatlasinventory
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.name
-      name: Name
-      type: string
-    name: v1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: AtlasProject is the Schema for the atlasprojects API
+        description: MongoDBAtlasInventory is the Schema for the MongoDBAtlasInventory
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -1687,17 +2375,21 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasProjectSpec defines the desired state of Project in
-              Atlas
+            description: DBaaSInventorySpec defines the Inventory Spec to be used
+              by provider operators
             properties:
-              connectionSecretRef:
-                description: ConnectionSecret is the name of the Kubernetes Secret
-                  which contains the information about the way to connect to Atlas
-                  (organization ID, API keys). The default Operator connection configuration
-                  will be used if not provided.
+              credentialsRef:
+                description: The Secret containing the provider-specific connection
+                  credentials to use with its API endpoint. The format of the Secret
+                  is specified in the provider’s operator in its DBaaSProvider CR
+                  (CredentialFields key). It is recommended to place the Secret in
+                  a namespace with limited accessibility.
                 properties:
                   name:
-                    description: Name is the name of the Kubernetes Resource
+                    description: The name for object of known type
+                    type: string
+                  namespace:
+                    description: The namespace where object of known type is stored
                     type: string
                 required:
                 - name
@@ -1977,10 +2669,11 @@ spec:
                 - name
                 type: object
             required:
-            - name
+            - credentialsRef
             type: object
           status:
-            description: AtlasProjectStatus defines the observed state of AtlasProject
+            description: DBaaSInventoryStatus defines the Inventory status to be used
+              by provider operators
             properties:
               authModes:
                 description: AuthModes contains a list of configured authentication
@@ -1991,75 +2684,76 @@ spec:
                   type: string
                 type: array
               conditions:
-                description: Conditions is the list of statuses showing the current
-                  state of the Atlas Custom Resource
                 items:
-                  description: Condition describes the state of an Atlas Custom Resource
-                    at a certain point.
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    type FooStatus struct{     // Represents the observations of a
+                    foo's current state.     // Known .status.conditions.type are:
+                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
+                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
+                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
+                    \n     // other fields }"
                   properties:
                     lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another.
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition.
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
                       type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
                     reason:
-                      description: The reason for the condition's last transition.
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                       type: string
                     status:
-                      description: Status of the condition, one of True, False, Unknown.
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
                       type: string
                     type:
-                      description: Type of Atlas Custom Resource condition.
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
                   required:
+                  - lastTransitionTime
+                  - message
+                  - reason
                   - status
                   - type
                   type: object
                 type: array
-              expiredIpAccessList:
-                description: The list of IP Access List entries that are expired due
-                  to 'deleteAfterDate' being less than the current date. Note, that
-                  this field is updated by the Atlas Operator only after specification
-                  changes
-                items:
-                  properties:
-                    awsSecurityGroup:
-                      description: Unique identifier of AWS security group in this
-                        access list entry.
-                      type: string
-                    cidrBlock:
-                      description: Range of IP addresses in CIDR notation in this
-                        access list entry.
-                      type: string
-                    comment:
-                      description: Comment associated with this access list entry.
-                      type: string
-                    deleteAfterDate:
-                      description: Timestamp in ISO 8601 date and time format in UTC
-                        after which Atlas deletes the temporary access list entry.
-                      type: string
-                    ipAddress:
-                      description: Entry using an IP address in this access list entry.
-                      type: string
-                  type: object
-                type: array
-              id:
-                description: The ID of the Atlas Project
-                type: string
-              observedGeneration:
-                description: ObservedGeneration indicates the generation of the resource
-                  specification that the Atlas Operator is aware of. The Atlas Operator
-                  updates this field to the 'metadata.generation' as soon as it starts
-                  reconciliation of the resource.
-                format: int64
-                type: integer
-              privateEndpoints:
-                description: The list of private endpoints configured for current
-                  project
+              instances:
+                description: A list of instances returned from querying the DB provider
                 items:
                   properties:
                     endpoints:
@@ -2106,13 +2800,17 @@ spec:
                       description: Name of the AWS or Azure Private Link Service that
                         Atlas manages.
                       type: string
-                    serviceResourceId:
-                      description: Unique identifier of the Azure Private Link Service
-                        (for AWS the same as ID).
+                    instanceInfo:
+                      additionalProperties:
+                        type: string
+                      description: Any other provider-specific information related
+                        to this instance
+                      type: object
+                    name:
+                      description: The name of this instance in the database service
                       type: string
                   required:
-                  - provider
-                  - region
+                  - instanceID
                   type: object
                 type: array
               prometheus:
@@ -2185,11 +2883,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  labels:
-    app.kubernetes.io/component: controller
-    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
-    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-  name: mongodb-atlas-manager-role
+  name: manager-role
 rules:
 - apiGroups:
   - ""
@@ -2208,6 +2902,17 @@ rules:
   - get
   - list
   - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -2313,46 +3018,6 @@ rules:
 - apiGroups:
   - dbaas.redhat.com
   resources:
-  - mongodbatlasconnections
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - dbaas.redhat.com
-  resources:
-  - mongodbatlasconnections/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - dbaas.redhat.com
-  resources:
-  - mongodbatlasinventories
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - dbaas.redhat.com
-  resources:
-  - mongodbatlasinventories/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - dbaas.redhat.com
-  resources:
   - dbaasproviders
   verbs:
   - create
@@ -2382,6 +3047,54 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasconnections/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasinstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasinstances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasinventories
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasinventories/status
+  verbs:
+  - get
+  - patch
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

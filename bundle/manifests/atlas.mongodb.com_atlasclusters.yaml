@@ -403,7 +403,8 @@ spec:
                                 description: Unique identifier of the private endpoint.
                                 type: string
                               ip:
-                                description: Private IP address of the private endpoint network interface you created in your Azure VNet.
+                                description: Private IP address of the private endpoint
+                                  network interface you created in your Azure VNet.
                                 type: string
                               providerName:
                                 description: Cloud provider to which you deployed

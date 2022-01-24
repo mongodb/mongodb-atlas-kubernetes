@@ -148,6 +148,26 @@ rules:
 - apiGroups:
   - dbaas.redhat.com
   resources:
+  - mongodbatlasinstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
+  - mongodbatlasinstances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dbaas.redhat.com
+  resources:
   - mongodbatlasinventories
   verbs:
   - create

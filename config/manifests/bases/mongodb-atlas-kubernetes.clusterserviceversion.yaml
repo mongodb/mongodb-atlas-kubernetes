@@ -48,6 +48,12 @@ spec:
         kind: MongoDBAtlasInventory
         name: mongodbatlasinventories.dbaas.redhat.com
         version: v1alpha1
+      - description: MongoDBAtlasInstance is the Schema for the MongoDBAtlasInstance
+          API
+        displayName: Mongo DBAtlas Instance
+        kind: MongoDBAtlasInstance
+        name: mongodbatlasinstances.dbaas.redhat.com
+        version: v1alpha1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas —
     the only multi-cloud document database service that gives you the versatility you need to build sophisticated and resilient applications that can adapt to changing customer demands and market trends.

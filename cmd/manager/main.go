@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,10 +49,10 @@ import (
 	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasconnection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinstance"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinventory"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
@@ -102,7 +103,6 @@ func main() {
 
 	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
 
-	syncPeriod := time.Hour * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
@@ -111,7 +111,7 @@ func main() {
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
-		SyncPeriod:             &syncPeriod,
+		SyncPeriod:             &config.SyncPeriod,
 		NewCache: cache.BuilderWithOptions(cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
 				&corev1.Secret{}: {
@@ -176,6 +176,20 @@ func main() {
 		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasConnection"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasConnection")
+		os.Exit(1)
+	}
+
+	if err = (&atlasinstance.MongoDBAtlasInstanceReconciler{
+		Client:          mgr.GetClient(),
+		Clientset:       clientset,
+		Log:             logger.Named("controllers").Named("MongoDBAtlasInstance").Sugar(),
+		Scheme:          mgr.GetScheme(),
+		AtlasDomain:     config.AtlasDomain,
+		ResourceWatcher: watch.NewResourceWatcher(),
+		GlobalAPISecret: config.GlobalAPISecret,
+		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasInstance"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasInstance")
 		os.Exit(1)
 	}
 
@@ -248,6 +262,7 @@ type Config struct {
 	GlobalAPISecret      client.ObjectKey
 	LogLevel             string
 	LogEncoder           string
+	SyncPeriod           time.Duration
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -287,6 +302,12 @@ func parseConfiguration() Config {
 		config.Namespace = watchedNamespace
 	}
 
+	syncPeriodMin, _ := strconv.Atoi(os.Getenv("SYNC_PERIOD_MIN"))
+	if syncPeriodMin <= 0 {
+		syncPeriodMin = 180 // default to 180 minutes (3 hours)
+		log.Infof("SYNC_PERIOD_MIN is missing. Default %d is used", syncPeriodMin)
+	}
+	config.SyncPeriod = time.Minute * time.Duration(syncPeriodMin)
 	return config
 }
 

@@ -52,6 +52,8 @@ spec:
                   namespace:
                     description: The namespace where object of known type is stored
                     type: string
+                required:
+                - name
                 type: object
             required:
             - instanceID

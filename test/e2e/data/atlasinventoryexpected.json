@@ -5,6 +5,7 @@
        "instanceInfo":{
           "connectionStringsStandardSrv":"mongodb+srv://testb.fffff.mongodb.net",
           "instanceSizeName":"M10",
+          "phase":"ready",
           "projectID":"608df5e652e1944293e8584a",
           "projectName":"Project 1",
           "providerName":"AWS",
@@ -17,6 +18,7 @@
        "instanceInfo":{
           "connectionStringsStandardSrv":"mongodb+srv://testa.ccccc.mongodb.net",
           "instanceSizeName":"M10",
+          "phase":"ready",
           "projectID":"60b798fea37f9f09acc1a154",
           "projectName":"Project 2",
           "providerName":"AWS",

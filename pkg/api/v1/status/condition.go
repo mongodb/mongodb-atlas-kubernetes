@@ -51,14 +51,9 @@ const (
 	DatabaseUserReadyType ConditionType = "DatabaseUserReady"
 )
 
-// MongoDBAtlasConnection condition types
+// MongoDBAtlasInstanceInventoryUpdateFail condition reason
 const (
-	MongoDBAtlasConnectionReadyType ConditionType = "ReadyForBinding"
-)
-
-// MongoDBAtlasInventory condition types
-const (
-	MongoDBAtlasInventoryReadyType ConditionType = "SpecSynced"
+	MongoDBAtlasInstanceInventoryUpdateFail string = "Fail to update inventory"
 )
 
 // Condition describes the state of an Atlas Custom Resource at a certain point.

@@ -37,9 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	dbaasv1alpha1 "github.com/RHEcosystemAppEng/dbaas-operator/api/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 )
@@ -230,6 +230,9 @@ func TestAtlasInventoryReconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("secret-%s", tcName),
 					Namespace: "dbaas-operator",
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
+					},
 				},
 				Data: map[string][]byte{
 					"orgId":         []byte("testorgid"),

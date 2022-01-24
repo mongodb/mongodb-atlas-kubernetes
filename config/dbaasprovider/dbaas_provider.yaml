@@ -15,6 +15,10 @@ spec:
       mediatype: image/png
   inventoryKind: MongoDBAtlasInventory
   connectionKind: MongoDBAtlasConnection
+  instanceKind: MongoDBAtlasInstance
+  allowsFreeTrial: true
+  externalProvisionURL: https://www.mongodb.com/atlas/database
+  externalProvisionDescription: Follow the MongoDB Atlas procedure [Create a New Cluster|https://docs.atlas.mongodb.com/tutorial/create-new-cluster/] to create a new paid cluster
   credentialFields:
     - key: orgId
       displayName: Organization ID
@@ -28,4 +32,32 @@ spec:
       displayName: Private API Key
       type: maskedstring
       required: true
-
+  instanceParameterSpecs:
+    - name: clusterName
+      displayName: Cluster Name
+      type: string
+      required: true
+    - name: ProjectName
+      displayName: Atlas Project Name
+      type: string
+      required: true
+    - name: clusterType
+      displayName: Cluster Type
+      type: string
+      required: false
+      defaultValue: Shared
+    - name: providerName
+      displayName: Cloud Provider
+      type: string
+      required: false
+      defaultValue: AWS
+    - name: regionName
+      displayName: Cloud Region
+      type: string
+      required: false
+      defaultValue: US_EAST_1
+    - name: instanceSizeName
+      displayName: Cluster Size Name
+      type: string
+      required: false
+      defaultValue: M0

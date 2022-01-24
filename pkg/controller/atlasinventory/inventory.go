@@ -3,6 +3,7 @@ package atlasinventory
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -26,19 +27,7 @@ func discoverInstances(atlasClient *mongodbatlas.Client) ([]dbaasv1alpha1.Instan
 			return nil, workflow.Terminate(getReasonFromResponse(response), err.Error())
 		}
 		for _, cluster := range clusters {
-			clusterSvc := dbaasv1alpha1.Instance{
-				InstanceID: cluster.ID,
-				Name:       cluster.Name,
-				InstanceInfo: map[string]string{
-					dbaas.InstanceSizeNameKey:             cluster.ProviderSettings.InstanceSizeName,
-					dbaas.CloudProviderKey:                cluster.ProviderSettings.ProviderName,
-					dbaas.CloudRegionKey:                  cluster.ProviderSettings.RegionName,
-					dbaas.ProjectIDKey:                    p.ID,
-					dbaas.ProjectNameKey:                  p.Name,
-					dbaas.ConnectionStringsStandardSrvKey: cluster.ConnectionStrings.StandardSrv,
-				},
-			}
-			instanceList = append(instanceList, clusterSvc)
+			instanceList = append(instanceList, GetInstance(*p, cluster))
 		}
 	}
 	return instanceList, workflow.OK()
@@ -55,4 +44,44 @@ func getReasonFromResponse(response *mongodbatlas.Response) workflow.ConditionRe
 		reason = workflow.MongoDBAtlasInventoryEndpointUnreachable
 	}
 	return reason
+}
+
+// GetClusterInfo query atlas for the cluster and return the relevant data required by DBaaS Operator
+func GetClusterInfo(atlasClient *mongodbatlas.Client, projectName, clusterName string) (*dbaasv1alpha1.Instance, workflow.Result) {
+	// Try to find the service
+	project, response, err := atlasClient.Projects.GetOneProjectByName(context.Background(), projectName)
+	if err != nil {
+		return nil, workflow.Terminate(getReasonFromResponse(response), err.Error())
+	}
+	cluster, response, err := atlasClient.Clusters.Get(context.Background(), project.ID, clusterName)
+	if err != nil {
+		return nil, workflow.Terminate(getReasonFromResponse(response), err.Error())
+	}
+	instance := GetInstance(*project, *cluster)
+	return &instance, workflow.OK()
+}
+
+// GetInstance returns instance info as required by DBaaS Operator
+func GetInstance(project mongodbatlas.Project, cluster mongodbatlas.Cluster) dbaasv1alpha1.Instance {
+	phase := strings.ToLower(cluster.StateName)
+	if cluster.StateName == "IDLE" {
+		phase = "ready"
+	}
+	provider := cluster.ProviderSettings.BackingProviderName
+	if len(provider) == 0 {
+		provider = cluster.ProviderSettings.ProviderName
+	}
+	return dbaasv1alpha1.Instance{
+		InstanceID: cluster.ID,
+		Name:       cluster.Name,
+		InstanceInfo: map[string]string{
+			dbaas.InstanceSizeNameKey:             cluster.ProviderSettings.InstanceSizeName,
+			dbaas.CloudProviderKey:                provider,
+			dbaas.CloudRegionKey:                  cluster.ProviderSettings.RegionName,
+			dbaas.ProjectIDKey:                    project.ID,
+			dbaas.ProjectNameKey:                  project.Name,
+			dbaas.ConnectionStringsStandardSrvKey: cluster.ConnectionStrings.StandardSrv,
+			dbaas.ProvisionPhaseKey:               phase,
+		},
+	}
 }

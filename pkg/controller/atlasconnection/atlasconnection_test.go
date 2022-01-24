@@ -48,7 +48,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
@@ -293,7 +292,7 @@ func TestAtlasConnectionReconcile(t *testing.T) {
 							LastTransitionTime: metav1.Now(),
 							Status:             metav1.ConditionStatus(tc.inventoryStatus),
 							Reason:             tc.inventoryReason,
-							Type:               string(status.MongoDBAtlasInventoryReadyType),
+							Type:               dbaasv1alpha1.DBaaSInventoryProviderSyncType,
 						},
 					},
 					Instances: instances,
@@ -489,7 +488,7 @@ func TestDBUserDelete(t *testing.T) {
 							LastTransitionTime: metav1.Now(),
 							Status:             metav1.ConditionStatus(tc.inventoryStatus),
 							Reason:             tc.inventoryReason,
-							Type:               string(status.MongoDBAtlasInventoryReadyType),
+							Type:               dbaasv1alpha1.DBaaSInventoryProviderSyncType,
 						},
 					},
 					Instances: instances,

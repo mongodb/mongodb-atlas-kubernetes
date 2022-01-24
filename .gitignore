@@ -41,5 +41,4 @@ node_modules
 tmp/
 
 # ready to work samples
-deploy/
 __debug_bin/
