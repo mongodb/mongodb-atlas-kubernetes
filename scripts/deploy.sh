@@ -29,8 +29,11 @@ org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 # both global and project keys
 kubectl delete secrets my-atlas-key --ignore-not-found -n "${ns}"
 kubectl create secret generic my-atlas-key --from-literal="orgId=${org_id}" --from-literal="publicApiKey=${public_key}" --from-literal="privateApiKey=${private_key}" -n "${ns}"
+kubectl label secret my-atlas-key atlas.mongodb.com/type=credentials
+
 kubectl delete secrets mongodb-atlas-operator-api-key --ignore-not-found -n "${ns}"
 kubectl create secret generic mongodb-atlas-operator-api-key --from-literal="orgId=${org_id}" --from-literal="publicApiKey=${public_key}" --from-literal="privateApiKey=${private_key}" -n "${ns}"
+kubectl label secret mongodb-atlas-operator-api-key atlas.mongodb.com/type=credentials
 
 label="app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator"
 # Wait for the Operator to start

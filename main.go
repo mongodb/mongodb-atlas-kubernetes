@@ -25,11 +25,14 @@ import (
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -40,6 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	// +kubebuilder:scaffold:imports
@@ -85,6 +89,15 @@ func main() {
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
 		SyncPeriod:             &syncPeriod,
+		NewCache: cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&corev1.Secret{}: {
+					Label: labels.SelectorFromSet(labels.Set{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					}),
+				},
+			},
+		}),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -128,9 +130,20 @@ func CreateUserSecret(name, ns string) {
 	)
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(name+" created"), Say("already exists")), "Can't create user secret"+name)
+
+	labels := map[string]string{
+		connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+	}
+
+	// apply all labels to the secret
+	for k, v := range labels {
+		session = cli.ExecuteWithoutWriter("kubectl", "label", "secret", name, fmt.Sprintf("%s=%s", k, v), "-n", ns, "--overwrite")
+		result = cli.GetSessionExitMsg(session)
+		Eventually(result).Should(SatisfyAny(Say("secret/"+name+" labeled"), Say("secret/"+name+" not labeled")))
+	}
 }
 
-func CreateApiKeySecret(keyName, ns string) { // TODO add ns
+func CreateApiKeySecret(keyName, ns string) {
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+os.Getenv("MCLI_PUBLIC_API_KEY"),
@@ -139,6 +152,12 @@ func CreateApiKeySecret(keyName, ns string) { // TODO add ns
 	)
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
+
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
+	result = cli.GetSessionExitMsg(session)
+
+	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
+	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
 func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
@@ -150,6 +169,12 @@ func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TOD
 	)
 	result := cli.GetSessionExitMsg(session)
 	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
+
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
+	result = cli.GetSessionExitMsg(session)
+
+	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
+	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
 func DeleteApiKeySecret(keyName, ns string) {
