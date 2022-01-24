@@ -51,7 +51,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 	})
 
 	AfterEach(func() {
-		if CurrentGinkgoTestDescription().Failed {
+		if CurrentGinkgoTestDescription().Failed && !strings.Contains(page.URL(), "token") {
 			pagereport.MakeScreenshot(page, "error")
 		}
 		oc.Delete(path) // we delete it all the time, because of shared space
@@ -146,7 +146,7 @@ func prepareSecrets(testKeys []string) utils.Secrets {
 	return s
 }
 
-func hasLock() func() bool { // timeout 40
+func hasLock() func() bool {
 	return func() bool {
 		layout := "2006-01-02T15:04:05Z"
 		if kubecli.HasConfigMap(lockNamespace, lockNamespace) {
