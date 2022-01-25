@@ -54,7 +54,7 @@ func Install(args ...string) {
 	dependencyAsFileForCRD()
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
-	EventuallyWithOffset(1, session.Wait("10m")).Should(Say("STATUS: deployed"), "HELM. Can't install release")
+	EventuallyWithOffset(1, session.Wait("20m")).Should(Say("STATUS: deployed"), "HELM. Can't install release")
 }
 
 func Upgrade(args ...string) {
