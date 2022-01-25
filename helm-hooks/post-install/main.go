@@ -2,18 +2,19 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"go.uber.org/zap"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 const (
@@ -62,6 +63,8 @@ func getNamespace() (string, error) {
 	return defaultNamespace, nil
 }
 
+// isClusterReady returns a boolean indicating if the cluster has reached the ready state and is
+// ready to be used.
 func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 	k8sClient, err := createK8sClient()
 	if err != nil {
