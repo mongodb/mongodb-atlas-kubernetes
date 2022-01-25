@@ -46,7 +46,7 @@ opm render "${BUNDLE_IMAGE}" --output=yaml \
 	>> "${CATALOG_DIR}"/operator.yaml
 
 echo "Adding ${CHANNEL} channel to the catalog"
-cat <<EOF>> "${CATALOG_DIR}"/channel.yaml
+cat <<EOF> "${CATALOG_DIR}"/channel.yaml
 ---
 schema: olm.channel
 package: mongodb-atlas-kubernetes

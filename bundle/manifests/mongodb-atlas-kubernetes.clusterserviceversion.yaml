@@ -326,7 +326,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: mongodb-atlas-controller:latest
+                image: docker.io/ikarpukhin/mongodb-atlas-operator:0.5.0
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:

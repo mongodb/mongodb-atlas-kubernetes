@@ -201,7 +201,7 @@ spec:
     spec:
       containers:
       - args:
-        - --atlas-domain=https://cloud.mongodb.com
+        - --atlas-domain=https://cloud-qa.mongodb.com
         - --leader-elect
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
@@ -220,7 +220,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.7.0
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['olm.targetNamespaces']
+        image: |-
+          quay.io
+          docker.io/igorkarpukhin/test:CLOUDP-84357/namespaced-mode-b50be23:latest
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

@@ -2,8 +2,7 @@ apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: mongodb-group
-  namespace: mongodb
+  namespace: mongodb-atlas-operator-system-test
 spec:
   targetNamespaces:
-    - "mongodb"
-    - "mongodb-test-2"
+    - "mongodb-atlas-operator-system-test"
