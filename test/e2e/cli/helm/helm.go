@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,7 +56,7 @@ func Install(args ...string) {
 	dependencyAsFileForCRD()
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
-	EventuallyWithOffset(1, session.Wait()).Should(Say("STATUS: deployed"), "HELM. Can't install release")
+	EventuallyWithOffset(1, session.Wait()).WithTimeout(time.Minute*10).Should(Say("STATUS: deployed"), "HELM. Can't install release")
 }
 
 func Upgrade(args ...string) {
