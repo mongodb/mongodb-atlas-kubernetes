@@ -1,0 +1,1 @@
+This file exists so the output directory exists in git (but we don't want the generated artefacts)

@@ -559,6 +559,9 @@ func buildPasswordSecret(name, password string) corev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace.Name,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
 		},
 		StringData: map[string]string{"password": password},
 	}
@@ -681,6 +684,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
 		"atlas.mongodb.com/cluster-name": cluster.Spec.Name,
+		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
