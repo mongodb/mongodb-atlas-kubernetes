@@ -219,11 +219,16 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),
 		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
-
 		"-f", pathToAtlasClusterValuesFile(input),
 		"--namespace=" + input.Namespace,
 		"--create-namespace",
 	}
+
+	// during the helm installation the process can take some time to wait for the cluster to be ready.
+	if chartName == config.AtlasClusterHelmChartPath {
+		args = append(args, "--timeout", "10m")
+	}
+
 	return args
 }
 
