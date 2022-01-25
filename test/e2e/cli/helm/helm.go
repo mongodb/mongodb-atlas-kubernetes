@@ -226,7 +226,7 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 
 	// during the helm installation the process can take some time to wait for the cluster to be ready.
 	if chartName == config.AtlasClusterHelmChartPath {
-		args = append(args, "--timeout", "10m")
+		args = append(args, "--timeout", "20m")
 	}
 
 	return args
