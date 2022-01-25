@@ -28,6 +28,8 @@ bin
 .env
 event_*.json
 
+helm-post-install
+
 # any custom files created by developers and not intended for public use should start with "my-"
 my-*
 tags
