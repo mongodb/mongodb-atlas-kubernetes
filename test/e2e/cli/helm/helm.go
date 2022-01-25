@@ -2,17 +2,15 @@ package helm
 
 import (
 	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -56,7 +54,7 @@ func Install(args ...string) {
 	dependencyAsFileForCRD()
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
-	EventuallyWithOffset(1, session.Wait()).WithTimeout(time.Minute*10).Should(Say("STATUS: deployed"), "HELM. Can't install release")
+	EventuallyWithOffset(1, session.Wait("10m")).Should(Say("STATUS: deployed"), "HELM. Can't install release")
 }
 
 func Upgrade(args ...string) {
