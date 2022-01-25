@@ -254,10 +254,10 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest := cloud.CreatePEActions(peitem)
 		privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-		Expect(privateEndpointID).ShouldNot(BeEmpty())
-
-		err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-		Expect(err).ShouldNot(HaveOccurred())
+		if privateEndpointID != "" {
+			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+			GinkgoWriter.Write([]byte(err.Error()))
+		}
 	}
 }
 
