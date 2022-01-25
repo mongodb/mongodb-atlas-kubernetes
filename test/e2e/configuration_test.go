@@ -180,6 +180,40 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
+		Entry("Free - Users can use M0, default key",
+			model.NewTestDataProvider(
+				"operator-ns-free",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{""},
+				[]model.DBUser{
+					*model.NewDBUser("user").
+						WithSecretRef("dbuser-secret").
+						AddBuildInAdminRole(),
+				},
+				30016,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
+				},
+			),
+		),
+		Entry("Free - Users can use M0, global",
+			model.NewTestDataProvider(
+				"operator-ns-free",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{""},
+				[]model.DBUser{
+					*model.NewDBUser("user").
+						WithSecretRef("dbuser-secret").
+						AddBuildInAdminRole(),
+				},
+				30017,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
+				},
+			),
+		),
 	)
 })
 

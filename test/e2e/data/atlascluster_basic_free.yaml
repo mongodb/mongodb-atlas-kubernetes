@@ -1,0 +1,14 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: atlascluster-basic-free
+spec:
+  projectRef:
+    name: my-project
+  clusterSpec:
+    name: cluster-basic
+    providerSettings:
+      instanceSizeName: M0
+      providerName: TENANT
+      regionName: US_EAST_1
+      backingProviderName: AWS
