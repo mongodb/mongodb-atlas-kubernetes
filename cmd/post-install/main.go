@@ -100,7 +100,7 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 				if cond.Status == corev1.ConditionTrue {
 					return true, nil
 				}
-				logger.Infof("Atlas Cluster %s is not yet ready, current state: %s\n", atlasCluster.Name, cond.Status)
+				logger.Infof("Atlas Cluster %s is not yet ready", atlasCluster.Name)
 			}
 		}
 	}
