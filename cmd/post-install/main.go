@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,14 +9,11 @@ import (
 
 	"go.uber.org/zap"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
-
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 const (
@@ -36,12 +32,25 @@ func setupLogger() *zap.SugaredLogger {
 	return log.Sugar()
 }
 
-func validateHookType(hookType string) error {
-	hook := HookType(hookType)
-	if hook != ClusterType && hook != UserType {
-		return fmt.Errorf("hook type must be one of %s or %s", ClusterType, UserType)
+func validateEnvVars() error {
+	if !hasExactlyOneEnv("CLUSTER_NAME", "USER_NAME") {
+		return fmt.Errorf("must specify exactly one of [CLUSTER_NAME, USER_NAME]")
 	}
 	return nil
+}
+
+func hasExactlyOneEnv(envVarNames ...string) bool {
+	foundOne := false
+	for _, envVarName := range envVarNames {
+		envVar := os.Getenv(envVarName)
+		if envVar != "" {
+			if foundOne {
+				return false
+			}
+			foundOne = true
+		}
+	}
+	return foundOne
 }
 
 // createK8sClient creates an in cluster client which can be used to fetch the current state of the AtlasCluster
@@ -62,18 +71,6 @@ func createK8sClient() (client.Client, error) {
 	return k8sClient, nil
 }
 
-type HookType string
-
-const (
-	ClusterType = "CLUSTER"
-	UserType    = "USER"
-)
-
-func getHookType() HookType {
-	hookType := os.Getenv("HOOK_TYPE")
-	return HookType(hookType)
-}
-
 // getNamespace returns the current namespace.
 func getNamespace() (string, error) {
 	data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
@@ -86,11 +83,11 @@ func getNamespace() (string, error) {
 	return defaultNamespace, nil
 }
 
-func isUserReady(k8sClient client.Client, logger *zap.SugaredLogger) (bool, error) {
+// isReady returns a boolean indicating whether or not the given checker's resource is
+// ready.
+func isReady(readinessChecker atlasResourceReadinessChecker, logger *zap.SugaredLogger) (bool, error) {
 	ticker := time.NewTicker(pollingInterval)
 	defer ticker.Stop()
-
-	databaseUserName := os.Getenv("USER_NAME")
 
 	namespace, err := getNamespace()
 	if err != nil {
@@ -104,72 +101,26 @@ func isUserReady(k8sClient client.Client, logger *zap.SugaredLogger) (bool, erro
 		}
 		totalTime += pollingInterval
 
-		atlasDatabaseUser := mdbv1.AtlasDatabaseUser{}
-		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, databaseUserName), &atlasDatabaseUser); err != nil {
+		isReady, err := readinessChecker.isReady(namespace, logger)
+		if err != nil {
 			return false, err
 		}
-
-		// the atlas user has reached the ready state.
-		for _, cond := range atlasDatabaseUser.Status.Conditions {
-			if cond.Type == status.DatabaseUserReadyType {
-				if cond.Status == corev1.ConditionTrue {
-					return true, nil
-				}
-				logger.Infof("Atlas Database User %s is not yet ready", atlasDatabaseUser.Name)
-			}
+		if isReady {
+			return true, nil
 		}
 	}
 	return false, nil
 }
 
-// isClusterReady returns a boolean indicating if the cluster has reached the ready state and is
-// ready to be used.
-func isClusterReady(k8sClient client.Client, logger *zap.SugaredLogger) (bool, error) {
-	ticker := time.NewTicker(pollingInterval)
-	defer ticker.Stop()
-
-	clusterName := os.Getenv("CLUSTER_NAME")
-
-	namespace, err := getNamespace()
-	if err != nil {
-		return false, err
-	}
-
-	totalTime := time.Duration(0)
-	for range ticker.C {
-		if totalTime > pollingDuration {
-			break
-		}
-		totalTime += pollingInterval
-
-		atlasCluster := mdbv1.AtlasCluster{}
-		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, clusterName), &atlasCluster); err != nil {
-			return false, err
-		}
-
-		// the atlas project has reached the ClusterReady state.
-		for _, cond := range atlasCluster.Status.Conditions {
-			if cond.Type == status.ClusterReadyType {
-				if cond.Status == corev1.ConditionTrue {
-					return true, nil
-				}
-				logger.Infof("Atlas Cluster %s is not yet ready", atlasCluster.Name)
-			}
-		}
-	}
-	return false, nil
+func shouldCheckForUser() bool {
+	return os.Getenv("USER_NAME") != ""
 }
 
 func main() {
 	logger := setupLogger()
-	if err := validateHookType(os.Getenv("HOOK_TYPE")); err != nil {
+	if err := validateEnvVars(); err != nil {
 		logger.Error(err)
 		os.Exit(1)
-	}
-
-	handler := isClusterReady
-	if getHookType() == UserType {
-		handler = isUserReady
 	}
 
 	k8sClient, err := createK8sClient()
@@ -178,14 +129,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	isReady, err := handler(k8sClient, logger)
+	var checker atlasResourceReadinessChecker = &clusterReadinessChecker{Client: k8sClient}
+	if shouldCheckForUser() {
+		checker = &userReadinessChecker{Client: k8sClient}
+	}
+
+	ready, err := isReady(checker, logger)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}
 
 	exitCode := 1
-	if !isReady {
+	if !ready {
 		exitCode = 0
 	}
 	os.Exit(exitCode)
