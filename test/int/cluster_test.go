@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -55,6 +57,9 @@ var _ = Describe("AtlasCluster", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-atlas-key",
 				Namespace: namespace.Name,
+				Labels: map[string]string{
+					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				},
 			},
 			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
 		}

@@ -54,12 +54,12 @@ func TestFilterActiveIPAccessLists(t *testing.T) {
 		assert.Equal(t, []project.IPAccessList{ipAccessExpired}, expired)
 	})
 	t.Run("Two active", func(t *testing.T) {
-		dateAfter1 := time.Now().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
-		dateAfter2 := time.Now().Add(time.Hour * 5).Format("2006-01-02T15:04:05")
+		dateAfter1 := time.Now().UTC().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
+		dateAfter2 := time.Now().UTC().Add(time.Hour * 5).Format("2006-01-02T15:04:05")
 		ipAccessActive1 := project.IPAccessList{DeleteAfterDate: dateAfter1}
 		ipAccessActive2 := project.IPAccessList{DeleteAfterDate: dateAfter2}
 		active, expired := filterActiveIPAccessLists([]project.IPAccessList{ipAccessActive2, ipAccessActive1})
-		assert.Equal(t, active, []project.IPAccessList{ipAccessActive2, ipAccessActive1})
+		assert.Equal(t, []project.IPAccessList{ipAccessActive2, ipAccessActive1}, active)
 		assert.Empty(t, expired)
 	})
 }
