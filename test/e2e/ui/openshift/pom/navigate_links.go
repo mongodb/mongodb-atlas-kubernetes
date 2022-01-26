@@ -1,35 +1,50 @@
 package pom
 
+import "os"
+
+/*
+	Please, add to GitHub Secrets or to environment variables:
+	OPENSHIFT_CONSOLE_URL cluster base URL
+	OPENSHIFT_SERVER_API service API link
+	OPENSHIFT_TOKEN_LINK page where token could be found
+
+	Samples:
+	export OPENSHIFT_CONSOLE_URL="https://some.openshiftapps.com"
+	export OPENSHIFT_SERVER_API="https://api.some.openshiftapps.com:6443"
+	export OPENSHIFT_TOKEN_LINK="https://oauth-some.openshiftapps.com/oauth/token/request"
+*/
+
 const (
-	baseURL                  = "https://console-openshift-console.apps.kubeteam-oshift.2g12.p1.openshiftapps.com"
 	loginEndPoint            = "/auth/login"
 	dashboardEndPoint        = "/dashboards"
 	operatorHubEndPoint      = "/operatorhub"
 	installedOeratorEndPoint = "/k8s/all-namespaces/operators.coreos.com~v1alpha1~ClusterServiceVersion"
-	serverAPI                = "https://api.kubeteam-oshift.2g12.p1.openshiftapps.com:6443"
-	tokenAuthLink            = "https://oauth-openshift.apps.kubeteam-oshift.2g12.p1.openshiftapps.com/oauth/token/request" //#nosec
 )
 
+func BaseURL() string {
+	return os.Getenv("OPENSHIFT_CONSOLE_URL")
+}
+
 func LoginPageLink() string {
-	return baseURL + loginEndPoint
+	return BaseURL() + loginEndPoint
 }
 
 func DashboardLink() string {
-	return baseURL + dashboardEndPoint
+	return BaseURL() + dashboardEndPoint
 }
 
 func OperatorHubLink() string {
-	return baseURL + operatorHubEndPoint
+	return BaseURL() + operatorHubEndPoint
 }
 
 func InstalledOperatorLink() string {
-	return baseURL + installedOeratorEndPoint
+	return BaseURL() + installedOeratorEndPoint
 }
 
 func TokenPageLink() string {
-	return tokenAuthLink
+	return os.Getenv("OPENSHIFT_TOKEN_LINK")
 }
 
 func ServerAPI() string {
-	return serverAPI
+	return os.Getenv("OPENSHIFT_SERVER_API")
 }
