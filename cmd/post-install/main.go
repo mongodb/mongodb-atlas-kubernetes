@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 
 	"go.uber.org/zap"
 
@@ -18,9 +24,40 @@ import (
 
 const (
 	pollingInterval  = time.Second * 10
-	pollingDuration  = time.Minute * 10
+	pollingDuration  = time.Minute * 20
 	defaultNamespace = "default"
 )
+
+func main() {
+	logger := setupLogger()
+	if err := validateEnvVars(logger); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+
+	k8sClient, err := createK8sClient()
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+
+	var checker atlasResourceReadinessChecker = &clusterReadinessChecker{Client: k8sClient}
+	if shouldCheckForUser() {
+		checker = &userReadinessChecker{Client: k8sClient}
+	}
+
+	ready, err := isReady(checker, logger)
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+
+	exitCode := 1
+	if ready {
+		exitCode = 0
+	}
+	os.Exit(exitCode)
+}
 
 func setupLogger() *zap.SugaredLogger {
 	log, err := zap.NewDevelopment()
@@ -32,14 +69,14 @@ func setupLogger() *zap.SugaredLogger {
 	return log.Sugar()
 }
 
-func validateEnvVars() error {
-	if !hasExactlyOneEnv("CLUSTER_NAME", "USER_NAME") {
+func validateEnvVars(logger *zap.SugaredLogger) error {
+	if !hasExactlyOneEnv(logger, "CLUSTER_NAME", "USER_NAME") {
 		return fmt.Errorf("must specify exactly one of [CLUSTER_NAME, USER_NAME]")
 	}
 	return nil
 }
 
-func hasExactlyOneEnv(envVarNames ...string) bool {
+func hasExactlyOneEnv(logger *zap.SugaredLogger, envVarNames ...string) bool {
 	foundOne := false
 	for _, envVarName := range envVarNames {
 		envVar := os.Getenv(envVarName)
@@ -47,6 +84,7 @@ func hasExactlyOneEnv(envVarNames ...string) bool {
 			if foundOne {
 				return false
 			}
+			logger.Infof("%s=%s", envVarName, envVar)
 			foundOne = true
 		}
 	}
@@ -116,33 +154,58 @@ func shouldCheckForUser() bool {
 	return os.Getenv("USER_NAME") != ""
 }
 
-func main() {
-	logger := setupLogger()
-	if err := validateEnvVars(); err != nil {
-		logger.Error(err)
-		os.Exit(1)
+type atlasResourceReadinessChecker interface {
+	isReady(namespace string, logger *zap.SugaredLogger) (bool, error)
+	name() string
+}
+
+type clusterReadinessChecker struct {
+	client.Client
+}
+
+func (c *clusterReadinessChecker) name() string {
+	return os.Getenv("CLUSTER_NAME")
+}
+
+func (c *clusterReadinessChecker) isReady(namespace string, logger *zap.SugaredLogger) (bool, error) {
+	atlasCluster := mdbv1.AtlasCluster{}
+	if err := c.Get(context.TODO(), kube.ObjectKey(namespace, c.name()), &atlasCluster); err != nil {
+		return false, err
+	}
+	// the atlas project has reached the ClusterReady state.
+	for _, cond := range atlasCluster.Status.Conditions {
+		if cond.Type == status.ClusterReadyType {
+			if cond.Status == corev1.ConditionTrue {
+				return true, nil
+			}
+			logger.Infof("Atlas Cluster %s is not yet ready", atlasCluster.Name)
+		}
+	}
+	return false, nil
+}
+
+type userReadinessChecker struct {
+	client.Client
+}
+
+func (c *userReadinessChecker) name() string {
+	return os.Getenv("USER_NAME")
+}
+
+func (c *userReadinessChecker) isReady(namespace string, logger *zap.SugaredLogger) (bool, error) {
+	atlasDatabaseUser := mdbv1.AtlasDatabaseUser{}
+	if err := c.Get(context.TODO(), kube.ObjectKey(namespace, c.name()), &atlasDatabaseUser); err != nil {
+		return false, err
 	}
 
-	k8sClient, err := createK8sClient()
-	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+	// the atlas user has reached the ready state.
+	for _, cond := range atlasDatabaseUser.Status.Conditions {
+		if cond.Type == status.DatabaseUserReadyType {
+			if cond.Status == corev1.ConditionTrue {
+				return true, nil
+			}
+			logger.Infof("Atlas Database User %s is not yet ready", atlasDatabaseUser.Name)
+		}
 	}
-
-	var checker atlasResourceReadinessChecker = &clusterReadinessChecker{Client: k8sClient}
-	if shouldCheckForUser() {
-		checker = &userReadinessChecker{Client: k8sClient}
-	}
-
-	ready, err := isReady(checker, logger)
-	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
-	}
-
-	exitCode := 1
-	if !ready {
-		exitCode = 0
-	}
-	os.Exit(exitCode)
+	return false, nil
 }
