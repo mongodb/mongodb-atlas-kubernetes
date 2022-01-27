@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/podman"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/ui/openshift/pom"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/ui/openshift/pom/pagereport"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -43,15 +44,15 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		operatorTag = strings.Split(s["BUNDLE_IMAGE"], ":")[1]
 		operatorTag = strings.ToLower(operatorTag)
-		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "Could not get a credential. Please, set up BUNDLE_IMAGE environment variable")
+		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "Could not get a image name. Please, set up BUNDLE_IMAGE environment variable")
 		Expect(operatorTag).ShouldNot(BeEmpty())
 
 		pw, browser, page = prepareBrowser()
 	})
 
 	AfterEach(func() {
-		if CurrentGinkgoTestDescription().Failed {
-			makeScreenshot(page, "error")
+		if CurrentGinkgoTestDescription().Failed && !strings.Contains(page.URL(), "token") {
+			pagereport.MakeScreenshot(page, "error")
 		}
 		oc.Delete(path) // we delete it all the time, because of shared space
 		closeBrowser(pw, browser, page)
@@ -78,16 +79,17 @@ var _ = Describe("[openshift] UserLogin", func() {
 			)
 		})
 		By("Login into openshift", func() {
-			pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"])
-			code := pom.NavigateTokenPage(page).GetCode()
+			pom.NavigateLogin(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"]).WaitLoad()
+			code := pom.NavigateTokenPage(page).With(s["OPENSHIFT_USER"], s["OPENSHIFT_PASS"]).GetCode()
 			Expect(code).ShouldNot(BeEmpty())
 
-			oc.Login(code)
+			oc.Login(code, pom.ServerAPI())
 		})
 
 		By("Lock environment", func() {
 			kubecli.CreateNamespace(lockNamespace)
 			Eventually(hasLock(), "40m", "10s").Should(BeFalse()) // TODO need to look how it is working and fix timeout
+			kubecli.CreateConfigMapWithLiterals(lockNamespace, lockNamespace)
 		})
 
 		By("Prepare custom catalog for openshift", func() {
@@ -104,33 +106,25 @@ var _ = Describe("[openshift] UserLogin", func() {
 
 		By("delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
+
+			pagereport.MakeScreenshot(page, "deleted")
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
+			pagereport.MakeScreenshot(page, "installed")
 		})
 		By("final screenshot, clean", func() {
-			makeScreenshot(page, "install")
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
-			makeScreenshot(page, "delete")
+			pagereport.MakeScreenshot(page, "final")
 			oc.Delete(path)
 		})
 	})
 })
 
-// makeScreenshot used only for the final screenshot
-func makeScreenshot(page playwright.Page, name string) {
-	path := fmt.Sprintf("output/openshift/%s.png", name)
-	utils.SaveToFile(path, []byte{})
-	_, err := page.Screenshot(playwright.PageScreenshotOptions{
-		Path: playwright.String(path),
-	})
-	Expect(err).ShouldNot(HaveOccurred())
-}
-
 func prepareBrowser() (*playwright.Playwright, playwright.Browser, playwright.Page) {
 	pw, err := playwright.Run()
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch playwright: %v", err))
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
-		Args:     []string{"--ignore-certificate-errors", "--headless"},
+		Headless: playwright.Bool(true),
+		Args:     []string{"--ignore-certificate-errors"},
 	}) // , "--headless"
 	Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("could not launch Chromium: %v", err))
 	page, err := browser.NewPage()
@@ -152,14 +146,14 @@ func prepareSecrets(testKeys []string) utils.Secrets {
 	return s
 }
 
-func hasLock() func() bool { // timeout 40
+func hasLock() func() bool {
 	return func() bool {
 		layout := "2006-01-02T15:04:05Z"
 		if kubecli.HasConfigMap(lockNamespace, lockNamespace) {
 			createTime, err := time.Parse(layout, string(kubecli.GetResourceCreationTimestamp("configmap", lockNamespace, lockNamespace)))
 			Expect(err).ShouldNot(HaveOccurred())
 
-			if time.Since(createTime).Minutes() > 10 { // TODO next task: change 10 to 40(?) if confg is ready
+			if time.Since(createTime).Minutes() > 15 { // TODO usually takes from 9 to 11 minutes
 				kubecli.DeleteResource("configmap", lockNamespace, lockNamespace)
 				return false
 			}

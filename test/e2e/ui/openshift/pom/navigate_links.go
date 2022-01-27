@@ -1,11 +1,13 @@
 package pom
 
 const (
-	baseURL                  = "https://console-openshift-console.apps.openshift.mongokubernetes.com"
+	baseURL                  = "https://console-openshift-console.apps.kubeteam-oshift.2g12.p1.openshiftapps.com"
 	loginEndPoint            = "/auth/login"
 	dashboardEndPoint        = "/dashboards"
 	operatorHubEndPoint      = "/operatorhub"
 	installedOeratorEndPoint = "/k8s/all-namespaces/operators.coreos.com~v1alpha1~ClusterServiceVersion"
+	serverAPI                = "https://api.kubeteam-oshift.2g12.p1.openshiftapps.com:6443"
+	tokenAuthLink            = "https://oauth-openshift.apps.kubeteam-oshift.2g12.p1.openshiftapps.com/oauth/token/request" //#nosec
 )
 
 func LoginPageLink() string {
@@ -25,5 +27,9 @@ func InstalledOperatorLink() string {
 }
 
 func TokenPageLink() string {
-	return "https://oauth-openshift.apps.openshift.mongokubernetes.com/oauth/token/request"
+	return tokenAuthLink
+}
+
+func ServerAPI() string {
+	return serverAPI
 }
