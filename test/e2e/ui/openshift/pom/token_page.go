@@ -23,6 +23,7 @@ func NewTokenPage(page playwright.Page) *TokenPage {
 
 func NavigateTokenPage(page playwright.Page) *TokenPage {
 	_, err := page.Goto(TokenPageLink(), playwright.PageGotoOptions{
+		Timeout:   playwright.Float(timeout),
 		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	})
 	Expect(err).ShouldNot(HaveOccurred(), "Could not navigate to token page")
