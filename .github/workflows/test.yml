@@ -248,9 +248,6 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
           OPENSHIFT_PASS: ${{ secrets.OPENSHIFT_PASS }}
-          OPENSHIFT_CONSOLE_URL: ${{ secrets.OPENSHIFT_CONSOLE_URL }}
-          OPENSHIFT_SERVER_API: ${{ secrets.OPENSHIFT_SERVER_API }}
-          OPENSHIFT_TOKEN_LINK: ${{ secrets.OPENSHIFT_TOKEN_LINK }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}

@@ -34,7 +34,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 	var page playwright.Page
 
 	BeforeEach(func() {
-		testKeys := []string{"DOCKER_REGISTRY", "DOCKER_PASSWORD", "DOCKER_USERNAME", "OPENSHIFT_USER", "OPENSHIFT_PASS", "OPENSHIFT_CONSOLE_URL", "OPENSHIFT_SERVER_API", "OPENSHIFT_TOKEN_LINK", "BUNDLE_IMAGE"}
+		testKeys := []string{"DOCKER_REGISTRY", "DOCKER_PASSWORD", "DOCKER_USERNAME", "OPENSHIFT_USER", "OPENSHIFT_PASS", "BUNDLE_IMAGE"}
 		s = prepareSecrets(testKeys)
 
 		// check environment

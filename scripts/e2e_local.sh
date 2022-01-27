@@ -9,13 +9,6 @@ org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 # this is the format how it's pushed by act -j build-push
 image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)
 
-openshift_console="$(grep "OPENSHIFT_CONSOLE_URL" .actrc | cut -d "=" -f 2)"
-openshift_server_api="$(grep "OPENSHIFT_SERVER_API" .actrc | cut -d "=" -f 2)"
-openshift_token_link="$(grep "OPENSHIFT_TOKEN_LINK" .actrc | cut -d "=" -f 2)"
-export OPENSHIFT_CONSOLE_URL=$openshift_console
-export OPENSHIFT_SERVER_API=$openshift_server_api
-export OPENSHIFT_TOKEN_LINK=$openshift_token_link
-
 export INPUT_IMAGE_URL_DOCKER="${image}"
 export INPUT_ENV=dev
 ./.github/actions/gen-install-scripts/entrypoint.sh
