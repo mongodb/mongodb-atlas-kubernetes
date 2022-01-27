@@ -16,10 +16,10 @@ RUN go mod download
 # Copy the go source
 COPY cmd/post-install/main.go cmd/post-install/main.go
 COPY pkg/ pkg/
+COPY Makefile Makefile
 COPY hack/licenses licenses
 
-RUN go build -o bin/helm-post-install cmd/post-install/main.go && \
-    chmod +x bin/helm-post-install
+RUN make post-install-hook
 
 FROM busybox
 

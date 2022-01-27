@@ -171,3 +171,8 @@ clear-atlas: export INPUT_ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actr
 clear-atlas: export INPUT_ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 clear-atlas: ## Clear Atlas organization
 	bash .github/actions/cleanup/entrypoint.sh
+
+.PHONY: post-install-hook
+post-install-hook:
+	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
+	chmod +x bin/helm-post-install

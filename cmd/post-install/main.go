@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -20,9 +18,8 @@ import (
 )
 
 const (
-	pollingInterval  = time.Second * 10
-	pollingDuration  = time.Minute * 10
-	defaultNamespace = "default"
+	pollingInterval = time.Second * 10
+	pollingDuration = time.Minute * 20
 )
 
 func setupLogger() *zap.SugaredLogger {
@@ -53,18 +50,6 @@ func createK8sClient() (client.Client, error) {
 	return k8sClient, nil
 }
 
-// getNamespace returns the current namespace.
-func getNamespace() (string, error) {
-	data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	if err != nil {
-		return "", err
-	}
-	if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-		return ns, nil
-	}
-	return defaultNamespace, nil
-}
-
 // isClusterReady returns a boolean indicating if the cluster has reached the ready state and is
 // ready to be used.
 func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
@@ -77,11 +62,7 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 	defer ticker.Stop()
 
 	clusterName := os.Getenv("CLUSTER_NAME")
-
-	namespace, err := getNamespace()
-	if err != nil {
-		return false, err
-	}
+	namespace := os.Getenv("NAMESPACE")
 
 	totalTime := time.Duration(0)
 	for range ticker.C {
