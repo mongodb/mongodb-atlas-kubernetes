@@ -19,7 +19,7 @@ RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     rm -rf $CONTROLLER_GEN_TMP_DIR && \
     CONTROLLER_GEN=${GOBIN}/controller-gen
 
-RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64 && \
+RUN curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.16.0/operator-sdk_linux_amd64 && \
     chmod +x operator-sdk_linux_amd64 && \
     mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
 
