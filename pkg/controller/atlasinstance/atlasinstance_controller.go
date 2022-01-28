@@ -366,7 +366,9 @@ func setInstanceStatusWithClusterInfo(atlasClient *mongodbatlas.Client, inst *db
 		statusFound := false
 		inst.Status.InstanceID = instInfo.InstanceID
 		inst.Status.InstanceInfo = instInfo.InstanceInfo
+		// Stores the phase info in inst.Status.Phase and remove from instInfo.InstanceInf map
 		inst.Status.Phase = instInfo.InstanceInfo[dbaas.ProvisionPhaseKey]
+		delete(instInfo.InstanceInfo, dbaas.ProvisionPhaseKey)
 		for _, cond := range atlasCluster.Status.Conditions {
 			if cond.Type == status.ClusterReadyType {
 				statusFound = true

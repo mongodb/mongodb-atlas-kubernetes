@@ -251,14 +251,14 @@ func TestSetInstanceStatusWithClusterInfo(t *testing.T) {
 			clusterName: "myclustercreating",
 			projectName: "myproject",
 			expErrMsg:   "",
-			expPhase:    "creating",
+			expPhase:    "Creating",
 			expStatus:   "True",
 		},
 		"ClusterReady": {
 			clusterName: "myclusterready",
 			projectName: "myproject",
 			expErrMsg:   "",
-			expPhase:    "ready",
+			expPhase:    "Ready",
 			expStatus:   "True",
 		},
 		"InvalidProject": {

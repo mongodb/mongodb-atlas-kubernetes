@@ -63,9 +63,10 @@ func GetClusterInfo(atlasClient *mongodbatlas.Client, projectName, clusterName s
 
 // GetInstance returns instance info as required by DBaaS Operator
 func GetInstance(project mongodbatlas.Project, cluster mongodbatlas.Cluster) dbaasv1alpha1.Instance {
-	phase := strings.ToLower(cluster.StateName)
+	// Convert state names to "Creating", "Ready", "Deleting", "Deleted" etc.
+	phase := strings.Title(strings.ToLower(cluster.StateName))
 	if cluster.StateName == "IDLE" {
-		phase = "ready"
+		phase = "Ready"
 	}
 	provider := cluster.ProviderSettings.BackingProviderName
 	if len(provider) == 0 {
