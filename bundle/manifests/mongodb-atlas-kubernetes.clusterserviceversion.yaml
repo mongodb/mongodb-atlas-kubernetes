@@ -322,11 +322,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: docker.io/ikarpukhin/mongodb-atlas-operator:0.5.0
+                image: mongodb-atlas-controller:latest
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
