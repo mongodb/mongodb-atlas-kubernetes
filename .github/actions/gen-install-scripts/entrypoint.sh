@@ -6,6 +6,7 @@ target_dir="deploy"
 clusterwide_dir="${target_dir}/clusterwide"
 namespaced_dir="${target_dir}/namespaced"
 crds_dir="${target_dir}/crds"
+openshift_namespaced="${target_dir}/openshift_namespaced"
 
 mkdir -p "${clusterwide_dir}"
 mkdir -p "${namespaced_dir}"
