@@ -1,10 +1,11 @@
 name: Release Post Install Hook
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version:"
-        required: true
+on: pull_request
+#  workflow_dispatch:
+#    inputs:
+#      version:
+#        description: "Release version:"
+#        required: true
+
 
 jobs:
   release-post-install-hook:
@@ -29,7 +30,8 @@ jobs:
         uses: actions/github-script@v5
         env:
           image: atlas-operator-post-install-hook
-          version: ${{ github.event.inputs.version }}
+          version: 1.0.0
+#          version: ${{ github.event.inputs.version }}
         with:
           result-encoding: string
           script: |
