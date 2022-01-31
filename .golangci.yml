@@ -82,7 +82,7 @@ issues:
         - gochecknoglobals
         - wrapcheck
         - nlreturn
-    - path: main.go
+    - path: cmd/manager/main.go
       linters:
         - gochecknoglobals
         - wrapcheck
