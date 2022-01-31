@@ -27,6 +27,9 @@ jobs:
       - name: Verify release version
         id: verify-release-version
         uses: actions/github-script@v5
+        env:
+          image: atlas-operator-post-install-hook
+          version: ${{ github.event.inputs.version }}
         with:
           result-encoding: string
           script: |
