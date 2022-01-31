@@ -42,7 +42,7 @@ jobs:
         env:
           version: ${{ github.event.inputs.version }}
         run: |
-          echo "Release ${version} already exists!"
+          echo "Release ${version} already exists"
           exit 1
 
       - name: Push Post Install Hook To Registry
