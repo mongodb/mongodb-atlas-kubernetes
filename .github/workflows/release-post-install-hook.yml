@@ -1,21 +1,19 @@
 name: Release Post Install Hook
-on: pull_request
-#  workflow_dispatch:
-#    inputs:
-#      version:
-#        description: "Release version:"
-#        required: true
-
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version:"
+        required: true
 
 jobs:
   release-post-install-hook:
-    name: Create Release
+    name: Release Post Install Hook
     runs-on: ubuntu-latest
-#    env:
-#      VERSION: ${{ github.event.inputs.version }}
-#      TAG: v${{ github.event.inputs.version }}
-#      DOCKER_RELEASE_REPO: mongodb/atlas-operator-post-install-hook
-#      QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      DOCKER_RELEASE_REPO: mongodb/atlas-operator-post-install-hook
+      QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2.4.0
@@ -25,13 +23,12 @@ jobs:
       - name: Install axios
         run: npm install axios
 
-      - name: Verify release version
+      - name: Verify release version already exists
         id: verify-release-version
         uses: actions/github-script@v5
         env:
           image: atlas-operator-post-install-hook
-          version: 1.0.0
-#          version: ${{ github.event.inputs.version }}
+          version: ${{ github.event.inputs.version }}
         with:
           result-encoding: string
           script: |
@@ -42,15 +39,18 @@ jobs:
 
       - name: Fail if release exists
         if: steps.verify-release-version.result != 'false'
-        run: exit 1
+        env:
+          version: ${{ github.event.inputs.version }}
+        run: |
+          echo "Release ${version} already exists!"
+          exit 1
 
-
-#      - name: Push Post Install Hook To Registry
-#        uses: docker/build-push-action@v1
-#        with:
-#          username: ${{ secrets.DOCKER_USERNAME }}
-#          password: ${{ secrets.DOCKER_PASSWORD }}
-#          repository: ${{ env.DOCKER_RELEASE_REPO }}
-#          registry: ${{ env.DOCKER_REGISTRY }}
-#          tags: ${{ github.event.inputs.version }}
-#          file: Dockerfile.post-install
+      - name: Push Post Install Hook To Registry
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.DOCKER_RELEASE_REPO }}
+          registry: ${{ env.DOCKER_REGISTRY }}
+          tags: ${{ github.event.inputs.version }}
+          file: Dockerfile.post-install
