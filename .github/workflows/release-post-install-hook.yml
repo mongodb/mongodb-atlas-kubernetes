@@ -30,8 +30,9 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const versionAlreadyExists = require('.github/scripts/image-version-already-exists.js');
-            return versionAlreadyExists();
+            const {image, version} = process.env;
+            const resp = await axios.get(`https://quay.io/api/v1/repository/mongodb/${image}`);
+            return resp.data.tags[version] !== undefined;
 
       - name: Fail if release exists
         if: steps.verify-release-version.result != 'false'
