@@ -249,16 +249,21 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 
 // DeleteAllPrivateEndpoints Specific for the current suite  - delete all requested Private Endpoints by test data
 func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
+	errorList := make([]string, 0)
 	project, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest := cloud.CreatePEActions(peitem)
 		privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-		Expect(privateEndpointID).ShouldNot(BeEmpty())
-
-		err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-		Expect(err).ShouldNot(HaveOccurred())
+		if privateEndpointID != "" {
+			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+			if err != nil {
+				GinkgoWriter.Write([]byte(err.Error()))
+				errorList = append(errorList, err.Error())
+			}
+		}
 	}
+	Expect(len(errorList)).Should(Equal(0), errorList)
 }
 
 func AllPEndpointUpdated(data *model.TestDataProvider) bool {
