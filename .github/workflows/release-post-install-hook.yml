@@ -35,6 +35,7 @@ jobs:
         with:
           result-encoding: string
           script: |
+            const axios = require("axios");
             const {image, version} = process.env;
             const resp = await axios.get(`https://quay.io/api/v1/repository/mongodb/${image}`);
             return resp.data.tags[version] !== undefined;
