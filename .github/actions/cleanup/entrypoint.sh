@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# For Deleting empty(!) PROJECTs which live more then 1 days
+# For Deleting empty(!) PROJECTs which live more then 9 hours
+# It deletes all if INPUT_CLEAN_ALL is true
 
 set -eou pipefail
+MAX_PROJECT_LIFETIME=9 # in hours
 
 delete_endpoints_for_project() {
     projectID=$1
@@ -27,9 +29,9 @@ delete_clusters() {
     done
 }
 
-# delete only old projects
+# delete only old projects (older than 9 hours)
 delete_old_project() {
-    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_days" -gt 1 ]]; then
+    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME ]]; then
         echo "deleting-$id"
         delete_endpoints_for_project "$id" "aws"
         delete_endpoints_for_project "$id" "azure"
@@ -64,9 +66,10 @@ for elkey in $(echo "$projects" | jq '.results | keys | .[]'); do
     count=$(echo "$element" | jq -r '.clusterCount')
     id=$(echo "$element" | jq -r '.id')
     created=$(echo "$element" | jq -r '.created')
-    existance_days=$(( ("$now" - $(date --date="$created" '+%s')) / 86400 ))
+    existance_hours=$(( ("$now" - $(date --date="$created" '+%s')) / 3600 % 24 ))
+
     # by default delete only old projects
-    if [[ "${INPUT_CLEAN_ALL}" == "true" ]]; then
+    if [[ "${INPUT_CLEAN_ALL:-}" == "true" ]]; then
         delete_all
     else
         delete_old_project
