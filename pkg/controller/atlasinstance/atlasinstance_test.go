@@ -24,16 +24,16 @@ import (
 	"testing"
 
 	dbaasv1alpha1 "github.com/RHEcosystemAppEng/dbaas-operator/api/v1alpha1"
-	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	status "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/fgrosse/zaptest"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	status "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
 
 func TestGetInstanceData(t *testing.T) {
