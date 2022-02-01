@@ -4,106 +4,53 @@
 
 set -eou pipefail
 
-BASE_URL="https://cloud-qa.mongodb.com/api/atlas/v1.0"
-
-get_projects() {
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest "${BASE_URL}/groups"
-}
-delete_project() {
-    projectID=$1
-    curl -s -X DELETE --digest -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" "${BASE_URL}/groups/${projectID}"
-}
-
-delete_pe_service() {
+delete_endpoints_for_project() {
     projectID=$1
     provider=$2
-    pe_service=$3
-    curl -s -X DELETE --digest -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" "${BASE_URL}/groups/${projectID}/privateEndpoint/${provider}/endpointService/${pe_service}"
-}
-
-delete_pe() {
-    projectID=$1
-    provider=$2
-    pe_service=$3
-    pe=$4
-    curl -s -X DELETE --digest -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" "${BASE_URL}/groups/${projectID}/privateEndpoint/${provider}/endpointService/${pe_service}/endpoint/${pe}"
-}
-
-delete_all_pe_for_project() {
-    projectID=$1
-    provider=$2
-    [[ "$provider" == "AWS" ]] && endpoint_field=".interfaceEndpoints" || endpoint_field=".privateEndpoints"
-
-    list=$(get_pe_service_in_project "$projectID" "$provider")
-    for elkey in $(echo "$list" | jq -c '.[]'); do
-        echo $elkey
-        pe_service_id=$(echo "$elkey" | jq -r '.id' )
-        for pe in $(echo "$elkey" | jq -r $endpoint_field' | .[]'); do
-            echo "private endpoint: $pe from $projectID will be deleted"
-
-            pe=$(echo "$pe" | sed 's/\//%2F/g')
-            delete_pe "$projectID" "$provider" "$pe_service_id" "$pe"
-        done
-        sleep 5 # fast operation we can wait
-        echo "pe service will be deleted: $pe_service_id in $projectID"
-        delete_pe_service "$projectID" "$provider" "$pe_service_id"
-        # we do not wait PE service deletion - long operation
+    endpoints=$(mongocli atlas privateEndpoints "$provider" list --projectId "$projectID" | awk 'NR!=1{print $1}')
+    # shellcheck disable=SC2068
+    # multiline
+    for endpoint in ${endpoints[@]}; do
+        echo "deleting endpoint $endpoint in $projectID"
+        mongocli atlas privateEndpoints "$provider" delete "$endpoint" --projectId "$projectID" --force
     done
 }
 
-get_pe_service_in_project() {
+delete_clusters() {
     projectID=$1
-    provider=$2
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest "${BASE_URL}/groups/${projectID}/privateEndpoint/${provider}/endpointService"
-}
-
-get_clusters() {
-    projectID=$1
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest "${BASE_URL}/groups/${projectID}/clusters"
-}
-delete_cluster() {
-    projectID=$1
-    name=$2
-    echo "${BASE_URL}/groups/${projectID}/clusters/${name}"
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest -X DELETE "${BASE_URL}/groups/${projectID}/clusters/${name}"
+    clusters=$(mongocli atlas cluster list --projectId "$projectID" | awk 'NR!=1{print $2}')
+    # shellcheck disable=SC2068
+    # multiline
+    for cluster in ${clusters[@]}; do
+        echo "deleting cluster $cluster in $projectID"
+        mongocli atlas cluster delete "$cluster" --projectId "$projectID" --force
+    done
 }
 
 # delete only old projects
 delete_old_project() {
-    if [[ "$count" = 0 ]] && [[ "$existance_days" -gt 1 ]]; then
+    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_days" -gt 1 ]]; then
         echo "deleting-$id"
-        delete_all_pe_for_project "$id" "AWS"
-        delete_all_pe_for_project "$id" "AZURE"
-        delete_project "$id"
+        delete_endpoints_for_project "$id" "aws"
+        delete_endpoints_for_project "$id" "azure"
+        mongocli iam projects delete "$id" --force
     fi
 }
 
-# terminate cluster and delete empty project
+# delete private endpoints, terminate clusters, delete empty project
 delete_all() {
-    delete_all_pe_for_project "$id" "AWS"
-    delete_all_pe_for_project "$id" "AZURE"
-    if [[ $count != 0 ]]; then
-        #delete cluster
-        clusters=$(get_clusters "$id")
-        for ckey in $(echo "$clusters" | jq '.results | keys | .[]'); do
-            cluster=$(echo "$clusters" | jq -r ".results[$ckey]")
-            csize=$(echo "$cluster" | jq -r '.providerSettings.instanceSizeName')
-            cname=$(echo "$cluster" | jq -r '.name')
-            if [[ $csize != "M0" ]]; then
-                echo "delete cluster: $id $cname $csize"
-                delete_cluster "$id" "$cname"
-                #not going to wait for deleting projects
-            else
-                echo "$cname $csize is M0"
-            fi
-        done
-    else
+    delete_endpoints_for_project "$id" "aws"
+    delete_endpoints_for_project "$id" "azure"
+    if [[ -z ${count:-} ]] || [[ ${count:-} == "null" ]]; then
         echo "deleting-$id"
-        delete_project "$id"
+        mongocli iam projects delete "$id" --force
+    else
+        echo "delete only cluster (will not wait)"
+        delete_clusters "$id"
     fi
 }
 
-projects=$(get_projects)
+projects=$(mongocli iam projects list -o json)
 if [[ $projects == *"error"* ]]; then
     echo "Error: $projects"
     exit 1
