@@ -75,6 +75,12 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(databaseUser); shouldSkip {
+		log.Infow(fmt.Sprintf("-> Skipping AtlasDatabaseUser reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", databaseUser.Spec)
+		return workflow.OK().ReconcileResult(), nil
+	}
+
 	if databaseUser.Spec.PasswordSecret != nil {
 		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", log, *databaseUser.PasswordSecretObjectKey())
 	}

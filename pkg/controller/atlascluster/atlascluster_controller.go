@@ -73,6 +73,11 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(cluster); shouldSkip {
+		log.Infow(fmt.Sprintf("-> Skipping AtlasCluster reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", cluster.Spec)
+		return workflow.OK().ReconcileResult(), nil
+	}
+
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
 
