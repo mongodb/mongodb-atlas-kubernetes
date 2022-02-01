@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -483,7 +484,7 @@ func buildConnectionSecret(name string) corev1.Secret {
 			Name:      name,
 			Namespace: namespace.Name,
 			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 			},
 		},
 		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},

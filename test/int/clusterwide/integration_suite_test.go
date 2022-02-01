@@ -29,13 +29,16 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -103,6 +106,15 @@ var _ = BeforeSuite(func(done Done) {
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:     scheme.Scheme,
 		SyncPeriod: &syncPeriod,
+		NewCache: cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&corev1.Secret{}: {
+					Label: labels.SelectorFromSet(labels.Set{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					}),
+				},
+			},
+		}),
 	})
 	Expect(err).ToNot(HaveOccurred())
 
