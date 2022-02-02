@@ -103,3 +103,9 @@ Create the PR to the main repository and wait until CI jobs get green.
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 See https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/98 as an example
+
+# Post install hook release
+
+If changes have been made to the post install hook (mongodb-atlas-kubernetes/cmd/post-install/main.go).
+You must also release this image. Run the "Release Post Install Hook" workflow manually specifying the desired 
+release version. 
