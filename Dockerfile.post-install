@@ -1,0 +1,36 @@
+# Build the manager binary
+FROM golang:1.17 as builder
+
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+WORKDIR /workspace
+# Copy the Go Modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the go source
+COPY cmd/post-install/main.go cmd/post-install/main.go
+COPY pkg/ pkg/
+COPY Makefile Makefile
+COPY hack/licenses licenses
+
+RUN make post-install-hook
+
+FROM busybox
+
+LABEL name="MongoDB Atlas Operator Post Install Hook" \
+      maintainer="support@mongodb.com" \
+      vendor="MongoDB" \
+      release="1" \
+      summary="MongoDB Atlas Operator Post Install Hook Image"
+
+WORKDIR /
+COPY --from=builder /workspace/bin/helm-post-install .
+COPY hack/licenses licenses
+
+ENTRYPOINT ["/helm-post-install"]

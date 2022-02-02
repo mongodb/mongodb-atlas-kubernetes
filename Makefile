@@ -80,11 +80,11 @@ e2e: run-kind ## Run e2e test. Command `make e2e focus=cluster-ns` run cluster-n
 .PHONY: manager
 manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
 manager: generate fmt vet ## Build manager binary
-	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" main.go
+	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	go run ./main.go
+	go run ./cmd/manager/main.go
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from a cluster
@@ -125,7 +125,7 @@ KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.0.1)
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
+# go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
 @[ -f $(1) ] || { \
@@ -134,7 +134,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
@@ -171,3 +171,8 @@ clear-atlas: export INPUT_ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actr
 clear-atlas: export INPUT_ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 clear-atlas: ## Clear Atlas organization
 	bash .github/actions/cleanup/entrypoint.sh
+
+.PHONY: post-install-hook
+post-install-hook:
+	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
+	chmod +x bin/helm-post-install

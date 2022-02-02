@@ -10,7 +10,7 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source & git info
-COPY main.go main.go
+COPY cmd/manager/main.go cmd/manager/main.go
 COPY .git/ .git/
 COPY pkg/ pkg/
 COPY Makefile Makefile
