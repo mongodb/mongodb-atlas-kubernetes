@@ -91,5 +91,8 @@ issues:
         - errcheck
         - stylecheck
         - noctx
+    - path: pkg/util/testutil/
+      linters:
+        - stylecheck
   max-issues-per-linter: 0
   max-same-issues: 0

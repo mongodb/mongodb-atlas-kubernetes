@@ -620,6 +620,40 @@ var _ = Describe("AtlasCluster", func() {
 
 		})
 	})
+
+	Describe("Setting the cluster skip annotation should skip reconciliations.", func() {
+		It("Should Succeed", func() {
+
+			By(`Creating the cluster with reconciliation policy "skip" first`, func() {
+				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					30*time.Minute, interval).Should(BeTrue())
+
+				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
+				createdCluster.Spec.Labels = append(createdCluster.Spec.Labels, mdbv1.LabelSpec{
+					Key:   "some-key",
+					Value: "some-value",
+				})
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+				defer cancel()
+
+				containsLabel := func(ac *mongodbatlas.Cluster) bool {
+					for _, label := range ac.Labels {
+						if label.Key == "some-key" && label.Value == "some-value" {
+							return true
+						}
+					}
+					return false
+				}
+
+				Expect(k8sClient.Update(context.Background(), createdCluster)).ToNot(HaveOccurred())
+				Eventually(testutil.WaitForAtlasStateToNotBeReached(ctx, atlasClient, createdProject.Name, createdCluster.Spec.Name, containsLabel))
+			})
+		})
+	})
+
 })
 
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
