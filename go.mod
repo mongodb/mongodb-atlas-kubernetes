@@ -11,9 +11,10 @@ require (
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.0
 	github.com/google/go-cmp v0.5.6
+	github.com/google/pprof v0.0.0-20220128192902-513e8ac6eea1 // indirect
 	github.com/mongodb-forks/digest v1.0.3
 	github.com/mxschmitt/playwright-go v0.1400.0
-	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.1.1
 	github.com/onsi/gomega v1.17.0
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
@@ -21,6 +22,7 @@ require (
 	go.mongodb.org/atlas v0.7.3-0.20210315115044-4b1d3f428c24
 	go.mongodb.org/mongo-driver v1.7.4
 	go.uber.org/zap v1.19.1
+	golang.org/x/tools v0.1.9 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0

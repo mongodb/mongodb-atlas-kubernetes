@@ -8,7 +8,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -375,7 +375,6 @@ var _ = Describe("AtlasCluster", func() {
 				testutil.EventExists(k8sClient, createdCluster, "Warning", string(workflow.Internal), "name is invalid because must be set")
 
 				lastGeneration++
-
 			})
 
 			By("Fixing the cluster", func() {
@@ -617,7 +616,6 @@ var _ = Describe("AtlasCluster", func() {
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.Name), 600, interval).Should(BeTrue())
 				createdCluster = nil
 			})
-
 		})
 	})
 })

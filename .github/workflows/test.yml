@@ -258,9 +258,9 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+          go install github.com/onsi/ginkgo/ginkgo@v2.1.1 && \
           go install github.com/onsi/gomega/...
-          ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
+          ginkgo --label-filter="${TEST_NAME}" --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}

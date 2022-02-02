@@ -3,7 +3,7 @@ package actions
 import (
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"

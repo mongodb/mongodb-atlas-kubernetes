@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.mongodb.org/mongo-driver/bson"
@@ -421,7 +421,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
 					fmt.Sprintf("Connection Secrets were created/updated: %s, %s", s1.Name, s2.Name))
-
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
 				oldName := createdDBUser.Spec.Username

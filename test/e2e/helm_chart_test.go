@@ -3,8 +3,7 @@ package e2e_test
 import (
 	"os"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -23,19 +22,19 @@ import (
 var _ = Describe("HELM charts", func() {
 	var data model.TestDataProvider
 
-	var _ = BeforeEach(func() {
+	_ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP IMAGE_URL")
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("Atfer each.", func() {
 			GinkgoWriter.Write([]byte("\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
-			if CurrentGinkgoTestDescription().Failed {
+			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
@@ -54,7 +53,7 @@ var _ = Describe("HELM charts", func() {
 		})
 	})
 
-	DescribeTable("[helm-ns] Namespaced operators working only with its own namespace with different configuration",
+	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
 		func(test model.TestDataProvider) {
 			data = test
 			By("User use helm for deploying namespaces operator", func() {
@@ -94,7 +93,7 @@ var _ = Describe("HELM charts", func() {
 		),
 	)
 
-	Describe("[helm-wide] HELM charts.", func() {
+	Describe("HELM charts.", Label("helm-wide"), func() {
 		It("User can deploy operator namespaces by using HELM", func() {
 			By("User creates configuration for a new Project and Cluster", func() {
 				data = model.NewTestDataProvider(
@@ -126,7 +125,7 @@ var _ = Describe("HELM charts", func() {
 		})
 	})
 
-	Describe("[helm-update] HELM charts.", func() {
+	Describe("HELM charts.", Label("helm-update"), func() {
 		It("User deploy operator and later deploy new version of the Atlas operator", func() {
 			By("User creates configuration for a new Project, Cluster, DBUser", func() {
 				data = model.NewTestDataProvider(

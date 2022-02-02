@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/onsi/gomega/gbytes"
@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[multinamespaced] Users can use clusterwide configuration with limitation to watch only particular namespaces", func() {
+var _ = Describe("Users can use clusterwide configuration with limitation to watch only particular namespaces", Label("multinamespaced"), func() {
 	var listData []model.TestDataProvider
 	var watchedNamespace []string
 
@@ -23,9 +23,9 @@ var _ = Describe("[multinamespaced] Users can use clusterwide configuration with
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("AfterEach. clean-up", func() {
-			if CurrentGinkgoTestDescription().Failed {
+			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
@@ -47,7 +47,6 @@ var _ = Describe("[multinamespaced] Users can use clusterwide configuration with
 
 	// (Consider Shared Clusters when E2E tests could conflict with each other)
 	It("Deploy cluster multinamespaced operator and create resources in each of them", func() {
-
 		By("Set up test data configuration", func() {
 			watched1 := model.NewTestDataProvider(
 				"multinamestace-watched1",

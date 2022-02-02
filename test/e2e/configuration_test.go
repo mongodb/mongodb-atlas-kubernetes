@@ -3,8 +3,7 @@ package e2e_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func() {
+var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns"), func() {
 	var data model.TestDataProvider // TODO check it
 
 	_ = BeforeEach(func() {
@@ -27,7 +26,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		if CurrentGinkgoTestDescription().Failed {
+		if CurrentSpecReport().Failed() {
 			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 			utils.SaveToFile(
 				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
@@ -42,7 +41,6 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 				data.Resources.Namespace,
 			)
-		} else {
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 		}
 	})
