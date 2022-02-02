@@ -649,7 +649,7 @@ var _ = Describe("AtlasCluster", func() {
 				}
 
 				Expect(k8sClient.Update(context.Background(), createdCluster)).ToNot(HaveOccurred())
-				Eventually(testutil.WaitForAtlasStateToNotBeReached(ctx, atlasClient, createdProject.Name, createdCluster.Spec.Name, containsLabel))
+				Eventually(testutil.WaitForAtlasClusterStateToNotBeReached(ctx, atlasClient, createdProject.Name, createdCluster.Spec.Name, containsLabel))
 			})
 		})
 	})

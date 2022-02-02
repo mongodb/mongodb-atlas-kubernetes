@@ -551,6 +551,49 @@ var _ = Describe("AtlasDatabaseUser", func() {
 				})
 			})
 		})
+
+		Describe("Setting the user skip annotation should skip reconciliations.", func() {
+			It("Should Succeed", func() {
+
+				By(`Creating the user with reconciliation policy "skip" first`, func() {
+					createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+					Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+					Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+						30*time.Minute, interval).Should(BeTrue())
+
+					createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+
+					Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
+					Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
+						DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+
+					createdDBUser.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
+					createdDBUser.Spec.Roles = append(createdDBUser.Spec.Roles, mdbv1.RoleSpec{
+						RoleName:       "new-role",
+						DatabaseName:   "new-database",
+						CollectionName: "new-collection",
+					})
+
+					// add the annotation to skip reconciliation and a new role. This new role should not be seen in
+					// atlas.
+					Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+					defer cancel()
+
+					containsDatabaseUser := func(dbUser *mongodbatlas.DatabaseUser) bool {
+						for _, role := range dbUser.Roles {
+							if role.RoleName == "new-role" && role.DatabaseName == "new-database" && role.CollectionName == "new-collection" {
+								return true
+							}
+						}
+						return false
+					}
+
+					Eventually(testutil.WaitForAtlasDatabaseUserStateToNotBeReached(ctx, atlasClient, "admin", createdProject.Name, createdClusterAWS.Spec.Name, containsDatabaseUser))
+				})
+			})
+		})
 	})
 })
 
