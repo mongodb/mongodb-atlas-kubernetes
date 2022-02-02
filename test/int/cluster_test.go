@@ -33,7 +33,7 @@ const (
 	ClusterUpdateTimeout = 40 * time.Minute
 )
 
-var _ = Describe("AtlasCluster", func() {
+var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 	const (
 		interval      = PollingInterval
 		intervalShort = time.Second * 2

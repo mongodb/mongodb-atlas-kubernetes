@@ -45,7 +45,7 @@ const (
 	DBUserUpdateTimeout = time.Minute * 4
 )
 
-var _ = Describe("AtlasDatabaseUser", func() {
+var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() {
 	const (
 		interval      = PollingInterval
 		intervalShort = time.Second * 2

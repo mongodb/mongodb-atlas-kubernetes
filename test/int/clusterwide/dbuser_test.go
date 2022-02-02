@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +28,7 @@ const (
 	ProjectCreationTimeout = 40
 )
 
-var _ = Describe("ClusterWide", func() {
+var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 	const interval = time.Second * 1
 
 	var (

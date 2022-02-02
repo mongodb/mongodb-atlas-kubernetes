@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +29,7 @@ const (
 	ProjectCreationTimeout = 40
 )
 
-var _ = Describe("AtlasProject", func() {
+var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	const interval = time.Second * 2
 
 	var (
