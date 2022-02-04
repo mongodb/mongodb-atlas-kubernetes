@@ -24,8 +24,10 @@ import (
 
 	"go.uber.org/zap"
 
+	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -49,6 +51,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinventory"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -74,6 +77,12 @@ type InstanceData struct {
 	RegionName       string
 	InstanceSizeName string
 }
+
+const (
+	DBaaSInstanceNameLabel      = "dbaas.redhat.com/instance-name"
+	DBaaSInstanceNamespaceLabel = "dbaas.redhat.com/instance-namespace"
+	FreeClusterFailed           = "CANNOT_CREATE_FREE_CLUSTER_VIA_PUBLIC_API"
+)
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
 
@@ -132,19 +141,14 @@ func (r *MongoDBAtlasInstanceReconciler) Reconcile(cx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	atlasProject := getAtlasProject(inst, instData, inventory.Spec.CredentialsRef.Name)
-
-	_, err = controllerutil.CreateOrUpdate(cx, r.Client, atlasProject, func() error {
-		return nil
-	})
+	atlasProject, err := r.reconcileAtlasProject(cx, inst, instData, inventory)
 	if err != nil {
-		log.Error(err, "Failed to create or update atlas project resource")
+		log.Error(err, "Failed to reconcile Atlas Project")
 		return ctrl.Result{}, err
 	}
 
-	atlasCluster := getOwnedAtlasCluster(inst, instData)
-
-	_, err = controllerutil.CreateOrUpdate(cx, r.Client, atlasCluster, instanceMutateFn(inst, atlasCluster, instData))
+	atlasCluster := getOwnedAtlasCluster(inst)
+	_, err = controllerutil.CreateOrUpdate(cx, r.Client, atlasCluster, instanceMutateFn(atlasProject, atlasCluster, instData))
 	if err != nil {
 		log.Error(err, "Failed to create or update atlas cluster resource")
 		return ctrl.Result{}, err
@@ -181,7 +185,7 @@ func (r *MongoDBAtlasInstanceReconciler) Reconcile(cx context.Context, req ctrl.
 		atlasClient = &cl
 	}
 
-	result := setInstanceStatusWithClusterInfo(atlasClient, inst, atlasCluster, atlasProject.Spec.Name)
+	result := setInstanceStatusWithClusterInfo(atlasClient, inst, atlasCluster, instData.ProjectName)
 	if !result.IsOk() {
 		log.Infof("Error setting instance status: %v", result.Message())
 		return ctrl.Result{}, errors.New(result.Message())
@@ -223,6 +227,52 @@ func (r *MongoDBAtlasInstanceReconciler) SetupWithManager(mgr ctrl.Manager) erro
 	return nil
 }
 
+// getAtlasProject returns an AtlasProject CR
+func (r *MongoDBAtlasInstanceReconciler) getAtlasProject(cx context.Context, inst *dbaas.MongoDBAtlasInstance) (atlasProject *v1.AtlasProject, err error) {
+	atlasProjectList := &v1.AtlasProjectList{}
+	opts := &client.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			DBaaSInstanceNameLabel:      inst.Name,
+			DBaaSInstanceNamespaceLabel: inst.Namespace,
+		}),
+	}
+	err = r.Client.List(cx, atlasProjectList, opts)
+	if err != nil {
+		return
+	}
+	if len(atlasProjectList.Items) < 1 {
+		return
+	}
+	atlasProject = &atlasProjectList.Items[0]
+	return
+}
+
+func (r *MongoDBAtlasInstanceReconciler) reconcileAtlasProject(cx context.Context, inst *dbaas.MongoDBAtlasInstance, instData *InstanceData, inventory *dbaas.MongoDBAtlasInventory) (atlasProject *v1.AtlasProject, err error) {
+	// First check if there is already an AtlasProject resource created for this instance using labels
+	atlasProject, err = r.getAtlasProject(cx, inst)
+	if err != nil {
+		return
+	}
+	if atlasProject == nil {
+		// No AtlasProject resource found, create one
+		project, err1 := r.getAtlasProjectForCreation(inst, instData, inventory)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		err = r.Client.Create(cx, project, &client.CreateOptions{})
+		if err != nil {
+			return
+		}
+		// Fetch the project name from newly created CR
+		atlasProject, err = r.getAtlasProject(cx, inst)
+		if err == nil && atlasProject == nil {
+			err = errors.New("atlas Project resource has not been created yet")
+		}
+	}
+	return
+}
+
 // Delete implements a handler for the Delete event.
 func (r *MongoDBAtlasInstanceReconciler) Delete(e event.DeleteEvent) error {
 	inst, ok := e.Object.(*dbaas.MongoDBAtlasInstance)
@@ -231,30 +281,47 @@ func (r *MongoDBAtlasInstanceReconciler) Delete(e event.DeleteEvent) error {
 		log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &dbaas.MongoDBAtlasInstance{}, e.Object)
 		return nil
 	}
-	return nil
+	// Fetch the corresponding AtlasProject resource for this instance
+	cx := context.Background()
+	atlasProject, err := r.getAtlasProject(cx, inst)
+	if err == nil && atlasProject != nil {
+		// Delete the AtlasProject resource. Note that the project will be kept in Atlas.
+		err = r.Client.Delete(cx, atlasProject, &client.DeleteOptions{})
+	}
+	return err
 }
 
-// getAtlasProject returns an AtlasProject for provisioning
-// No ownerref is set as the same project can be used to provisiong multiple clusters
-func getAtlasProject(instance *dbaas.MongoDBAtlasInstance, data *InstanceData, secretName string) *v1.AtlasProject {
+// getAtlasProjectForCreation returns an AtlasProject object for provisioning
+// No ownerref is set as the same project can be used to provision multiple clusters
+func (r *MongoDBAtlasInstanceReconciler) getAtlasProjectForCreation(instance *dbaas.MongoDBAtlasInstance, data *InstanceData, inventory *dbaas.MongoDBAtlasInventory) (*v1.AtlasProject, error) {
+	secret := &corev1.Secret{}
+	if err := r.Client.Get(context.Background(), *inventory.ConnectionSecretObjectKey(), secret); err != nil {
+		return nil, err
+	}
 	return &v1.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      data.ProjectName,
-			Namespace: instance.Namespace,
+			GenerateName: "atlas-project-",
+			Namespace:    inventory.Namespace, // AtlasProject CR must be in the same namespace as the inventory
 			Labels: map[string]string{
-				"created-by": "atlas-operator",
+				"created-by":                "atlas-operator",
+				DBaaSInstanceNameLabel:      instance.Name,
+				DBaaSInstanceNamespaceLabel: instance.Namespace,
+			},
+			Annotations: map[string]string{
+				// Keep the project in Atlas when local k8s AtlasProject resource is deleted
+				customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 			},
 		},
 		Spec: v1.AtlasProjectSpec{
 			Name:                data.ProjectName,
-			ConnectionSecret:    &v1.ResourceRef{Name: secretName},
+			ConnectionSecret:    &v1.ResourceRef{Name: inventory.Spec.CredentialsRef.Name},
 			ProjectIPAccessList: []project.IPAccessList{},
 		},
-	}
+	}, nil
 }
 
 // getAtlasClusterSpec returns the spec for the desired cluster
-func getAtlasClusterSpec(instance *dbaas.MongoDBAtlasInstance, data *InstanceData) *v1.AtlasClusterSpec {
+func getAtlasClusterSpec(atlasProject *v1.AtlasProject, data *InstanceData) *v1.AtlasClusterSpec {
 	var providerSettingsSpec *v1.ProviderSettingsSpec
 	if data.InstanceSizeName == "M0" || data.InstanceSizeName == "M2" || data.InstanceSizeName == "M5" {
 		// See Atlas documentation https://docs.atlas.mongodb.com/reference/api/clusters-create-one/
@@ -272,17 +339,17 @@ func getAtlasClusterSpec(instance *dbaas.MongoDBAtlasInstance, data *InstanceDat
 		}
 	}
 	return &v1.AtlasClusterSpec{
-		Project:          v1.ResourceRefNamespaced{Name: data.ProjectName, Namespace: instance.Namespace},
+		Project:          v1.ResourceRefNamespaced{Name: atlasProject.Name, Namespace: atlasProject.Namespace},
 		Name:             data.ClusterName,
 		ProviderSettings: providerSettingsSpec,
 	}
 }
 
 // getOwnedAtlasCluster returns an AtlasCluster object owned by the instance
-func getOwnedAtlasCluster(instance *dbaas.MongoDBAtlasInstance, data *InstanceData) *v1.AtlasCluster {
+func getOwnedAtlasCluster(instance *dbaas.MongoDBAtlasInstance) *v1.AtlasCluster {
 	return &v1.AtlasCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      data.ClusterName,
+			Name:      instance.Name,
 			Namespace: instance.Namespace,
 			Labels: map[string]string{
 				"managed-by":      "atlas-operator",
@@ -346,9 +413,9 @@ func getInstanceData(log *zap.SugaredLogger, inst *dbaas.MongoDBAtlasInstance) (
 	}, nil
 }
 
-func instanceMutateFn(inst *dbaas.MongoDBAtlasInstance, atlasCluster *v1.AtlasCluster, data *InstanceData) controllerutil.MutateFn {
+func instanceMutateFn(atlasProject *v1.AtlasProject, atlasCluster *v1.AtlasCluster, data *InstanceData) controllerutil.MutateFn {
 	return func() error {
-		atlasCluster.Spec = *getAtlasClusterSpec(inst, data)
+		atlasCluster.Spec = *getAtlasClusterSpec(atlasProject, data)
 		return nil
 	}
 }
@@ -356,34 +423,33 @@ func instanceMutateFn(inst *dbaas.MongoDBAtlasInstance, atlasCluster *v1.AtlasCl
 func setInstanceStatusWithClusterInfo(atlasClient *mongodbatlas.Client, inst *dbaas.MongoDBAtlasInstance, atlasCluster *v1.AtlasCluster, project string) workflow.Result {
 	instInfo, result := atlasinventory.GetClusterInfo(atlasClient, project, inst.Spec.Name)
 	if result.IsOk() {
-		// Set the phase based on AtlasCluster state
-		// pending - provisioning not yet started
-		// creating - provisioning in progress
-		// updating - cluster updating in progress
-		// deleting - cluster deletion in progress
-		// deleted - cluster has been deleted
-		// ready - cluster provisioning complete
-		statusFound := false
-		inst.Status.InstanceID = instInfo.InstanceID
-		inst.Status.InstanceInfo = instInfo.InstanceInfo
 		// Stores the phase info in inst.Status.Phase and remove from instInfo.InstanceInf map
 		inst.Status.Phase = instInfo.InstanceInfo[dbaas.ProvisionPhaseKey]
 		delete(instInfo.InstanceInfo, dbaas.ProvisionPhaseKey)
-		for _, cond := range atlasCluster.Status.Conditions {
-			if cond.Type == status.ClusterReadyType {
-				statusFound = true
-				if cond.Status == "True" {
-					dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), "Ready", cond.Message)
-				} else {
-					dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), cond.Reason, cond.Message)
+		inst.Status.InstanceID = instInfo.InstanceID
+		inst.Status.InstanceInfo = instInfo.InstanceInfo
+	} else {
+		inst.Status.Phase = "Pending"
+		inst.Status.InstanceID = ""
+		inst.Status.InstanceInfo = nil
+	}
+	statusFound := false
+	for _, cond := range atlasCluster.Status.Conditions {
+		if cond.Type == status.ClusterReadyType {
+			statusFound = true
+			if cond.Status == corev1.ConditionTrue {
+				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), "Ready", cond.Message)
+			} else {
+				if strings.Contains(cond.Message, FreeClusterFailed) {
+					inst.Status.Phase = "Failed"
 				}
+				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), cond.Reason, cond.Message)
 			}
 		}
-		if !statusFound {
-			dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, "Pending", "Waiting for cluster creation to start")
-		}
-	} else {
-		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
 	}
+	if !statusFound {
+		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, "Pending", "Waiting for cluster creation to start")
+	}
+
 	return result
 }

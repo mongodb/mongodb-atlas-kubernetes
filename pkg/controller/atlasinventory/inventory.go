@@ -64,6 +64,12 @@ func GetClusterInfo(atlasClient *mongodbatlas.Client, projectName, clusterName s
 // GetInstance returns instance info as required by DBaaS Operator
 func GetInstance(project mongodbatlas.Project, cluster mongodbatlas.Cluster) dbaasv1alpha1.Instance {
 	// Convert state names to "Creating", "Ready", "Deleting", "Deleted" etc.
+	// Pending - provisioning not yet started
+	// Creating - provisioning in progress
+	// Updating - cluster updating in progress
+	// Deleting - cluster deletion in progress
+	// Deleted - cluster has been deleted
+	// Ready - cluster provisioning complete
 	phase := strings.Title(strings.ToLower(cluster.StateName))
 	if cluster.StateName == "IDLE" {
 		phase = "Ready"

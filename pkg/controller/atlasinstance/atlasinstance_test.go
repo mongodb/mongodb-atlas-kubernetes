@@ -15,6 +15,7 @@
 package atlasinstance
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -30,10 +31,17 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	status "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 )
 
 func TestGetInstanceData(t *testing.T) {
@@ -332,4 +340,130 @@ func TestSetInstanceStatusWithClusterInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAtlasInstanceReconcile(t *testing.T) {
+	atlasClient, teardown := setupMockAltasServer(t)
+	defer teardown()
+
+	s := scheme.Scheme
+	utilruntime.Must(scheme.AddToScheme(s))
+	utilruntime.Must(v1.AddToScheme(s))
+	utilruntime.Must(dbaas.AddToScheme(s))
+	client := fake.NewClientBuilder().WithScheme(s).Build()
+	logger := zaptest.Logger(t)
+
+	// Create a MongoDBAtlasInstanceReconciler object with the scheme and fake client.
+	r := &MongoDBAtlasInstanceReconciler{
+		Client:          client,
+		AtlasClient:     atlasClient,
+		Scheme:          s,
+		Log:             logger.Sugar(),
+		ResourceWatcher: watch.NewResourceWatcher(),
+	}
+
+	tcName := "mytest"
+	clusterName := "myclusternew"
+	projectName := "myproject"
+	expectedPhase := "Pending"
+	expectedReadyCondition := "False"
+	expectedReasonString := "Pending"
+	expectedErrString := "CLUSTER_NOT_FOUND"
+	expectedRequeue := true
+	inventory := &dbaas.MongoDBAtlasInventory{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "dbaas.redhat.com/v1alpha1",
+			Kind:       "MongoDBAtlasInventory",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("inventory-%s", tcName),
+			Namespace: "dbaas-operator",
+		},
+		Spec: dbaasv1alpha1.DBaaSInventorySpec{
+			CredentialsRef: &dbaasv1alpha1.NamespacedName{
+				Name:      fmt.Sprintf("secret-%s", tcName),
+				Namespace: "dbaas-operator",
+			},
+		},
+	}
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Opaque",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("secret-%s", tcName),
+			Namespace: "dbaas-operator",
+			Labels: map[string]string{
+				"atlas.mongodb.com/type": "credentials",
+			},
+		},
+		Data: map[string][]byte{
+			"orgId":         []byte("testorgid"),
+			"privateApiKey": []byte("testprivatekey"),
+			"publicApiKey":  []byte("testpublickey"),
+		},
+	}
+
+	instance := &dbaas.MongoDBAtlasInstance{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "dbaas.redhat.com/v1alpha1",
+			Kind:       "MongoDBAtlasInstance",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("instance-%s", tcName),
+			Namespace: "dbaas-operator",
+		},
+		Spec: dbaasv1alpha1.DBaaSInstanceSpec{
+			Name: clusterName,
+			InventoryRef: dbaasv1alpha1.NamespacedName{
+				Name:      inventory.Name,
+				Namespace: inventory.Namespace,
+			},
+			OtherInstanceParams: map[string]string{
+				"projectName": projectName,
+			},
+		},
+	}
+	err := client.Create(context.Background(), secret)
+	assert.NoError(t, err)
+	err = client.Create(context.Background(), inventory)
+	assert.NoError(t, err)
+	err = client.Create(context.Background(), instance)
+	assert.NoError(t, err)
+
+	// Mock request to simulate Reconcile() being called on an event for a
+	// watched resource .
+	req := reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		},
+	}
+	res, err := r.Reconcile(context.Background(), req)
+	if err != nil {
+		assert.Contains(t, err.Error(), expectedErrString)
+	} else {
+		assert.Equal(t, expectedRequeue, res.Requeue)
+	}
+	instanceUpdated := &dbaas.MongoDBAtlasInstance{}
+	err = client.Get(context.Background(),
+		types.NamespacedName{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		}, instanceUpdated)
+	assert.NoError(t, err)
+
+	if len(expectedReadyCondition) > 0 {
+		assert.Equal(t, expectedReadyCondition, string(instanceUpdated.Status.Conditions[0].Status))
+		assert.Equal(t, expectedReasonString, instanceUpdated.Status.Conditions[0].Reason)
+	}
+	assert.Equal(t, expectedPhase, instanceUpdated.Status.Phase)
+
+	// After an instance is deleted, the corresponding atlas project should be deleted
+	delEvent := event.DeleteEvent{Object: instance}
+	err = r.Delete(delEvent)
+	assert.NoError(t, err)
+	atlasProject, err := r.getAtlasProject(context.Background(), instance)
+	assert.NoError(t, err)
+	assert.Nil(t, atlasProject)
 }
