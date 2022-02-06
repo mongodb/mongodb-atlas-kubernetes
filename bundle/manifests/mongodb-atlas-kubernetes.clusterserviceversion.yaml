@@ -68,7 +68,7 @@ metadata:
       Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.16.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: mongodb-atlas-kubernetes.v0.5.0
+  name: mongodb-atlas-kubernetes.v0.7.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
