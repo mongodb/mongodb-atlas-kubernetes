@@ -258,7 +258,7 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/ginkgo@v2.1.1 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.1 && \
           go install github.com/onsi/gomega/...
           ginkgo --label-filter="${TEST_NAME}" --nodes=10 -v test/e2e/
 
