@@ -268,16 +268,3 @@ jobs:
         with:
           name: logs
           path: test/e2e/output/**
-
-  cleanup:
-    name: Cleanup atlas projects
-    needs: allowed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.4.0
-
-      - name: CleanUp empty AtlasProjects older than one day
-        uses: ./.github/actions/cleanup
-        with:
-          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
