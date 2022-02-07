@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: mongodb-atlas-operator-local
+  namespace: mongodb-atlas-operator-system-test 
+spec:
+  channel: beta
+  name: mongodb-atlas-kubernetes
+  source: mongodb-atlas-kubernetes-local
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic
