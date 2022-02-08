@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
@@ -116,6 +117,14 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
+
+	var authModes authmode.AuthModes
+	if authModes, result = r.ensureX509(ctx, projectID, project); !result.IsOk() {
+		ctx.SetConditionFromResult(status.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+	authModes.AddAuthMode(authmode.Scram) // add the default auth method
+	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
 
 	if project.GetDeletionTimestamp().IsZero() {
 		if !isDeletionFinalizerPresent(project) {

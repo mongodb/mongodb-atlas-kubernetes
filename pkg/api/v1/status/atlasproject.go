@@ -1,6 +1,7 @@
 package status
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 )
 
@@ -58,6 +59,12 @@ func AtlasProjectUpdatePrivateEnpointsOption(privateEndpoints []ProjectPrivateEn
 	}
 }
 
+func AtlasProjectAuthModesOption(authModes []authmode.AuthMode) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.AuthModes = authModes
+	}
+}
+
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	Common `json:",inline"`
@@ -72,4 +79,9 @@ type AtlasProjectStatus struct {
 
 	// The list of private endpoints configured for current project
 	PrivateEndpoints []ProjectPrivateEndpoint `json:"privateEndpoints,omitempty"`
+
+	// AuthModes contains a list of configured authentication modes
+	// "SCRAM" is default authentication method and requires a password for each user
+	// "X509" signifies that self-managed X.509 authentication is configured
+	AuthModes authmode.AuthModes `json:"AuthModes,omitempty"`
 }
