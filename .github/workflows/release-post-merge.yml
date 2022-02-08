@@ -56,7 +56,7 @@ jobs:
           tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
 
       - name: Push Atlas Operator to Registry
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -66,7 +66,7 @@ jobs:
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Push Atlas Operator to RedHat Connect
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           username: unused
           password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
@@ -77,7 +77,7 @@ jobs:
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Push Atlas Operator to Quay Registry
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           username: ${{ env.QUAY_ROBOT_NAME }}
           password: ${{ secrets.QUAY_PASSWORD }}

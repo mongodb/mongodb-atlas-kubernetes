@@ -114,7 +114,7 @@ jobs:
         uses: ./.github/actions/set-tag
 
       - name: Push Atlas Operator to Registry
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -178,7 +178,7 @@ jobs:
 
       - name: Push bundle-image for the test
         if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v2.9.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
