@@ -79,9 +79,13 @@ type InstanceData struct {
 }
 
 const (
-	DBaaSInstanceNameLabel      = "dbaas.redhat.com/instance-name"
-	DBaaSInstanceNamespaceLabel = "dbaas.redhat.com/instance-namespace"
-	FreeClusterFailed           = "CANNOT_CREATE_FREE_CLUSTER_VIA_PUBLIC_API"
+	DBaaSInstanceNameLabel         = "dbaas.redhat.com/instance-name"
+	DBaaSInstanceNamespaceLabel    = "dbaas.redhat.com/instance-namespace"
+	FreeClusterFailed              = "CANNOT_CREATE_FREE_CLUSTER_VIA_PUBLIC_API"
+	PhaseFailed                    = "Failed"
+	PhasePending                   = "Pending"
+	ClusterAlreadyExistsInAtlas    = "ClusterAlreadyExistsInAtlas"
+	ClusterAlreadyExistsInAtlasMsg = "Can not create the cluster as it already exists in Atlas"
 )
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -147,7 +151,45 @@ func (r *MongoDBAtlasInstanceReconciler) Reconcile(cx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
+	return r.reconcileAtlasCluster(cx, log, inst, instData, inventory, atlasProject)
+}
+
+func (r *MongoDBAtlasInstanceReconciler) reconcileAtlasCluster(cx context.Context, log *zap.SugaredLogger, inst *dbaas.MongoDBAtlasInstance, instData *InstanceData, inventory *dbaas.MongoDBAtlasInventory, atlasProject *v1.AtlasProject) (ctrl.Result, error) {
+	if atlasProject == nil {
+		return ctrl.Result{}, errors.New("there is no Atlas Project used to provision atlas cluster")
+	}
+	atlasConn, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, inventory.ConnectionSecretObjectKey())
+	if err != nil {
+		result := workflow.Terminate(workflow.MongoDBAtlasInventoryInputError, err.Error())
+		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
+		return result.ReconcileResult(), nil
+	}
+	atlasClient := r.AtlasClient
+	if atlasClient == nil {
+		cl, err := atlas.Client(r.AtlasDomain, atlasConn, log)
+		if err != nil {
+			result := workflow.Terminate(workflow.MongoDBAtlasInventoryInputError, err.Error())
+			dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
+			return result.ReconcileResult(), nil
+		}
+		atlasClient = &cl
+	}
+
 	atlasCluster := getOwnedAtlasCluster(inst)
+	if err := r.Client.Get(cx, types.NamespacedName{Namespace: atlasCluster.Namespace, Name: atlasCluster.Name}, atlasCluster); err != nil {
+		if apiErrors.IsNotFound(err) { // The AtlasCluster CR does not exist
+			_, result := atlasinventory.GetClusterInfo(atlasClient, atlasProject.Spec.Name, inst.Spec.Name)
+			if result.IsOk() {
+				// The cluster already exists in Atlas. Mark provisioning phase as failed and return
+				inst.Status.Phase = PhaseFailed
+				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, ClusterAlreadyExistsInAtlas, ClusterAlreadyExistsInAtlasMsg)
+				// No requeue
+				return ctrl.Result{}, nil
+			}
+		} else {
+			return ctrl.Result{}, err
+		}
+	}
 	_, err = controllerutil.CreateOrUpdate(cx, r.Client, atlasCluster, instanceMutateFn(atlasProject, atlasCluster, instData))
 	if err != nil {
 		log.Error(err, "Failed to create or update atlas cluster resource")
@@ -165,24 +207,6 @@ func (r *MongoDBAtlasInstanceReconciler) Reconcile(cx context.Context, req ctrl.
 		}
 		log.Error(err, "Error fetching Atlas Cluster")
 		return ctrl.Result{}, err
-	}
-
-	atlasConn, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, inventory.ConnectionSecretObjectKey())
-	if err != nil {
-		result := workflow.Terminate(workflow.MongoDBAtlasInventoryInputError, err.Error())
-		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
-		return result.ReconcileResult(), nil
-	}
-
-	atlasClient := r.AtlasClient
-	if atlasClient == nil {
-		cl, err := atlas.Client(r.AtlasDomain, atlasConn, log)
-		if err != nil {
-			result := workflow.Terminate(workflow.MongoDBAtlasInventoryInputError, err.Error())
-			dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
-			return result.ReconcileResult(), nil
-		}
-		atlasClient = &cl
 	}
 
 	result := setInstanceStatusWithClusterInfo(atlasClient, inst, atlasCluster, instData.ProjectName)
@@ -266,9 +290,6 @@ func (r *MongoDBAtlasInstanceReconciler) reconcileAtlasProject(cx context.Contex
 		}
 		// Fetch the project name from newly created CR
 		atlasProject, err = r.getAtlasProject(cx, inst)
-		if err == nil && atlasProject == nil {
-			err = errors.New("atlas Project resource has not been created yet")
-		}
 	}
 	return
 }
@@ -429,7 +450,7 @@ func setInstanceStatusWithClusterInfo(atlasClient *mongodbatlas.Client, inst *db
 		inst.Status.InstanceID = instInfo.InstanceID
 		inst.Status.InstanceInfo = instInfo.InstanceInfo
 	} else {
-		inst.Status.Phase = "Pending"
+		inst.Status.Phase = PhasePending
 		inst.Status.InstanceID = ""
 		inst.Status.InstanceInfo = nil
 	}
@@ -441,14 +462,14 @@ func setInstanceStatusWithClusterInfo(atlasClient *mongodbatlas.Client, inst *db
 				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), "Ready", cond.Message)
 			} else {
 				if strings.Contains(cond.Message, FreeClusterFailed) {
-					inst.Status.Phase = "Failed"
+					inst.Status.Phase = PhaseFailed
 				}
 				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionStatus(cond.Status), cond.Reason, cond.Message)
 			}
 		}
 	}
 	if !statusFound {
-		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, "Pending", "Waiting for cluster creation to start")
+		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, PhasePending, "Waiting for cluster creation to start")
 	}
 
 	return result
