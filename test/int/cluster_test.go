@@ -210,7 +210,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		})
 	})
 
-	Describe("Create cluster & change it to GEOSHARDED", func() {
+	Describe("Create cluster & change it to GEOSHARDED", Label("int", "geosharded", "slow"), func() {
 		It("Should Succeed", func() {
 			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 

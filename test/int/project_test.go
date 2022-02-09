@@ -2,14 +2,16 @@ package int
 
 import (
 	"context"
+	"sync"
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
+
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,24 +196,23 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					By(fmt.Sprintf("Creating several projects: %s", projectName))
 					createdProjects[i] = mdbv1.DefaultProject(namespace.Name, "").WithAtlasName(projectName).WithName(projectName)
 					Expect(k8sClient.Create(context.Background(), createdProjects[i])).ShouldNot(HaveOccurred())
-					fmt.Printf("%+v", createdProjects[i])
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
 
 					Eventually(testutil.WaitFor(k8sClient, createdProjects[i], status.TrueCondition(status.ReadyType)),
 						"5m", "2s").Should(BeTrue())
 
 					By(fmt.Sprintf("Deleting the project: %s", projectName))
-
 					Expect(k8sClient.Delete(context.Background(), createdProjects[i])).Should(Succeed())
-					fmt.Printf("%+v", createdProjects[i])
-					fmt.Printf("%v=======================NAME: %s\n", i, projectName)
-					fmt.Printf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
 					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 1*time.Minute, 5*time.Second).Should(BeTrue())
 
 					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
 					time.Sleep(1 * time.Minute)
-					fmt.Printf("%+v", createdProjects[i])
-					fmt.Printf("%v=======================NAME: %s\n", i, projectName)
-					fmt.Printf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
 					Expect(checkAtlasProjectRemoved(createdProjects[i].Status.ID)()).Should(BeTrue())
 				}(i)
 			}
