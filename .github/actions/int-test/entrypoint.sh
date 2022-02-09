@@ -7,4 +7,4 @@ export ATLAS_PRIVATE_KEY="${INPUT_ATLAS_PRIVATE_KEY}"
 # otherwise we may get strange "Detected Programmatic Focus - setting exit status to 197"
 export GINKGO_EDITOR_INTEGRATION="true"
 
-ginkgo --label-filter= "${INPUT_TEST_NAME}" -v -nodes="${INPUT_PARALLEL_NODES}" "${INPUT_TEST_PATH}"
+ginkgo --label-filter="${INPUT_TEST_NAME}" --timeout 80m -v -nodes="${INPUT_PARALLEL_NODES}" "${INPUT_TEST_PATH}"
