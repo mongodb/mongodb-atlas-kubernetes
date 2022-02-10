@@ -20,8 +20,13 @@ func discoverInstances(atlasClient *mongodbatlas.Client) ([]dbaasv1alpha1.Instan
 	if err != nil {
 		return nil, workflow.Terminate(getReasonFromResponse(response), err.Error())
 	}
+	processed := map[string]bool{}
 	instanceList := []dbaasv1alpha1.Instance{}
 	for _, p := range projects.Results {
+		if _, ok := processed[p.ID]; ok {
+			// This project ID has been processed. Move on to next.
+			continue
+		}
 		clusters, response, err := atlasClient.Clusters.List(context.Background(), p.ID, &mongodbatlas.ListOptions{})
 		if err != nil {
 			return nil, workflow.Terminate(getReasonFromResponse(response), err.Error())
@@ -29,6 +34,7 @@ func discoverInstances(atlasClient *mongodbatlas.Client) ([]dbaasv1alpha1.Instan
 		for _, cluster := range clusters {
 			instanceList = append(instanceList, GetInstance(*p, cluster))
 		}
+		processed[p.ID] = true
 	}
 	return instanceList, workflow.OK()
 }
