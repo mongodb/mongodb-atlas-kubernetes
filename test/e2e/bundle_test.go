@@ -26,9 +26,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 	})
 	_ = AfterEach(func() {
 		By("Atfer each.", func() {
-			GinkgoWriter.Write([]byte("TEST1"))
 			if CurrentSpecReport().Failed() {
-				GinkgoWriter.Write([]byte("TEST2"))
 				actions.SaveDefaultOperatorLogs(data.Resources)
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
@@ -62,7 +60,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 
 		By("OLM install", func() {
 			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL), "3m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--verbose"), "3m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {
