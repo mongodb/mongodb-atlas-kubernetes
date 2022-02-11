@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/ui/openshift/pom/pagereport"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -25,7 +25,7 @@ const (
 	lockNamespace = "lock-test"
 )
 
-var _ = Describe("[openshift] UserLogin", func() {
+var _ = Describe("Openshift UI test", Label("openshift"), func() {
 	var s utils.Secrets
 	var t model.TestDataProvider
 	var operatorTag, path string
@@ -51,7 +51,7 @@ var _ = Describe("[openshift] UserLogin", func() {
 	})
 
 	AfterEach(func() {
-		if CurrentGinkgoTestDescription().Failed && !strings.Contains(page.URL(), "token") {
+		if CurrentSpecReport().Failed() && !strings.Contains(page.URL(), "token") {
 			pagereport.MakeScreenshot(page, "error")
 		}
 		oc.Delete(path) // we delete it all the time, because of shared space

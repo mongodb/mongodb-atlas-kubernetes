@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,7 +45,7 @@ const (
 	DBUserUpdateTimeout = time.Minute * 4
 )
 
-var _ = Describe("AtlasDatabaseUser", func() {
+var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() {
 	const (
 		interval      = PollingInterval
 		intervalShort = time.Second * 2
@@ -421,7 +421,6 @@ var _ = Describe("AtlasDatabaseUser", func() {
 
 				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
 					fmt.Sprintf("Connection Secrets were created/updated: %s, %s", s1.Name, s2.Name))
-
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
 				oldName := createdDBUser.Spec.Username
@@ -665,7 +664,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
 	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
-	fmt.Printf("!! Secret: %v (%v)\n", kube.ObjectKey(project.Namespace, secretName), secret.Namespace+"/"+secret.Name)
+	GinkgoWriter.Write([]byte(fmt.Sprintf("!! Secret: %v (%v)\n", kube.ObjectKey(project.Namespace, secretName), secret.Namespace+"/"+secret.Name)))
 
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
@@ -688,7 +687,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
-	fmt.Printf("!! Secret 2: %v \n", secret.Namespace+"/"+secret.Name)
+	GinkgoWriter.Write([]byte(fmt.Sprintf("!! Secret 2: %v \n", secret.Namespace+"/"+secret.Name)))
 	return secret
 }
 

@@ -82,13 +82,13 @@ issues:
         - gochecknoglobals
         - wrapcheck
         - nlreturn
+        - errcheck
     - path: cmd/manager/main.go
       linters:
         - gochecknoglobals
         - wrapcheck
     - path: test/e2e
       linters:
-        - errcheck
         - stylecheck
         - noctx
   max-issues-per-linter: 0

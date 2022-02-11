@@ -3,8 +3,7 @@ package e2e_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -33,7 +32,7 @@ type privateEndpoint struct {
 	region   string
 }
 
-var _ = Describe("[privatelink] UserLogin", func() {
+var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var data model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -47,7 +46,7 @@ var _ = Describe("[privatelink] UserLogin", func() {
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		if CurrentGinkgoTestDescription().Failed {
+		if CurrentSpecReport().Failed() {
 			By("Save logs to output directory ", func() {
 				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 				utils.SaveToFile(
