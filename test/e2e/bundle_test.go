@@ -12,9 +12,7 @@ import (
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("User can deploy operator from bundles", func() {
@@ -28,29 +26,22 @@ var _ = Describe("User can deploy operator from bundles", func() {
 	})
 	_ = AfterEach(func() {
 		By("Atfer each.", func() {
+			GinkgoWriter.Write([]byte("TEST1"))
 			if CurrentSpecReport().Failed() {
-				utils.SaveToFile(
-					"output/operator-logs.txt",
-					kubecli.GetManagerLogs(config.DefaultOperatorNS),
-				)
-				actions.SaveK8sResources(
-					[]string{"deploy"},
-					"default",
-				)
+				GinkgoWriter.Write([]byte("TEST2"))
+				actions.SaveDefaultOperatorLogs(data.Resources)
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(data.Resources)
+				actions.SaveOLMLogs(data.Resources)
 				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})
 	})
 
 	It("User can install operator with OLM", Label("bundle-test"), func() {
-		Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--timeout", "7m"), "7m").Should(gexec.Exit(0))
-
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
@@ -67,6 +58,11 @@ var _ = Describe("User can deploy operator from bundles", func() {
 			)
 			Expect(len(data.Resources.Users)).Should(Equal(1))
 			actions.PrepareUsersConfigurations(&data)
+		})
+
+		By("OLM install", func() {
+			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL), "3m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {

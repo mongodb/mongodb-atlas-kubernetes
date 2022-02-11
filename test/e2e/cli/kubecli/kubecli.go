@@ -188,7 +188,7 @@ func GetManagerLogs(ns string) []byte {
 	return session.Out.Contents()
 }
 
-func GetTestAppLogs(label, ns string) []byte {
+func GetLogs(label, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "-l", label, "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()

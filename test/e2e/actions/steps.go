@@ -146,9 +146,53 @@ func SaveTestAppLogs(input model.UserInputs) {
 		)
 		utils.SaveToFile(
 			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
-			kubecli.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+			kubecli.GetLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 	}
+}
+
+// SaveOperatorLogs save logs from user input namespace
+func SaveOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs(input.Namespace),
+	)
+}
+
+// SaveDefaultOperatorLogs save logs from default namespace
+func SaveDefaultOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs("default"),
+	)
+}
+
+func SaveOLMLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/catalog-operator.log", input.Namespace),
+		kubecli.GetLogs("app=catalog-operator", "olm"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/olm-operator.log", input.Namespace),
+		kubecli.GetLogs("app=olm-operator", "olm"),
+	)
+	
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/catalogsources.yaml", input.Namespace),
+		kubecli.GetYamlResource("catalogsources", "default"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/subscriptions.yaml", input.Namespace),
+		kubecli.GetYamlResource("subscriptions", "default"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/olm-operator.yaml", input.Namespace),
+		kubecli.GetYamlResource("olm-operator", "default"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/csvs.yaml", input.Namespace),
+		kubecli.GetYamlResource("csvs", "default"),
+	)
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
