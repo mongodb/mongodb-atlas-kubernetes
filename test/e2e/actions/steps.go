@@ -176,7 +176,6 @@ func SaveOLMLogs(input model.UserInputs) {
 		fmt.Sprintf("output/%s/olm-operator.log", input.Namespace),
 		kubecli.GetLogs("app=olm-operator", "olm"),
 	)
-	
 	utils.SaveToFile(
 		fmt.Sprintf("output/%s/catalogsources.yaml", input.Namespace),
 		kubecli.GetYamlResource("catalogsources", "default"),
