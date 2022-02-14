@@ -5,7 +5,8 @@ metadata:
     alm-examples: '[]'
     capabilities: Basic Install
     categories: Database
-    description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
+    description: The MongoDB Atlas Kubernetes Operator enables easy management of
+      Clusters in MongoDB Atlas
   name: mongodb-atlas-kubernetes.v0.0.0
   namespace: placeholder
 spec:
@@ -147,9 +148,9 @@ spec:
       deployments: null
     strategy: ""
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
-  - supported: false
+  - supported: true
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
@@ -164,10 +165,10 @@ spec:
   links:
   - name: MongoDB Atlas Kubernetes
     url: https://github.com/mongodb/mongodb-atlas-kubernetes
-  maturity: beta
-  provider:
-    name: MongoDB, Inc
   maintainers:
   - email: support@mongodb.com
+    name: MongoDB, Inc
+  maturity: beta
+  provider:
     name: MongoDB, Inc
   version: 0.0.0

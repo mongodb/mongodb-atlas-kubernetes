@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/onsi/gomega/gbytes"
@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
+var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide operator", Label("cluster-wide"), func() {
 	var NortonData, NimnulData model.TestDataProvider
 	commonClusterName := "megacluster"
 
@@ -32,9 +32,9 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 	})
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("AfterEach. clean-up", func() {
-			if CurrentGinkgoTestDescription().Failed {
+			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
@@ -54,9 +54,8 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				)
 				actions.SaveTestAppLogs(NortonData.Resources)
 				actions.SaveTestAppLogs(NimnulData.Resources)
-			} else {
-				actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 			}
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 		})
 	})
 

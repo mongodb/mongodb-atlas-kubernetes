@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/go-logr/zapr"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -40,7 +40,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
@@ -64,6 +63,10 @@ var (
 	atlasDomain string
 )
 
+const (
+	timeout = 60
+)
+
 func init() {
 	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
 		atlasDomain = "https://cloud-qa.mongodb.com"
@@ -72,92 +75,93 @@ func init() {
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Project Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Project Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
-
-	ctrl.SetLogger(zapr.NewLogger(logger))
-
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-	}
-
-	atlasClient, connection = prepareAtlasClient()
-
-	var err error
-	cfg, err = testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
-
-	err = mdbv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	syncPeriod := time.Minute * 30
-	// The manager watches ALL namespaces
-	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:     scheme.Scheme,
-		SyncPeriod: &syncPeriod,
-	})
-	Expect(err).ToNot(HaveOccurred())
-
-	// globalPredicates should be used for general controller Predicates
-	// that should be applied to all controllers in order to limit the
-	// resources they receive events for.
-	globalPredicates := []predicate.Predicate{
-		watch.CommonPredicates(), // ignore spurious changes. status changes etc.
-		watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
-			namespace.Name: true,
-		}),
-	}
-
-	err = (&atlasproject.AtlasProjectReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:      atlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlascluster.AtlasClusterReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:      atlasDomain,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
-		AtlasDomain:      atlasDomain,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
-		ResourceWatcher:  watch.NewResourceWatcher(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
+var _ = BeforeSuite(func() {
+	done := make(chan interface{})
 	go func() {
-		err = k8sManager.Start(ctrl.SetupSignalHandler())
+		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
+
+		ctrl.SetLogger(zapr.NewLogger(logger))
+
+		By("bootstrapping test environment")
+		testEnv = &envtest.Environment{
+			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
+		}
+
+		atlasClient, connection = prepareAtlasClient()
+
+		var err error
+		cfg, err = testEnv.Start()
 		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg).ToNot(BeNil())
+
+		err = mdbv1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
+		syncPeriod := time.Minute * 30
+		// The manager watches ALL namespaces
+		k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
+			Scheme:     scheme.Scheme,
+			SyncPeriod: &syncPeriod,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		// globalPredicates should be used for general controller Predicates
+		// that should be applied to all controllers in order to limit the
+		// resources they receive events for.
+		globalPredicates := []predicate.Predicate{
+			watch.CommonPredicates(), // ignore spurious changes. status changes etc.
+			watch.SelectNamespacesPredicate(map[string]bool{ // select only desired namespaces
+				namespace.Name: true,
+			}),
+		}
+
+		err = (&atlasproject.AtlasProjectReconciler{
+			Client:           k8sManager.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
+			AtlasDomain:      atlasDomain,
+			ResourceWatcher:  watch.NewResourceWatcher(),
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
+		}).SetupWithManager(k8sManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = (&atlascluster.AtlasClusterReconciler{
+			Client:           k8sManager.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+			AtlasDomain:      atlasDomain,
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+		}).SetupWithManager(k8sManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
+			Client:           k8sManager.GetClient(),
+			Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+			AtlasDomain:      atlasDomain,
+			GlobalPredicates: globalPredicates,
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+			ResourceWatcher:  watch.NewResourceWatcher(),
+		}).SetupWithManager(k8sManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		go func() {
+			err = k8sManager.Start(ctrl.SetupSignalHandler())
+			Expect(err).ToNot(HaveOccurred())
+		}()
+
+		// It's recommended to construct the client directly for tests
+		// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
+		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient).ToNot(BeNil())
+
+		close(done)
 	}()
-
-	// It's recommended to construct the client directly for tests
-	// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).ToNot(BeNil())
-
-	close(done)
-}, 60)
+	Eventually(done, timeout).Should(BeClosed())
+})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

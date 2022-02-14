@@ -1,0 +1,12 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: mongodb-atlas-kubernetes-local
+spec:
+  sourceType: grpc
+  image: docker.io/ikarpukhin/mongodb-atlas-catalog:0.5.0
+  displayName: MongoDB Atlas operator
+  publisher: MongoDB
+  updateStrategy:
+    registryPoll:
+      interval: 10m

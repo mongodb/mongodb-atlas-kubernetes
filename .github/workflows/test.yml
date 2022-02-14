@@ -62,6 +62,7 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
       - name: Run testing
         uses: ./.github/actions/int-test
         with:
@@ -258,9 +259,9 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.1 && \
           go install github.com/onsi/gomega/...
-          ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
+          ginkgo --label-filter="${TEST_NAME}" --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}
@@ -268,16 +269,3 @@ jobs:
         with:
           name: logs
           path: test/e2e/output/**
-
-  cleanup:
-    name: Cleanup atlas projects
-    needs: allowed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.4.0
-
-      - name: CleanUp empty AtlasProjects older than one day
-        uses: ./.github/actions/cleanup
-        with:
-          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
