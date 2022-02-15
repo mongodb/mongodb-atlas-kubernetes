@@ -169,7 +169,15 @@ func SaveDefaultOperatorLogs(input model.UserInputs) {
 
 func SaveOLMLogs(input model.UserInputs) {
 	utils.SaveToFile(
-		fmt.Sprintf("output/%s/all-olm.log", input.Namespace),
+		fmt.Sprintf("output/%s/catalog-operator.log", input.Namespace),
+		kubecli.GetLogs("app=catalog-operator", "olm"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/olm-operator.log", input.Namespace),
+		kubecli.GetLogs("app=olm-operator", "olm"),
+	)
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/all-olm.yaml", input.Namespace),
 		kubecli.GetYamlResource("all", "olm"),
 	)
 	utils.SaveToFile(
