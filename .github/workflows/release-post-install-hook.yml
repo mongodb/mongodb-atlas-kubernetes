@@ -26,7 +26,7 @@ jobs:
 
       - name: Verify release version already exists
         id: verify-release-version
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         env:
           image: atlas-operator-post-install-hook
           version: ${{ github.event.inputs.version }}
