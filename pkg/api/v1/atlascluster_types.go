@@ -111,6 +111,10 @@ type AtlasClusterSpec struct {
 	// Configuration for cluster regions.
 	// +optional
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
+
+	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	AdvancedClusterSpec *mongodbatlas.AdvancedCluster `json:"advancedClusterSpec,omitempty"`
 }
 
 // AutoScalingSpec configures your cluster to automatically scale its storage

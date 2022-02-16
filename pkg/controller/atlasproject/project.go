@@ -23,7 +23,7 @@ func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, proj
 				OrgID: ctx.Connection.OrgID,
 				Name:  project.Spec.Name,
 			}
-			if p, _, err = ctx.Client.Projects.Create(context.Background(), p); err != nil {
+			if p, _, err = ctx.Client.Projects.Create(context.Background(), p, nil); err != nil {
 				return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())
 			}
 			ctx.Log.Infow("Created Atlas Project", "name", project.Spec.Name, "id", p.ID)

@@ -99,29 +99,54 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.Client = atlasClient
 	ctx.AdvancedClient = advancedClient
 
-	c, result := r.ensureClusterState(ctx, project, cluster)
-	if c != nil && c.StateName != "" {
-		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
-	}
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
+		if c != nil && c.StateName != "" {
+			ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		}
 
-	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		if !result.IsOk() {
+			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			return result.ReconcileResult(), nil
+		}
+
+		if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+			ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+			return csResult.ReconcileResult(), nil
+		}
+
+		ctx.
+			SetConditionTrue(status.ClusterReadyType).
+			EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+			EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
+
+		ctx.SetConditionTrue(status.ReadyType)
+		return result.ReconcileResult(), nil
+	} else {
+		c, result := r.ensureClusterState(ctx, project, cluster)
+		if c != nil && c.StateName != "" {
+			ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		}
+
+		if !result.IsOk() {
+			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			return result.ReconcileResult(), nil
+		}
+
+		if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+			ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+			return csResult.ReconcileResult(), nil
+		}
+
+		ctx.
+			SetConditionTrue(status.ClusterReadyType).
+			EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+			EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
+			EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
+
+		ctx.SetConditionTrue(status.ReadyType)
 		return result.ReconcileResult(), nil
 	}
-
-	if csResult := r.ensureConnectionSecrets(ctx, project, c, cluster); !csResult.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
-		return csResult.ReconcileResult(), nil
-	}
-
-	ctx.
-		SetConditionTrue(status.ClusterReadyType).
-		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
-		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
-		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
-
-	ctx.SetConditionTrue(status.ReadyType)
-	return result.ReconcileResult(), nil
 }
 
 func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {

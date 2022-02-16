@@ -21,6 +21,29 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
+func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.AdvancedCluster, _ workflow.Result) {
+	advancedClusterSpec := cluster.Spec.AdvancedClusterSpec
+
+	_, resp, err := ctx.AdvancedClient.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedClusterSpec.Name)
+
+	if err != nil {
+		if resp == nil {
+			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+		}
+
+		if resp.StatusCode != http.StatusNotFound {
+			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+		}
+
+		ctx.Log.Infof("Advanced Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
+		_, _, err = ctx.AdvancedClient.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedClusterSpec)
+		if err != nil {
+			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+		}
+	}
+	return advancedClusterSpec, workflow.OK()
+}
+
 func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
 	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.Name)
 	if err != nil {
@@ -186,7 +209,7 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster, clusterResource *mdbv1.AtlasCluster) workflow.Result {
+func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, clusterResource *mdbv1.AtlasCluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
@@ -209,7 +232,7 @@ func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, 
 		}
 
 		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
 			continue
 		}
 
@@ -220,12 +243,12 @@ func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, 
 
 		data := connectionsecret.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
-			ConnURL:    cluster.ConnectionStrings.Standard,
-			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
+			ConnURL:    connectionStrings.Standard,
+			SrvConnURL: connectionStrings.StandardSrv,
 			Password:   password,
 		}
 
-		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data)
+		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
 		}
