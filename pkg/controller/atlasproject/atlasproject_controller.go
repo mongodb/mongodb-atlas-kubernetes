@@ -97,12 +97,13 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Connection = connection
 
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, advancedClient, err := atlas.AllClients(r.AtlasDomain, connection, log)
 	if err != nil {
 		ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
+	ctx.AdvancedClient = advancedClient
 
 	var projectID string
 	if projectID, result = r.ensureProjectExists(ctx, project); !result.IsOk() {
