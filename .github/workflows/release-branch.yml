@@ -65,4 +65,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: jasonmimick,priyolahiri,fabritsius,leo-ri
+        REVIEWERS: priyolahiri,fabritsius,leo-ri,chatton,igor-karpukhin

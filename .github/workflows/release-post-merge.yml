@@ -99,7 +99,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           release_name: ${{ steps.tag.outputs.tag }}
-          body_path: changelog.md
+          body_path: docs/release-notes/release-notes.md
           draft: true
           prerelease: false
 

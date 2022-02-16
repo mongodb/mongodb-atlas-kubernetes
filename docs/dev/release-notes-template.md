@@ -1,7 +1,7 @@
 
-# MongoDB Atlas Operator 1.x.y
+# MongoDB Atlas Operator vx.y.z
 
-## Kubernetes Operator
+## Atlas Operator
 
 * Breaking Changes
     * Breaking Change 1
