@@ -34,6 +34,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 				)
 				actions.SaveTestAppLogs(data.Resources)
 				actions.SaveOLMLogs(data.Resources)
+				actions.SaveClusterDump(data.Resources)
 				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})

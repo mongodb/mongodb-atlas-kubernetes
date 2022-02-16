@@ -186,6 +186,10 @@ func SaveOLMLogs(input model.UserInputs) {
 	)
 }
 
+func SaveClusterDump(input model.UserInputs) {
+	kubecli.GetClusterDump(fmt.Sprintf("output/%s/dump", input.Namespace))
+}
+
 func CheckUsersAttributes(input model.UserInputs) {
 	userDBResourceName := func(clusterName string, user model.DBUser) string { // user name helmkind or kube-test-kind
 		if input.KeyName[0:4] == "helm" {

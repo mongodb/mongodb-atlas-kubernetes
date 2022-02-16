@@ -241,3 +241,9 @@ func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
 }
+
+func GetClusterDump(output string) {
+	outputFolder := fmt.Sprintf("--output-directory=%s", output)
+	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
