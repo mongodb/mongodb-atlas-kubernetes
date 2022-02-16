@@ -24,7 +24,7 @@ import (
 func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.AdvancedCluster, _ workflow.Result) {
 	advancedClusterSpec := cluster.Spec.AdvancedClusterSpec
 
-	_, resp, err := ctx.AdvancedClient.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedClusterSpec.Name)
+	advancedCluster, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedClusterSpec.Name)
 
 	if err != nil {
 		if resp == nil {
@@ -35,13 +35,18 @@ func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Contex
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
+		advancedCluster, err = advancedClusterSpec.AdvancedCluster()
+		if err != nil {
+			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+		}
+
 		ctx.Log.Infof("Advanced Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
-		_, _, err = ctx.AdvancedClient.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedClusterSpec)
+		advancedCluster, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedCluster)
 		if err != nil {
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 	}
-	return advancedClusterSpec, workflow.OK()
+	return advancedCluster, workflow.OK()
 }
 
 func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {

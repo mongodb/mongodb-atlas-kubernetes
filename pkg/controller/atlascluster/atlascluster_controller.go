@@ -90,14 +90,13 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Connection = connection
 
-	atlasClient, advancedClient, err := atlas.AllClients(r.AtlasDomain, connection, log)
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
-	ctx.AdvancedClient = advancedClient
 
 	if cluster.Spec.AdvancedClusterSpec != nil {
 		c, result := r.ensureAdvancedClusterState(ctx, project, cluster)

@@ -97,14 +97,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	}
 	ctx.Connection = connection
 
-	atlasClient, advancedClient, err := atlas.AllClients(r.AtlasDomain, connection, log)
+	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
-	ctx.AdvancedClient = advancedClient
 
 	result = r.ensureDatabaseUser(ctx, *project, *databaseUser)
 	if !result.IsOk() {

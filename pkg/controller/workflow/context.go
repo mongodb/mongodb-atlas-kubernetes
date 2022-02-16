@@ -21,9 +21,6 @@ type Context struct {
 	// Client is a mongodb atlas client used to make v1.0 API calls
 	Client mongodbatlas.Client
 
-	// AdvancedClient is a mongodb atlas client used to make v1.5 API calls.
-	AdvancedClient mongodbatlas.Client
-
 	// Connection is an object encapsulating information about connecting to Atlas using API
 	Connection atlas.Connection
 

@@ -114,7 +114,96 @@ type AtlasClusterSpec struct {
 
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
-	AdvancedClusterSpec *mongodbatlas.AdvancedCluster `json:"advancedClusterSpec,omitempty"`
+	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
+}
+
+type AdvancedClusterSpec struct {
+	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
+	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
+	ClusterType              string                     `json:"clusterType,omitempty"`
+	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
+	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
+	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
+	GroupID                  string                     `json:"groupId,omitempty"`
+	ID                       string                     `json:"id,omitempty"`
+	Labels                   []LabelSpec                `json:"labels,omitempty"`
+	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
+	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
+	Name                     string                     `json:"name,omitempty"`
+	Paused                   *bool                      `json:"paused,omitempty"`
+	PitEnabled               *bool                      `json:"pitEnabled,omitempty"`
+	StateName                string                     `json:"stateName,omitempty"`
+	ReplicationSpecs         []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
+	CreateDate               string                     `json:"createDate,omitempty"`
+	RootCertType             string                     `json:"rootCertType,omitempty"`
+	VersionReleaseSystem     string                     `json:"versionReleaseSystem,omitempty"`
+}
+
+// AdvancedCluster converts the AdvancedClusterSpec to native Atlas client AdvancedCluster format.
+func (s *AdvancedClusterSpec) AdvancedCluster() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
+}
+
+// BiConnector specifies BI Connector for Atlas configuration on this cluster.
+type BiConnector struct {
+	Enabled        *bool  `json:"enabled,omitempty"`
+	ReadPreference string `json:"readPreference,omitempty"`
+}
+
+// ConnectionStrings configuration for applications use to connect to this cluster.
+type ConnectionStrings struct {
+	Standard          string                `json:"standard,omitempty"`
+	StandardSrv       string                `json:"standardSrv,omitempty"`
+	PrivateEndpoint   []PrivateEndpointSpec `json:"privateEndpoint,omitempty"`
+	AwsPrivateLink    map[string]string     `json:"awsPrivateLink,omitempty"`
+	AwsPrivateLinkSrv map[string]string     `json:"awsPrivateLinkSrv,omitempty"`
+	Private           string                `json:"private,omitempty"`
+	PrivateSrv        string                `json:"privateSrv,omitempty"`
+}
+
+// PrivateEndpointSpec connection strings. Each object describes the connection strings
+// you can use to connect to this cluster through a private endpoint.
+// Atlas returns this parameter only if you deployed a private endpoint to all regions
+// to which you deployed this cluster's nodes.
+type PrivateEndpointSpec struct {
+	ConnectionString    string         `json:"connectionString,omitempty"`
+	Endpoints           []EndpointSpec `json:"endpoints,omitempty"`
+	SRVConnectionString string         `json:"srvConnectionString,omitempty"`
+	Type                string         `json:"type,omitempty"`
+}
+
+// EndpointSpec through which you connect to Atlas.
+type EndpointSpec struct {
+	EndpointID   string `json:"endpointId,omitempty"`
+	ProviderName string `json:"providerName,omitempty"`
+	Region       string `json:"region,omitempty"`
+}
+
+type AdvancedReplicationSpec struct {
+	NumShards     int                     `json:"numShards,omitempty"`
+	ID            string                  `json:"id,omitempty"`
+	ZoneName      string                  `json:"zoneName,omitempty"`
+	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
+}
+
+type AdvancedRegionConfig struct {
+	AnalyticsSpecs      *Specs           `json:"analyticsSpecs,omitempty"`
+	ElectableSpecs      *Specs           `json:"electableSpecs,omitempty"`
+	ReadOnlySpecs       *Specs           `json:"readOnlySpecs,omitempty"`
+	AutoScaling         *AutoScalingSpec `json:"autoScaling,omitempty"`
+	BackingProviderName string           `json:"backingProviderName,omitempty"`
+	Priority            *int             `json:"priority,omitempty"`
+	ProviderName        string           `json:"providerName,omitempty"`
+	RegionName          string           `json:"regionName,omitempty"`
+}
+
+type Specs struct {
+	DiskIOPS      *int64 `json:"diskIOPS,omitempty"`
+	EbsVolumeType string `json:"ebsVolumeType,omitempty"`
+	InstanceSize  string `json:"instanceSize,omitempty"`
+	NodeCount     *int   `json:"nodeCount,omitempty"`
 }
 
 // AutoScalingSpec configures your cluster to automatically scale its storage

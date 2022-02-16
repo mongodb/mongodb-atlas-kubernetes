@@ -36,6 +36,224 @@ spec:
           spec:
             description: AtlasClusterSpec defines the desired state of AtlasCluster
             properties:
+              advancedClusterSpec:
+                description: Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                properties:
+                  backupEnabled:
+                    type: boolean
+                  biConnector:
+                    description: BiConnectorSpec specifies BI Connector for Atlas
+                      configuration on this cluster
+                    properties:
+                      enabled:
+                        description: Flag that indicates whether or not BI Connector
+                          for Atlas is enabled on the cluster.
+                        type: boolean
+                      readPreference:
+                        description: Source from which the BI Connector for Atlas
+                          reads data. Each BI Connector for Atlas read preference
+                          contains a distinct combination of readPreference and readPreferenceTags
+                          options.
+                        type: string
+                    type: object
+                  clusterType:
+                    type: string
+                  connectionStrings:
+                    description: ConnectionStrings configuration for applications
+                      use to connect to this cluster.
+                    properties:
+                      awsPrivateLink:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      awsPrivateLinkSrv:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      private:
+                        type: string
+                      privateEndpoint:
+                        items:
+                          description: PrivateEndpointSpec connection strings. Each
+                            object describes the connection strings you can use to
+                            connect to this cluster through a private endpoint. Atlas
+                            returns this parameter only if you deployed a private
+                            endpoint to all regions to which you deployed this cluster's
+                            nodes.
+                          properties:
+                            connectionString:
+                              type: string
+                            endpoints:
+                              items:
+                                description: EndpointSpec through which you connect
+                                  to Atlas.
+                                properties:
+                                  endpointId:
+                                    type: string
+                                  providerName:
+                                    type: string
+                                  region:
+                                    type: string
+                                type: object
+                              type: array
+                            srvConnectionString:
+                              type: string
+                            type:
+                              type: string
+                          type: object
+                        type: array
+                      privateSrv:
+                        type: string
+                      standard:
+                        type: string
+                      standardSrv:
+                        type: string
+                    type: object
+                  createDate:
+                    type: string
+                  encryptionAtRestProvider:
+                    description: DiskSizeGB               *float64                   `json:"diskSizeGB,omitempty"`
+                    type: string
+                  groupId:
+                    type: string
+                  id:
+                    type: string
+                  labels:
+                    items:
+                      description: LabelSpec contains key-value pairs that tag and
+                        categorize the Cluster/DBUser
+                      properties:
+                        key:
+                          maxLength: 255
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    type: array
+                  mongoDBMajorVersion:
+                    type: string
+                  mongoDBVersion:
+                    type: string
+                  name:
+                    type: string
+                  paused:
+                    type: boolean
+                  pitEnabled:
+                    type: boolean
+                  replicationSpecs:
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        numShards:
+                          type: integer
+                        regionConfigs:
+                          items:
+                            properties:
+                              analyticsSpecs:
+                                properties:
+                                  diskIOPS:
+                                    format: int64
+                                    type: integer
+                                  ebsVolumeType:
+                                    type: string
+                                  instanceSize:
+                                    type: string
+                                  nodeCount:
+                                    type: integer
+                                type: object
+                              autoScaling:
+                                description: AutoScalingSpec configures your cluster
+                                  to automatically scale its storage
+                                properties:
+                                  autoIndexingEnabled:
+                                    description: Flag that indicates whether autopilot
+                                      mode for Performance Advisor is enabled. The
+                                      default is false.
+                                    type: boolean
+                                  compute:
+                                    description: Collection of settings that configure
+                                      how a cluster might scale its cluster tier and
+                                      whether the cluster can scale down.
+                                    properties:
+                                      enabled:
+                                        description: Flag that indicates whether cluster
+                                          tier auto-scaling is enabled. The default
+                                          is false.
+                                        type: boolean
+                                      maxInstanceSize:
+                                        description: 'Maximum instance size to which
+                                          your cluster can automatically scale (such
+                                          as M40). Atlas requires this parameter if
+                                          "autoScaling.compute.enabled" : true.'
+                                        type: string
+                                      minInstanceSize:
+                                        description: 'Minimum instance size to which
+                                          your cluster can automatically scale (such
+                                          as M10). Atlas requires this parameter if
+                                          "autoScaling.compute.scaleDownEnabled" :
+                                          true.'
+                                        type: string
+                                      scaleDownEnabled:
+                                        description: 'Flag that indicates whether
+                                          the cluster tier may scale down. Atlas requires
+                                          this parameter if "autoScaling.compute.enabled"
+                                          : true.'
+                                        type: boolean
+                                    type: object
+                                  diskGBEnabled:
+                                    description: Flag that indicates whether disk
+                                      auto-scaling is enabled. The default is true.
+                                    type: boolean
+                                type: object
+                              backingProviderName:
+                                type: string
+                              electableSpecs:
+                                properties:
+                                  diskIOPS:
+                                    format: int64
+                                    type: integer
+                                  ebsVolumeType:
+                                    type: string
+                                  instanceSize:
+                                    type: string
+                                  nodeCount:
+                                    type: integer
+                                type: object
+                              priority:
+                                type: integer
+                              providerName:
+                                type: string
+                              readOnlySpecs:
+                                properties:
+                                  diskIOPS:
+                                    format: int64
+                                    type: integer
+                                  ebsVolumeType:
+                                    type: string
+                                  instanceSize:
+                                    type: string
+                                  nodeCount:
+                                    type: integer
+                                type: object
+                              regionName:
+                                type: string
+                            type: object
+                          type: array
+                        zoneName:
+                          type: string
+                      type: object
+                    type: array
+                  rootCertType:
+                    type: string
+                  stateName:
+                    type: string
+                  versionReleaseSystem:
+                    type: string
+                type: object
               autoScaling:
                 description: Collection of settings that configures auto-scaling information
                   for the cluster. If you specify the autoScaling object, you must
