@@ -61,7 +61,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 
 		By("OLM install", func() {
 			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--verbose", "--timeout", "5m"), "5m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--verbose", "--timeout", "15m"), "15m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {
