@@ -39,6 +39,7 @@ func Client(atlasDomain string, connection Connection, log *zap.SugaredLogger) (
 	return versionedClient(atlasDomain, connection, basicVersion, log)
 }
 
+// AdvancedClient returns an instance of mongodbatlas.Client which uses the v1.5 API.
 func AdvancedClient(atlasDomain string, connection Connection, log *zap.SugaredLogger) (mongodbatlas.Client, error) {
 	return versionedClient(atlasDomain, connection, advancedVersion, log)
 }
