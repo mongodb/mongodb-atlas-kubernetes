@@ -21,32 +21,76 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.AdvancedCluster, _ workflow.Result) {
+func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	advancedClusterSpec := cluster.Spec.AdvancedClusterSpec
 
 	advancedCluster, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedClusterSpec.Name)
 
 	if err != nil {
 		if resp == nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		if resp.StatusCode != http.StatusNotFound {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return advancedCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
 		advancedCluster, err = advancedClusterSpec.AdvancedCluster()
 		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Advanced Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
+		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
 		advancedCluster, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedCluster)
 		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return advancedCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 	}
-	return advancedCluster, workflow.OK()
+
+	switch advancedCluster.StateName {
+	case "IDLE":
+		resultingCluster, err := MergedAdvancedCluster(*advancedCluster, cluster.Spec)
+		if err != nil {
+			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
+		}
+
+		if done := AdvancedClustersEqual(ctx.Log, *advancedCluster, resultingCluster); done {
+			return advancedCluster, workflow.OK()
+		}
+
+		if cluster.Spec.Paused != nil {
+			if advancedCluster.Paused == nil || *advancedCluster.Paused != *cluster.Spec.Paused {
+				//paused is different from Atlas
+				//we need to first send a special (un)pause request before reconciling everything else
+				resultingCluster = mongodbatlas.AdvancedCluster{
+					Paused: cluster.Spec.Paused,
+				}
+			} else {
+				//otherwise, don't send the paused field
+				resultingCluster.Paused = nil
+			}
+		}
+
+		resultingCluster = cleanupAdvancedCluster(resultingCluster)
+
+		advancedCluster, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, &resultingCluster)
+		if err != nil {
+			return advancedCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
+		}
+
+		return nil, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+
+	case "CREATING":
+		return nil, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+
+	case "UPDATING", "REPAIRING":
+		return nil, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+
+	// TODO: add "DELETING", "DELETED", handle 404 on delete
+
+	default:
+		return nil, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", advancedCluster.StateName))
+	}
 }
 
 func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
@@ -135,6 +179,14 @@ func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
 	return cluster
 }
 
+func cleanupAdvancedCluster(cluster mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
+	cluster.ID = ""
+	cluster.MongoDBVersion = ""
+	cluster.StateName = ""
+	cluster.ConnectionStrings = nil
+	return cluster
+}
+
 // removeOutdatedFields unsets fields which are should be empty based on flags
 func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas.Cluster) mongodbatlas.Cluster {
 	if lookAt == nil {
@@ -181,6 +233,20 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 	return
 }
 
+// MergedAdvancedCluster will return the result of merging AtlasClusterSpec with Atlas Advanced Cluster
+func MergedAdvancedCluster(advancedCluster mongodbatlas.AdvancedCluster, spec mdbv1.AtlasClusterSpec) (mongodbatlas.AdvancedCluster, error) {
+	result := mongodbatlas.AdvancedCluster{}
+	if err := compat.JSONCopy(&result, advancedCluster); err != nil {
+		return result, err
+	}
+
+	if err := compat.JSONCopy(&result, spec.AdvancedClusterSpec); err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 // mergeRegionConfigs removes replicationSpecs[i].RegionsConfigs[key] from Atlas Cluster that are absent in Operator.
 // Dev idea: this could have been added into some more generic method like `JSONCopy` or something wrapping it to make
 // sure any Atlas map get redundant keys removed. So far there's only one map in Cluster ('RegionsConfig') so we'll do this
@@ -206,6 +272,16 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	clusterAtlas = removeOutdatedFields(&clusterAtlas, &clusterOperator)
 	clusterOperator = removeOutdatedFields(&clusterOperator, nil)
 
+	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
+	if d != "" {
+		log.Debugf("Clusters are different: %s", d)
+	}
+
+	return d == ""
+}
+
+// AdvancedClustersEqual compares two Atlas Advanced Clusters
+func AdvancedClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.AdvancedCluster, clusterOperator mongodbatlas.AdvancedCluster) bool {
 	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Clusters are different: %s", d)

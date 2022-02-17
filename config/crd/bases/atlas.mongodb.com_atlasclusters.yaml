@@ -111,8 +111,9 @@ spec:
                     type: object
                   createDate:
                     type: string
+                  diskSizeGB:
+                    type: integer
                   encryptionAtRestProvider:
-                    description: DiskSizeGB               *float64                   `json:"diskSizeGB,omitempty"`
                     type: string
                   groupId:
                     type: string

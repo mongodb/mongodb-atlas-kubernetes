@@ -225,7 +225,14 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 		timeout := time.Now().Add(workflow.DefaultTimeout)
 
 		for time.Now().Before(timeout) {
-			_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
+
+			deleteClusterFunc := atlasClient.Clusters.Delete
+			if cluster.Spec.AdvancedClusterSpec != nil {
+				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
+			}
+
+			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.Spec.Name)
+
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 				log.Info("Cluster doesn't exist or is already deleted")

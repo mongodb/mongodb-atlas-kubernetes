@@ -36,6 +36,11 @@ func (in *AdvancedClusterSpec) DeepCopyInto(out *AdvancedClusterSpec) {
 		*out = new(ConnectionStrings)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.DiskSizeGB != nil {
+		in, out := &in.DiskSizeGB, &out.DiskSizeGB
+		*out = new(int)
+		**out = **in
+	}
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
 		*out = make([]LabelSpec, len(*in))
