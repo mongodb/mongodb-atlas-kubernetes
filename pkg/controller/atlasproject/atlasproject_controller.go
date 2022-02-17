@@ -108,9 +108,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
-		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
-			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			setCondition(ctx, status.ClusterReadyType, result)
+		if !project.GetDeletionTimestamp().IsZero() && isDeletionFinalizerPresent(project) {
+			if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
+				result = workflow.Terminate(workflow.Internal, errRm.Error())
+				setCondition(ctx, status.ClusterReadyType, result)
+			}
 		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		setCondition(ctx, status.ProjectReadyType, result)
