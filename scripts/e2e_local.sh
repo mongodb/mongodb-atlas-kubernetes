@@ -7,19 +7,23 @@ public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
 private_key=$(grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 # this is the format how it's pushed by act -j build-push
-image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD)
+branch="$(git rev-parse --abbrev-ref HEAD | awk '{sub(/\//, "_"); print}')"
+commit=$(git rev-parse --short HEAD)
+image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):${branch}-${commit}
+echo "Using docker image: ${image}"
 
 export INPUT_IMAGE_URL_DOCKER="${image}"
 export INPUT_ENV=dev
 ./.github/actions/gen-install-scripts/entrypoint.sh
 # TODO temporary change line
-sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
+awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 docker build -t "${image}" .
 docker push "${image}"
 
 #bundles
-bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_BUNDLES_REPO" .env | cut -d "=" -f 2):$(git rev-parse --abbrev-ref HEAD)-$(git rev-parse --short HEAD) #Registry is nessary
+bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_BUNDLES_REPO" .env | cut -d "=" -f 2):${branch}-${commit} #Registry is nessary
 export BUNDLE_IMAGE="${bundle_image}"
 docker build -f bundle.Dockerfile -t "${bundle_image}" .
 docker push "${bundle_image}"
