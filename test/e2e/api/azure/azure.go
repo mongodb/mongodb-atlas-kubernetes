@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 
@@ -36,11 +37,10 @@ func (s *sessionAzure) GetSessionSubscriptionID() string {
 
 // https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity#section-readme
 // https://github.com/Azure/azure-sdk-for-go/wiki/Set-up-Your-Environment-for-Authentication#configure-defaultazurecredential
-func SessionAzure(subscriptionID string, tagNameValue string) sessionAzure {
+func SessionAzure(subscriptionID string, tagNameValue string) (sessionAzure, error) {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		fmt.Println("error is: " + err.Error())
-		return sessionAzure{}
+		return sessionAzure{}, errors.New("AuthError: " + err.Error())
 	}
 	fmt.Println("success authorize")
 	return sessionAzure{
@@ -49,7 +49,7 @@ func SessionAzure(subscriptionID string, tagNameValue string) sessionAzure {
 		Tags: map[string]*string{
 			"name": to.StringPtr(tagNameValue),
 		},
-	}
+	}, nil
 }
 
 func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpointName, privateLinkServiceResourceID string) (string, string, error) {
@@ -80,15 +80,29 @@ func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpoint
 		return "", "", errors.New("Can not get network: " + err.Error())
 	}
 
-	ip, err := s.GetPEIPAddress(
-		resourceGroupName,
-		path.Base(*(*pe.PrivateEndpointProperties.NetworkInterfaces)[0].ID),
-	)
+	var ip string
+	err = retryFunction(10, time.Minute*2, func() error {
+		ip, err = s.GetPEIPAddress(resourceGroupName, path.Base(*(*pe.PrivateEndpointProperties.NetworkInterfaces)[0].ID))
+		return err
+	})
 	if err != nil {
 		return "", "", err
 	}
-
 	return *pe.ID, ip, nil
+}
+
+func retryFunction(attempt int, sleep time.Duration, function func() error) error {
+	var err error
+	for i := 0; i < attempt; i++ {
+		err = function()
+		if err != nil {
+			fmt.Print("waiting PE...")
+			time.Sleep(sleep)
+			continue
+		}
+		break
+	}
+	return err
 }
 
 func (s sessionAzure) DeletePrivateEndpoint(resourceGroupName, endpointName string) error {
@@ -103,19 +117,21 @@ func (s sessionAzure) DeletePrivateEndpoint(resourceGroupName, endpointName stri
 }
 
 // disable network policies for Private Endpoints: https://docs.microsoft.com/en-us/azure/private-link/disable-private-endpoint-network-policy
-func (s *sessionAzure) DisableNetworkPolicies(resourceGroup, vpc, subnetName string) {
+func (s *sessionAzure) DisableNetworkPolicies(resourceGroup, vpc, subnetName string) error {
 	networkClient := network.NewSubnetsClient(s.SubscriptionID)
 	networkClient.Authorizer = s.Authorizer
 	subnet, err := networkClient.Get(context.Background(), resourceGroup, vpc, subnetName, "")
 	if err != nil {
-		fmt.Println("Can not get subnet " + err.Error())
+		return errors.New("Can not get subnet: " + err.Error())
 	}
-	subnet.PrivateEndpointNetworkPolicies = "Disabled"
+
+	subnet.PrivateEndpointNetworkPolicies = network.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled
 	_, err = networkClient.CreateOrUpdate(context.Background(), resourceGroup, vpc, subnetName, subnet)
 	if err != nil {
-		fmt.Println("Can not update subnet" + err.Error())
+		return errors.New("Can not update subnet: " + err.Error())
 	}
 	s.Subnet = subnet
+	return nil
 }
 
 func (s *sessionAzure) GetPEIPAddress(resourceGroup, networkInterface string) (string, error) {
