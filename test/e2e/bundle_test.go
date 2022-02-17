@@ -27,13 +27,10 @@ var _ = Describe("User can deploy operator from bundles", func() {
 	_ = AfterEach(func() {
 		By("Atfer each.", func() {
 			if CurrentSpecReport().Failed() {
-				actions.SaveDefaultOperatorLogs(data.Resources)
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
-				actions.SaveTestAppLogs(data.Resources)
-				actions.SaveOLMLogs(data.Resources)
 				actions.SaveClusterDump(data.Resources)
 				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
