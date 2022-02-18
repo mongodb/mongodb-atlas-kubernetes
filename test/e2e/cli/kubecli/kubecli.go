@@ -35,7 +35,8 @@ func GetPodStatus(ns string) func() string {
 // DescribeOperatorPod performs "kubectl describe" to get Operator pod information
 func DescribeOperatorPod(ns string) string {
 	session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 // GetGeneration .status.observedGeneration
@@ -184,30 +185,31 @@ func DeleteApiKeySecret(keyName, ns string) {
 
 func GetManagerLogs(ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
-func GetTestAppLogs(label, ns string) []byte {
+func GetLogs(label, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "-l", label, "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
 func DescribeTestApp(label, ns string) []byte {
 	session := cli.Execute("kubectl", "describe", "pods", "-l", label, "-n", ns)
-	return session.Wait("1m").Out.Contents()
+	cli.SessionShouldExit(session)
+	return session.Out.Contents()
 }
 
 func GetYamlResource(resource string, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "get", resource, "-o", "yaml", "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
 func GetJsonResource(resource string, ns string) []byte {
 	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "json")
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
@@ -238,4 +240,10 @@ func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "jsonpath={.status.privateEndpoints}")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
+}
+
+func GetClusterDump(output string) {
+	outputFolder := fmt.Sprintf("--output-directory=%s", output)
+	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }

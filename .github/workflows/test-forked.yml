@@ -230,9 +230,9 @@ jobs:
           sudo dpkg -i mongocli.deb
           mongocli --version
 
-      - name: Install operator-sdk-v1.4.2
+      - name: Install operator-sdk-v1.16.0
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64 -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.16.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
