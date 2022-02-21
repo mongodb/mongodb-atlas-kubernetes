@@ -225,7 +225,6 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 		timeout := time.Now().Add(workflow.DefaultTimeout)
 
 		for time.Now().Before(timeout) {
-
 			deleteClusterFunc := atlasClient.Clusters.Delete
 			if cluster.Spec.AdvancedClusterSpec != nil {
 				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
