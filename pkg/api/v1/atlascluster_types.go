@@ -368,7 +368,7 @@ type AtlasCluster struct {
 	Status status.AtlasClusterStatus `json:"status,omitempty"`
 }
 
-func (c *AtlasCluster) GetName() string {
+func (c *AtlasCluster) GetClusterName() string {
 	if c.Spec.AdvancedClusterSpec != nil {
 		return c.Spec.AdvancedClusterSpec.Name
 	}

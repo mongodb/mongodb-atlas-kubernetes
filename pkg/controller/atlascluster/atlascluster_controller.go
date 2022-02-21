@@ -187,7 +187,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
-	log = log.With("projectID", project.Status.ID, "clusterName", cluster.GetName())
+	log = log.With("projectID", project.Status.ID, "clusterName", cluster.GetClusterName())
 
 	if customresource.ResourceShouldBeLeftInAtlas(cluster) {
 		log.Infof("Not removing Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
@@ -196,7 +196,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	// We always remove the connection secrets even if the cluster is not removed from Atlas
-	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.GetName())
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.GetClusterName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}
@@ -230,7 +230,7 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
 			}
 
-			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.GetName())
+			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.GetClusterName())
 
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {

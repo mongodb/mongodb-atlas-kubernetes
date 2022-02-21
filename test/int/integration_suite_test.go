@@ -83,7 +83,7 @@ var (
 
 func init() {
 	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
-		atlasDomain = "https://cloud-qa.mongodb.com"
+		atlasDomain = "https://cloud-qa.mongodb.com/"
 	}
 }
 
