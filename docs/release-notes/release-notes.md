@@ -8,6 +8,7 @@
     *  Upgraded to Go 1.17
     *  When installing a cluster using the helm chart, helm will not exit until the cluster is ready if `postInstallHook.enabled` is set to true.
     *  The operator now only watches secrets with the label `atlas.mongodb.com/type=credentials` to avoid watching unnecessary secrets.
+    *  It is possible to configure the Operator to skip reconciliations on specific resources by adding the annotation `mongodb.com/atlas-reconciliation-policy=skip`.
 * Bug fixes 
     * Fixed an issue where errors would be logged upon resource deletion.
 
