@@ -146,9 +146,29 @@ func SaveTestAppLogs(input model.UserInputs) {
 		)
 		utils.SaveToFile(
 			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
-			kubecli.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+			kubecli.GetLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 	}
+}
+
+// SaveOperatorLogs save logs from user input namespace
+func SaveOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs(input.Namespace),
+	)
+}
+
+// SaveDefaultOperatorLogs save logs from default namespace
+func SaveDefaultOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs("default"),
+	)
+}
+
+func SaveClusterDump(input model.UserInputs) {
+	kubecli.GetClusterDump(fmt.Sprintf("output/%s/dump", input.Namespace))
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
