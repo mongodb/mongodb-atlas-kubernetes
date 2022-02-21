@@ -424,6 +424,30 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	}
 }
 
+func NewAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
+	return &AtlasCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasClusterSpec{
+			AdvancedClusterSpec: &AdvancedClusterSpec{
+				Name: nameInAtlas,
+				ReplicationSpecs: []*AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*AdvancedRegionConfig{
+							{
+								ElectableSpecs: &Specs{
+									InstanceSize: "M10",
+								},
+							},
+						},
+					}},
+			},
+		},
+	}
+}
+
 func (c *AtlasCluster) WithName(name string) *AtlasCluster {
 	c.Spec.ClusterSpec.Name = name
 	return c
@@ -503,3 +527,7 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 		WithProviderName(provider.ProviderAzure).
 		WithRegionName("EUROPE_NORTH")
 }
+
+// func DefaultAdvancedCluster(namespace, projectName string) *AtlasCluster {
+//	return NewAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+//}
