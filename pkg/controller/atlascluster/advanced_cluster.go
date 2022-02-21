@@ -68,12 +68,12 @@ func advancedClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, clu
 		return advancedCluster, workflow.OK()
 	}
 
-	if cluster.Spec.Paused != nil {
+	if cluster.Spec.AdvancedClusterSpec.Paused != nil {
 		if advancedCluster.Paused == nil || *advancedCluster.Paused != *cluster.Spec.AdvancedClusterSpec.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
 			resultingCluster = mongodbatlas.AdvancedCluster{
-				Paused: cluster.Spec.Paused,
+				Paused: cluster.Spec.AdvancedClusterSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
@@ -83,7 +83,7 @@ func advancedClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, clu
 
 	resultingCluster = cleanupAdvancedCluster(resultingCluster)
 
-	advancedCluster, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, &resultingCluster)
+	advancedCluster, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, cluster.Spec.AdvancedClusterSpec.Name, &resultingCluster)
 	if err != nil {
 		return advancedCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 	}

@@ -112,7 +112,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
-				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-wide"
+				data.Resources.Clusters[0].Spec.ClusterSpec.Name = "cluster-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
@@ -144,7 +144,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-upgrade"
-				data.Resources.Clusters[0].Spec.Name = "cluster-from-helm-upgrade"
+				data.Resources.Clusters[0].Spec.ClusterSpec.Name = "cluster-from-helm-upgrade"
 			})
 			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()
@@ -154,7 +154,7 @@ var _ = Describe("HELM charts", func() {
 			})
 			By("User update new released operator", func() {
 				backup := true
-				data.Resources.Clusters[0].Spec.ProviderBackupEnabled = &backup
+				data.Resources.Clusters[0].Spec.ClusterSpec.ProviderBackupEnabled = &backup
 				actions.HelmUpgradeChartVersions(&data)
 				actions.CheckUsersCanUseOldApp(&data)
 			})
@@ -175,7 +175,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 	})
 
 	By("Check attributes", func() {
-		uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 		actions.CompareClustersSpec(data.Resources.Clusters[0].Spec, uCluster)
 	})
 
@@ -191,7 +191,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 
 func deleteClusterAndOperator(data *model.TestDataProvider) {
 	By("Check project, cluster does not exist", func() {
-		helm.Uninstall(data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
+		helm.Uninstall(data.Resources.Clusters[0].Spec.ClusterSpec.Name, data.Resources.Namespace)
 		Eventually(
 			func() bool {
 				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)

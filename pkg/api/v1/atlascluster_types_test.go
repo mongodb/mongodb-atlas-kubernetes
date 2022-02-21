@@ -49,10 +49,12 @@ func TestEnums(t *testing.T) {
 		ClusterType: "GEOSHARDED",
 	}
 	operatorCluster := AtlasClusterSpec{
-		ProviderSettings: &ProviderSettingsSpec{
-			ProviderName: provider.ProviderAWS,
+		ClusterSpec: &ClusterSpec{
+			ProviderSettings: &ProviderSettingsSpec{
+				ProviderName: provider.ProviderAWS,
+			},
+			ClusterType: TypeGeoSharded,
 		},
-		ClusterType: TypeGeoSharded,
 	}
 	transformedCluster, err := operatorCluster.Cluster()
 	assert.NoError(t, err)
