@@ -36,6 +36,9 @@ func init() {
 	excludedClusterFieldsTheirs["connectionStrings"] = true
 	excludedClusterFieldsTheirs["srvAddress"] = true
 	excludedClusterFieldsTheirs["stateName"] = true
+	excludedClusterFieldsTheirs["links"] = true
+	excludedClusterFieldsTheirs["createDate"] = true
+	excludedClusterFieldsTheirs["versionReleaseSystem"] = true
 }
 
 func TestCompatibility(t *testing.T) {
