@@ -437,7 +437,8 @@ func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerN
 		},
 		Spec: AtlasClusterSpec{
 			AdvancedClusterSpec: &AdvancedClusterSpec{
-				Name: nameInAtlas,
+				Name:        nameInAtlas,
+				ClusterType: string(TypeReplicaSet),
 				ReplicationSpecs: []*AdvancedReplicationSpec{
 					{
 						RegionConfigs: []*AdvancedRegionConfig{
