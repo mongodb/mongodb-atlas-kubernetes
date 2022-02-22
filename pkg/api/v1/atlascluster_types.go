@@ -428,8 +428,9 @@ func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	return newAwsAdvancedCluster(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1")
 }
 
-func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerName, regionName string) *AtlasCluster {
+func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasCluster {
 	priority := 0
+	// nodeCount := 1
 	return &AtlasCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -445,10 +446,12 @@ func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerN
 							{
 								Priority: &priority,
 								ElectableSpecs: &Specs{
+									//NodeCount:    &nodeCount,
 									InstanceSize: instanceSize,
 								},
-								ProviderName: providerName,
-								RegionName:   regionName,
+								BackingProviderName: backingProviderName,
+								ProviderName:        "TENANT",
+								RegionName:          regionName,
 							},
 						},
 					}},
