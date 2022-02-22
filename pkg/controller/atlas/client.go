@@ -24,7 +24,7 @@ func Client(atlasDomain string, connection Connection, log *zap.SugaredLogger) (
 	if err != nil {
 		return mongodbatlas.Client{}, err
 	}
-	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
+	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
 	if err != nil {
 		return mongodbatlas.Client{}, err
 	}

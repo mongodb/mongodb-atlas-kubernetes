@@ -16,8 +16,9 @@ func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, proj
 	// Try to find the project
 	p, _, err := ctx.Client.Projects.GetOneProjectByName(context.Background(), project.Spec.Name)
 	if err != nil {
+		ctx.Log.Infow("Error", "err", err.Error())
 		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+		if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
 			// Project doesn't exist? Try to create it
 			p = &mongodbatlas.Project{
 				OrgID:                     ctx.Connection.OrgID,
