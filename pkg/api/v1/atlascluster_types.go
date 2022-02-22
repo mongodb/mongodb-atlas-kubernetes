@@ -424,7 +424,12 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	}
 }
 
-func NewAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
+func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
+	return newAwsAdvancedCluster(namespace, name, namespace, "M10", "AWS", "US_EAST_1")
+}
+
+func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerName, regionName string) *AtlasCluster {
+	priority := 0
 	return &AtlasCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -437,9 +442,12 @@ func NewAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 					{
 						RegionConfigs: []*AdvancedRegionConfig{
 							{
-								ElectableSpecs: &Specs{
-									InstanceSize: "M10",
+								Priority: &priority,
+								ReadOnlySpecs: &Specs{
+									InstanceSize: instanceSize,
 								},
+								ProviderName: providerName,
+								RegionName:   regionName,
 							},
 						},
 					}},
@@ -528,6 +536,6 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 		WithRegionName("EUROPE_NORTH")
 }
 
-func DefaultAdvancedCluster(namespace, projectName string) *AtlasCluster {
-	return NewAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+func DefaultAwsAdvancedCluster(namespace, projectName string) *AtlasCluster {
+	return NewAwsAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
 }

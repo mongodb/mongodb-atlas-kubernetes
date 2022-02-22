@@ -657,7 +657,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 
 	Describe("Create advanced cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultAdvancedCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAwsAdvancedCluster(namespace.Name, createdProject.Name)
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			// replicationSpecsCheck := func(cluster *mongodbatlas.AdvancedCluster) {
