@@ -443,7 +443,7 @@ func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerN
 						RegionConfigs: []*AdvancedRegionConfig{
 							{
 								Priority: &priority,
-								ReadOnlySpecs: &Specs{
+								ElectableSpecs: &Specs{
 									InstanceSize: instanceSize,
 								},
 								ProviderName: providerName,
