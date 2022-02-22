@@ -528,6 +528,6 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 		WithRegionName("EUROPE_NORTH")
 }
 
-// func DefaultAdvancedCluster(namespace, projectName string) *AtlasCluster {
-//	return NewAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
-//}
+func DefaultAdvancedCluster(namespace, projectName string) *AtlasCluster {
+	return NewAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+}
