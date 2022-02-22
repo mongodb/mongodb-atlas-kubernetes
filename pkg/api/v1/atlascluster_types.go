@@ -425,7 +425,7 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 }
 
 func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
-	return newAwsAdvancedCluster(namespace, name, namespace, "M10", "AWS", "US_EAST_1")
+	return newAwsAdvancedCluster(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1")
 }
 
 func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, providerName, regionName string) *AtlasCluster {
