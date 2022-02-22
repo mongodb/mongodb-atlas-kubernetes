@@ -3,7 +3,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.6.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.10
 	github.com/Azure/go-autorest/autorest/to v0.4.0
