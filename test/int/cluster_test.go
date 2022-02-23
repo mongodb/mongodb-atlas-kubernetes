@@ -655,17 +655,9 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		})
 	})
 
-	Describe("Create advanced cluster & change ReplicationSpecs", func() {
+	Describe("Create advanced cluster", func() {
 		It("Should Succeed", func() {
 			createdCluster = mdbv1.DefaultAwsAdvancedCluster(namespace.Name, createdProject.Name)
-			// Atlas will add some defaults in case the Atlas Operator doesn't set them
-			// replicationSpecsCheck := func(cluster *mongodbatlas.AdvancedCluster) {
-			//	Expect(cluster.ReplicationSpecs).To(HaveLen(1))
-			//	Expect(cluster.ReplicationSpecs[0].ID).NotTo(BeNil())
-			//	Expect(cluster.ReplicationSpecs[0].ZoneName).To(Equal("Zone 1"))
-			//	Expect(cluster.ReplicationSpecs[0].RegionConfigs).To(HaveLen(1))
-			//	Expect(cluster.ReplicationSpecs[0].RegionConfigs[0].RegionName).To(BeEquivalentTo(createdCluster.Spec.AdvancedClusterSpec.ReplicationSpecs[0].RegionConfigs[0].RegionName))
-			//}
 
 			By(fmt.Sprintf("Creating the Advanced Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
@@ -674,31 +666,10 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 					30*time.Minute, interval).Should(BeTrue())
 
 				doAdvancedClusterStatusChecks()
-
-				singleNumShard := func(cluster *mongodbatlas.AdvancedCluster) {
-					Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(1)))
-				}
-				checkAdvancedAtlasState(nil, singleNumShard)
+				checkAdvancedAtlasState()
 			})
-
-			// By("Updating ReplicationSpecs", func() {
-			//	createdCluster.Spec.ClusterSpec.ReplicationSpecs = append(createdCluster.Spec.ClusterSpec.ReplicationSpecs, mdbv1.ReplicationSpec{
-			//		NumShards: int64ptr(2),
-			//	})
-			//	createdCluster.Spec.ClusterSpec.ClusterType = "SHARDED"
-			//
-			//	performUpdate(40 * time.Minute)
-			//	doRegularClusterStatusChecks()
-			//
-			//	twoNumShard := func(cluster *mongodbatlas.Cluster) {
-			//		Expect(cluster.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(2)))
-			//	}
-			//	// ReplicationSpecs has the same defaults but the number of shards has changed
-			//	checkAtlasState(replicationSpecsCheck, twoNumShard)
-			// })
 		})
 	})
-
 })
 
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
