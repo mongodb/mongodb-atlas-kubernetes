@@ -85,7 +85,8 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			if createdCluster != nil {
 				By("Removing Atlas Cluster " + createdCluster.Name)
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
+
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.GetClusterName()), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
