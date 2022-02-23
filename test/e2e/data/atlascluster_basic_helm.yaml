@@ -3,10 +3,11 @@ kind: AtlasCluster
 metadata:
   name: atlascluster-basic-helm
 spec:
-  name: atlascluster-basic-helm
   projectRef:
     name: my-project
-  providerSettings:
-    instanceSizeName: M10
-    providerName: AWS
-    regionName: US_EAST_1
+  clusterSpec:
+    name: atlascluster-basic-helm
+    providerSettings:
+      instanceSizeName: M10
+      providerName: AWS
+      regionName: US_EAST_1
