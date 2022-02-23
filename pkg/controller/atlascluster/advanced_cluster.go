@@ -34,7 +34,7 @@ func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Contex
 			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
+		ctx.Log.Infof("Advanced Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
 		advancedCluster, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedCluster)
 		if err != nil {
 			return advancedCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
@@ -46,15 +46,15 @@ func (r *AtlasClusterReconciler) ensureAdvancedClusterState(ctx *workflow.Contex
 		return advancedClusterIdle(ctx, project, cluster, advancedCluster)
 
 	case "CREATING":
-		return nil, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+		return advancedCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return nil, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return advancedCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return nil, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", advancedCluster.StateName))
+		return advancedCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", advancedCluster.StateName))
 	}
 }
 
