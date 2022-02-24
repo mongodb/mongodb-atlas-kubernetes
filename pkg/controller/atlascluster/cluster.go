@@ -22,7 +22,7 @@ import (
 )
 
 func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
-	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.Name)
+	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name)
 	if err != nil {
 		if resp == nil {
 			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
@@ -37,7 +37,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.Name)
+		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.ClusterSpec.Name)
 		atlasCluster, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, atlasCluster)
 		if err != nil {
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
@@ -55,12 +55,12 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 			return atlasCluster, workflow.OK()
 		}
 
-		if cluster.Spec.Paused != nil {
-			if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.Paused {
+		if cluster.Spec.ClusterSpec.Paused != nil {
+			if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.ClusterSpec.Paused {
 				// paused is different from Atlas
 				// we need to first send a special (un)pause request before reconciling everything else
 				resultingCluster = mongodbatlas.Cluster{
-					Paused: cluster.Spec.Paused,
+					Paused: cluster.Spec.ClusterSpec.Paused,
 				}
 			} else {
 				// otherwise, don't send the paused field
@@ -70,7 +70,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 
 		resultingCluster = cleanupCluster(resultingCluster)
 
-		atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.Name, &resultingCluster)
+		atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name, &resultingCluster)
 		if err != nil {
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 		}
@@ -135,11 +135,11 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpe
 		return
 	}
 
-	if err = compat.JSONCopy(&result, spec); err != nil {
+	if err = compat.JSONCopy(&result, spec.ClusterSpec); err != nil {
 		return
 	}
 
-	mergeRegionConfigs(result.ReplicationSpecs, spec.ReplicationSpecs)
+	mergeRegionConfigs(result.ReplicationSpecs, spec.ClusterSpec.ReplicationSpecs)
 
 	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
 	// "Don't specify this parameter when creating a multi-region cluster using the replicationSpec object or a Global

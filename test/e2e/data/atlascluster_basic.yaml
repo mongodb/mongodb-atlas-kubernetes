@@ -3,11 +3,12 @@ kind: AtlasCluster
 metadata:
   name: atlascluster-basic
 spec:
-  name: cluster-basic
   projectRef:
     name: my-project
-  providerSettings:
-    instanceSizeName: M2
-    providerName: TENANT
-    regionName: US_EAST_1
-    backingProviderName: AWS
+  clusterSpec:
+    name: cluster-basic
+    providerSettings:
+      instanceSizeName: M2
+      providerName: TENANT
+      regionName: US_EAST_1
+      backingProviderName: AWS
