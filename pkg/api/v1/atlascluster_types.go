@@ -40,10 +40,7 @@ const (
 	TypeGeoSharded ClusterType = "GEOSHARDED"
 )
 
-// AtlasClusterSpec defines the desired state of AtlasCluster
-type AtlasClusterSpec struct {
-	// Project is a reference to AtlasProject resource the cluster belongs to
-	Project ResourceRefNamespaced `json:"projectRef"`
+type ClusterSpec struct {
 
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -111,6 +108,14 @@ type AtlasClusterSpec struct {
 	// Configuration for cluster regions.
 	// +optional
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
+}
+
+// AtlasClusterSpec defines the desired state of AtlasCluster
+type AtlasClusterSpec struct {
+	// Project is a reference to AtlasProject resource the cluster belongs to
+	Project ResourceRefNamespaced `json:"projectRef"`
+
+	ClusterSpec *ClusterSpec `json:"clusterSpec,omitempty"`
 }
 
 // AutoScalingSpec configures your cluster to automatically scale its storage
@@ -253,7 +258,7 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, spec)
+	err := compat.JSONCopy(result, *spec.ClusterSpec)
 	return result, err
 }
 
@@ -268,6 +273,10 @@ type AtlasCluster struct {
 
 	Spec   AtlasClusterSpec          `json:"spec,omitempty"`
 	Status status.AtlasClusterStatus `json:"status,omitempty"`
+}
+
+func (c *AtlasCluster) GetClusterName() string {
+	return c.Spec.ClusterSpec.Name
 }
 
 // +kubebuilder:object:root=true
@@ -311,19 +320,21 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 			Namespace: namespace,
 		},
 		Spec: AtlasClusterSpec{
-			Name:             nameInAtlas,
-			ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			ClusterSpec: &ClusterSpec{
+				Name:             nameInAtlas,
+				ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			},
 		},
 	}
 }
 
 func (c *AtlasCluster) WithName(name string) *AtlasCluster {
-	c.Name = name
+	c.Spec.ClusterSpec.Name = name
 	return c
 }
 
 func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
-	c.Spec.Name = name
+	c.Spec.ClusterSpec.Name = name
 	return c
 }
 
@@ -333,21 +344,21 @@ func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
 }
 
 func (c *AtlasCluster) WithProviderName(name provider.ProviderName) *AtlasCluster {
-	c.Spec.ProviderSettings.ProviderName = name
+	c.Spec.ClusterSpec.ProviderSettings.ProviderName = name
 	return c
 }
 
 func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.RegionName = name
+	c.Spec.ClusterSpec.ProviderSettings.RegionName = name
 	return c
 }
 
 func (c *AtlasCluster) WithInstanceSize(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.InstanceSizeName = name
+	c.Spec.ClusterSpec.ProviderSettings.InstanceSizeName = name
 	return c
 }
 func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.BackingProviderName = name
+	c.Spec.ClusterSpec.ProviderSettings.BackingProviderName = name
 	return c
 }
 
@@ -356,7 +367,7 @@ func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
 func (c *AtlasCluster) Lightweight() *AtlasCluster {
 	c.WithInstanceSize("M2")
 	// M2 is restricted to some set of regions only - we need to ensure them
-	switch c.Spec.ProviderSettings.ProviderName {
+	switch c.Spec.ClusterSpec.ProviderSettings.ProviderName {
 	case provider.ProviderAWS:
 		{
 			c.WithRegionName("US_EAST_1")
@@ -371,7 +382,7 @@ func (c *AtlasCluster) Lightweight() *AtlasCluster {
 		}
 	}
 	// Changing provider to tenant as this is shared now
-	c.WithBackingProvider(string(c.Spec.ProviderSettings.ProviderName))
+	c.WithBackingProvider(string(c.Spec.ClusterSpec.ProviderSettings.ProviderName))
 	c.WithProviderName(provider.ProviderTenant)
 	return c
 }

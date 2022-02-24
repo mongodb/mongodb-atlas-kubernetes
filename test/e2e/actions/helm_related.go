@@ -18,7 +18,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 	By("User use HELM upgrade command for changing atlas resources\n", func() {
 		data.Resources.Project.Spec.ProjectIPAccessList[0].Comment = "updated"
 		enabled := true
-		data.Resources.Clusters[0].Spec.ProviderBackupEnabled = &enabled
+		data.Resources.Clusters[0].Spec.ClusterSpec.ProviderBackupEnabled = &enabled
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
@@ -29,7 +29,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 			WaitCluster(data.Resources, strconv.Itoa(generation+1))
 			ExpectWithOffset(1, data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
-		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, updatedCluster)
 		user := mongocli.GetUser(data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
 		ExpectWithOffset(1, user.Roles[0].RoleName).Should(Equal(model.RoleBuildInAdmin))
@@ -71,7 +71,7 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 
 		// TODO temporary.
 		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
-		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.Name, data.Resources.Namespace)
+		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.ClusterSpec.Name, data.Resources.Namespace)
 		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
 
 		helm.UpgradeAtlasClusterChartDev(data.Resources)
@@ -79,7 +79,7 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 		By("Wait updating")
 		WaitCluster(data.Resources, strconv.Itoa(generation+1))
 
-		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, updatedCluster)
 		CheckUsersAttributes(data.Resources)
 	})

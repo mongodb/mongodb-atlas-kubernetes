@@ -84,7 +84,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -122,7 +122,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 
 			By("Removing the cluster", func() {
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
 			})
 		})
 	})

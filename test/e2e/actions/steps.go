@@ -43,7 +43,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
 	ExpectWithOffset(
-		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.Name),
+		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.ClusterSpec.Name),
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
@@ -72,7 +72,7 @@ func WaitTestApplication(ns, label string) {
 
 func CheckIfClusterExist(input model.UserInputs) func() bool {
 	return func() bool {
-		return mongocli.IsClusterExist(input.ProjectID, input.Clusters[0].Spec.Name)
+		return mongocli.IsClusterExist(input.ProjectID, input.Clusters[0].Spec.ClusterSpec.Name)
 	}
 }
 
@@ -97,10 +97,10 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
-		"Name":                Equal(requested.Name),
+		"Name":                Equal(requested.ClusterSpec.Name),
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
-			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
-			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
+			"InstanceSizeName": Equal(requested.ClusterSpec.ProviderSettings.InstanceSizeName),
+			"ProviderName":     Equal(string(requested.ClusterSpec.ProviderSettings.ProviderName)),
 		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
@@ -108,8 +108,8 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 		})),
 	}), "Cluster should be the same as requested by the user")
 
-	if len(requested.ReplicationSpecs) > 0 {
-		for i, replica := range requested.ReplicationSpecs {
+	if len(requested.ClusterSpec.ReplicationSpecs) > 0 {
+		for i, replica := range requested.ClusterSpec.ReplicationSpecs {
 			for key, region := range replica.RegionsConfig {
 				// diffent type
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
@@ -119,12 +119,12 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 			}
 		}
 	} else {
-		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+		ExpectWithOffset(1, requested.ClusterSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"RegionName": Equal(created.ProviderSettings.RegionName),
 		})), "Cluster should be the same as requested by the user: Region Name")
 	}
-	if requested.ProviderSettings.ProviderName == "TENANT" {
-		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+	if requested.ClusterSpec.ProviderSettings.ProviderName == "TENANT" {
+		ExpectWithOffset(1, requested.ClusterSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
 		})), "Cluster should be the same as requested by the user: Backking Provider Name")
 	}
@@ -345,7 +345,7 @@ func DeployCluster(data *model.TestDataProvider, generation string) {
 		WaitCluster(data.Resources, "1")
 	})
 	By("check cluster Attribute", func() {
-		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
 	})
 }

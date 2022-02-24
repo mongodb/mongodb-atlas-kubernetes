@@ -134,7 +134,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -218,7 +218,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWrite", "someDB", "thisIsTheOnlyAllowedCollection").
 					// Cluster doesn't exist
-					WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.Name+"-foo")
+					WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name+"-foo")
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -236,7 +236,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				).Should(BeTrue())
 			})
 			By("Fixing second user", func() {
-				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.Name)
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name)
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -445,7 +445,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Changing the scopes - one stale secret is expected to be removed", func() {
-				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.Name)
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name)
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
@@ -599,7 +599,7 @@ func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDa
 func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.Name)
+	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.ClusterSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	if c.ConnectionStrings == nil {
@@ -655,21 +655,21 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 	Expect(err).NotTo(HaveOccurred())
 	// Shouldn't return the error - by this step the roles should be propagated
 	Expect(s).To(Equal(p))
-	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.Name, dbName, collectionName)
+	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.ClusterSpec.Name, dbName, collectionName)
 	return nil
 }
 
 func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
-	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.Name), kube.NormalizeIdentifier(username))
+	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.ClusterSpec.Name), kube.NormalizeIdentifier(username))
 	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
 	GinkgoWriter.Write([]byte(fmt.Sprintf("!! Secret: %v (%v)\n", kube.ObjectKey(project.Namespace, secretName), secret.Namespace+"/"+secret.Name)))
 
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.Name)
+	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.ClusterSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{
@@ -682,7 +682,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
-		"atlas.mongodb.com/cluster-name": cluster.Spec.Name,
+		"atlas.mongodb.com/cluster-name": cluster.Spec.ClusterSpec.Name,
 		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
