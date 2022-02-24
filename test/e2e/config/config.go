@@ -14,8 +14,8 @@ const (
 	DefaultOperatorNS        = "mongodb-atlas-system"
 	DefaultOperatorName      = "mongodb-atlas-operator"
 	DefaultOperatorGlobalKey = "mongodb-atlas-operator-api-key"
-	AtlasHost                = "https://cloud-qa.mongodb.com"
-	AtlasAPIURL              = AtlasHost + "/api/atlas/v1.0/"
+	AtlasHost                = "https://cloud-qa.mongodb.com/"
+	AtlasAPIURL              = AtlasHost + "api/atlas/v1.0/"
 	TestAppLabelPrefix       = "app=test-app-"
 	ActrcPath                = "../../.actrc"
 
