@@ -47,7 +47,6 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 	switch atlasCluster.StateName {
 	case "IDLE":
 		return regularClusterIdle(ctx, project, cluster, atlasCluster)
-
 	case "CREATING":
 		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
