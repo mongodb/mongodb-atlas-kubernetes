@@ -83,7 +83,7 @@ var (
 
 func init() {
 	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
-		atlasDomain = "https://cloud-qa.mongodb.com/"
+		atlasDomain = "https://cloud-qa.mongodb.com"
 	}
 }
 
@@ -162,7 +162,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	withDigest := httputil.Digest(publicKey, privateKey)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
 	Expect(err).ToNot(HaveOccurred())
-	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
+	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
 	Expect(err).ToNot(HaveOccurred())
 
 	return aClient, atlas.Connection{

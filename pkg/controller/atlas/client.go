@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -25,12 +24,7 @@ func Client(atlasDomain string, connection Connection, log *zap.SugaredLogger) (
 	if err != nil {
 		return mongodbatlas.Client{}, err
 	}
-
-	if !strings.HasSuffix(atlasDomain, "/") {
-		atlasDomain += "/"
-	}
-
-	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
+	client, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
 	if err != nil {
 		return mongodbatlas.Client{}, err
 	}
