@@ -59,6 +59,7 @@ type AtlasProjectSpec struct {
 
 	// Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true
 	// +kubebuilder:default:=true
+	// +optional
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
