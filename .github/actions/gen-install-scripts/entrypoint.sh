@@ -6,12 +6,12 @@ target_dir="deploy"
 clusterwide_dir="${target_dir}/clusterwide"
 namespaced_dir="${target_dir}/namespaced"
 crds_dir="${target_dir}/crds"
-openshift_namespaced="${target_dir}/openshift_namespaced"
+openshift="${target_dir}/openshift"
 
 mkdir -p "${clusterwide_dir}"
 mkdir -p "${namespaced_dir}"
 mkdir -p "${crds_dir}"
-mkdir -p "${openshift_namespaced}"
+mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
 controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -32,8 +32,8 @@ kustomize build "config/crd" > "${clusterwide_dir}/crds.yaml"
 echo "Created clusterwide config"
 
 # base-openshift-namespace-scoped
-kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/namespaced" > "${openshift_namespaced}/clusterwide-config.yaml"
-kustomize build "config/crd" > "${openshift_namespaced}/crds.yaml"
+kustomize build --load-restrictor LoadRestrictionsNone "config/release/${INPUT_ENV}/openshift" > "${openshift}/openshift.yaml"
+kustomize build "config/crd" > "${openshift}/crds.yaml"
 echo "Created openshift namespaced config"
 
 # namespaced
