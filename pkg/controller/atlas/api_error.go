@@ -16,4 +16,7 @@ const (
 
 	// Error indicates that the cluster doesn't exist
 	ClusterNotFound = "CLUSTER_NOT_FOUND"
+
+	// Resource not found
+	ResourceNotFound = "RESOURCE_NOT_FOUND"
 )

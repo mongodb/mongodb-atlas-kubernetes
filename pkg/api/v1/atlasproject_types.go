@@ -56,6 +56,11 @@ type AtlasProjectSpec struct {
 
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
 	PrivateEndpoints []project.PrivateEndpoint `json:"privateEndpoints,omitempty"`
+
+	// Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true
+	// +kubebuilder:default:=true
+	// +optional
+	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
