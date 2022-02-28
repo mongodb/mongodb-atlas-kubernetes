@@ -166,7 +166,7 @@ func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
 // GetIPAccessListStatus returns the status of an individual project ip access list. The documentation can be found
 // here https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
 func GetIPAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IPAccessListStatus, error) {
-	urlStr := fmt.Sprintf("api/atlas/v1.0/groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
+	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
 	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
 	if err != nil {
 		return IPAccessListStatus{}, err
