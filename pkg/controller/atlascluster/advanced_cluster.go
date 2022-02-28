@@ -110,6 +110,15 @@ func MergedAdvancedCluster(advancedCluster mongodbatlas.AdvancedCluster, spec md
 		return result, err
 	}
 
+	for i, replicationSpec := range advancedCluster.ReplicationSpecs {
+		for k, v := range replicationSpec.RegionConfigs {
+			// the response does not return backing provider names in some situations.
+			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
+			if v.BackingProviderName == "" {
+				result.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
+			}
+		}
+	}
 	return result, nil
 }
 

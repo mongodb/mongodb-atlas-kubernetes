@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -42,9 +44,18 @@ func WaitCluster(input model.UserInputs, generation string) {
 		input.Namespace, input.Clusters[0].GetClusterNameResource()),
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
-	ExpectWithOffset(
-		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
-	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	cluster := input.Clusters[0]
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		atlasClient, err := a.AClient()
+		Expect(err).To(BeNil())
+		advancedCluster, err := atlasClient.GetAdvancedCluster(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+		Expect(err).To(BeNil())
+		Expect(advancedCluster.StateName).To(Equal("IDLE"))
+	} else {
+		ExpectWithOffset(
+			1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
+		).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	}
 }
 
 func WaitProject(data *model.TestDataProvider, generation string) {
@@ -137,14 +148,37 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
 	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.GroupID).To(Not(BeEmpty()))
 
+	defaultPriority := 7
 	for i, replicationSpec := range advancedSpec.ReplicationSpecs {
 		for key, region := range replicationSpec.RegionConfigs {
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].AnalyticsSpecs).Should(PointTo(Equal(*region.AnalyticsSpecs)), "Replica Spec: AnalyticsSpecs is not the same")
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs).Should(PointTo(Equal(*region.ElectableSpecs)), "Replica Spec: ElectableSpecs is not the same")
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ReadOnlySpecs).Should(PointTo(Equal(*region.ReadOnlySpecs)), "Replica Spec: ReadOnlySpecs is not the same")
+			if region.Priority == nil {
+				region.Priority = &defaultPriority
+			}
+
+			Expect(specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].AnalyticsSpecs, region.AnalyticsSpecs), "Replica Spec: AnalyticsSpecs is not the same").To(BeTrue())
+			Expect(specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ReadOnlySpecs, region.ReadOnlySpecs), "Replica Spec: ReadOnlySpecs is not the same").To(BeTrue())
+			Expect(specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs, region.ElectableSpecs), "Replica Spec: ElectableSpecs is not the same").To(BeTrue())
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].BackingProviderName).Should(Equal(region.BackingProviderName), "Replica Spec: Backing Provider name is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
 		}
 	}
+}
+
+// specsAreEqual returns true if an atlas spec matches an operator spec.
+func specsAreEqual(atlasSpecs *mongodbatlas.Specs, specs *v1.Specs) bool {
+	if specs == nil && atlasSpecs == nil {
+		return true
+	}
+	if specs == nil || atlasSpecs == nil {
+		return false
+	}
+
+	return specs.InstanceSize == atlasSpecs.InstanceSize &&
+		specs.NodeCount == atlasSpecs.NodeCount &&
+		specs.DiskIOPS == atlasSpecs.DiskIOPS &&
+		specs.EbsVolumeType == atlasSpecs.EbsVolumeType
 }
 
 func SaveK8sResources(resources []string, ns string) {
@@ -219,7 +253,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
 					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
 					"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
-				}), "Users roles attributes should be the same as requsted by the user")
+				}), "Users roles attributes should be the same as requested by the user")
 			}
 		}
 	}

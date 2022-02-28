@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"context"
 	"os"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
@@ -166,6 +165,78 @@ var _ = Describe("HELM charts", func() {
 			})
 		})
 	})
+
+	Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster"), func() {
+		It("User can deploy operator namespaces by using HELM", func() {
+			By("User creates configuration for a new Project and Advanced Cluster", func() {
+				data = model.NewTestDataProvider(
+					"helm-advanced",
+					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+					[]string{"data/atlascluster_advanced_helm.yaml"},
+					[]string{},
+					[]model.DBUser{
+						*model.NewDBUser("reader2").
+							WithSecretRef("dbuser-secret-u2").
+							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+							WithAuthDatabase("admin"),
+					},
+					30014,
+					[]func(*model.TestDataProvider){},
+				)
+				// helm template has equal ObjectMeta.Name and Spec.Name
+				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-helm"
+				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-helm"
+			})
+			By("User use helm for deploying operator", func() {
+				helm.InstallOperatorWideSubmodule(data.Resources)
+			})
+			By("User deploy cluster by helm", func() {
+				helm.InstallClusterSubmodule(data.Resources)
+			})
+			By("Check Cluster", func() {
+				waitClusterWithChecks(&data)
+			})
+			By("Delete Resources", func() {
+				deleteClusterAndOperator(&data)
+			})
+		})
+	})
+
+	Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster-multi-region"), func() {
+		It("User can deploy operator namespaces by using HELM", func() {
+			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
+				data = model.NewTestDataProvider(
+					"helm-advanced",
+					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+					[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
+					[]string{},
+					[]model.DBUser{
+						*model.NewDBUser("reader2").
+							WithSecretRef("dbuser-secret-u2").
+							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+							WithAuthDatabase("admin"),
+					},
+					30015,
+					[]func(*model.TestDataProvider){},
+				)
+				// helm template has equal ObjectMeta.Name and Spec.Name
+				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-multiregion-helm"
+				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-multiregion-helm"
+			})
+			By("User use helm for deploying operator", func() {
+				helm.InstallOperatorWideSubmodule(data.Resources)
+			})
+			By("User deploy cluster by helm", func() {
+				helm.InstallClusterSubmodule(data.Resources)
+			})
+			By("Check Cluster", func() {
+				waitClusterWithChecks(&data)
+			})
+			By("Delete Resources", func() {
+				deleteClusterAndOperator(&data)
+			})
+		})
+	})
 })
 
 func waitClusterWithChecks(data *model.TestDataProvider) {
@@ -182,7 +253,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 		if cluster.Spec.AdvancedClusterSpec != nil {
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(BeNil())
-			advancedCluster, _, err := atlasClient.Client.AdvancedClusters.Get(context.Background(), data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+			advancedCluster, err := atlasClient.GetAdvancedCluster(data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareAdvancedClustersSpec(cluster.Spec, *advancedCluster)
 		} else {
@@ -203,7 +274,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 
 func deleteClusterAndOperator(data *model.TestDataProvider) {
 	By("Check project, cluster does not exist", func() {
-		helm.Uninstall(data.Resources.Clusters[0].Spec.ClusterSpec.Name, data.Resources.Namespace)
+		helm.Uninstall(data.Resources.Clusters[0].Spec.GetClusterName(), data.Resources.Namespace)
 		Eventually(
 			func() bool {
 				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
