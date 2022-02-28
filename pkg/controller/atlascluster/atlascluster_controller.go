@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -99,53 +101,63 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.Client = atlasClient
 
 	if cluster.Spec.AdvancedClusterSpec != nil {
-		c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
-		if c != nil && c.StateName != "" {
-			ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
-		}
+		return r.handleAdvancedCluster(ctx, project, cluster)
+	}
 
-		if !result.IsOk() {
-			ctx.SetConditionFromResult(status.ClusterReadyType, result)
-			return result.ReconcileResult(), nil
-		}
+	return r.handleRegularCluster(ctx, project, cluster)
+}
 
-		if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
-			ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
-			return csResult.ReconcileResult(), nil
-		}
+// handleAdvancedCluster ensures the state of the cluster using the Advanced Cluster API
+func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (reconcile.Result, error) {
+	c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
 
-		ctx.
-			SetConditionTrue(status.ClusterReadyType).
-			EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
-			EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
-
-		ctx.SetConditionTrue(status.ReadyType)
-		return result.ReconcileResult(), nil
-	} else {
-		c, result := r.ensureClusterState(ctx, project, cluster)
-		if c != nil && c.StateName != "" {
-			ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
-		}
-
-		if !result.IsOk() {
-			ctx.SetConditionFromResult(status.ClusterReadyType, result)
-			return result.ReconcileResult(), nil
-		}
-
-		if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
-			ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
-			return csResult.ReconcileResult(), nil
-		}
-
-		ctx.
-			SetConditionTrue(status.ClusterReadyType).
-			EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
-			EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
-			EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
-
-		ctx.SetConditionTrue(status.ReadyType)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+		return csResult.ReconcileResult(), nil
+	}
+
+	ctx.
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return result.ReconcileResult(), nil
+}
+
+// handleRegularCluster ensures the state of the cluster using the Regular Cluster API
+func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (reconcile.Result, error) {
+	c, result := r.ensureClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+		return csResult.ReconcileResult(), nil
+	}
+
+	ctx.
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
+		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return result.ReconcileResult(), nil
 }
 
 func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
