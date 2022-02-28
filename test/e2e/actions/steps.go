@@ -3,6 +3,7 @@ package actions
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -176,8 +177,8 @@ func specsAreEqual(atlasSpecs *mongodbatlas.Specs, specs *v1.Specs) bool {
 	}
 
 	return specs.InstanceSize == atlasSpecs.InstanceSize &&
-		specs.NodeCount == atlasSpecs.NodeCount &&
-		specs.DiskIOPS == atlasSpecs.DiskIOPS &&
+		reflect.DeepEqual(specs.NodeCount, atlasSpecs.NodeCount) &&
+		reflect.DeepEqual(specs.DiskIOPS, atlasSpecs.DiskIOPS) &&
 		specs.EbsVolumeType == atlasSpecs.EbsVolumeType
 }
 
