@@ -39,9 +39,16 @@ jobs:
         git checkout -b "release/${VERSION}"
         git push origin "release/${VERSION}"
 
-    - name: Create the release report file
+    - name: Create the licence report file
       run: |
         go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
+
+    - name: Commit and push licence report file
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PATH_TO_COMMIT: "third_party_licenses.txt"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Commit and push deploy directory
       uses: ./.github/actions/push-files
