@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -103,6 +105,41 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Client = atlasClient
 
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		return r.handleAdvancedCluster(ctx, project, cluster)
+	}
+
+	return r.handleRegularCluster(ctx, project, cluster)
+}
+
+// handleAdvancedCluster ensures the state of the cluster using the Advanced Cluster API
+func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (reconcile.Result, error) {
+	c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
+		return csResult.ReconcileResult(), nil
+	}
+
+	ctx.
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return result.ReconcileResult(), nil
+}
+
+// handleRegularCluster ensures the state of the cluster using the Regular Cluster API
+func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (reconcile.Result, error) {
 	c, result := r.ensureClusterState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
@@ -113,7 +150,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if csResult := r.ensureConnectionSecrets(ctx, project, c, cluster); !csResult.IsOk() {
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
 		return csResult.ReconcileResult(), nil
 	}
@@ -167,7 +204,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
-	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
+	log = log.With("projectID", project.Status.ID, "clusterName", cluster.GetClusterName())
 
 	if customresource.ResourceShouldBeLeftInAtlas(cluster) {
 		log.Infof("Not removing Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
@@ -176,7 +213,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	// We always remove the connection secrets even if the cluster is not removed from Atlas
-	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.GetClusterName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}
@@ -205,7 +242,13 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 		timeout := time.Now().Add(workflow.DefaultTimeout)
 
 		for time.Now().Before(timeout) {
-			_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
+			deleteClusterFunc := atlasClient.Clusters.Delete
+			if cluster.Spec.AdvancedClusterSpec != nil {
+				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
+			}
+
+			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.GetClusterName())
+
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 				log.Info("Cluster doesn't exist or is already deleted")

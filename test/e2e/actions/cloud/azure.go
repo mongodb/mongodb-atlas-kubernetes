@@ -20,9 +20,14 @@ var (
 )
 
 func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
-	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
-
-	session.DisableNetworkPolicies(resourceGroup, vpc, subnetName)
+	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	if err != nil {
+		return "", "", err
+	}
+	err = session.DisableNetworkPolicies(resourceGroup, vpc, subnetName)
+	if err != nil {
+		return "", "", err
+	}
 	id, ip, err := session.CreatePrivateEndpoint(pe.Region, resourceGroup, privatelinkName, pe.ServiceResourceID)
 	if err != nil {
 		return "", "", err
@@ -31,13 +36,19 @@ func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEn
 }
 
 func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
-	err := session.DeletePrivateEndpoint(resourceGroup, path.Base(privatelinkName))
+	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	if err != nil {
+		return err
+	}
+	err = session.DeletePrivateEndpoint(resourceGroup, path.Base(privatelinkName))
 	return err
 }
 
 func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelinkName string) bool {
-	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	if err != nil {
+		return false
+	}
 	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)
@@ -47,7 +58,11 @@ func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelink
 }
 
 func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privatelinkName string) bool {
-	session := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
 	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)

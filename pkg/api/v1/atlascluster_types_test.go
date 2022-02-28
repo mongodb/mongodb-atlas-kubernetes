@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/fatih/structtag"
+
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -23,6 +24,9 @@ func init() {
 	excludedClusterFieldsTheirs["backupEnabled"] = true
 	excludedClusterFieldsTheirs["id"] = true
 	excludedClusterFieldsTheirs["groupId"] = true
+	excludedClusterFieldsTheirs["createDate"] = true
+	excludedClusterFieldsTheirs["links"] = true
+	excludedClusterFieldsTheirs["versionReleaseSystem"] = true
 
 	// Deprecated
 	excludedClusterFieldsTheirs["replicationSpec"] = true
@@ -36,10 +40,13 @@ func init() {
 	excludedClusterFieldsTheirs["connectionStrings"] = true
 	excludedClusterFieldsTheirs["srvAddress"] = true
 	excludedClusterFieldsTheirs["stateName"] = true
+	excludedClusterFieldsTheirs["links"] = true
+	excludedClusterFieldsTheirs["createDate"] = true
+	excludedClusterFieldsTheirs["versionReleaseSystem"] = true
 }
 
 func TestCompatibility(t *testing.T) {
-	compareStruct(AtlasClusterSpec{}, mongodbatlas.Cluster{}, t)
+	compareStruct(ClusterSpec{}, mongodbatlas.Cluster{}, t)
 }
 
 // TestEnums verifies that replacing the strings with "enum" in Atlas Operator works correctly and is (de)serialized
@@ -52,10 +59,12 @@ func TestEnums(t *testing.T) {
 		ClusterType: "GEOSHARDED",
 	}
 	operatorCluster := AtlasClusterSpec{
-		ProviderSettings: &ProviderSettingsSpec{
-			ProviderName: provider.ProviderAWS,
+		ClusterSpec: &ClusterSpec{
+			ProviderSettings: &ProviderSettingsSpec{
+				ProviderName: provider.ProviderAWS,
+			},
+			ClusterType: TypeGeoSharded,
 		},
-		ClusterType: TypeGeoSharded,
 	}
 	transformedCluster, err := operatorCluster.Cluster()
 	assert.NoError(t, err)

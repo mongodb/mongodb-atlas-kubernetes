@@ -30,7 +30,7 @@ func AClient() (Atlas, error) {
 		return A, err
 	}
 	A.Client = mongodbatlas.NewClient(tc)
-	u, _ := url.Parse(config.AtlasAPIURL)
+	u, _ := url.Parse(config.AtlasHost)
 	A.Client.BaseURL = u
 	return A, nil
 }

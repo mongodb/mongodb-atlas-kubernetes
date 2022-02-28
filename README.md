@@ -60,13 +60,14 @@ kind: AtlasCluster
 metadata:
   name: my-atlas-cluster
 spec:
-  name: "Test-cluster"
   projectRef:
     name: my-project
-  providerSettings:
-    instanceSizeName: M10
-    providerName: AWS
-    regionName: US_EAST_1
+  clusterSpec:
+    name: "Test-cluster"
+    providerSettings:
+      instanceSizeName: M10
+      providerName: AWS
+      regionName: US_EAST_1
 EOF
 ```
 
