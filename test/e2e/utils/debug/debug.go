@@ -2,21 +2,16 @@ package debug
 
 import "encoding/json"
 
-// PrettyString is a utility function for debugging.
-func PrettyString(obj interface{}) (string, error) {
-	bytes, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(bytes), nil
+// PrettyString is a utility function for displaying an indented json structure as a sring.
+func PrettyString(obj interface{}) string {
+	return string(PrettyBytes(obj))
 }
 
-// MustPrettyString returns an indented string and panics if there is an error.
-// the use case for this function is debugging.
-func MustPrettyString(obj interface{}) string {
-	s, err := PrettyString(obj)
+// PrettyBytes is a utility function for displaying an indented json structure as a byte array.
+func PrettyBytes(obj interface{}) []byte {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
-		panic(err)
+		return nil
 	}
-	return s
+	return bytes
 }

@@ -69,7 +69,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.ClusterSpec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 	)
@@ -79,7 +79,7 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Upgrade(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.ClusterSpec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 		"--recreate-pods",
