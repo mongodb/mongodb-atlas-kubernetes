@@ -38,3 +38,4 @@ test/e2e/data/operator-*
 test/e2e/output/
 
 node_modules
+tmp/

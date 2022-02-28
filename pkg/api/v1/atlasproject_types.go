@@ -61,6 +61,9 @@ type AtlasProjectSpec struct {
 	// +kubebuilder:default:=true
 	// +optional
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
+
+	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
+	X509CertRef *ResourceRef `json:"x509CertRef,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -113,6 +116,14 @@ func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...st
 		v := o.(status.AtlasProjectStatusOption)
 		v(&p.Status)
 	}
+}
+
+func (p *AtlasProject) X509SecretObjectKey() *client.ObjectKey {
+	if p.Spec.X509CertRef != nil {
+		key := kube.ObjectKey(p.Namespace, p.Spec.X509CertRef.Name)
+		return &key
+	}
+	return nil
 }
 
 // ************************************ Builder methods *************************************************

@@ -78,6 +78,8 @@ kubectl create secret generic the-user-password --from-literal="password=P@@swor
 kubectl label secret the-user-password atlas.mongodb.com/type=credentials
 ```
 
+(note) To create X.509 user please see [this doc](docs/dev/x509-user.md).
+
 **5.** Create an `AtlasDatabaseUser` Custom Resource
 
 In order to connect to an Atlas Cluster the database user needs to be created. `AtlasDatabaseUser` resource should reference
