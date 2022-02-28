@@ -209,7 +209,7 @@ func packageChart(sPath, dPath string) {
 
 func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 	args := []string{
-		input.Clusters[0].Spec.ClusterSpec.Name,
+		input.Clusters[0].Spec.GetClusterName(),
 		chartName,
 		"--set-string", fmt.Sprintf("atlas.orgId=%s", os.Getenv("MCLI_ORG_ID")),
 		"--set-string", fmt.Sprintf("atlas.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),

@@ -1,7 +1,10 @@
 package e2e_test
 
 import (
+	"context"
 	"os"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -175,11 +178,20 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 	})
 
 	By("Check attributes", func() {
-		uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
-		actions.CompareClustersSpec(data.Resources.Clusters[0].Spec, uCluster)
+		cluster := data.Resources.Clusters[0]
+		if cluster.Spec.AdvancedClusterSpec != nil {
+			atlasClient, err := atlas.AClient()
+			Expect(err).To(BeNil())
+			advancedCluster, _, err := atlasClient.Client.AdvancedClusters.Get(context.Background(), data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+			Expect(err).To(BeNil())
+			actions.CompareAdvancedClustersSpec(cluster.Spec, *advancedCluster)
+		} else {
+			uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
+			actions.CompareClustersSpec(cluster.Spec, uCluster)
+		}
 	})
 
-	By("check database users Attibutes", func() {
+	By("check database users Attributes", func() {
 		Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
 		actions.CheckUsersAttributes(data.Resources)
 	})

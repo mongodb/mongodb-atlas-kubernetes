@@ -43,7 +43,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
 	ExpectWithOffset(
-		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.ClusterSpec.Name),
+		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
 	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
 }
 
@@ -127,6 +127,23 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 		ExpectWithOffset(1, requested.ClusterSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
 		})), "Cluster should be the same as requested by the user: Backking Provider Name")
+	}
+}
+
+func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatlas.AdvancedCluster) {
+	advancedSpec := requested.AdvancedClusterSpec
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
+	Expect(created.Name).To(Equal(advancedSpec.Name))
+
+	for i, replicationSpec := range advancedSpec.ReplicationSpecs {
+		for key, region := range replicationSpec.RegionConfigs {
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].AnalyticsSpecs).Should(PointTo(Equal(*region.AnalyticsSpecs)), "Replica Spec: AnalyticsSpecs is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs).Should(PointTo(Equal(*region.ElectableSpecs)), "Replica Spec: ElectableSpecs is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ReadOnlySpecs).Should(PointTo(Equal(*region.ReadOnlySpecs)), "Replica Spec: ReadOnlySpecs is not the same")
+		}
 	}
 }
 
