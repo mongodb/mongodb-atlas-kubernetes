@@ -96,11 +96,17 @@ func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID
 }
 
 func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, apiUser *mongodbatlas.DatabaseUser) workflow.Result {
+	log := ctx.Log
+
 	secret := &corev1.Secret{}
-	if err := k8sClient.Get(context.Background(), *dbUser.PasswordSecretObjectKey(), secret); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
+	passwordKey := dbUser.PasswordSecretObjectKey()
+	var currentPasswordResourceVersion string
+	if passwordKey != nil {
+		if err := k8sClient.Get(context.Background(), *passwordKey, secret); err != nil {
+			return workflow.Terminate(workflow.Internal, err.Error())
+		}
+		currentPasswordResourceVersion = secret.ResourceVersion
 	}
-	currentPasswordResourceVersion := secret.ResourceVersion
 
 	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
 
@@ -109,7 +115,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	if err != nil {
 		var apiError *mongodbatlas.ErrorResponse
 		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
-			// User doesn't exist? Try to create it
+			log.Debugw("User doesn't exist. Create new user", "apiUser", apiUser)
 			if _, _, err = ctx.Client.DatabaseUsers.Create(context.Background(), project.ID(), apiUser); err != nil {
 				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 			}

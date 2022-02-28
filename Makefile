@@ -238,3 +238,7 @@ clear-atlas: ## Clear Atlas organization
 post-install-hook:
 	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
 	chmod +x bin/helm-post-install
+
+.PHONY: x509-cert
+x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/dev/x509-user.md)
+	go run scripts/create_x509.go

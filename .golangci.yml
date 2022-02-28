@@ -94,6 +94,9 @@ issues:
     - path: test/e2e/helm_chart_test.go
       linters:
         - dupl
+    - path: pkg/util/testutil/
+      linters:
+        - stylecheck
     - path: pkg/controller/atlascluster
       linters:
         - dupl

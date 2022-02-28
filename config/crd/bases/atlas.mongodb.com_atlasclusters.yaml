@@ -256,6 +256,7 @@ spec:
                     type: string
                 type: object
               clusterSpec:
+                description: Configuration for the advanced cluster API
                 properties:
                   autoScaling:
                     description: Collection of settings that configures auto-scaling

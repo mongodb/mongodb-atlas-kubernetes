@@ -39,3 +39,40 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 		}))
 	})
 }
+
+func TestReconciliationShouldBeSkipped(t *testing.T) {
+	newResourceTypes := func() []v1.AtlasCustomResource {
+		return []v1.AtlasCustomResource{
+			&v1.AtlasCluster{},
+			&v1.AtlasDatabaseUser{},
+			&v1.AtlasProject{},
+		}
+	}
+
+	t.Run("Empty annotations", func(t *testing.T) {
+		for _, resourceType := range newResourceTypes() {
+			assert.False(t, ReconciliationShouldBeSkipped(resourceType))
+		}
+	})
+
+	t.Run("Other resource types", func(t *testing.T) {
+		for _, resourceType := range newResourceTypes() {
+			resourceType.SetAnnotations(map[string]string{"foo": "bar"})
+			assert.False(t, ReconciliationShouldBeSkipped(resourceType))
+		}
+	})
+
+	t.Run("Annotation present, reconciliation should not be skipped", func(t *testing.T) {
+		for _, resourceType := range newResourceTypes() {
+			resourceType.SetAnnotations(map[string]string{ReconciliationPolicyAnnotation: "foobar"})
+			assert.False(t, ReconciliationShouldBeSkipped(resourceType))
+		}
+	})
+
+	t.Run("Annotation present, reconciliation should be skipped", func(t *testing.T) {
+		for _, resourceType := range newResourceTypes() {
+			resourceType.SetAnnotations(map[string]string{ReconciliationPolicyAnnotation: ReconciliationPolicySkip})
+			assert.True(t, ReconciliationShouldBeSkipped(resourceType))
+		}
+	})
+}

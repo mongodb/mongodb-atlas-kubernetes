@@ -14,6 +14,7 @@ a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 package status
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 )
 
@@ -66,6 +67,11 @@ func (in *AtlasProjectStatus) DeepCopyInto(out *AtlasProjectStatus) {
 	if in.PrivateEndpoints != nil {
 		in, out := &in.PrivateEndpoints, &out.PrivateEndpoints
 		*out = make([]ProjectPrivateEndpoint, len(*in))
+		copy(*out, *in)
+	}
+	if in.AuthModes != nil {
+		in, out := &in.AuthModes, &out.AuthModes
+		*out = make(authmode.AuthModes, len(*in))
 		copy(*out, *in)
 	}
 }

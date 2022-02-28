@@ -115,6 +115,8 @@ type AtlasClusterSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
 	Project ResourceRefNamespaced `json:"projectRef"`
 
+	// Configuration for the advanced cluster API
+	// +optional
 	ClusterSpec *ClusterSpec `json:"clusterSpec,omitempty"`
 
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
