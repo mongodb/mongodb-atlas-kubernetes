@@ -15,8 +15,11 @@ import (
 )
 
 const (
-	ResourcePolicyAnnotation = "mongodb.com/atlas-resource-policy"
+	ResourcePolicyAnnotation       = "mongodb.com/atlas-resource-policy"
+	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
+
 	ResourcePolicyKeep       = "keep"
+	ReconciliationPolicySkip = "skip"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
@@ -53,6 +56,14 @@ func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomR
 func ResourceShouldBeLeftInAtlas(resource mdbv1.AtlasCustomResource) bool {
 	if v, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return v == ResourcePolicyKeep
+	}
+	return false
+}
+
+// ReconciliationShouldBeSkipped returns 'true' if reconciliation should be skipped for this resource.
+func ReconciliationShouldBeSkipped(resource mdbv1.AtlasCustomResource) bool {
+	if v, ok := resource.GetAnnotations()[ReconciliationPolicyAnnotation]; ok {
+		return v == ReconciliationPolicySkip
 	}
 	return false
 }

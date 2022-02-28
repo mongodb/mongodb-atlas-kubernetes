@@ -91,6 +91,9 @@ issues:
       linters:
         - stylecheck
         - noctx
+    - path: pkg/util/testutil/
+      linters:
+        - stylecheck
     - path: pkg/controller/atlascluster
       linters:
         - dupl

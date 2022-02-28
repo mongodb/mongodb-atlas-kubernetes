@@ -77,6 +77,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project); shouldSkip {
+		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
+		return workflow.OK().ReconcileResult(), nil
+	}
+
 	if project.ConnectionSecretObjectKey() != nil {
 		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
 		// the projects once that secret is changed
