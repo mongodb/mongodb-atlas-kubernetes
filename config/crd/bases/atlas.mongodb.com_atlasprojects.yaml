@@ -113,6 +113,12 @@ spec:
                       type: string
                   type: object
                 type: array
+              withDefaultAlertsSettings:
+                default: true
+                description: Flag that indicates whether to create the new project
+                  with the default alert settings enabled. This parameter defaults
+                  to true
+                type: boolean
             required:
             - name
             type: object

@@ -91,6 +91,7 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 
+		// interfaceEndpoint.Status is for the interface endpoint AZURE
 		if interfaceEndpoint.AWSConnectionStatus == "AVAILABLE" || interfaceEndpoint.Status == "AVAILABLE" {
 			ctx.SetConditionTrue(status.PrivateEndpointReadyType)
 			continue

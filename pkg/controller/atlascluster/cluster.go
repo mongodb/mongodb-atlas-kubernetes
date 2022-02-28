@@ -46,37 +46,7 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 
 	switch atlasCluster.StateName {
 	case "IDLE":
-		resultingCluster, err := MergedCluster(*atlasCluster, cluster.Spec)
-		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
-		}
-
-		if done := ClustersEqual(ctx.Log, *atlasCluster, resultingCluster); done {
-			return atlasCluster, workflow.OK()
-		}
-
-		if cluster.Spec.ClusterSpec.Paused != nil {
-			if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.ClusterSpec.Paused {
-				// paused is different from Atlas
-				// we need to first send a special (un)pause request before reconciling everything else
-				resultingCluster = mongodbatlas.Cluster{
-					Paused: cluster.Spec.ClusterSpec.Paused,
-				}
-			} else {
-				// otherwise, don't send the paused field
-				resultingCluster.Paused = nil
-			}
-		}
-
-		resultingCluster = cleanupCluster(resultingCluster)
-
-		atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name, &resultingCluster)
-		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
-		}
-
-		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
-
+		return regularClusterIdle(ctx, project, cluster, atlasCluster)
 	case "CREATING":
 		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
@@ -88,6 +58,39 @@ func (r *AtlasClusterReconciler) ensureClusterState(ctx *workflow.Context, proje
 	default:
 		return atlasCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", atlasCluster.StateName))
 	}
+}
+
+func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, atlasCluster *mongodbatlas.Cluster) (*mongodbatlas.Cluster, workflow.Result) {
+	resultingCluster, err := MergedCluster(*atlasCluster, cluster.Spec)
+	if err != nil {
+		return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	if done := ClustersEqual(ctx.Log, *atlasCluster, resultingCluster); done {
+		return atlasCluster, workflow.OK()
+	}
+
+	if cluster.Spec.ClusterSpec.Paused != nil {
+		if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.ClusterSpec.Paused {
+			// paused is different from Atlas
+			// we need to first send a special (un)pause request before reconciling everything else
+			resultingCluster = mongodbatlas.Cluster{
+				Paused: cluster.Spec.ClusterSpec.Paused,
+			}
+		} else {
+			// otherwise, don't send the paused field
+			resultingCluster.Paused = nil
+		}
+	}
+
+	resultingCluster = cleanupCluster(resultingCluster)
+
+	atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name, &resultingCluster)
+	if err != nil {
+		return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
+	}
+
+	return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
 }
 
 // cleanupCluster will unset some fields that cannot be changed via API or are deprecated.
@@ -186,7 +189,7 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mongodbatlas.Cluster, clusterResource *mdbv1.AtlasCluster) workflow.Result {
+func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, clusterResource *mdbv1.AtlasCluster) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
@@ -209,7 +212,7 @@ func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, 
 		}
 
 		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
 			continue
 		}
 
@@ -220,12 +223,12 @@ func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, 
 
 		data := connectionsecret.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
-			ConnURL:    cluster.ConnectionStrings.Standard,
-			SrvConnURL: cluster.ConnectionStrings.StandardSrv,
+			ConnURL:    connectionStrings.Standard,
+			SrvConnURL: connectionStrings.StandardSrv,
 			Password:   password,
 		}
 
-		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), cluster.Name, data)
+		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
 		}

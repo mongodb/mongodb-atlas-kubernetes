@@ -117,6 +117,26 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		})
 	}
 
+	doAdvancedClusterStatusChecks := func() {
+		By("Checking observed Advanced Cluster state", func() {
+			atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.AdvancedClusterSpec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.Standard).To(Equal(atlasCluster.ConnectionStrings.Standard))
+			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).To(Equal(atlasCluster.ConnectionStrings.StandardSrv))
+			Expect(createdCluster.Status.MongoDBVersion).To(Equal(atlasCluster.MongoDBVersion))
+			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+			Expect(createdCluster.Status.Conditions).To(HaveLen(2))
+			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
+				status.TrueCondition(status.ClusterReadyType),
+				status.TrueCondition(status.ReadyType),
+			)))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
+		})
+	}
+
 	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.Cluster)) {
 		By("Verifying Cluster state in Atlas", func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name)
@@ -126,6 +146,22 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlascluster.ClustersEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
+
+			for _, check := range additionalChecks {
+				check(atlasCluster)
+			}
+		})
+	}
+
+	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
+		By("Verifying Cluster state in Atlas", func() {
+			atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.AdvancedClusterSpec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			mergedCluster, err := atlascluster.MergedAdvancedCluster(*atlasCluster, createdCluster.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(atlascluster.AdvancedClustersEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
 
 			for _, check := range additionalChecks {
 				check(atlasCluster)
@@ -616,6 +652,22 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
 				createdCluster = nil
+			})
+		})
+	})
+
+	Describe("Create advanced cluster", func() {
+		It("Should Succeed", func() {
+			createdCluster = mdbv1.DefaultAwsAdvancedCluster(namespace.Name, createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Advanced Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					30*time.Minute, interval).Should(BeTrue())
+
+				doAdvancedClusterStatusChecks()
+				checkAdvancedAtlasState()
 			})
 		})
 	})

@@ -91,5 +91,8 @@ issues:
       linters:
         - stylecheck
         - noctx
+    - path: pkg/controller/atlascluster
+      linters:
+        - dupl
   max-issues-per-linter: 0
   max-same-issues: 0
