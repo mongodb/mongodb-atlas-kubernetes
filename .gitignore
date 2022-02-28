@@ -35,6 +35,9 @@ testbin/
 
 # don't include generated files from e2e tests
 test/e2e/data/operator-*
+test/e2e/data/helm-wide-*
+test/e2e/data/helm-advanced-*
+test/e2e/data/helm-multi-region-*
 test/e2e/output/
 
 node_modules
