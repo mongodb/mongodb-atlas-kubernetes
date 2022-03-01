@@ -75,7 +75,7 @@ func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.P
 	if err != nil {
 		return nil, err
 	}
-	ginkgo.GinkgoWriter.Println(debug.PrettyString(enpointsList))
+	ginkgoPrettyPrintf(enpointsList, "listing private endpoints in project %s", projectID)
 	return enpointsList, nil
 }
 
@@ -84,6 +84,13 @@ func (a *Atlas) GetAdvancedCluster(projectId, clusterName string) (*mongodbatlas
 	if err != nil {
 		return nil, err
 	}
-	ginkgo.GinkgoWriter.Println(debug.PrettyString(advancedCluster))
+	ginkgoPrettyPrintf(advancedCluster, "getting advanced cluster %s in project %s", clusterName, projectId)
 	return advancedCluster, nil
+}
+
+// ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
+func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) {
+	ginkgo.GinkgoWriter.Printf(msg, formatArgs)
+	ginkgo.GinkgoWriter.Println()
+	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }

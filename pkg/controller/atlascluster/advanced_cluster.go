@@ -160,7 +160,7 @@ func GetAllClusterNames(client mongodbatlas.Client, projectID string) ([]string,
 			}
 		}
 
-		// we only include secrets which have not been handled by the regular cluster API.
+		// we only include cluster names which have not been handled by the regular cluster API.
 		if !found {
 			clusterNames = append(clusterNames, c.Name)
 		}

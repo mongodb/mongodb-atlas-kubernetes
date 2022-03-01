@@ -20,9 +20,8 @@ type ClusterSpec v1.AtlasClusterSpec
 func (c ClusterSpec) GetClusterName() string {
 	if c.AdvancedClusterSpec != nil {
 		return c.AdvancedClusterSpec.Name
-	} else {
-		return c.ClusterSpec.Name
 	}
+	return c.ClusterSpec.Name
 }
 
 // LoadUserClusterConfig load configuration into object
