@@ -167,20 +167,20 @@ func AddMongoDBRepo() {
 // InstallClusterSubmodule install the Atlas Cluster Helm Chart from submodule.
 func InstallClusterSubmodule(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input, true)
-	args := prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)
+	args := prepareHelmChartNewArgs(input, config.AtlasClusterHelmChartPath)
 	Install(args...)
 }
 
 // InstallClusterRelease from repo
 func InstallClusterRelease(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input, true)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
+	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster") // TODO clean up (func prepareHelmChartNewArgs()) + line 183
 	Install(args...)
 }
 
-func UpgradeAtlasClusterChart(input model.UserInputs) {
+func UpgradeAtlasClusterChart(input model.UserInputs) { // used for submodule
 	PrepareHelmChartValuesFile(input, true)
-	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...)
+	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...) // TODO clean up (func prepareHelmChartNewArgs()) + line 210
 }
 
 func UpgradeOperatorChart(input model.UserInputs) {
@@ -199,7 +199,7 @@ func UpgradeOperatorChart(input model.UserInputs) {
 
 func UpgradeAtlasClusterChartDev(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input, true)
-	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...)
+	Upgrade(prepareHelmChartNewArgs(input, config.AtlasClusterHelmChartPath)...)
 }
 
 func packageChart(sPath, dPath string) {
@@ -207,7 +207,7 @@ func packageChart(sPath, dPath string) {
 	cli.SessionShouldExit(session)
 }
 
-func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
+func prepareHelmChartArgs(input model.UserInputs, chartName string) []string { // TODO clean up (func prepareHelmChartNewArgs()) + line 183
 	args := []string{
 		input.Clusters[0].Spec.ClusterSpec.Name,
 		chartName,
@@ -215,6 +215,26 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 		"--set-string", fmt.Sprintf("atlas.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
 		"--set-string", fmt.Sprintf("atlas.privateApiKey=%s", os.Getenv("MCLI_PRIVATE_API_KEY")),
 		"--set-string", fmt.Sprintf("atlas.connectionSecretName=%s", input.KeyName),
+
+		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
+		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),
+		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
+
+		"-f", pathToAtlasClusterValuesFile(input),
+		"--namespace=" + input.Namespace,
+		"--create-namespace",
+	}
+	return args
+}
+
+func prepareHelmChartNewArgs(input model.UserInputs, chartName string) []string {
+	args := []string{
+		input.Clusters[0].Spec.ClusterSpec.Name,
+		chartName,
+		"--set-string", fmt.Sprintf("atlas.secret.orgId=%s", os.Getenv("MCLI_ORG_ID")),
+		"--set-string", fmt.Sprintf("atlas.secret.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
+		"--set-string", fmt.Sprintf("atlas.secret.privateApiKey=%s", os.Getenv("MCLI_PRIVATE_API_KEY")),
+		"--set-string", fmt.Sprintf("atlas.secret.setCustomName=%s", input.KeyName),
 
 		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),

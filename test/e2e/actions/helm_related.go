@@ -23,7 +23,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
 		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
-		helm.UpgradeAtlasClusterChart(data.Resources)
+		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
 
 		By("Wait project creation", func() {
 			WaitCluster(data.Resources, strconv.Itoa(generation+1))
@@ -49,7 +49,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 			WithSecretRef("new-user-secret").
 			AddBuildInAdminRole()
 		data.Resources.Users = append(data.Resources.Users, newUser)
-		helm.UpgradeAtlasClusterChart(data.Resources)
+		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
 		CheckUsersAttributes(data.Resources)
 	})
 }
@@ -58,7 +58,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 	By("User delete database user from the Atlas\n", func() {
 		data.Resources.Users = data.Resources.Users[1:]
-		helm.UpgradeAtlasClusterChart(data.Resources)
+		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
 		CheckUsersAttributes(data.Resources)
 	})
 }
@@ -73,6 +73,9 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
 		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.ClusterSpec.Name, data.Resources.Namespace)
 		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
+		// TODO temporary. all secrets atlas.mongodb.com/type: "credentials"
+		kubecli.LabelResourceByLabel("secrets", "atlas.mongodb.com/type=credentials", data.Resources.Namespace, "app.kubernetes.io/name=atlas-cluster")
+		// kubecli.Annotate("secrets", "atlas.mongodb.com/type=credentials", )
 
 		helm.UpgradeAtlasClusterChartDev(data.Resources)
 

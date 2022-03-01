@@ -49,14 +49,16 @@ func GetGeneration(ns, resourceName string) string {
 func GetStatusCondition(statusType, ns string, atlasname string) string {
 	jsonpath := fmt.Sprintf("jsonpath={.status.conditions[?(@.type=='%s')].status}", statusType)
 	session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", jsonpath)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 func GetStatusPhase(ns string, args ...string) string {
 	args = append([]string{"get"}, args...)
 	args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
 	session := cli.Execute("kubectl", args...)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 // GetProjectResource
@@ -233,6 +235,11 @@ func GetResourceCreationTimestamp(resource, name, ns string) []byte {
 
 func Annotate(resource, annotation, ns string) {
 	session := cli.Execute("kubectl", "annotate", resource, annotation, "-n", ns, "--overwrite=true")
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
+func LabelResourceByLabel(resource, newLabel, ns, labeled string) {
+	session := cli.Execute("kubectl", "label", resource, newLabel, "-l", labeled, "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }
 
