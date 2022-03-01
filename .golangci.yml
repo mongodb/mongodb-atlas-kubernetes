@@ -91,6 +91,15 @@ issues:
       linters:
         - stylecheck
         - noctx
+    - path: test/e2e/helm_chart_test.go
+      linters:
+        - dupl
+    - path: pkg/controller/atlascluster/advanced_cluster.go
+      linters:
+        - prealloc
+    - path: pkg/controller/atlasdatabaseuser/connectionsecrets
+      linters:
+        - prealloc
     - path: pkg/util/testutil/
       linters:
         - stylecheck

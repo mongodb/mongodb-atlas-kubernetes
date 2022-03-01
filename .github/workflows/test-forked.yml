@@ -145,6 +145,8 @@ jobs:
             "helm-ns",
             "helm-wide",
             "helm-update",
+            "helm-advanced-cluster",
+            "helm-advanced-cluster-multi-region",
             "multinamespaced",
             "privatelink",
           ]

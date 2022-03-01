@@ -42,9 +42,18 @@ func WaitCluster(input model.UserInputs, generation string) {
 		input.Namespace, input.Clusters[0].GetClusterNameResource()),
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
-	ExpectWithOffset(
-		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.ClusterSpec.Name),
-	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	cluster := input.Clusters[0]
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		atlasClient, err := a.AClient()
+		Expect(err).To(BeNil())
+		advancedCluster, err := atlasClient.GetAdvancedCluster(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+		Expect(err).To(BeNil())
+		Expect(advancedCluster.StateName).To(Equal("IDLE"))
+	} else {
+		ExpectWithOffset(
+			1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
+		).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	}
 }
 
 func WaitProject(data *model.TestDataProvider, generation string) {
@@ -130,6 +139,28 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 	}
 }
 
+func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatlas.AdvancedCluster) {
+	advancedSpec := requested.AdvancedClusterSpec
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
+	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.GroupID).To(Not(BeEmpty()))
+
+	defaultPriority := 7
+	for i, replicationSpec := range advancedSpec.ReplicationSpecs {
+		for key, region := range replicationSpec.RegionConfigs {
+			if region.Priority == nil {
+				region.Priority = &defaultPriority
+			}
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ProviderName).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].RegionName).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
+		}
+	}
+}
+
 func SaveK8sResources(resources []string, ns string) {
 	for _, resource := range resources {
 		data := kubecli.GetYamlResource(resource, ns)
@@ -202,7 +233,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
 					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
 					"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
-				}), "Users roles attributes should be the same as requsted by the user")
+				}), "Users roles attributes should be the same as requested by the user")
 			}
 		}
 	}

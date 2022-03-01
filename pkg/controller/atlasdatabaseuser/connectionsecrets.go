@@ -24,25 +24,73 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
+	advancedClusters, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+	}
+
+	var clusterSecrets []clusterSecret
+	for _, c := range clusters {
+		clusterSecrets = append(clusterSecrets, clusterSecret{
+			name:              c.Name,
+			connectionStrings: c.ConnectionStrings,
+		})
+	}
+
+	for _, c := range advancedClusters.Results {
+		// based on configuration settings, some advanced clusters also show up in the regular clusters API.
+		// For these clusters, we don't want to duplicate the secret so we skip them.
+		found := false
+		for _, regularCluster := range clusters {
+			if regularCluster.Name == c.Name {
+				found = true
+				break
+			}
+		}
+
+		// we only include secrets which have not been handled by the regular cluster API.
+		if !found {
+			clusterSecrets = append(clusterSecrets, clusterSecret{
+				name:              c.Name,
+				connectionStrings: c.ConnectionStrings,
+			})
+		}
+	}
+
+	// ensure secrets for both clusters and advanced cluster.
+	if result := createOrUpdateConnectionSecretsFromClusterSecrets(ctx, k8sClient, recorder, project, dbUser, clusterSecrets); !result.IsOk() {
+		return result
+	}
+
+	return workflow.OK()
+}
+
+// clusterSecret holds the information required to ensure a secret for a user in a given cluster.
+type clusterSecret struct {
+	name              string
+	connectionStrings *mongodbatlas.ConnectionStrings
+}
+
+func createOrUpdateConnectionSecretsFromClusterSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, clusterSecrets []clusterSecret) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
-	for _, cluster := range clusters {
+	for _, cs := range clusterSecrets {
 		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, cluster.Name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, cs.name) {
 			continue
 		}
 		// Cluster may be not ready yet, so no connection urls - skipping
 		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if cluster.ConnectionStrings == nil || cluster.ConnectionStrings.StandardSrv == "" {
-			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cluster.Name)
+		if cs.connectionStrings == nil || cs.connectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cs.name)
 			requeue = true
 			continue
 		}
 		// Cluster may be not ready yet, so no connection urls - skipping
 		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if cluster.ConnectionStrings == nil || cluster.ConnectionStrings.StandardSrv == "" {
-			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cluster.Name)
+		if cs.connectionStrings == nil || cs.connectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cs.name)
 			requeue = true
 			continue
 		}
@@ -52,14 +100,14 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		}
 		data := connectionsecret.ConnectionData{
 			DBUserName:    dbUser.Spec.Username,
-			ConnURL:       cluster.ConnectionStrings.Standard,
-			SrvConnURL:    cluster.ConnectionStrings.StandardSrv,
-			PvtConnURL:    cluster.ConnectionStrings.Private,
-			PvtSrvConnURL: cluster.ConnectionStrings.PrivateSrv,
+			ConnURL:       cs.connectionStrings.Standard,
+			SrvConnURL:    cs.connectionStrings.StandardSrv,
+			PvtConnURL:    cs.connectionStrings.Private,
+			PvtSrvConnURL: cs.connectionStrings.PrivateSrv,
 			Password:      password,
 		}
 		var secretName string
-		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cluster.Name, data); err != nil {
+		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cs.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
