@@ -366,8 +366,6 @@ func TestAtlasInstanceReconcile(t *testing.T) {
 	clusterName := "myclusternew"
 	projectName := "myproject"
 	expectedPhase := "Pending"
-	expectedReadyCondition := "False"
-	expectedReasonString := "Pending"
 	expectedErrString := "CLUSTER_NOT_FOUND"
 	expectedRequeue := true
 	inventory := &dbaas.MongoDBAtlasInventory{
@@ -452,11 +450,6 @@ func TestAtlasInstanceReconcile(t *testing.T) {
 			Namespace: instance.Namespace,
 		}, instanceUpdated)
 	assert.NoError(t, err)
-
-	if len(expectedReadyCondition) > 0 {
-		assert.Equal(t, expectedReadyCondition, string(instanceUpdated.Status.Conditions[0].Status))
-		assert.Equal(t, expectedReasonString, instanceUpdated.Status.Conditions[0].Reason)
-	}
 	assert.Equal(t, expectedPhase, instanceUpdated.Status.Phase)
 
 	// After an instance is deleted, the corresponding atlas project should be deleted

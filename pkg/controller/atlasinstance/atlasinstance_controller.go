@@ -150,7 +150,20 @@ func (r *MongoDBAtlasInstanceReconciler) Reconcile(cx context.Context, req ctrl.
 		log.Error(err, "Failed to reconcile Atlas Project")
 		return ctrl.Result{}, err
 	}
-
+	atlasProjectCond := atlasProject.CheckConditions()
+	if atlasProjectCond == nil || atlasProjectCond.Type == status.IPAccessListReadyType { // AtlasProject reconciliation still on going
+		log.Infof("Atlas Project for instance:%v/%v is not ready. Requeue to retry.", inst.Namespace, inst.Name)
+		// Set phase to Pending
+		inst.Status.Phase = PhasePending
+		// Requeue to try again
+		return ctrl.Result{Requeue: true}, nil
+	}
+	if atlasProjectCond.Status == corev1.ConditionFalse { // AtlasProject reconciliation failed
+		dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, atlasProjectCond.Reason, atlasProjectCond.Message)
+		// Do not requeue
+		return ctrl.Result{}, nil
+	}
+	// Now proceed to provision the cluster
 	return r.reconcileAtlasCluster(cx, log, inst, instData, inventory, atlasProject)
 }
 
@@ -393,21 +406,22 @@ func getOwnedAtlasCluster(instance *dbaas.MongoDBAtlasInstance) *v1.AtlasCluster
 }
 
 func getInstanceData(log *zap.SugaredLogger, inst *dbaas.MongoDBAtlasInstance) (*InstanceData, error) {
-	if len(inst.Spec.Name) == 0 {
+	name := strings.TrimSpace(inst.Spec.Name)
+	if len(name) == 0 {
 		log.Errorf("Missing %v", dbaas.ClusterNameKey)
 		return nil, fmt.Errorf("missing %v", dbaas.ClusterNameKey)
 	}
 	projectName, ok := inst.Spec.OtherInstanceParams[dbaas.ProjectNameKey]
-	if !ok || len(projectName) == 0 {
+	if !ok || len(strings.TrimSpace(projectName)) == 0 {
 		log.Errorf("Missing %v", dbaas.ProjectNameKey)
 		return nil, fmt.Errorf("missing %v", dbaas.ProjectNameKey)
 	}
-	provider := strings.ToUpper(inst.Spec.CloudProvider)
+	provider := strings.ToUpper(strings.TrimSpace(inst.Spec.CloudProvider))
 	if len(provider) == 0 {
 		provider = "AWS"
 		log.Infof("%v is missing, default value of AWS is used", dbaas.CloudProviderKey)
 	}
-	region := inst.Spec.CloudRegion
+	region := strings.TrimSpace(inst.Spec.CloudRegion)
 	if len(region) == 0 {
 		switch provider {
 		case "AWS":
@@ -420,17 +434,17 @@ func getInstanceData(log *zap.SugaredLogger, inst *dbaas.MongoDBAtlasInstance) (
 		log.Infof("%v is missing, default value of %s is used", dbaas.CloudProviderKey, region)
 	}
 	instanceSizeName, ok := inst.Spec.OtherInstanceParams[dbaas.InstanceSizeNameKey]
-	if !ok || len(instanceSizeName) == 0 {
+	if !ok || len(strings.TrimSpace(instanceSizeName)) == 0 {
 		log.Infof("%v is missing, default value of M0 is used", dbaas.InstanceSizeNameKey)
 		instanceSizeName = "M0"
 	}
 
 	return &InstanceData{
-		ProjectName:      projectName,
-		ClusterName:      inst.Spec.Name,
+		ProjectName:      strings.TrimSpace(projectName),
+		ClusterName:      name,
 		ProviderName:     provider,
 		RegionName:       region,
-		InstanceSizeName: instanceSizeName,
+		InstanceSizeName: strings.TrimSpace(instanceSizeName),
 	}, nil
 }
 
