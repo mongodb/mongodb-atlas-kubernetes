@@ -2,6 +2,7 @@ package atlas
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -90,7 +91,6 @@ func (a *Atlas) GetAdvancedCluster(projectId, clusterName string) (*mongodbatlas
 
 // ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
 func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) {
-	ginkgo.GinkgoWriter.Printf(msg, formatArgs)
-	ginkgo.GinkgoWriter.Println()
+	ginkgo.GinkgoWriter.Println(fmt.Sprintf(msg, formatArgs...))
 	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }
