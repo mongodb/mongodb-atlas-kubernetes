@@ -24,33 +24,41 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
-	clusterSecrets := make([]clusterSecret, len(clusters))
-	for i, c := range clusters {
-		clusterSecrets[i] = clusterSecret{
-			name:              c.Name,
-			connectionStrings: c.ConnectionStrings,
-		}
-	}
-
 	advancedClusters, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
-	advancedClusterSecrets := make([]clusterSecret, len(advancedClusters.Results))
-	for i, c := range advancedClusters.Results {
-		advancedClusterSecrets[i] = clusterSecret{
+	var clusterSecrets []clusterSecret
+	for _, c := range clusters {
+		clusterSecrets = append(clusterSecrets, clusterSecret{
 			name:              c.Name,
 			connectionStrings: c.ConnectionStrings,
+		})
+	}
+
+	for _, c := range advancedClusters.Results {
+		// based on configuration settings, some advanced clusters also show up in the regular clusters API.
+		// For these clusters, we don't want to duplicate the secret so we skip them.
+		found := false
+		for _, regularCluster := range clusters {
+			if regularCluster.Name == c.Name {
+				found = true
+				break
+			}
+		}
+
+		// we only include secrets which have not been handled by the regular cluster API.
+		if !found {
+			clusterSecrets = append(clusterSecrets, clusterSecret{
+				name:              c.Name,
+				connectionStrings: c.ConnectionStrings,
+			})
 		}
 	}
 
 	// ensure secrets for both clusters and advanced cluster.
 	if result := createOrUpdateConnectionSecretsFromClusterSecrets(ctx, k8sClient, recorder, project, dbUser, clusterSecrets); !result.IsOk() {
-		return result
-	}
-
-	if result := createOrUpdateConnectionSecretsFromClusterSecrets(ctx, k8sClient, recorder, project, dbUser, advancedClusterSecrets); !result.IsOk() {
 		return result
 	}
 

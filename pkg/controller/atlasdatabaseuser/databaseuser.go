@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -149,8 +151,9 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(mdbv1.ClusterScopeType) {
 		var apiError *mongodbatlas.ErrorResponse
-		_, _, err := ctx.Client.Clusters.Get(context.Background(), projectID, s)
-		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+		_, _, regularErr := ctx.Client.Clusters.Get(context.Background(), projectID, s)
+		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(context.Background(), projectID, s)
+		if errors.As(regularErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound && errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 			return fmt.Errorf(`"scopes" field references cluster named "%s" but such cluster doesn't exist in Atlas'`, s)
 		}
 	}
@@ -158,19 +161,17 @@ func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDat
 }
 
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
-	allClustersInProject, _, err := ctx.Client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	allClusterNames, err := atlascluster.GetAllClusterNames(ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
 	var clustersToCheck []string
 	if user.Spec.Scopes != nil {
-		clustersToCheck = filterScopeClusters(user, allClustersInProject)
+		clustersToCheck = filterScopeClusters(user, allClusterNames)
 	} else {
 		// otherwise we just take all the existing clusters
-		for _, cluster := range allClustersInProject {
-			clustersToCheck = append(clustersToCheck, cluster.Name)
-		}
+		clustersToCheck = allClusterNames
 	}
 
 	readyClusters := 0
@@ -201,14 +202,14 @@ func clusterIsReady(client mongodbatlas.Client, projectID, clusterName string) (
 	return status.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
-func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []mongodbatlas.Cluster) []string {
+func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []string) []string {
 	scopeClusters := user.GetScopes(mdbv1.ClusterScopeType)
 	var clustersToCheck []string
 	if len(scopeClusters) > 0 {
 		// filtering the scope clusters by the ones existing in Atlas
 		for _, c := range scopeClusters {
 			for _, a := range allClustersInProject {
-				if a.Name == c {
+				if a == c {
 					clustersToCheck = append(clustersToCheck, c)
 					break
 				}
