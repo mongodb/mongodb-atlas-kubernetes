@@ -3,10 +3,7 @@ package actions
 import (
 	"fmt"
 	"os"
-	"reflect"
 	"strconv"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -157,44 +154,11 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 			if region.Priority == nil {
 				region.Priority = &defaultPriority
 			}
-
-			if region.AnalyticsSpecs != nil {
-				ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].AnalyticsSpecs, region.AnalyticsSpecs)).To(BeTrue(), "Replica Spec: AnalyticsSpecs is not the same")
-			}
-			if region.ElectableSpecs != nil {
-				ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs, region.ElectableSpecs)).To(BeTrue(), "Replica Spec: ElectableSpecs is not the same")
-			}
-			if region.ReadOnlySpecs != nil {
-				ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ReadOnlySpecs, region.ReadOnlySpecs)).To(BeTrue(), "Replica Spec: ReadOnlySpecs is not the same")
-			}
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ProviderName).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].RegionName).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
 		}
 	}
-}
-
-// specsAreEqual returns true if an atlas spec matches an operator spec.
-func specsAreEqual(atlasSpecs *mongodbatlas.Specs, specs *v1.Specs) bool {
-	// set the default values for the optional fields that are not set.
-	// these are populated in the API response if unset.
-
-	if specs.DiskIOPS == nil {
-		diskOpts := int64(3000)
-		specs.DiskIOPS = &diskOpts
-	}
-	if specs.EbsVolumeType == "" {
-		specs.EbsVolumeType = "STANDARD"
-	}
-	if specs.NodeCount == nil {
-		defaultNodeCount := 0
-		specs.NodeCount = &defaultNodeCount
-	}
-
-	return specs.InstanceSize == atlasSpecs.InstanceSize &&
-		reflect.DeepEqual(specs.NodeCount, atlasSpecs.NodeCount) &&
-		reflect.DeepEqual(specs.DiskIOPS, atlasSpecs.DiskIOPS) &&
-		specs.EbsVolumeType == atlasSpecs.EbsVolumeType
 }
 
 func SaveK8sResources(resources []string, ns string) {
