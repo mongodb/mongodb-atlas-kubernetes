@@ -62,6 +62,8 @@ else
   # add replaces
   awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  # replace OPERATOR_NAMESPACES with the one from OLM
+  value="metadata.annotations['olm.targetNamespaces']" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath = env(value)'
 fi
 
 # add additional LABELs to bundle.Docker file
