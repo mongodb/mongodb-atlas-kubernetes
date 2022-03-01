@@ -160,7 +160,7 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 
 			// ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].AnalyticsSpecs, region.AnalyticsSpecs)).To(BeTrue(), "Replica Spec: AnalyticsSpecs is not the same")
 			// ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ReadOnlySpecs, region.ReadOnlySpecs)).To(BeTrue(), "Replica Spec: ReadOnlySpecs is not the same")
-			ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs, region.ElectableSpecs)).To(BeTrue(), "Replica Spec: ElectableSpecs is not the same")
+			// ExpectWithOffset(1, specsAreEqual(created.ReplicationSpecs[i].RegionConfigs[key].ElectableSpecs, region.ElectableSpecs)).To(BeTrue(), "Replica Spec: ElectableSpecs is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ProviderName).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].RegionName).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
