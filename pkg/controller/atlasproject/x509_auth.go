@@ -55,7 +55,7 @@ func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID str
 		}
 	}
 
-	if !authModes.CheckAuthMode(authmode.X509) {
+	if !authModes.CheckAuthMode(authmode.X509) && specCert != "" {
 		log.Debugw("Adding new AuthMode to the status", "mode", authmode.X509)
 		authModes.AddAuthMode(authmode.X509)
 	}
