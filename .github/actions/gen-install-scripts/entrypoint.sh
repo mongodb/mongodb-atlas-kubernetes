@@ -62,7 +62,7 @@ else
   # add replaces
   awk '!/replaces:/' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "  replaces: $current_version" >> bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-  # replace OPERATOR_NAMESPACES with the one from OLM
+  # Add WATCH_NAMESPACE env parameter
   value="metadata.annotations['olm.targetNamespaces']" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2] |= {"name": "WATCH_NAMESPACE", "valueFrom": {"fieldRef": {"fieldPath": env(value)}}}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 fi
 
