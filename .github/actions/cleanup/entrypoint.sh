@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# For Deleting empty(!) PROJECTs which live more then (9) hours
+# For Deleting empty(!) PROJECTs which live more then (3) hours
 # It deletes all if INPUT_CLEAN_ALL is true
 
-MAX_PROJECT_LIFETIME=9 # in hours
+MAX_PROJECT_LIFETIME=3 # in hours
 mongocli config set skip_update_check true
 
 delete_endpoints_for_project() {
