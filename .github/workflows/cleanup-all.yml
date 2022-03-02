@@ -1,6 +1,6 @@
 name: Clean Atlas organization
 # local run sample:
-# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch", "action":"workflow_dispatch", "inputs": {"clean":"true"} }' > payload.json | act -j cleanup-all -e payload.json
+# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch", "action":"workflow_dispatch", "inputs": {"clean":"true", "timelife": "3"} }' > payload.json | act -j cleanup-all -e payload.json
 
 on:
   workflow_dispatch:
@@ -8,6 +8,10 @@ on:
       clean:
         description: "Clean all(true) or old empty projects(false)?"
         default: "false"
+        required: true
+      timelife:
+        description: "Timelife of project in hours"
+        default: "3"
         required: true
 
 jobs:
@@ -17,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.4.0
 
-      - name: CleanUp empty AtlasProjects older than one day
+      - name: CleanUp Atlas organization
         uses: ./.github/actions/cleanup
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
@@ -26,3 +30,4 @@ jobs:
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
         with:
           CLEAN_ALL: ${{ github.event.inputs.clean }}
+          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
