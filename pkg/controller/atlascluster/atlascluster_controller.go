@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -82,6 +84,13 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
+
+	if err := validate.ClusterSpec(cluster.Spec); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.ValidationSucceeded)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {

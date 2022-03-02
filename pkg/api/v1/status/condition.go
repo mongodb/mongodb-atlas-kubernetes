@@ -28,7 +28,8 @@ conditions:
 type ConditionType string
 
 const (
-	ReadyType ConditionType = "Ready"
+	ReadyType           ConditionType = "Ready"
+	ValidationSucceeded ConditionType = "ValidationSucceeded"
 )
 
 // AtlasProject condition types

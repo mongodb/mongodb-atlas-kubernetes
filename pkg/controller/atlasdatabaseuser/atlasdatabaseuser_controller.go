@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -88,6 +90,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, databaseUser)
+
+	if err := validate.DatabaseUser(databaseUser); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.ValidationSucceeded)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(databaseUser, project); !result.IsOk() {
