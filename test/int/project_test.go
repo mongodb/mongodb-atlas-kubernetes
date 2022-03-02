@@ -79,6 +79,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			status.TrueCondition(status.ProjectReadyType),
 			status.TrueCondition(status.IPAccessListReadyType),
 			status.TrueCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(createdProject.Status.ID).NotTo(BeNil())
 		Expect(createdProject.Status.Conditions).To(ConsistOf(projectReadyConditions))
@@ -116,6 +117,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ProjectReadyType),
 				status.FalseCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.ID()).To(BeEmpty())
@@ -446,6 +448,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				status.TrueCondition(status.ProjectReadyType),
 				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
@@ -462,6 +465,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
 					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.ValidationSucceeded),
 				)
 				Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 				Expect(createdProject.ID()).To(BeEmpty())
