@@ -39,7 +39,7 @@ func TestFilterScopeClusters(t *testing.T) {
 		Name: "cluster2",
 		Type: mdbv1.ClusterScopeType,
 	}}
-	clusters := []mongodbatlas.Cluster{{Name: "cluster1"}, {Name: "cluster4"}, {Name: "cluster5"}}
+	clusters := []string{"cluster1", "cluster4", "cluster5"}
 	scopeClusters := filterScopeClusters(mdbv1.AtlasDatabaseUser{Spec: mdbv1.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
 	assert.Equal(t, []string{"cluster1"}, scopeClusters)
 }

@@ -69,7 +69,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.ClusterSpec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 	)
@@ -79,7 +79,7 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Upgrade(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.ClusterSpec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 		"--recreate-pods",
@@ -209,7 +209,7 @@ func packageChart(sPath, dPath string) {
 
 func prepareHelmChartArgs(input model.UserInputs, chartName string) []string { // TODO clean up (func prepareHelmChartNewArgs()) + line 183
 	args := []string{
-		input.Clusters[0].Spec.ClusterSpec.Name,
+		input.Clusters[0].Spec.GetClusterName(),
 		chartName,
 		"--set-string", fmt.Sprintf("atlas.orgId=%s", os.Getenv("MCLI_ORG_ID")),
 		"--set-string", fmt.Sprintf("atlas.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),

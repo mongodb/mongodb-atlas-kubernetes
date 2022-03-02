@@ -110,6 +110,15 @@ func MergedAdvancedCluster(advancedCluster mongodbatlas.AdvancedCluster, spec md
 		return result, err
 	}
 
+	for i, replicationSpec := range advancedCluster.ReplicationSpecs {
+		for k, v := range replicationSpec.RegionConfigs {
+			// the response does not return backing provider names in some situations.
+			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
+			if v.BackingProviderName == "" {
+				result.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
+			}
+		}
+	}
 	return result, nil
 }
 
@@ -121,4 +130,40 @@ func AdvancedClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Adv
 	}
 
 	return d == ""
+}
+
+// GetAllClusterNames returns all cluster names including regular and advanced clusters.
+func GetAllClusterNames(client mongodbatlas.Client, projectID string) ([]string, error) {
+	var clusterNames []string
+	clusters, _, err := client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	advancedClusters, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range clusters {
+		clusterNames = append(clusterNames, c.Name)
+	}
+
+	for _, c := range advancedClusters.Results {
+		// based on configuration settings, some advanced clusters also show up in the regular clusters API.
+		// For these clusters, we don't want to duplicate the secret so we skip them.
+		found := false
+		for _, regularCluster := range clusters {
+			if regularCluster.Name == c.Name {
+				found = true
+				break
+			}
+		}
+
+		// we only include cluster names which have not been handled by the regular cluster API.
+		if !found {
+			clusterNames = append(clusterNames, c.Name)
+		}
+	}
+	return clusterNames, nil
 }
