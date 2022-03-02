@@ -229,7 +229,7 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string { /
 
 func prepareHelmChartNewArgs(input model.UserInputs, chartName string) []string {
 	args := []string{
-		input.Clusters[0].Spec.ClusterSpec.Name,
+		input.Clusters[0].Spec.GetClusterName(),
 		chartName,
 		"--set-string", fmt.Sprintf("atlas.secret.orgId=%s", os.Getenv("MCLI_ORG_ID")),
 		"--set-string", fmt.Sprintf("atlas.secret.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
