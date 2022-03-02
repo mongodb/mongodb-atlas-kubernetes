@@ -107,7 +107,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			Expect(createdCluster.Status.MongoDBVersion).To(Equal(atlasCluster.MongoDBVersion))
 			Expect(createdCluster.Status.MongoURIUpdated).To(Equal(atlasCluster.MongoURIUpdated))
 			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-			Expect(createdCluster.Status.Conditions).To(HaveLen(2))
+			Expect(createdCluster.Status.Conditions).To(HaveLen(3))
 			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.ClusterReadyType),
 				status.TrueCondition(status.ReadyType),
@@ -128,7 +128,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).To(Equal(atlasCluster.ConnectionStrings.StandardSrv))
 			Expect(createdCluster.Status.MongoDBVersion).To(Equal(atlasCluster.MongoDBVersion))
 			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
-			Expect(createdCluster.Status.Conditions).To(HaveLen(2))
+			Expect(createdCluster.Status.Conditions).To(HaveLen(3))
 			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.ClusterReadyType),
 				status.TrueCondition(status.ReadyType),
