@@ -17,7 +17,13 @@
 ## AtlasProject Resource
 * Changes
     * The AtlasProject will not be marked as ready until the Project IP Access List is successfully created.
-  
+
+## AtlasCluster Resource
+* Changes
+  * The AtlasCluster now has two main configuration options. You must specify exactly one of
+    * `spec.clusterSpec` or `spec.advancedClusterSpec`. `clusterSpec` uses the regular [Atlas Cluster API](https://docs.atlas.mongodb.com/reference/api/clusters/) while `advancedClusterSpec` uses the [Atlas Advanced Cluster API](https://docs.atlas.mongodb.com/reference/api/clusters-advanced/)
+    * Note: in order to migrate an existing resource to use the `spec.clusterSpec` structure, you must move all fields currently under `spec.*` to `spec.clusterSpec.*` with the exception of `spec.projectRef`      
+
 *The images can be found in:*
 
 https://quay.io/repository/mongodb/mongodb-atlas-operator
