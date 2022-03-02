@@ -323,6 +323,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.TrueCondition(status.DatabaseUserReadyType),
 					status.TrueCondition(status.ReadyType),
+					status.TrueCondition(status.ValidationSucceeded),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -519,6 +520,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.FalseCondition(status.DatabaseUserReadyType),
 					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.ValidationSucceeded),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -801,6 +803,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		expectedConditionsMatchers := testutil.MatchConditions(
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
@@ -814,6 +817,7 @@ func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 		userChangesApplied := testutil.MatchConditions(
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		// this is the status the db user gets to when tries to create connection secrets and sees that the cluster
 		// is not ready

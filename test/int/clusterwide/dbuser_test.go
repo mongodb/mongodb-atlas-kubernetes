@@ -199,6 +199,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
 				status.FalseCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
@@ -215,6 +216,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		expectedConditionsMatchers := testutil.MatchConditions(
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
