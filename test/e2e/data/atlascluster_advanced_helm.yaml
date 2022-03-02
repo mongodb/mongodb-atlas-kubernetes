@@ -1,0 +1,17 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: atlas-cluster-advanced
+spec:
+  projectRef:
+    name: my-project
+  advancedClusterSpec:
+    clusterType: REPLICASET
+    name: advanced-cluster
+    replicationSpecs:
+      - regionConfigs:
+          - electableSpecs:
+              instanceSize: M5
+            providerName: TENANT
+            backingProviderName: AWS
+            regionName: US_EAST_1

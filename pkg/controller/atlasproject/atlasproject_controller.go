@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -95,6 +97,13 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
+
+	if err := validate.Project(project); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.ValidationSucceeded)
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {

@@ -134,7 +134,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].GetClusterName()), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -218,7 +218,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWrite", "someDB", "thisIsTheOnlyAllowedCollection").
 					// Cluster doesn't exist
-					WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name+"-foo")
+					WithScope(mdbv1.ClusterScopeType, createdClusterAzure.GetClusterName()+"-foo")
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -323,6 +323,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.TrueCondition(status.DatabaseUserReadyType),
 					status.TrueCondition(status.ReadyType),
+					status.TrueCondition(status.ValidationSucceeded),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -519,6 +520,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				expectedConditionsMatchers := testutil.MatchConditions(
 					status.FalseCondition(status.DatabaseUserReadyType),
 					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.ValidationSucceeded),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -698,14 +700,14 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 	Expect(err).NotTo(HaveOccurred())
 	// Shouldn't return the error - by this step the roles should be propagated
 	Expect(s).To(Equal(p))
-	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.Spec.ClusterSpec.Name, dbName, collectionName)
+	fmt.Fprintf(GinkgoWriter, "User %s (cluster %s) has inserted a single document to %s/%s\n", user.Spec.Username, cluster.GetClusterName(), dbName, collectionName)
 	return nil
 }
 
 func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
-	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.Spec.ClusterSpec.Name), kube.NormalizeIdentifier(username))
+	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.GetClusterName()), kube.NormalizeIdentifier(username))
 	Expect(k8sClient.Get(context.Background(), kube.ObjectKey(project.Namespace, secretName), &secret)).To(Succeed())
 	GinkgoWriter.Write([]byte(fmt.Sprintf("!! Secret: %v (%v)\n", kube.ObjectKey(project.Namespace, secretName), secret.Namespace+"/"+secret.Name)))
 
@@ -725,7 +727,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	}
 	expectedLabels := map[string]string{
 		"atlas.mongodb.com/project-id":   project.ID(),
-		"atlas.mongodb.com/cluster-name": cluster.Spec.ClusterSpec.Name,
+		"atlas.mongodb.com/cluster-name": cluster.GetClusterName(),
 		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
@@ -801,6 +803,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		expectedConditionsMatchers := testutil.MatchConditions(
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
@@ -814,6 +817,7 @@ func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 		userChangesApplied := testutil.MatchConditions(
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ValidationSucceeded),
 		)
 		// this is the status the db user gets to when tries to create connection secrets and sees that the cluster
 		// is not ready
