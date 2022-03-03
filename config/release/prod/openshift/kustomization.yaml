@@ -13,7 +13,7 @@ resources:
 - ../../../rbac/namespaced
 
 patches:
-  - path: ../manager_watch_namespace_patch.json
+  - path: ./manager_watch_namespace_patch.json
     target:
       group: apps
       version: v1
