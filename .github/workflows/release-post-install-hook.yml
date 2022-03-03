@@ -39,7 +39,7 @@ jobs:
             return resp.data.tags[version] !== undefined;
 
       - name: Fail if release exists
-        if: steps.verify-release-version.result != 'false'
+        if: steps.verify-release-version.result == 'true'
         env:
           version: ${{ github.event.inputs.version }}
         run: |
