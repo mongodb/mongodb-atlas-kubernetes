@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# For Deleting empty(!) PROJECTs which live more then (9) hours
+# For Deleting empty(!) PROJECTs which live more then (3) hours
 # It deletes all if INPUT_CLEAN_ALL is true
 
-MAX_PROJECT_LIFETIME=9 # in hours
 mongocli config set skip_update_check true
 
 delete_endpoints_for_project() {
@@ -52,7 +51,7 @@ delete_clusters() {
 
 # delete only old projects (older than 9 hours)
 delete_old_project() {
-    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME ]]; then
+    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME_INPUT ]]; then
         echo "====== Cleaning Project: $id"
         delete_endpoints_for_project "$id" "aws"
         delete_endpoints_for_project "$id" "azure"
