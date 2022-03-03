@@ -35,13 +35,6 @@ jobs:
       run: |
         go get github.com/google/go-licenses && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
 
-    - name: Commit and push licence report file
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PATH_TO_COMMIT: "third_party_licenses.txt"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
     - name: Create deploy configurations
       uses: ./.github/actions/gen-install-scripts
       with:
@@ -60,6 +53,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PATH_TO_COMMIT: "deploy"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit and push licence report file
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PATH_TO_COMMIT: "third_party_licenses.txt"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Commit and push bundle directory
