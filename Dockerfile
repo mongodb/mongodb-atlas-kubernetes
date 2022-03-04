@@ -27,7 +27,8 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-230
 RUN microdnf install yum &&\
     yum -y update &&\
     yum clean all &&\
-    microdnf clean all 
+    dnf remove python3-pip -y &&\
+    microdnf clean all
 
 #FROM registry.access.redhat.com/ubi8/ubi
 #
