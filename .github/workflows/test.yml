@@ -174,7 +174,7 @@ jobs:
 
       - name: Change path for the test
         run: |
-          sed -i -e 's/cloud.mongodb.com/cloud-qa.mongodb.com\//' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
       - name: Push bundle-image for the test
         if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
