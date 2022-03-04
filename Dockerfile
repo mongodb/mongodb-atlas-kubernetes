@@ -17,7 +17,6 @@ COPY Makefile Makefile
 COPY config/ config/
 COPY hack/ hack/
 
-
 ARG VERSION
 ENV PRODUCT_VERSION=${VERSION}
 
@@ -26,7 +25,7 @@ RUN make manager
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-230
 
 RUN microdnf install yum &&\
-    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical &&\
+    yum -y update &&\
     yum clean all &&\
     microdnf clean all
 
