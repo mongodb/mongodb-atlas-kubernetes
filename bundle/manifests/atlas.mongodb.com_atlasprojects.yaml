@@ -115,12 +115,36 @@ spec:
                       type: string
                   type: object
                 type: array
+              withDefaultAlertsSettings:
+                default: true
+                description: Flag that indicates whether to create the new project
+                  with the default alert settings enabled. This parameter defaults
+                  to true
+                type: boolean
+              x509CertRef:
+                description: X509CertRef is the name of the Kubernetes Secret which
+                  contains PEM-encoded CA certificate
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
             required:
             - name
             type: object
           status:
             description: AtlasProjectStatus defines the observed state of AtlasProject
             properties:
+              AuthModes:
+                description: AuthModes contains a list of configured authentication
+                  modes "SCRAM" is default authentication method and requires a password
+                  for each user "X509" signifies that self-managed X.509 authentication
+                  is configured
+                items:
+                  type: string
+                type: array
               conditions:
                 description: Conditions is the list of statuses showing the current
                   state of the Atlas Custom Resource
