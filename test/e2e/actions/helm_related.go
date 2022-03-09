@@ -23,7 +23,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
 		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
-		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
+		helm.UpgradeAtlasClusterChartDev(data.Resources)
 
 		By("Wait project creation", func() {
 			WaitCluster(data.Resources, strconv.Itoa(generation+1))
@@ -49,7 +49,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 			WithSecretRef("new-user-secret").
 			AddBuildInAdminRole()
 		data.Resources.Users = append(data.Resources.Users, newUser)
-		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
+		helm.UpgradeAtlasClusterChartDev(data.Resources)
 		CheckUsersAttributes(data.Resources)
 	})
 }
@@ -58,7 +58,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 	By("User delete database user from the Atlas\n", func() {
 		data.Resources.Users = data.Resources.Users[1:]
-		helm.UpgradeAtlasClusterChartDev(data.Resources) // TODO was
+		helm.UpgradeAtlasClusterChartDev(data.Resources)
 		CheckUsersAttributes(data.Resources)
 	})
 }

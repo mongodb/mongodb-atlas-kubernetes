@@ -16,7 +16,7 @@ import (
 )
 
 var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns"), func() {
-	var data model.TestDataProvider // TODO check it
+	var data model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))

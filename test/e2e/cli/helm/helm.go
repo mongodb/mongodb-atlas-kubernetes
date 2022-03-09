@@ -174,13 +174,8 @@ func InstallClusterSubmodule(input model.UserInputs) {
 // InstallClusterRelease from repo
 func InstallClusterRelease(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster") // TODO clean up (func prepareHelmChartNewArgs()) + line 183
+	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
 	Install(args...)
-}
-
-func UpgradeAtlasClusterChart(input model.UserInputs) { // used for submodule
-	PrepareHelmChartValuesFile(input)
-	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...) // TODO clean up (func prepareHelmChartNewArgs()) + line 210
 }
 
 func UpgradeOperatorChart(input model.UserInputs) {
