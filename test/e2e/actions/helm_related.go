@@ -68,15 +68,6 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 	By("User update helm chart (used main-branch)", func() {
 		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
 		helm.UpgradeOperatorChart(data.Resources)
-
-		// TODO temporary.
-		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "helm.sh/hook-", data.Resources.Namespace)
-		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-name="+data.Resources.Clusters[0].Spec.GetClusterName(), data.Resources.Namespace)
-		kubecli.Annotate(data.Resources.GetAtlasProjectFullKubeName(), "meta.helm.sh/release-namespace="+data.Resources.Namespace, data.Resources.Namespace)
-		// TODO temporary. all secrets atlas.mongodb.com/type: "credentials"
-		kubecli.LabelResourceByLabel("secrets", "atlas.mongodb.com/type=credentials", data.Resources.Namespace, "app.kubernetes.io/name=atlas-cluster")
-		// kubecli.Annotate("secrets", "atlas.mongodb.com/type=credentials", )
-
 		helm.UpgradeAtlasClusterChartDev(data.Resources)
 
 		By("Wait updating")

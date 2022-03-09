@@ -9,8 +9,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-// dependencyAsFile changes Chart dependency 'repository' >> 'file'
-// for not released dependencies
+// dependencyAsFile changes Chart dependency from 'repository' to 'file'
+// used for not released dependencies
 func dependencyAsFileForCRD() {
 	chart := filepath.Join(config.AtlasOperatorHelmChartPath, "Chart.yaml")
 	data, _ := ioutil.ReadFile(filepath.Clean(chart))
