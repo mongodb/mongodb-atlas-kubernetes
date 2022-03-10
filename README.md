@@ -20,6 +20,7 @@ kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kuberne
 ### Step 2. Create Atlas Cluster
 
 **1.** Create an Atlas API Key Secret
+
 In order to work with the Atlas Operator you need to provide [authentication information](https://docs.atlas.mongodb.com/configure-api-access)
  to allow the Atlas Operator to communicate with Atlas API. Once you have generated a Public and Private key in Atlas, you can create a Kuberentes Secret with:
 ```
@@ -52,6 +53,7 @@ spec:
 EOF
 ```
 **3.** Create an `AtlasCluster` Custom Resource.
+
 The example below is a minimal configuration to create an M10 Atlas cluster in the AWS US East region. For a full list of properties, check
 `atlasclusters.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasclusters.yaml)):
 ```
