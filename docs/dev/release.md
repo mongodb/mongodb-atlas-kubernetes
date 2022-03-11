@@ -43,7 +43,7 @@ Clone the *fork* and not *upstream* to your maching.
 
 Add the upstream repository as a remote one
 ```bash
-git remote add upstream git@github.com/k8s-operatorhub/community-operators.git
+git remote add upstream https://github.com/k8s-operatorhub/community-operators.git
 ```
 
 Assign the path to the repo to `RH_COMMUNITY_OPERATORHUB_REPO_PATH` env variable.
@@ -57,7 +57,7 @@ Clone the *fork* and not *upstream* to your maching.
 
 Add the upstream repository as a remote one
 ```bash
-git remote add upstream git@github.com/redhat-openshift-ecosystem/community-operators-prod.git
+git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
 ```
 
 Assign the path to the repo to `RH_COMMUNITY_OPENSHIFT_REPO_PATH` env variable.
