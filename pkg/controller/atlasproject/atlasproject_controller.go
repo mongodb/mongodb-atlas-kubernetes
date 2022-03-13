@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
 
 	"go.mongodb.org/atlas/mongodbatlas"
