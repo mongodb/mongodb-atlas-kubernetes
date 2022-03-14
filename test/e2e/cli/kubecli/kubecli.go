@@ -163,7 +163,7 @@ func CreateApiKeySecret(keyName, ns string) {
 	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
-func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
+func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) {
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+public,
