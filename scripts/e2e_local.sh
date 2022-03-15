@@ -7,7 +7,7 @@ public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
 private_key=$(grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 # this is the format how it's pushed by act -j build-push
-branch="$(git rev-parse --abbrev-ref HEAD | awk '{sub(/\//, "_"); print}')"
+branch="$(git rev-parse --abbrev-ref HEAD | awk '{sub(/\//, "-"); print}')"
 commit=$(git rev-parse --short HEAD)
 image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env | cut -d "=" -f 2):${branch}-${commit}
 echo "Using docker image: ${image}"
