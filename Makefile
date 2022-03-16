@@ -6,7 +6,7 @@ SHELL := /usr/bin/env bash
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.5.0
+VERSION ?= 0.8.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -75,14 +75,14 @@ int-test: export ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut
 # magical env that if specified makes the test output 0 on successful runs
 # https://github.com/onsi/ginkgo/blob/master/ginkgo/run_command.go#L130
 int-test: export GINKGO_EDITOR_INTEGRATION="true"
-int-test: generate manifests ## Run integration tests
+int-test: generate manifests ## Run integration tests. Sample with labels: `make int-test label=AtlasProject` or `make int-test label='AtlasCluster && !slow'`
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh
-	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo --timeout 80m -v -nodes=8 ./test/int -coverprofile cover.out
+	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo --label-filter='$(label)' --timeout 80m -v -nodes=8 ./test/int -coverprofile cover.out
 
 .PHONY: e2e
-e2e: run-kind ## Run e2e test. Command `make e2e focus=cluster-ns` run cluster-ns test
-	./scripts/e2e_local.sh $(focus)
+e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+	./scripts/e2e_local.sh $(label)
 
 .PHONY: manager
 manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
