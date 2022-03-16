@@ -111,8 +111,11 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
-			Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-				30*time.Minute, interval).Should(BeTrue())
+			Eventually(
+				func(g Gomega) {
+					success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+					g.Expect(success).To(BeTrue())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 
 			createdDBUser = mdbv1.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
@@ -186,6 +189,31 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
+func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
+	startedCreation := false
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasCluster)
+		if c.Status.StateName != "" {
+			startedCreation = true
+		}
+		// When the create request has been made to Atlas - we expect the following status
+		if startedCreation {
+			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
+				status.FalseCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+			)
+			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+		} else {
+			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
+			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
+			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
+		}
+	}
+}
+
+// nolint
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
