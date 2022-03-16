@@ -29,7 +29,7 @@ import (
 const (
 	// Set this to true if you are debugging cluster creation.
 	// This may not help much if there was the update though...
-	ClusterDevMode       = true
+	ClusterDevMode       = false
 	ClusterUpdateTimeout = 40 * time.Minute
 )
 
@@ -662,7 +662,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 	})
 
 	Describe("Setting the cluster skip annotation should skip reconciliations.", func() {
-		FIt("Should Succeed", func() {
+		It("Should Succeed", func() {
 
 			By(`Creating the cluster with reconciliation policy "skip" first`, func() {
 				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
