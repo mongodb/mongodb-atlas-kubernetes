@@ -153,10 +153,10 @@ spec:
                   instance
                 type: object
               phase:
-                description: Represents the cluster provisioning phase pending - provisioning
-                  not yet started creating - provisioning in progress updating - cluster
-                  updating in progress deleting - cluster deletion in progress deleted
-                  - cluster has been deleted ready - cluster provisioning complete
+                description: Represents the cluster provisioning phase Pending - provisioning
+                  not yet started Creating - provisioning in progress Updating - cluster
+                  updating in progress Deleting - cluster deletion in progress Deleted
+                  - cluster has been deleted Ready - cluster provisioning complete
                 type: string
             required:
             - instanceID
