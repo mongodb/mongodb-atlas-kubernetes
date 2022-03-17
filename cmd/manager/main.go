@@ -17,9 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
+	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strings"
 	"time"
 
@@ -35,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -71,9 +74,14 @@ func main() {
 	// logr looks quite limited in functionality so we better use Zap directly.
 	// Though we still need the controller-runtime library and go-logr/zapr as they are used in controller-runtime
 	// logging
-	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
-
-	config := parseConfiguration(logger.Sugar())
+	//logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
+	ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
+	config := parseConfiguration()
+	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder)
+	if err != nil {
+		fmt.Printf("error instantiating logger: %v\r\n", err)
+		os.Exit(1)
+	}
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
@@ -178,10 +186,12 @@ type Config struct {
 	WatchedNamespaces    map[string]bool
 	ProbeAddr            string
 	GlobalAPISecret      client.ObjectKey
+	LogLevel             string
+	LogEncoder           string
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
-func parseConfiguration(log *zap.SugaredLogger) Config {
+func parseConfiguration() Config {
 	var globalAPISecretName string
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com/", "the Atlas URL domain name (with slash in the end).")
@@ -192,7 +202,8 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-
+	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal")
+	flag.StringVar(&config.LogEncoder, "log-encoder", "json", "Log encoder. Available values: json | console")
 	flag.Parse()
 
 	config.GlobalAPISecret = operatorGlobalKeySecretOrDefault(globalAPISecretName)
@@ -203,7 +214,7 @@ func parseConfiguration(log *zap.SugaredLogger) Config {
 	config.WatchedNamespaces = make(map[string]bool)
 	for _, namespace := range strings.Split(watchedNamespace, ",") {
 		namespace = strings.TrimSpace(namespace)
-		log.Infof("The Operator is watching the namespace %s", namespace)
+		fmt.Printf("The Operator is watching the namespace %s\r\n", namespace)
 		config.WatchedNamespaces[namespace] = true
 	}
 
@@ -233,4 +244,33 @@ func operatorGlobalKeySecretOrDefault(secretNameOverride string) client.ObjectKe
 	}
 
 	return client.ObjectKey{Namespace: operatorNamespace, Name: secretName}
+}
+
+func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
+	lv := zap.AtomicLevel{}
+	err := lv.UnmarshalText([]byte(strings.ToLower(level)))
+	if err != nil {
+		return nil, err
+	}
+
+	enc := strings.ToLower(encoding)
+	if enc != "json" && enc != "console" {
+		return nil, errors.New("'encoding' parameter can only by either 'json' or 'console'")
+	}
+
+	cfg := zap.Config{
+		Level:             lv,
+		OutputPaths:       []string{"stdout"},
+		DisableCaller:     false,
+		DisableStacktrace: false,
+		Encoding:          enc,
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:  "msg",
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalLevelEncoder,
+			TimeKey:     "time",
+			EncodeTime:  zapcore.ISO8601TimeEncoder,
+		},
+	}
+	return cfg.Build()
 }
