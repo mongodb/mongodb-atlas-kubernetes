@@ -44,6 +44,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		createdProject   *mdbv1.AtlasProject
 		createdCluster   *mdbv1.AtlasCluster
 		lastGeneration   int64
+		manualDeletion   bool
 	)
 
 	BeforeEach(func() {
@@ -52,6 +53,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		createdCluster = &mdbv1.AtlasCluster{}
 
 		lastGeneration = 0
+		manualDeletion = false
 
 		connectionSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -80,6 +82,15 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 	AfterEach(func() {
 		if ClusterDevMode {
 			return
+		}
+		if manualDeletion && createdProject != nil {
+			By("Deleting the cluster in Atlas manually", func() {
+				// We need to remove the cluster in Atlas manually to let project get removed
+				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
+				createdCluster = nil
+			})
 		}
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdCluster != nil {
@@ -610,7 +621,6 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
-
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 					DBUserUpdateTimeout, interval).Should(BeTrue())
 			})
@@ -622,12 +632,10 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 
 			By("Checking that Secrets got removed", func() {
 				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdCluster.Spec.ClusterSpec.Name, createdDBUser.Spec.Username))}
+				createdCluster = nil // prevent cleanup from failing due to cluster already deleted
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
-
-			// prevent cleanup from failing due to cluster already deleted
-			createdCluster = nil
 		})
 	})
 
@@ -636,6 +644,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			By(`Creating the cluster with retention policy "keep" first`, func() {
 				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
 				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
+				manualDeletion = true // We need to remove the cluster in Atlas manually to let project get removed
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(
@@ -648,15 +657,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 				Expect(k8sClient.Delete(context.Background(), createdCluster)).To(Succeed())
 				time.Sleep(5 * time.Minute)
 				Expect(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name)()).Should(BeFalse())
-
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
-			})
-			By("Deleting the cluster in Atlas manually", func() {
-				// We need to remove the cluster in Atlas manually to let project get removed
-				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
-				Expect(err).NotTo(HaveOccurred())
-				Eventually(checkAtlasClusterRemoved(createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
-				createdCluster = nil
 			})
 		})
 	})
