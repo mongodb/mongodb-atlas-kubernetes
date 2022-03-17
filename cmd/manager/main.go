@@ -20,12 +20,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go.uber.org/zap/zapcore"
 	"log"
 	"os"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strings"
 	"time"
+
+	"go.uber.org/zap/zapcore"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -74,7 +75,6 @@ func main() {
 	// logr looks quite limited in functionality so we better use Zap directly.
 	// Though we still need the controller-runtime library and go-logr/zapr as they are used in controller-runtime
 	// logging
-	//logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 	ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 	config := parseConfiguration()
 	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder)
