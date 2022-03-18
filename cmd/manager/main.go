@@ -83,6 +83,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger.Info("starting with configuration", zap.Any("config", config))
+
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
@@ -214,7 +216,6 @@ func parseConfiguration() Config {
 	config.WatchedNamespaces = make(map[string]bool)
 	for _, namespace := range strings.Split(watchedNamespace, ",") {
 		namespace = strings.TrimSpace(namespace)
-		fmt.Printf("The Operator is watching the namespace %s\r\n", namespace)
 		config.WatchedNamespaces[namespace] = true
 	}
 
