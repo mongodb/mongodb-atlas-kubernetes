@@ -82,7 +82,7 @@ int-test: generate manifests ## Run integration tests. Sample with labels: `make
 
 .PHONY: e2e
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
-	./scripts/e2e_local.sh $(label)
+	./scripts/e2e_local.sh $(label) $(build)
 
 .PHONY: manager
 manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
