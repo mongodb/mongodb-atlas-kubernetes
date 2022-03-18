@@ -63,10 +63,14 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 					data.Resources.Namespace,
 				)
 			})
-			By("Clean Cloud", func() {
-				DeleteAllPrivateEndpoints(&data)
-			})
+
 		}
+		By("Clean Cloud", func() {
+			DeleteAllPrivateEndpoints(&data)
+		})
+		By("Delete Resources, Project with PEService", func() {
+			actions.DeleteUserResourcesProject(&data)
+		})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
@@ -74,7 +78,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			data = test
 			privateFlow(test, pe)
 		},
-		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint",
+		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 			model.NewTestDataProvider(
 				"privatelink-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -95,7 +99,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint",
+		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
 			model.NewTestDataProvider(
 				"privatelink-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -114,7 +118,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				region:   "northeurope",
 			}},
 		),
-		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint",
+		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
 			model.NewTestDataProvider(
 				"privatelink-aws-2",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -139,7 +143,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint",
+		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-azure-2"),
 			model.NewTestDataProvider(
 				"privatelink-aws-azure",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -235,14 +239,6 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 				},
 			).Should(BeTrue())
 		}
-	})
-
-	By("Delete PE from Clouds", func() {
-		DeleteAllPrivateEndpoints(&userData)
-	})
-
-	By("Delete Resources, Project with PEService", func() {
-		actions.DeleteUserResourcesProject(&userData)
 	})
 }
 

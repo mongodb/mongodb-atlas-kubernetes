@@ -50,7 +50,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 			data = test
 			mainCycle(test)
 		},
-		Entry("Trial - Simplest configuration with no backup and one Admin User",
+		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
 			model.NewTestDataProvider(
 				"operator-ns-trial",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -67,7 +67,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only",
+		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db"),
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -90,7 +90,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Multiregion AWS, Backup and 2 DBUsers",
+		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
 			model.NewTestDataProvider(
 				"operator-ns-multiregion-aws",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -112,7 +112,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Multiregion Azure, Backup and 1 DBUser",
+		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-azure",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -129,7 +129,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Multiregion GCP, Backup and 1 DBUser",
+		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-gcp",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -146,7 +146,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup",
+		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup", Label("ns-owner"),
 			model.NewTestDataProvider(
 				"operator-ns-product-owner",
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
@@ -163,7 +163,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Trial - Global connection",
+		Entry("Trial - Global connection", Label("ns-global-key"),
 			model.NewTestDataProvider(
 				"operator-ns-trial-global",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -180,7 +180,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Free - Users can use M0, default key",
+		Entry("Free - Users can use M0, default key", Label("ns-m0"),
 			model.NewTestDataProvider(
 				"operator-ns-free",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -197,7 +197,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Free - Users can use M0, global",
+		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
 			model.NewTestDataProvider(
 				"operator-ns-free",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
