@@ -547,6 +547,31 @@ spec:
                 - name
                 - providerSettings
                 type: object
+              processArgs:
+                description: ProcessArgs allows to modify Advanced Configuration Options
+                properties:
+                  defaultReadConcern:
+                    type: string
+                  defaultWriteConcern:
+                    type: string
+                  failIndexKeyTooLong:
+                    type: boolean
+                  javascriptEnabled:
+                    type: boolean
+                  minimumEnabledTlsProtocol:
+                    type: string
+                  noTableScan:
+                    type: boolean
+                  oplogSizeMB:
+                    format: int64
+                    type: integer
+                  sampleRefreshIntervalBIConnector:
+                    format: int64
+                    type: integer
+                  sampleSizeBIConnector:
+                    format: int64
+                    type: integer
+                type: object
               projectRef:
                 description: Project is a reference to AtlasProject resource the cluster
                   belongs to

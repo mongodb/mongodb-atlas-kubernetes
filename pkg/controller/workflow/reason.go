@@ -27,6 +27,7 @@ const (
 	ClusterCreating                    ConditionReason = "ClusterCreating"
 	ClusterUpdating                    ConditionReason = "ClusterUpdating"
 	ClusterConnectionSecretsNotCreated ConditionReason = "ClusterConnectionSecretsNotCreated"
+	ClusterAdvancedOptionsAreNotReady  ConditionReason = "ClusterAdvancedOptionsAreNotReady"
 )
 
 // Atlas Database User reasons
