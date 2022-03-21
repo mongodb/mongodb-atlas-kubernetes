@@ -161,12 +161,16 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 	}
 }
 
-func SaveK8sResources(resources []string, ns string) {
+func SaveK8sResourcesTo(resources []string, ns string, destination string) {
 	for _, resource := range resources {
 		data := kubecli.GetYamlResource(resource, ns)
-		path := fmt.Sprintf("output/%s/%s.yaml", ns, resource)
+		path := fmt.Sprintf("output/%s/%s.yaml", destination, resource)
 		utils.SaveToFile(path, data)
 	}
+}
+
+func SaveK8sResources(resources []string, ns string) {
+	SaveK8sResourcesTo(resources, ns, ns)
 }
 
 func SaveTestAppLogs(input model.UserInputs) {

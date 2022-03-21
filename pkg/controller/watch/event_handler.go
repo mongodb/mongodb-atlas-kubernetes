@@ -5,6 +5,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
@@ -22,8 +23,7 @@ func (d *EventHandlerWithDelete) Delete(e event.DeleteEvent, _ workqueue.RateLim
 	objectKey := kube.ObjectKeyFromObject(e.Object)
 	log := zap.S().With("resource", objectKey)
 
-	if err := d.Controller.Delete(e); err != nil {
+	if err := d.Controller.Delete(e); err != nil && k8serrors.IsNotFound(err) {
 		log.Errorf("Object (%s) removed from Kubernetes, but controller could not delete it: %s", e.Object.GetObjectKind(), err)
-		return
 	}
 }

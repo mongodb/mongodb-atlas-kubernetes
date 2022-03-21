@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
@@ -39,12 +40,17 @@ var _ = Describe("HELM charts", func() {
 			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
-					"output/operator-logs.txt",
+					fmt.Sprintf("output/%s/operator-logs-default.txt", data.Resources.Namespace),
 					kubecli.GetManagerLogs(config.DefaultOperatorNS),
 				)
-				actions.SaveK8sResources(
+				utils.SaveToFile(
+					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
+					kubecli.GetManagerLogs(data.Resources.Namespace),
+				)
+				actions.SaveK8sResourcesTo(
 					[]string{"deploy"},
 					"default",
+					data.Resources.Namespace,
 				)
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
