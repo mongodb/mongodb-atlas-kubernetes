@@ -148,27 +148,31 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 		return kube.NormalizeIdentifier(createdProject.Spec.Name) + suffix
 	}
 
+	byCreatingDefaultAWSandAzureClusters := func() {
+		By("Creating clusters", func() {
+			createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+
+			createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name).Lightweight()
+			Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
+
+			Eventually(
+				func(g Gomega) {
+					success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+					g.Expect(success).To(BeTrue())
+				}).WithTimeout(ClusterUpdateTimeout).WithPolling(interval).Should(Succeed())
+
+			Eventually(
+				func(g Gomega) {
+					success := testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+					g.Expect(success).To(BeTrue())
+				}).WithTimeout(ClusterUpdateTimeout).WithPolling(interval).Should(Succeed())
+		})
+	}
+
 	Describe("Create/Update two users, two clusters", func() {
 		It("They should be created successfully", func() {
-			By("Creating clusters", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
-				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
-
-				createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name).Lightweight()
-				Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
-
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(ClusterUpdateTimeout).WithPolling(interval).Should(Succeed())
-
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(ClusterUpdateTimeout).WithPolling(interval).Should(Succeed())
-			})
+			byCreatingDefaultAWSandAzureClusters()
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
@@ -406,25 +410,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 	})
 	Describe("Change database users (make sure all stale secrets are removed)", func() {
 		It("Should succeed", func() {
-			By("Creating AWS and Azure clusters", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
-				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
-
-				createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name).Lightweight()
-				Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
-
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(ClusterUpdateTimeout).WithPolling(intervalShort).Should(Succeed())
-
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(ClusterUpdateTimeout).WithPolling(intervalShort).Should(Succeed())
-			})
+			byCreatingDefaultAWSandAzureClusters()
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
 			By(fmt.Sprintf("Creating the Database User %s (no scopes)", kube.ObjectKeyFromObject(createdDBUser)), func() {
