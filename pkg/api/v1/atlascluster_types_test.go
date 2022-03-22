@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 var (
@@ -141,4 +142,40 @@ func parseJSONName(t reflect.StructTag) string {
 		panic(err)
 	}
 	return jsonTag.Name
+}
+
+func TestIsEqual(t *testing.T) {
+	operatorArgs := ProcessArgs{
+		JavascriptEnabled: toptr.Boolptr(true),
+	}
+
+	atlasArgs := mongodbatlas.ProcessArgs{
+		JavascriptEnabled: toptr.Boolptr(false),
+	}
+
+	areTheyEqual := operatorArgs.IsEqual(atlasArgs)
+	assert.False(t, areTheyEqual, "should NOT be equal if pointer values are different")
+
+	atlasArgs.JavascriptEnabled = toptr.Boolptr(true)
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal if all pointer values are the same")
+
+	areTheyEqual = operatorArgs.IsEqual(&atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal if Atlas args is a pointer")
+
+	atlasArgs.DefaultReadConcern = "available"
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal if Atlas args have more values")
+
+	operatorArgs.DefaultReadConcern = "available"
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should work for non-pointer values")
+
+	operatorArgs.OplogSizeMB = toptr.Int64ptr(8)
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.False(t, areTheyEqual, "should NOT be equal if Operator has more args")
 }

@@ -182,6 +182,15 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		})
 	}
 
+	checkAdvancedClusterOptions := func(specOptions *mdbv1.ProcessArgs) {
+		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
+			atlasOptions, _, err := atlasClient.Clusters.GetProcessArgs(context.Background(), createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(specOptions.IsEqual(atlasOptions)).To(BeTrue())
+		})
+	}
+
 	performUpdate := func(timeout interface{}) {
 		Expect(k8sClient.Update(context.Background(), createdCluster)).To(Succeed())
 
@@ -714,6 +723,33 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 
 				doAdvancedClusterStatusChecks()
 				checkAdvancedAtlasState()
+			})
+		})
+	})
+
+	Describe("Set advanced cluster options", func() {
+		It("Should Succeed", func() {
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster.Spec.ProcessArgs = &mdbv1.ProcessArgs{
+				JavascriptEnabled:  boolptr(true),
+				DefaultReadConcern: "available",
+			}
+
+			By(fmt.Sprintf("Creating the Cluster with Advanced Options %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
+					30*time.Minute, interval).Should(BeTrue())
+
+				doRegularClusterStatusChecks()
+				checkAdvancedClusterOptions(createdCluster.Spec.ProcessArgs)
+			})
+
+			By("Updating Advanced Cluster Options", func() {
+				createdCluster.Spec.ProcessArgs.JavascriptEnabled = boolptr(false)
+				performUpdate(40 * time.Minute)
+				doRegularClusterStatusChecks()
+				checkAdvancedClusterOptions(createdCluster.Spec.ProcessArgs)
 			})
 		})
 	})

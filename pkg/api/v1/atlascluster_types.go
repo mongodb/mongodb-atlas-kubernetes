@@ -17,6 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"reflect"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -122,6 +124,10 @@ type AtlasClusterSpec struct {
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
 	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
+
+	// ProcessArgs allows to modify Advanced Configuration Options
+	// +optional
+	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
 }
 
 type AdvancedClusterSpec struct {
@@ -244,6 +250,43 @@ type ComputeSpec struct {
 	// Maximum instance size to which your cluster can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.
 	// +optional
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
+}
+
+type ProcessArgs mongodbatlas.ProcessArgs
+
+func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
+	specV := reflect.ValueOf(specArgs)
+	newV := reflect.Indirect(reflect.ValueOf(newArgs))
+	typeOfSpec := specV.Type()
+	for i := 0; i < specV.NumField(); i++ {
+		name := typeOfSpec.Field(i).Name
+		specValue := specV.FieldByName(name)
+		newValue := newV.FieldByName(name)
+
+		if specValue.IsZero() {
+			continue
+		}
+		if newValue.IsZero() {
+			return false
+		}
+
+		if specValue.Kind() == reflect.Ptr {
+			if specValue.IsNil() {
+				continue
+			}
+			if newValue.IsNil() {
+				return false
+			}
+			specValue = specValue.Elem()
+			newValue = newValue.Elem()
+		}
+
+		if specValue.Interface() != newValue.Interface() {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Check compatibility with library type.
