@@ -185,7 +185,7 @@ func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, pro
 
 func (r *AtlasClusterReconciler) handleAdvancedOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) workflow.Result {
 	clusterName := cluster.GetClusterName()
-	args, _, err := ctx.Client.Clusters.GetProcessArgs(context.Background(), project.Status.ID, clusterName)
+	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context.Background(), project.Status.ID, clusterName)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, "cannot get process args")
 	}
@@ -194,7 +194,7 @@ func (r *AtlasClusterReconciler) handleAdvancedOptions(ctx *workflow.Context, pr
 		return workflow.OK()
 	}
 
-	if !cluster.Spec.ProcessArgs.IsEqual(*args) {
+	if !cluster.Spec.ProcessArgs.IsEqual(atlasArgs) {
 		options := mongodbatlas.ProcessArgs(*cluster.Spec.ProcessArgs)
 		args, resp, err := ctx.Client.Clusters.UpdateProcessArgs(context.Background(), project.Status.ID, clusterName, &options)
 		ctx.Log.Debugw("ProcessArgs Update", "args", args, "resp", resp.Body, "err", err)

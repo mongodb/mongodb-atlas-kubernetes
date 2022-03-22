@@ -161,6 +161,9 @@ func TestIsEqual(t *testing.T) {
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should be equal if all pointer values are the same")
 
+	areTheyEqual = operatorArgs.IsEqual(&atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal if Atlas args is a pointer")
+
 	atlasArgs.DefaultReadConcern = "available"
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
