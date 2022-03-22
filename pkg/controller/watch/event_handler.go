@@ -2,10 +2,10 @@ package watch
 
 import (
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
