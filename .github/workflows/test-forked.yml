@@ -6,6 +6,10 @@ on:
     paths-ignore:
       - 'docs/**'
 
+concurrency:
+  group: test-forked-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   allowed:
     name: Allowed action

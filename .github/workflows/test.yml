@@ -13,6 +13,10 @@ on:
       - 'docs/**'
   workflow_dispatch:
 
+concurrency:
+  group: test-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   allowed:
     name: Allowed

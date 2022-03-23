@@ -14,6 +14,9 @@ on:
         default: "3"
         required: true
 
+concurrency:
+  group: cleanup
+
 jobs:
   cleanup-all:
     name: Cleanup atlas empty projects, and terminate cluster
