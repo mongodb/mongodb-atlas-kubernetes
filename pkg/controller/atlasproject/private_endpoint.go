@@ -91,15 +91,14 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		// interfaceEndpoint.Status is for the interface endpoint AZURE
-		if interfaceEndpoint.AWSConnectionStatus == "AVAILABLE" || interfaceEndpoint.Status == "AVAILABLE" {
-			ctx.SetConditionTrue(status.PrivateEndpointReadyType)
-			continue
+		// interfaceEndpoint.Status is for the AZURE and GCP interface endpoints
+		if !(interfaceEndpoint.AWSConnectionStatus == "AVAILABLE" || interfaceEndpoint.Status == "AVAILABLE") {
+			result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
+			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+			return result
 		}
 
-		result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
-		ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
-		return result
+		ctx.SetConditionTrue(status.PrivateEndpointReadyType)
 	}
 
 	return workflow.OK()
