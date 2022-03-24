@@ -205,7 +205,8 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 		Expect(err).ShouldNot(HaveOccurred())
 
 		for _, peitem := range project.Status.PrivateEndpoints {
-			cloudTest := cloud.CreatePEActions(peitem)
+			cloudTest, err := cloud.CreatePEActions(peitem)
+			Expect(err).ShouldNot(HaveOccurred())
 			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(privateLinkID).ShouldNot(BeEmpty())
@@ -230,7 +231,8 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 		project, err := kube.GetProjectResource(&userData)
 		Expect(err).ShouldNot(HaveOccurred())
 		for _, peitem := range project.Status.PrivateEndpoints {
-			cloudTest := cloud.CreatePEActions(peitem)
+			cloudTest, err := cloud.CreatePEActions(peitem)
+			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
@@ -248,14 +250,18 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	project, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
 	for _, peitem := range project.Status.PrivateEndpoints {
-		cloudTest := cloud.CreatePEActions(peitem)
-		privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-		if privateEndpointID != "" {
-			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-			if err != nil {
-				GinkgoWriter.Write([]byte(err.Error()))
-				errorList = append(errorList, err.Error())
+		cloudTest, err := cloud.CreatePEActions(peitem)
+		if err != nil {
+			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			if privateEndpointID != "" {
+				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+				if err != nil {
+					GinkgoWriter.Write([]byte(err.Error()))
+					errorList = append(errorList, err.Error())
+				}
 			}
+		} else {
+			errorList = append(errorList, err.Error())
 		}
 	}
 	Expect(len(errorList)).Should(Equal(0), errorList)
