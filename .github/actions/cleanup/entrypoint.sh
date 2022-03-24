@@ -22,12 +22,13 @@ delete_endpoints_for_project() {
         if [[ $points != "null" ]]; then
             for pe in $(echo "$points" | jq -r '.[]'); do
                 echo "----Delete private endpoint: $pe from $projectID will be deleted"
-                pe=$(echo "$pe" | sed 's/\//%2F/g')
+                echo "mongocli atlas privateEndpoints $provider interfaces delete $pe --endpointServiceId $service_id --projectId $projectID --force"
                 mongocli atlas privateEndpoints "$provider" interfaces delete "$pe" --endpointServiceId "$service_id" --projectId "$projectID" --force
-                mongocli atlas privateEndpoints "$provider" interfaces describe "$pe" --endpointServiceId "$service_id" --projectId "$projectID" | awk 'NR!=1{print $1}'
-                until [[ "$(mongocli atlas privateEndpoints "$provider" interfaces describe "$pe" --endpointServiceId "$service_id" --projectId "$projectID" | awk 'NR!=1{print $1}')" == "" ]]; do
-                    echo "wait..."
-                    sleep 1
+                try=1
+                until [[ "$(mongocli atlas privateEndpoints "$provider" list --projectId "$projectID" -o json | grep "$pe" && echo "alive" || echo "deleted")" == "deleted" ]] || [[ "$try" -gt 150 ]]; do
+                    echo "wait...$try..."
+                    ((try++))
+                    sleep 2
                 done
             done
         fi
@@ -44,33 +45,49 @@ delete_clusters() {
     # shellcheck disable=SC2068
     # multiline
     for cluster in ${clusters[@]}; do
-        echo "deleting cluster $cluster in $projectID"
-        mongocli atlas cluster delete "$cluster" --projectId "$projectID" --force
+        state=$(mongocli atlas cluster describe "$cluster" --projectId "$projectID" -o json | jq -r '.stateName')
+        echo "Current cluster: $cluster. State: $state"
+        if [[ -n $state ]] || [[ $state != "DELETING" ]]; then
+            echo "deleting cluster $cluster in $projectID"
+            mongocli atlas cluster delete "$cluster" --projectId "$projectID" --force
+        fi
     done
 }
 
-# delete only old projects (older than 9 hours)
+delete_project() {
+    peDeleted=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
+    [[ $peDeleted == "" ]] && mongocli iam projects delete "$id" --force
+}
+
+# delete only old projects (older than MAX_PROJECT_LIFETIME_INPUT hours)
 delete_old_project() {
-    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME_INPUT ]]; then
+    exist=is_project_exist
+    if [[ -n ${exist:-} ]] || [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME_INPUT ]]; then
         echo "====== Cleaning Project: $id"
         delete_endpoints_for_project "$id" "aws"
         delete_endpoints_for_project "$id" "azure"
-        isReady=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
-        [[ $isReady == "" ]] && mongocli iam projects delete "$id" --force
+        delete_project
     fi
+}
+
+# Check if it is still exits. Could be process from another source (test, manual work, CI/CD pipelines)
+is_project_exist() {
+    mongocli iam projects list | awk '/'"$id"'/{print "true"}'
 }
 
 # delete private endpoints, terminate clusters, delete empty project
 delete_all() {
-    echo "====== Cleaning Project: $id"
-    delete_endpoints_for_project "$id" "aws"
-    delete_endpoints_for_project "$id" "azure"
-    if [[ -z ${count:-} ]] || [[ ${count:-} == "null" ]]; then
-        isReady=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
-        [[ $isReady == "" ]] && mongocli iam projects delete "$id" --force
-    else
-        echo "delete only cluster (will not wait)"
-        delete_clusters "$id"
+    exist=is_project_exist
+    if [[ -n ${exist:-} ]]; then
+        echo "====== Cleaning Project: $id"
+        delete_endpoints_for_project "$id" "aws"
+        delete_endpoints_for_project "$id" "azure"
+        if [[ -z ${count:-} ]] || [[ ${count:-} == "null" ]]; then
+            delete_project
+        else
+            echo "delete only cluster (will not wait)"
+            delete_clusters "$id"
+        fi
     fi
 }
 
