@@ -34,7 +34,7 @@ jobs:
     needs: allowed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
 
       - name: Cache multiple paths
         uses: actions/cache@v2
@@ -59,7 +59,7 @@ jobs:
       matrix:
         test: ["AtlasProject", "AtlasCluster", "AtlasDatabaseUser"]
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
 
       - name: Cache multiple paths
         uses: actions/cache@v2
@@ -82,7 +82,7 @@ jobs:
     needs: allowed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
 
       - name: Cache multiple paths
         uses: actions/cache@v2
@@ -109,7 +109,7 @@ jobs:
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           fetch-depth: 0 # required for tags
 
@@ -160,7 +160,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           # Make sure we also get the helm-charts submodule!
           submodules: recursive
