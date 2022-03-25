@@ -91,15 +91,14 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		// interfaceEndpoint.Status is for the interface endpoint AZURE
-		if interfaceEndpoint.AWSConnectionStatus == "AVAILABLE" || interfaceEndpoint.Status == "AVAILABLE" {
-			ctx.SetConditionTrue(status.PrivateEndpointReadyType)
-			continue
+		// interfaceEndpoint.Status is for the AZURE and GCP interface endpoints
+		if !(isAvailable(interfaceEndpoint.AWSConnectionStatus) || isAvailable(interfaceEndpoint.Status)) {
+			result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
+			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+			return result
 		}
 
-		result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
-		ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
-		return result
+		ctx.SetConditionTrue(status.PrivateEndpointReadyType)
 	}
 
 	return workflow.OK()
@@ -107,7 +106,7 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 
 func allEnpointsAreAvailable(atlasPeConnections []mongodbatlas.PrivateEndpointConnection) bool {
 	for _, conn := range atlasPeConnections {
-		if conn.Status != "AVAILABLE" {
+		if !isAvailable(conn.Status) {
 			return false
 		}
 	}
@@ -200,7 +199,7 @@ func clearOutNotLinkedPEs(client mongodbatlas.Client, projectID string, atlasCon
 	endpointsWithoutPair := []status.ProjectPrivateEndpoint{}
 	endpointsAreDeleting := false
 	for _, atlasConn := range atlasConns {
-		if atlasConn.Status == "DELETING" {
+		if isDeleting(atlasConn.Status) {
 			endpointsAreDeleting = true
 		}
 
@@ -281,4 +280,12 @@ func convertOneToStatus(endpoint mongodbatlas.PrivateEndpointConnection) status.
 	}
 
 	return pe
+}
+
+func isAvailable(status string) bool {
+	return status == "AVAILABLE"
+}
+
+func isDeleting(status string) bool {
+	return status == "DELETING"
 }
