@@ -229,7 +229,7 @@ func HasConfigMap(configName, ns string) bool {
 
 func GetResourceCreationTimestamp(resource, name, ns string) []byte {
 	session := cli.Execute("kubectl", "get", resource, name, "-n", ns, "-o", "jsonpath={.metadata.creationTimestamp}")
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 

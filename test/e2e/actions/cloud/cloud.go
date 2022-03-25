@@ -19,66 +19,62 @@ type PEActions struct {
 	PrivateEndpoint status.ProjectPrivateEndpoint
 }
 
-func CreatePEActions(pe status.ProjectPrivateEndpoint) PEActions {
-	return PEActions{PrivateEndpoint: pe}
+func CreatePEActions(pe status.ProjectPrivateEndpoint) (PEActions, error) {
+	peActions := PEActions{PrivateEndpoint: pe}
+	switch pe.Provider {
+	case provider.ProviderAWS:
+		peActions.CloudActions = &awsAction{}
+	case provider.ProviderAzure:
+		peActions.CloudActions = &azureAction{}
+	case provider.ProviderGCP:
+		peActions.CloudActions = &gcpAction{}
+	default:
+		return peActions, errors.New("Check Provider")
+	}
+	if err := peActions.validation(); err != nil {
+		return peActions, err
+	}
+	return peActions, nil
+}
+
+func (peActions *PEActions) validation() error {
+	switch peActions.PrivateEndpoint.Provider {
+	case provider.ProviderAWS:
+		if peActions.PrivateEndpoint.ServiceName == "" {
+			return errors.New("AWS. PrivateEndpoint.ServiceName is empty")
+		}
+	case provider.ProviderAzure:
+		if peActions.PrivateEndpoint.ServiceResourceID == "" {
+			return errors.New("Azure. PrivateEndpoint.ServiceResourceID is empty")
+		}
+	case provider.ProviderGCP:
+		return errors.New("work with GCP is not implemented")
+	default:
+		return errors.New("Check Provider")
+	}
+	return nil
 }
 
 func (peActions *PEActions) CreatePrivateEndpoint(name string) (string, string, error) {
-	switch peActions.PrivateEndpoint.Provider {
-	case provider.ProviderAWS:
-		peActions.CloudActions = &awsAction{}
-		return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
-	case provider.ProviderAzure:
-		peActions.CloudActions = &azureAction{}
-		return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
-	case provider.ProviderGCP:
-		peActions.CloudActions = &gcpAction{}
-		return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
+	if err := peActions.validation(); err != nil {
+		return "", "", err
 	}
-	return "", "", errors.New("Check Provider")
+	return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
 }
 
 func (peActions *PEActions) DeletePrivateEndpoint(name string) error {
-	switch peActions.PrivateEndpoint.Provider {
-	case provider.ProviderAWS:
-		peActions.CloudActions = &awsAction{}
-		return peActions.CloudActions.deletePrivateEndpoint(peActions.PrivateEndpoint, name)
-	case provider.ProviderAzure:
-		peActions.CloudActions = &azureAction{}
-		return peActions.CloudActions.deletePrivateEndpoint(peActions.PrivateEndpoint, name)
-	case provider.ProviderGCP:
-		peActions.CloudActions = &gcpAction{}
-		return peActions.CloudActions.deletePrivateEndpoint(peActions.PrivateEndpoint, name)
+	if err := peActions.validation(); err != nil {
+		return err
 	}
-	return errors.New("Check Provider")
+	return peActions.CloudActions.deletePrivateEndpoint(peActions.PrivateEndpoint, name)
 }
 
+// privateID is different for different clouds: privateID for AWS or PEname for AZURE
+// AWS = PrivateID, AZURE = privateEndpoint Name
 func (peActions *PEActions) IsStatusPrivateEndpointPending(privateID string) bool {
-	switch peActions.PrivateEndpoint.Provider {
-	case provider.ProviderAWS:
-		peActions.CloudActions = &awsAction{}
-		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID) // privateID for AWS or PEname for AZURE
-	case provider.ProviderAzure:
-		peActions.CloudActions = &azureAction{}
-		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID) // privaID for AWS = PrivateID, for AZURE = privateEndpoint Name
-	case provider.ProviderGCP:
-		peActions.CloudActions = &gcpAction{}
-		return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)
-	}
-	return false
+	return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)
 }
 
 func (peActions *PEActions) IsStatusPrivateEndpointAvailable(privateID string) bool {
-	switch peActions.PrivateEndpoint.Provider {
-	case provider.ProviderAWS:
-		peActions.CloudActions = &awsAction{}
-		return peActions.CloudActions.statusPrivateEndpointAvailable(peActions.PrivateEndpoint.Region, privateID)
-	case provider.ProviderAzure:
-		peActions.CloudActions = &azureAction{}
-		return peActions.CloudActions.statusPrivateEndpointAvailable(peActions.PrivateEndpoint.Region, privateID)
-	case provider.ProviderGCP:
-		peActions.CloudActions = &gcpAction{}
-		return peActions.CloudActions.statusPrivateEndpointAvailable(peActions.PrivateEndpoint.Region, privateID)
-	}
-	return false
+	return peActions.CloudActions.statusPrivateEndpointAvailable(peActions.PrivateEndpoint.Region, privateID)
 }

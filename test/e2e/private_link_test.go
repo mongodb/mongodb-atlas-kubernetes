@@ -76,7 +76,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
 		func(test model.TestDataProvider, pe []privateEndpoint) {
 			data = test
-			privateFlow(test, pe)
+			privateFlow(&data, pe)
 		},
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 			model.NewTestDataProvider(
@@ -175,37 +175,39 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	)
 })
 
-func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) {
+func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint) {
 	By("Deploy Project with requested configuration", func() {
-		actions.PrepareUsersConfigurations(&userData)
-		deploy.NamespacedOperator(&userData)
-		actions.DeployProjectAndWait(&userData, "1")
+		actions.PrepareUsersConfigurations(userData)
+		deploy.NamespacedOperator(userData)
+		actions.DeployProjectAndWait(userData, "1")
 	})
 
 	By("Create Private Link and the rest users resources", func() {
 		for _, pe := range requstedPE {
 			userData.Resources.Project.WithPrivateLink(provider.ProviderName(pe.provider), pe.region)
 		}
-		actions.PrepareUsersConfigurations(&userData)
-		actions.DeployProject(&userData, "2")
+		actions.PrepareUsersConfigurations(userData)
+		actions.DeployProject(userData, "2")
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(kube.GetProjectPEndpointServiceStatus(&userData), "15m", "10s").Should(Equal("True"),
+		Eventually(kube.GetProjectPEndpointServiceStatus(userData), "15m", "10s").Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
-		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"),
+		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
-		Expect(AllPEndpointUpdated(&userData)).Should(BeTrue(),
+		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
-		actions.UpdateProjectID(&userData)
+		actions.UpdateProjectID(userData)
+		Expect(userData.Resources.ProjectID).ShouldNot(BeEmpty())
 	})
 
 	By("Create Endpoint in requested Cloud Provider", func() {
-		project, err := kube.GetProjectResource(&userData)
+		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		for _, peitem := range project.Status.PrivateEndpoints {
-			cloudTest := cloud.CreatePEActions(peitem)
+			cloudTest, err := cloud.CreatePEActions(peitem)
+			Expect(err).ShouldNot(HaveOccurred())
 			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(privateLinkID).ShouldNot(BeEmpty())
@@ -219,18 +221,19 @@ func privateFlow(userData model.TestDataProvider, requstedPE []privateEndpoint) 
 	})
 
 	By("Deploy Changed Projects", func() {
-		actions.PrepareUsersConfigurations(&userData)
-		actions.DeployProjectAndWait(&userData, "3")
+		actions.PrepareUsersConfigurations(userData)
+		actions.DeployProjectAndWait(userData, "3")
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(&userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
-		Eventually(kube.GetReadyProjectStatus(&userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
+		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
-		project, err := kube.GetProjectResource(&userData)
+		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
 		for _, peitem := range project.Status.PrivateEndpoints {
-			cloudTest := cloud.CreatePEActions(peitem)
+			cloudTest, err := cloud.CreatePEActions(peitem)
+			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
@@ -248,14 +251,18 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	project, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
 	for _, peitem := range project.Status.PrivateEndpoints {
-		cloudTest := cloud.CreatePEActions(peitem)
-		privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-		if privateEndpointID != "" {
-			err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-			if err != nil {
-				GinkgoWriter.Write([]byte(err.Error()))
-				errorList = append(errorList, err.Error())
+		cloudTest, err := cloud.CreatePEActions(peitem)
+		if err == nil {
+			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			if privateEndpointID != "" {
+				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+				if err != nil {
+					GinkgoWriter.Write([]byte(err.Error()))
+					errorList = append(errorList, err.Error())
+				}
 			}
+		} else {
+			errorList = append(errorList, err.Error())
 		}
 	}
 	Expect(len(errorList)).Should(Equal(0), errorList)

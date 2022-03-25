@@ -1,9 +1,24 @@
 #!/bin/bash
 
-# For Deleting empty(!) PROJECTs which live more then (3) hours
+# For Deleting empty(!) PROJECTs which live more then (MAX_PROJECT_LIFETIME_INPUT) hours
 # It deletes all if INPUT_CLEAN_ALL is true
 
 mongocli config set skip_update_check true
+
+command_result_waiter() {
+    command=$1
+    match=$2
+    interval=$3
+    maxCount=$4
+
+    try=1
+    echo "wait result...."
+    until [[ "$( eval " $command" | grep "$match" && echo "alive" || echo "deleted")" == "deleted" ]] || [[ "$try" -gt $maxCount ]]; do
+        echo "wait...try $try..."
+        ((try++))
+        sleep "$interval"
+    done
+}
 
 delete_endpoints_for_project() {
     projectID=$1
@@ -22,57 +37,81 @@ delete_endpoints_for_project() {
         if [[ $points != "null" ]]; then
             for pe in $(echo "$points" | jq -r '.[]'); do
                 echo "----Delete private endpoint: $pe from $projectID will be deleted"
-                pe=$(echo "$pe" | sed 's/\//%2F/g')
                 mongocli atlas privateEndpoints "$provider" interfaces delete "$pe" --endpointServiceId "$service_id" --projectId "$projectID" --force
-                mongocli atlas privateEndpoints "$provider" interfaces describe "$pe" --endpointServiceId "$service_id" --projectId "$projectID" | awk 'NR!=1{print $1}'
-                until [[ "$(mongocli atlas privateEndpoints "$provider" interfaces describe "$pe" --endpointServiceId "$service_id" --projectId "$projectID" | awk 'NR!=1{print $1}')" == "" ]]; do
-                    echo "wait..."
-                    sleep 1
-                done
+
+                command="mongocli atlas privateEndpoints $provider list --projectId $projectID -o json"
+                command_result_waiter "$command" "$pe" 2 150
             done
         fi
 
         echo "--Private endpoint service will be deleted: $service_id in $projectID"
         # we do not wait PE service deletion - long operation
         mongocli atlas privateEndpoints "$provider" delete "$service_id" --projectId "$projectID" --force
+        command="mongocli atlas privateEndpoints $provider list --projectId $projectID -o json"
+        command_result_waiter "$command" "$service_id" 10 60
     done
 }
 
 delete_clusters() {
     projectID=$1
+    echo "====== Cleaning Clusters in Project: $projectID"
     clusters=$(mongocli atlas cluster list --projectId "$projectID" | awk 'NR!=1{print $2}')
     # shellcheck disable=SC2068
     # multiline
     for cluster in ${clusters[@]}; do
-        echo "deleting cluster $cluster in $projectID"
-        mongocli atlas cluster delete "$cluster" --projectId "$projectID" --force
+        echo "====== Cleaning Clusters: $cluster"
+        state=$(mongocli atlas cluster describe "$cluster" --projectId "$projectID" -o json | jq -r '.stateName')
+        echo "Current cluster: $cluster. State: $state"
+        if [[ -n $state ]] && [[ $state != "DELETING" ]]; then
+            echo "deleting cluster $cluster in $projectID"
+            mongocli atlas cluster delete "$cluster" --projectId "$projectID" --force
+            command="mongocli atlas cluster list --projectId $projectID"
+            echo "$command"
+            command_result_waiter "$command" "$cluster" 10 90
+        fi
     done
 }
 
-# delete only old projects (older than 9 hours)
+delete_project() {
+    peDeleted=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
+    [[ $peDeleted == "" ]] && mongocli iam projects delete "$id" --force
+}
+
+# delete only old projects (older than MAX_PROJECT_LIFETIME_INPUT hours)
 delete_old_project() {
-    if [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME_INPUT ]]; then
-        echo "====== Cleaning Project: $id"
-        delete_endpoints_for_project "$id" "aws"
-        delete_endpoints_for_project "$id" "azure"
-        isReady=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
-        [[ $isReady == "" ]] && mongocli iam projects delete "$id" --force
-    fi
+    output=$(
+        exist=is_project_exist
+        if [[ -n ${exist:-} ]] || [[ -z "${count:-}" ]] || [[ ${count:-} == "null"  ]] && [[ "$existance_hours" -gt $MAX_PROJECT_LIFETIME_INPUT ]]; then
+            echo "====== Cleaning Project: $id"
+            delete_endpoints_for_project "$id" "aws"
+            delete_endpoints_for_project "$id" "azure"
+            delete_project
+        fi
+    )
+    echo "${output[@]}"
+}
+
+# Check if it is still exits. Could be process from another source (test, manual work, CI/CD pipelines)
+is_project_exist() {
+    mongocli iam projects list | awk '/'"$id"'/{print "true"}'
 }
 
 # delete private endpoints, terminate clusters, delete empty project
 delete_all() {
-    echo "====== Cleaning Project: $id"
-    delete_endpoints_for_project "$id" "aws"
-    delete_endpoints_for_project "$id" "azure"
-    if [[ -z ${count:-} ]] || [[ ${count:-} == "null" ]]; then
-        isReady=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
-        [[ $isReady == "" ]] && mongocli iam projects delete "$id" --force
-    else
-        echo "delete only cluster (will not wait)"
-        delete_clusters "$id"
-    fi
+    output=$(
+        exist=is_project_exist
+        if [[ -n ${exist:-} ]]; then
+            echo "====== Cleaning Project: $id"
+            delete_endpoints_for_project "$id" "aws"
+            delete_endpoints_for_project "$id" "azure"
+            delete_clusters "$id"
+            delete_project
+        fi
+    )
+    echo "${output[@]}"
 }
+
+echo "The process could take a while. Please, wait..."
 
 projects=$(mongocli iam projects list -o json | jq -c .)
 if [[ $projects == *"error"* ]]; then
@@ -92,8 +131,11 @@ for elkey in $(echo "$projects" | jq '.results | keys | .[]'); do
 
     # by default delete only old projects
     if [[ "${INPUT_CLEAN_ALL:-}" == "true" ]]; then
-        delete_all
+        delete_all &
     else
-        delete_old_project
+        delete_old_project &
     fi
 done
+
+wait
+echo "Job Done"
