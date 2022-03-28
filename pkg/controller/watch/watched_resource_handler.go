@@ -32,8 +32,17 @@ type ResourcesHandler struct {
 	TrackedResources map[WatchedObject]map[client.ObjectKey]bool
 }
 
+// NewSecretHandler TODO Igor: refactor this to create generic constructor
 func NewSecretHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "Secret", TrackedResources: tracked}
+}
+
+func NewBackupScheduleHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasBackupSchedule", TrackedResources: tracked}
+}
+
+func NewBackupPolicyHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasBackupPolicy", TrackedResources: tracked}
 }
 
 // Create handles the Create event for the resource.
@@ -45,6 +54,7 @@ func (c *ResourcesHandler) Create(e event.CreateEvent, q workqueue.RateLimitingI
 
 func (c *ResourcesHandler) Update(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	if !shouldHandleUpdate(e) {
+		zap.S().Debugf("resource watcher: skipping update for resource %v", e.ObjectNew.GetName())
 		return
 	}
 	// For some reasons e.ObjectOld.GetObjectKind().GroupVersionKind().Kind is empty... that's why we have to keep the
@@ -78,4 +88,5 @@ func (c *ResourcesHandler) doHandle(namespace, name, kind string, q workqueue.Ra
 // Delete (Seems we don't need to react on watched resources removal..)
 func (c *ResourcesHandler) Delete(event.DeleteEvent, workqueue.RateLimitingInterface) {}
 
-func (c *ResourcesHandler) Generic(event.GenericEvent, workqueue.RateLimitingInterface) {}
+func (c *ResourcesHandler) Generic(e event.GenericEvent, w workqueue.RateLimitingInterface) {
+}

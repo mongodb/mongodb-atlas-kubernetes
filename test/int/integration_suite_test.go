@@ -228,6 +228,7 @@ func prepareControllers() {
 		Client:           k8sManager.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		AtlasDomain:      atlasDomain,
+		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates: globalPredicates,
 		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),

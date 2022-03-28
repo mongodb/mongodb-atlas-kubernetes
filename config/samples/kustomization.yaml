@@ -5,4 +5,6 @@ resources:
 - atlas_v1_atlascluster.yaml
 - atlas_v1_atlasproject.yaml
 - atlas_v1_atlasdatabaseuser.yaml
+- atlas_v1_atlasbackuppolicy.yaml
+- atlas_v1_atlasbackupschedule.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

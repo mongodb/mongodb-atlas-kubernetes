@@ -1,0 +1,20 @@
+# permissions for end users to view atlasbackupschedules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasbackupschedule-viewer-role
+rules:
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackupschedules
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackupschedules/status
+    verbs:
+      - get

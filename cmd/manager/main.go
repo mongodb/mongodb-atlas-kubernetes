@@ -128,6 +128,7 @@ func main() {
 		Scheme:           mgr.GetScheme(),
 		AtlasDomain:      config.AtlasDomain,
 		GlobalAPISecret:  config.GlobalAPISecret,
+		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalPredicates: globalPredicates,
 		EventRecorder:    mgr.GetEventRecorderFor("AtlasCluster"),
 	}).SetupWithManager(mgr); err != nil {

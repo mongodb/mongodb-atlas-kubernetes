@@ -792,6 +792,74 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			})
 		})
 	})
+
+	Describe("Create default cluster with backups enabled", func() {
+		It("Should succeed", func() {
+			backupPolicyDefault := &mdbv1.AtlasBackupPolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "policy-1",
+					Namespace: namespace.Name,
+				},
+				Spec: mdbv1.AtlasBackupPolicySpec{
+					Items: []mdbv1.AtlasBackupPolicyItem{
+						{
+							FrequencyType:     "weekly",
+							FrequencyInterval: 1,
+							RetentionUnit:     "days",
+							RetentionValue:    7,
+						},
+					},
+				},
+				Status: mdbv1.AtlasBackupPolicyStatus{},
+			}
+
+			backupScheduleDefault := &mdbv1.AtlasBackupSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "schedule-1",
+					Namespace: namespace.Name,
+				},
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					AutoExportEnabled: false,
+					PolicyRef: mdbv1.ResourceRefNamespaced{
+						Name:      backupPolicyDefault.Name,
+						Namespace: backupPolicyDefault.Namespace,
+					},
+					ReferenceHourOfDay:    12,
+					ReferenceMinuteOfHour: 10,
+					RestoreWindowDays:     5,
+					UpdateSnapshots:       false,
+					Export:                mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).NotTo(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).NotTo(HaveOccurred())
+
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).WithBackupScheduleRef(mdbv1.ResourceRefNamespaced{
+				Name:      backupScheduleDefault.Name,
+				Namespace: backupScheduleDefault.Namespace,
+			})
+
+			By(fmt.Sprintf("Creating cluster with backups enabled: %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).NotTo(HaveOccurred())
+
+				Eventually(
+					func(g Gomega) {
+						cluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(cluster.StateName).To(Equal("IDLE"))
+					}).WithTimeout(30 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+				actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actualPolicy.Policies[0].PolicyItems).NotTo(BeZero())
+				Expect(actualPolicy.Policies[0].PolicyItems[0].FrequencyType).To(Equal(backupPolicyDefault.Spec.Items[0].FrequencyType))
+				Expect(actualPolicy.Policies[0].PolicyItems[0].FrequencyInterval).To(Equal(backupPolicyDefault.Spec.Items[0].FrequencyInterval))
+				Expect(actualPolicy.Policies[0].PolicyItems[0].RetentionValue).To(Equal(backupPolicyDefault.Spec.Items[0].RetentionValue))
+				Expect(actualPolicy.Policies[0].PolicyItems[0].RetentionUnit).To(Equal(backupPolicyDefault.Spec.Items[0].RetentionUnit))
+			})
+		})
+	})
 })
 
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
