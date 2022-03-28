@@ -469,6 +469,7 @@ spec:
                         - GCP
                         - AZURE
                         - TENANT
+                        - SERVERLESS
                         type: string
                       regionName:
                         description: Physical location of your MongoDB cluster. The
@@ -483,7 +484,6 @@ spec:
                         - PROVISIONED
                         type: string
                     required:
-                    - instanceSizeName
                     - providerName
                     type: object
                   replicationSpecs:

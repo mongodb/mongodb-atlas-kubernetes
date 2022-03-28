@@ -17,6 +17,16 @@ func ClusterSpec(clusterSpec mdbv1.AtlasClusterSpec) error {
 	if clusterSpec.AdvancedClusterSpec != nil && clusterSpec.ClusterSpec != nil {
 		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec or spec.advancedClusterSpec, both were present"))
 	}
+
+	if clusterSpec.ClusterSpec != nil {
+		if clusterSpec.ClusterSpec.ProviderSettings != nil && (clusterSpec.ClusterSpec.ProviderSettings.InstanceSizeName == "" && clusterSpec.ClusterSpec.ProviderSettings.ProviderName != "SERVERLESS") {
+			err = multierror.Append(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
+		}
+		if clusterSpec.ClusterSpec.ProviderSettings != nil && (clusterSpec.ClusterSpec.ProviderSettings.InstanceSizeName != "" && clusterSpec.ClusterSpec.ProviderSettings.ProviderName == "SERVERLESS") {
+			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
+		}
+	}
+
 	return err
 }
 

@@ -118,9 +118,11 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if result := r.handleAdvancedOptions(ctx, project, cluster); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
-		return result.ReconcileResult(), nil
+	if !cluster.IsServerless() {
+		if result := r.handleAdvancedOptions(ctx, project, cluster); !result.IsOk() {
+			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			return result.ReconcileResult(), nil
+		}
 	}
 
 	return workflow.OK().ReconcileResult(), nil
@@ -129,6 +131,10 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluster) clusterHandlerFunc {
 	if cluster.Spec.AdvancedClusterSpec != nil {
 		return r.handleAdvancedCluster
+	}
+
+	if cluster.Spec.ClusterSpec.ProviderSettings != nil && cluster.Spec.ClusterSpec.ProviderSettings.ProviderName == "SERVERLESS" {
+		return r.handleServerlessCluster
 	}
 
 	return r.handleRegularCluster
@@ -161,6 +167,30 @@ func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, pr
 // handleRegularCluster ensures the state of the cluster using the Regular Cluster API
 func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
 	c, result := r.ensureClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
+		return result, nil
+	}
+
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		return csResult, nil
+	}
+
+	ctx.
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
+		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return result, nil
+}
+
+func (r *AtlasClusterReconciler) handleServerlessCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+	c, result := r.ensureServerlessClusterState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
@@ -288,6 +318,9 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 			deleteClusterFunc := atlasClient.Clusters.Delete
 			if cluster.Spec.AdvancedClusterSpec != nil {
 				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
+			}
+			if cluster.IsServerless() {
+				deleteClusterFunc = atlasClient.ServerlessInstances.Delete
 			}
 
 			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.GetClusterName())

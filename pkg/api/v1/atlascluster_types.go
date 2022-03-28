@@ -328,10 +328,11 @@ type ProviderSettingsSpec struct {
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
 	// Atlas provides different cluster tiers, each with a default storage capacity and RAM size. The cluster you select is used for all the data-bearing hosts in your cluster tier.
-	InstanceSizeName string `json:"instanceSizeName"`
+	// +optional
+	InstanceSizeName string `json:"instanceSizeName,omitempty"`
 
 	// Cloud service provider on which Atlas provisions the hosts.
-	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT;SERVERLESS
 	ProviderName provider.ProviderName `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
@@ -418,6 +419,13 @@ func (c *AtlasCluster) GetClusterName() string {
 		return c.Spec.AdvancedClusterSpec.Name
 	}
 	return c.Spec.ClusterSpec.Name
+}
+
+func (c *AtlasCluster) IsServerless() bool {
+	if c.Spec.AdvancedClusterSpec != nil {
+		return false
+	}
+	return c.Spec.ClusterSpec.ProviderSettings != nil && c.Spec.ClusterSpec.ProviderSettings.ProviderName == "SERVERLESS"
 }
 
 // +kubebuilder:object:root=true
