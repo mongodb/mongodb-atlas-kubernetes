@@ -125,9 +125,21 @@ type AtlasClusterSpec struct {
 	// +optional
 	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
 
+	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
+
 	// ProcessArgs allows to modify Advanced Configuration Options
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
+// ServerlessSpec defines the desired state of Atlas Serverless Instance
+type ServerlessSpec struct {
+	// Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
+	Name string `json:"name"`
+	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
+	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 }
 
 type AdvancedClusterSpec struct {
@@ -415,17 +427,23 @@ type AtlasCluster struct {
 }
 
 func (c *AtlasCluster) GetClusterName() string {
-	if c.Spec.AdvancedClusterSpec != nil {
+	if c.IsAdvancedCluster() {
 		return c.Spec.AdvancedClusterSpec.Name
+	}
+	if c.IsServerless() {
+		return c.Spec.ServerlessSpec.Name
 	}
 	return c.Spec.ClusterSpec.Name
 }
 
+// IsServerless returns true if the AtlasCluster is configured to be a serverless instance
 func (c *AtlasCluster) IsServerless() bool {
-	if c.Spec.AdvancedClusterSpec != nil {
-		return false
-	}
-	return c.Spec.ClusterSpec.ProviderSettings != nil && c.Spec.ClusterSpec.ProviderSettings.ProviderName == "SERVERLESS"
+	return c.Spec.ServerlessSpec != nil
+}
+
+// IsAdvancedCluster returns true if the AtlasCluster is configured to be an advanced cluster.
+func (c *AtlasCluster) IsAdvancedCluster() bool {
+	return c.Spec.AdvancedClusterSpec != nil
 }
 
 // +kubebuilder:object:root=true
@@ -484,7 +502,7 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 			Namespace: namespace,
 		},
 		Spec: AtlasClusterSpec{
-			ClusterSpec: &ClusterSpec{
+			ServerlessSpec: &ServerlessSpec{
 				Name: nameInAtlas,
 				ProviderSettings: &ProviderSettingsSpec{
 					BackingProviderName: backingProviderName,

@@ -11,8 +11,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasClusterReconciler) ensureServerlessClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
-	atlasCluster, resp, err := ctx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name)
+func (r *AtlasClusterReconciler) ensureServerlessClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, serverlessSpec *mdbv1.ServerlessSpec) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
+	atlasCluster, resp, err := ctx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, serverlessSpec.Name)
 	if err != nil {
 		if resp == nil {
 			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
@@ -22,18 +22,13 @@ func (r *AtlasClusterReconciler) ensureServerlessClusterState(ctx *workflow.Cont
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
 		}
 
-		atlasCluster, err = cluster.Spec.Cluster()
-		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
-		}
-
-		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.ClusterSpec.Name)
+		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
 		atlasCluster, _, err = ctx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
-			Name: cluster.Spec.ClusterSpec.Name,
+			Name: serverlessSpec.Name,
 			ProviderSettings: &mongodbatlas.ServerlessProviderSettings{
-				BackingProviderName: cluster.Spec.ClusterSpec.ProviderSettings.BackingProviderName,
-				ProviderName:        string(cluster.Spec.ClusterSpec.ProviderSettings.ProviderName),
-				RegionName:          cluster.Spec.ClusterSpec.ProviderSettings.RegionName,
+				BackingProviderName: serverlessSpec.ProviderSettings.BackingProviderName,
+				ProviderName:        string(serverlessSpec.ProviderSettings.ProviderName),
+				RegionName:          serverlessSpec.ProviderSettings.RegionName,
 			},
 		})
 		if err != nil {
