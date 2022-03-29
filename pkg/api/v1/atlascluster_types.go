@@ -477,6 +477,25 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	}
 }
 
+func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasCluster {
+	return &AtlasCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasClusterSpec{
+			ClusterSpec: &ClusterSpec{
+				Name: nameInAtlas,
+				ProviderSettings: &ProviderSettingsSpec{
+					BackingProviderName: backingProviderName,
+					ProviderName:        "SERVERLESS",
+					RegionName:          regionName,
+				},
+			},
+		},
+	}
+}
+
 func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	return newAwsAdvancedCluster(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
 }
@@ -593,4 +612,8 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 
 func DefaultAwsAdvancedCluster(namespace, projectName string) *AtlasCluster {
 	return NewAwsAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+}
+
+func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasCluster {
+	return newServerlessInstance(namespace, "test-serverless-instance-k8s", "test-serverless-instance", "AWS", "US_EAST_1").WithProjectName(projectName)
 }

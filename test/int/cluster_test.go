@@ -150,6 +150,27 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 		})
 	}
 
+	doServerlessClusterStatusChecks := func() {
+		By("Checking observed Serverless state", func() {
+			atlasCluster, _, err := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.AdvancedClusterSpec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(createdCluster.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdCluster.Status.ConnectionStrings.Standard).To(Equal(atlasCluster.ConnectionStrings.Standard))
+			Expect(createdCluster.Status.ConnectionStrings.StandardSrv).To(Equal(atlasCluster.ConnectionStrings.StandardSrv))
+			Expect(createdCluster.Status.MongoDBVersion).To(Not(BeEmpty()))
+			Expect(createdCluster.Status.StateName).To(Equal("IDLE"))
+			Expect(createdCluster.Status.Conditions).To(HaveLen(3))
+			Expect(createdCluster.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
+				status.TrueCondition(status.ClusterReadyType),
+				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+			)))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(createdCluster.Generation))
+			Expect(createdCluster.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
+		})
+	}
+
 	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.Cluster)) {
 		By("Verifying Cluster state in Atlas", func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.ClusterSpec.Name)
@@ -175,6 +196,22 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlascluster.AdvancedClustersEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
+
+			for _, check := range additionalChecks {
+				check(atlasCluster)
+			}
+		})
+	}
+
+	checkServerlessAtlasState := func(additionalChecks ...func(c *mongodbatlas.Cluster)) {
+		By("Verifying Serverless Cluster state in Atlas", func() {
+			atlasCluster, _, err := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.AdvancedClusterSpec.Name)
+			Expect(err).ToNot(HaveOccurred())
+
+			mergedCluster, err := atlascluster.MergedCluster(*atlasCluster, createdCluster.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(atlascluster.ClustersEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
 
 			for _, check := range additionalChecks {
 				check(atlasCluster)
@@ -750,6 +787,25 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 				performUpdate(40 * time.Minute)
 				doRegularClusterStatusChecks()
 				checkAdvancedClusterOptions(createdCluster.Spec.ProcessArgs)
+			})
+		})
+	})
+
+	Describe("Create serverless instance", func() {
+		FIt("Should Succeed", func() {
+			createdCluster = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
+
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdCluster, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+
+				doServerlessClusterStatusChecks()
+				checkServerlessAtlasState()
 			})
 		})
 	})
