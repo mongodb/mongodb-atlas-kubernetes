@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/onsi/gomega/gbytes"
@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Cluster wide operator", func() {
+var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide operator", Label("cluster-wide"), func() {
 	var NortonData, NimnulData model.TestDataProvider
 	commonClusterName := "megacluster"
 
@@ -32,9 +32,9 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 	})
 
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("AfterEach. clean-up", func() {
-			if CurrentGinkgoTestDescription().Failed {
+			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				utils.SaveToFile(
 					"output/operator-logs.txt",
@@ -54,9 +54,8 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				)
 				actions.SaveTestAppLogs(NortonData.Resources)
 				actions.SaveTestAppLogs(NimnulData.Resources)
-			} else {
-				actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 			}
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{NortonData, NimnulData})
 		})
 	})
 
@@ -92,9 +91,9 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 				[]func(*model.TestDataProvider){},
 			)
 			NortonData.Resources.Clusters[0].ObjectMeta.Name = "norton-cluster"
-			NortonData.Resources.Clusters[0].Spec.Name = commonClusterName
+			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Name = commonClusterName
 			NimnulData.Resources.Clusters[0].ObjectMeta.Name = "nimnul-cluster"
-			NimnulData.Resources.Clusters[0].Spec.Name = commonClusterName
+			NimnulData.Resources.Clusters[0].Spec.ClusterSpec.Name = commonClusterName
 		})
 
 		By("Deploy users resorces", func() {
@@ -105,7 +104,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 		})
 
 		By("Operator working with right cluster if one of the user update configuration", func() {
-			NortonData.Resources.Clusters[0].Spec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
+			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
 			utils.SaveToFile(
 				NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources),
 				utils.JSONToYAMLConvert(NortonData.Resources.Clusters[0]),
@@ -115,7 +114,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 			By("Norton cluster has labels", func() {
 				Expect(
-					kubecli.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels[0],
+					kubecli.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.ClusterSpec.Labels[0],
 				).To(MatchFields(IgnoreExtras, Fields{
 					"Key":   Equal("something"),
 					"Value": Equal("awesome"),
@@ -124,7 +123,7 @@ var _ = Describe("[cluster-wide] Users (Norton and Nimnul) can work with one Clu
 
 			By("Nimnul cluster does not have labels", func() {
 				Eventually(
-					kubecli.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.Labels,
+					kubecli.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.ClusterSpec.Labels,
 				).Should(BeNil())
 			})
 		})

@@ -35,7 +35,8 @@ func GetPodStatus(ns string) func() string {
 // DescribeOperatorPod performs "kubectl describe" to get Operator pod information
 func DescribeOperatorPod(ns string) string {
 	session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 // GetGeneration .status.observedGeneration
@@ -48,14 +49,16 @@ func GetGeneration(ns, resourceName string) string {
 func GetStatusCondition(statusType, ns string, atlasname string) string {
 	jsonpath := fmt.Sprintf("jsonpath={.status.conditions[?(@.type=='%s')].status}", statusType)
 	session := cli.Execute("kubectl", "get", atlasname, "-n", ns, "-o", jsonpath)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 func GetStatusPhase(ns string, args ...string) string {
 	args = append([]string{"get"}, args...)
 	args = append(args, "-o", "jsonpath={..status.phase}", "-n", ns)
 	session := cli.Execute("kubectl", args...)
-	return string(session.Wait("1m").Out.Contents())
+	cli.SessionShouldExit(session)
+	return string(session.Out.Contents())
 }
 
 // GetProjectResource
@@ -160,7 +163,7 @@ func CreateApiKeySecret(keyName, ns string) {
 	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
-func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) { // TODO
+func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) {
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+public,
@@ -184,30 +187,31 @@ func DeleteApiKeySecret(keyName, ns string) {
 
 func GetManagerLogs(ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "deploy/mongodb-atlas-operator", "manager", "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
-func GetTestAppLogs(label, ns string) []byte {
+func GetLogs(label, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "logs", "-l", label, "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
 func DescribeTestApp(label, ns string) []byte {
 	session := cli.Execute("kubectl", "describe", "pods", "-l", label, "-n", ns)
-	return session.Wait("1m").Out.Contents()
+	cli.SessionShouldExit(session)
+	return session.Out.Contents()
 }
 
 func GetYamlResource(resource string, ns string) []byte {
 	session := cli.ExecuteWithoutWriter("kubectl", "get", resource, "-o", "yaml", "-n", ns)
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
 func GetJsonResource(resource string, ns string) []byte {
 	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "json")
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
@@ -225,7 +229,7 @@ func HasConfigMap(configName, ns string) bool {
 
 func GetResourceCreationTimestamp(resource, name, ns string) []byte {
 	session := cli.Execute("kubectl", "get", resource, name, "-n", ns, "-o", "jsonpath={.metadata.creationTimestamp}")
-	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+	cli.SessionShouldExit(session)
 	return session.Out.Contents()
 }
 
@@ -234,8 +238,19 @@ func Annotate(resource, annotation, ns string) {
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }
 
+func LabelResourceByLabel(resource, newLabel, ns, labeled string) {
+	session := cli.Execute("kubectl", "label", resource, newLabel, "-l", labeled, "-n", ns)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
 func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 	session := cli.Execute("kubectl", "get", resource, "-n", ns, "-o", "jsonpath={.status.privateEndpoints}")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	return session.Out.Contents()
+}
+
+func GetClusterDump(output string) {
+	outputFolder := fmt.Sprintf("--output-directory=%s", output)
+	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
+	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }

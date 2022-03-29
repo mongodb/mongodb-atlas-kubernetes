@@ -18,7 +18,7 @@ type Context struct {
 	// Is not supposed to be mutated!
 	Log *zap.SugaredLogger
 
-	// Client is a mongodb atlas client used to make API calls
+	// Client is a mongodb atlas client used to make v1.0 API calls
 	Client mongodbatlas.Client
 
 	// Connection is an object encapsulating information about connecting to Atlas using API

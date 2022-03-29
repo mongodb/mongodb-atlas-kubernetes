@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"os"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -12,47 +12,32 @@ import (
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
+var _ = Describe("User can deploy operator from bundles", func() {
 	var data model.TestDataProvider
 	var imageURL string
 
-	var _ = BeforeEach(func() {
+	_ = BeforeEach(func() {
 		imageURL = os.Getenv("BUNDLE_IMAGE")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
-	var _ = AfterEach(func() {
+	_ = AfterEach(func() {
 		By("Atfer each.", func() {
-			if CurrentGinkgoTestDescription().Failed {
-				GinkgoWriter.Write([]byte("Resources wasn't clean"))
-				utils.SaveToFile(
-					"output/operator-logs.txt",
-					kubecli.GetManagerLogs(config.DefaultOperatorNS),
-				)
-				actions.SaveK8sResources(
-					[]string{"deploy"},
-					"default",
-				)
+			if CurrentSpecReport().Failed() {
 				actions.SaveK8sResources(
 					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
-				actions.SaveTestAppLogs(data.Resources)
-			} else {
+				actions.SaveClusterDump(data.Resources)
 				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})
 	})
 
-	It("User can install", func() {
-		Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-		Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--timeout", "7m"), "7m").Should(gexec.Exit(0))
-
+	It("User can install operator with OLM", Label("bundle-test"), func() {
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
@@ -69,6 +54,11 @@ var _ = Describe("[bundle-test] User can deploy operator from bundles", func() {
 			)
 			Expect(len(data.Resources.Users)).Should(Equal(1))
 			actions.PrepareUsersConfigurations(&data)
+		})
+
+		By("OLM install", func() {
+			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--verbose", "--timeout", "15m"), "15m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {

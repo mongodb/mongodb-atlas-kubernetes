@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
@@ -42,9 +42,18 @@ func WaitCluster(input model.UserInputs, generation string) {
 		input.Namespace, input.Clusters[0].GetClusterNameResource()),
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
-	ExpectWithOffset(
-		1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.Name),
-	).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	cluster := input.Clusters[0]
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		atlasClient, err := a.AClient()
+		Expect(err).To(BeNil())
+		advancedCluster, err := atlasClient.GetAdvancedCluster(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+		Expect(err).To(BeNil())
+		Expect(advancedCluster.StateName).To(Equal("IDLE"))
+	} else {
+		ExpectWithOffset(
+			1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
+		).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
+	}
 }
 
 func WaitProject(data *model.TestDataProvider, generation string) {
@@ -72,7 +81,7 @@ func WaitTestApplication(ns, label string) {
 
 func CheckIfClusterExist(input model.UserInputs) func() bool {
 	return func() bool {
-		return mongocli.IsClusterExist(input.ProjectID, input.Clusters[0].Spec.Name)
+		return mongocli.IsClusterExist(input.ProjectID, input.Clusters[0].Spec.ClusterSpec.Name)
 	}
 }
 
@@ -97,10 +106,10 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
-		"Name":                Equal(requested.Name),
+		"Name":                Equal(requested.ClusterSpec.Name),
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
-			"InstanceSizeName": Equal(requested.ProviderSettings.InstanceSizeName),
-			"ProviderName":     Equal(string(requested.ProviderSettings.ProviderName)),
+			"InstanceSizeName": Equal(requested.ClusterSpec.ProviderSettings.InstanceSizeName),
+			"ProviderName":     Equal(string(requested.ClusterSpec.ProviderSettings.ProviderName)),
 		})),
 		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"Standard":    Not(BeEmpty()),
@@ -108,8 +117,8 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 		})),
 	}), "Cluster should be the same as requested by the user")
 
-	if len(requested.ReplicationSpecs) > 0 {
-		for i, replica := range requested.ReplicationSpecs {
+	if len(requested.ClusterSpec.ReplicationSpecs) > 0 {
+		for i, replica := range requested.ClusterSpec.ReplicationSpecs {
 			for key, region := range replica.RegionsConfig {
 				// diffent type
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
@@ -119,23 +128,49 @@ func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Clust
 			}
 		}
 	} else {
-		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+		ExpectWithOffset(1, requested.ClusterSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"RegionName": Equal(created.ProviderSettings.RegionName),
 		})), "Cluster should be the same as requested by the user: Region Name")
 	}
-	if requested.ProviderSettings.ProviderName == "TENANT" {
-		ExpectWithOffset(1, requested.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
+	if requested.ClusterSpec.ProviderSettings.ProviderName == "TENANT" {
+		ExpectWithOffset(1, requested.ClusterSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
 		})), "Cluster should be the same as requested by the user: Backking Provider Name")
 	}
 }
 
-func SaveK8sResources(resources []string, ns string) {
+func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatlas.AdvancedCluster) {
+	advancedSpec := requested.AdvancedClusterSpec
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
+	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.GroupID).To(Not(BeEmpty()))
+
+	defaultPriority := 7
+	for i, replicationSpec := range advancedSpec.ReplicationSpecs {
+		for key, region := range replicationSpec.RegionConfigs {
+			if region.Priority == nil {
+				region.Priority = &defaultPriority
+			}
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ProviderName).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].RegionName).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
+		}
+	}
+}
+
+func SaveK8sResourcesTo(resources []string, ns string, destination string) {
 	for _, resource := range resources {
 		data := kubecli.GetYamlResource(resource, ns)
-		path := fmt.Sprintf("output/%s/%s.yaml", ns, resource)
+		path := fmt.Sprintf("output/%s/%s.yaml", destination, resource)
 		utils.SaveToFile(path, data)
 	}
+}
+
+func SaveK8sResources(resources []string, ns string) {
+	SaveK8sResourcesTo(resources, ns, ns)
 }
 
 func SaveTestAppLogs(input model.UserInputs) {
@@ -146,9 +181,29 @@ func SaveTestAppLogs(input model.UserInputs) {
 		)
 		utils.SaveToFile(
 			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
-			kubecli.GetTestAppLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+			kubecli.GetLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 	}
+}
+
+// SaveOperatorLogs save logs from user input namespace
+func SaveOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs(input.Namespace),
+	)
+}
+
+// SaveDefaultOperatorLogs save logs from default namespace
+func SaveDefaultOperatorLogs(input model.UserInputs) {
+	utils.SaveToFile(
+		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
+		kubecli.GetManagerLogs("default"),
+	)
+}
+
+func SaveClusterDump(input model.UserInputs) {
+	kubecli.GetClusterDump(fmt.Sprintf("output/%s/dump", input.Namespace))
 }
 
 func CheckUsersAttributes(input model.UserInputs) {
@@ -182,7 +237,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
 					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),
 					"CollectionName": Equal(user.Spec.Roles[i].CollectionName),
-				}), "Users roles attributes should be the same as requsted by the user")
+				}), "Users roles attributes should be the same as requested by the user")
 			}
 		}
 	}
@@ -325,7 +380,7 @@ func DeployCluster(data *model.TestDataProvider, generation string) {
 		WaitCluster(data.Resources, "1")
 	})
 	By("check cluster Attribute", func() {
-		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
+		cluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, cluster)
 	})
 }

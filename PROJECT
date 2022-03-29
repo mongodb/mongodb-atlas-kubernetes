@@ -1,21 +1,37 @@
 domain: mongodb.com
-layout: go.kubebuilder.io/v3
+layout: 
+- go.kubebuilder.io/v2
 projectName: mongodb-atlas-kubernetes
 repo: github.com/mongodb/mongodb-atlas-kubernetes
 resources:
-- crdVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
   group: atlas
   kind: AtlasCluster
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
-- crdVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
   group: atlas
   kind: AtlasProject
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
-- crdVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
   group: atlas
   kind: AtlasDatabaseUser
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
-version: 3-alpha
+version: "3"
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}

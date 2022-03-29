@@ -1,6 +1,6 @@
 [
   {"op": "add",
     "path": "/spec/template/spec/containers/0/args/0",
-    "value": "--atlas-domain=https://cloud-qa.mongodb.com"
+    "value": "--atlas-domain=https://cloud-qa.mongodb.com/"
   }
 ]

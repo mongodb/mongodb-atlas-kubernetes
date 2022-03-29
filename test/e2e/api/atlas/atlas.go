@@ -2,9 +2,14 @@ package atlas
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/onsi/ginkgo/v2"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils/debug"
 
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -30,7 +35,7 @@ func AClient() (Atlas, error) {
 		return A, err
 	}
 	A.Client = mongodbatlas.NewClient(tc)
-	u, _ := url.Parse(config.AtlasAPIURL)
+	u, _ := url.Parse(config.AtlasHost)
 	A.Client.BaseURL = u
 	return A, nil
 }
@@ -71,5 +76,21 @@ func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.P
 	if err != nil {
 		return nil, err
 	}
+	ginkgoPrettyPrintf(enpointsList, "listing private endpoints in project %s", projectID)
 	return enpointsList, nil
+}
+
+func (a *Atlas) GetAdvancedCluster(projectId, clusterName string) (*mongodbatlas.AdvancedCluster, error) {
+	advancedCluster, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, clusterName)
+	if err != nil {
+		return nil, err
+	}
+	ginkgoPrettyPrintf(advancedCluster, "getting advanced cluster %s in project %s", clusterName, projectId)
+	return advancedCluster, nil
+}
+
+// ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
+func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) {
+	ginkgo.GinkgoWriter.Println(fmt.Sprintf(msg, formatArgs...))
+	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }

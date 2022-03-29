@@ -22,7 +22,7 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3.0.0
       with:
         fetch-depth: 0 #required for tags
 
@@ -34,6 +34,19 @@ jobs:
         VERSION: ${{ env.VERSION }}
         ENV: prod
 
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: "1.17"
+
+    - name: Download dependencies
+      run: |
+        go mod download
+
+    - name: Create the licence report file
+      run: |
+        go get github.com/google/go-licenses && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
+
     - name: Create branch and push it
       run: |
         git checkout -b "release/${VERSION}"
@@ -44,6 +57,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PATH_TO_COMMIT: "deploy"
+        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+
+    - name: Commit and push licence report file
+      uses: ./.github/actions/push-files
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PATH_TO_COMMIT: "third_party_licenses.txt"
         DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Commit and push bundle directory
@@ -65,4 +85,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: jasonmimick,priyolahiri,fabritsius,leo-ri
+        REVIEWERS: priyolahiri,fabritsius,leo-ri,chatton,igor-karpukhin

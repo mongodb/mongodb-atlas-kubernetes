@@ -6,7 +6,7 @@ SHELL := /usr/bin/env bash
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.5.0
+VERSION ?= 0.8.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -29,13 +29,20 @@ BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
+# Base registry for the operator, bundle, catalog images
+REGISTRY ?= quay.io/mongodb
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= controller-bundle:$(VERSION)
+BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-controller-bundle:$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
-
+IMG ?= mongodb-atlas-controller:latest
+#BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator-bundle
+OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator
+CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-catalog
+OPERATOR_IMAGE ?= ${OPERATOR_REGISTRY}:${VERSION}
+CATALOG_IMAGE ?= ${CATALOG_REGISTRY}:${VERSION}
+TARGET_NAMESPACE ?= mongodb-atlas-operator-system-test
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -68,14 +75,14 @@ int-test: export ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut
 # magical env that if specified makes the test output 0 on successful runs
 # https://github.com/onsi/ginkgo/blob/master/ginkgo/run_command.go#L130
 int-test: export GINKGO_EDITOR_INTEGRATION="true"
-int-test: generate manifests ## Run integration tests
+int-test: generate manifests ## Run integration tests. Sample with labels: `make int-test label=AtlasProject` or `make int-test label='AtlasCluster && !slow'`
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh
-	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo -v -nodes=8 ./test/int -coverprofile cover.out
+	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ginkgo --label-filter='$(label)' --timeout 80m -v -nodes=8 ./test/int -coverprofile cover.out
 
 .PHONY: e2e
-e2e: run-kind ## Run e2e test. Command `make e2e focus=cluster-ns` run cluster-ns test
-	./scripts/e2e_local.sh $(focus)
+e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+	./scripts/e2e_local.sh $(label) $(build)
 
 .PHONY: manager
 manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
@@ -146,10 +153,65 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
+.PHONY: image
+image: manager ## Build the operator image
+	docker build -t $(OPERATOR_IMAGE) .
+	docker push $(OPERATOR_IMAGE)
+
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
+.PHONY: bundle-push
+bundle-push: bundle bundle-build ## Publish the bundle image
+	docker push $(BUNDLE_IMG)
+
+.PHONY: catalog-build
+CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
+#catalog-build: IMG=
+catalog-build: ## bundle bundle-push ## Build file-based bundle
+	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
+	CATALOG_DIR=$(CATALOG_DIR) \
+	CHANNEL=$(DEFAULT_CHANNEL) \
+	CATALOG_IMAGE=$(CATALOG_IMAGE) \
+	BUNDLE_IMAGE=$(BUNDLE_IMG) \
+	VERSION=$(VERSION) \
+	./scripts/build_catalog.sh
+
+.PHONY: catalog-push
+catalog-push:
+	docker push $(CATALOG_IMAGE)
+
+.PHONY: build-subscription
+build-subscription:
+	CATALOG_DIR=$(shell dirname "$(CATALOG_DIR)") \
+	CHANNEL=$(DEFAULT_CHANNEL) \
+	TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
+	./scripts/build_subscription.sh
+
+.PHONY: build-catalogsource
+build-catalogsource:
+	CATALOG_DIR=$(shell dirname "$(CATALOG_DIR)") \
+	CATALOG_IMAGE=$(CATALOG_IMAGE) \
+	./scripts/build_catalogsource.sh
+
+.PHONY: deploy-olm
+# Deploy atlas operator to the running openshift cluster with OLM
+deploy-olm: export IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
+deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsource build-subscription
+	oc -n openshift-marketplace delete catalogsource mongodb-atlas-kubernetes-local --ignore-not-found
+	oc delete namespace $(TARGET_NAMESPACE) --ignore-not-found
+	oc create namespace $(TARGET_NAMESPACE)
+	oc -n openshift-marketplace apply -f ./scripts/openshift/catalogsource.yaml
+	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/operatorgroup.yaml
+	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/subscription.yaml
+
+## Disabled for now
+## .PHONY: docker-login-olm
+## docker-login-olm:
+## docker login -u $(shell oc whoami) -p $(shell oc whoami -t) $(REGISTRY)
+
+.PHONY: docker-push
 docker-push: ## Push the docker image
 	docker push ${IMG}
 
@@ -176,3 +238,7 @@ clear-atlas: ## Clear Atlas organization
 post-install-hook:
 	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
 	chmod +x bin/helm-post-install
+
+.PHONY: x509-cert
+x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/dev/x509-user.md)
+	go run scripts/create_x509.go

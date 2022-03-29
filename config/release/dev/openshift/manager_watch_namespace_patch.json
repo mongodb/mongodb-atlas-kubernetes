@@ -1,0 +1,13 @@
+[
+  {"op": "add",
+    "path": "/spec/template/spec/containers/0/env/0",
+    "value": {
+      "name": "WATCH_NAMESPACE",
+      "valueFrom": {
+        "fieldRef": {
+          "fieldPath": "metadata.annotations['olm.targetNamespaces']"
+        }
+      }
+    }
+  }
+]

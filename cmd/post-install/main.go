@@ -19,7 +19,7 @@ import (
 
 const (
 	pollingInterval = time.Second * 10
-	pollingDuration = time.Minute * 20
+	pollingDuration = time.Minute * 30
 )
 
 func setupLogger() *zap.SugaredLogger {

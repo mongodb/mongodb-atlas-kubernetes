@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
@@ -77,6 +80,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
+
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project); shouldSkip {
+		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
+		return workflow.OK().ReconcileResult(), nil
+	}
+
 	if project.ConnectionSecretObjectKey() != nil {
 		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
 		// the projects once that secret is changed
@@ -89,8 +98,19 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
+	if err := validate.Project(project); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.ValidationSucceeded)
+
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
+		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
+			result = workflow.Terminate(workflow.Internal, errRm.Error())
+			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		ctx.SetConditionFromResult(status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
@@ -110,6 +130,14 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
+
+	var authModes authmode.AuthModes
+	if authModes, result = r.ensureX509(ctx, projectID, project); !result.IsOk() {
+		ctx.SetConditionFromResult(status.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+	authModes.AddAuthMode(authmode.Scram) // add the default auth method
+	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
 
 	if project.GetDeletionTimestamp().IsZero() {
 		if !isDeletionFinalizerPresent(project) {

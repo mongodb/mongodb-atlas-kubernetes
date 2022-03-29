@@ -1,0 +1,8 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: mongodb-group
+  namespace: mongodb-atlas-operator-system-test
+spec:
+  targetNamespaces:
+    - "mongodb-atlas-operator-system-test"

@@ -17,7 +17,7 @@ jobs:
       QUAY_RELEASE_REGISTRY: quay.io
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
             return resp.data.tags[version] !== undefined;
 
       - name: Fail if release exists
-        if: steps.verify-release-version.result != 'false'
+        if: steps.verify-release-version.result == 'true'
         env:
           version: ${{ github.event.inputs.version }}
         run: |

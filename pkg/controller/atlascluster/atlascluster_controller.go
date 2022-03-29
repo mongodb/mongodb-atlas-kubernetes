@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -71,10 +73,22 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
-	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(cluster); shouldSkip {
+		log.Infow(fmt.Sprintf("-> Skipping AtlasCluster reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", cluster.Spec)
+		return workflow.OK().ReconcileResult(), nil
+	}
+
+	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
 	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
+
+	if err := validate.ClusterSpec(cluster.Spec); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		return result.ReconcileResult(), nil
+	}
+	ctx.SetConditionTrue(status.ValidationSucceeded)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {
@@ -98,19 +112,65 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Client = atlasClient
 
+	handleCluster := r.selectClusterHandler(cluster)
+	if result, _ := handleCluster(ctx, project, cluster); !result.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if result := r.handleAdvancedOptions(ctx, project, cluster); !result.IsOk() {
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluster) clusterHandlerFunc {
+	if cluster.Spec.AdvancedClusterSpec != nil {
+		return r.handleAdvancedCluster
+	}
+
+	return r.handleRegularCluster
+}
+
+// handleAdvancedCluster ensures the state of the cluster using the Advanced Cluster API
+func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+	c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
+		return result, nil
+	}
+
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		return csResult, nil
+	}
+
+	ctx.
+		SetConditionTrue(status.ClusterReadyType).
+		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return result, nil
+}
+
+// handleRegularCluster ensures the state of the cluster using the Regular Cluster API
+func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
 	c, result := r.ensureClusterState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
-		return result.ReconcileResult(), nil
+		return result, nil
 	}
 
-	if csResult := r.ensureConnectionSecrets(ctx, project, c, cluster); !csResult.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, csResult)
-		return csResult.ReconcileResult(), nil
+	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, cluster); !csResult.IsOk() {
+		return csResult, nil
 	}
 
 	ctx.
@@ -120,7 +180,32 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
 
 	ctx.SetConditionTrue(status.ReadyType)
-	return result.ReconcileResult(), nil
+	return result, nil
+}
+
+func (r *AtlasClusterReconciler) handleAdvancedOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) workflow.Result {
+	clusterName := cluster.GetClusterName()
+	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context.Background(), project.Status.ID, clusterName)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, "cannot get process args")
+	}
+
+	if cluster.Spec.ProcessArgs == nil {
+		return workflow.OK()
+	}
+
+	if !cluster.Spec.ProcessArgs.IsEqual(atlasArgs) {
+		options := mongodbatlas.ProcessArgs(*cluster.Spec.ProcessArgs)
+		args, resp, err := ctx.Client.Clusters.UpdateProcessArgs(context.Background(), project.Status.ID, clusterName, &options)
+		ctx.Log.Debugw("ProcessArgs Update", "args", args, "resp", resp.Body, "err", err)
+		if err != nil {
+			return workflow.Terminate(workflow.Internal, "cannot update process args")
+		}
+
+		workflow.InProgress(workflow.ClusterAdvancedOptionsAreNotReady, "cluster Advanced Configuration Options are being updated")
+	}
+
+	return workflow.OK()
 }
 
 func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
@@ -162,7 +247,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 		return errors.New("cannot read project resource")
 	}
 
-	log = log.With("projectID", project.Status.ID, "clusterName", cluster.Spec.Name)
+	log = log.With("projectID", project.Status.ID, "clusterName", cluster.GetClusterName())
 
 	if customresource.ResourceShouldBeLeftInAtlas(cluster) {
 		log.Infof("Not removing Atlas Cluster from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
@@ -171,7 +256,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	// We always remove the connection secrets even if the cluster is not removed from Atlas
-	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.Spec.Name)
+	secrets, err := connectionsecret.ListByClusterName(r.Client, cluster.Namespace, project.ID(), cluster.GetClusterName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}
@@ -200,7 +285,13 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 		timeout := time.Now().Add(workflow.DefaultTimeout)
 
 		for time.Now().Before(timeout) {
-			_, err = atlasClient.Clusters.Delete(context.Background(), project.Status.ID, cluster.Spec.Name)
+			deleteClusterFunc := atlasClient.Clusters.Delete
+			if cluster.Spec.AdvancedClusterSpec != nil {
+				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
+			}
+
+			_, err = deleteClusterFunc(context.Background(), project.Status.ID, cluster.GetClusterName())
+
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 				log.Info("Cluster doesn't exist or is already deleted")
@@ -221,3 +312,5 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 	}()
 	return nil
 }
+
+type clusterHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error)

@@ -73,10 +73,13 @@ type AtlasDatabaseUserSpec struct {
 	Scopes []ScopeSpec `json:"scopes,omitempty"`
 
 	// PasswordSecret is a reference to the Secret keeping the user password.
-	PasswordSecret *ResourceRef `json:"passwordSecretRef"`
+	PasswordSecret *ResourceRef `json:"passwordSecretRef,omitempty"`
 
 	// Username is a username for authenticating to MongoDB.
 	Username string `json:"username"`
+
+	// X509Type is X.509 method by which the database authenticates the provided username
+	X509Type string `json:"x509Type,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

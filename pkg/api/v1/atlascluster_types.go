@@ -17,6 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"reflect"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,10 +42,7 @@ const (
 	TypeGeoSharded ClusterType = "GEOSHARDED"
 )
 
-// AtlasClusterSpec defines the desired state of AtlasCluster
-type AtlasClusterSpec struct {
-	// Project is a reference to AtlasProject resource the cluster belongs to
-	Project ResourceRefNamespaced `json:"projectRef"`
+type ClusterSpec struct {
 
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -113,6 +112,113 @@ type AtlasClusterSpec struct {
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
 }
 
+// AtlasClusterSpec defines the desired state of AtlasCluster
+type AtlasClusterSpec struct {
+	// Project is a reference to AtlasProject resource the cluster belongs to
+	Project ResourceRefNamespaced `json:"projectRef"`
+
+	// Configuration for the advanced cluster API
+	// +optional
+	ClusterSpec *ClusterSpec `json:"clusterSpec,omitempty"`
+
+	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
+
+	// ProcessArgs allows to modify Advanced Configuration Options
+	// +optional
+	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
+type AdvancedClusterSpec struct {
+	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
+	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
+	ClusterType              string                     `json:"clusterType,omitempty"`
+	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
+	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
+	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
+	GroupID                  string                     `json:"groupId,omitempty"`
+	ID                       string                     `json:"id,omitempty"`
+	Labels                   []LabelSpec                `json:"labels,omitempty"`
+	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
+	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
+	Name                     string                     `json:"name,omitempty"`
+	Paused                   *bool                      `json:"paused,omitempty"`
+	PitEnabled               *bool                      `json:"pitEnabled,omitempty"`
+	StateName                string                     `json:"stateName,omitempty"`
+	ReplicationSpecs         []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
+	CreateDate               string                     `json:"createDate,omitempty"`
+	RootCertType             string                     `json:"rootCertType,omitempty"`
+	VersionReleaseSystem     string                     `json:"versionReleaseSystem,omitempty"`
+}
+
+// AdvancedCluster converts the AdvancedClusterSpec to native Atlas client AdvancedCluster format.
+func (s *AdvancedClusterSpec) AdvancedCluster() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
+}
+
+// BiConnector specifies BI Connector for Atlas configuration on this cluster.
+type BiConnector struct {
+	Enabled        *bool  `json:"enabled,omitempty"`
+	ReadPreference string `json:"readPreference,omitempty"`
+}
+
+// ConnectionStrings configuration for applications use to connect to this cluster.
+type ConnectionStrings struct {
+	Standard          string                `json:"standard,omitempty"`
+	StandardSrv       string                `json:"standardSrv,omitempty"`
+	PrivateEndpoint   []PrivateEndpointSpec `json:"privateEndpoint,omitempty"`
+	AwsPrivateLink    map[string]string     `json:"awsPrivateLink,omitempty"`
+	AwsPrivateLinkSrv map[string]string     `json:"awsPrivateLinkSrv,omitempty"`
+	Private           string                `json:"private,omitempty"`
+	PrivateSrv        string                `json:"privateSrv,omitempty"`
+}
+
+// PrivateEndpointSpec connection strings. Each object describes the connection strings
+// you can use to connect to this cluster through a private endpoint.
+// Atlas returns this parameter only if you deployed a private endpoint to all regions
+// to which you deployed this cluster's nodes.
+type PrivateEndpointSpec struct {
+	ConnectionString    string         `json:"connectionString,omitempty"`
+	Endpoints           []EndpointSpec `json:"endpoints,omitempty"`
+	SRVConnectionString string         `json:"srvConnectionString,omitempty"`
+	Type                string         `json:"type,omitempty"`
+}
+
+// EndpointSpec through which you connect to Atlas.
+type EndpointSpec struct {
+	EndpointID   string `json:"endpointId,omitempty"`
+	ProviderName string `json:"providerName,omitempty"`
+	Region       string `json:"region,omitempty"`
+}
+
+type AdvancedReplicationSpec struct {
+	NumShards     int                     `json:"numShards,omitempty"`
+	ID            string                  `json:"id,omitempty"`
+	ZoneName      string                  `json:"zoneName,omitempty"`
+	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
+}
+
+type AdvancedRegionConfig struct {
+	AnalyticsSpecs      *Specs           `json:"analyticsSpecs,omitempty"`
+	ElectableSpecs      *Specs           `json:"electableSpecs,omitempty"`
+	ReadOnlySpecs       *Specs           `json:"readOnlySpecs,omitempty"`
+	AutoScaling         *AutoScalingSpec `json:"autoScaling,omitempty"`
+	BackingProviderName string           `json:"backingProviderName,omitempty"`
+	Priority            *int             `json:"priority,omitempty"`
+	ProviderName        string           `json:"providerName,omitempty"`
+	RegionName          string           `json:"regionName,omitempty"`
+}
+
+type Specs struct {
+	DiskIOPS      *int64 `json:"diskIOPS,omitempty"`
+	EbsVolumeType string `json:"ebsVolumeType,omitempty"`
+	InstanceSize  string `json:"instanceSize,omitempty"`
+	NodeCount     *int   `json:"nodeCount,omitempty"`
+}
+
 // AutoScalingSpec configures your cluster to automatically scale its storage
 type AutoScalingSpec struct {
 	// Flag that indicates whether autopilot mode for Performance Advisor is enabled.
@@ -144,6 +250,43 @@ type ComputeSpec struct {
 	// Maximum instance size to which your cluster can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.
 	// +optional
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
+}
+
+type ProcessArgs mongodbatlas.ProcessArgs
+
+func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
+	specV := reflect.ValueOf(specArgs)
+	newV := reflect.Indirect(reflect.ValueOf(newArgs))
+	typeOfSpec := specV.Type()
+	for i := 0; i < specV.NumField(); i++ {
+		name := typeOfSpec.Field(i).Name
+		specValue := specV.FieldByName(name)
+		newValue := newV.FieldByName(name)
+
+		if specValue.IsZero() {
+			continue
+		}
+		if newValue.IsZero() {
+			return false
+		}
+
+		if specValue.Kind() == reflect.Ptr {
+			if specValue.IsNil() {
+				continue
+			}
+			if newValue.IsNil() {
+				return false
+			}
+			specValue = specValue.Elem()
+			newValue = newValue.Elem()
+		}
+
+		if specValue.Interface() != newValue.Interface() {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Check compatibility with library type.
@@ -253,7 +396,7 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 // Cluster converts the Spec to native Atlas client format.
 func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, spec)
+	err := compat.JSONCopy(result, *spec.ClusterSpec)
 	return result, err
 }
 
@@ -268,6 +411,13 @@ type AtlasCluster struct {
 
 	Spec   AtlasClusterSpec          `json:"spec,omitempty"`
 	Status status.AtlasClusterStatus `json:"status,omitempty"`
+}
+
+func (c *AtlasCluster) GetClusterName() string {
+	if c.Spec.AdvancedClusterSpec != nil {
+		return c.Spec.AdvancedClusterSpec.Name
+	}
+	return c.Spec.ClusterSpec.Name
 }
 
 // +kubebuilder:object:root=true
@@ -311,19 +461,55 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 			Namespace: namespace,
 		},
 		Spec: AtlasClusterSpec{
-			Name:             nameInAtlas,
-			ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			ClusterSpec: &ClusterSpec{
+				Name:             nameInAtlas,
+				ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			},
+		},
+	}
+}
+
+func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
+	return newAwsAdvancedCluster(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
+}
+
+func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasCluster {
+	priority := 7
+	return &AtlasCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasClusterSpec{
+			AdvancedClusterSpec: &AdvancedClusterSpec{
+				Name:        nameInAtlas,
+				ClusterType: string(TypeReplicaSet),
+				ReplicationSpecs: []*AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*AdvancedRegionConfig{
+							{
+								Priority: &priority,
+								ElectableSpecs: &Specs{
+									InstanceSize: instanceSize,
+								},
+								BackingProviderName: backingProviderName,
+								ProviderName:        "TENANT",
+								RegionName:          regionName,
+							},
+						},
+					}},
+			},
 		},
 	}
 }
 
 func (c *AtlasCluster) WithName(name string) *AtlasCluster {
-	c.Name = name
+	c.Spec.ClusterSpec.Name = name
 	return c
 }
 
 func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
-	c.Spec.Name = name
+	c.Spec.ClusterSpec.Name = name
 	return c
 }
 
@@ -333,21 +519,21 @@ func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
 }
 
 func (c *AtlasCluster) WithProviderName(name provider.ProviderName) *AtlasCluster {
-	c.Spec.ProviderSettings.ProviderName = name
+	c.Spec.ClusterSpec.ProviderSettings.ProviderName = name
 	return c
 }
 
 func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.RegionName = name
+	c.Spec.ClusterSpec.ProviderSettings.RegionName = name
 	return c
 }
 
 func (c *AtlasCluster) WithInstanceSize(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.InstanceSizeName = name
+	c.Spec.ClusterSpec.ProviderSettings.InstanceSizeName = name
 	return c
 }
 func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
-	c.Spec.ProviderSettings.BackingProviderName = name
+	c.Spec.ClusterSpec.ProviderSettings.BackingProviderName = name
 	return c
 }
 
@@ -356,7 +542,7 @@ func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
 func (c *AtlasCluster) Lightweight() *AtlasCluster {
 	c.WithInstanceSize("M2")
 	// M2 is restricted to some set of regions only - we need to ensure them
-	switch c.Spec.ProviderSettings.ProviderName {
+	switch c.Spec.ClusterSpec.ProviderSettings.ProviderName {
 	case provider.ProviderAWS:
 		{
 			c.WithRegionName("US_EAST_1")
@@ -371,7 +557,7 @@ func (c *AtlasCluster) Lightweight() *AtlasCluster {
 		}
 	}
 	// Changing provider to tenant as this is shared now
-	c.WithBackingProvider(string(c.Spec.ProviderSettings.ProviderName))
+	c.WithBackingProvider(string(c.Spec.ClusterSpec.ProviderSettings.ProviderName))
 	c.WithProviderName(provider.ProviderTenant)
 	return c
 }
@@ -395,4 +581,8 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAzure).
 		WithRegionName("EUROPE_NORTH")
+}
+
+func DefaultAwsAdvancedCluster(namespace, projectName string) *AtlasCluster {
+	return NewAwsAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
 }

@@ -6,6 +6,10 @@ on:
     paths-ignore:
       - 'docs/**'
 
+concurrency:
+  group: test-forked-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   allowed:
     name: Allowed action
@@ -20,7 +24,7 @@ jobs:
     needs: allowed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -53,7 +57,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -83,7 +87,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -113,7 +117,7 @@ jobs:
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -155,6 +159,8 @@ jobs:
             "helm-ns",
             "helm-wide",
             "helm-update",
+            "helm-advanced-cluster",
+            "helm-advanced-cluster-multi-region",
             "multinamespaced",
             "privatelink",
           ]
@@ -169,7 +175,7 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Check out code
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -245,9 +251,9 @@ jobs:
           sudo dpkg -i mongocli.deb
           mongocli --version
 
-      - name: Install operator-sdk-v1.4.2
+      - name: Install operator-sdk-v1.16.0
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.4.2/operator-sdk_linux_amd64 -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.16.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
@@ -276,9 +282,9 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.1 && \
           go install github.com/onsi/gomega/...
-          ginkgo -focus "${TEST_NAME}" -nodes=10 -stream -v test/e2e/
+          ginkgo --label-filter="${TEST_NAME}" --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}
@@ -286,19 +292,3 @@ jobs:
         with:
           name: logs
           path: test/e2e/output/**
-
-  cleanup:
-    name: Cleanup atlas projects
-    needs: allowed
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.4.0
-        with:
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-
-      - name: CleanUp empty AtlasProjects older than one day
-        uses: ./.github/actions/cleanup
-        with:
-          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}

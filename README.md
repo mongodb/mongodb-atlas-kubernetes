@@ -1,13 +1,14 @@
-# MongoDB Atlas Operator (trial version)
+# MongoDB Atlas Operator (Beta)
 [![MongoDB Atlas Operator](https://github.com/mongodb/mongodb-atlas-kubernetes/workflows/Test/badge.svg)](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/test.yml?query=branch%3Amain)
 [![MongoDB Atlas Go Client](https://img.shields.io/badge/Powered%20by%20-go--client--mongodb--atlas-%2313AA52)](https://github.com/mongodb/go-client-mongodb-atlas)
 
 The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas — the only multi-cloud document database service that gives you the versatility you need to build sophisticated and resilient applications that can adapt to changing customer demands and market trends.
 
-> Current Status: *trial version*. The Operator gives users the ability to provision
+> Current Status: *Beta*.
+> The Operator gives users the ability to provision
 > Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information
-> into applications deployed to Kubernetes. More features like private endpoints, backup management, LDAP/X.509 authentication, etc.
-> are yet to come.
+> into applications deployed to Kubernetes or via Private Endpoints on AWS or Azure.
+> More features like private endpoints, backup management, LDAP/X.509 authentication, etc. are yet to come.
 
 The full documentation for the Operator can be found [here](https://docs.atlas.mongodb.com/atlas-operator/)
 
@@ -19,6 +20,7 @@ kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kuberne
 ### Step 2. Create Atlas Cluster
 
 **1.** Create an Atlas API Key Secret
+
 In order to work with the Atlas Operator you need to provide [authentication information](https://docs.atlas.mongodb.com/configure-api-access)
  to allow the Atlas Operator to communicate with Atlas API. Once you have generated a Public and Private key in Atlas, you can create a Kuberentes Secret with:
 ```
@@ -51,6 +53,7 @@ spec:
 EOF
 ```
 **3.** Create an `AtlasCluster` Custom Resource.
+
 The example below is a minimal configuration to create an M10 Atlas cluster in the AWS US East region. For a full list of properties, check
 `atlasclusters.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasclusters.yaml)):
 ```
@@ -60,13 +63,14 @@ kind: AtlasCluster
 metadata:
   name: my-atlas-cluster
 spec:
-  name: "Test-cluster"
   projectRef:
     name: my-project
-  providerSettings:
-    instanceSizeName: M10
-    providerName: AWS
-    regionName: US_EAST_1
+  clusterSpec:
+    name: "Test-cluster"
+    providerSettings:
+      instanceSizeName: M10
+      providerName: AWS
+      regionName: US_EAST_1
 EOF
 ```
 
@@ -76,6 +80,8 @@ kubectl create secret generic the-user-password --from-literal="password=P@@swor
 
 kubectl label secret the-user-password atlas.mongodb.com/type=credentials
 ```
+
+(note) To create X.509 user please see [this doc](docs/dev/x509-user.md).
 
 **5.** Create an `AtlasDatabaseUser` Custom Resource
 

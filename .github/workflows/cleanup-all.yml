@@ -1,20 +1,36 @@
 name: Clean Atlas organization
 # local run sample:
-# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch"}' > payload.json | act -j cleanup-all -e payload.json
-# ^ command will clean branch organization with name `CLOUDP-smth`
+# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch", "action":"workflow_dispatch", "inputs": {"clean":"true", "timelife": "3"} }' > payload.json | act -j cleanup-all -e payload.json
+
 on:
   workflow_dispatch:
+    inputs:
+      clean:
+        description: "Clean all(true) or old empty projects(false)?"
+        default: "false"
+        required: true
+      timelife:
+        description: "Timelife of project in hours"
+        default: "3"
+        required: true
+
+concurrency:
+  group: cleanup
 
 jobs:
   cleanup-all:
     name: Cleanup atlas empty projects, and terminate cluster
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3.0.0
 
-      - name: CleanUp empty AtlasProjects older than one day
+      - name: CleanUp Atlas organization
         uses: ./.github/actions/cleanup
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
         with:
-          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          CLEAN_ALL: "true"
+          CLEAN_ALL: ${{ github.event.inputs.clean }}
+          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}

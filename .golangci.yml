@@ -82,14 +82,29 @@ issues:
         - gochecknoglobals
         - wrapcheck
         - nlreturn
+        - errcheck
     - path: cmd/manager/main.go
       linters:
         - gochecknoglobals
         - wrapcheck
     - path: test/e2e
       linters:
-        - errcheck
         - stylecheck
         - noctx
+    - path: test/e2e/helm_chart_test.go
+      linters:
+        - dupl
+    - path: pkg/controller/atlascluster/advanced_cluster.go
+      linters:
+        - prealloc
+    - path: pkg/controller/atlasdatabaseuser/connectionsecrets
+      linters:
+        - prealloc
+    - path: pkg/util/testutil/
+      linters:
+        - stylecheck
+    - path: pkg/controller/atlascluster
+      linters:
+        - dupl
   max-issues-per-linter: 0
   max-same-issues: 0

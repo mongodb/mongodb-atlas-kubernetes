@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -34,7 +34,7 @@ func UpdateCluster(newData *model.TestDataProvider) {
 	})
 
 	By("Check attributes\n", func() {
-		uCluster := mongocli.GetClustersInfo(newData.Resources.ProjectID, newData.Resources.Clusters[0].Spec.Name)
+		uCluster := mongocli.GetClustersInfo(newData.Resources.ProjectID, newData.Resources.Clusters[0].Spec.GetClusterName())
 		CompareClustersSpec(newData.Resources.Clusters[0].Spec, uCluster)
 	})
 }
@@ -65,11 +65,11 @@ func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) {
 }
 
 func activateCluster(data *model.TestDataProvider, paused bool) {
-	data.Resources.Clusters[0].Spec.Paused = &paused
+	data.Resources.Clusters[0].Spec.ClusterSpec.Paused = &paused
 	UpdateCluster(data)
 	By("Check additional cluster field `paused`\n")
-	uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.Name)
-	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.Paused))
+	uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.GetClusterName())
+	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.ClusterSpec.Paused))
 }
 
 func SuspendCluster(data *model.TestDataProvider) {

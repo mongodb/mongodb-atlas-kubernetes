@@ -3,8 +3,7 @@ package e2e_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
@@ -16,8 +15,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func() {
-	var data model.TestDataProvider // TODO check it
+var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns"), func() {
+	var data model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
@@ -27,7 +26,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		if CurrentGinkgoTestDescription().Failed {
+		if CurrentSpecReport().Failed() {
 			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 			utils.SaveToFile(
 				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
@@ -42,7 +41,6 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
 				data.Resources.Namespace,
 			)
-		} else {
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 		}
 	})
@@ -52,7 +50,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 			data = test
 			mainCycle(test)
 		},
-		Entry("Trial - Simplest configuration with no backup and one Admin User",
+		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
 			model.NewTestDataProvider(
 				"operator-ns-trial",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -69,7 +67,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only",
+		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db"),
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -92,7 +90,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Multiregion AWS, Backup and 2 DBUsers",
+		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
 			model.NewTestDataProvider(
 				"operator-ns-multiregion-aws",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -114,7 +112,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Multiregion Azure, Backup and 1 DBUser",
+		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-azure",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -131,7 +129,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Multiregion GCP, Backup and 1 DBUser",
+		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-gcp",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -148,7 +146,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup",
+		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup", Label("ns-owner"),
 			model.NewTestDataProvider(
 				"operator-ns-product-owner",
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
@@ -165,7 +163,7 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 				},
 			),
 		),
-		Entry("Trial - Global connection",
+		Entry("Trial - Global connection", Label("ns-global-key"),
 			model.NewTestDataProvider(
 				"operator-ns-trial-global",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -177,6 +175,40 @@ var _ = Describe("[cluster-ns] Configuration namespaced. Deploy cluster", func()
 						AddBuildInAdminRole(),
 				},
 				30011,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
+				},
+			),
+		),
+		Entry("Free - Users can use M0, default key", Label("ns-m0"),
+			model.NewTestDataProvider(
+				"operator-ns-free",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{""},
+				[]model.DBUser{
+					*model.NewDBUser("user").
+						WithSecretRef("dbuser-secret").
+						AddBuildInAdminRole(),
+				},
+				30016,
+				[]func(*model.TestDataProvider){
+					actions.DeleteFirstUser,
+				},
+			),
+		),
+		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
+			model.NewTestDataProvider(
+				"operator-ns-free",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{""},
+				[]model.DBUser{
+					*model.NewDBUser("user").
+						WithSecretRef("dbuser-secret").
+						AddBuildInAdminRole(),
+				},
+				30017,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
 				},

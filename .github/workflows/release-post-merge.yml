@@ -46,7 +46,7 @@ jobs:
           echo "::set-output name=tag::$tag"
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3.0.0
         with:
           fetch-depth: 0 #needs for tags
 
@@ -99,7 +99,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           release_name: ${{ steps.tag.outputs.tag }}
-          body_path: changelog.md
+          body_path: docs/release-notes/release-notes.md
           draft: true
           prerelease: false
 

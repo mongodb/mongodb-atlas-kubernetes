@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -69,7 +69,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 	)
@@ -79,7 +79,7 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Upgrade(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.Name, user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 		"--recreate-pods",
@@ -166,21 +166,16 @@ func AddMongoDBRepo() {
 
 // InstallClusterSubmodule install the Atlas Cluster Helm Chart from submodule.
 func InstallClusterSubmodule(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, true)
+	PrepareHelmChartValuesFile(input)
 	args := prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)
 	Install(args...)
 }
 
 // InstallClusterRelease from repo
 func InstallClusterRelease(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, true)
+	PrepareHelmChartValuesFile(input)
 	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
 	Install(args...)
-}
-
-func UpgradeAtlasClusterChart(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, true)
-	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...)
 }
 
 func UpgradeOperatorChart(input model.UserInputs) {
@@ -193,12 +188,12 @@ func UpgradeOperatorChart(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"-n", input.Namespace,
-		"--wait", "--timeout", "5m",
+		// "--wait", "--timeout", "5m", // TODO helm upgrade do not exit
 	)
 }
 
 func UpgradeAtlasClusterChartDev(input model.UserInputs) {
-	PrepareHelmChartValuesFile(input, true)
+	PrepareHelmChartValuesFile(input)
 	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...)
 }
 
@@ -209,12 +204,12 @@ func packageChart(sPath, dPath string) {
 
 func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 	args := []string{
-		input.Clusters[0].Spec.Name,
+		input.Clusters[0].Spec.GetClusterName(),
 		chartName,
-		"--set-string", fmt.Sprintf("atlas.orgId=%s", os.Getenv("MCLI_ORG_ID")),
-		"--set-string", fmt.Sprintf("atlas.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
-		"--set-string", fmt.Sprintf("atlas.privateApiKey=%s", os.Getenv("MCLI_PRIVATE_API_KEY")),
-		"--set-string", fmt.Sprintf("atlas.connectionSecretName=%s", input.KeyName),
+		"--set-string", fmt.Sprintf("atlas.secret.orgId=%s", os.Getenv("MCLI_ORG_ID")),
+		"--set-string", fmt.Sprintf("atlas.secret.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
+		"--set-string", fmt.Sprintf("atlas.secret.privateApiKey=%s", os.Getenv("MCLI_PRIVATE_API_KEY")),
+		"--set-string", fmt.Sprintf("atlas.secret.setCustomName=%s", input.KeyName),
 
 		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),

@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/go-logr/zapr"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -44,7 +44,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
@@ -84,16 +83,13 @@ var (
 
 func init() {
 	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
-		atlasDomain = "https://cloud-qa.mongodb.com"
+		atlasDomain = "https://cloud-qa.mongodb.com/"
 	}
 }
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Project Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Project Controller Suite")
 }
 
 // SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
@@ -166,7 +162,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	withDigest := httputil.Digest(publicKey, privateKey)
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
 	Expect(err).ToNot(HaveOccurred())
-	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain+"/api/atlas/v1.0/"))
+	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
 	Expect(err).ToNot(HaveOccurred())
 
 	return aClient, atlas.Connection{
