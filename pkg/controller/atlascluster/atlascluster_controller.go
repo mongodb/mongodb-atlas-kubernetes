@@ -164,13 +164,13 @@ func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, pr
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
 func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
-	c, result := r.ensureServerlessClusterState(ctx, project, cluster.Spec.ServerlessSpec)
+	c, result := ensureServerlessInstanceState(ctx, project, cluster.Spec.ServerlessSpec)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
 
 // handleRegularCluster ensures the state of the cluster using the Regular Cluster API
 func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
-	c, result := r.ensureClusterState(ctx, project, cluster)
+	c, result := ensureClusterState(ctx, project, cluster)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
 

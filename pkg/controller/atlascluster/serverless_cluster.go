@@ -11,7 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasClusterReconciler) ensureServerlessClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, serverlessSpec *mdbv1.ServerlessSpec) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
+func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasProject, serverlessSpec *mdbv1.ServerlessSpec) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
 	atlasCluster, resp, err := ctx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, serverlessSpec.Name)
 	if err != nil {
 		if resp == nil {
