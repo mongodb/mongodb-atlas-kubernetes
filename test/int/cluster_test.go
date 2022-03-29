@@ -792,7 +792,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 	})
 
 	Describe("Create serverless instance", func() {
-		FIt("Should Succeed", func() {
+		It("Should Succeed", func() {
 			createdCluster = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdCluster)), func() {
