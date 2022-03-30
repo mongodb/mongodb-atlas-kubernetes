@@ -37,6 +37,8 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 	}
 
 	switch atlasCluster.StateName {
+	case "IDLE":
+		return atlasCluster, workflow.OK()
 	case "CREATING":
 		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
 
