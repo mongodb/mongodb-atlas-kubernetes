@@ -18,6 +18,7 @@ const (
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
+	ProjectIntegrationInAtlas ConditionReason = "ProjectIntegrationError" // TODO
 )
 
 // Atlas Cluster reasons

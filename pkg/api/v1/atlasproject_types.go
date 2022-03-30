@@ -64,6 +64,10 @@ type AtlasProjectSpec struct {
 
 	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
 	X509CertRef *ResourceRef `json:"x509CertRef,omitempty"`
+
+	// Integrations is a list of integration with MongoDB Atlas for the Project
+	// +optional
+	Integrations []project.Intergation `json:"integration,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
