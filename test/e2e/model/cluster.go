@@ -21,6 +21,9 @@ func (c ClusterSpec) GetClusterName() string {
 	if c.AdvancedClusterSpec != nil {
 		return c.AdvancedClusterSpec.Name
 	}
+	if c.ServerlessSpec != nil {
+		return c.ServerlessSpec.Name
+	}
 	return c.ClusterSpec.Name
 }
 
