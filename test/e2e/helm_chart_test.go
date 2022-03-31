@@ -305,7 +305,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 		case cluster.Spec.ServerlessSpec != nil:
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(BeNil())
-			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, cluster.Spec.ServerlessSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareServerlessSpec(cluster.Spec, *serverlessInstance)
 		default:
