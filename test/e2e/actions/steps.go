@@ -53,7 +53,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 	case cluster.Spec.ServerlessSpec != nil:
 		atlasClient, err := a.AClient()
 		Expect(err).To(BeNil())
-		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, cluster.Spec.ServerlessSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
