@@ -161,6 +161,15 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 	}
 }
 
+func CompareServerlessSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) {
+	advancedSpec := requested.AdvancedClusterSpec
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
+	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.GroupID).To(Not(BeEmpty()))
+}
+
 func SaveK8sResourcesTo(resources []string, ns string, destination string) {
 	for _, resource := range resources {
 		data := kubecli.GetYamlResource(resource, ns)
