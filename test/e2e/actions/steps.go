@@ -169,11 +169,10 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 }
 
 func CompareServerlessSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) {
-	advancedSpec := requested.AdvancedClusterSpec
+	serverlessSpec := requested.ServerlessSpec
 	Expect(created.MongoDBVersion).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
-	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
-	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.Name).To(Equal(serverlessSpec.Name))
 	Expect(created.GroupID).To(Not(BeEmpty()))
 }
 
