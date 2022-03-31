@@ -43,13 +43,20 @@ func WaitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
 	cluster := input.Clusters[0]
-	if cluster.Spec.AdvancedClusterSpec != nil {
+	switch {
+	case cluster.Spec.AdvancedClusterSpec != nil:
 		atlasClient, err := a.AClient()
 		Expect(err).To(BeNil())
 		advancedCluster, err := atlasClient.GetAdvancedCluster(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedCluster.StateName).To(Equal("IDLE"))
-	} else {
+	case cluster.Spec.ServerlessSpec != nil:
+		atlasClient, err := a.AClient()
+		Expect(err).To(BeNil())
+		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+		Expect(err).To(BeNil())
+		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
+	default:
 		ExpectWithOffset(
 			1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
 		).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
