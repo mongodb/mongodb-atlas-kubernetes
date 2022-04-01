@@ -67,7 +67,7 @@ type AtlasProjectSpec struct {
 
 	// Integrations is a list of integration with MongoDB Atlas for the Project
 	// +optional
-	Integrations []project.Intergation `json:"integration,omitempty"`
+	Integrations []project.Intergation `json:"integrations,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

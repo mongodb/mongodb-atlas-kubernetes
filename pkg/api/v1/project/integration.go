@@ -22,7 +22,6 @@ const (
 
 type Intergation struct {
 	// Third Party Integration type such as Slack, New Relic, etc
-	// +kubebuilder:validation:UniqueItems
 	// +kubebuilder:validation:Enum=PAGER_DUTY;SLACK;DATADOG;NEW_RELIC;OPS_GENIE;VICTOR_OPS;FLOWDOCK;WEBHOOK;MICROSOFT_TEAMS
 	// +optional
 	Type IntegrationType `json:"type,omitempty"`
