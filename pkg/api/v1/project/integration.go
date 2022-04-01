@@ -6,25 +6,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
-type IntegrationType string
-
-const (
-	PagerDuty       IntegrationType = "PAGER_DUTY"
-	Slack           IntegrationType = "SLACK"
-	Datadog         IntegrationType = "DATADOG"
-	NewRelic        IntegrationType = "NEW_RELIC"
-	Opsgenie        IntegrationType = "OPS_GENIE"
-	VictorOps       IntegrationType = "VICTOR_OPS"
-	Flowdock        IntegrationType = "FLOWDOCK"
-	WebhookSettings IntegrationType = "WEBHOOK"
-	MicrosoftTeams  IntegrationType = "MICROSOFT_TEAMS"
-)
-
-type Intergation struct {
+type Integration struct {
 	// Third Party Integration type such as Slack, New Relic, etc
 	// +kubebuilder:validation:Enum=PAGER_DUTY;SLACK;DATADOG;NEW_RELIC;OPS_GENIE;VICTOR_OPS;FLOWDOCK;WEBHOOK;MICROSOFT_TEAMS
 	// +optional
-	Type IntegrationType `json:"type,omitempty"`
+	Type string `json:"type,omitempty"`
 	// +optional
 	LicenseKey string `json:"licenseKey,omitempty"`
 	// +optional
@@ -57,13 +43,12 @@ type Intergation struct {
 	Secret string `json:"secret,omitempty"`
 }
 
-func (i Intergation) ToAtlas() (*mongodbatlas.ThirdPartyIntegration, error) {
+func (i Integration) ToAtlas() (*mongodbatlas.ThirdPartyIntegration, error) {
 	result := &mongodbatlas.ThirdPartyIntegration{}
 	err := compat.JSONCopy(result, i)
 	return result, err
 }
 
-// TODO identifier?
-func (i Intergation) Identifier() interface{} {
+func (i Integration) Identifier() interface{} {
 	return i.Type
 }
