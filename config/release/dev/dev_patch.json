@@ -1,4 +1,8 @@
 [
+  {"op": "replace",
+    "path": "/spec/template/spec/containers/0/args/3",
+    "value": "--log-level=debug"
+  },
   {"op": "add",
     "path": "/spec/template/spec/containers/0/args/0",
     "value": "--atlas-domain=https://cloud-qa.mongodb.com/"
