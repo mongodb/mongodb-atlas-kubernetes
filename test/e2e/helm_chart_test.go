@@ -277,9 +277,13 @@ var _ = Describe("HELM charts", func() {
 			By("Check Cluster", func() {
 				waitClusterWithChecks(&data)
 			})
-			By("Delete Resources", func() {
-				deleteClusterAndOperator(&data)
-			})
+
+			// consistently fails to clean project, seems related to.
+			// https://jira.mongodb.org/browse/CLOUDP-116291
+
+			// By("Delete Resources", func() {
+			//	deleteClusterAndOperator(&data)
+			// })
 		})
 	})
 })
