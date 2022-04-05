@@ -25,32 +25,27 @@ func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, projectID string, r
 	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
 	ctx.Log.Debugf("integrationsInAtlas: %v", integrationsInAtlas)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectIntegrationInAtlas, err.Error())
+		return workflow.Terminate(workflow.ProjectIntegrationInAtlasOthers, err.Error())
 	}
 
 	currentIntegrationsInAtlas := fromAtlas(integrationsInAtlas.Results) // TODO rename ^
 	ctx.Log.Debugf("currentIntegrationsInAtlas: %v", currentIntegrationsInAtlas)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectIntegrationInAtlas, err.Error())
+		return workflow.Terminate(workflow.ProjectIntegrationInAtlasOthers, err.Error())
 	}
 
 	indentificatorsForDelete := set.Difference(currentIntegrationsInAtlas, requestedIntegrations)
 	ctx.Log.Debugf("indentificatorsForDelete: %v", indentificatorsForDelete)
 	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete, ctx.Log); err != nil {
-		return workflow.Terminate(workflow.ProjectIntegrationInAtlas, err.Error())
+		return workflow.Terminate(workflow.ProjectIntegrationInAtlasOthers, err.Error())
 	}
 
 	// integrationsToUpdate := set.Intersection(currentIntegrationsInAtlas, requestedIntegrations) // TODO ??
 
 	indentificatorsForCreate := set.Difference(requestedIntegrations, currentIntegrationsInAtlas)
 	ctx.Log.Debugf("indentificatorsForCreate: %v", indentificatorsForCreate)
-	integrationsToCreate := make([]project.Integration, len(indentificatorsForCreate))
-	requestedIntegrationMap := buildMap(requestedIntegrations)
-	for _, item := range indentificatorsForCreate {
-		indentificatorsForCreate = append(indentificatorsForCreate, requestedIntegrationMap[item.Identifier().(string)])
-	}
-	if result := createIntegrationsInAtlas(ctx, projectID, integrationsToCreate); !result.IsOk() {
-		return result // ?
+	if result := createIntegrationsInAtlas(ctx, projectID, indentificatorsForCreate); !result.IsOk() {
+		return result
 	}
 
 	return workflow.OK()
@@ -66,19 +61,18 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 	return nil
 }
 
-func createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []project.Integration) workflow.Result {
+func createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.Identifiable) workflow.Result {
 	for _, item := range integrations {
-		integration, err := item.ToAtlas()
-
+		integration, err := item.(project.Integration).ToAtlas()
 		if err != nil {
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectIntegrationInAtlasOthers, err.Error())
 		}
-
+		ctx.Log.Warnf("WARNING!!!!!!!!!!!!", integration.Type, integration.Region, integration.APIKey)
 		// TODO do we need thirdPartIntegration results here?
 		_, _, err = ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
 
 		if err != nil {
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlas, err.Error())
+			return workflow.Terminate(workflow.ProjectIntegrationInAtlasRequest, err.Error())
 		}
 	}
 	return workflow.OK()
@@ -93,7 +87,7 @@ func buildMap(integrations []project.Integration) map[string]project.Integration
 	return newMap
 }
 
-func fromAtlas(source []*mongodbatlas.ThirdPartyIntegration) ([]project.Integration) {
+func fromAtlas(source []*mongodbatlas.ThirdPartyIntegration) []project.Integration {
 	result := make([]project.Integration, len(source))
 	for i, item := range source {
 		result[i] = project.Integration(*item)
