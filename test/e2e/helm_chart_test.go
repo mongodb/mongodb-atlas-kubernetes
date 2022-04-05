@@ -230,7 +230,7 @@ var _ = Describe("HELM charts", func() {
 				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-multiregion-helm"
 
 				// TODO: investigate why connectivity works locally by not on the e2e hosts.
-				data.SkipAppConnectivityCheck = true
+				data.SkipAppConnectivityCheck = false
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
