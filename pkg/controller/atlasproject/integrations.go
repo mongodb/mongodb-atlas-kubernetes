@@ -2,10 +2,10 @@ package atlasproject
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
@@ -15,66 +15,55 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-type integrations struct {
-	list             []project.Integration
-	projectNamespace string
-}
-
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	integrationList := integrations{
-		list:             project.Spec.Integrations,
-		projectNamespace: project.Namespace,
-	}
-	if result := createOrDeleteIntegrationsInAtlas(ctx, r.Client, projectID, integrationList); !result.IsOk() {
-		return result
-	}
-	return workflow.OK()
-}
-
-func createOrDeleteIntegrationsInAtlas(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) workflow.Result {
-	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
+	integrationsInAtlas, err := fetchIntegrations(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
-	ctx.Log.Debugf("Got Integrations From Atlas: %v", *integrationsInAtlas)
 	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
 
-	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, requestedIntegrations.list)
+	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, project.Spec.Integrations)
 	ctx.Log.Debugf("indentificatorsForDelete: %v", indentificatorsForDelete)
 	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete); err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
 
-	integrationsToUpdate := set.Intersection(integrationsInAtlasAlias, requestedIntegrations.list)
+	integrationsToUpdate := set.Intersection(integrationsInAtlasAlias, project.Spec.Integrations)
 	ctx.Log.Debugf("integrationsToUpdate: %v", integrationsToUpdate)
-	if result := updateIntegrationsAtlas(ctx, c, projectID, integrationsToUpdate, requestedIntegrations.projectNamespace); !result.IsOk() {
+	if result := r.updateIntegrationsAtlas(ctx, projectID, integrationsToUpdate, project.Namespace); !result.IsOk() {
 		return result
 	}
 
-	indentificatorsForCreate := set.Difference(requestedIntegrations.list, integrationsInAtlasAlias)
+	indentificatorsForCreate := set.Difference(project.Spec.Integrations, integrationsInAtlasAlias)
 	ctx.Log.Debugf("indentificatorsForCreate: %v", indentificatorsForCreate)
-	if result := createIntegrationsInAtlas(ctx, c, projectID, indentificatorsForCreate, requestedIntegrations.projectNamespace); !result.IsOk() {
+	if result := r.createIntegrationsInAtlas(ctx, projectID, indentificatorsForCreate, project.Namespace); !result.IsOk() {
 		return result
 	}
 
-	ready, err := checkIntegrationsReady(ctx, c, projectID, requestedIntegrations)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
-	}
-	if !ready {
+	setPrometheusStatus(project, integrationsInAtlas)
+	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		ctx.SetConditionFalse(status.IntegrationReadyType)
 		return workflow.InProgress(workflow.ProjectIntegrationInAtlasInternal, "in progress")
 	}
-	if len(requestedIntegrations.list) > 0 {
+	if len(project.Spec.Integrations) > 0 {
 		ctx.SetConditionTrue(status.IntegrationReadyType)
 	}
 	return workflow.OK()
 }
 
-func updateIntegrationsAtlas(ctx *workflow.Context, c client.Client, projectID string, integrationsToUpdate [][]set.Identifiable, defaultNS string) workflow.Result {
+func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.ThirdPartyIntegrations, error) {
+	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
+	if err != nil {
+		return nil, err
+	}
+	ctx.Log.Debugf("Got Integrations From Atlas: %v", *integrationsInAtlas)
+	return integrationsInAtlas, nil
+}
+
+func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToUpdate {
 		atlasIntegration := item[0].(aliasThirdPartyIntegration)
-		kubeIntegration := item[1].(project.Integration).ToAtlas(defaultNS, c)
+		kubeIntegration, _ := item[1].(project.Integration).ToAtlas(r.Client, namespace)
 		if kubeIntegration == nil {
 			ctx.Log.Warn("Update Integrations: Can not convert kube integration")
 			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Update Integrations: Can not convert kube integration")
@@ -100,14 +89,17 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 	return nil
 }
 
-func createIntegrationsInAtlas(ctx *workflow.Context, c client.Client, projectID string, integrations []set.Identifiable, defaultNS string) workflow.Result {
+func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrations {
-		integration := item.(project.Integration).ToAtlas(defaultNS, c)
+		integration, err := item.(project.Integration).ToAtlas(r.Client, namespace)
+		if err != nil {
+			ctx.Log.Debugw("cannot convert integration", "err", err)
+		}
 		if integration == nil {
 			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Can not convert integration")
 		}
 
-		_, _, err := ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
+		_, _, err = ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
 		if err != nil {
 			return workflow.Terminate(workflow.ProjectIntegrationInAtlasRequest, err.Error())
 		}
@@ -115,25 +107,29 @@ func createIntegrationsInAtlas(ctx *workflow.Context, c client.Client, projectID
 	return workflow.OK()
 }
 
-func checkIntegrationsReady(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) (bool, error) {
-	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
-	if err != nil {
-		return false, err
+func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, namespace string, integrationsIntersection [][]set.Identifiable, requestedIntegrations []project.Integration) bool {
+	if len(integrationsIntersection) != len(requestedIntegrations) {
+		return false
 	}
 
-	requestedIntegrationsConverted := convertToAtlasIntegrationList(requestedIntegrations, c)
-	if reflect.DeepEqual(integrationsInAtlas.Results, requestedIntegrationsConverted) {
-		return true, nil
-	}
-	return false, err
-}
+	ctx.Log.Debugw("checkIntegrationsReady", "integrationsIntersection", integrationsIntersection)
+	for _, integrationPair := range integrationsIntersection {
+		atlas := integrationPair[0].(aliasThirdPartyIntegration)
+		spec := integrationPair[1].(project.Integration)
+		var areEqual bool
+		if isPrometheusType(atlas.Type) {
+			areEqual = arePrometheusesEqual(atlas, spec)
+		} else {
+			specAsAtlas, _ := spec.ToAtlas(r.Client, namespace)
+			areEqual = reflect.DeepEqual(atlas, specAsAtlas)
+		}
 
-func convertToAtlasIntegrationList(list integrations, c client.Client) []*mongodbatlas.ThirdPartyIntegration {
-	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.list))
-	for i, item := range list.list {
-		result[i] = item.ToAtlas(list.projectNamespace, c)
+		if !areEqual {
+			return false
+		}
 	}
-	return result
+
+	return true
 }
 
 type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration
@@ -148,4 +144,28 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 		result[i] = aliasThirdPartyIntegration(*item)
 	}
 	return result
+}
+
+func setPrometheusStatus(project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
+	for _, atlasIntegration := range atlasIntegrations.Results {
+		if isPrometheusType(atlasIntegration.Type) {
+			project.Status.Prometheus.DiscoveryURL = buildPrometheusDiscoveryURL(project.ID())
+		}
+	}
+}
+
+func arePrometheusesEqual(atlas aliasThirdPartyIntegration, spec project.Integration) bool {
+	return atlas.Type == spec.Type &&
+		atlas.UserName == spec.UserName &&
+		atlas.ServiceDiscovery == spec.ServiceDiscovery &&
+		atlas.Enabled == spec.Enabled
+}
+
+func isPrometheusType(typeName string) bool {
+	return typeName == "PROMETHEUS"
+}
+
+func buildPrometheusDiscoveryURL(projectID string) string {
+	api := "https://cloud.mongodb.com/api/atlas/v1.0"
+	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }

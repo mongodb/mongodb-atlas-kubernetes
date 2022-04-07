@@ -10,7 +10,7 @@ import (
 
 type Integration struct {
 	// Third Party Integration type such as Slack, New Relic, etc
-	// +kubebuilder:validation:Enum=PAGER_DUTY;SLACK;DATADOG;NEW_RELIC;OPS_GENIE;VICTOR_OPS;FLOWDOCK;WEBHOOK;MICROSOFT_TEAMS
+	// +kubebuilder:validation:Enum=PAGER_DUTY;SLACK;DATADOG;NEW_RELIC;OPS_GENIE;VICTOR_OPS;FLOWDOCK;WEBHOOK;MICROSOFT_TEAMS;PROMETHEUS
 	// +optional
 	Type string `json:"type,omitempty"`
 	// +optional
@@ -43,10 +43,25 @@ type Integration struct {
 	URL string `json:"url,omitempty"`
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
+	// +optional
+	Name string `json:"name,omitempty"`
+	// +optional
+	MicrosoftTeamsWebhookURL string `json:"microsoftTeamsWebhookUrl,omitempty"`
+	// +optional
+	UserName string `json:"username,omitempty"`
+	// +optional
+	PasswordRef common.ResourceRefNamespaced `json:"passwordRef,omitempty"`
+	// +optional
+	ServiceDiscovery string `json:"serviceDiscovery,omitempty"`
+	// +optional
+	Scheme string `json:"scheme,omitempty"`
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
 }
 
-func (i Integration) ToAtlas(defaultNS string, c client.Client) *mongodbatlas.ThirdPartyIntegration {
+func (i Integration) ToAtlas(c client.Client, defaultNS string) (*mongodbatlas.ThirdPartyIntegration, error) {
 	result := mongodbatlas.ThirdPartyIntegration{}
+	var err error
 	result.Type = i.Type
 	result.LicenseKey, _ = i.LicenseKeyRef.ReadPassword(c, defaultNS)
 	result.AccountID = i.AccountID
@@ -63,7 +78,14 @@ func (i Integration) ToAtlas(defaultNS string, c client.Client) *mongodbatlas.Th
 	result.OrgName = i.OrgName
 	result.URL = i.URL
 	result.Secret, _ = i.SecretRef.ReadPassword(c, defaultNS)
-	return &result
+	result.Name = i.Name
+	result.MicrosoftTeamsWebhookURL = i.MicrosoftTeamsWebhookURL
+	result.UserName = i.UserName
+	result.Password, err = i.PasswordRef.ReadPassword(c, defaultNS)
+	result.ServiceDiscovery = i.ServiceDiscovery
+	result.Scheme = i.Scheme
+	result.Enabled = i.Enabled
+	return &result, err
 }
 
 func (i Integration) Identifier() interface{} {

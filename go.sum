@@ -99,6 +99,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.44.15 h1:z02BVeV6k7hZMfWEQmKh3X23s3F9PBHFCcIVfNlut7A=
 github.com/aws/aws-sdk-go v1.44.15/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.43.23 h1:/YmZzPMK6Xzi0B/W9O/Pq7nyIXpBv6mTiJdDDFC7u94=
+github.com/aws/aws-sdk-go v1.43.23/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
@@ -577,8 +579,8 @@ go.etcd.io/etcd/client/v3 v3.5.0/go.mod h1:AIKXXVX/DQXtfTEqBryiLTUXwON+GuvO6Z7lL
 go.etcd.io/etcd/pkg/v3 v3.5.0/go.mod h1:UzJGatBQ1lXChBkQF0AuAtkRQMYnHubxAEYIrC3MSsE=
 go.etcd.io/etcd/raft/v3 v3.5.0/go.mod h1:UFOHSIvO/nKwd4lhkwabrTD3cqW5yVyYYf/KlD00Szc=
 go.etcd.io/etcd/server/v3 v3.5.0/go.mod h1:3Ah5ruV+M+7RZr0+Y/5mNLwC+eQlni+mQmOVdCRJoS4=
-go.mongodb.org/atlas v0.15.0 h1:YyOBdBIuI//krRITf4r7PSirJ3YDNNUfNmapxwSyDow=
-go.mongodb.org/atlas v0.15.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
+go.mongodb.org/atlas v0.16.0 h1:IqnDuK3XAZUgJ5lPHc4v4z4B8F6mvsS37O4ck7tOYVc=
+go.mongodb.org/atlas v0.16.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
 go.mongodb.org/mongo-driver v1.8.3 h1:TDKlTkGDKm9kkJVUOAXDK5/fkqKHJVwYQSpoRfB43R4=
 go.mongodb.org/mongo-driver v1.8.3/go.mod h1:0sQWfOeY63QTntERDJJ/0SuKK0T1uVSgKCuAROlKEPY=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

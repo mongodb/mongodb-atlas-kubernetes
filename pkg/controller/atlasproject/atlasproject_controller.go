@@ -211,7 +211,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 
 	ctx.SetConditionTrue(status.ReadyType)
-	return ctrl.Result{}, nil
+	return workflow.OK().ReconcileResult(), nil
 }
 
 // allIPAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.

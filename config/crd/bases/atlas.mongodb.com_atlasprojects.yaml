@@ -90,6 +90,8 @@ spec:
                       type: object
                     channelName:
                       type: string
+                    enabled:
+                      type: boolean
                     flowName:
                       type: string
                     licenseKeyRef:
@@ -106,8 +108,26 @@ spec:
                       required:
                       - name
                       type: object
+                    microsoftTeamsWebhookUrl:
+                      type: string
+                    name:
+                      type: string
                     orgName:
                       type: string
+                    passwordRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
                     readTokenRef:
                       description: ResourceRefNamespaced is a reference to a Kubernetes
                         Resource that allows to configure the namespace
@@ -138,7 +158,9 @@ spec:
                       required:
                       - name
                       type: object
-                    secret:
+                    scheme:
+                      type: string
+                    secretRef:
                       description: ResourceRefNamespaced is a reference to a Kubernetes
                         Resource that allows to configure the namespace
                       properties:
@@ -152,6 +174,8 @@ spec:
                       required:
                       - name
                       type: object
+                    serviceDiscovery:
+                      type: string
                     serviceKeyRef:
                       description: ResourceRefNamespaced is a reference to a Kubernetes
                         Resource that allows to configure the namespace
@@ -181,8 +205,11 @@ spec:
                       - FLOWDOCK
                       - WEBHOOK
                       - MICROSOFT_TEAMS
+                      - PROMETHEUS
                       type: string
                     url:
+                      type: string
+                    username:
                       type: string
                     writeTokenRef:
                       description: ResourceRefNamespaced is a reference to a Kubernetes
@@ -306,7 +333,7 @@ spec:
           status:
             description: AtlasProjectStatus defines the observed state of AtlasProject
             properties:
-              AuthModes:
+              authModes:
                 description: AuthModes contains a list of configured authentication
                   modes "SCRAM" is default authentication method and requires a password
                   for each user "X509" signifies that self-managed X.509 authentication
@@ -432,6 +459,18 @@ spec:
                   - region
                   type: object
                 type: array
+              prometheus:
+                description: Prometheus contains the status for Prometheus integration
+                  including the
+                properties:
+                  prometheusDiscoveryURL:
+                    type: string
+                  status:
+                    type: string
+                required:
+                - prometheusDiscoveryURL
+                - status
+                type: object
             required:
             - conditions
             type: object
