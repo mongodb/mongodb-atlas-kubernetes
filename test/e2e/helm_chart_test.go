@@ -246,6 +246,46 @@ var _ = Describe("HELM charts", func() {
 			})
 		})
 	})
+
+	Describe("Serverless Instance HELM charts.", Label("serverless-instance"), func() {
+		It("User can deploy operator namespaces by using HELM", func() {
+			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
+				data = model.NewTestDataProvider(
+					"helm-serverless",
+					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+					[]string{"data/atlascluster_serverless.yaml"},
+					[]string{},
+					[]model.DBUser{
+						*model.NewDBUser("reader2").
+							WithSecretRef("dbuser-secret-u2").
+							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+							WithAuthDatabase("admin"),
+					},
+					30016,
+					[]func(*model.TestDataProvider){},
+				)
+				// helm template has equal ObjectMeta.Name and Spec.Name
+				data.Resources.Clusters[0].ObjectMeta.Name = "serverless-instance-helm"
+				data.Resources.Clusters[0].Spec.ServerlessSpec.Name = "serverless-instance-helm"
+			})
+			By("User use helm for deploying operator", func() {
+				helm.InstallOperatorWideSubmodule(data.Resources)
+			})
+			By("User deploy cluster by helm", func() {
+				helm.InstallClusterSubmodule(data.Resources)
+			})
+			By("Check Cluster", func() {
+				waitClusterWithChecks(&data)
+			})
+
+			// consistently fails to clean project, seems related to.
+			// https://jira.mongodb.org/browse/CLOUDP-116291
+
+			// By("Delete Resources", func() {
+			//	deleteClusterAndOperator(&data)
+			// })
+		})
+	})
 })
 
 func waitClusterWithChecks(data *model.TestDataProvider) {
@@ -259,13 +299,20 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 
 	By("Check attributes", func() {
 		cluster := data.Resources.Clusters[0]
-		if cluster.Spec.AdvancedClusterSpec != nil {
+		switch {
+		case cluster.Spec.AdvancedClusterSpec != nil:
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(BeNil())
 			advancedCluster, err := atlasClient.GetAdvancedCluster(data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareAdvancedClustersSpec(cluster.Spec, *advancedCluster)
-		} else {
+		case cluster.Spec.ServerlessSpec != nil:
+			atlasClient, err := atlas.AClient()
+			Expect(err).To(BeNil())
+			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, cluster.Spec.ServerlessSpec.Name)
+			Expect(err).To(BeNil())
+			actions.CompareServerlessSpec(cluster.Spec, *serverlessInstance)
+		default:
 			uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
 			actions.CompareClustersSpec(cluster.Spec, uCluster)
 		}

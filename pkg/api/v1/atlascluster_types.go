@@ -125,9 +125,21 @@ type AtlasClusterSpec struct {
 	// +optional
 	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
 
+	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
+
 	// ProcessArgs allows to modify Advanced Configuration Options
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
+// ServerlessSpec defines the desired state of Atlas Serverless Instance
+type ServerlessSpec struct {
+	// Name of the cluster as it appears in Atlas. After Atlas creates the cluster, you can't change its name.
+	Name string `json:"name"`
+	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
+	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 }
 
 type AdvancedClusterSpec struct {
@@ -328,10 +340,11 @@ type ProviderSettingsSpec struct {
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
 	// Atlas provides different cluster tiers, each with a default storage capacity and RAM size. The cluster you select is used for all the data-bearing hosts in your cluster tier.
-	InstanceSizeName string `json:"instanceSizeName"`
+	// +optional
+	InstanceSizeName string `json:"instanceSizeName,omitempty"`
 
 	// Cloud service provider on which Atlas provisions the hosts.
-	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT;SERVERLESS
 	ProviderName provider.ProviderName `json:"providerName"`
 
 	// Physical location of your MongoDB cluster.
@@ -414,10 +427,23 @@ type AtlasCluster struct {
 }
 
 func (c *AtlasCluster) GetClusterName() string {
-	if c.Spec.AdvancedClusterSpec != nil {
+	if c.IsAdvancedCluster() {
 		return c.Spec.AdvancedClusterSpec.Name
 	}
+	if c.IsServerless() {
+		return c.Spec.ServerlessSpec.Name
+	}
 	return c.Spec.ClusterSpec.Name
+}
+
+// IsServerless returns true if the AtlasCluster is configured to be a serverless instance
+func (c *AtlasCluster) IsServerless() bool {
+	return c.Spec.ServerlessSpec != nil
+}
+
+// IsAdvancedCluster returns true if the AtlasCluster is configured to be an advanced cluster.
+func (c *AtlasCluster) IsAdvancedCluster() bool {
+	return c.Spec.AdvancedClusterSpec != nil
 }
 
 // +kubebuilder:object:root=true
@@ -464,6 +490,25 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 			ClusterSpec: &ClusterSpec{
 				Name:             nameInAtlas,
 				ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			},
+		},
+	}
+}
+
+func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasCluster {
+	return &AtlasCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: AtlasClusterSpec{
+			ServerlessSpec: &ServerlessSpec{
+				Name: nameInAtlas,
+				ProviderSettings: &ProviderSettingsSpec{
+					BackingProviderName: backingProviderName,
+					ProviderName:        "SERVERLESS",
+					RegionName:          regionName,
+				},
 			},
 		},
 	}
@@ -585,4 +630,8 @@ func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
 
 func DefaultAwsAdvancedCluster(namespace, projectName string) *AtlasCluster {
 	return NewAwsAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+}
+
+func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasCluster {
+	return newServerlessInstance(namespace, "test-serverless-instance-k8s", "test-serverless-instance", "AWS", "US_EAST_1").WithProjectName(projectName)
 }

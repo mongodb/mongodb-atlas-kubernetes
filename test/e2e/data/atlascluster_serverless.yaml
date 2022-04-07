@@ -1,0 +1,13 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasCluster
+metadata:
+  name: atlascluster-serverless
+spec:
+  projectRef:
+    name: my-project
+  serverlessSpec:
+    name: serverless-instance
+    providerSettings:
+      providerName: SERVERLESS
+      backingProviderName: AWS
+      regionName: US_EAST_1

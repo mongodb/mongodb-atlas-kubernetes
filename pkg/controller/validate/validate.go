@@ -2,6 +2,7 @@ package validate
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -10,13 +11,24 @@ import (
 
 func ClusterSpec(clusterSpec mdbv1.AtlasClusterSpec) error {
 	var err error
-	if clusterSpec.AdvancedClusterSpec == nil && clusterSpec.ClusterSpec == nil {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec or spec.advancedClusterSpec, neither were present"))
+
+	if allAreNil(clusterSpec.AdvancedClusterSpec, clusterSpec.ServerlessSpec, clusterSpec.ClusterSpec) {
+		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec or spec.advancedClusterSpec or spec.serverlessSpec to be present, but none were"))
 	}
 
-	if clusterSpec.AdvancedClusterSpec != nil && clusterSpec.ClusterSpec != nil {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec or spec.advancedClusterSpec, both were present"))
+	if moreThanOneIsNonNil(clusterSpec.AdvancedClusterSpec, clusterSpec.ServerlessSpec, clusterSpec.ClusterSpec) {
+		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec, spec.advancedClusterSpec or spec.serverlessSpec, more than one were present"))
 	}
+
+	if clusterSpec.ClusterSpec != nil {
+		if clusterSpec.ClusterSpec.ProviderSettings != nil && (clusterSpec.ClusterSpec.ProviderSettings.InstanceSizeName == "" && clusterSpec.ClusterSpec.ProviderSettings.ProviderName != "SERVERLESS") {
+			err = multierror.Append(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
+		}
+		if clusterSpec.ClusterSpec.ProviderSettings != nil && (clusterSpec.ClusterSpec.ProviderSettings.InstanceSizeName != "" && clusterSpec.ClusterSpec.ProviderSettings.ProviderName == "SERVERLESS") {
+			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
+		}
+	}
+
 	return err
 }
 
@@ -26,4 +38,24 @@ func Project(_ *mdbv1.AtlasProject) error {
 
 func DatabaseUser(_ *mdbv1.AtlasDatabaseUser) error {
 	return nil
+}
+
+func getNonNilCount(values ...interface{}) int {
+	nonNilCount := 0
+	for _, v := range values {
+		if !reflect.ValueOf(v).IsNil() {
+			nonNilCount += 1
+		}
+	}
+	return nonNilCount
+}
+
+// allAreNil returns true if all elements are nil.
+func allAreNil(values ...interface{}) bool {
+	return getNonNilCount(values...) == 0
+}
+
+// moreThanOneIsNil returns true if there are more than one non nil elements.
+func moreThanOneIsNonNil(values ...interface{}) bool {
+	return getNonNilCount(values...) > 1
 }

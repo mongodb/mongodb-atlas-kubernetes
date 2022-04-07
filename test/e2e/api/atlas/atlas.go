@@ -89,6 +89,15 @@ func (a *Atlas) GetAdvancedCluster(projectId, clusterName string) (*mongodbatlas
 	return advancedCluster, nil
 }
 
+func (a *Atlas) GetServerlessInstance(projectId, clusterName string) (*mongodbatlas.Cluster, error) {
+	serverlessInstance, _, err := a.Client.ServerlessInstances.Get(context.Background(), projectId, clusterName)
+	if err != nil {
+		return nil, err
+	}
+	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", clusterName, projectId)
+	return serverlessInstance, nil
+}
+
 // ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
 func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) {
 	ginkgo.GinkgoWriter.Println(fmt.Sprintf(msg, formatArgs...))

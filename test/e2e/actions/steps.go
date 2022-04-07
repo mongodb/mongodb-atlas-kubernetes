@@ -43,13 +43,20 @@ func WaitCluster(input model.UserInputs, generation string) {
 	).Should(Equal("IDLE"), "Kubernetes resource: Cluster status should be IDLE")
 
 	cluster := input.Clusters[0]
-	if cluster.Spec.AdvancedClusterSpec != nil {
+	switch {
+	case cluster.Spec.AdvancedClusterSpec != nil:
 		atlasClient, err := a.AClient()
 		Expect(err).To(BeNil())
 		advancedCluster, err := atlasClient.GetAdvancedCluster(input.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedCluster.StateName).To(Equal("IDLE"))
-	} else {
+	case cluster.Spec.ServerlessSpec != nil:
+		atlasClient, err := a.AClient()
+		Expect(err).To(BeNil())
+		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, cluster.Spec.ServerlessSpec.Name)
+		Expect(err).To(BeNil())
+		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
+	default:
 		ExpectWithOffset(
 			1, mongocli.GetClusterStateName(input.ProjectID, input.Clusters[0].Spec.GetClusterName()),
 		).Should(Equal("IDLE"), "Atlas: Cluster status should be IDLE")
@@ -159,6 +166,14 @@ func CompareAdvancedClustersSpec(requested model.ClusterSpec, created mongodbatl
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
 		}
 	}
+}
+
+func CompareServerlessSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) {
+	serverlessSpec := requested.ServerlessSpec
+	Expect(created.MongoDBVersion).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
+	Expect(created.Name).To(Equal(serverlessSpec.Name))
+	Expect(created.GroupID).To(Not(BeEmpty()))
 }
 
 func SaveK8sResourcesTo(resources []string, ns string, destination string) {
