@@ -13,21 +13,8 @@ func TestFromAtlas(t *testing.T) {
 		t.Log("test")
 		atlasSide := []*mongodbatlas.ThirdPartyIntegration{{
 			Type:        "DATADOG",
-			LicenseKey:  "",
-			AccountID:   "",
-			WriteToken:  "",
-			ReadToken:   "",
 			APIKey:      "somekey",
 			Region:      "EU",
-			ServiceKey:  "",
-			APIToken:    "",
-			TeamName:    "",
-			ChannelName: "",
-			RoutingKey:  "",
-			FlowName:    "",
-			OrgName:     "",
-			URL:         "",
-			Secret:      "",
 		}}
 		converted := fromAtlas(atlasSide)
 
@@ -35,5 +22,4 @@ func TestFromAtlas(t *testing.T) {
 		assert.Equal(t, atlasSide[0].APIKey, converted[0].APIKey)
 		assert.Equal(t, atlasSide[0].URL, converted[0].URL)
 	})
-
 }
