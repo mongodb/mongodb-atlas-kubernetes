@@ -2,6 +2,7 @@ package int
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -843,12 +844,18 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			By(fmt.Sprintf("Creating cluster with backups enabled: %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).NotTo(HaveOccurred())
 
+				// Do not use Gomega function here like func(g Gomega) as it seems to hang when tests run in parallel
 				Eventually(
-					func(g Gomega) {
+					func() error {
 						cluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
-						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(cluster.StateName).To(Equal("IDLE"))
-					}).WithTimeout(30 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+						if err != nil {
+							return err
+						}
+						if cluster.StateName != "IDLE" {
+							return errors.New("cluster is not IDLE yet")
+						}
+						return nil
+					}).WithTimeout(30 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
 
 				actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
 				Expect(err).NotTo(HaveOccurred())

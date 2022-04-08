@@ -263,7 +263,7 @@ func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, pr
 }
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
-func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureServerlessInstanceState(ctx, project, cluster.Spec.ServerlessSpec)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
@@ -271,12 +271,6 @@ func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context,
 // handleRegularCluster ensures the state of the cluster using the Regular Cluster API
 func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureClusterState(ctx, project, cluster)
-	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
-}
-
-// ensureConnectionSecretsAndSetStatusOptions creates the relevant connection secrets and sets
-// status options to the given context. This function can be used for regular clusters and serverless instances
-func (r *AtlasClusterReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, result workflow.Result, c *mongodbatlas.Cluster) (workflow.Result, error) {
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
@@ -288,6 +282,19 @@ func (r *AtlasClusterReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx 
 	if err := r.handleClusterBackupSchedule(ctx, cluster, project.ID(), c.Name, *c.ProviderBackupEnabled || *c.BackupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result, nil
+	}
+	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
+}
+
+// ensureConnectionSecretsAndSetStatusOptions creates the relevant connection secrets and sets
+// status options to the given context. This function can be used for regular clusters and serverless instances
+func (r *AtlasClusterReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, result workflow.Result, c *mongodbatlas.Cluster) (workflow.Result, error) {
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
 		return result, nil
 	}
 
