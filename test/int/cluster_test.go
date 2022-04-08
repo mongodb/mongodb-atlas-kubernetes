@@ -854,16 +854,35 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 						if cluster.StateName != "IDLE" {
 							return errors.New("cluster is not IDLE yet")
 						}
+						time.Sleep(10 * time.Second)
 						return nil
 					}).WithTimeout(30 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
 
-				actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(actualPolicy.Policies[0].PolicyItems).NotTo(BeZero())
-				Expect(actualPolicy.Policies[0].PolicyItems[0].FrequencyType).To(Equal(backupPolicyDefault.Spec.Items[0].FrequencyType))
-				Expect(actualPolicy.Policies[0].PolicyItems[0].FrequencyInterval).To(Equal(backupPolicyDefault.Spec.Items[0].FrequencyInterval))
-				Expect(actualPolicy.Policies[0].PolicyItems[0].RetentionValue).To(Equal(backupPolicyDefault.Spec.Items[0].RetentionValue))
-				Expect(actualPolicy.Policies[0].PolicyItems[0].RetentionUnit).To(Equal(backupPolicyDefault.Spec.Items[0].RetentionUnit))
+				Eventually(func() error {
+					actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+					if err != nil {
+						return err
+					}
+					if len(actualPolicy.Policies[0].PolicyItems) == 0 {
+						return errors.New("policies == 0")
+					}
+					ap := actualPolicy.Policies[0].PolicyItems[0]
+					cp := backupPolicyDefault.Spec.Items[0]
+					if ap.FrequencyType != cp.FrequencyType {
+						return fmt.Errorf("incorrect frequency type. got: %v. expected: %v", ap.FrequencyType, cp.FrequencyType)
+					}
+					if ap.FrequencyInterval != cp.FrequencyInterval {
+						return fmt.Errorf("incorrect frequency interval. got: %v. expected: %v", ap.FrequencyInterval, cp.FrequencyInterval)
+					}
+					if ap.RetentionValue != cp.RetentionValue {
+						return fmt.Errorf("incorrect retention value. got: %v. expected: %v", ap.RetentionValue, cp.RetentionValue)
+					}
+					if ap.RetentionUnit != cp.RetentionUnit {
+						return fmt.Errorf("incorrect retention unit. got: %v. expected: %v", ap.RetentionUnit, cp.RetentionUnit)
+					}
+					return nil
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
+
 			})
 		})
 	})
