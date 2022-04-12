@@ -7,7 +7,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/aws/aws-sdk-go v1.43.23
+	github.com/aws/aws-sdk-go v1.43.37
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.3
 	github.com/google/go-cmp v0.5.7
