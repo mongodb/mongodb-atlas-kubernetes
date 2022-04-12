@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mongodb-atlas-x509
+  namespace: mongodb-atlas-system
+spec:
+  secretName: mongodb-atlas-x509
+  secretTemplate:
+    labels:
+      atlas.mongodb.com/type: credentials
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - mongodb
+  commonName: x509-testing-user
+  isCA: true
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  dnsNames:
+    - example.com
+  issuerRef:
+    name: default-issuer
