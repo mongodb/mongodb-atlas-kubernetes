@@ -1,0 +1,12 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasBackupPolicy
+metadata:
+  name: atlasbackuppolicy-sample
+spec:
+  id: "1"
+  items:
+    - id: "2"
+      frequencyType: "WEEKLY"
+      frequencyInterval: 6
+      retentionUnit: "DAYS"
+      retentionValue: 6

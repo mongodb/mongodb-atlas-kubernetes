@@ -20,12 +20,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,6 +54,7 @@ import (
 
 // AtlasClusterReconciler reconciles an AtlasCluster object
 type AtlasClusterReconciler struct {
+	watch.ResourceWatcher
 	Client           client.Client
 	Log              *zap.SugaredLogger
 	Scheme           *runtime.Scheme
@@ -59,10 +66,20 @@ type AtlasClusterReconciler struct {
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
-
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupschedules,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupschedules/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupschedules,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackupschedules/status,verbs=get;update;patch
+
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackuppolicies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackuppolicies/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackuppolicies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasbackuppolicies/status,verbs=get;update;patch
+
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -113,7 +130,7 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.Client = atlasClient
 
 	handleCluster := r.selectClusterHandler(cluster)
-	if result, _ := handleCluster(ctx, project, cluster); !result.IsOk() {
+	if result, _ := handleCluster(ctx, project, cluster, req); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -138,14 +155,97 @@ func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluste
 	return r.handleRegularCluster
 }
 
+func (r *AtlasClusterReconciler) handleClusterBackupSchedule(ctx *workflow.Context, c *mdbv1.AtlasCluster, projectID, cName string, backupEnabled bool, req ctrl.Request) error {
+	if c.Spec.BackupScheduleRef.Name == "" && c.Spec.BackupScheduleRef.Namespace == "" {
+		r.Log.Debug("no backup schedule configured for the cluster")
+		return nil
+	}
+
+	if !backupEnabled {
+		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for cluster %v", c.ClusterName)
+	}
+
+	resourcesToWatch := []watch.WatchedObject{}
+
+	// Process backup schedule
+	bSchedule := &mdbv1.AtlasBackupSchedule{}
+	bKey := types.NamespacedName{Namespace: c.Spec.BackupScheduleRef.Namespace, Name: c.Spec.BackupScheduleRef.Name}
+	err := r.Client.Get(context.Background(), bKey, bSchedule)
+	if err != nil {
+		return fmt.Errorf("%v backupschedule resource is not found. e: %w", c.Spec.BackupScheduleRef, err)
+	}
+	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: bKey})
+
+	// Process backup policy for the schedule
+	bPolicy := &mdbv1.AtlasBackupPolicy{}
+	pKey := types.NamespacedName{Namespace: bSchedule.Spec.PolicyRef.Namespace, Name: bSchedule.Spec.PolicyRef.Name}
+	err = r.Client.Get(context.Background(), pKey, bPolicy)
+	if err != nil {
+		return fmt.Errorf("unable to get backuppolicy resource %s/%s. e: %w", bSchedule.Spec.PolicyRef.Namespace, bSchedule.Spec.PolicyRef.Name, err)
+	}
+	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bPolicy.Kind, Resource: pKey})
+
+	// Create new backup schedule
+	r.Log.Infof("updating backupschedule for the atlas cluster: %v", cName)
+	apiScheduleRes := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+		ClusterName:           cName,
+		ReferenceHourOfDay:    &bSchedule.Spec.ReferenceHourOfDay,
+		ReferenceMinuteOfHour: &bSchedule.Spec.ReferenceMinuteOfHour,
+		RestoreWindowDays:     &bSchedule.Spec.RestoreWindowDays,
+		UpdateSnapshots:       &bSchedule.Spec.UpdateSnapshots,
+		Policies:              nil,
+	}
+
+	// No matter what happens we should add watchers to both schedule and policy
+	defer func() {
+		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, r.Log, resourcesToWatch...)
+		r.Log.Debugf("watched backup schedule resources: %v\r\n", r.WatchedResources)
+	}()
+
+	apiPolicy := mongodbatlas.Policy{}
+
+	for _, bpItem := range bPolicy.Spec.Items {
+		apiPolicy.PolicyItems = append(apiPolicy.PolicyItems, mongodbatlas.PolicyItem{
+			FrequencyInterval: bpItem.FrequencyInterval,
+			FrequencyType:     strings.ToLower(bpItem.FrequencyType),
+			RetentionValue:    bpItem.RetentionValue,
+			RetentionUnit:     strings.ToLower(bpItem.RetentionUnit),
+		})
+	}
+	apiScheduleRes.Policies = []mongodbatlas.Policy{apiPolicy}
+
+	currentSchedule, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(context.Background(), projectID, cName)
+	if err != nil {
+		r.Log.Debugf("unable to delete current backup policy for project: %v:%v, %v", projectID, cName, err)
+	}
+	r.Log.Debugf("successfully deleted backup policy. Default schedule received: %v", currentSchedule)
+
+	apiScheduleRes.ClusterID = currentSchedule.ClusterID
+	// There is only one policy, always
+	apiScheduleRes.Policies[0].ID = currentSchedule.Policies[0].ID
+
+	r.Log.Debugf("applying backupschedule policy: %v", *apiScheduleRes)
+	if _, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Update(context.Background(), projectID, cName, apiScheduleRes); err != nil {
+		return fmt.Errorf("unable to create backupschedule %v. e: %w", bKey, err)
+	}
+	r.Log.Infof("successfully updated backupschedule for cluster %v", cName)
+	return nil
+}
+
 // handleAdvancedCluster ensures the state of the cluster using the Advanced Cluster API
-func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
+		return result, nil
+	}
+
+	if err := r.handleClusterBackupSchedule(ctx, cluster, project.ID(), c.Name, *c.BackupEnabled, req); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
 		return result, nil
 	}
 
@@ -163,14 +263,27 @@ func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, pr
 }
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
-func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureServerlessInstanceState(ctx, project, cluster.Spec.ServerlessSpec)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
 
 // handleRegularCluster ensures the state of the cluster using the Regular Cluster API
-func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error) {
+func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureClusterState(ctx, project, cluster)
+	if c != nil && c.StateName != "" {
+		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+	}
+
+	if !result.IsOk() {
+		return result, nil
+	}
+
+	if err := r.handleClusterBackupSchedule(ctx, cluster, project.ID(), c.Name, *c.ProviderBackupEnabled || *c.BackupEnabled, req); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		return result, nil
+	}
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
 
@@ -243,11 +356,24 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// Watch for Backup schedules
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasBackupSchedule{}}, watch.NewBackupScheduleHandler(r.WatchedResources))
+	if err != nil {
+		return err
+	}
+
+	// Watch for Backup policies
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasBackupPolicy{}}, watch.NewBackupPolicyHandler(r.WatchedResources))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Delete implements a handler for the Delete event.
 func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
+	// TODO: Add deletion for AtlasBackupSchedule and AtlasBackupPolicy
 	cluster, ok := e.Object.(*mdbv1.AtlasCluster)
 	if !ok {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, e.Object)
@@ -279,6 +405,9 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 
 	for i := range secrets {
 		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
 			log.Errorw("Failed to delete secret", "secretName", secrets[i].Name, "error", err)
 		}
 	}
@@ -332,4 +461,4 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 	return nil
 }
 
-type clusterHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (workflow.Result, error)
+type clusterHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error)

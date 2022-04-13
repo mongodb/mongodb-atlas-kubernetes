@@ -255,6 +255,18 @@ spec:
                   versionReleaseSystem:
                     type: string
                 type: object
+              backupRef:
+                description: Backup schedule for the AtlasCluster
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
               clusterSpec:
                 description: Configuration for the advanced cluster API
                 properties:

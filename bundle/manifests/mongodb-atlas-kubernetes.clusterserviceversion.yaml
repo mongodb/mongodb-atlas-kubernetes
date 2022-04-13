@@ -6,6 +6,14 @@ metadata:
       [
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasBackupPolicy",
+          "metadata": {
+            "name": "atlasbackuppolicy-sample"
+          },
+          "spec": null
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasCluster",
           "metadata": {
             "name": "my-atlas-cluster"
@@ -66,15 +74,19 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Database
-    description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
-    operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
+    description: The MongoDB Atlas Kubernetes Operator enables easy management of
+      Clusters in MongoDB Atlas
+    operators.operatorframework.io/builder: operator-sdk-v1.16.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: mongodb-atlas-kubernetes.v0.8.0
+  name: mongodb-atlas-kubernetes.v0.5.0
   namespace: placeholder
 spec:
-  apiservicedefinitions: {}
+  apiservicedefinitions: { }
   customresourcedefinitions:
     owned:
+      - kind: AtlasBackupPolicy
+        name: atlasbackuppolicies.atlas.mongodb.com
+        version: v1
       - description: AtlasCluster is the Schema for the atlasclusters API
         displayName: Atlas Cluster
         kind: AtlasCluster
@@ -229,6 +241,26 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
+                - atlasbackuppolicies
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackuppolicies/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
                 - atlasclusters
               verbs:
                 - create
@@ -286,6 +318,46 @@ spec:
                 - get
                 - patch
                 - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackupschedules
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackupschedules/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackuppolicies
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasbackuppolicies/status
+              verbs:
+                - get
+                - patch
+                - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator
@@ -296,7 +368,7 @@ spec:
                 app.kubernetes.io/component: controller
                 app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
                 app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-            strategy: {}
+            strategy: { }
             template:
               metadata:
                 labels:
@@ -310,6 +382,8 @@ spec:
                       - --leader-elect
                       - --health-probe-bind-address=:8081
                       - --metrics-bind-address=127.0.0.1:8080
+                      - --log-level=info
+                      - --log-encoder=json
                     command:
                       - /manager
                     env:

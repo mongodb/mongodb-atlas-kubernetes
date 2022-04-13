@@ -1,0 +1,15 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasBackupSchedule
+metadata:
+  name: atlasbackupschedule-sample
+spec:
+  autoExportEnabled: true
+  referenceHourOfDay: 10
+  referenceMinuteOfHour: 10
+  restoreWindowDays: 2
+  policies:
+    - name: atlas-default-backuppolicy
+      namespace: mongodb-atlas-system
+    - name: atlas-default-backuppolicy2
+      namespace: mongodb-atlas-system
+

@@ -2,6 +2,7 @@ package int
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -789,6 +790,99 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 
 				doServerlessClusterStatusChecks()
+			})
+		})
+	})
+
+	Describe("Create default cluster with backups enabled", func() {
+		It("Should succeed", func() {
+			backupPolicyDefault := &mdbv1.AtlasBackupPolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "policy-1",
+					Namespace: namespace.Name,
+				},
+				Spec: mdbv1.AtlasBackupPolicySpec{
+					Items: []mdbv1.AtlasBackupPolicyItem{
+						{
+							FrequencyType:     "weekly",
+							FrequencyInterval: 1,
+							RetentionUnit:     "days",
+							RetentionValue:    7,
+						},
+					},
+				},
+				Status: mdbv1.AtlasBackupPolicyStatus{},
+			}
+
+			backupScheduleDefault := &mdbv1.AtlasBackupSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "schedule-1",
+					Namespace: namespace.Name,
+				},
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					AutoExportEnabled: false,
+					PolicyRef: mdbv1.ResourceRefNamespaced{
+						Name:      backupPolicyDefault.Name,
+						Namespace: backupPolicyDefault.Namespace,
+					},
+					ReferenceHourOfDay:    12,
+					ReferenceMinuteOfHour: 10,
+					RestoreWindowDays:     5,
+					UpdateSnapshots:       false,
+					Export:                mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).NotTo(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).NotTo(HaveOccurred())
+
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).WithBackupScheduleRef(mdbv1.ResourceRefNamespaced{
+				Name:      backupScheduleDefault.Name,
+				Namespace: backupScheduleDefault.Namespace,
+			})
+
+			By(fmt.Sprintf("Creating cluster with backups enabled: %s", kube.ObjectKeyFromObject(createdCluster)), func() {
+				Expect(k8sClient.Create(context.Background(), createdCluster)).NotTo(HaveOccurred())
+
+				// Do not use Gomega function here like func(g Gomega) as it seems to hang when tests run in parallel
+				Eventually(
+					func() error {
+						cluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+						if err != nil {
+							return err
+						}
+						if cluster.StateName != "IDLE" {
+							return errors.New("cluster is not IDLE yet")
+						}
+						time.Sleep(10 * time.Second)
+						return nil
+					}).WithTimeout(30 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
+
+				Eventually(func() error {
+					actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdCluster.Spec.ClusterSpec.Name)
+					if err != nil {
+						return err
+					}
+					if len(actualPolicy.Policies[0].PolicyItems) == 0 {
+						return errors.New("policies == 0")
+					}
+					ap := actualPolicy.Policies[0].PolicyItems[0]
+					cp := backupPolicyDefault.Spec.Items[0]
+					if ap.FrequencyType != cp.FrequencyType {
+						return fmt.Errorf("incorrect frequency type. got: %v. expected: %v", ap.FrequencyType, cp.FrequencyType)
+					}
+					if ap.FrequencyInterval != cp.FrequencyInterval {
+						return fmt.Errorf("incorrect frequency interval. got: %v. expected: %v", ap.FrequencyInterval, cp.FrequencyInterval)
+					}
+					if ap.RetentionValue != cp.RetentionValue {
+						return fmt.Errorf("incorrect retention value. got: %v. expected: %v", ap.RetentionValue, cp.RetentionValue)
+					}
+					if ap.RetentionUnit != cp.RetentionUnit {
+						return fmt.Errorf("incorrect retention unit. got: %v. expected: %v", ap.RetentionUnit, cp.RetentionUnit)
+					}
+					return nil
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Not(HaveOccurred()))
+
 			})
 		})
 	})

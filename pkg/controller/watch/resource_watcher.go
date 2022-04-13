@@ -22,10 +22,18 @@ func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, r
 	for _, watchedObjectKey := range watchedObjectsKeys {
 		r.addWatchedResourceIfNotAdded(watchedObjectKey, resourceKind, dependant, log)
 	}
-
 	// Next we need to clean any watched resources that are not referenced any more. This could happen if the SecretRef
 	// has been updated to reference another Secret, for example
 	r.cleanNonWatchedResources(dependant, resourceKind, watchedObjectsKeys)
+}
+
+func (r ResourceWatcher) EnsureMultiplesResourcesAreWatched(dependant client.ObjectKey, log *zap.SugaredLogger, resources ...WatchedObject) {
+	for _, res := range resources {
+		r.addWatchedResourceIfNotAdded(res.Resource, res.ResourceKind, dependant, log)
+		log.Debugf("resource watcher: watching %v to trigger reconciliation for %v", res.Resource, dependant)
+	}
+
+	r.cleanNonWatchedResourcesExceptMultiple(dependant, resources...)
 }
 
 func (r *ResourceWatcher) addWatchedResourceIfNotAdded(watchedObjectKey client.ObjectKey, resourceKind string, dependentResourceNsName client.ObjectKey, log *zap.SugaredLogger) {
@@ -34,7 +42,7 @@ func (r *ResourceWatcher) addWatchedResourceIfNotAdded(watchedObjectKey client.O
 		r.WatchedResources[key] = make(map[client.ObjectKey]bool)
 	}
 	if _, ok := r.WatchedResources[key][dependentResourceNsName]; !ok {
-		log.Debugf("Watching %s to trigger reconciliation for %s", key, dependentResourceNsName)
+		log.Debugf("resource watcher: watching %s to trigger reconciliation for %s", key, dependentResourceNsName)
 	}
 	r.WatchedResources[key][dependentResourceNsName] = true
 }
@@ -42,6 +50,20 @@ func (r *ResourceWatcher) addWatchedResourceIfNotAdded(watchedObjectKey client.O
 func (r ResourceWatcher) cleanNonWatchedResources(dependant client.ObjectKey, resourceKind string, watchedKeys []client.ObjectKey) {
 	for k, v := range r.WatchedResources {
 		if !contains(watchedKeys, k.Resource) || k.ResourceKind != resourceKind {
+			delete(v, dependant)
+		}
+	}
+}
+
+func (r ResourceWatcher) cleanNonWatchedResourcesExceptMultiple(dependant client.ObjectKey, resources ...WatchedObject) {
+	for k, v := range r.WatchedResources {
+		toRemove := true
+		for _, res := range resources {
+			if res.Resource == k.Resource {
+				toRemove = false
+			}
+		}
+		if toRemove {
 			delete(v, dependant)
 		}
 	}

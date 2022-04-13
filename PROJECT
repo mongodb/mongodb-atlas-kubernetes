@@ -1,6 +1,9 @@
 domain: mongodb.com
-layout: 
+layout:
 - go.kubebuilder.io/v2
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
 projectName: mongodb-atlas-kubernetes
 repo: github.com/mongodb/mongodb-atlas-kubernetes
 resources:
@@ -31,7 +34,22 @@ resources:
   kind: AtlasDatabaseUser
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
+- api:
+    crdVersion: v1beta1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
+  group: atlas
+  kind: AtlasBackupPolicy
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  version: v1
+- api:
+    crdVersion: v1beta1
+    namespaced: true
+  controller: true
+  domain: mongodb.com
+  group: atlas
+  kind: AtlasBackupSchedule
+  path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
+  version: v1
 version: "3"
-plugins:
-  manifests.sdk.operatorframework.io/v2: {}
-  scorecard.sdk.operatorframework.io/v2: {}

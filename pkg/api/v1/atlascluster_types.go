@@ -125,6 +125,10 @@ type AtlasClusterSpec struct {
 	// +optional
 	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
 
+	// Backup schedule for the AtlasCluster
+	// +optional
+	BackupScheduleRef ResourceRefNamespaced `json:"backupRef"`
+
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
 	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
@@ -570,6 +574,13 @@ func (c *AtlasCluster) WithProviderName(name provider.ProviderName) *AtlasCluste
 
 func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
 	c.Spec.ClusterSpec.ProviderSettings.RegionName = name
+	return c
+}
+
+func (c *AtlasCluster) WithBackupScheduleRef(ref ResourceRefNamespaced) *AtlasCluster {
+	t := true
+	c.Spec.ClusterSpec.ProviderBackupEnabled = &t
+	c.Spec.BackupScheduleRef = ref
 	return c
 }
 

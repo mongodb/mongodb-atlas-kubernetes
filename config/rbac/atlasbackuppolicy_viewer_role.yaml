@@ -1,0 +1,20 @@
+# permissions for end users to view atlasbackuppolicies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasbackuppolicy-viewer-role
+rules:
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackuppolicies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackuppolicies/status
+    verbs:
+      - get

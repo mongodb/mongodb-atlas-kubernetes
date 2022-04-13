@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasbackupschedules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasbackupschedule-editor-role
+rules:
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackupschedules
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasbackupschedules/status
+    verbs:
+      - get

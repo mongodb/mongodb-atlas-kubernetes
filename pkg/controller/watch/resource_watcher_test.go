@@ -62,4 +62,5 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		}
 		assert.Equal(t, expectedWatched, watcher.WatchedResources)
 	})
+	// TODO: add test for different kind of resources
 }
