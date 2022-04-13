@@ -127,7 +127,7 @@ type AtlasClusterSpec struct {
 
 	// Backup schedule for the AtlasCluster
 	// +optional
-	BackupSchedule ResourceRefNamespaced `json:"backupRef"`
+	BackupScheduleRef ResourceRefNamespaced `json:"backupRef"`
 
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
@@ -580,7 +580,7 @@ func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
 func (c *AtlasCluster) WithBackupScheduleRef(ref ResourceRefNamespaced) *AtlasCluster {
 	t := true
 	c.Spec.ClusterSpec.ProviderBackupEnabled = &t
-	c.Spec.BackupSchedule = ref
+	c.Spec.BackupScheduleRef = ref
 	return c
 }
 

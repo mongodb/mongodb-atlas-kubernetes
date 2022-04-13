@@ -433,7 +433,7 @@ func (in *AtlasClusterSpec) DeepCopyInto(out *AtlasClusterSpec) {
 		*out = new(AdvancedClusterSpec)
 		(*in).DeepCopyInto(*out)
 	}
-	out.BackupSchedule = in.BackupSchedule
+	out.BackupScheduleRef = in.BackupScheduleRef
 	if in.ServerlessSpec != nil {
 		in, out := &in.ServerlessSpec, &out.ServerlessSpec
 		*out = new(ServerlessSpec)

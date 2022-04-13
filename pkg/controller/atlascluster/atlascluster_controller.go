@@ -156,7 +156,7 @@ func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluste
 }
 
 func (r *AtlasClusterReconciler) handleClusterBackupSchedule(ctx *workflow.Context, c *mdbv1.AtlasCluster, projectID, cName string, backupEnabled bool, req ctrl.Request) error {
-	if c.Spec.BackupSchedule.Name == "" && c.Spec.BackupSchedule.Namespace == "" {
+	if c.Spec.BackupScheduleRef.Name == "" && c.Spec.BackupScheduleRef.Namespace == "" {
 		r.Log.Debug("no backup schedule configured for the cluster")
 		return nil
 	}
@@ -169,10 +169,10 @@ func (r *AtlasClusterReconciler) handleClusterBackupSchedule(ctx *workflow.Conte
 
 	// Process backup schedule
 	bSchedule := &mdbv1.AtlasBackupSchedule{}
-	bKey := types.NamespacedName{Namespace: c.Spec.BackupSchedule.Namespace, Name: c.Spec.BackupSchedule.Name}
+	bKey := types.NamespacedName{Namespace: c.Spec.BackupScheduleRef.Namespace, Name: c.Spec.BackupScheduleRef.Name}
 	err := r.Client.Get(context.Background(), bKey, bSchedule)
 	if err != nil {
-		return fmt.Errorf("%v backupschedule resource is not found. e: %w", c.Spec.BackupSchedule, err)
+		return fmt.Errorf("%v backupschedule resource is not found. e: %w", c.Spec.BackupScheduleRef, err)
 	}
 	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: bKey})
 
