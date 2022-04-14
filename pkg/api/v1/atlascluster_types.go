@@ -24,8 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )

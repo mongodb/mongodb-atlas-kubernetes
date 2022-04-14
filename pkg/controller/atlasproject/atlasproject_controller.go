@@ -205,7 +205,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
-	if result = ensureIntegration(ctx, projectID, project); !result.IsOk() {
+	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.IntegrationReadyType, result)
 		return result.ReconcileResult(), nil
 	}

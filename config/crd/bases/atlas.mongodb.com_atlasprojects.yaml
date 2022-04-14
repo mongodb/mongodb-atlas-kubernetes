@@ -53,6 +53,137 @@ spec:
                 required:
                 - name
                 type: object
+              integrations:
+                description: Integrations is a list of integration with MongoDB Atlas
+                  for the Project
+                items:
+                  properties:
+                    accountId:
+                      type: string
+                    apiKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    apiTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    channelName:
+                      type: string
+                    flowName:
+                      type: string
+                    licenseKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    orgName:
+                      type: string
+                    readTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    region:
+                      type: string
+                    routingKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    secret:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    serviceKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    teamName:
+                      type: string
+                    type:
+                      description: Third Party Integration type such as Slack, New
+                        Relic, etc
+                      enum:
+                      - PAGER_DUTY
+                      - SLACK
+                      - DATADOG
+                      - NEW_RELIC
+                      - OPS_GENIE
+                      - VICTOR_OPS
+                      - FLOWDOCK
+                      - WEBHOOK
+                      - MICROSOFT_TEAMS
+                      type: string
+                    url:
+                      type: string
+                    writeTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  type: object
+                type: array
               name:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
@@ -203,6 +334,136 @@ spec:
               id:
                 description: The ID of the Atlas Project
                 type: string
+              integrations:
+                description: The list of current integrations for the project
+                items:
+                  properties:
+                    accountId:
+                      type: string
+                    apiKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    apiTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    channelName:
+                      type: string
+                    flowName:
+                      type: string
+                    licenseKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    orgName:
+                      type: string
+                    readTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    region:
+                      type: string
+                    routingKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    secret:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    serviceKeyRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    teamName:
+                      type: string
+                    type:
+                      description: Third Party Integration type such as Slack, New
+                        Relic, etc
+                      enum:
+                      - PAGER_DUTY
+                      - SLACK
+                      - DATADOG
+                      - NEW_RELIC
+                      - OPS_GENIE
+                      - VICTOR_OPS
+                      - FLOWDOCK
+                      - WEBHOOK
+                      - MICROSOFT_TEAMS
+                      type: string
+                    url:
+                      type: string
+                    writeTokenRef:
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  type: object
+                type: array
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator

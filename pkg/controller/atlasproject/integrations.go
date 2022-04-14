@@ -2,11 +2,11 @@ package atlasproject
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
@@ -16,39 +16,49 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-func ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	integrationList := project.Spec.DeepCopy().Integrations
-	if result := createOrDeleteIntegrationInAtlas(ctx, projectID, integrationList); !result.IsOk() {
+type integrations struct {
+	i                []project.Integration
+	projectNamespace string
+}
+
+func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	integrationList := integrations{
+		i:                project.Spec.DeepCopy().Integrations,
+		projectNamespace: project.Namespace,
+	}
+	if result := createOrDeleteIntegrationInAtlas(ctx, r.Client, projectID, integrationList); !result.IsOk() {
 		return result
 	}
 	return workflow.OK()
 }
 
-func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, projectID string, requestedIntegrations []project.Integration) workflow.Result {
-	integrationsInAtlas, err := getIntegrationsAndConvert(ctx, projectID)
+func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) workflow.Result {
+	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
+	ctx.Log.Debugf("Got Integrations From Atlas: %v", &integrationsInAtlas)
+	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
 
-	indentificatorsForDelete := set.Difference(integrationsInAtlas, requestedIntegrations)
+	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, requestedIntegrations.i)
 	ctx.Log.Debugf("indentificatorsForDelete: %v", indentificatorsForDelete)
-	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete, ctx.Log); err != nil {
+	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete); err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
 
-	integrationsToUpdate := set.Intersection(integrationsInAtlas, requestedIntegrations)
+	integrationsToUpdate := set.Intersection(integrationsInAtlasAlias, requestedIntegrations.i)
 	ctx.Log.Debugf("integrationsToUpdate: %v", integrationsToUpdate)
-	if result := updateIntegrationsAtlas(ctx, projectID, integrationsToUpdate, ctx.Log); !result.IsOk() {
+	if result := updateIntegrationsAtlas(ctx, c, projectID, integrationsToUpdate, requestedIntegrations.projectNamespace); !result.IsOk() {
 		return result
 	}
 
-	indentificatorsForCreate := set.Difference(requestedIntegrations, integrationsInAtlas)
+	indentificatorsForCreate := set.Difference(requestedIntegrations.i, integrationsInAtlasAlias)
 	ctx.Log.Debugf("indentificatorsForCreate: %v", indentificatorsForCreate)
-	if result := createIntegrationsInAtlas(ctx, projectID, indentificatorsForCreate); !result.IsOk() {
+	if result := createIntegrationsInAtlas(ctx, c, projectID, indentificatorsForCreate, requestedIntegrations.projectNamespace); !result.IsOk() {
 		return result
 	}
 
-	ready, err := checkIntegrationsReady(ctx, projectID, requestedIntegrations)
+	ready, err := checkIntegrationsReady(ctx, c, projectID, requestedIntegrations)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
@@ -60,46 +70,48 @@ func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, projectID string, r
 	return workflow.OK()
 }
 
-func updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, log *zap.SugaredLogger) workflow.Result {
+func updateIntegrationsAtlas(ctx *workflow.Context, c client.Client, projectID string, integrationsToUpdate [][]set.Identifiable, defaultNS string) workflow.Result {
 	for _, item := range integrationsToUpdate {
-		atlasIntegration, err := item[0].(project.Integration).ToAtlas()
-		if err != nil {
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
+		atlasIntegration := item[0].(aliasThirdPartyIntegration)
+		if &atlasIntegration == nil {
+			ctx.Log.Warn("Update Integrations: Can not convert atlas integration")
+			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Update Integrations: Can not convert atlas integration")
 		}
 
-		kubeIntegration, err := item[1].(project.Integration).ToAtlas()
-		if err != nil {
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
+		kubeIntegration := item[1].(project.Integration).ToAtlas(defaultNS, c)
+		if kubeIntegration == nil {
+			ctx.Log.Warn("Update Integrations: Can not convert kube integration")
+			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Update Integrations: Can not convert kube integration")
 		}
-		if &atlasIntegration != &kubeIntegration {
-			log.Debugf("Try to update integration: %s", kubeIntegration.Type)
-			if _, _, err = ctx.Client.Integrations.Replace(context.Background(), projectID, kubeIntegration.Type, kubeIntegration); err != nil {
-				return workflow.Terminate(workflow.ProjectIntegrationInAtlasRequest, err.Error())
+		t := mongodbatlas.ThirdPartyIntegration(atlasIntegration)
+		if &t != kubeIntegration {
+			ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
+			if _, _, err := ctx.Client.Integrations.Replace(context.Background(), projectID, kubeIntegration.Type, kubeIntegration); err != nil {
+				return workflow.Terminate(workflow.ProjectIntegrationInAtlasRequest, "Can not convert integration")
 			}
 		}
 	}
 	return workflow.OK()
 }
 
-func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integrationsToRemove []set.Identifiable, log *zap.SugaredLogger) error {
+func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integrationsToRemove []set.Identifiable) error {
 	for _, integration := range integrationsToRemove {
 		if _, err := ctx.Client.Integrations.Delete(context.Background(), projectID, integration.Identifier().(string)); err != nil {
 			return err
 		}
-		log.Debugw("Third Party Integration deleted: ", integration.Identifier())
+		ctx.Log.Debugw("Third Party Integration deleted: ", integration.Identifier())
 	}
 	return nil
 }
 
-func createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.Identifiable) workflow.Result {
+func createIntegrationsInAtlas(ctx *workflow.Context, c client.Client, projectID string, integrations []set.Identifiable, defaultNS string) workflow.Result {
 	for _, item := range integrations {
-		integration, err := item.(project.Integration).ToAtlas()
-		if err != nil {
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
+		integration := item.(project.Integration).ToAtlas(defaultNS, c)
+		if integration == nil {
+			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Can not convert integration")
 		}
 
-		_, _, err = ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
-
+		_, _, err := ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
 		if err != nil {
 			return workflow.Terminate(workflow.ProjectIntegrationInAtlasRequest, err.Error())
 		}
@@ -107,37 +119,40 @@ func createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrat
 	return workflow.OK()
 }
 
-func checkIntegrationsReady(ctx *workflow.Context, projectID string, requestedIntegrations []project.Integration) (bool, error) {
-	atlasIntegrations, err := getIntegrationsAndConvert(ctx, projectID)
+func checkIntegrationsReady(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) (bool, error) {
+	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
 	if err != nil {
 		return false, err
 	}
-	if reflect.DeepEqual(atlasIntegrations, requestedIntegrations) {
+	ctx.Log.Debugf("Got Integrations From Atlas: %v", &integrationsInAtlas)
+
+	requestedIntegrationsConverted := convertToAtlasIntegrationList(requestedIntegrations, c, ctx.Log)
+	if reflect.DeepEqual(integrationsInAtlas, requestedIntegrationsConverted) {
 		ctx.SetConditionTrue(status.IntegrationReadyType)
 		return true, nil
 	}
 	return false, err
 }
 
-func getIntegrationsAndConvert(ctx *workflow.Context, projectID string) ([]project.Integration, error) {
-	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
-	if err != nil {
-		return nil, err
+func convertToAtlasIntegrationList(list integrations, c client.Client, log *zap.SugaredLogger) []*mongodbatlas.ThirdPartyIntegration {
+	// var result []*mongodbatlas.ThirdPartyIntegration
+	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.i))
+	for i, item := range list.i {
+		result[i] = item.ToAtlas(list.projectNamespace, c)
 	}
-	ctx.Log.Debugf("Got Integrations From Atlas: %v", &integrationsInAtlas)
-
-	convertedIntegrationsInAtlas := fromAtlas(integrationsInAtlas.Results)
-	if err != nil {
-		return nil, err
-	}
-	return convertedIntegrationsInAtlas, nil
+	return result
 }
 
-func fromAtlas(source []*mongodbatlas.ThirdPartyIntegration) []project.Integration {
-	result := make([]project.Integration, len(source))
-	for i, item := range source {
-		result[i] = project.Integration(*item)
-		fmt.Print(result[i].Type)
+type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration
+
+func (i aliasThirdPartyIntegration) Identifier() interface{} {
+	return i.Type
+}
+
+func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []aliasThirdPartyIntegration {
+	result := make([]aliasThirdPartyIntegration, len(list))
+	for i, item := range list {
+		result[i] = aliasThirdPartyIntegration(*item)
 	}
 	return result
 }

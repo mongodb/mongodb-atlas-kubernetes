@@ -1,5 +1,15 @@
 package v1
 
+import (
+	"context"
+	"fmt"
+
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+)
+
 /*
 Copyright (C) MongoDB, Inc. 2020-present.
 
@@ -29,4 +39,38 @@ type LabelSpec struct {
 	// +kubebuilder:validation:MaxLength:=255
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.ObjectKey {
+	if rn == nil {
+		return nil
+	}
+
+	ns := rn.Namespace
+	if rn.Namespace != "" {
+		ns = parentNamespace
+	}
+	key := kube.ObjectKey(ns, rn.Name)
+	return &key
+}
+
+func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {
+	if rn != nil {
+		secret := &v1.Secret{}
+		if rn.Namespace != "" {
+		}
+		if err := kubeClient.Get(context.Background(), *rn.GetObject(parentNamespace), secret); err != nil {
+			return "", err
+		}
+		p, exist := secret.Data["password"]
+		switch {
+		case !exist:
+			return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
+		case len(p) == 0:
+			return "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
+		default:
+			return string(p), nil
+		}
+	}
+	return "", nil
 }
