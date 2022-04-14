@@ -195,4 +195,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
+  replaces: mongodb-atlas-kubernetes.v0.2.0
   version: 0.0.0

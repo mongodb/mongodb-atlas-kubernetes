@@ -12,6 +12,8 @@ ifndef PRODUCT_VERSION
 PRODUCT_VERSION := $(shell git describe --tags --dirty --broken)
 endif
 
+CONTAINER_ENGINE?=docker
+
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -160,16 +162,16 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, update se
 
 .PHONY: image
 image: manager ## Build the operator image
-	docker build -t $(OPERATOR_IMAGE) .
-	docker push $(OPERATOR_IMAGE)
+	$(CONTAINER_ENGINE) build -t $(OPERATOR_IMAGE) .
+	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_ENGINE) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
-bundle-push: bundle bundle-build ## Publish the bundle image
-	docker push $(BUNDLE_IMG)
+bundle-push: ## Push the bundle image.
+	$(CONTAINER_ENGINE) push $(BUNDLE_IMG)
 
 # A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
 # These images MUST exist in a registry and be pull-able.
@@ -180,7 +182,7 @@ CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
 #catalog-build: IMG=
 catalog-build: opm ## bundle bundle-push ## Build file-based bundle
 	ifneq ($(origin CATALOG_BASE_IMG), undefined)
-		$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMAGE) --bundles $(BUNDLE_IMGS) --from-index $(CATALOG_BASE_IMG)
+		$(OPM) index add --container-tool $(CONTAINER_ENGINE) --mode semver --tag $(CATALOG_IMAGE) --bundles $(BUNDLE_IMGS) --from-index $(CATALOG_BASE_IMG)
 	else
 		$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
 		CATALOG_DIR=$(CATALOG_DIR) \
@@ -192,11 +194,11 @@ catalog-build: opm ## bundle bundle-push ## Build file-based bundle
 	endif
 
 docker-build: ## Build the docker image
-	docker build -t $(IMGVERSION) .
+	$(CONTAINER_ENGINE) build -t $(IMGVERSION) .
 
 .PHONY: catalog-push
 catalog-push:
-	docker push $(CATALOG_IMAGE)
+	$(CONTAINER_ENGINE) push $(CATALOG_IMAGE)
 
 .PHONY: build-subscription
 build-subscription:
@@ -229,7 +231,7 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 
 .PHONY: docker-push
 docker-push: ## Push the docker image
-	docker push $(IMGVERSION)
+	$(CONTAINER_ENGINE) push $(IMGVERSION)
 
 # Additional make goals
 .PHONY: run-kind
