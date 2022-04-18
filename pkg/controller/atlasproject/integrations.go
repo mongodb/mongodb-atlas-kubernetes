@@ -135,7 +135,6 @@ func checkIntegrationsReady(ctx *workflow.Context, c client.Client, projectID st
 }
 
 func convertToAtlasIntegrationList(list integrations, c client.Client, log *zap.SugaredLogger) []*mongodbatlas.ThirdPartyIntegration {
-	// var result []*mongodbatlas.ThirdPartyIntegration
 	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.i))
 	for i, item := range list.i {
 		result[i] = item.ToAtlas(list.projectNamespace, c)

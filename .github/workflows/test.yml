@@ -154,6 +154,7 @@ jobs:
             "serverless-instance",
             "multinamespaced",
             "privatelink",
+            "integration-ns",
           ]
         include:
           - k8s: "latest-openshift"

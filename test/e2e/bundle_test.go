@@ -41,6 +41,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		By("User creates configuration for a new Project and Cluster", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},

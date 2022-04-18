@@ -50,6 +50,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 		By("Set up test data configuration", func() {
 			watched1 := model.NewTestDataProvider(
 				"multinamestace-watched1",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -59,6 +60,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			)
 			watchedGlobal := model.NewTestDataProvider(
 				"multinamestace-watched-global",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -68,6 +70,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			)
 			notWatched := model.NewTestDataProvider(
 				"multinamestace-notwatched",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -77,6 +80,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			)
 			notWatchedGlobal := model.NewTestDataProvider(
 				"multinamestace-notwatched",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},

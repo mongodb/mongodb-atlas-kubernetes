@@ -64,6 +64,7 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 			// TODO need for the next task
 			t = model.NewTestDataProvider(
 				"operator-in-openshift",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},

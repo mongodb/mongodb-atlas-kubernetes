@@ -47,7 +47,7 @@ func (p *AProject) ProjectName(name string) *AProject {
 	return p
 }
 
-func (p *AProject) SecretRef(name string) *AProject {
+func (p *AProject) WithSecretRef(name string) *AProject {
 	p.Spec.ConnectionSecret = &v1.ResourceRef{Name: name}
 	return p
 }
@@ -66,6 +66,11 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 		Region:   region,
 	}
 	p.Spec.PrivateEndpoints = append(p.Spec.PrivateEndpoints, link)
+	return p
+}
+
+func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
+	p.Spec.Integrations = append(p.Spec.Integrations, project.Integration(spec))
 	return p
 }
 

@@ -64,6 +64,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 		By("Users can create clusters with the same name", func() {
 			NortonData = model.NewTestDataProvider(
 				"norton-wide",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -78,6 +79,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			)
 			NimnulData = model.NewTestDataProvider(
 				"nimnul-wide",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},

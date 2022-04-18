@@ -10,11 +10,11 @@ type TestDataProvider struct {
 	SkipAppConnectivityCheck bool
 }
 
-func NewTestDataProvider(keyTestPrefix string, r *AtlasKeyType, initClusterConfigs []string, updateClusterConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
+func NewTestDataProvider(keyTestPrefix string, project AProject, r *AtlasKeyType, initClusterConfigs []string, updateClusterConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
 	var data TestDataProvider
 	data.ConfPaths = initClusterConfigs
 	data.ConfUpdatePaths = updateClusterConfig
-	data.Resources = NewUserInputs(keyTestPrefix, users, r)
+	data.Resources = NewUserInputs(keyTestPrefix, project, users, r)
 	data.Actions = actions
 	data.PortGroup = portGroup
 	for i := range initClusterConfigs {

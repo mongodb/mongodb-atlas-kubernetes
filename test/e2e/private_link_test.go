@@ -81,6 +81,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 			model.NewTestDataProvider(
 				"privatelink-aws-1",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -102,6 +103,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
 			model.NewTestDataProvider(
 				"privatelink-azure-1",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -121,6 +123,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
 			model.NewTestDataProvider(
 				"privatelink-aws-2",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -146,6 +149,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-azure-2"),
 			model.NewTestDataProvider(
 				"privatelink-aws-azure",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},

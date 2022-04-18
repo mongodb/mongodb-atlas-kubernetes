@@ -82,6 +82,7 @@ var _ = Describe("HELM charts", func() {
 		Entry("Several actions with helm update",
 			model.NewTestDataProvider(
 				"helm-ns",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic_helm.yaml"},
 				[]string{},
@@ -106,6 +107,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project and Cluster", func() {
 				data = model.NewTestDataProvider(
 					"helm-wide",
+					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_basic_helm.yaml"},
 					[]string{},
@@ -138,6 +140,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project, Cluster, DBUser", func() {
 				data = model.NewTestDataProvider(
 					"helm-upgrade",
+					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_basic_helm.yaml"},
 					[]string{},
@@ -177,6 +180,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project and Advanced Cluster", func() {
 				data = model.NewTestDataProvider(
 					"helm-advanced",
+					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_advanced_helm.yaml"},
 					[]string{},
@@ -213,6 +217,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
 				data = model.NewTestDataProvider(
 					"helm-advanced",
+					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
 					[]string{},
