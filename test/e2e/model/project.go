@@ -62,7 +62,7 @@ func (p *AProject) WithIpAccess(ipAdress, comment string) *AProject {
 }
 
 func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string) *AProject {
-	link := project.PrivateEndpoint{
+	link := v1.PrivateEndpoint{
 		Provider: provider,
 		Region:   region,
 	}
@@ -100,7 +100,7 @@ func (p *AProject) GetPrivateIDByProviderRegion(provider provider.ProviderName, 
 }
 
 func (p *AProject) DeletePrivateLink(id string) *AProject {
-	var peList []project.PrivateEndpoint
+	var peList []v1.PrivateEndpoint
 	for _, peItem := range p.Spec.PrivateEndpoints {
 		if peItem.ID != id {
 			peList = append(peList, peItem)
