@@ -73,7 +73,7 @@ func readX509CertFromSecret(kubeClient client.Client, secretRef client.ObjectKey
 		return "", err
 	}
 
-	defaultName := "ca.crt"
+	const defaultName = "ca.crt"
 	certData, found := secret.Data[defaultName]
 	if !found {
 		if len(secret.Data) != 1 {
