@@ -8,6 +8,10 @@ SHELL := /usr/bin/env bash
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 0.8.0
 
+ifndef PRODUCT_VERSION
+PRODUCT_VERSION := $(shell git describe --tags --dirty --broken)
+endif
+
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -85,7 +89,6 @@ e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-n
 	./scripts/e2e_local.sh $(label) $(build)
 
 .PHONY: manager
-manager: export PRODUCT_VERSION=$(shell git describe --tags --dirty --broken)
 manager: generate fmt vet ## Build manager binary
 	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
 
