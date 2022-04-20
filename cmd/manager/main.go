@@ -83,7 +83,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("starting with configuration", zap.Any("config", config))
+	logger.Info("starting with configuration", zap.Any("config", config), zap.Any("version", atlas.ProductVersion))
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
