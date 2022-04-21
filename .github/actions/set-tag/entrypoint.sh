@@ -2,6 +2,8 @@
 
 #set -eou pipefail
 
+git config --global --add safe.directory /github/workspace
+
 # Setup tag name
 commit_id=$(git rev-parse --short HEAD)
 branch_name=${GITHUB_HEAD_REF-}
