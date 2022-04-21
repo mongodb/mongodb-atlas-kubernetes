@@ -257,6 +257,7 @@ var _ = Describe("HELM charts", func() {
 			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
 				data = model.NewTestDataProvider(
 					"helm-serverless",
+					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 					[]string{"data/atlascluster_serverless.yaml"},
 					[]string{},

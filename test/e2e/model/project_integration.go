@@ -8,7 +8,7 @@ type ProjectIntegration project.Integration
 
 func NewPIntegration(iType string) *ProjectIntegration {
 	return &ProjectIntegration{
-		Type:          iType,
+		Type: iType,
 	}
 }
 

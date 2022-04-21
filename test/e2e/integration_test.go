@@ -8,16 +8,19 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ =  Describe("Configuration namespaced. Deploy cluster", Label("integration-ns"), func() {
+var _ = Describe("Configuration namespaced. Deploy cluster", Label("integration-ns"), func() {
 	var data model.TestDataProvider
 	var key string
 
@@ -44,10 +47,10 @@ var _ =  Describe("Configuration namespaced. Deploy cluster", Label("integration
 			)
 			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+				[]string{"deploy", "atlasprojects"},
 				data.Resources.Namespace,
 			)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
+			actions.DeleteUserResourcesProject(&data)
 		}
 	})
 
@@ -58,19 +61,14 @@ var _ =  Describe("Configuration namespaced. Deploy cluster", Label("integration
 		},
 		Entry("Users can use integration section", Label("project-integration"),
 			model.NewTestDataProvider(
-				"operator-ns-project-integration-cr",
-				*model.NewProject("project-integration-cr").
-					ProjectName("project-integration").
-					WithIntegration(
-						*model.NewPIntegration("DATADOG").WithAPIKeyRef("test-int", ""),
-					),
+				"operator-integration-cr",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{},
 				[]string{},
 				[]model.DBUser{},
 				30018,
-				[]func(*model.TestDataProvider){
-				},
+				[]func(*model.TestDataProvider){},
 			),
 		),
 	)
@@ -79,29 +77,53 @@ var _ =  Describe("Configuration namespaced. Deploy cluster", Label("integration
 func integrationCycle(data model.TestDataProvider, key string) {
 	actions.PrepareUsersConfigurations(&data)
 	deploy.NamespacedOperator(&data)
-
-	By("Create Secret for integration", func() {
-		for _, i := range data.Resources.Project.Spec.Integrations {
-			kubecli.CreateUserSecret(key, i.APIKeyRef.Name, i.APIKeyRef.Namespace)
-		}
-	})
+	t := "DATADOG"
 
 	By("Deploy User Resouces", func() {
 		actions.DeployProjectAndWait(&data, "1")
 		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
+		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		Expect(status).Should(BeEmpty())
 	})
 
+	By("Add integration", func() {
+		newIntegration := model.NewPIntegration(t).WithAPIKeyRef("test-int", data.Resources.Namespace).WithRegion("EU")
+		data.Resources.Project = data.Resources.Project.WithIntegration(*newIntegration)
+		By("Create Secret for integration", func() {
+			for _, i := range data.Resources.Project.Spec.Integrations {
+				kubecli.CreateUserSecret(key, i.APIKeyRef.Name, i.APIKeyRef.Namespace)
+			}
+		})
+		actions.PrepareUsersConfigurations(&data)
+		actions.DeployProjectAndWait(&data, "2")
+	})
+	atlasClient, err := atlas.AClient()
 	By("Check statuses", func() {
-		// TODO to kube
 		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
 		Expect(status).Should(Equal("True"))
+
+		Expect(err).ShouldNot(HaveOccurred())
+
+		dog, err := atlasClient.GetIntegraionbyType(data.Resources.ProjectID, t)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(dog.APIKey).Should(Equal(key))
 	})
 
-	By("Additional check for the current data set", func() {
-		for _, check := range data.Actions {
-			check(&data)
-		}
+	By("Delete integration", func() {
+		data.Resources.Project.Spec.Integrations = []project.Integration{}
+		actions.PrepareUsersConfigurations(&data)
+		actions.DeployProjectAndWait(&data, "3")
 	})
+
+	By("Delete integration check", func() {
+		_, err := atlasClient.GetIntegraionbyType(data.Resources.ProjectID, t)
+		Expect(err).Should(HaveOccurred())
+
+		// TODO uncomment with
+		// status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		// Expect(status).Should(BeEmpty())
+	})
+
 	By("Delete User Resources", func() {
 		actions.DeleteUserResourcesProject(&data)
 	})

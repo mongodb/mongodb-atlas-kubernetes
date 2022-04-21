@@ -31,7 +31,7 @@ func NewUserInputs(keyTestPrefix string, project AProject, users []DBUser, r *At
 	}
 
 	input.Project = &project
-	input.Project = NewProject("k-"+projectName).ProjectName(projectName)
+	input.Project = NewProject("k-" + projectName).ProjectName(projectName)
 	if len(input.Project.Spec.ProjectIPAccessList) == 0 {
 		input.Project = input.Project.WithIpAccess("0.0.0.0/0", "everyone")
 	}

@@ -17,13 +17,13 @@ import (
 )
 
 type integrations struct {
-	i                []project.Integration
+	list             []project.Integration
 	projectNamespace string
 }
 
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	integrationList := integrations{
-		i:                project.Spec.DeepCopy().Integrations,
+		list:             project.Spec.DeepCopy().Integrations,
 		projectNamespace: project.Namespace,
 	}
 	if result := createOrDeleteIntegrationInAtlas(ctx, r.Client, projectID, integrationList); !result.IsOk() {
@@ -37,22 +37,22 @@ func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, c client.Client, pr
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
-	ctx.Log.Debugf("Got Integrations From Atlas: %v", &integrationsInAtlas)
+	ctx.Log.Debugf("Got Integrations From Atlas: %v", *integrationsInAtlas)
 	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
 
-	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, requestedIntegrations.i)
+	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, requestedIntegrations.list)
 	ctx.Log.Debugf("indentificatorsForDelete: %v", indentificatorsForDelete)
 	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete); err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
 	}
 
-	integrationsToUpdate := set.Intersection(integrationsInAtlasAlias, requestedIntegrations.i)
+	integrationsToUpdate := set.Intersection(integrationsInAtlasAlias, requestedIntegrations.list)
 	ctx.Log.Debugf("integrationsToUpdate: %v", integrationsToUpdate)
 	if result := updateIntegrationsAtlas(ctx, c, projectID, integrationsToUpdate, requestedIntegrations.projectNamespace); !result.IsOk() {
 		return result
 	}
 
-	indentificatorsForCreate := set.Difference(requestedIntegrations.i, integrationsInAtlasAlias)
+	indentificatorsForCreate := set.Difference(requestedIntegrations.list, integrationsInAtlasAlias)
 	ctx.Log.Debugf("indentificatorsForCreate: %v", indentificatorsForCreate)
 	if result := createIntegrationsInAtlas(ctx, c, projectID, indentificatorsForCreate, requestedIntegrations.projectNamespace); !result.IsOk() {
 		return result
@@ -64,9 +64,11 @@ func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, c client.Client, pr
 	}
 	if !ready {
 		ctx.SetConditionFalse(status.IntegrationReadyType)
-		workflow.InProgress(workflow.ProjectIntegrationInAtlasInternal, "....in progress")
+		return workflow.InProgress(workflow.ProjectIntegrationInAtlasInternal, "in progress")
 	}
-	ctx.SetConditionTrue(status.IntegrationReadyType)
+	if len(requestedIntegrations.list) > 0 {
+		ctx.SetConditionTrue(status.IntegrationReadyType)
+	}
 	return workflow.OK()
 }
 
@@ -124,19 +126,17 @@ func checkIntegrationsReady(ctx *workflow.Context, c client.Client, projectID st
 	if err != nil {
 		return false, err
 	}
-	ctx.Log.Debugf("Got Integrations From Atlas: %v", &integrationsInAtlas)
 
 	requestedIntegrationsConverted := convertToAtlasIntegrationList(requestedIntegrations, c, ctx.Log)
-	if reflect.DeepEqual(integrationsInAtlas, requestedIntegrationsConverted) {
-		ctx.SetConditionTrue(status.IntegrationReadyType)
+	if reflect.DeepEqual(integrationsInAtlas.Results, requestedIntegrationsConverted) {
 		return true, nil
 	}
 	return false, err
 }
 
 func convertToAtlasIntegrationList(list integrations, c client.Client, log *zap.SugaredLogger) []*mongodbatlas.ThirdPartyIntegration {
-	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.i))
-	for i, item := range list.i {
+	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.list))
+	for i, item := range list.list {
 		result[i] = item.ToAtlas(list.projectNamespace, c)
 	}
 	return result
