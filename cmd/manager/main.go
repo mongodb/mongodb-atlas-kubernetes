@@ -73,7 +73,7 @@ func main() {
 	// logging
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 
-	config := parseConfiguration(logger.Sugar(), zap.Any("version", atlas.ProductVersion))
+	config := parseConfiguration(logger.Sugar())
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
