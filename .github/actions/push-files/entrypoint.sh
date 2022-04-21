@@ -2,6 +2,8 @@
 
 set -eou pipefail
 
+git config --global --add safe.directory /github/workspace
+
 commit_single_file() {
   # Commit to the branch
   file="$1"
