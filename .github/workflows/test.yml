@@ -161,7 +161,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3
         with:
           # Make sure we also get the helm-charts submodule!
           submodules: recursive
