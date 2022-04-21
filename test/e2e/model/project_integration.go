@@ -18,8 +18,8 @@ func (i *ProjectIntegration) WithLicenseKeyRef(name, ns string) *ProjectIntegrat
 	return i
 }
 
-func (i *ProjectIntegration) WithAccountID(ID string) *ProjectIntegration {
-	i.AccountID = ID
+func (i *ProjectIntegration) WithAccountID(id string) *ProjectIntegration {
+	i.AccountID = id
 	return i
 }
 
@@ -84,8 +84,8 @@ func (i *ProjectIntegration) WithOrgName(o string) *ProjectIntegration {
 	return i
 }
 
-func (i *ProjectIntegration) WithURL(URL string) *ProjectIntegration {
-	i.URL = URL
+func (i *ProjectIntegration) WithURL(url string) *ProjectIntegration {
+	i.URL = url
 	return i
 }
 

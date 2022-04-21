@@ -80,7 +80,7 @@ func (sr *SecretReference) ReadPassword(kubeClient client.Client, parentNamespac
 
 		secret := &v1.Secret{}
 		if err := kubeClient.Get(context.Background(), *nsType, secret); err != nil {
-			return "", fmt.Errorf("can not read secret: %s, value %v", err, nsType)
+			return "", fmt.Errorf("can not read secret (%w), value %v", err, nsType)
 		}
 		p, exist := secret.Data["password"]
 		switch {

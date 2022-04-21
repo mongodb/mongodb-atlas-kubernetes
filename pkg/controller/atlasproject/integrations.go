@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -75,11 +74,6 @@ func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, c client.Client, pr
 func updateIntegrationsAtlas(ctx *workflow.Context, c client.Client, projectID string, integrationsToUpdate [][]set.Identifiable, defaultNS string) workflow.Result {
 	for _, item := range integrationsToUpdate {
 		atlasIntegration := item[0].(aliasThirdPartyIntegration)
-		if &atlasIntegration == nil {
-			ctx.Log.Warn("Update Integrations: Can not convert atlas integration")
-			return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, "Update Integrations: Can not convert atlas integration")
-		}
-
 		kubeIntegration := item[1].(project.Integration).ToAtlas(defaultNS, c)
 		if kubeIntegration == nil {
 			ctx.Log.Warn("Update Integrations: Can not convert kube integration")
@@ -127,14 +121,14 @@ func checkIntegrationsReady(ctx *workflow.Context, c client.Client, projectID st
 		return false, err
 	}
 
-	requestedIntegrationsConverted := convertToAtlasIntegrationList(requestedIntegrations, c, ctx.Log)
+	requestedIntegrationsConverted := convertToAtlasIntegrationList(requestedIntegrations, c)
 	if reflect.DeepEqual(integrationsInAtlas.Results, requestedIntegrationsConverted) {
 		return true, nil
 	}
 	return false, err
 }
 
-func convertToAtlasIntegrationList(list integrations, c client.Client, log *zap.SugaredLogger) []*mongodbatlas.ThirdPartyIntegration {
+func convertToAtlasIntegrationList(list integrations, c client.Client) []*mongodbatlas.ThirdPartyIntegration {
 	result := make([]*mongodbatlas.ThirdPartyIntegration, len(list.list))
 	for i, item := range list.list {
 		result[i] = item.ToAtlas(list.projectNamespace, c)

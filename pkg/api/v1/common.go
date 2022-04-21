@@ -57,8 +57,6 @@ func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.Objec
 func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {
 	if rn != nil {
 		secret := &v1.Secret{}
-		if rn.Namespace != "" {
-		}
 		if err := kubeClient.Get(context.Background(), *rn.GetObject(parentNamespace), secret); err != nil {
 			return "", err
 		}
