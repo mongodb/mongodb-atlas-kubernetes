@@ -129,6 +129,11 @@ containers:
 
 ```
 
+## Additional information or features
+Operator support Third Party Integration.
+- [Mongodb Atlas Operator sample](docs/project-integration.md)
+- [Atlas documentation Atlas](https://docs.atlas.mongodb.com/reference/api/third-party-integration-settings/)
+
 ## How to Contribute
 
 Please file issues before filing PRs. For PRs to be accepted, contributors must sign our [CLA](https://www.mongodb.com/legal/contributor-agreement).
