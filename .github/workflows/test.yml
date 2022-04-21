@@ -166,6 +166,9 @@ jobs:
           # Make sure we also get the helm-charts submodule!
           submodules: recursive
 
+      - name: Add permissions
+        run: git config --global --add safe.directory /github/workspace
+
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
