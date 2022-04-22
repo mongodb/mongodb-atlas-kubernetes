@@ -189,30 +189,6 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
-	startedCreation := false
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasCluster)
-		if c.Status.StateName != "" {
-			startedCreation = true
-		}
-		// When the create request has been made to Atlas - we expect the following status
-		if startedCreation {
-			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
-			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
-				status.FalseCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
-			)
-			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-		} else {
-			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
-			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
-		}
-	}
-}
-
 func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
