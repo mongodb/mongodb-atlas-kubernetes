@@ -157,11 +157,17 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					ClusterUpdateTimeout, interval).Should(BeTrue())
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFunc()),
-					500, interval).Should(BeTrue())
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdClusterAzure, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 			})
 			createdDBUser = mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 
@@ -309,8 +315,11 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
 				// We don't wait for the full cluster creation - only when it has started the process
-				Eventually(testutil.WaitFor(k8sClient, createdClusterAWS, status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating))),
-					20, intervalShort).Should(BeTrue())
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 			})
 			By("Updating the database user while the cluster is being created", func() {
 				createdDBUser = createdDBUser.WithRole("read", "test", "somecollection")
