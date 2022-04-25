@@ -9,19 +9,19 @@
   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
   ```
 
-- Create an Issuer ([example](../helpers/certs/issuer.yaml))
+- Create an Issuer ([example](./helpers/certs/issuer.yaml))
   ```
   kubectl apply -f docs/helpers/certs/issuer.yaml
   ```
 
-- Create a Certificate ([example](../helpers/certs/cert.yaml))
+- Create a Certificate ([example](./helpers/certs/cert.yaml))
   ```
   kubectl apply -f docs/helpers/certs/cert.yaml`
   ```
 
-### B. Using a custom [script](../../scripts/create_x509.go)
+### B. Using a custom [script](../scripts/create_x509.go)
 
-- Run the [script](../../scripts/create_x509.go):
+- Run the [script](../scripts/create_x509.go):
   ```
   go run scripts/create_x509.go --path=tmp/x509/
   ```
