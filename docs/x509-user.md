@@ -1,15 +1,32 @@
 # Generate X.509 Client Certificates
 
-### [Prerequisite] Generate an X.509 certificate
+## [Prerequisite] Generate an X.509 certificate
 
-- Create cert via the [script](../../scripts/create_x509.go) or an alternative like [cert-manager](https://cert-manager.io/docs/):
+### A. Using [cert-manager](https://cert-manager.io/docs/)
 
+- Install the [cert-manager](https://cert-manager.io/docs/installation/)
+  ```
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+  ```
+
+- Create an Issuer ([example](../helpers/certs/issuer.yaml))
+  ```
+  kubectl apply -f docs/helpers/certs/issuer.yaml
+  ```
+
+- Create a Certificate ([example](../helpers/certs/cert.yaml))
+  ```
+  kubectl apply -f docs/helpers/certs/cert.yaml`
+  ```
+
+### B. Using a custom [script](../../scripts/create_x509.go)
+
+- Run the [script](../../scripts/create_x509.go):
   ```
   go run scripts/create_x509.go --path=tmp/x509/
   ```
 
 - Put cert into the secret:
-
   ```
   kubectl create secret generic my-x509-cert --from-file=./tmp/x509/cert.pem
   kubectl label secret my-x509-cert atlas.mongodb.com/type=credentials

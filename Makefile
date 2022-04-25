@@ -243,5 +243,5 @@ post-install-hook:
 	chmod +x bin/helm-post-install
 
 .PHONY: x509-cert
-x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/dev/x509-user.md)
+x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 	go run scripts/create_x509.go

@@ -1,0 +1,7 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: default-issuer
+  namespace: mongodb-atlas-system
+spec:
+  selfSigned: {}

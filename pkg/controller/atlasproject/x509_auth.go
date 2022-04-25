@@ -2,7 +2,10 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
+	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -70,14 +73,37 @@ func readX509CertFromSecret(kubeClient client.Client, secretRef client.ObjectKey
 		return "", err
 	}
 
-	if len(secret.Data) != 1 {
-		return "", errors.New("the secret should contain one X.509 certificate")
+	const defaultName = "ca.crt"
+	certData, found := secret.Data[defaultName]
+	if !found {
+		if len(secret.Data) != 1 {
+			errorMsg := fmt.Sprintf("the secret should have data entry with key \"%s\" or have a single data entry", defaultName)
+			return "", errors.New(errorMsg)
+		}
+
+		singleKey, _ := getFirstMapItemKey(secret.Data)
+		certData = secret.Data[singleKey]
 	}
 
-	var cert string
-	for _, item := range secret.Data {
-		cert = string(item)
+	cert := string(certData)
+	if isNotPemEncoded(cert) {
+		cert = base64.StdEncoding.EncodeToString(certData)
+		if isNotPemEncoded(cert) {
+			return "", errors.New("certificate has to be .pem encoded")
+		}
 	}
 
 	return cert, nil
+}
+
+func isNotPemEncoded(cert string) bool {
+	return !(strings.Contains(cert, "-----BEGIN") && strings.Contains(cert, "-----END"))
+}
+
+func getFirstMapItemKey(aMap map[string][]byte) (string, bool) {
+	for key := range aMap {
+		return key, true
+	}
+
+	return "", false
 }
