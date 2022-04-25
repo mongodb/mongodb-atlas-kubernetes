@@ -207,7 +207,13 @@ func parseConfiguration() Config {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal")
 	flag.StringVar(&config.LogEncoder, "log-encoder", "json", "Log encoder. Available values: json | console")
+	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
+
+	if *appVersion {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 
 	config.GlobalAPISecret = operatorGlobalKeySecretOrDefault(globalAPISecretName)
 
