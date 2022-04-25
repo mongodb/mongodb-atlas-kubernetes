@@ -27,7 +27,7 @@ func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserIn
 		ProjectID:          "",
 		KeyName:            keyTestPrefix,
 		Namespace:          "ns-" + projectName,
-		ProjectPath:        filepath.Join(DataFolder, projectName, "resources", projectName+".yaml"),
+		ProjectPath:        filepath.Join(DataGenFolder, projectName, "resources", projectName+".yaml"),
 	}
 	input.Project = NewProject("k-"+projectName).ProjectName(projectName).WithIpAccess("0.0.0.0/0", "everyone")
 	if !r.GlobalLevelKey {
@@ -41,11 +41,11 @@ func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserIn
 }
 
 func (u *UserInputs) GetAppFolder() string {
-	return filepath.Join(DataFolder, u.Project.Spec.Name, "app")
+	return filepath.Join(DataGenFolder, u.Project.Spec.Name, "app")
 }
 
 func (u *UserInputs) GetOperatorFolder() string {
-	return filepath.Join(DataFolder, u.Project.Spec.Name, "operator")
+	return filepath.Join(DataGenFolder, u.Project.Spec.Name, "operator")
 }
 
 func (u *UserInputs) GetResourceFolder() string {
@@ -57,7 +57,7 @@ func (u *UserInputs) GetUsersFolder() string {
 }
 
 func (u *UserInputs) GetServiceCatalogSourceFolder() string {
-	return filepath.Join(DataFolder, u.Project.Spec.Name, "catalog")
+	return filepath.Join(DataGenFolder, u.Project.Spec.Name, "catalog")
 }
 
 func (u *UserInputs) GetAtlasProjectFullKubeName() string {
