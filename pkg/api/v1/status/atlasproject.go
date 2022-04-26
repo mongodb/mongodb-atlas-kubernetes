@@ -84,7 +84,4 @@ type AtlasProjectStatus struct {
 	// "SCRAM" is default authentication method and requires a password for each user
 	// "X509" signifies that self-managed X.509 authentication is configured
 	AuthModes authmode.AuthModes `json:"AuthModes,omitempty"`
-
-	// The list of current integrations for the project
-	Integrations []project.Integration `json:"integrations,omitempty"`
 }
