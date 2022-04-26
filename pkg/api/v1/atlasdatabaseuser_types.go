@@ -51,7 +51,7 @@ const (
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
 type AtlasDatabaseUserSpec struct {
 	// Project is a reference to AtlasProject resource the user belongs to
-	Project common. ResourceRefNamespaced `json:"projectRef"`
+	Project common.ResourceRefNamespaced `json:"projectRef"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin

@@ -156,7 +156,7 @@ type AdvancedClusterSpec struct {
 	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
 	GroupID                  string                     `json:"groupId,omitempty"`
 	ID                       string                     `json:"id,omitempty"`
-	Labels                   []common.LabelSpec                `json:"labels,omitempty"`
+	Labels                   []common.LabelSpec         `json:"labels,omitempty"`
 	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
 	Name                     string                     `json:"name,omitempty"`
