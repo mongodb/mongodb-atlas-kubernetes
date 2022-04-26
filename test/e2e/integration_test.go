@@ -104,7 +104,7 @@ func integrationCycle(data model.TestDataProvider, key string) {
 
 		Expect(err).ShouldNot(HaveOccurred())
 
-		dog, err := atlasClient.GetIntegraionbyType(data.Resources.ProjectID, t)
+		dog, err := atlasClient.GetIntegrationbyType(data.Resources.ProjectID, t)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(dog.APIKey).Should(Equal(key))
 	})
@@ -116,7 +116,7 @@ func integrationCycle(data model.TestDataProvider, key string) {
 	})
 
 	By("Delete integration check", func() {
-		_, err := atlasClient.GetIntegraionbyType(data.Resources.ProjectID, t)
+		_, err := atlasClient.GetIntegrationbyType(data.Resources.ProjectID, t)
 		Expect(err).Should(HaveOccurred())
 
 		// TODO uncomment with

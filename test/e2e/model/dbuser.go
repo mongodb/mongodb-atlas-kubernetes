@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
@@ -42,7 +43,7 @@ func NewDBUser(userName string) *DBUser {
 		},
 		Spec: UserSpec{
 			Username: userName,
-			Project: v1.ResourceRefNamespaced{
+			Project: common.ResourceRefNamespaced{
 				Name: "my-project",
 			},
 		},
@@ -60,7 +61,7 @@ func (s *DBUser) WithProjectRef(name string) *DBUser {
 }
 
 func (s *DBUser) WithSecretRef(name string) *DBUser {
-	s.Spec.PasswordSecret = &v1.ResourceRef{Name: name}
+	s.Spec.PasswordSecret = &common.ResourceRef{Name: name}
 	return s
 }
 

@@ -1,13 +1,9 @@
 package project
 
 import (
-	"context"
-	"fmt"
-
 	"go.mongodb.org/atlas/mongodbatlas"
-	v1 "k8s.io/api/core/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -18,27 +14,27 @@ type Integration struct {
 	// +optional
 	Type string `json:"type,omitempty"`
 	// +optional
-	LicenseKeyRef SecretReference `json:"licenseKeyRef,omitempty"`
+	LicenseKeyRef common.ResourceRefNamespaced `json:"licenseKeyRef,omitempty"`
 	// +optional
 	AccountID string `json:"accountId,omitempty"`
 	// +optional
-	WriteTokenRef SecretReference `json:"writeTokenRef,omitempty"`
+	WriteTokenRef common.ResourceRefNamespaced `json:"writeTokenRef,omitempty"`
 	// +optional
-	ReadTokenRef SecretReference `json:"readTokenRef,omitempty"`
+	ReadTokenRef common.ResourceRefNamespaced `json:"readTokenRef,omitempty"`
 	// +optional
-	APIKeyRef SecretReference `json:"apiKeyRef,omitempty"`
+	APIKeyRef common.ResourceRefNamespaced `json:"apiKeyRef,omitempty"`
 	// +optional
 	Region string `json:"region,omitempty"`
 	// +optional
-	ServiceKeyRef SecretReference `json:"serviceKeyRef,omitempty"`
+	ServiceKeyRef common.ResourceRefNamespaced `json:"serviceKeyRef,omitempty"`
 	// +optional
-	APITokenRef SecretReference `json:"apiTokenRef,omitempty"`
+	APITokenRef common.ResourceRefNamespaced `json:"apiTokenRef,omitempty"`
 	// +optional
 	TeamName string `json:"teamName,omitempty"`
 	// +optional
 	ChannelName string `json:"channelName,omitempty"`
 	// +optional
-	RoutingKeyRef SecretReference `json:"routingKeyRef,omitempty"`
+	RoutingKeyRef common.ResourceRefNamespaced `json:"routingKeyRef,omitempty"`
 	// +optional
 	FlowName string `json:"flowName,omitempty"`
 	// +optional
@@ -46,53 +42,7 @@ type Integration struct {
 	// +optional
 	URL string `json:"url,omitempty"`
 	// +optional
-	SecretRef SecretReference `json:"secret,omitempty"`
-}
-
-type SecretReference struct {
-	// Name is the name of the Kubernetes Resource
-	Name string `json:"name"`
-
-	// Namespace is the namespace of the Kubernetes Resource
-	// +optional
-	Namespace string `json:"namespace"`
-}
-
-func (sr *SecretReference) GetObject(parentNamespace string) *client.ObjectKey {
-	if sr == nil {
-		return nil
-	}
-
-	ns := sr.Namespace
-	if sr.Namespace == "" {
-		ns = parentNamespace
-	}
-	key := kube.ObjectKey(ns, sr.Name)
-	return &key
-}
-
-func (sr *SecretReference) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {
-	if sr != nil {
-		nsType := sr.GetObject(parentNamespace)
-		if nsType == nil {
-			return "", fmt.Errorf("object is empty")
-		}
-
-		secret := &v1.Secret{}
-		if err := kubeClient.Get(context.Background(), *nsType, secret); err != nil {
-			return "", fmt.Errorf("can not read secret (%w), value %v", err, nsType)
-		}
-		p, exist := secret.Data["password"]
-		switch {
-		case !exist:
-			return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
-		case len(p) == 0:
-			return "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
-		default:
-			return string(p), nil
-		}
-	}
-	return "", nil
+	SecretRef common.ResourceRefNamespaced `json:"secret,omitempty"`
 }
 
 func (i Integration) ToAtlas(defaultNS string, c client.Client) *mongodbatlas.ThirdPartyIntegration {
