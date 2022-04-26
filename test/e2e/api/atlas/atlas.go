@@ -104,7 +104,7 @@ func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) 
 	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }
 
-func (a *Atlas) GetIntegraionbyType(projectId, iType string) (*mongodbatlas.ThirdPartyIntegration, error) {
+func (a *Atlas) GetIntegrationbyType(projectId, iType string) (*mongodbatlas.ThirdPartyIntegration, error) {
 	integraion, _, err := a.Client.Integrations.Get(context.Background(), projectId, iType)
 	if err != nil {
 		return nil, err
