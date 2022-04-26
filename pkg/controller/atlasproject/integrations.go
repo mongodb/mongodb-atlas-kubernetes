@@ -22,16 +22,16 @@ type integrations struct {
 
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	integrationList := integrations{
-		list:             project.Spec.DeepCopy().Integrations,
+		list:             project.Spec.Integrations,
 		projectNamespace: project.Namespace,
 	}
-	if result := createOrDeleteIntegrationInAtlas(ctx, r.Client, projectID, integrationList); !result.IsOk() {
+	if result := createOrDeleteIntegrationsInAtlas(ctx, r.Client, projectID, integrationList); !result.IsOk() {
 		return result
 	}
 	return workflow.OK()
 }
 
-func createOrDeleteIntegrationInAtlas(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) workflow.Result {
+func createOrDeleteIntegrationsInAtlas(ctx *workflow.Context, c client.Client, projectID string, requestedIntegrations integrations) workflow.Result {
 	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInAtlasInternal, err.Error())
