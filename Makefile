@@ -115,6 +115,8 @@ manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 .PHONY: fmt
 fmt: ## Run go fmt against code
 	go fmt ./...
+	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
+	find . -name "*.go" -not -path "./vendor/*" -exec goimports -l "{}" \;
 
 .PHONY: vet
 vet: ## Run go vet against code
