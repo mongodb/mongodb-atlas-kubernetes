@@ -53,12 +53,13 @@ func (m *MarketPage) ChooseProviderType(catalogName string) *MarketPage {
 
 func (m *MarketPage) InstallAtlasOperator() *MarketPage {
 	atlasOperatorLoc := fmt.Sprintf("[data-test=\"mongodb-atlas-kubernetes-%s-openshift-marketplace\"]", m.CatalogSourceName)
-	Expect(m.P.Click(atlasOperatorLoc, playwright.PageClickOptions{
-		Timeout: playwright.Float(timeoutShort),
-	})).ShouldNot(HaveOccurred())
+	err := m.P.Click(atlasOperatorLoc, playwright.PageClickOptions{
+		Timeout: playwright.Float(timeout),
+	})
+	Expect(err).ShouldNot(HaveOccurred(), "Please, make sure the test-catalog is deployed")
 	Expect(m.P.Click(installConfirmLoc)).ShouldNot(HaveOccurred())
 	Expect(m.P.Click(installButtonLoc)).ShouldNot(HaveOccurred())
-	_, err := m.P.WaitForSelector(viewOperatorLoc, playwright.PageWaitForSelectorOptions{
+	_, err = m.P.WaitForSelector(viewOperatorLoc, playwright.PageWaitForSelectorOptions{
 		State:   playwright.WaitForSelectorStateAttached,
 		Timeout: playwright.Float(timeout),
 	})
