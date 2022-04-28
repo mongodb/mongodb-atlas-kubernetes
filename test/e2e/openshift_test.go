@@ -54,7 +54,7 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 		if CurrentSpecReport().Failed() && !strings.Contains(page.URL(), "token") {
 			pagereport.MakeScreenshot(page, "error")
 		}
-		oc.Delete(path) // we delete it all the time, because of shared space
+		oc.Delete(path)                                                   // we delete it all the time, because of shared space
 		kubecli.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
 		closeBrowser(pw, browser, page)
 	})
