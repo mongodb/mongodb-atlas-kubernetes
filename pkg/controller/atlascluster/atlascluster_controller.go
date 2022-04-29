@@ -173,8 +173,6 @@ func (r *AtlasClusterReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasCluster
 		pSettings.BackingProviderName = string(pSettings.ProviderName)
 		pSettings.ProviderName = "TENANT"
 	}
-
-	return
 }
 
 func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluster) clusterHandlerFunc {
