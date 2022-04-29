@@ -23,9 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
@@ -77,7 +78,7 @@ type ClusterSpec struct {
 	// Collection of key-value pairs that tag and categorize the cluster.
 	// Each key and value has a maximum length of 255 characters.
 	// +optional
-	Labels []LabelSpec `json:"labels,omitempty"`
+	Labels []common.LabelSpec `json:"labels,omitempty"`
 
 	// Version of the cluster to deploy.
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
@@ -115,7 +116,7 @@ type ClusterSpec struct {
 // AtlasClusterSpec defines the desired state of AtlasCluster
 type AtlasClusterSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
-	Project ResourceRefNamespaced `json:"projectRef"`
+	Project common.ResourceRefNamespaced `json:"projectRef"`
 
 	// Configuration for the advanced cluster API
 	// +optional
@@ -127,7 +128,7 @@ type AtlasClusterSpec struct {
 
 	// Backup schedule for the AtlasCluster
 	// +optional
-	BackupScheduleRef ResourceRefNamespaced `json:"backupRef"`
+	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
@@ -155,7 +156,7 @@ type AdvancedClusterSpec struct {
 	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
 	GroupID                  string                     `json:"groupId,omitempty"`
 	ID                       string                     `json:"id,omitempty"`
-	Labels                   []LabelSpec                `json:"labels,omitempty"`
+	Labels                   []common.LabelSpec         `json:"labels,omitempty"`
 	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
 	Name                     string                     `json:"name,omitempty"`
@@ -563,7 +564,7 @@ func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
 }
 
 func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
-	c.Spec.Project = ResourceRefNamespaced{Name: projectName}
+	c.Spec.Project = common.ResourceRefNamespaced{Name: projectName}
 	return c
 }
 
@@ -577,7 +578,7 @@ func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
 	return c
 }
 
-func (c *AtlasCluster) WithBackupScheduleRef(ref ResourceRefNamespaced) *AtlasCluster {
+func (c *AtlasCluster) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasCluster {
 	t := true
 	c.Spec.ClusterSpec.ProviderBackupEnabled = &t
 	c.Spec.BackupScheduleRef = ref

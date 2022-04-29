@@ -305,18 +305,20 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 			GinkgoWriter.Write([]byte(data.Resources.ProjectPath + "\n"))
 			utils.SaveToFile(data.Resources.ProjectPath, data.Resources.Project.ConvertByte())
 		})
-		By("Create cluster spec", func() {
-			data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
-			utils.SaveToFile(
-				data.Resources.Clusters[0].ClusterFileName(data.Resources),
-				utils.JSONToYAMLConvert(data.Resources.Clusters[0]),
-			)
-		})
+		if len(data.Resources.Clusters) > 0 {
+			By("Create cluster spec", func() {
+				data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+				utils.SaveToFile(
+					data.Resources.Clusters[0].ClusterFileName(data.Resources),
+					utils.JSONToYAMLConvert(data.Resources.Clusters[0]),
+				)
+			})
+		}
 		if len(data.Resources.Users) > 0 {
 			By("Create dbuser spec", func() {
 				for _, user := range data.Resources.Users {
 					user.SaveConfigurationTo(data.Resources.ProjectPath)
-					kubecli.CreateUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+					kubecli.CreateRandomUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
 				}
 			})
 		}

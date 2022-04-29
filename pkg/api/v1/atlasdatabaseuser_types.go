@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -50,7 +51,7 @@ const (
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
 type AtlasDatabaseUserSpec struct {
 	// Project is a reference to AtlasProject resource the user belongs to
-	Project ResourceRefNamespaced `json:"projectRef"`
+	Project common.ResourceRefNamespaced `json:"projectRef"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user. Default value is 'admin'.
 	// +kubebuilder:default=admin
@@ -62,7 +63,7 @@ type AtlasDatabaseUserSpec struct {
 
 	// Labels is an array containing key-value pairs that tag and categorize the database user.
 	// Each key and value has a maximum length of 255 characters.
-	Labels []LabelSpec `json:"labels,omitempty"`
+	Labels []common.LabelSpec `json:"labels,omitempty"`
 
 	// Roles is an array of this user's roles and the databases / collections on which the roles apply. A role allows
 	// the user to perform particular actions on the specified database.
@@ -73,7 +74,7 @@ type AtlasDatabaseUserSpec struct {
 	Scopes []ScopeSpec `json:"scopes,omitempty"`
 
 	// PasswordSecret is a reference to the Secret keeping the user password.
-	PasswordSecret *ResourceRef `json:"passwordSecretRef,omitempty"`
+	PasswordSecret *common.ResourceRef `json:"passwordSecretRef,omitempty"`
 
 	// Username is a username for authenticating to MongoDB.
 	Username string `json:"username"`
@@ -215,8 +216,8 @@ func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUs
 		},
 		Spec: AtlasDatabaseUserSpec{
 			Username:       dbUserName,
-			Project:        ResourceRefNamespaced{Name: projectName},
-			PasswordSecret: &ResourceRef{},
+			Project:        common.ResourceRefNamespaced{Name: projectName},
+			PasswordSecret: &common.ResourceRef{},
 			Roles:          []RoleSpec{},
 			Scopes:         []ScopeSpec{},
 		},

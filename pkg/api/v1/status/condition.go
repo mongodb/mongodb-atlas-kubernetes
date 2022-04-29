@@ -38,6 +38,7 @@ const (
 	IPAccessListReadyType           ConditionType = "IPAccessListReady"
 	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
 	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
+	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 )
 
 // AtlasCluster condition types

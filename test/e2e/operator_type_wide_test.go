@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	common "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -64,6 +64,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 		By("Users can create clusters with the same name", func() {
 			NortonData = model.NewTestDataProvider(
 				"norton-wide",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{},
@@ -78,6 +79,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 			)
 			NimnulData = model.NewTestDataProvider(
 				"nimnul-wide",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -104,7 +106,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 		})
 
 		By("Operator working with right cluster if one of the user update configuration", func() {
-			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Labels = []v1.LabelSpec{{Key: "something", Value: "awesome"}}
+			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Labels = []common.LabelSpec{{Key: "something", Value: "awesome"}}
 			utils.SaveToFile(
 				NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources),
 				utils.JSONToYAMLConvert(NortonData.Resources.Clusters[0]),

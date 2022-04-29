@@ -20,7 +20,7 @@ type UserInputs struct {
 }
 
 // NewUsersInputs prepare users inputs
-func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserInputs {
+func NewUserInputs(keyTestPrefix string, project AProject, users []DBUser, r *AtlasKeyType) UserInputs {
 	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, utils.GenID())
 	input := UserInputs{
 		AtlasKeyAccessType: *r,
@@ -29,9 +29,15 @@ func NewUserInputs(keyTestPrefix string, users []DBUser, r *AtlasKeyType) UserIn
 		Namespace:          "ns-" + projectName,
 		ProjectPath:        filepath.Join(DataGenFolder, projectName, "resources", projectName+".yaml"),
 	}
-	input.Project = NewProject("k-"+projectName).ProjectName(projectName).WithIpAccess("0.0.0.0/0", "everyone")
+
+	input.Project = &project
+	input.Project = NewProject("k-" + projectName).ProjectName(projectName)
+	if len(input.Project.Spec.ProjectIPAccessList) == 0 {
+		input.Project = input.Project.WithIpAccess("0.0.0.0/0", "everyone")
+	}
+
 	if !r.GlobalLevelKey {
-		input.Project = input.Project.SecretRef(keyTestPrefix)
+		input.Project = input.Project.WithSecretRef(keyTestPrefix)
 	}
 
 	for _, user := range users {

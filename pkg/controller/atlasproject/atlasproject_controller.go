@@ -174,7 +174,6 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 				return result.ReconcileResult(), nil
 			}
 		}
-
 		return result.ReconcileResult(), nil
 	}
 
@@ -205,6 +204,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
+
+	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
+		return result.ReconcileResult(), nil
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return ctrl.Result{}, nil

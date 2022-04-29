@@ -10,6 +10,8 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 )
 
 // AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule
@@ -24,7 +26,7 @@ type AtlasBackupScheduleSpec struct {
 	Export AtlasBackupExportSpec `json:"export,omitempty"`
 
 	// A reference (name & namespace) for backup policy in the desired updated backup policy.
-	PolicyRef ResourceRefNamespaced `json:"policy"`
+	PolicyRef common.ResourceRefNamespaced `json:"policy"`
 
 	// UTC Hour of day between 0 and 23, inclusive, representing which hour of the day that Atlas takes snapshots for backup policy items
 	// +kubebuilder:validation:Minimum:=0

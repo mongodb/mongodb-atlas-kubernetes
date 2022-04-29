@@ -18,10 +18,10 @@ import (
 var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns"), func() {
 	var data model.TestDataProvider
 
-	_ = BeforeEach(func() {
+	BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
-	_ = AfterEach(func() {
+	AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
@@ -53,6 +53,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
 			model.NewTestDataProvider(
 				"operator-ns-trial",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -70,6 +71,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db"),
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update.yaml"},
@@ -93,6 +95,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
 			model.NewTestDataProvider(
 				"operator-ns-multiregion-aws",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_multiregion_aws.yaml"},
 				[]string{"data/atlascluster_multiregion_aws_update.yaml"},
@@ -115,6 +118,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-azure",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_multiregion_azure.yaml"},
 				[]string{},
@@ -132,6 +136,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
 			model.NewTestDataProvider(
 				"operator-multiregion-gcp",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_multiregion_gcp.yaml"},
 				[]string{},
@@ -149,6 +154,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup", Label("ns-owner"),
 			model.NewTestDataProvider(
 				"operator-ns-product-owner",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
 				[]string{"data/atlascluster_backup.yaml"},
 				[]string{"data/atlascluster_backup_update_remove_backup.yaml"},
@@ -166,6 +172,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Trial - Global connection", Label("ns-global-key"),
 			model.NewTestDataProvider(
 				"operator-ns-trial-global",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_basic.yaml"},
 				[]string{},
@@ -183,6 +190,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Free - Users can use M0, default key", Label("ns-m0"),
 			model.NewTestDataProvider(
 				"operator-ns-free",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				[]string{"data/atlascluster_basic_free.yaml"},
 				[]string{""},
@@ -200,6 +208,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
 			model.NewTestDataProvider(
 				"operator-ns-free",
+				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
 				[]string{"data/atlascluster_basic_free.yaml"},
 				[]string{""},

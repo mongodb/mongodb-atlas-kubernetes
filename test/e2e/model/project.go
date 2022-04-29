@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -47,8 +48,8 @@ func (p *AProject) ProjectName(name string) *AProject {
 	return p
 }
 
-func (p *AProject) SecretRef(name string) *AProject {
-	p.Spec.ConnectionSecret = &v1.ResourceRef{Name: name}
+func (p *AProject) WithSecretRef(name string) *AProject {
+	p.Spec.ConnectionSecret = &common.ResourceRef{Name: name}
 	return p
 }
 
@@ -66,6 +67,11 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 		Region:   region,
 	}
 	p.Spec.PrivateEndpoints = append(p.Spec.PrivateEndpoints, link)
+	return p
+}
+
+func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
+	p.Spec.Integrations = append(p.Spec.Integrations, project.Integration(spec))
 	return p
 }
 

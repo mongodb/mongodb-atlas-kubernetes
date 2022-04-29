@@ -5,6 +5,7 @@
 
 
 ## AtlasProject Resource
+  * [3rd Party Integration](https://docs.atlas.mongodb.com/reference/api/third-party-integration-settings/) are supported `spec.integrations`
 
 ## AtlasCluster Resource
 * Changes

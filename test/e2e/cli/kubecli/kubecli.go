@@ -125,8 +125,12 @@ func CreateNamespace(name string) *Buffer {
 	return session.Out
 }
 
-func CreateUserSecret(name, ns string) {
+func CreateRandomUserSecret(name, ns string) {
 	secret, _ := password.Generate(10, 3, 0, false, false)
+	CreateUserSecret(secret, name, ns)
+}
+
+func CreateUserSecret(secret, name, ns string) {
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", name,
 		"--from-literal=password="+secret,
 		"-n", ns,

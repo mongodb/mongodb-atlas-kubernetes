@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
@@ -353,7 +354,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 				},
 			}
 			createdCluster.Spec.ClusterSpec.ProviderSettings.InstanceSizeName = "M10"
-			createdCluster.Spec.ClusterSpec.Labels = []mdbv1.LabelSpec{{Key: "createdBy", Value: "Atlas Operator"}}
+			createdCluster.Spec.ClusterSpec.Labels = []common.LabelSpec{{Key: "createdBy", Value: "Atlas Operator"}}
 			createdCluster.Spec.ClusterSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 				NumShards: int64ptr(1),
 				ZoneName:  "Zone 1",
@@ -485,7 +486,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			})
 
 			By("Updating the Cluster labels", func() {
-				createdCluster.Spec.ClusterSpec.Labels = []mdbv1.LabelSpec{{Key: "int-test", Value: "true"}}
+				createdCluster.Spec.ClusterSpec.Labels = []common.LabelSpec{{Key: "int-test", Value: "true"}}
 				performUpdate(20 * time.Minute)
 				doRegularClusterStatusChecks()
 				checkAtlasState()
@@ -707,7 +708,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 
 				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
-				createdCluster.Spec.ClusterSpec.Labels = append(createdCluster.Spec.ClusterSpec.Labels, mdbv1.LabelSpec{
+				createdCluster.Spec.ClusterSpec.Labels = append(createdCluster.Spec.ClusterSpec.Labels, common.LabelSpec{
 					Key:   "some-key",
 					Value: "some-value",
 				})
@@ -821,7 +822,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 				},
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					AutoExportEnabled: false,
-					PolicyRef: mdbv1.ResourceRefNamespaced{
+					PolicyRef: common.ResourceRefNamespaced{
 						Name:      backupPolicyDefault.Name,
 						Namespace: backupPolicyDefault.Namespace,
 					},
@@ -836,7 +837,7 @@ var _ = Describe("AtlasCluster", Label("int", "AtlasCluster"), func() {
 			Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).NotTo(HaveOccurred())
 			Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).NotTo(HaveOccurred())
 
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).WithBackupScheduleRef(mdbv1.ResourceRefNamespaced{
+			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).WithBackupScheduleRef(common.ResourceRefNamespaced{
 				Name:      backupScheduleDefault.Name,
 				Namespace: backupScheduleDefault.Namespace,
 			})

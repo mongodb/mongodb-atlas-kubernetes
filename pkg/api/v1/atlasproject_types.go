@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -47,7 +48,7 @@ type AtlasProjectSpec struct {
 	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
 	// +optional
-	ConnectionSecret *ResourceRef `json:"connectionSecretRef,omitempty"`
+	ConnectionSecret *common.ResourceRef `json:"connectionSecretRef,omitempty"`
 
 	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
@@ -63,7 +64,11 @@ type AtlasProjectSpec struct {
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 
 	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
-	X509CertRef *ResourceRef `json:"x509CertRef,omitempty"`
+	X509CertRef *common.ResourceRef `json:"x509CertRef,omitempty"`
+
+	// Integrations is a list of MongoDB Atlas integrations for the project
+	// +optional
+	Integrations []project.Integration `json:"integrations,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -152,7 +157,7 @@ func (p *AtlasProject) WithAtlasName(name string) *AtlasProject {
 
 func (p *AtlasProject) WithConnectionSecret(name string) *AtlasProject {
 	if name != "" {
-		p.Spec.ConnectionSecret = &ResourceRef{Name: name}
+		p.Spec.ConnectionSecret = &common.ResourceRef{Name: name}
 	}
 	return p
 }

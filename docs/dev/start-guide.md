@@ -1,7 +1,7 @@
 # Onboarding to Atlas Operator
 
 1. Install Go (1.16)
-1. Install dependencies 
+1. Install dependencies
 ```
 # on Mac
 brew install act # or https://github.com/nektos/act#installation
@@ -20,7 +20,7 @@ pre-commit install # from the root of the project
  created during running `make deploy`)
 1. Create an AtlasCluster: `kubectl apply -f config/samples/atlas_v1_atlascluster.yaml`
 1. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
-   
+
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
 
 #How-To
@@ -39,4 +39,3 @@ When running integration tests from an IDE the following environment variables n
 `ATLAS_PUBLIC_KEY=<..>`
 `ATLAS_PRIVATE_KEY=<..>`
 `GINKGO_EDITOR_INTEGRATION=true`
-
