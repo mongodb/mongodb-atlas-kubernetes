@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"strings"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
