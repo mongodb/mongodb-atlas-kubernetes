@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"strings"
 	"time"
 
@@ -150,11 +151,13 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 
 func (r *AtlasClusterReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasCluster) {
 	var pSettings *mdbv1.ProviderSettingsSpec
+	var clusterType string
 	if cluster.Spec.ClusterSpec != nil {
 		if cluster.Spec.ClusterSpec.ProviderSettings == nil {
 			return
 		}
 		pSettings = cluster.Spec.ClusterSpec.ProviderSettings
+		clusterType = "TENANT"
 	}
 
 	if cluster.Spec.ServerlessSpec != nil {
@@ -162,16 +165,20 @@ func (r *AtlasClusterReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasCluster
 			return
 		}
 		pSettings = cluster.Spec.ServerlessSpec.ProviderSettings
+		clusterType = "SERVERLESS"
 	}
 
-	if pSettings == nil || pSettings.ProviderName == "TENANT" {
+	modifyProviderSettings(pSettings, clusterType)
+}
+
+func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, clusterType string) {
+	if pSettings == nil || string(pSettings.ProviderName) == clusterType {
 		return
 	}
-
 	switch pSettings.InstanceSizeName {
 	case "M0", "M2", "M5":
 		pSettings.BackingProviderName = string(pSettings.ProviderName)
-		pSettings.ProviderName = "TENANT"
+		pSettings.ProviderName = provider.ProviderName(clusterType)
 	}
 }
 
