@@ -54,9 +54,9 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 		if CurrentSpecReport().Failed() && !strings.Contains(page.URL(), "token") {
 			pagereport.MakeScreenshot(page, "error")
 		}
-		oc.Delete(path) // we delete it all the time, because of shared space
-		closeBrowser(pw, browser, page)
+		oc.Delete(path)
 		kubecli.DeleteResource("configmap", lockNamespace, lockNamespace) // clean lockConfig Map
+		closeBrowser(pw, browser, page)
 	})
 
 	It("User can deploy Atlas Kubernetes operator from openshift", func() {
