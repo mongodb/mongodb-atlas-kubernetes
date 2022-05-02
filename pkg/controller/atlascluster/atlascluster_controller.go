@@ -176,8 +176,15 @@ func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, clusterType s
 	if pSettings == nil || string(pSettings.ProviderName) == clusterType {
 		return
 	}
-	switch pSettings.InstanceSizeName {
-	case "M0", "M2", "M5":
+
+	switch strings.ToUpper(clusterType) {
+	case "TENANT":
+		switch pSettings.InstanceSizeName {
+		case "M0", "M2", "M5":
+			pSettings.BackingProviderName = string(pSettings.ProviderName)
+			pSettings.ProviderName = provider.ProviderName(clusterType)
+		}
+	case "SERVERLESS":
 		pSettings.BackingProviderName = string(pSettings.ProviderName)
 		pSettings.ProviderName = provider.ProviderName(clusterType)
 	}
