@@ -100,6 +100,57 @@ var _ = Describe("HELM charts", func() {
 				},
 			),
 		),
+		Entry("",
+			model.NewTestDataProvider(
+				"helm-advanced",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_advanced_helm.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				},
+				30014,
+				[]func(*model.TestDataProvider){},
+			),
+		),
+		Entry("",
+			model.NewTestDataProvider(
+				"helm-advanced-cluster-multiregion",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				},
+				30015,
+				[]func(*model.TestDataProvider){},
+			),
+		),
+		Entry("",
+			model.NewTestDataProvider(
+				"helm-serverless",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_serverless.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				},
+				30016,
+				[]func(*model.TestDataProvider){},
+			),
+		),
 	)
 
 	Describe("HELM charts.", Label("helm-wide"), func() {
@@ -175,123 +226,120 @@ var _ = Describe("HELM charts", func() {
 		})
 	})
 
-	Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster"), func() {
-		It("User can deploy operator namespaces by using HELM", func() {
-			By("User creates configuration for a new Project and Advanced Cluster", func() {
-				data = model.NewTestDataProvider(
-					"helm-advanced",
-					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-					[]string{"data/atlascluster_advanced_helm.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("reader2").
-							WithSecretRef("dbuser-secret-u2").
-							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-							WithAuthDatabase("admin"),
-					},
-					30014,
-					[]func(*model.TestDataProvider){},
-				)
-				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-helm"
-				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = "advanced-cluster-helm"
-			})
-			By("User use helm for deploying operator", func() {
-				helm.InstallOperatorWideSubmodule(data.Resources)
-			})
-			By("User deploy cluster by helm", func() {
-				helm.InstallClusterSubmodule(data.Resources)
-			})
-			By("Check Cluster", func() {
-				waitClusterWithChecks(&data)
-			})
-			By("Delete Resources", func() {
-				deleteClusterAndOperator(&data)
-			})
-		})
-	})
+	// Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster"), func() {
+	// 	It("User can deploy operator namespaces by using HELM", func() {
+	// 		By("User creates configuration for a new Project and Advanced Cluster", func() {
+	// 			data = model.NewTestDataProvider(
+	// 				"helm-advanced",
+	// 				model.AProject{},
+	// 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+	// 				[]string{"data/atlascluster_advanced_helm.yaml"},
+	// 				[]string{},
+	// 				[]model.DBUser{
+	// 					*model.NewDBUser("reader2").
+	// 						WithSecretRef("dbuser-secret-u2").
+	// 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+	// 						WithAuthDatabase("admin"),
+	// 				},
+	// 				30014,
+	// 				[]func(*model.TestDataProvider){},
+	// 			)
+	// 			// helm template has equal ObjectMeta.Name and Spec.Name
+	// 			data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-helm"
+	// 			data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-helm"
+	// 		})
+	// 		By("User use helm for deploying operator", func() {
+	// 			helm.InstallOperatorWideSubmodule(data.Resources)
+	// 		})
+	// 		By("User deploy cluster by helm", func() {
+	// 			helm.InstallClusterSubmodule(data.Resources)
+	// 		})
+	// 		By("Check Cluster", func() {
+	// 			waitClusterWithChecks(&data)
+	// 		})
+	// 		By("Delete Resources", func() {
+	// 			deleteClusterAndOperator(&data)
+	// 		})
+	// 	})
+	// })
 
-	Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster-multi-region"), func() {
-		It("User can deploy operator namespaces by using HELM", func() {
-			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
-				data = model.NewTestDataProvider(
-					"helm-advanced",
-					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-					[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("reader2").
-							WithSecretRef("dbuser-secret-u2").
-							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-							WithAuthDatabase("admin"),
-					},
-					30015,
-					[]func(*model.TestDataProvider){},
-				)
-				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-multiregion-helm"
-				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = "advanced-cluster-multiregion-helm"
+	// Describe("Advanced Cluster HELM charts.", Label("helm-advanced-cluster-multi-region"), func() {
+	// 	It("User can deploy operator namespaces by using HELM", func() {
+	// 		By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
+	// 			data = model.NewTestDataProvider(
+	// 				"helm-advanced",
+	// 				model.AProject{},
+	// 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+	// 				[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
+	// 				[]string{},
+	// 				[]model.DBUser{
+	// 					*model.NewDBUser("reader2").
+	// 						WithSecretRef("dbuser-secret-u2").
+	// 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+	// 						WithAuthDatabase("admin"),
+	// 				},
+	// 				30015,
+	// 				[]func(*model.TestDataProvider){},
+	// 			)
+	// 			// helm template has equal ObjectMeta.Name and Spec.Name
+	// 			data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-multiregion-helm"
+	// 			data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-multiregion-helm"
 
-				// TODO: investigate why connectivity works locally by not on the e2e hosts.
-				data.SkipAppConnectivityCheck = false
-			})
-			By("User use helm for deploying operator", func() {
-				helm.InstallOperatorWideSubmodule(data.Resources)
-			})
-			By("User deploy cluster by helm", func() {
-				helm.InstallClusterSubmodule(data.Resources)
-			})
-			By("Check Cluster", func() {
-				waitClusterWithChecks(&data)
-			})
-			By("Delete Resources", func() {
-				deleteClusterAndOperator(&data)
-			})
-		})
-	})
+	// 			// TODO: investigate why connectivity works locally by not on the e2e hosts.
+	// 			data.SkipAppConnectivityCheck = false
+	// 		})
+	// 		By("User use helm for deploying operator", func() {
+	// 			helm.InstallOperatorWideSubmodule(data.Resources)
+	// 		})
+	// 		By("User deploy cluster by helm", func() {
+	// 			helm.InstallClusterSubmodule(data.Resources)
+	// 		})
+	// 		By("Check Cluster", func() {
+	// 			waitClusterWithChecks(&data)
+	// 		})
+	// 		By("Delete Resources", func() {
+	// 			deleteClusterAndOperator(&data)
+	// 		})
+	// 	})
+	// })
 
-	Describe("Serverless Instance HELM charts.", Label("serverless-instance"), func() {
-		It("User can deploy operator namespaces by using HELM", func() {
-			By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
-				data = model.NewTestDataProvider(
-					"helm-serverless",
-					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-					[]string{"data/atlascluster_serverless.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("reader2").
-							WithSecretRef("dbuser-secret-u2").
-							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-							WithAuthDatabase("admin"),
-					},
-					30016,
-					[]func(*model.TestDataProvider){},
-				)
-				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Clusters[0].ObjectMeta.Name = "serverless-instance-helm"
-				data.Resources.Clusters[0].Spec.ServerlessSpec.Name = "serverless-instance-helm"
-			})
-			By("User use helm for deploying operator", func() {
-				helm.InstallOperatorWideSubmodule(data.Resources)
-			})
-			By("User deploy cluster by helm", func() {
-				helm.InstallClusterSubmodule(data.Resources)
-			})
-			By("Check Cluster", func() {
-				waitClusterWithChecks(&data)
-			})
+	// Describe("Serverless Instance HELM charts.", Label("serverless-instance"), func() {
+	// 	It("User can deploy operator namespaces by using HELM", func() {
+	// 		By("User creates configuration for a new Project and Advanced Cluster across multiple regions", func() {
+	// 			data = model.NewTestDataProvider(
+	// 				"helm-serverless",
+	// 				model.AProject{},
+	// 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+	// 				[]string{"data/atlascluster_serverless.yaml"},
+	// 				[]string{},
+	// 				[]model.DBUser{
+	// 					*model.NewDBUser("reader2").
+	// 						WithSecretRef("dbuser-secret-u2").
+	// 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+	// 						WithAuthDatabase("admin"),
+	// 				},
+	// 				30016,
+	// 				[]func(*model.TestDataProvider){},
+	// 			)
+	// 			// helm template has equal ObjectMeta.Name and Spec.Name
+	// 			data.Resources.Clusters[0].ObjectMeta.Name = "serverless-instance-helm"
+	// 			data.Resources.Clusters[0].Spec.ServerlessSpec.Name = "serverless-instance-helm"
+	// 		})
+	// 		By("User use helm for deploying operator", func() {
+	// 			helm.InstallOperatorWideSubmodule(data.Resources)
+	// 		})
+	// 		By("User deploy cluster by helm", func() {
+	// 			helm.InstallClusterSubmodule(data.Resources)
+	// 		})
+	// 		By("Check Cluster", func() {
+	// 			waitClusterWithChecks(&data)
+	// 		})
 
-			// consistently fails to clean project, seems related to.
-			// https://jira.mongodb.org/browse/CLOUDP-116291
-
-			// By("Delete Resources", func() {
-			//	deleteClusterAndOperator(&data)
-			// })
-		})
-	})
+	// 		By("Delete Resources", func() {
+	// 			deleteClusterAndOperator(&data)
+	// 		})
+	// 	})
+	// })
 })
 
 func waitClusterWithChecks(data *model.TestDataProvider) {
