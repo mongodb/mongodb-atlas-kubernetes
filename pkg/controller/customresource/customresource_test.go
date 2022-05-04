@@ -43,7 +43,7 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 func TestReconciliationShouldBeSkipped(t *testing.T) {
 	newResourceTypes := func() []v1.AtlasCustomResource {
 		return []v1.AtlasCustomResource{
-			&v1.AtlasCluster{},
+			&v1.AtlasDeployment{},
 			&v1.AtlasDatabaseUser{},
 			&v1.AtlasProject{},
 		}

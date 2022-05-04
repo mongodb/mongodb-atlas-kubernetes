@@ -1,0 +1,20 @@
+# permissions for end users to view atlasclusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasdeployment-viewer-role
+rules:
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasdeployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - atlas.mongodb.com
+    resources:
+      - atlasdeployments/status
+    verbs:
+      - get

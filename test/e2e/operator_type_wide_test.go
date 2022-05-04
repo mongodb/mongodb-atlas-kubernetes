@@ -93,9 +93,9 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 				[]func(*model.TestDataProvider){},
 			)
 			NortonData.Resources.Clusters[0].ObjectMeta.Name = "norton-cluster"
-			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Name = commonClusterName
+			NortonData.Resources.Clusters[0].Spec.DeploymentSpec.Name = commonClusterName
 			NimnulData.Resources.Clusters[0].ObjectMeta.Name = "nimnul-cluster"
-			NimnulData.Resources.Clusters[0].Spec.ClusterSpec.Name = commonClusterName
+			NimnulData.Resources.Clusters[0].Spec.DeploymentSpec.Name = commonClusterName
 		})
 
 		By("Deploy users resorces", func() {
@@ -106,7 +106,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 		})
 
 		By("Operator working with right cluster if one of the user update configuration", func() {
-			NortonData.Resources.Clusters[0].Spec.ClusterSpec.Labels = []common.LabelSpec{{Key: "something", Value: "awesome"}}
+			NortonData.Resources.Clusters[0].Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "something", Value: "awesome"}}
 			utils.SaveToFile(
 				NortonData.Resources.Clusters[0].ClusterFileName(NortonData.Resources),
 				utils.JSONToYAMLConvert(NortonData.Resources.Clusters[0]),
@@ -116,7 +116,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 
 			By("Norton cluster has labels", func() {
 				Expect(
-					kubecli.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.ClusterSpec.Labels[0],
+					kubecli.GetClusterResource(NortonData.Resources.Namespace, NortonData.Resources.Clusters[0].GetClusterNameResource()).Spec.DeploymentSpec.Labels[0],
 				).To(MatchFields(IgnoreExtras, Fields{
 					"Key":   Equal("something"),
 					"Value": Equal("awesome"),
@@ -125,7 +125,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 
 			By("Nimnul cluster does not have labels", func() {
 				Eventually(
-					kubecli.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.ClusterSpec.Labels,
+					kubecli.GetClusterResource(NimnulData.Resources.Namespace, NimnulData.Resources.Clusters[0].GetClusterNameResource()).Spec.DeploymentSpec.Labels,
 				).Should(BeNil())
 			})
 		})

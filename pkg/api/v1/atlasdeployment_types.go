@@ -32,18 +32,18 @@ import (
 )
 
 func init() {
-	SchemeBuilder.Register(&AtlasCluster{}, &AtlasClusterList{})
+	SchemeBuilder.Register(&AtlasDeployment{}, &AtlasDeploymentList{})
 }
 
-type ClusterType string
+type DeploymentType string
 
 const (
-	TypeReplicaSet ClusterType = "REPLICASET"
-	TypeSharded    ClusterType = "SHARDED"
-	TypeGeoSharded ClusterType = "GEOSHARDED"
+	TypeReplicaSet DeploymentType = "REPLICASET"
+	TypeSharded    DeploymentType = "SHARDED"
+	TypeGeoSharded DeploymentType = "GEOSHARDED"
 )
 
-type ClusterSpec struct {
+type DeploymentSpec struct {
 
 	// Collection of settings that configures auto-scaling information for the cluster.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -59,7 +59,7 @@ type ClusterSpec struct {
 	// The parameter is required if replicationSpecs are set or if Global Clusters are deployed.
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
-	ClusterType ClusterType `json:"clusterType,omitempty"`
+	ClusterType DeploymentType `json:"clusterType,omitempty"`
 
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
@@ -113,20 +113,20 @@ type ClusterSpec struct {
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
 }
 
-// AtlasClusterSpec defines the desired state of AtlasCluster
-type AtlasClusterSpec struct {
+// AtlasDeploymentSpec defines the desired state of AtlasDeployment
+type AtlasDeploymentSpec struct {
 	// Project is a reference to AtlasProject resource the cluster belongs to
 	Project common.ResourceRefNamespaced `json:"projectRef"`
 
 	// Configuration for the advanced cluster API
 	// +optional
-	ClusterSpec *ClusterSpec `json:"clusterSpec,omitempty"`
+	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
 
 	// Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
-	AdvancedClusterSpec *AdvancedClusterSpec `json:"advancedClusterSpec,omitempty"`
+	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
 
-	// Backup schedule for the AtlasCluster
+	// Backup schedule for the AtlasDeployment
 	// +optional
 	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
@@ -147,10 +147,10 @@ type ServerlessSpec struct {
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 }
 
-type AdvancedClusterSpec struct {
+type AdvancedDeploymentSpec struct {
 	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
 	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
-	ClusterType              string                     `json:"clusterType,omitempty"`
+	DeploymentType           string                     `json:"deploymentType,omitempty"`
 	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
 	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
 	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
@@ -169,8 +169,8 @@ type AdvancedClusterSpec struct {
 	VersionReleaseSystem     string                     `json:"versionReleaseSystem,omitempty"`
 }
 
-// AdvancedCluster converts the AdvancedClusterSpec to native Atlas client AdvancedCluster format.
-func (s *AdvancedClusterSpec) AdvancedCluster() (*mongodbatlas.AdvancedCluster, error) {
+// AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.
+func (s *AdvancedDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
 	result := &mongodbatlas.AdvancedCluster{}
 	err := compat.JSONCopy(result, s)
 	return result, err
@@ -412,9 +412,9 @@ type RegionsConfig struct {
 var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 
 // Cluster converts the Spec to native Atlas client format.
-func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
+func (spec *AtlasDeploymentSpec) Cluster() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, *spec.ClusterSpec)
+	err := compat.JSONCopy(result, *spec.DeploymentSpec)
 	return result, err
 }
 
@@ -422,45 +422,45 @@ func (spec *AtlasClusterSpec) Cluster() (*mongodbatlas.Cluster, error) {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// AtlasCluster is the Schema for the atlasclusters API
-type AtlasCluster struct {
+// AtlasDeployment is the Schema for the atlasclusters API
+type AtlasDeployment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasClusterSpec          `json:"spec,omitempty"`
-	Status status.AtlasClusterStatus `json:"status,omitempty"`
+	Spec   AtlasDeploymentSpec          `json:"spec,omitempty"`
+	Status status.AtlasDeploymentStatus `json:"status,omitempty"`
 }
 
-func (c *AtlasCluster) GetClusterName() string {
-	if c.IsAdvancedCluster() {
-		return c.Spec.AdvancedClusterSpec.Name
+func (c *AtlasDeployment) GetClusterName() string {
+	if c.IsAdvancedDeployment() {
+		return c.Spec.AdvancedDeploymentSpec.Name
 	}
 	if c.IsServerless() {
 		return c.Spec.ServerlessSpec.Name
 	}
-	return c.Spec.ClusterSpec.Name
+	return c.Spec.DeploymentSpec.Name
 }
 
-// IsServerless returns true if the AtlasCluster is configured to be a serverless instance
-func (c *AtlasCluster) IsServerless() bool {
+// IsServerless returns true if the AtlasDeployment is configured to be a serverless instance
+func (c *AtlasDeployment) IsServerless() bool {
 	return c.Spec.ServerlessSpec != nil
 }
 
-// IsAdvancedCluster returns true if the AtlasCluster is configured to be an advanced cluster.
-func (c *AtlasCluster) IsAdvancedCluster() bool {
-	return c.Spec.AdvancedClusterSpec != nil
+// IsAdvancedDeployment returns true if the AtlasDeployment is configured to be an advanced cluster.
+func (c *AtlasDeployment) IsAdvancedDeployment() bool {
+	return c.Spec.AdvancedDeploymentSpec != nil
 }
 
 // +kubebuilder:object:root=true
 
-// AtlasClusterList contains a list of AtlasCluster
-type AtlasClusterList struct {
+// AtlasDeploymentList contains a list of AtlasDeployment
+type AtlasDeploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []AtlasCluster `json:"items"`
+	Items           []AtlasDeployment `json:"items"`
 }
 
-func (c AtlasCluster) AtlasProjectObjectKey() client.ObjectKey {
+func (c AtlasDeployment) AtlasProjectObjectKey() client.ObjectKey {
 	ns := c.Namespace
 	if c.Spec.Project.Namespace != "" {
 		ns = c.Spec.Project.Namespace
@@ -468,31 +468,31 @@ func (c AtlasCluster) AtlasProjectObjectKey() client.ObjectKey {
 	return kube.ObjectKey(ns, c.Spec.Project.Name)
 }
 
-func (c *AtlasCluster) GetStatus() status.Status {
+func (c *AtlasDeployment) GetStatus() status.Status {
 	return c.Status
 }
 
-func (c *AtlasCluster) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (c *AtlasDeployment) UpdateStatus(conditions []status.Condition, options ...status.Option) {
 	c.Status.Conditions = conditions
 	c.Status.ObservedGeneration = c.ObjectMeta.Generation
 
 	for _, o := range options {
 		// This will fail if the Option passed is incorrect - which is expected
-		v := o.(status.AtlasClusterStatusOption)
+		v := o.(status.AtlasDeploymentStatusOption)
 		v(&c.Status)
 	}
 }
 
 // ************************************ Builder methods *************************************************
 
-func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
-	return &AtlasCluster{
+func NewCluster(namespace, name, nameInAtlas string) *AtlasDeployment {
+	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: AtlasClusterSpec{
-			ClusterSpec: &ClusterSpec{
+		Spec: AtlasDeploymentSpec{
+			DeploymentSpec: &DeploymentSpec{
 				Name:             nameInAtlas,
 				ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
 			},
@@ -500,13 +500,13 @@ func NewCluster(namespace, name, nameInAtlas string) *AtlasCluster {
 	}
 }
 
-func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasCluster {
-	return &AtlasCluster{
+func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasDeployment {
+	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: AtlasClusterSpec{
+		Spec: AtlasDeploymentSpec{
 			ServerlessSpec: &ServerlessSpec{
 				Name: nameInAtlas,
 				ProviderSettings: &ProviderSettingsSpec{
@@ -519,21 +519,21 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 	}
 }
 
-func NewAwsAdvancedCluster(namespace, name, nameInAtlas string) *AtlasCluster {
-	return newAwsAdvancedCluster(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
+func NewAwsAdvancedDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
+	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
 }
 
-func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasCluster {
+func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasDeployment {
 	priority := 7
-	return &AtlasCluster{
+	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: AtlasClusterSpec{
-			AdvancedClusterSpec: &AdvancedClusterSpec{
-				Name:        nameInAtlas,
-				ClusterType: string(TypeReplicaSet),
+		Spec: AtlasDeploymentSpec{
+			AdvancedDeploymentSpec: &AdvancedDeploymentSpec{
+				Name:           nameInAtlas,
+				DeploymentType: string(TypeReplicaSet),
 				ReplicationSpecs: []*AdvancedReplicationSpec{
 					{
 						RegionConfigs: []*AdvancedRegionConfig{
@@ -553,53 +553,53 @@ func newAwsAdvancedCluster(namespace, name, nameInAtlas, instanceSize, backingPr
 	}
 }
 
-func (c *AtlasCluster) WithName(name string) *AtlasCluster {
-	c.Spec.ClusterSpec.Name = name
+func (c *AtlasDeployment) WithName(name string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.Name = name
 	return c
 }
 
-func (c *AtlasCluster) WithAtlasName(name string) *AtlasCluster {
-	c.Spec.ClusterSpec.Name = name
+func (c *AtlasDeployment) WithAtlasName(name string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.Name = name
 	return c
 }
 
-func (c *AtlasCluster) WithProjectName(projectName string) *AtlasCluster {
+func (c *AtlasDeployment) WithProjectName(projectName string) *AtlasDeployment {
 	c.Spec.Project = common.ResourceRefNamespaced{Name: projectName}
 	return c
 }
 
-func (c *AtlasCluster) WithProviderName(name provider.ProviderName) *AtlasCluster {
-	c.Spec.ClusterSpec.ProviderSettings.ProviderName = name
+func (c *AtlasDeployment) WithProviderName(name provider.ProviderName) *AtlasDeployment {
+	c.Spec.DeploymentSpec.ProviderSettings.ProviderName = name
 	return c
 }
 
-func (c *AtlasCluster) WithRegionName(name string) *AtlasCluster {
-	c.Spec.ClusterSpec.ProviderSettings.RegionName = name
+func (c *AtlasDeployment) WithRegionName(name string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.ProviderSettings.RegionName = name
 	return c
 }
 
-func (c *AtlasCluster) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasCluster {
+func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasDeployment {
 	t := true
-	c.Spec.ClusterSpec.ProviderBackupEnabled = &t
+	c.Spec.DeploymentSpec.ProviderBackupEnabled = &t
 	c.Spec.BackupScheduleRef = ref
 	return c
 }
 
-func (c *AtlasCluster) WithInstanceSize(name string) *AtlasCluster {
-	c.Spec.ClusterSpec.ProviderSettings.InstanceSizeName = name
+func (c *AtlasDeployment) WithInstanceSize(name string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = name
 	return c
 }
-func (c *AtlasCluster) WithBackingProvider(name string) *AtlasCluster {
-	c.Spec.ClusterSpec.ProviderSettings.BackingProviderName = name
+func (c *AtlasDeployment) WithBackingProvider(name string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.ProviderSettings.BackingProviderName = name
 	return c
 }
 
 // Lightweight makes the cluster work with small shared instance M2. This is useful for non-cluster tests (e.g.
 // database users) and saves some money for the company.
-func (c *AtlasCluster) Lightweight() *AtlasCluster {
+func (c *AtlasDeployment) Lightweight() *AtlasDeployment {
 	c.WithInstanceSize("M2")
 	// M2 is restricted to some set of regions only - we need to ensure them
-	switch c.Spec.ClusterSpec.ProviderSettings.ProviderName {
+	switch c.Spec.DeploymentSpec.ProviderSettings.ProviderName {
 	case provider.ProviderAWS:
 		{
 			c.WithRegionName("US_EAST_1")
@@ -614,36 +614,36 @@ func (c *AtlasCluster) Lightweight() *AtlasCluster {
 		}
 	}
 	// Changing provider to tenant as this is shared now
-	c.WithBackingProvider(string(c.Spec.ClusterSpec.ProviderSettings.ProviderName))
+	c.WithBackingProvider(string(c.Spec.DeploymentSpec.ProviderSettings.ProviderName))
 	c.WithProviderName(provider.ProviderTenant)
 	return c
 }
 
-func DefaultGCPCluster(namespace, projectName string) *AtlasCluster {
+func DefaultGCPCluster(namespace, projectName string) *AtlasDeployment {
 	return NewCluster(namespace, "test-cluster-gcp-k8s", "test-cluster-gcp").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderGCP).
 		WithRegionName("EASTERN_US")
 }
 
-func DefaultAWSCluster(namespace, projectName string) *AtlasCluster {
+func DefaultAWSCluster(namespace, projectName string) *AtlasDeployment {
 	return NewCluster(namespace, "test-cluster-aws-k8s", "test-cluster-aws").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAWS).
 		WithRegionName("US_WEST_2")
 }
 
-func DefaultAzureCluster(namespace, projectName string) *AtlasCluster {
+func DefaultAzureCluster(namespace, projectName string) *AtlasDeployment {
 	return NewCluster(namespace, "test-cluster-azure-k8s", "test-cluster-azure").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAzure).
 		WithRegionName("EUROPE_NORTH")
 }
 
-func DefaultAwsAdvancedCluster(namespace, projectName string) *AtlasCluster {
-	return NewAwsAdvancedCluster(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
+func DefaultAwsAdvancedDeployment(namespace, projectName string) *AtlasDeployment {
+	return NewAwsAdvancedDeployment(namespace, "test-cluster-advanced-k8s", "test-cluster-advanced").WithProjectName(projectName)
 }
 
-func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasCluster {
+func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeployment {
 	return newServerlessInstance(namespace, "test-serverless-instance-k8s", "test-serverless-instance", "AWS", "US_EAST_1").WithProjectName(projectName)
 }

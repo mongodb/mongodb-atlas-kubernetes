@@ -24,7 +24,7 @@ func (w WatchedObject) String() string {
 }
 
 // ResourcesHandler is a special implementation of 'handler.EventHandler' that checks if the event for
-// WatchedObject must trigger reconciliation for any Operator managed Resource (AtlasProject, AtlasCluster etc). This is
+// WatchedObject must trigger reconciliation for any Operator managed Resource (AtlasProject, AtlasDeployment etc). This is
 // done via consulting the 'TrackedResources' map. The map is stored in relevant Reconciler which ensures it's up-to-date
 // on each reconciliation
 type ResourcesHandler struct {

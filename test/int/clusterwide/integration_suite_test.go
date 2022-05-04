@@ -43,7 +43,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
 	// +kubebuilder:scaffold:imports
@@ -128,21 +128,21 @@ var _ = BeforeSuite(func() {
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = (&atlascluster.AtlasClusterReconciler{
+		err = (&atlasdeployment.AtlasDeploymentReconciler{
 			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 			AtlasDomain:      atlasDomain,
 			GlobalPredicates: globalPredicates,
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 			AtlasDomain:      atlasDomain,
 			GlobalPredicates: globalPredicates,
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 			ResourceWatcher:  watch.NewResourceWatcher(),
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())

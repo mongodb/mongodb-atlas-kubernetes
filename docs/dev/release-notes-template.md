@@ -11,7 +11,7 @@
     * Fixes an issue ...
 
 
-## AtlasCluster Resource
+## AtlasDeployment Resource
 * Breaking Changes
     * Breaking Change 1
 * Changes

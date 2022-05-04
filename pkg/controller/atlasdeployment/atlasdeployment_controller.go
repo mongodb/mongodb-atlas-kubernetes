@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package atlascluster
+package atlasdeployment
 
 import (
 	"context"
@@ -54,8 +54,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
-// AtlasClusterReconciler reconciles an AtlasCluster object
-type AtlasClusterReconciler struct {
+// AtlasDeploymentReconciler reconciles an AtlasDeployment object
+type AtlasDeploymentReconciler struct {
 	watch.ResourceWatcher
 	Client           client.Client
 	Log              *zap.SugaredLogger
@@ -66,10 +66,10 @@ type AtlasClusterReconciler struct {
 	EventRecorder    record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasclusters/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasdeployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasbackupschedules,verbs=get;list;watch;create;update;patch;delete
@@ -84,22 +84,22 @@ type AtlasClusterReconciler struct {
 
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
-func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With("atlascluster", req.NamespacedName)
+func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := r.Log.With("atlasdeployment", req.NamespacedName)
 
-	cluster := &mdbv1.AtlasCluster{}
+	cluster := &mdbv1.AtlasDeployment{}
 	result := customresource.PrepareResource(r.Client, req, cluster, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(cluster); shouldSkip {
-		log.Infow(fmt.Sprintf("-> Skipping AtlasCluster reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", cluster.Spec)
+		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", cluster.Spec)
 		return workflow.OK().ReconcileResult(), nil
 	}
 
 	ctx := customresource.MarkReconciliationStarted(r.Client, cluster, log)
-	log.Infow("-> Starting AtlasCluster reconciliation", "spec", cluster.Spec, "status", cluster.Status)
+	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", cluster.Spec, "status", cluster.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, cluster)
 
 	if err := validate.ClusterSpec(cluster.Spec); err != nil {
@@ -150,14 +150,14 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasClusterReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasCluster) {
+func (r *AtlasDeploymentReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasDeployment) {
 	var pSettings *mdbv1.ProviderSettingsSpec
 	var clusterType string
-	if cluster.Spec.ClusterSpec != nil {
-		if cluster.Spec.ClusterSpec.ProviderSettings == nil {
+	if cluster.Spec.DeploymentSpec != nil {
+		if cluster.Spec.DeploymentSpec.ProviderSettings == nil {
 			return
 		}
-		pSettings = cluster.Spec.ClusterSpec.ProviderSettings
+		pSettings = cluster.Spec.DeploymentSpec.ProviderSettings
 		clusterType = "TENANT"
 	}
 
@@ -190,9 +190,9 @@ func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, clusterType s
 	}
 }
 
-func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluster) clusterHandlerFunc {
-	if cluster.IsAdvancedCluster() {
-		return r.handleAdvancedCluster
+func (r *AtlasDeploymentReconciler) selectClusterHandler(cluster *mdbv1.AtlasDeployment) clusterHandlerFunc {
+	if cluster.IsAdvancedDeployment() {
+		return r.handleAdvancedDeployment
 	}
 	if cluster.IsServerless() {
 		return r.handleServerlessInstance
@@ -200,7 +200,7 @@ func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluste
 	return r.handleRegularCluster
 }
 
-func (r *AtlasClusterReconciler) handleClusterBackupSchedule(ctx *workflow.Context, c *mdbv1.AtlasCluster, projectID, cName string, backupEnabled bool, req ctrl.Request) error {
+func (r *AtlasDeploymentReconciler) handleClusterBackupSchedule(ctx *workflow.Context, c *mdbv1.AtlasDeployment, projectID, cName string, backupEnabled bool, req ctrl.Request) error {
 	if c.Spec.BackupScheduleRef.Name == "" && c.Spec.BackupScheduleRef.Namespace == "" {
 		r.Log.Debug("no backup schedule configured for the cluster")
 		return nil
@@ -277,11 +277,11 @@ func (r *AtlasClusterReconciler) handleClusterBackupSchedule(ctx *workflow.Conte
 	return nil
 }
 
-// handleAdvancedCluster ensures the state of the cluster using the Advanced Cluster API
-func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
-	c, result := r.ensureAdvancedClusterState(ctx, project, cluster)
+// handleAdvancedDeployment ensures the state of the cluster using the Advanced Cluster API
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
+	c, result := r.ensureAdvancedDeploymentState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
-		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		ctx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
@@ -300,24 +300,24 @@ func (r *AtlasClusterReconciler) handleAdvancedCluster(ctx *workflow.Context, pr
 
 	ctx.
 		SetConditionTrue(status.ClusterReadyType).
-		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
-		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings))
+		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(c.ConnectionStrings))
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return result, nil
 }
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
-func (r *AtlasClusterReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureServerlessInstanceState(ctx, project, cluster.Spec.ServerlessSpec)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
 }
 
 // handleRegularCluster ensures the state of the cluster using the Regular Cluster API
-func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) handleRegularCluster(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureClusterState(ctx, project, cluster)
 	if c != nil && c.StateName != "" {
-		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		ctx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
@@ -334,9 +334,9 @@ func (r *AtlasClusterReconciler) handleRegularCluster(ctx *workflow.Context, pro
 
 // ensureConnectionSecretsAndSetStatusOptions creates the relevant connection secrets and sets
 // status options to the given context. This function can be used for regular clusters and serverless instances
-func (r *AtlasClusterReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, result workflow.Result, c *mongodbatlas.Cluster) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, result workflow.Result, c *mongodbatlas.Cluster) (workflow.Result, error) {
 	if c != nil && c.StateName != "" {
-		ctx.EnsureStatusOption(status.AtlasClusterStateNameOption(c.StateName))
+		ctx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(c.StateName))
 	}
 
 	if !result.IsOk() {
@@ -349,15 +349,15 @@ func (r *AtlasClusterReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx 
 
 	ctx.
 		SetConditionTrue(status.ClusterReadyType).
-		EnsureStatusOption(status.AtlasClusterMongoDBVersionOption(c.MongoDBVersion)).
-		EnsureStatusOption(status.AtlasClusterConnectionStringsOption(c.ConnectionStrings)).
-		EnsureStatusOption(status.AtlasClusterMongoURIUpdatedOption(c.MongoURIUpdated))
+		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(c.MongoDBVersion)).
+		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(c.ConnectionStrings)).
+		EnsureStatusOption(status.AtlasDeploymentMongoURIUpdatedOption(c.MongoURIUpdated))
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return result, nil
 }
 
-func (r *AtlasClusterReconciler) handleAdvancedOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) workflow.Result {
+func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment) workflow.Result {
 	clusterName := cluster.GetClusterName()
 	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context.Background(), project.Status.ID, clusterName)
 	if err != nil {
@@ -382,21 +382,21 @@ func (r *AtlasClusterReconciler) handleAdvancedOptions(ctx *workflow.Context, pr
 	return workflow.OK()
 }
 
-func (r *AtlasClusterReconciler) readProjectResource(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasDeploymentReconciler) readProjectResource(cluster *mdbv1.AtlasDeployment, project *mdbv1.AtlasProject) workflow.Result {
 	if err := r.Client.Get(context.Background(), cluster.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 	return workflow.OK()
 }
 
-func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	c, err := controller.New("AtlasCluster", mgr, controller.Options{Reconciler: r})
+func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	c, err := controller.New("AtlasDeployment", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource AtlasCluster & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasCluster{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
+	// Watch for changes to primary resource AtlasDeployment & handle delete separately
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDeployment{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
@@ -417,17 +417,17 @@ func (r *AtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // Delete implements a handler for the Delete event.
-func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
+func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
 	// TODO: Add deletion for AtlasBackupSchedule and AtlasBackupPolicy
-	cluster, ok := e.Object.(*mdbv1.AtlasCluster)
+	cluster, ok := e.Object.(*mdbv1.AtlasDeployment)
 	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasCluster{}, e.Object)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)
 		return nil
 	}
 
 	log := r.Log.With("atlascluster", kube.ObjectKeyFromObject(cluster))
 
-	log.Infow("-> Starting AtlasCluster deletion", "spec", cluster.Spec)
+	log.Infow("-> Starting AtlasDeployment deletion", "spec", cluster.Spec)
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(cluster, project); !result.IsOk() {
@@ -460,7 +460,7 @@ func (r *AtlasClusterReconciler) Delete(e event.DeleteEvent) error {
 	return nil
 }
 
-func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasCluster, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
+func (r *AtlasDeploymentReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasDeployment, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		return err
@@ -476,7 +476,7 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 
 		for time.Now().Before(timeout) {
 			deleteClusterFunc := atlasClient.Clusters.Delete
-			if cluster.Spec.AdvancedClusterSpec != nil {
+			if cluster.Spec.AdvancedDeploymentSpec != nil {
 				deleteClusterFunc = atlasClient.AdvancedClusters.Delete
 			}
 			if cluster.IsServerless() {
@@ -506,4 +506,4 @@ func (r *AtlasClusterReconciler) deleteClusterFromAtlas(cluster *mdbv1.AtlasClus
 	return nil
 }
 
-type clusterHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, req reconcile.Request) (workflow.Result, error)
+type clusterHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)

@@ -34,7 +34,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 	var (
 		connectionSecret  corev1.Secret
 		createdProject    *mdbv1.AtlasProject
-		createdClusterAWS *mdbv1.AtlasCluster
+		createdClusterAWS *mdbv1.AtlasDeployment
 		createdDBUser     *mdbv1.AtlasDatabaseUser
 		secondDBUser      *mdbv1.AtlasDatabaseUser
 	)
@@ -76,7 +76,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 		}
 
 		if createdProject != nil && createdProject.ID() != "" {
-			list := mdbv1.AtlasClusterList{}
+			list := mdbv1.AtlasDeploymentList{}
 			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
 
 			for i := range list.Items {
@@ -84,7 +84,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), list.Items[i].Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -125,7 +125,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 
 			By("Removing the cluster", func() {
 				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), createdClusterAWS.Spec.ClusterSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdClusterAWS.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
 			})
 		})
 	})
@@ -164,7 +164,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUse
 	}
 }
 
-func checkAtlasClusterRemoved(projectID string, clusterName string) func() bool {
+func checkAtlasDeploymentRemoved(projectID string, clusterName string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
 		if err != nil {
@@ -192,7 +192,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasCluster)
+		c := a.(*mdbv1.AtlasDeployment)
 		if c.Status.StateName != "" {
 			startedCreation = true
 		}
@@ -217,7 +217,7 @@ func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResou
 func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasCluster)
+		c := a.(*mdbv1.AtlasDeployment)
 		if c.Status.StateName != "" {
 			startedCreation = true
 		}

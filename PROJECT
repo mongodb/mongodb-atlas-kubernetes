@@ -13,7 +13,7 @@ resources:
   controller: true
   domain: mongodb.com
   group: atlas
-  kind: AtlasCluster
+  kind: AtlasDeployment
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
 - api:

@@ -47,7 +47,7 @@ func init() {
 }
 
 func TestCompatibility(t *testing.T) {
-	compareStruct(ClusterSpec{}, mongodbatlas.Cluster{}, t)
+	compareStruct(DeploymentSpec{}, mongodbatlas.Cluster{}, t)
 }
 
 // TestEnums verifies that replacing the strings with "enum" in Atlas Operator works correctly and is (de)serialized
@@ -59,8 +59,8 @@ func TestEnums(t *testing.T) {
 		},
 		ClusterType: "GEOSHARDED",
 	}
-	operatorCluster := AtlasClusterSpec{
-		ClusterSpec: &ClusterSpec{
+	operatorCluster := AtlasDeploymentSpec{
+		DeploymentSpec: &DeploymentSpec{
 			ProviderSettings: &ProviderSettingsSpec{
 				ProviderName: provider.ProviderAWS,
 			},

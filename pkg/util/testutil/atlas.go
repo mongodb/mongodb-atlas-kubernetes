@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-// WaitForAtlasClusterStateToNotBeReached periodically checks the given atlas cluster for a given condition. The function
+// WaitForAtlasDeploymentStateToNotBeReached periodically checks the given atlas cluster for a given condition. The function
 // returns true after the given context timeout is exceeded.
-func WaitForAtlasClusterStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, projectName, clusterName string, fns ...func(*mongodbatlas.Cluster) bool) func() bool {
+func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, projectName, clusterName string, fns ...func(*mongodbatlas.Cluster) bool) func() bool {
 	return func() bool {
 		select {
 		case <-ctx.Done():

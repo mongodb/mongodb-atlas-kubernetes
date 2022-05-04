@@ -9,7 +9,7 @@ const (
 	NotInGroup = "NOT_IN_GROUP"
 
 	// Error indicates that the project is being removed while it still has clusters
-	CannotCloseGroupActiveAtlasCluster = "CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_CLUSTERS"
+	CannotCloseGroupActiveAtlasDeployment = "CANNOT_CLOSE_GROUP_ACTIVE_ATLAS_CLUSTERS"
 
 	// Error indicates that the database user doesn't exist
 	UsernameNotFound = "USERNAME_NOT_FOUND"

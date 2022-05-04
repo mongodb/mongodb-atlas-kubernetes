@@ -1,5 +1,5 @@
 apiVersion: atlas.mongodb.com/v1
-kind: AtlasCluster
+kind: AtlasDeployment
 metadata:
   name: atlascluster-serverless
 spec:

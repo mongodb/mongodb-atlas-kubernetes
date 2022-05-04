@@ -54,9 +54,9 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 	var (
 		connectionSecret    corev1.Secret
 		createdProject      *mdbv1.AtlasProject
-		createdClusterAWS   *mdbv1.AtlasCluster
-		createdClusterGCP   *mdbv1.AtlasCluster
-		createdClusterAzure *mdbv1.AtlasCluster
+		createdClusterAWS   *mdbv1.AtlasDeployment
+		createdClusterGCP   *mdbv1.AtlasDeployment
+		createdClusterAzure *mdbv1.AtlasDeployment
 		createdDBUser       *mdbv1.AtlasDatabaseUser
 		secondDBUser        *mdbv1.AtlasDatabaseUser
 	)
@@ -126,7 +126,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 		}
 
 		if createdProject != nil && createdProject.ID() != "" {
-			list := mdbv1.AtlasClusterList{}
+			list := mdbv1.AtlasDeploymentList{}
 			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
 
 			for i := range list.Items {
@@ -134,7 +134,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasClusterRemoved(createdProject.ID(), list.Items[i].GetClusterName()), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), list.Items[i].GetClusterName()), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -246,7 +246,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				).Should(BeTrue())
 			})
 			By("Fixing second user", func() {
-				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name)
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -450,7 +450,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Changing the scopes - one stale secret is expected to be removed", func() {
-				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.ClusterSpec.Name)
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
@@ -649,15 +649,15 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	return user
 }
 
-func tryConnect(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) error {
+func tryConnect(projectID string, cluster mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) error {
 	_, err := mongoClient(projectID, cluster, user)
 	return err
 }
 
-func mongoClient(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
+func mongoClient(projectID string, cluster mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.ClusterSpec.Name)
+	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, cluster.Spec.DeploymentSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	if c.ConnectionStrings == nil {
@@ -685,7 +685,7 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) error {
+func tryWrite(projectID string, cluster mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser, dbName, collectionName string) error {
 	dbClient, err := mongoClient(projectID, cluster, user)
 	Expect(err).NotTo(HaveOccurred())
 	defer func() {
@@ -717,7 +717,7 @@ func tryWrite(projectID string, cluster mdbv1.AtlasCluster, user mdbv1.AtlasData
 	return nil
 }
 
-func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasCluster, user mdbv1.AtlasDatabaseUser) corev1.Secret {
+func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) corev1.Secret {
 	secret := corev1.Secret{}
 	username := user.Spec.Username
 	secretName := fmt.Sprintf("%s-%s-%s", kube.NormalizeIdentifier(project.Spec.Name), kube.NormalizeIdentifier(cluster.GetClusterName()), kube.NormalizeIdentifier(username))
@@ -727,7 +727,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, cluster
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.ClusterSpec.Name)
+	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), cluster.Spec.DeploymentSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{

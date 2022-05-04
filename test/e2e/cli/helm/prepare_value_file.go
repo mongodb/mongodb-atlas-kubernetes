@@ -40,7 +40,7 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 		newValues.Users = append(newValues.Users, currentUser)
 	}
 	utils.SaveToFile(
-		pathToAtlasClusterValuesFile(input),
+		pathToAtlasDeploymentValuesFile(input),
 		utils.JSONToYAMLConvert(newValues),
 	)
 }

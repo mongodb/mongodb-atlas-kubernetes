@@ -65,11 +65,11 @@ func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) {
 }
 
 func activateCluster(data *model.TestDataProvider, paused bool) {
-	data.Resources.Clusters[0].Spec.ClusterSpec.Paused = &paused
+	data.Resources.Clusters[0].Spec.DeploymentSpec.Paused = &paused
 	UpdateCluster(data)
 	By("Check additional cluster field `paused`\n")
 	uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.GetClusterName())
-	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.ClusterSpec.Paused))
+	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.DeploymentSpec.Paused))
 }
 
 func SuspendCluster(data *model.TestDataProvider) {
