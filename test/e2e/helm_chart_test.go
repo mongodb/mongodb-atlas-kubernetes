@@ -94,63 +94,63 @@ var _ = Describe("HELM charts", func() {
 				},
 				30006,
 				[]func(*model.TestDataProvider){
-					actions.HelmDefaultUpgradeResouces,
-					actions.HelmUpgradeUsersRoleAddAdminUser,
-					actions.HelmUpgradeDeleteFirstUser,
+					// actions.HelmDefaultUpgradeResouces,
+					// actions.HelmUpgradeUsersRoleAddAdminUser,
+					// actions.HelmUpgradeDeleteFirstUser,
 				},
 			),
 		),
-		Entry("",
-			model.NewTestDataProvider(
-				"helm-advanced",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_advanced_helm.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("reader2").
-						WithSecretRef("dbuser-secret-u2").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-						WithAuthDatabase("admin"),
-				},
-				30014,
-				[]func(*model.TestDataProvider){},
-			),
-		),
-		Entry("",
-			model.NewTestDataProvider(
-				"helm-advanced-cluster-multiregion",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("reader2").
-						WithSecretRef("dbuser-secret-u2").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-						WithAuthDatabase("admin"),
-				},
-				30015,
-				[]func(*model.TestDataProvider){},
-			),
-		),
-		Entry("",
-			model.NewTestDataProvider(
-				"helm-serverless",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_serverless.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("reader2").
-						WithSecretRef("dbuser-secret-u2").
-						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-						WithAuthDatabase("admin"),
-				},
-				30016,
-				[]func(*model.TestDataProvider){},
-			),
-		),
+		// Entry("",
+		// 	model.NewTestDataProvider(
+		// 		"helm-advanced",
+		// 		model.AProject{},
+		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+		// 		[]string{"data/atlascluster_advanced_helm.yaml"},
+		// 		[]string{},
+		// 		[]model.DBUser{
+		// 			*model.NewDBUser("reader2").
+		// 				WithSecretRef("dbuser-secret-u2").
+		// 				AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+		// 				WithAuthDatabase("admin"),
+		// 		},
+		// 		30014,
+		// 		[]func(*model.TestDataProvider){},
+		// 	),
+		// ),
+		// Entry("",
+		// 	model.NewTestDataProvider(
+		// 		"helm-advanced-cluster-multiregion",
+		// 		model.AProject{},
+		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+		// 		[]string{"data/atlascluster_advanced_multi_region_helm.yaml"},
+		// 		[]string{},
+		// 		[]model.DBUser{
+		// 			*model.NewDBUser("reader2").
+		// 				WithSecretRef("dbuser-secret-u2").
+		// 				AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+		// 				WithAuthDatabase("admin"),
+		// 		},
+		// 		30015,
+		// 		[]func(*model.TestDataProvider){},
+		// 	),
+		// ),
+		// Entry("",
+		// 	model.NewTestDataProvider(
+		// 		"helm-serverless",
+		// 		model.AProject{},
+		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+		// 		[]string{"data/atlascluster_serverless.yaml"},
+		// 		[]string{},
+		// 		[]model.DBUser{
+		// 			*model.NewDBUser("reader2").
+		// 				WithSecretRef("dbuser-secret-u2").
+		// 				AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+		// 				WithAuthDatabase("admin"),
+		// 		},
+		// 		30016,
+		// 		[]func(*model.TestDataProvider){},
+		// 	),
+		// ),
 	)
 
 	Describe("HELM charts.", Label("helm-wide"), func() {
