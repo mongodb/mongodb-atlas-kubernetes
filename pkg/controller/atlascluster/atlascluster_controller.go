@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -129,6 +131,9 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Client = atlasClient
 
+	// Allow users to specify M0/M2/M5 clusters without providing TENANT for Normal and Serverless clusters
+	r.verifyNonTenantCase(cluster)
+
 	handleCluster := r.selectClusterHandler(cluster)
 	if result, _ := handleCluster(ctx, project, cluster, req); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ClusterReadyType, result)
@@ -143,6 +148,46 @@ func (r *AtlasClusterReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasClusterReconciler) verifyNonTenantCase(cluster *mdbv1.AtlasCluster) {
+	var pSettings *mdbv1.ProviderSettingsSpec
+	var clusterType string
+	if cluster.Spec.ClusterSpec != nil {
+		if cluster.Spec.ClusterSpec.ProviderSettings == nil {
+			return
+		}
+		pSettings = cluster.Spec.ClusterSpec.ProviderSettings
+		clusterType = "TENANT"
+	}
+
+	if cluster.Spec.ServerlessSpec != nil {
+		if cluster.Spec.ServerlessSpec.ProviderSettings == nil {
+			return
+		}
+		pSettings = cluster.Spec.ServerlessSpec.ProviderSettings
+		clusterType = "SERVERLESS"
+	}
+
+	modifyProviderSettings(pSettings, clusterType)
+}
+
+func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, clusterType string) {
+	if pSettings == nil || string(pSettings.ProviderName) == clusterType {
+		return
+	}
+
+	switch strings.ToUpper(clusterType) {
+	case "TENANT":
+		switch pSettings.InstanceSizeName {
+		case "M0", "M2", "M5":
+			pSettings.BackingProviderName = string(pSettings.ProviderName)
+			pSettings.ProviderName = provider.ProviderName(clusterType)
+		}
+	case "SERVERLESS":
+		pSettings.BackingProviderName = string(pSettings.ProviderName)
+		pSettings.ProviderName = provider.ProviderName(clusterType)
+	}
 }
 
 func (r *AtlasClusterReconciler) selectClusterHandler(cluster *mdbv1.AtlasCluster) clusterHandlerFunc {
