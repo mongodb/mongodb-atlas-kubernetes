@@ -42,7 +42,7 @@ type Integration struct {
 	// +optional
 	URL string `json:"url,omitempty"`
 	// +optional
-	SecretRef common.ResourceRefNamespaced `json:"secret,omitempty"`
+	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
 func (i Integration) ToAtlas(defaultNS string, c client.Client) *mongodbatlas.ThirdPartyIntegration {
