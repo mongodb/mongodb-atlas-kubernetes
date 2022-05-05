@@ -12,4 +12,7 @@ if [ -z "${branch_name}" ]; then
 fi
 branch_name=$(echo "${branch_name}" | sed  's/\//-/g')
 tag="${branch_name}-${commit_id}"
+
+# Replace all dots with dashes
+tag=$(echo "${tag}" | awk '{gsub(/\./, "-", $0); print $0}')
 echo "::set-output name=tag::$tag"
