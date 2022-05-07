@@ -47,15 +47,18 @@ func GetAppVersion(name string) string {
 }
 
 func Uninstall(name string, ns string) {
-	session := cli.Execute("helm", "uninstall", name, "--namespace", ns, "--wait")
-	EventuallyWithOffset(1, session.Wait()).Should(Say("uninstalled"), "HELM. Can't unninstall "+name)
+	session := cli.Execute("helm", "uninstall", name, "--namespace", ns, "--wait", "--timeout", "15m") // remove timeout
+	EventuallyWithOffset(1, session.Wait("15m")).Should(Say("uninstalled"), "HELM. Can't unninstall "+name)
 }
 
 func Install(args ...string) {
 	dependencyAsFileForCRD()
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
-	EventuallyWithOffset(1, session.Wait()).Should(Say("STATUS: deployed"), "HELM. Can't install release")
+	msg := cli.GetSessionExitMsg(session)
+	ExpectWithOffset(1, msg).Should(SatisfyAny(Say("STATUS: deployed"), Say("resource that already exists"), BeEmpty()),
+		"HELM. Can't install release",
+	)
 }
 
 func Upgrade(args ...string) {
@@ -88,15 +91,13 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 
 func InstallCRD(input model.UserInputs) {
 	Install(
-		"mongodb-atlas-operator-crds",
+		"mongodb-atlas-operator-crds"+input.TestID,
 		config.AtlasOperatorCRDHelmChartPath,
-		"--namespace", input.Namespace,
-		"--create-namespace",
 	)
 }
 
 func UninstallCRD(input model.UserInputs) {
-	Uninstall("mongodb-atlas-operator-crds", input.Namespace)
+	Uninstall("mongodb-atlas-operator-crds", "default")
 }
 
 func InstallOperatorWideSubmodule(input model.UserInputs) {
@@ -128,6 +129,7 @@ func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
 
 // InstallOperatorNamespacedSubmodule installs the operator from `helm-charts` directory.
 // It is expected that this directory already exists.
+// mongodb-atlas-operator-crds.enabled=false - because used only for DDT-tests, and CRD deploy there separately
 func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 	packageChart(config.AtlasOperatorCRDHelmChartPath, filepath.Join(config.AtlasOperatorHelmChartPath, "charts"))
 	repo, tag := splitDockerImage()
@@ -138,6 +140,7 @@ func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
+		"--set", "mongodb-atlas-operator-crds.enabled=false",
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)

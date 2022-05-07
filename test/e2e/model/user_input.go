@@ -9,6 +9,7 @@ import (
 )
 
 type UserInputs struct {
+	TestID             string
 	AtlasKeyAccessType AtlasKeyType
 	ProjectID          string
 	KeyName            string
@@ -21,8 +22,10 @@ type UserInputs struct {
 
 // NewUsersInputs prepare users inputs
 func NewUserInputs(keyTestPrefix string, project AProject, users []DBUser, r *AtlasKeyType) UserInputs {
-	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, utils.GenID())
+	testID := utils.GenID()
+	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, testID)
 	input := UserInputs{
+		TestID:             testID,
 		AtlasKeyAccessType: *r,
 		ProjectID:          "",
 		KeyName:            keyTestPrefix,
