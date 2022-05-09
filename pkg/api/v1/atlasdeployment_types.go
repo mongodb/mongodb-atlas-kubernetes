@@ -35,12 +35,12 @@ func init() {
 	SchemeBuilder.Register(&AtlasDeployment{}, &AtlasDeploymentList{})
 }
 
-type DeploymentType string
+type ClusterType string
 
 const (
-	TypeReplicaSet DeploymentType = "REPLICASET"
-	TypeSharded    DeploymentType = "SHARDED"
-	TypeGeoSharded DeploymentType = "GEOSHARDED"
+	TypeReplicaSet ClusterType = "REPLICASET"
+	TypeSharded    ClusterType = "SHARDED"
+	TypeGeoSharded ClusterType = "GEOSHARDED"
 )
 
 type DeploymentSpec struct {
@@ -59,7 +59,7 @@ type DeploymentSpec struct {
 	// The parameter is required if replicationSpecs are set or if Global Clusters are deployed.
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
-	ClusterType DeploymentType `json:"clusterType,omitempty"`
+	ClusterType ClusterType `json:"clusterType,omitempty"`
 
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
