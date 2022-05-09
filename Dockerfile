@@ -44,7 +44,7 @@ LABEL name="MongoDB Atlas Operator" \
       io.k8s.description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster" \
       io.openshift.tags="mongodb,atlas" \
       io.openshift.maintainer.product="MongoDB" \
-      License="Apache-2.0" \
+      License="Apache-2.0"
 
 
 WORKDIR /
