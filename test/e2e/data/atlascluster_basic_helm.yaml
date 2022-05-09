@@ -5,7 +5,7 @@ metadata:
 spec:
   projectRef:
     name: my-project
-  clusterSpec:
+  deploymentSpec:
     name: atlascluster-basic-helm
     providerSettings:
       instanceSizeName: M10

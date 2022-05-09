@@ -5,7 +5,7 @@ metadata:
 spec:
   projectRef:
     name: my-project
-  clusterSpec:
+  deploymentSpec:
     name: cluster-multiregion-gcp
     providerBackupEnabled: true
     clusterType: REPLICASET
@@ -13,16 +13,16 @@ spec:
       instanceSizeName: M10
       providerName: GCP
     replicationSpecs:
-    - numShards: 1
-      zoneName: US-Zone
-      regionsConfig:
-        CENTRAL_US:
-          analyticsNodes: 0
-          electableNodes: 1
-          priority: 6
-          readOnlyNodes: 0
-        EASTERN_US:
-          analyticsNodes: 0
-          electableNodes: 2
-          priority: 7
-          readOnlyNodes: 0
+      - numShards: 1
+        zoneName: US-Zone
+        regionsConfig:
+          CENTRAL_US:
+            analyticsNodes: 0
+            electableNodes: 1
+            priority: 6
+            readOnlyNodes: 0
+          EASTERN_US:
+            analyticsNodes: 0
+            electableNodes: 2
+            priority: 7
+            readOnlyNodes: 0

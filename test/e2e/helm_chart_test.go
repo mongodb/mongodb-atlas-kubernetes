@@ -53,7 +53,7 @@ var _ = Describe("HELM charts", func() {
 					data.Resources.Namespace,
 				)
 				actions.SaveK8sResources(
-					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(data.Resources)
