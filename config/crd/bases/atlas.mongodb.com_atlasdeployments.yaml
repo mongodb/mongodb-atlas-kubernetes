@@ -56,6 +56,8 @@ spec:
                           options.
                         type: string
                     type: object
+                  clusterType:
+                    type: string
                   connectionStrings:
                     description: ConnectionStrings configuration for applications
                       use to connect to this cluster.
@@ -108,8 +110,6 @@ spec:
                         type: string
                     type: object
                   createDate:
-                    type: string
-                  deploymentType:
                     type: string
                   diskSizeGB:
                     type: integer

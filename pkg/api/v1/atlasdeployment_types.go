@@ -150,7 +150,7 @@ type ServerlessSpec struct {
 type AdvancedDeploymentSpec struct {
 	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
 	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
-	DeploymentType           string                     `json:"deploymentType,omitempty"`
+	ClusterType              string                     `json:"clusterType,omitempty"`
 	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
 	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
 	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
@@ -532,8 +532,8 @@ func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backin
 		},
 		Spec: AtlasDeploymentSpec{
 			AdvancedDeploymentSpec: &AdvancedDeploymentSpec{
-				Name:           nameInAtlas,
-				DeploymentType: string(TypeReplicaSet),
+				Name:        nameInAtlas,
+				ClusterType: string(TypeReplicaSet),
 				ReplicationSpecs: []*AdvancedReplicationSpec{
 					{
 						RegionConfigs: []*AdvancedRegionConfig{

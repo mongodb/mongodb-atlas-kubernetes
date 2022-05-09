@@ -5,122 +5,122 @@ metadata:
   creationTimestamp: null
   name: manager-role
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasbackuppolicies
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasbackuppolicies/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasbackupschedules
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasbackupschedules/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasdeployments
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasdeployments/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasdatabaseusers
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasdatabaseusers/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasprojects
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - atlas.mongodb.com
-    resources:
-      - atlasprojects/status
-    verbs:
-      - get
-      - patch
-      - update
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackuppolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackuppolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupschedules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupschedules/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdatabaseusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdatabaseusers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasprojects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasprojects/status
+  verbs:
+  - get
+  - patch
+  - update
