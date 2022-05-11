@@ -40,5 +40,5 @@ func (ac *AC) ClusterFileName(input UserInputs) string {
 }
 
 func (ac *AC) GetClusterNameResource() string {
-	return "atlascluster.atlas.mongodb.com/" + ac.ObjectMeta.Name
+	return "atlasdeployment.atlas.mongodb.com/" + ac.ObjectMeta.Name
 }
