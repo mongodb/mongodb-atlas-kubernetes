@@ -23,7 +23,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kubecli.Apply(DefaultDeployConfig)).Should(
-				Say("customresourcedefinition.apiextensions.k8s.io/atlasclusters.atlas.mongodb.com"),
+				Say("customresourcedefinition.apiextensions.k8s.io/atlasdeployments.atlas.mongodb.com"),
 			)
 			Eventually(
 				kubecli.GetPodStatus(DefaultOperatorNS),
@@ -45,11 +45,11 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Cluster wide opera
 					DefaultOperatorNS,
 				)
 				actions.SaveK8sResources(
-					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					NortonData.Resources.Namespace,
 				)
 				actions.SaveK8sResources(
-					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					NimnulData.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(NortonData.Resources)
