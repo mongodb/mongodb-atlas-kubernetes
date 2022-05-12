@@ -174,7 +174,7 @@ func InstallClusterSubmodule(input model.UserInputs) {
 // InstallClusterRelease from repo
 func InstallClusterRelease(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
+	args := prepareHelmChartArgs(input, "mongodb/atlas-deployment")
 	Install(args...)
 }
 
@@ -223,7 +223,7 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 }
 
 // pathToAtlasDeploymentValuesFile generate path to values file (HELM chart)
-// values for the  atlas-cluster helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
+// values for the  atlas-deployment helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-deployment/values.yaml
 func pathToAtlasDeploymentValuesFile(input model.UserInputs) string {
 	return path.Join(input.ProjectPath, "values.yaml")
 }
