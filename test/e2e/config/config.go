@@ -23,7 +23,7 @@ const (
 	TestAppHelmChartPath          = "../app/helm/"
 	AtlasOperatorHelmChartPath    = "../../helm-charts/charts/atlas-operator"
 	AtlasOperatorCRDHelmChartPath = "../../helm-charts/charts/atlas-operator-crds"
-	AtlasDeploymentHelmChartPath  = "../../helm-charts/charts/atlas-cluster"
+	AtlasDeploymentHelmChartPath  = "../../helm-charts/charts/atlas-deployment"
 	HelmChartDirectory            = "../../helm-charts/charts"
 
 	// AWS Tags for test
