@@ -8,8 +8,8 @@ metadata:
 spec:
   group: atlas.mongodb.com
   names:
-    kind: AtlasDeployment
-    listKind: AtlasDeploymentList
+    kind: AtlasCluster
+    listKind: AtlasClusterList
     plural: atlasclusters
     singular: atlascluster
   scope: Namespaced
@@ -17,7 +17,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasDeployment is the Schema for the atlasclusters API
+        description: AtlasCluster is the Schema for the atlasclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,7 +32,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
+            description: AtlasClusterSpec defines the desired state of AtlasCluster
             properties:
               advancedClusterSpec:
                 description: Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
@@ -562,7 +562,7 @@ spec:
             - projectRef
             type: object
           status:
-            description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
+            description: AtlasClusterStatus defines the observed state of AtlasCluster.
             properties:
               conditions:
                 description: Conditions is the list of statuses showing the current
