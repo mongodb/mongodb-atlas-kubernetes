@@ -46,6 +46,7 @@ func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 
 	switch atlasCluster.StateName {
 	case "IDLE":
+
 		return regularClusterIdle(ctx, project, cluster, atlasCluster)
 	case "CREATING":
 		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
@@ -240,4 +241,26 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	}
 
 	return workflow.OK()
+}
+
+func (r *AtlasClusterReconciler) handleClusterVersionUpgrade(current *mdbv1.ClusterSpec, new *mdbv1.ClusterSpec) error {
+	shouldBeUpdated, err := r.clusterMustBeUpgraded(current, new)
+	if err != nil {
+		return err
+	}
+
+	if !shouldBeUpdated {
+		r.Log.Debug("cluster shouldn't be upgraded")
+		return nil
+	}
+
+	r.Log.Infof("performing cluster upgrade from %s, to %s",
+		current.ProviderSettings.InstanceSizeName, new.ProviderSettings.InstanceSizeName)
+	return nil
+}
+
+// If instance size name changed from M
+func (r *AtlasClusterReconciler) clusterMustBeUpgraded(current *mdbv1.ClusterSpec, new *mdbv1.ClusterSpec) (bool, error) {
+	//if current.MongoDBMajorVersion
+	return false, nil
 }
