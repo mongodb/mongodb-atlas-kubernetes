@@ -193,6 +193,30 @@ spec:
                   for the current Project.
                 items:
                   properties:
+                    endpointGroupName:
+                      description: Unique identifier of the endpoint group. The endpoint
+                        group encompasses all of the endpoints that you created in
+                        Google Cloud.
+                      type: string
+                    endpoints:
+                      description: Collection of individual private endpoints that
+                        comprise your endpoint group.
+                      items:
+                        properties:
+                          endpointName:
+                            description: Forwarding rule that corresponds to the endpoint
+                              you created in Google Cloud.
+                            type: string
+                          ipAddress:
+                            description: Private IP address of the endpoint you created
+                              in Google Cloud.
+                            type: string
+                        type: object
+                      type: array
+                    gcpProjectId:
+                      description: Unique identifier of the Google Cloud project in
+                        which you created your endpoints.
+                      type: string
                     id:
                       description: Unique identifier of the private endpoint you created
                         in your AWS VPC or Azure Vnet.
@@ -476,6 +500,23 @@ spec:
                   project
                 items:
                   properties:
+                    endpoints:
+                      description: Collection of individual GCP private endpoints
+                        that comprise your network endpoint group.
+                      items:
+                        properties:
+                          endpointName:
+                            type: string
+                          ipAddress:
+                            type: string
+                          status:
+                            type: string
+                        required:
+                        - endpointName
+                        - ipAddress
+                        - status
+                        type: object
+                      type: array
                     id:
                       description: Unique identifier for AWS or AZURE Private Link
                         Connection.

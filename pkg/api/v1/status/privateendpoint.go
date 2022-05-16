@@ -15,6 +15,14 @@ type ProjectPrivateEndpoint struct {
 	ServiceResourceID string `json:"serviceResourceId,omitempty"`
 	// Unique identifier of the AWS or Azure Private Link Interface Endpoint.
 	InterfaceEndpointID string `json:"interfaceEndpointId,omitempty"`
+	// Collection of individual GCP private endpoints that comprise your network endpoint group.
+	Endpoints []GCPEndpoint `json:"endpoints,omitempty"`
+}
+
+type GCPEndpoint struct {
+	Status       string `json:"status"`
+	EndpointName string `json:"endpointName"`
+	IPAddress    string `json:"ipAddress"`
 }
 
 func (pe ProjectPrivateEndpoint) Identifier() interface{} {
