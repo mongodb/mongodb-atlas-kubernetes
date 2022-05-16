@@ -1,11 +1,11 @@
 apiVersion: atlas.mongodb.com/v1
-kind: AtlasCluster
+kind: AtlasDeployment
 metadata:
   name: atlascluster-basic
 spec:
   projectRef:
     name: my-project
-  clusterSpec:
+  deploymentSpec:
     name: cluster-basic
     providerSettings:
       instanceSizeName: M5

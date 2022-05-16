@@ -15,16 +15,16 @@ type AC struct {
 	Spec            ClusterSpec        `json:"spec,omitempty"`
 }
 
-type ClusterSpec v1.AtlasClusterSpec
+type ClusterSpec v1.AtlasDeploymentSpec
 
 func (c ClusterSpec) GetClusterName() string {
-	if c.AdvancedClusterSpec != nil {
-		return c.AdvancedClusterSpec.Name
+	if c.AdvancedDeploymentSpec != nil {
+		return c.AdvancedDeploymentSpec.Name
 	}
 	if c.ServerlessSpec != nil {
 		return c.ServerlessSpec.Name
 	}
-	return c.ClusterSpec.Name
+	return c.DeploymentSpec.Name
 }
 
 // LoadUserClusterConfig load configuration into object
@@ -40,5 +40,5 @@ func (ac *AC) ClusterFileName(input UserInputs) string {
 }
 
 func (ac *AC) GetClusterNameResource() string {
-	return "atlascluster.atlas.mongodb.com/" + ac.ObjectMeta.Name
+	return "atlasdeployment.atlas.mongodb.com/" + ac.ObjectMeta.Name
 }

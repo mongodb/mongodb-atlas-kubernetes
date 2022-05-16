@@ -80,7 +80,7 @@ func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.P
 	return enpointsList, nil
 }
 
-func (a *Atlas) GetAdvancedCluster(projectId, clusterName string) (*mongodbatlas.AdvancedCluster, error) {
+func (a *Atlas) GetAdvancedDeployment(projectId, clusterName string) (*mongodbatlas.AdvancedCluster, error) {
 	advancedCluster, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, clusterName)
 	if err != nil {
 		return nil, err

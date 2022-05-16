@@ -8,7 +8,7 @@
   * [3rd Party Integration](https://docs.atlas.mongodb.com/reference/api/third-party-integration-settings/) are supported `spec.integrations`
   * [GCP Private Endpoints](https://www.mongodb.com/docs/atlas/reference/api/private-endpoints/) are now supported
 
-## AtlasCluster Resource
+## AtlasDeployment Resource
 * Changes
   * [Serverless instances](https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/) are supported via the new `spec.serverlessSpec` field.
 

@@ -53,7 +53,7 @@ var _ = Describe("HELM charts", func() {
 					data.Resources.Namespace,
 				)
 				actions.SaveK8sResources(
-					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(data.Resources)
@@ -122,7 +122,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-wide"
-				data.Resources.Clusters[0].Spec.ClusterSpec.Name = "cluster-from-helm-wide"
+				data.Resources.Clusters[0].Spec.DeploymentSpec.Name = "cluster-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
@@ -155,7 +155,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "cluster-from-helm-upgrade"
-				data.Resources.Clusters[0].Spec.ClusterSpec.Name = "cluster-from-helm-upgrade"
+				data.Resources.Clusters[0].Spec.DeploymentSpec.Name = "cluster-from-helm-upgrade"
 			})
 			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()
@@ -165,7 +165,7 @@ var _ = Describe("HELM charts", func() {
 			})
 			By("User update new released operator", func() {
 				backup := true
-				data.Resources.Clusters[0].Spec.ClusterSpec.ProviderBackupEnabled = &backup
+				data.Resources.Clusters[0].Spec.DeploymentSpec.ProviderBackupEnabled = &backup
 				actions.HelmUpgradeChartVersions(&data)
 				actions.CheckUsersCanUseOldApp(&data)
 			})
@@ -195,7 +195,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-helm"
-				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-helm"
+				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = "advanced-cluster-helm"
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
@@ -232,7 +232,7 @@ var _ = Describe("HELM charts", func() {
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Clusters[0].ObjectMeta.Name = "advanced-cluster-multiregion-helm"
-				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = "advanced-cluster-multiregion-helm"
+				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = "advanced-cluster-multiregion-helm"
 
 				// TODO: investigate why connectivity works locally by not on the e2e hosts.
 				data.SkipAppConnectivityCheck = false
@@ -306,12 +306,12 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 	By("Check attributes", func() {
 		cluster := data.Resources.Clusters[0]
 		switch {
-		case cluster.Spec.AdvancedClusterSpec != nil:
+		case cluster.Spec.AdvancedDeploymentSpec != nil:
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(BeNil())
-			advancedCluster, err := atlasClient.GetAdvancedCluster(data.Resources.ProjectID, cluster.Spec.AdvancedClusterSpec.Name)
+			advancedCluster, err := atlasClient.GetAdvancedDeployment(data.Resources.ProjectID, cluster.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).To(BeNil())
-			actions.CompareAdvancedClustersSpec(cluster.Spec, *advancedCluster)
+			actions.CompareAdvancedDeploymentsSpec(cluster.Spec, *advancedCluster)
 		case cluster.Spec.ServerlessSpec != nil:
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(BeNil())
@@ -319,7 +319,7 @@ func waitClusterWithChecks(data *model.TestDataProvider) {
 			Expect(err).To(BeNil())
 			actions.CompareServerlessSpec(cluster.Spec, *serverlessInstance)
 		default:
-			uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.ClusterSpec.Name)
+			uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.DeploymentSpec.Name)
 			actions.CompareClustersSpec(cluster.Spec, uCluster)
 		}
 	})

@@ -1,4 +1,4 @@
-package atlascluster
+package atlasdeployment
 
 import (
 	"context"
@@ -21,8 +21,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
-	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name)
+func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
+	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.DeploymentSpec.Name)
 	if err != nil {
 		if resp == nil {
 			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
@@ -37,7 +37,7 @@ func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.ClusterSpec.Name)
+		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.DeploymentSpec.Name)
 		atlasCluster, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, atlasCluster)
 		if err != nil {
 			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
@@ -60,7 +60,7 @@ func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 	}
 }
 
-func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasCluster, atlasCluster *mongodbatlas.Cluster) (*mongodbatlas.Cluster, workflow.Result) {
+func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, atlasCluster *mongodbatlas.Cluster) (*mongodbatlas.Cluster, workflow.Result) {
 	resultingCluster, err := MergedCluster(*atlasCluster, cluster.Spec)
 	if err != nil {
 		return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
@@ -70,12 +70,12 @@ func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 		return atlasCluster, workflow.OK()
 	}
 
-	if cluster.Spec.ClusterSpec.Paused != nil {
-		if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.ClusterSpec.Paused {
+	if cluster.Spec.DeploymentSpec.Paused != nil {
+		if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.DeploymentSpec.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
 			resultingCluster = mongodbatlas.Cluster{
-				Paused: cluster.Spec.ClusterSpec.Paused,
+				Paused: cluster.Spec.DeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
@@ -85,7 +85,7 @@ func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 
 	resultingCluster = cleanupCluster(resultingCluster)
 
-	atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.ClusterSpec.Name, &resultingCluster)
+	atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.DeploymentSpec.Name, &resultingCluster)
 	if err != nil {
 		return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
 	}
@@ -132,17 +132,17 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 	return result
 }
 
-// MergedCluster will return the result of merging AtlasClusterSpec with Atlas Cluster
-func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasClusterSpec) (result mongodbatlas.Cluster, err error) {
+// MergedCluster will return the result of merging AtlasDeploymentSpec with Atlas Cluster
+func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasDeploymentSpec) (result mongodbatlas.Cluster, err error) {
 	if err = compat.JSONCopy(&result, atlasCluster); err != nil {
 		return
 	}
 
-	if err = compat.JSONCopy(&result, spec.ClusterSpec); err != nil {
+	if err = compat.JSONCopy(&result, spec.DeploymentSpec); err != nil {
 		return
 	}
 
-	mergeRegionConfigs(result.ReplicationSpecs, spec.ClusterSpec.ReplicationSpecs)
+	mergeRegionConfigs(result.ReplicationSpecs, spec.DeploymentSpec.ReplicationSpecs)
 
 	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
 	// "Don't specify this parameter when creating a multi-region cluster using the replicationSpec object or a Global
@@ -189,7 +189,7 @@ func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, cl
 	return d == ""
 }
 
-func (r *AtlasClusterReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, clusterResource *mdbv1.AtlasCluster) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, clusterResource *mdbv1.AtlasDeployment) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {

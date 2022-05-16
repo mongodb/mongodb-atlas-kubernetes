@@ -1,11 +1,11 @@
 apiVersion: atlas.mongodb.com/v1
-kind: AtlasCluster
+kind: AtlasDeployment
 metadata:
   name: atlascluster-backup
 spec:
   projectRef:
     name: my-project
-  clusterSpec:
+  deploymentSpec:
     name: cluster-backup
     providerBackupEnabled: false
     providerSettings:

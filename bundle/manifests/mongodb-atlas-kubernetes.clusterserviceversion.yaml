@@ -14,7 +14,7 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
-          "kind": "AtlasCluster",
+          "kind": "AtlasDeployment",
           "metadata": {
             "name": "my-atlas-cluster"
           },
@@ -87,9 +87,9 @@ spec:
       - kind: AtlasBackupPolicy
         name: atlasbackuppolicies.atlas.mongodb.com
         version: v1
-      - description: AtlasCluster is the Schema for the atlasclusters API
+      - description: AtlasDeployment is the Schema for the atlasclusters API
         displayName: Atlas Cluster
-        kind: AtlasCluster
+        kind: AtlasDeployment
         name: atlasclusters.atlas.mongodb.com
         version: v1
       - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
@@ -144,12 +144,12 @@ spec:
         - ipAddress: "203.0.113.0/24"
           comment: "CIDR block for Application Server B - D"
     ```
-    **3.** Create an `AtlasCluster` Custom Resource.
+    **3.** Create an `AtlasDeployment` Custom Resource.
     The example below is a minimal configuration to create an M10 Atlas cluster in the AWS US East region. For a full list of properties, check
     `atlasclusters.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasclusters.yaml)):
     ```
     apiVersion: atlas.mongodb.com/v1
-    kind: AtlasCluster
+    kind: AtlasDeployment
     metadata:
       name: my-atlas-cluster
     spec:
@@ -163,7 +163,7 @@ spec:
     ```
 
     **4.** Create a database user password Kubernetes Secret
-    The Secret must be created in the same namespace as the `AtlasCluster` and `AtlasProject` were created.
+    The Secret must be created in the same namespace as the `AtlasDeployment` and `AtlasProject` were created.
     ```
     kubectl create secret generic the-user-password --from-literal="password=P@@sword%"
     ```

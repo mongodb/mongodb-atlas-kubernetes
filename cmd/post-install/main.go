@@ -32,7 +32,7 @@ func setupLogger() *zap.SugaredLogger {
 	return log.Sugar()
 }
 
-// createK8sClient creates an in cluster client which can be used to fetch the current state of the AtlasCluster
+// createK8sClient creates an in cluster client which can be used to fetch the current state of the AtlasDeployment
 // resource.
 func createK8sClient() (client.Client, error) {
 	restCfg, err := rest.InClusterConfig()
@@ -46,7 +46,7 @@ func createK8sClient() (client.Client, error) {
 		return nil, err
 	}
 
-	k8sClient.Scheme().AddKnownTypes(schema.GroupVersion{Group: "atlas.mongodb.com", Version: "v1"}, &mdbv1.AtlasCluster{}, &mdbv1.AtlasClusterList{})
+	k8sClient.Scheme().AddKnownTypes(schema.GroupVersion{Group: "atlas.mongodb.com", Version: "v1"}, &mdbv1.AtlasDeployment{}, &mdbv1.AtlasDeploymentList{})
 	return k8sClient, nil
 }
 
@@ -71,7 +71,7 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 		}
 		totalTime += pollingInterval
 
-		atlasCluster := mdbv1.AtlasCluster{}
+		atlasCluster := mdbv1.AtlasDeployment{}
 		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, clusterName), &atlasCluster); err != nil {
 			return false, err
 		}

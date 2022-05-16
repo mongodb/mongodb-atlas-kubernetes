@@ -1,4 +1,4 @@
-package atlascluster
+package atlasdeployment
 
 import (
 	"context"

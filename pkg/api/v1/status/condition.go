@@ -41,7 +41,7 @@ const (
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 )
 
-// AtlasCluster condition types
+// AtlasDeployment condition types
 const (
 	ClusterReadyType ConditionType = "ClusterReady"
 )

@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: atlasclusters.atlas.mongodb.com
+  name: atlasdeployments.atlas.mongodb.com
 spec:
   group: atlas.mongodb.com
   names:
-    kind: AtlasCluster
-    listKind: AtlasClusterList
-    plural: atlasclusters
-    singular: atlascluster
+    kind: AtlasDeployment
+    listKind: AtlasDeploymentList
+    plural: atlasdeployments
+    singular: atlasdeployment
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasCluster is the Schema for the atlasclusters API
+        description: AtlasDeployment is the Schema for the atlasclusters API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,9 +34,9 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasClusterSpec defines the desired state of AtlasCluster
+            description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
             properties:
-              advancedClusterSpec:
+              advancedDeploymentSpec:
                 description: Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
@@ -256,7 +256,7 @@ spec:
                     type: string
                 type: object
               backupRef:
-                description: Backup schedule for the AtlasCluster
+                description: Backup schedule for the AtlasDeployment
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
@@ -267,7 +267,7 @@ spec:
                 required:
                 - name
                 type: object
-              clusterSpec:
+              deploymentSpec:
                 description: Configuration for the advanced cluster API
                 properties:
                   autoScaling:
@@ -713,7 +713,7 @@ spec:
             - projectRef
             type: object
           status:
-            description: AtlasClusterStatus defines the observed state of AtlasCluster.
+            description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
               conditions:
                 description: Conditions is the list of statuses showing the current

@@ -1,4 +1,4 @@
-package atlascluster
+package atlasdeployment
 
 import (
 	"testing"
@@ -25,8 +25,8 @@ func TestClusterMatchesSpec(t *testing.T) {
 			},
 			ClusterType: "GEOSHARDED",
 		}
-		operatorCluster := mdbv1.AtlasClusterSpec{
-			ClusterSpec: &mdbv1.ClusterSpec{
+		operatorCluster := mdbv1.AtlasDeploymentSpec{
+			DeploymentSpec: &mdbv1.DeploymentSpec{
 				ProviderSettings: &mdbv1.ProviderSettingsSpec{
 					ProviderName: provider.ProviderAWS,
 				},
@@ -42,7 +42,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 	})
 	t.Run("Clusters don't match (enums)", func(t *testing.T) {
 		atlasClusterEnum := mongodbatlas.Cluster{ClusterType: "GEOSHARDED"}
-		operatorClusterEnum := mdbv1.AtlasClusterSpec{ClusterSpec: &mdbv1.ClusterSpec{ClusterType: mdbv1.TypeReplicaSet}}
+		operatorClusterEnum := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.DeploymentSpec{ClusterType: mdbv1.TypeReplicaSet}}
 
 		merged, err := MergedCluster(atlasClusterEnum, operatorClusterEnum)
 		assert.NoError(t, err)
@@ -54,7 +54,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 		common := mdbv1.DefaultAWSCluster("test-ns", "project-name")
 		// Note, that in reality it seems that Atlas nullifies ProviderSettings.RegionName only if RegionsConfig are specified
 		// but it's ok not to overcomplicate
-		common.Spec.ClusterSpec.ReplicationSpecs = append(common.Spec.ClusterSpec.ReplicationSpecs, mdbv1.ReplicationSpec{
+		common.Spec.DeploymentSpec.ReplicationSpecs = append(common.Spec.DeploymentSpec.ReplicationSpecs, mdbv1.ReplicationSpec{
 			NumShards: int64ptr(2),
 		})
 		// Emulating Atlas behavior when it nullifies the ProviderSettings.RegionName
@@ -94,7 +94,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 			},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.ClusterSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(1),
 			ZoneName:  "zone1",
 		}}
@@ -119,7 +119,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 			},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.ClusterSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(2),
 			ZoneName:  "zone5",
 		}}
@@ -156,7 +156,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 			}},
 		}
 		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.ClusterSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(1),
 			ZoneName:  "zone1",
 			RegionsConfig: map[string]mdbv1.RegionsConfig{

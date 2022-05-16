@@ -1,11 +1,11 @@
 apiVersion: atlas.mongodb.com/v1
-kind: AtlasCluster
+kind: AtlasDeployment
 metadata:
   name: atlas-cluster-advanced
 spec:
   projectRef:
     name: my-project
-  advancedClusterSpec:
+  advancedDeploymentSpec:
     clusterType: GEOSHARDED
     name: advanced-cluster
     replicationSpecs:

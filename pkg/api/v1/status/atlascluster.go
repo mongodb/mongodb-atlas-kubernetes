@@ -6,8 +6,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
-// AtlasClusterStatus defines the observed state of AtlasCluster.
-type AtlasClusterStatus struct {
+// AtlasDeploymentStatus defines the observed state of AtlasDeployment.
+type AtlasDeploymentStatus struct {
 	Common `json:",inline"`
 
 	// StateName is the current state of the cluster.
@@ -90,23 +90,23 @@ type Endpoint struct {
 
 // +k8s:deepcopy-gen=false
 
-// AtlasClusterStatusOption is the option that is applied to Atlas Cluster Status.
-type AtlasClusterStatusOption func(s *AtlasClusterStatus)
+// AtlasDeploymentStatusOption is the option that is applied to Atlas Cluster Status.
+type AtlasDeploymentStatusOption func(s *AtlasDeploymentStatus)
 
-func AtlasClusterStateNameOption(stateName string) AtlasClusterStatusOption {
-	return func(s *AtlasClusterStatus) {
+func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
 		s.StateName = stateName
 	}
 }
 
-func AtlasClusterMongoDBVersionOption(mongoDBVersion string) AtlasClusterStatusOption {
-	return func(s *AtlasClusterStatus) {
+func AtlasDeploymentMongoDBVersionOption(mongoDBVersion string) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
 		s.MongoDBVersion = mongoDBVersion
 	}
 }
 
-func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasClusterStatusOption {
-	return func(s *AtlasClusterStatus) {
+func AtlasDeploymentConnectionStringsOption(connectionStrings *mongodbatlas.ConnectionStrings) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
 		cs := ConnectionStrings{}
 		err := compat.JSONCopy(&cs, connectionStrings)
 		if err != nil {
@@ -116,8 +116,8 @@ func AtlasClusterConnectionStringsOption(connectionStrings *mongodbatlas.Connect
 	}
 }
 
-func AtlasClusterMongoURIUpdatedOption(mongoURIUpdated string) AtlasClusterStatusOption {
-	return func(s *AtlasClusterStatus) {
+func AtlasDeploymentMongoURIUpdatedOption(mongoURIUpdated string) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
 		s.MongoURIUpdated = mongoURIUpdated
 	}
 }

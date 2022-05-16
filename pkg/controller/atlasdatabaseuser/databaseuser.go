@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -161,7 +161,7 @@ func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDat
 }
 
 func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
-	allClusterNames, err := atlascluster.GetAllClusterNames(ctx.Client, projectID)
+	allClusterNames, err := atlasdeployment.GetAllClusterNames(ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}

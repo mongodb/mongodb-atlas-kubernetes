@@ -19,7 +19,7 @@ operator-sdk init --domain=mongodb.com --repo=github.com/mongodb/mongodb-atlas-k
 1. Scaffold the APIs and apply changes manually. Scaffolding one API should be enough to find the difference and apply 
    it to all the other existing APIs
 ```
-operator-sdk create api --group atlas --version v1 --kind AtlasCluster --resource=true --controller=true
+operator-sdk create api --group atlas --version v1 --kind AtlasDeployment --resource=true --controller=true
 ```
 
 ### Upgrade of controller-runtime and k8s.io Go dependencies

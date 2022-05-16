@@ -47,8 +47,8 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
@@ -224,14 +224,14 @@ func prepareControllers() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&atlascluster.AtlasClusterReconciler{
+	err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		AtlasDomain:      atlasDomain,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates: globalPredicates,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasCluster"),
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

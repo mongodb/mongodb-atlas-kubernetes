@@ -68,10 +68,10 @@ func GetProjectResource(namespace, rName string) []byte {
 }
 
 // GetClusterResource
-func GetClusterResource(namespace, rName string) v1.AtlasCluster {
+func GetClusterResource(namespace, rName string) v1.AtlasDeployment {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
 	output := session.Wait("1m").Out.Contents()
-	var cluster v1.AtlasCluster
+	var cluster v1.AtlasDeployment
 	ExpectWithOffset(1, json.Unmarshal(output, &cluster)).ShouldNot(HaveOccurred())
 	return cluster
 }

@@ -167,14 +167,14 @@ func AddMongoDBRepo() {
 // InstallClusterSubmodule install the Atlas Cluster Helm Chart from submodule.
 func InstallClusterSubmodule(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)
+	args := prepareHelmChartArgs(input, config.AtlasDeploymentHelmChartPath)
 	Install(args...)
 }
 
 // InstallClusterRelease from repo
 func InstallClusterRelease(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
-	args := prepareHelmChartArgs(input, "mongodb/atlas-cluster")
+	args := prepareHelmChartArgs(input, "mongodb/atlas-deployment")
 	Install(args...)
 }
 
@@ -192,9 +192,9 @@ func UpgradeOperatorChart(input model.UserInputs) {
 	)
 }
 
-func UpgradeAtlasClusterChartDev(input model.UserInputs) {
+func UpgradeAtlasDeploymentChartDev(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
-	Upgrade(prepareHelmChartArgs(input, config.AtlasClusterHelmChartPath)...)
+	Upgrade(prepareHelmChartArgs(input, config.AtlasDeploymentHelmChartPath)...)
 }
 
 func packageChart(sPath, dPath string) {
@@ -215,15 +215,15 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),
 		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
 
-		"-f", pathToAtlasClusterValuesFile(input),
+		"-f", pathToAtlasDeploymentValuesFile(input),
 		"--namespace=" + input.Namespace,
 		"--create-namespace",
 	}
 	return args
 }
 
-// pathToAtlasClusterValuesFile generate path to values file (HELM chart)
-// values for the  atlas-cluster helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
-func pathToAtlasClusterValuesFile(input model.UserInputs) string {
+// pathToAtlasDeploymentValuesFile generate path to values file (HELM chart)
+// values for the  atlas-deployment helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-deployment/values.yaml
+func pathToAtlasDeploymentValuesFile(input model.UserInputs) string {
 	return path.Join(input.ProjectPath, "values.yaml")
 }

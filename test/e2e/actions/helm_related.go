@@ -18,12 +18,12 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 	By("User use HELM upgrade command for changing atlas resources\n", func() {
 		data.Resources.Project.Spec.ProjectIPAccessList[0].Comment = "updated"
 		enabled := true
-		data.Resources.Clusters[0].Spec.ClusterSpec.ProviderBackupEnabled = &enabled
+		data.Resources.Clusters[0].Spec.DeploymentSpec.ProviderBackupEnabled = &enabled
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
 		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
-		helm.UpgradeAtlasClusterChartDev(data.Resources)
+		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 
 		By("Wait project creation", func() {
 			WaitCluster(data.Resources, strconv.Itoa(generation+1))
@@ -49,7 +49,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 			WithSecretRef("new-user-secret").
 			AddBuildInAdminRole()
 		data.Resources.Users = append(data.Resources.Users, newUser)
-		helm.UpgradeAtlasClusterChartDev(data.Resources)
+		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 		CheckUsersAttributes(data.Resources)
 	})
 }
@@ -58,7 +58,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 	By("User delete database user from the Atlas\n", func() {
 		data.Resources.Users = data.Resources.Users[1:]
-		helm.UpgradeAtlasClusterChartDev(data.Resources)
+		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 		CheckUsersAttributes(data.Resources)
 	})
 }
@@ -68,7 +68,7 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 	By("User update helm chart (used main-branch)", func() {
 		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Clusters[0].GetClusterNameResource()))
 		helm.UpgradeOperatorChart(data.Resources)
-		helm.UpgradeAtlasClusterChartDev(data.Resources)
+		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 
 		By("Wait updating")
 		WaitCluster(data.Resources, strconv.Itoa(generation+1))

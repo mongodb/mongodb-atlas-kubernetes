@@ -15,7 +15,7 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 	}
 	type values struct {
 		Project  model.ProjectSpec   `json:"project,omitempty"`
-		Clusters []model.ClusterSpec `json:"clusters,omitempty"`
+		Clusters []model.ClusterSpec `json:"deployments,omitempty"`
 		Users    []usersType         `json:"users,omitempty"`
 	}
 	convertType := func(user model.DBUser) usersType {
@@ -40,7 +40,7 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 		newValues.Users = append(newValues.Users, currentUser)
 	}
 	utils.SaveToFile(
-		pathToAtlasClusterValuesFile(input),
+		pathToAtlasDeploymentValuesFile(input),
 		utils.JSONToYAMLConvert(newValues),
 	)
 }

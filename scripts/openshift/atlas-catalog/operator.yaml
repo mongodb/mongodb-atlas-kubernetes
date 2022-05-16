@@ -10,7 +10,7 @@ properties:
 - type: olm.gvk
   value:
     group: atlas.mongodb.com
-    kind: AtlasCluster
+    kind: AtlasDeployment
     version: v1
 - type: olm.gvk
   value:

@@ -1,4 +1,4 @@
-package atlascluster
+package atlasdeployment
 
 import (
 	"testing"
@@ -9,9 +9,9 @@ import (
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
-func TestMergedAdvancedCluster(t *testing.T) {
-	defaultAtlas := v1.DefaultAwsAdvancedCluster("default", "my-project")
-	defaultAtlas.Spec.AdvancedClusterSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
+func TestMergedAdvancedDeployment(t *testing.T) {
+	defaultAtlas := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
 
 	t.Run("Test merging clusters removes backing provider name if empty", func(t *testing.T) {
 		advancedCluster := mongodbatlas.AdvancedCluster{
@@ -30,7 +30,7 @@ func TestMergedAdvancedCluster(t *testing.T) {
 			},
 		}
 
-		merged, err := MergedAdvancedCluster(advancedCluster, defaultAtlas.Spec)
+		merged, err := MergedAdvancedDeployment(advancedCluster, defaultAtlas.Spec)
 		assert.NoError(t, err)
 		assert.Empty(t, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
@@ -52,7 +52,7 @@ func TestMergedAdvancedCluster(t *testing.T) {
 			},
 		}
 
-		merged, err := MergedAdvancedCluster(advancedCluster, defaultAtlas.Spec)
+		merged, err := MergedAdvancedDeployment(advancedCluster, defaultAtlas.Spec)
 		assert.NoError(t, err)
 		assert.Equal(t, "AWS", merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})

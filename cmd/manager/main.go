@@ -44,8 +44,8 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlascluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -122,17 +122,17 @@ func main() {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
-	if err = (&atlascluster.AtlasClusterReconciler{
+	if err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasCluster").Sugar(),
+		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:           mgr.GetScheme(),
 		AtlasDomain:      config.AtlasDomain,
 		GlobalAPISecret:  config.GlobalAPISecret,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasCluster"),
+		EventRecorder:    mgr.GetEventRecorderFor("AtlasDeployment"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AtlasCluster")
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasDeployment")
 		os.Exit(1)
 	}
 
