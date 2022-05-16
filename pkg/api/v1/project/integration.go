@@ -59,35 +59,58 @@ type Integration struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-func (i Integration) ToAtlas(c client.Client, defaultNS string) (*mongodbatlas.ThirdPartyIntegration, error) {
-	result := mongodbatlas.ThirdPartyIntegration{}
-	var err error
-	result.Type = i.Type
-	result.LicenseKey, _ = i.LicenseKeyRef.ReadPassword(c, defaultNS)
-	result.AccountID = i.AccountID
-	result.WriteToken, _ = i.WriteTokenRef.ReadPassword(c, defaultNS)
-	result.ReadToken, _ = i.ReadTokenRef.ReadPassword(c, defaultNS)
-	result.APIKey, _ = i.APIKeyRef.ReadPassword(c, defaultNS)
-	result.Region = i.Region
-	result.ServiceKey, _ = i.ServiceKeyRef.ReadPassword(c, defaultNS)
-	result.APIToken, _ = i.APITokenRef.ReadPassword(c, defaultNS)
-	result.TeamName = i.TeamName
-	result.ChannelName = i.ChannelName
-	result.RoutingKey, _ = i.RoutingKeyRef.ReadPassword(c, defaultNS)
-	result.FlowName = i.FlowName
-	result.OrgName = i.OrgName
-	result.URL = i.URL
-	result.Secret, _ = i.SecretRef.ReadPassword(c, defaultNS)
-	result.Name = i.Name
-	result.MicrosoftTeamsWebhookURL = i.MicrosoftTeamsWebhookURL
-	result.UserName = i.UserName
-	result.Password, err = i.PasswordRef.ReadPassword(c, defaultNS)
-	result.ServiceDiscovery = i.ServiceDiscovery
-	result.Scheme = i.Scheme
-	result.Enabled = i.Enabled
-	return &result, err
+func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodbatlas.ThirdPartyIntegration, err error) {
+	result = &mongodbatlas.ThirdPartyIntegration{
+		Type:                     i.Type,
+		AccountID:                i.AccountID,
+		Region:                   i.Region,
+		TeamName:                 i.TeamName,
+		ChannelName:              i.ChannelName,
+		FlowName:                 i.FlowName,
+		OrgName:                  i.OrgName,
+		URL:                      i.URL,
+		Name:                     i.Name,
+		MicrosoftTeamsWebhookURL: i.MicrosoftTeamsWebhookURL,
+		UserName:                 i.UserName,
+		ServiceDiscovery:         i.ServiceDiscovery,
+		Scheme:                   i.Scheme,
+		Enabled:                  i.Enabled,
+	}
+
+	readPassword := func(passwordField common.ResourceRefNamespaced, target *string, errors *[]error) {
+		if passwordField.Name == "" {
+			return
+		}
+
+		*target, err = passwordField.ReadPassword(c, defaultNS)
+		storeError(err, errors)
+	}
+
+	errorList := make([]error, 0)
+	readPassword(i.LicenseKeyRef, &result.LicenseKey, &errorList)
+	readPassword(i.WriteTokenRef, &result.WriteToken, &errorList)
+	readPassword(i.ReadTokenRef, &result.ReadToken, &errorList)
+	readPassword(i.APIKeyRef, &result.APIKey, &errorList)
+	readPassword(i.ServiceKeyRef, &result.ServiceKey, &errorList)
+	readPassword(i.APITokenRef, &result.APIToken, &errorList)
+	readPassword(i.RoutingKeyRef, &result.RoutingKey, &errorList)
+	readPassword(i.SecretRef, &result.Secret, &errorList)
+	readPassword(i.PasswordRef, &result.Password, &errorList)
+
+	if len(errorList) != 0 {
+		firstError := (errorList)[0]
+		return nil, firstError
+	}
+
+	return result, nil
 }
 
 func (i Integration) Identifier() interface{} {
 	return i.Type
+}
+
+func storeError(err error, errors *[]error) {
+	if err != nil {
+		*errors = append(*errors, err)
+	}
 }

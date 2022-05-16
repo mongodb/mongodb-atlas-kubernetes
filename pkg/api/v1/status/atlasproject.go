@@ -89,11 +89,7 @@ type AtlasProjectStatus struct {
 	AuthModes authmode.AuthModes `json:"authModes,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
-	// including the
-	Prometheus PrometheusStatus `json:"prometheus,omitempty"`
-}
-
-type PrometheusStatus struct {
-	Status       string `json:"status"`
-	DiscoveryURL string `json:"prometheusDiscoveryURL"`
+	// including the prometheusDiscoveryURL
+	// +optional
+	Prometheus Prometheus `json:"prometheus,omitempty"`
 }

@@ -70,12 +70,16 @@ func (c *Context) EnsureCondition(condition status.Condition) *Context {
 }
 
 func (c *Context) SetConditionFromResult(conditionType status.ConditionType, result Result) *Context {
-	c.EnsureCondition(status.Condition{
+	condition := status.Condition{
 		Type:    conditionType,
 		Status:  corev1.ConditionFalse,
 		Reason:  string(result.reason),
 		Message: result.message,
-	})
+	}
+	if result.IsOk() {
+		condition.Status = corev1.ConditionTrue
+	}
+	c.EnsureCondition(condition)
 	c.lastConditionWarn = result.warning
 	return c
 }

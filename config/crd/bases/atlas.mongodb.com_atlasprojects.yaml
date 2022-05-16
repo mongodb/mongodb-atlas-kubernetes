@@ -461,15 +461,12 @@ spec:
                 type: array
               prometheus:
                 description: Prometheus contains the status for Prometheus integration
-                  including the
+                  including the prometheusDiscoveryURL
                 properties:
                   prometheusDiscoveryURL:
                     type: string
-                  status:
+                  scheme:
                     type: string
-                required:
-                - prometheusDiscoveryURL
-                - status
                 type: object
             required:
             - conditions
