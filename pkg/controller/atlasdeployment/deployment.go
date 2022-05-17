@@ -2,7 +2,6 @@ package atlasdeployment
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -272,13 +271,6 @@ func handleSharedClusterUpgrade(ctx *workflow.Context, current *mongodbatlas.Clu
 	if err != nil {
 		return false, fmt.Errorf(baseErr, err)
 	}
-
-	dta, err := json.MarshalIndent(new, "", " ")
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("DEBUG UPGRADE", string(dta))
 
 	_, err = atlasClient.Do(context.Background(), req, &new)
 	if err != nil {
