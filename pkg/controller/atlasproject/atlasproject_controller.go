@@ -101,7 +101,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	if err := validate.Project(project); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
+		setCondition(ctx, status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.SetConditionTrue(status.ValidationSucceeded)
@@ -110,31 +110,32 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	if err != nil {
 		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
 			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			setCondition(ctx, status.ClusterReadyType, result)
 		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		ctx.SetConditionFromResult(status.ProjectReadyType, result)
+		setCondition(ctx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Connection = connection
 
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
-		ctx.SetConditionFromResult(status.ClusterReadyType, workflow.Terminate(workflow.Internal, err.Error()))
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		setCondition(ctx, status.ClusterReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
 
 	var projectID string
 	if projectID, result = r.ensureProjectExists(ctx, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ProjectReadyType, result)
+		setCondition(ctx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
 	var authModes authmode.AuthModes
 	if authModes, result = r.ensureX509(ctx, projectID, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ProjectReadyType, result)
+		setCondition(ctx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	authModes.AddAuthMode(authmode.Scram) // add the default auth method
@@ -145,7 +146,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
 			if err := r.addDeletionFinalizer(context, project); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+				setCondition(ctx, status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -157,20 +158,20 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
 				if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
-					ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+					setCondition(ctx, status.PrivateEndpointReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 
 				if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(status.ClusterReadyType, result)
+					setCondition(ctx, status.ClusterReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 			}
 
 			if err = r.removeDeletionFinalizer(context, project); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.ClusterReadyType, result)
+				setCondition(ctx, status.ClusterReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -182,7 +183,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
 	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		setCondition(ctx, status.IPAccessListReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
@@ -201,11 +202,13 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
+		setCondition(ctx, status.PrivateEndpointReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
+		setCondition(ctx, status.IntegrationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
@@ -304,4 +307,12 @@ func removeString(slice []string, s string) (result []string) {
 		result = append(result, item)
 	}
 	return result
+}
+
+// setCondition sets the condition from the result and logs the warnings
+func setCondition(ctx *workflow.Context, condition status.ConditionType, result workflow.Result) {
+	ctx.SetConditionFromResult(condition, result)
+	if result.IsWarning() {
+		ctx.Log.Warnw(result.GetMessage())
+	}
 }
