@@ -45,6 +45,9 @@ func AtlasProjectUpdatePrivateEnpointsOption(privateEndpoints []ProjectPrivateEn
 					if currentPE.InterfaceEndpointID != "" {
 						s.PrivateEndpoints[peIdx].InterfaceEndpointID = currentPE.InterfaceEndpointID
 					}
+					if len(currentPE.ServiceAttachmentNames) != 0 {
+						s.PrivateEndpoints[peIdx].ServiceAttachmentNames = currentPE.ServiceAttachmentNames
+					}
 					if len(currentPE.Endpoints) != 0 {
 						s.PrivateEndpoints[peIdx].Endpoints = currentPE.Endpoints
 					}
