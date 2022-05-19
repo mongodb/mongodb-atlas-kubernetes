@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -96,7 +97,7 @@ func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context
 		}
 
 		_, resp, err := ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			ctx.Log.Debugw("Create request failed", "Status", resp.Status, "Integration", integration)
 		}
 		if err != nil {
