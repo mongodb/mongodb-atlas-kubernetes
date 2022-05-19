@@ -15,6 +15,8 @@ type ProjectPrivateEndpoint struct {
 	ServiceResourceID string `json:"serviceResourceId,omitempty"`
 	// Unique identifier of the AWS or Azure Private Link Interface Endpoint.
 	InterfaceEndpointID string `json:"interfaceEndpointId,omitempty"`
+	// Unique alphanumeric and special character strings that identify the service attachments associated with the GCP Private Service Connect endpoint service.
+	ServiceAttachmentNames []string `json:"serviceAttachmentNames,omitempty"`
 	// Collection of individual GCP private endpoints that comprise your network endpoint group.
 	Endpoints []GCPEndpoint `json:"endpoints,omitempty"`
 }

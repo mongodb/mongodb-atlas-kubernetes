@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -39,24 +40,22 @@ func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, specPEs []
 		return result
 	}
 
-	endpointsToCreate := set.Difference(specPEs, statusPEs)
-	endpointsToUpdate := set.Intersection(specPEs, statusPEs)
 	endpointsToDelete := set.Difference(statusPEs, specPEs)
-
-	log.Debugw("Items to create", "difference", endpointsToCreate)
-	log.Debugw("Items to update", "difference", endpointsToUpdate)
-	log.Debugw("Items to delete", "difference", endpointsToDelete)
-
+	log.Debugw("Private Endpoints to delete", "difference", endpointsToDelete)
 	if result := deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete); !result.IsOk() {
 		return result
 	}
 
+	endpointsToCreate := set.Difference(specPEs, statusPEs)
+	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
 	newConnections, err := createPeServiceInAtlas(ctx.Client, projectID, endpointsToCreate)
 	if err != nil {
 		log.Debugw("Failed to create PE Service in Atlas", "error", err)
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectAddPrivateEnpointsOption(convertAllToStatus(ctx, projectID, newConnections)))
 
+	endpointsToUpdate := set.Intersection(specPEs, statusPEs)
+	log.Debugw("Private Endpoints to update", "difference", endpointsToUpdate)
 	if err = createPrivateEndpointInAtlas(ctx.Client, projectID, endpointsToUpdate, log); err != nil {
 		log.Debugw("Failed to create PE Interface in Atlas", "error", err)
 	}
@@ -212,8 +211,8 @@ func clearOutNotLinkedPEs(ctx *workflow.Context, projectID string, atlasConns []
 	endpointsWithoutPair := []status.ProjectPrivateEndpoint{}
 	endpointsAreDeleting := false
 	for _, atlasConn := range atlasConns {
-		if isDeleting(atlasConn.Status) {
-			endpointsAreDeleting = true
+		if !isAvailable(atlasConn.Status) {
+			continue
 		}
 
 		atlasPE := convertOneToStatus(ctx, projectID, atlasConn)
@@ -226,6 +225,7 @@ func clearOutNotLinkedPEs(ctx *workflow.Context, projectID string, atlasConns []
 
 		if !found {
 			endpointsWithoutPair = append(endpointsWithoutPair, atlasPE)
+			endpointsAreDeleting = true
 		}
 	}
 
@@ -271,65 +271,68 @@ func convertAllToStatus(ctx *workflow.Context, projectID string, peList []mongod
 	return result
 }
 
-func convertOneToStatus(ctx *workflow.Context, projectID string, endpoint mongodbatlas.PrivateEndpointConnection) status.ProjectPrivateEndpoint {
+func convertOneToStatus(ctx *workflow.Context, projectID string, conn mongodbatlas.PrivateEndpointConnection) status.ProjectPrivateEndpoint {
 	pe := status.ProjectPrivateEndpoint{
-		ID:       endpoint.ID,
-		Provider: provider.ProviderName(endpoint.ProviderName),
-		Region:   endpoint.Region,
+		ID:       conn.ID,
+		Provider: provider.ProviderName(conn.ProviderName),
+		Region:   conn.Region,
 	}
 
 	switch pe.Provider {
 	case provider.ProviderAWS:
-		pe.ServiceName = endpoint.EndpointServiceName
-		pe.ServiceResourceID = endpoint.ID
-		if len(endpoint.InterfaceEndpoints) != 0 {
-			pe.InterfaceEndpointID = endpoint.InterfaceEndpoints[0]
+		pe.ServiceName = conn.EndpointServiceName
+		pe.ServiceResourceID = conn.ID
+		if len(conn.InterfaceEndpoints) != 0 {
+			pe.InterfaceEndpointID = conn.InterfaceEndpoints[0]
 		}
 	case provider.ProviderAzure:
-		pe.ServiceName = endpoint.PrivateLinkServiceName
-		pe.ServiceResourceID = endpoint.PrivateLinkServiceResourceID
-		if len(endpoint.PrivateEndpoints) != 0 {
-			pe.InterfaceEndpointID = endpoint.PrivateEndpoints[0]
+		pe.ServiceName = conn.PrivateLinkServiceName
+		pe.ServiceResourceID = conn.PrivateLinkServiceResourceID
+		if len(conn.PrivateEndpoints) != 0 {
+			pe.InterfaceEndpointID = conn.PrivateEndpoints[0]
 		}
 	case provider.ProviderGCP:
-		pe.InterfaceEndpointID, pe.Endpoints = getGCPEndpointData(ctx, projectID, endpoint)
+		pe.ServiceAttachmentNames = conn.ServiceAttachmentNames
+		if len(conn.EndpointGroupNames) != 0 {
+			var err error
+			pe.InterfaceEndpointID = conn.EndpointGroupNames[0]
+			pe.Endpoints, err = getGCPInterfaceEndpoint(ctx, projectID, pe)
+			if err != nil {
+				ctx.Log.Warnw("failed to get Interface Endpoint Data for GCP", "err", err, "pe", pe)
+			}
+		}
 	}
+	ctx.Log.Debugw("Converted Status", "status", pe, "connection", conn)
+
 	return pe
 }
 
-// getGCPEndpointData returns an InterfaceEndpointID and a list of GCP endpoints
-func getGCPEndpointData(ctx *workflow.Context, projectID string, endpoint mongodbatlas.PrivateEndpointConnection) (string, []status.GCPEndpoint) {
+// getGCPInterfaceEndpoint returns an InterfaceEndpointID and a list of GCP endpoints
+func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint status.ProjectPrivateEndpoint) ([]status.GCPEndpoint, error) {
 	log := ctx.Log
-	serviceID := endpoint.ID
-	if len(endpoint.EndpointGroupNames) == 0 {
-		return "", nil
+	if endpoint.InterfaceEndpointID == "" {
+		return nil, errors.New("InterfaceEndpointID is empty")
 	}
-	endpointID := endpoint.EndpointGroupNames[0]
-	interfaceEndpointConn, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, string(provider.ProviderGCP), serviceID, endpointID)
+	interfaceEndpointConn, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, string(provider.ProviderGCP), endpoint.ID, endpoint.InterfaceEndpointID)
 	if err != nil {
-		return endpointID, nil
+		return nil, err
 	}
 
-	endpointConns := interfaceEndpointConn.Endpoints
-	listOfEndpoints := make([]status.GCPEndpoint, 0)
-	for _, e := range endpointConns {
+	interfaceConns := interfaceEndpointConn.Endpoints
+	listOfInterfaces := make([]status.GCPEndpoint, 0)
+	for _, e := range interfaceConns {
 		endpoint := status.GCPEndpoint{
 			Status:       e.Status,
 			EndpointName: e.EndpointName,
 			IPAddress:    e.IPAddress,
 		}
-		listOfEndpoints = append(listOfEndpoints, endpoint)
+		listOfInterfaces = append(listOfInterfaces, endpoint)
 	}
+	log.Debugw("Result of getGCPEndpointData", "endpoint.ID", endpoint.ID, "listOfInterfaces", listOfInterfaces)
 
-	log.Debugw("Result of getGCPEndpointData", "endpointID", endpointID, "listOfEndpoints", listOfEndpoints)
-
-	return endpointID, listOfEndpoints
+	return listOfInterfaces, nil
 }
 
 func isAvailable(status string) bool {
 	return status == "AVAILABLE"
-}
-
-func isDeleting(status string) bool {
-	return status == "DELETING"
 }

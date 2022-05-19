@@ -419,6 +419,13 @@ spec:
                       description: Cloud provider region for which you want to create
                         the private endpoint service.
                       type: string
+                    serviceAttachmentNames:
+                      description: Unique alphanumeric and special character strings
+                        that identify the service attachments associated with the
+                        GCP Private Service Connect endpoint service.
+                      items:
+                        type: string
+                      type: array
                     serviceName:
                       description: Name of the AWS or Azure Private Link Service that
                         Atlas manages.
