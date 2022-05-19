@@ -22,7 +22,7 @@ func SessionGCP(gProjectID string) (sessionGCP, error) {
 	return sessionGCP{computeService, gProjectID}, nil
 }
 
-func (s *sessionGCP) AddIPAdress(addressName, region, subnet string) (string, error) {
+func (s *sessionGCP) AddIPAdress(region, addressName, subnet string) (string, error) {
 	address := &compute.Address{
 		AddressType:    "INTERNAL",
 		Description:    addressName,
@@ -36,6 +36,7 @@ func (s *sessionGCP) AddIPAdress(addressName, region, subnet string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("computeService.Addresses.Insert: %v", err)
 	}
+	// TODO add get IP and return
 	return "", nil
 }
 
@@ -55,7 +56,7 @@ func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 	return nil
 }
 
-func (s *sessionGCP) AddForwardRule(ruleName, addressName, region, network, subnet, target string) ( error) {
+func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) ( error) {
 	rules := &compute.ForwardingRule{
 		IPAddress:                     s.formAddressURL(region, addressName),
 		IPProtocol:                    "",
@@ -93,7 +94,7 @@ func (s *sessionGCP) AddForwardRule(ruleName, addressName, region, network, subn
 	return  nil
 }
 
-func (s *sessionGCP) DeleteForwardRule(ruleName, region string) error {
+func (s *sessionGCP) DeleteForwardRule(region, ruleName string) error {
 	_, err := s.computeService.ForwardingRules.Delete(s.gProjectID, region, ruleName).Do()
 	if err != nil {
 		return fmt.Errorf("computeService.ForwardingRules.Insert: %v", err)

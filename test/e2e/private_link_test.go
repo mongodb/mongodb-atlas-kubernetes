@@ -12,7 +12,7 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
+	// "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
@@ -77,26 +77,26 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
 		func(test model.TestDataProvider, pe []privateEndpoint) {
 			data = test
-			// privateFlow(&data, pe)
+			privateFlow(&data, pe)
 			// TODO remove
 			// peitem := data.Resources.Project.Spec.PrivateEndpoints[0]
-			googleID := "atlasoperator" // Google Cloud Project ID
-			// googleVPC := "atlas-operator-test" // VPC Name
-			googleSubnetName := "atlas-operator-subnet-leo"  // Subnet Name
-			googleConnectPrefix := "leo-test" // Private Service Connect Endpoint Prefix
-			region := "europe-west1"
+			// googleID := "atlasoperator" // Google Cloud Project ID
+			// // googleVPC := "atlas-operator-test" // VPC Name
+			// googleSubnetName := "atlas-operator-subnet-leo"  // Subnet Name
+			// googleConnectPrefix := "leo-test" // Private Service Connect Endpoint Prefix
+			// region := "europe-west1"
 			// target := "projects/p-mnvqejvhytwi2kmovmtjdq6g/regions/europe-west1/serviceAttachments/sa-europe-west1-627b91a2a99afa3aa58fb909-1"
 
-			// err := gcp.SessionGCP(googleID, key, region, googleSubnetName, googleConnectPrefix)
-			s, err := gcp.SessionGCP(googleID)
-			s.AddIPAdress(googleConnectPrefix+"-1", region, googleSubnetName)
-			t, err := s.DescribeIPStatus(region, googleConnectPrefix+"-1")
-			Expect(err).ShouldNot(HaveOccurred())
-			GinkgoWriter.Println(t)
+
+			// s, err := gcp.SessionGCP(googleID)
+			// s.AddIPAdress(googleConnectPrefix+"-1", region, googleSubnetName)
+			// t, err := s.DescribeIPStatus(region, googleConnectPrefix+"-1")
+			// Expect(err).ShouldNot(HaveOccurred())
+			// GinkgoWriter.Println(t)
 			// err = s.AddForwardRule(googleConnectPrefix, googleConnectPrefix+"-1", region, googleVPC, googleSubnetName, target)
 			// err = s.DeleteForwardRule(googleConnectPrefix, region)
 			// err = s.DeleteIPAdress(region, googleConnectPrefix+"-1")
-			Expect(err).ShouldNot(HaveOccurred())
+			// Expect(err).ShouldNot(HaveOccurred())
 			// s.AddAttachment(googleConnectPrefix, googleConnectPrefix+"-1", region, googleVPC, target)
 			// Expect(err).ShouldNot(HaveOccurred())
 			// cloudTest, err := cloud.CreatePEActions(peitem)
@@ -217,7 +217,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "GCP",
-					region:   "eu-west-1",
+					region:   "europe-west1",
 				},
 			},
 		),
@@ -257,15 +257,16 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
+			// privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
+			output, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(privateLinkID).ShouldNot(BeEmpty())
-			Eventually(
-				func() bool {
-					return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
-				},
-			).Should(BeTrue())
-			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID, ip)
+			// // Expect(privateLinkID).ShouldNot(BeEmpty())
+			// Eventually(
+			// 	func() bool {
+			// 		return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
+			// 	},
+			// ).Should(BeTrue())
+			userData.Resources.Project.UpdatePrivateLinkID(output)
 		}
 	})
 

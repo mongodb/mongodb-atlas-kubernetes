@@ -8,6 +8,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
@@ -80,11 +81,21 @@ func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	return p
 }
 
-func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, id, ip string) *AProject {
+// func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, id, ip string) *AProject {
+// 	for i, peItem := range p.Spec.PrivateEndpoints {
+// 		if (peItem.Provider == provider) && (peItem.Region == region) {
+// 			p.Spec.PrivateEndpoints[i].ID = id
+// 			p.Spec.PrivateEndpoints[i].IP = ip
+// 		}
+// 	}
+// 	return p
+// }
+
+func (p *AProject) UpdatePrivateLinkID(test cloud.CloudResponse) *AProject {
 	for i, peItem := range p.Spec.PrivateEndpoints {
-		if (peItem.Provider == provider) && (peItem.Region == region) {
-			p.Spec.PrivateEndpoints[i].ID = id
-			p.Spec.PrivateEndpoints[i].IP = ip
+		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
+			p.Spec.PrivateEndpoints[i].ID = test.ID
+			p.Spec.PrivateEndpoints[i].IP = test.IP
 		}
 	}
 	return p

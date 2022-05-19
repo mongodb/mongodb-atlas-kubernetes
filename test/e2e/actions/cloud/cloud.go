@@ -8,7 +8,7 @@ import (
 )
 
 type CloudActions interface {
-	createPrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) (string, string, error)
+	createPrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) (CloudResponse, error)
 	deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, name string) error
 	statusPrivateEndpointPending(region, privateID string) bool
 	statusPrivateEndpointAvailable(region, privateID string) bool
@@ -17,6 +17,22 @@ type CloudActions interface {
 type PEActions struct {
 	CloudActions    CloudActions
 	PrivateEndpoint status.ProjectPrivateEndpoint
+}
+
+type CloudResponse struct {
+	ID string // AWS = PrivateID, AZURE = privateEndpoint Name
+	IP string
+	Provider provider.ProviderName
+	Region string
+	// GCP = project ID
+	GoogleProjectID string
+	GoogleVPC string
+	GoogleEndpoints []Endpoints // TODO remove?
+}
+
+type Endpoints struct {
+	IP string
+	Name string
 }
 
 func CreatePEActions(pe status.ProjectPrivateEndpoint) (PEActions, error) {
@@ -55,9 +71,14 @@ func (peActions *PEActions) validation() error {
 	return nil
 }
 
-func (peActions *PEActions) CreatePrivateEndpoint(name string) (string, string, error) {
+func (peActions *PEActions) CreatePrivateEndpoint(name string) (CloudResponse, error) {
+	var output CloudResponse
 	if err := peActions.validation(); err != nil {
-		return "", "", err
+		return output, err
+	}
+	output, err := peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
+	if err != nil {
+		return CloudResponse{}, err
 	}
 	return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
 }
