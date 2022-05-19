@@ -78,6 +78,14 @@ func (r Result) IsOk() bool {
 	return !r.terminated
 }
 
+func (r Result) IsWarning() bool {
+	return r.warning
+}
+
+func (r Result) GetMessage() string {
+	return r.message
+}
+
 func (r Result) ReconcileResult() reconcile.Result {
 	if r.requeueAfter < 0 {
 		return reconcile.Result{}
