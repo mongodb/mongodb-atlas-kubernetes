@@ -46,6 +46,7 @@ func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 
 	switch atlasCluster.StateName {
 	case "IDLE":
+
 		return regularClusterIdle(ctx, project, cluster, atlasCluster)
 	case "CREATING":
 		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
@@ -84,6 +85,15 @@ func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, clus
 	}
 
 	resultingCluster = cleanupCluster(resultingCluster)
+
+	// Handle shared (M0,M2,M5) cluster to non-shared cluster upgrade
+	scheduled, err := handleSharedClusterUpgrade(ctx, atlasCluster, &resultingCluster)
+	if err != nil {
+		return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+	}
+	if scheduled {
+		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is upgrading")
+	}
 
 	atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.DeploymentSpec.Name, &resultingCluster)
 	if err != nil {
@@ -240,4 +250,47 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	}
 
 	return workflow.OK()
+}
+
+func handleSharedClusterUpgrade(ctx *workflow.Context, current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) (scheduled bool, _ error) {
+	baseErr := "can not perform cluster upgrade. ERR: %v"
+	if !clusterShouldBeUpgraded(current, new) {
+		ctx.Log.Debug("cluster shouldn't be upgraded")
+		return false, nil
+	}
+
+	// Remove backingProviderName
+	new.ProviderSettings.BackingProviderName = ""
+	ctx.Log.Infof("performing cluster upgrade from %s, to %s",
+		current.ProviderSettings.InstanceSizeName, new.ProviderSettings.InstanceSizeName)
+
+	// TODO: Replace with the go-atlas-client when this method will be added to go-atlas-client
+	atlasClient := ctx.Client
+	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/clusters/tenantUpgrade", current.GroupID)
+	req, err := atlasClient.NewRequest(context.Background(), http.MethodPost, urlStr, new)
+	if err != nil {
+		return false, fmt.Errorf(baseErr, err)
+	}
+
+	_, err = atlasClient.Do(context.Background(), req, &new)
+	if err != nil {
+		return false, fmt.Errorf(baseErr, err)
+	}
+
+	return true, nil
+}
+
+func clusterShouldBeUpgraded(current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) bool {
+	if isSharedCluster(current.ProviderSettings.InstanceSizeName) && !isSharedCluster(new.ProviderSettings.InstanceSizeName) {
+		return true
+	}
+	return false
+}
+
+func isSharedCluster(instanceSizeName string) bool {
+	switch strings.ToUpper(instanceSizeName) {
+	case "M0", "M2", "M5":
+		return true
+	}
+	return false
 }
