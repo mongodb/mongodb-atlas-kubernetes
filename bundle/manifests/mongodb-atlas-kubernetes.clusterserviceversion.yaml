@@ -10,26 +10,40 @@ metadata:
           "metadata": {
             "name": "atlasbackuppolicy-sample"
           },
-          "spec": null
+          "spec": {
+            "id": "1",
+            "items": [
+              {
+                "frequencyInterval": 6,
+                "frequencyType": "WEEKLY",
+                "id": "2",
+                "retentionUnit": "DAYS",
+                "retentionValue": 6
+              }
+            ]
+          }
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
-          "kind": "AtlasDeployment",
+          "kind": "AtlasBackupSchedule",
           "metadata": {
-            "name": "my-atlas-cluster"
+            "name": "atlasbackupschedule-sample"
           },
           "spec": {
-            "clusterSpec": {
-              "name": "test-cluster",
-              "providerSettings": {
-                "instanceSizeName": "M10",
-                "providerName": "AWS",
-                "regionName": "US_EAST_1"
+            "autoExportEnabled": true,
+            "policies": [
+              {
+                "name": "atlas-default-backuppolicy",
+                "namespace": "mongodb-atlas-system"
+              },
+              {
+                "name": "atlas-default-backuppolicy2",
+                "namespace": "mongodb-atlas-system"
               }
-            },
-            "projectRef": {
-              "name": "my-project"
-            }
+            ],
+            "referenceHourOfDay": 10,
+            "referenceMinuteOfHour": 10,
+            "restoreWindowDays": 2
           }
         },
         {
@@ -57,6 +71,26 @@ metadata:
         },
         {
           "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasDeployment",
+          "metadata": {
+            "name": "my-atlas-cluster"
+          },
+          "spec": {
+            "deploymentSpec": {
+              "name": "test-cluster",
+              "providerSettings": {
+                "instanceSizeName": "M10",
+                "providerName": "AWS",
+                "regionName": "US_EAST_1"
+              }
+            },
+            "projectRef": {
+              "name": "my-project"
+            }
+          }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasProject",
           "metadata": {
             "name": "my-project"
@@ -74,28 +108,34 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Database
-    description: The MongoDB Atlas Kubernetes Operator enables easy management of
-      Clusters in MongoDB Atlas
-    operators.operatorframework.io/builder: operator-sdk-v1.16.0
+    description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
+    operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: mongodb-atlas-kubernetes.v0.5.0
+  name: mongodb-atlas-kubernetes.v1.0.0
   namespace: placeholder
 spec:
-  apiservicedefinitions: { }
+  apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - kind: AtlasBackupPolicy
+      - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
+        displayName: Atlas Backup Policy
+        kind: AtlasBackupPolicy
         name: atlasbackuppolicies.atlas.mongodb.com
         version: v1
-      - description: AtlasDeployment is the Schema for the atlasclusters API
-        displayName: Atlas Cluster
-        kind: AtlasDeployment
-        name: atlasclusters.atlas.mongodb.com
+      - description: AtlasBackupSchedule is the Schema for the atlasbackupschedules API
+        displayName: Atlas Backup Schedule
+        kind: AtlasBackupSchedule
+        name: atlasbackupschedules.atlas.mongodb.com
         version: v1
       - description: AtlasDatabaseUser is the Schema for the Atlas Database User API
         displayName: Atlas Database User
         kind: AtlasDatabaseUser
         name: atlasdatabaseusers.atlas.mongodb.com
+        version: v1
+      - description: AtlasDeployment is the Schema for the atlasclusters API
+        displayName: Atlas Deployment
+        kind: AtlasDeployment
+        name: atlasdeployments.atlas.mongodb.com
         version: v1
       - description: AtlasProject is the Schema for the atlasprojects API
         displayName: Atlas Project
@@ -261,7 +301,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlasclusters
+                - atlasbackupschedules
               verbs:
                 - create
                 - delete
@@ -273,7 +313,7 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
-                - atlasclusters/status
+                - atlasbackupschedules/status
               verbs:
                 - get
                 - patch
@@ -301,6 +341,26 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
+                - atlasdeployments
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasdeployments/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
                 - atlasprojects
               verbs:
                 - create
@@ -318,46 +378,6 @@ spec:
                 - get
                 - patch
                 - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackupschedules
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackupschedules/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackuppolicies
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - atlas.mongodb.com
-              resources:
-                - atlasbackuppolicies/status
-              verbs:
-                - get
-                - patch
-                - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator
@@ -368,7 +388,7 @@ spec:
                 app.kubernetes.io/component: controller
                 app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
                 app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
-            strategy: { }
+            strategy: {}
             template:
               metadata:
                 labels:
@@ -399,7 +419,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: registry.connect.redhat.com/mongodb/mongodb-atlas-kubernetes-operator:0.8.0
+                    image: registry.connect.redhat.com/mongodb/mongodb-atlas-kubernetes-operator:1.0.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -474,5 +494,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 0.8.0
-  replaces: mongodb-atlas-kubernetes.v0.7.0
+  version: 1.0.0
+  replaces: mongodb-atlas-kubernetes.v0.5.0

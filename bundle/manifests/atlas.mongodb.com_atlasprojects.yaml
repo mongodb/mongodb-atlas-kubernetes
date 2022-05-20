@@ -55,6 +55,180 @@ spec:
                 required:
                 - name
                 type: object
+              integrations:
+                description: Integrations is a list of MongoDB Atlas integrations
+                  for the project
+                items:
+                  properties:
+                    accountId:
+                      type: string
+                    apiKeyRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    apiTokenRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    channelName:
+                      type: string
+                    enabled:
+                      type: boolean
+                    flowName:
+                      type: string
+                    licenseKeyRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    microsoftTeamsWebhookUrl:
+                      type: string
+                    name:
+                      type: string
+                    orgName:
+                      type: string
+                    passwordRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    readTokenRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    region:
+                      type: string
+                    routingKeyRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    scheme:
+                      type: string
+                    secretRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    serviceDiscovery:
+                      type: string
+                    serviceKeyRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    teamName:
+                      type: string
+                    type:
+                      description: Third Party Integration type such as Slack, New
+                        Relic, etc
+                      enum:
+                      - PAGER_DUTY
+                      - SLACK
+                      - DATADOG
+                      - NEW_RELIC
+                      - OPS_GENIE
+                      - VICTOR_OPS
+                      - FLOWDOCK
+                      - WEBHOOK
+                      - MICROSOFT_TEAMS
+                      - PROMETHEUS
+                      type: string
+                    url:
+                      type: string
+                    username:
+                      type: string
+                    writeTokenRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  type: object
+                type: array
               name:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
@@ -64,6 +238,30 @@ spec:
                   for the current Project.
                 items:
                   properties:
+                    endpointGroupName:
+                      description: Unique identifier of the endpoint group. The endpoint
+                        group encompasses all of the endpoints that you created in
+                        Google Cloud.
+                      type: string
+                    endpoints:
+                      description: Collection of individual private endpoints that
+                        comprise your endpoint group.
+                      items:
+                        properties:
+                          endpointName:
+                            description: Forwarding rule that corresponds to the endpoint
+                              you created in Google Cloud.
+                            type: string
+                          ipAddress:
+                            description: Private IP address of the endpoint you created
+                              in Google Cloud.
+                            type: string
+                        type: object
+                      type: array
+                    gcpProjectId:
+                      description: Unique identifier of the Google Cloud project in
+                        which you created your endpoints.
+                      type: string
                     id:
                       description: Unique identifier of the private endpoint you created
                         in your AWS VPC or Azure Vnet.
@@ -137,7 +335,7 @@ spec:
           status:
             description: AtlasProjectStatus defines the observed state of AtlasProject
             properties:
-              AuthModes:
+              authModes:
                 description: AuthModes contains a list of configured authentication
                   modes "SCRAM" is default authentication method and requires a password
                   for each user "X509" signifies that self-managed X.509 authentication
@@ -217,6 +415,23 @@ spec:
                   project
                 items:
                   properties:
+                    endpoints:
+                      description: Collection of individual GCP private endpoints
+                        that comprise your network endpoint group.
+                      items:
+                        properties:
+                          endpointName:
+                            type: string
+                          ipAddress:
+                            type: string
+                          status:
+                            type: string
+                        required:
+                        - endpointName
+                        - ipAddress
+                        - status
+                        type: object
+                      type: array
                     id:
                       description: Unique identifier for AWS or AZURE Private Link
                         Connection.
@@ -233,6 +448,13 @@ spec:
                       description: Cloud provider region for which you want to create
                         the private endpoint service.
                       type: string
+                    serviceAttachmentNames:
+                      description: Unique alphanumeric and special character strings
+                        that identify the service attachments associated with the
+                        GCP Private Service Connect endpoint service.
+                      items:
+                        type: string
+                      type: array
                     serviceName:
                       description: Name of the AWS or Azure Private Link Service that
                         Atlas manages.
@@ -246,6 +468,15 @@ spec:
                   - region
                   type: object
                 type: array
+              prometheus:
+                description: Prometheus contains the status for Prometheus integration
+                  including the prometheusDiscoveryURL
+                properties:
+                  prometheusDiscoveryURL:
+                    type: string
+                  scheme:
+                    type: string
+                type: object
             required:
             - conditions
             type: object
