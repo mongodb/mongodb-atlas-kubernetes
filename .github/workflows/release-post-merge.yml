@@ -86,11 +86,6 @@ jobs:
           tags: ${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
-      - name: Create simple description
-        uses: ./.github/actions/changelog
-        with:
-          tag: ${{ steps.tag.outputs.tag }}
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
