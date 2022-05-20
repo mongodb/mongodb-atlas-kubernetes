@@ -82,7 +82,7 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
-  - atlasclusters
+  - atlasbackuppolicies
   verbs:
   - create
   - delete
@@ -94,7 +94,27 @@ rules:
 - apiGroups:
   - atlas.mongodb.com
   resources:
-  - atlasclusters/status
+  - atlasbackuppolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupschedules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupschedules/status
   verbs:
   - get
   - patch
@@ -115,6 +135,26 @@ rules:
   - atlas.mongodb.com
   resources:
   - atlasdatabaseusers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasdeployments/status
   verbs:
   - get
   - patch
@@ -205,6 +245,8 @@ spec:
         - --leader-elect
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
+        - --log-level=info
+        - --log-encoder=json
         command:
         - /manager
         env:
@@ -220,7 +262,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:0.8.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.0.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
