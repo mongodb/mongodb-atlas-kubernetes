@@ -38,13 +38,57 @@ spec:
           spec:
             description: AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
             properties:
-              foo:
-                description: Foo is an example field of AtlasBackupPolicy. Edit atlasbackuppolicy_types.go
-                  to remove/update
-                type: string
+              items:
+                description: A list of BackupPolicy items
+                items:
+                  properties:
+                    frequencyInterval:
+                      description: Desired frequency of the new backup policy item
+                        specified by FrequencyType. A value of 1 specifies the first
+                        instance of the corresponding FrequencyType. The only accepted
+                        value you can set for frequency interval with NVMe clusters
+                        is 12.
+                      enum:
+                      - 1
+                      - 2
+                      - 4
+                      - 6
+                      - 8
+                      - 12
+                      type: integer
+                    frequencyType:
+                      description: 'Frequency associated with the backup policy item.
+                        One of the following values: hourly, daily, weekly or monthly.
+                        You cannot specify multiple hourly and daily backup policy
+                        items.'
+                      enum:
+                      - hourly
+                      - daily
+                      - weekly
+                      - monthly
+                      type: string
+                    retentionUnit:
+                      description: 'Scope of the backup policy item: days, weeks,
+                        or months'
+                      enum:
+                      - days
+                      - weeks
+                      - months
+                      type: string
+                    retentionValue:
+                      description: Value to associate with RetentionUnit
+                      type: integer
+                  required:
+                  - frequencyInterval
+                  - frequencyType
+                  - retentionUnit
+                  - retentionValue
+                  type: object
+                type: array
+            required:
+            - items
             type: object
           status:
-            description: AtlasBackupPolicyStatus defines the observed state of AtlasBackupPolicy
             type: object
         type: object
     served: true
