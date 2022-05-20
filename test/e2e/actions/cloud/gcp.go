@@ -3,6 +3,7 @@ package cloud
 import (
 	"fmt"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 )
@@ -15,7 +16,6 @@ var (
 	googleVPC           = "atlas-operator-test"       // VPC Name
 	googleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
 	googleConnectPrefix = "leo-test"                  // Private Service Connect Endpoint Prefix
-	key                 = ""                          // TODO remove
 )
 
 func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (CloudResponse, error) {
@@ -24,17 +24,20 @@ func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 		return CloudResponse{}, err
 	}
 	var cResponse CloudResponse
-	for i:=0; i<5; i++ {
-		addressName := googleConnectPrefix+"-ip-"+fmt.Sprint(i)
-		ruleName := googleConnectPrefix+fmt.Sprint(i)
-		// TODO
-		target := ""
-
+	for i, target := range pe.ServiceAttachmentNames {
+		addressName := googleConnectPrefix + privatelinkName + "-ip-" + fmt.Sprint(i)
+		ruleName := googleConnectPrefix + privatelinkName + fmt.Sprint(i)
 		ip, err := session.AddIPAdress(pe.Region, addressName, googleSubnetName)
 		if err != nil {
-			return CloudResponse{}, fmt.Errorf("Cloud. can not add IP adress: %s, for region: %s", addressName, pe.Region)
+			return CloudResponse{}, err
 		}
-		cResponse.GoogleEndpoints = append(cResponse.GoogleEndpoints, Endpoints{IP: ip, Name: addressName})
+		cResponse.GoogleEndpoints = append(cResponse.GoogleEndpoints, v1.GCPEndpoint{
+			EndpointName: addressName,
+			IPAddress:    ip,
+		})
+		cResponse.GoogleVPC = googleVPC
+		cResponse.Region = pe.Region
+		cResponse.Provider = pe.Provider
 		session.AddForwardRule(pe.Region, ruleName, addressName, googleVPC, googleSubnetName, target)
 	}
 	return cResponse, nil

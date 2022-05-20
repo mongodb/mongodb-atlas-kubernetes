@@ -81,21 +81,13 @@ func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	return p
 }
 
-// func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, id, ip string) *AProject {
-// 	for i, peItem := range p.Spec.PrivateEndpoints {
-// 		if (peItem.Provider == provider) && (peItem.Region == region) {
-// 			p.Spec.PrivateEndpoints[i].ID = id
-// 			p.Spec.PrivateEndpoints[i].IP = ip
-// 		}
-// 	}
-// 	return p
-// }
-
 func (p *AProject) UpdatePrivateLinkID(test cloud.CloudResponse) *AProject {
 	for i, peItem := range p.Spec.PrivateEndpoints {
 		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
-			p.Spec.PrivateEndpoints[i].ID = test.ID
-			p.Spec.PrivateEndpoints[i].IP = test.IP
+			p.Spec.PrivateEndpoints[i].ID = test.ID // in case AWS/Azure
+			p.Spec.PrivateEndpoints[i].IP = test.IP // in case Azure
+			p.Spec.PrivateEndpoints[i].EndpointGroupName = test.GoogleVPC
+			p.Spec.PrivateEndpoints[i].Endpoints = test.GoogleEndpoints // in case GCP
 		}
 	}
 	return p

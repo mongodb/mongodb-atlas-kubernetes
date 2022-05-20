@@ -34,10 +34,10 @@ func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEn
 		return CloudResponse{}, err
 	}
 	cResponse := CloudResponse{
-		ID:              id,
-		IP:              ip,
-		Provider:        provider.ProviderAzure,
-		Region:          pe.Region,
+		ID:       id,
+		IP:       ip,
+		Provider: provider.ProviderAzure,
+		Region:   pe.Region,
 	}
 	return cResponse, nil
 }

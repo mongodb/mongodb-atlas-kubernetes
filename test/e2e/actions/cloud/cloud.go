@@ -3,6 +3,7 @@ package cloud
 import (
 	"errors"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
@@ -20,18 +21,17 @@ type PEActions struct {
 }
 
 type CloudResponse struct {
-	ID string // AWS = PrivateID, AZURE = privateEndpoint Name
-	IP string
-	Provider provider.ProviderName
-	Region string
-	// GCP = project ID
+	ID              string // AWS = PrivateID, AZURE = privateEndpoint Name
+	IP              string
+	Provider        provider.ProviderName
+	Region          string
 	GoogleProjectID string
-	GoogleVPC string
-	GoogleEndpoints []Endpoints // TODO remove?
+	GoogleVPC       string
+	GoogleEndpoints v1.GCPEndpoints
 }
 
 type Endpoints struct {
-	IP string
+	IP   string
 	Name string
 }
 
@@ -64,7 +64,9 @@ func (peActions *PEActions) validation() error {
 			return errors.New("Azure. PrivateEndpoint.ServiceResourceID is empty")
 		}
 	case provider.ProviderGCP:
-		return errors.New("work with GCP is not implemented")
+		if len(peActions.PrivateEndpoint.ServiceAttachmentNames) < 1 {
+			return errors.New("GCP. PrivateEndpoint.ServiceAttachmentNames should not be empty")
+		}
 	default:
 		return errors.New("Check Provider")
 	}
@@ -72,12 +74,7 @@ func (peActions *PEActions) validation() error {
 }
 
 func (peActions *PEActions) CreatePrivateEndpoint(name string) (CloudResponse, error) {
-	var output CloudResponse
 	if err := peActions.validation(); err != nil {
-		return output, err
-	}
-	output, err := peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)
-	if err != nil {
 		return CloudResponse{}, err
 	}
 	return peActions.CloudActions.createPrivateEndpoint(peActions.PrivateEndpoint, name)

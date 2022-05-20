@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
@@ -36,8 +37,25 @@ func (s *sessionGCP) AddIPAdress(region, addressName, subnet string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("computeService.Addresses.Insert: %v", err)
 	}
-	// TODO add get IP and return
-	return "", nil
+	ip, err := s.GetIP(region, addressName, 20, 10)
+	if err != nil {
+		return "", fmt.Errorf("computeService.Addresses.Get: %v", err)
+	}
+	return ip, nil
+}
+
+func (s *sessionGCP) GetIP(region, addressName string, try, interval int) (string, error) {
+	for i := 0; i < try; i++ {
+		r, err := s.computeService.Addresses.Get(s.gProjectID, region, addressName).Do()
+		if err != nil {
+			return "", err
+		}
+		if r.Address != "" {
+			return r.Address, nil
+		}
+		time.Sleep(time.Duration(interval) * time.Second)
+	}
+	return "", fmt.Errorf("timeout computeService.Addresses.Get")
 }
 
 func (s *sessionGCP) DescribeIPStatus(region, addressName string) (string, error) {
@@ -56,7 +74,7 @@ func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 	return nil
 }
 
-func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) ( error) {
+func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) error {
 	rules := &compute.ForwardingRule{
 		IPAddress:                     s.formAddressURL(region, addressName),
 		IPProtocol:                    "",
@@ -91,7 +109,7 @@ func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subn
 	if err != nil {
 		return fmt.Errorf("computeService.ForwardingRules.Insert: %v", err)
 	}
-	return  nil
+	return nil
 }
 
 func (s *sessionGCP) DeleteForwardRule(region, ruleName string) error {

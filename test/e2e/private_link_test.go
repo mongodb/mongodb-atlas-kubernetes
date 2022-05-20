@@ -12,6 +12,7 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
 	// "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
@@ -78,28 +79,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		func(test model.TestDataProvider, pe []privateEndpoint) {
 			data = test
 			privateFlow(&data, pe)
-			// TODO remove
-			// peitem := data.Resources.Project.Spec.PrivateEndpoints[0]
-			// googleID := "atlasoperator" // Google Cloud Project ID
-			// // googleVPC := "atlas-operator-test" // VPC Name
-			// googleSubnetName := "atlas-operator-subnet-leo"  // Subnet Name
-			// googleConnectPrefix := "leo-test" // Private Service Connect Endpoint Prefix
-			// region := "europe-west1"
-			// target := "projects/p-mnvqejvhytwi2kmovmtjdq6g/regions/europe-west1/serviceAttachments/sa-europe-west1-627b91a2a99afa3aa58fb909-1"
 
-
-			// s, err := gcp.SessionGCP(googleID)
-			// s.AddIPAdress(googleConnectPrefix+"-1", region, googleSubnetName)
-			// t, err := s.DescribeIPStatus(region, googleConnectPrefix+"-1")
-			// Expect(err).ShouldNot(HaveOccurred())
-			// GinkgoWriter.Println(t)
-			// err = s.AddForwardRule(googleConnectPrefix, googleConnectPrefix+"-1", region, googleVPC, googleSubnetName, target)
-			// err = s.DeleteForwardRule(googleConnectPrefix, region)
-			// err = s.DeleteIPAdress(region, googleConnectPrefix+"-1")
-			// Expect(err).ShouldNot(HaveOccurred())
-			// s.AddAttachment(googleConnectPrefix, googleConnectPrefix+"-1", region, googleVPC, target)
-			// Expect(err).ShouldNot(HaveOccurred())
-			// cloudTest, err := cloud.CreatePEActions(peitem)
 		},
 		// Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 		// 	model.NewTestDataProvider(
@@ -266,7 +246,12 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 			// 		return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
 			// 	},
 			// ).Should(BeTrue())
-			userData.Resources.Project.UpdatePrivateLinkID(output)
+			Expect(output.GoogleEndpoints[0].EndpointName).ShouldNot(BeEmpty())
+			Expect(output.GoogleEndpoints[0].IPAddress).ShouldNot(BeEmpty())
+			GinkgoWriter.Printf("RESULT-OUTPUT0000000000000000000000000: %v", output)
+			GinkgoWriter.Printf("RESULT-OUTPUT: %v", userData.Resources.Project.Spec.PrivateEndpoints)
+			userData.Resources.Project = userData.Resources.Project.UpdatePrivateLinkID(output)
+			GinkgoWriter.Printf("RESULT: %v", userData.Resources.Project.Spec.PrivateEndpoints)
 		}
 	})
 

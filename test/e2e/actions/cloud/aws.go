@@ -28,10 +28,10 @@ func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 		return CloudResponse{}, err
 	}
 	cResponse := CloudResponse{
-		ID:              privateEndpointID,
-		IP:              "",
-		Provider:        provider.ProviderAWS,
-		Region:          pe.Region,
+		ID:       privateEndpointID,
+		IP:       "",
+		Provider: provider.ProviderAWS,
+		Region:   pe.Region,
 	}
 	return cResponse, nil
 }
