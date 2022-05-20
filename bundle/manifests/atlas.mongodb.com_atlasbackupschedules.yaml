@@ -54,6 +54,7 @@ spec:
                       cloud backup snapshot to.
                     type: string
                   frequencyType:
+                    default: MONTHLY
                     enum:
                     - MONTHLY
                     type: string
@@ -61,23 +62,19 @@ spec:
                 - exportBucketId
                 - frequencyType
                 type: object
-              policies:
-                description: Array containing a references (name & namespace) for
-                  each backup policy item in the desired updated backup policy.
-                items:
-                  description: ResourceRefNamespaced is a reference to a Kubernetes
-                    Resource that allows to configure the namespace
-                  properties:
-                    name:
-                      description: Name is the name of the Kubernetes Resource
-                      type: string
-                    namespace:
-                      description: Namespace is the namespace of the Kubernetes Resource
-                      type: string
-                  required:
-                  - name
-                  type: object
-                type: array
+              policy:
+                description: A reference (name & namespace) for backup policy in the
+                  desired updated backup policy.
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
               referenceHourOfDay:
                 description: UTC Hour of day between 0 and 23, inclusive, representing
                   which hour of the day that Atlas takes snapshots for backup policy
@@ -111,7 +108,7 @@ spec:
                   the snapshots
                 type: boolean
             required:
-            - policies
+            - policy
             type: object
           status:
             type: object
