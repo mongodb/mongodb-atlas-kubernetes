@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"fmt"
+	"time"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -52,7 +53,7 @@ func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoi
 		return err
 	}
 	for i := range pe.Endpoints {
-		session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i))
+		session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i), 10, 20*time.Second)
 		session.DeleteIPAdress(pe.Region, formAddressName(privatelinkName, i))
 	}
 	return nil

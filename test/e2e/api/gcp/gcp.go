@@ -104,11 +104,37 @@ func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subn
 	return nil
 }
 
-func (s *sessionGCP) DeleteForwardRule(region, ruleName string) error {
+func (s *sessionGCP) DeleteForwardRule(region, ruleName string, try int, interval time.Duration) error {
 	_, err := s.computeService.ForwardingRules.Delete(s.gProjectID, region, ruleName).Do()
 	if err != nil {
-		return fmt.Errorf("computeService.ForwardingRules.Insert: %v", err)
+		return fmt.Errorf("computeService.ForwardingRules.Delete: %v", err)
 	}
+
+	contain := func(list []*compute.ForwardingRule, name string) bool {
+		for _, item := range list {
+			if item.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+
+	deleted := false
+	for i := 0; i < try; i++ {
+		r, err := s.computeService.ForwardingRules.List(s.gProjectID, region).Do()
+		if err != nil {
+			return fmt.Errorf("computeService.ForwardingRule.List: %v", err)
+		}
+		if !contain(r.Items, ruleName) {
+			deleted = true
+			break
+		}
+		time.Sleep(interval)
+	}
+	if !deleted {
+		return fmt.Errorf("computeService.ForwardingRules.Delete. Could not delete forward rule after %d retries", try)
+	}
+
 	return nil
 }
 
