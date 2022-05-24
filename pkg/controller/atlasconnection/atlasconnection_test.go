@@ -73,7 +73,7 @@ func setupMockAltasServer() (client *mongodbatlas.Client, teardown func()) {
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(baseURLPath+"/", http.StripPrefix(baseURLPath, router))
 
-	router.HandleFunc("/groups/{group-id}/databaseUsers/{db}/{user}", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/atlas/v1.0/groups/{group-id}/databaseUsers/{db}/{user}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		groupID, ok := vars["group-id"]
 		if !ok {
@@ -102,7 +102,7 @@ func setupMockAltasServer() (client *mongodbatlas.Client, teardown func()) {
 		}
 	}).Methods(http.MethodDelete)
 
-	router.HandleFunc("/groups/{group-id}/databaseUsers", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/atlas/v1.0/groups/{group-id}/databaseUsers", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		groupID, ok := vars["group-id"]
 		if !ok {

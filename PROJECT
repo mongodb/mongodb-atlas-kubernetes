@@ -48,15 +48,6 @@ resources:
   controller: true
   domain: mongodb.com
   group: atlas
-  kind: AtlasCluster
-  path: github.com/mongodb/mongodb-atlas-kubernetes/pkg/api
-  version: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: mongodb.com
-  group: atlas
   kind: AtlasProject
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1

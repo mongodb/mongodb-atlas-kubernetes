@@ -147,6 +147,7 @@ containers:
                key: connectionStringStandardSrv
 
 ```
+
 ## Additional information or features
 
 Operator support Third Party Integration.
