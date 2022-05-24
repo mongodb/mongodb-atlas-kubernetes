@@ -86,8 +86,10 @@ func (p *AProject) UpdatePrivateLinkID(test cloud.CloudResponse) *AProject {
 		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
 			p.Spec.PrivateEndpoints[i].ID = test.ID // in case AWS/Azure
 			p.Spec.PrivateEndpoints[i].IP = test.IP // in case Azure
+			// in case of GCP
+			p.Spec.PrivateEndpoints[i].GCPProjectID = test.GoogleProjectID
 			p.Spec.PrivateEndpoints[i].EndpointGroupName = test.GoogleVPC
-			p.Spec.PrivateEndpoints[i].Endpoints = test.GoogleEndpoints // in case GCP
+			p.Spec.PrivateEndpoints[i].Endpoints = test.GoogleEndpoints
 		}
 	}
 	return p

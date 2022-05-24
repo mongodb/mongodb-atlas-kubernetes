@@ -58,14 +58,6 @@ func (s *sessionGCP) GetIP(region, addressName string, try, interval int) (strin
 	return "", fmt.Errorf("timeout computeService.Addresses.Get")
 }
 
-func (s *sessionGCP) DescribeIPStatus(region, addressName string) (string, error) {
-	resp, err := s.computeService.Addresses.Get(s.gProjectID, region, addressName).Context(context.Background()).Do()
-	if err != nil {
-		return "", fmt.Errorf("computeService.Addresses.Get: %v", err)
-	}
-	return resp.Status, nil
-}
-
 func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 	_, err := s.computeService.Addresses.Delete(s.gProjectID, region, addressName).Context(context.Background()).Do()
 	if err != nil {
@@ -118,6 +110,21 @@ func (s *sessionGCP) DeleteForwardRule(region, ruleName string) error {
 		return fmt.Errorf("computeService.ForwardingRules.Insert: %v", err)
 	}
 	return nil
+}
+
+// Possible values:
+// "ACCEPTED" - The connection has been accepted by the producer.
+// "CLOSED" - The connection has been closed by the producer and will
+// not serve traffic going forward.
+// "PENDING" - The connection is pending acceptance by the producer.
+// "REJECTED" - The connection has been rejected by the producer.
+// "STATUS_UNSPECIFIED"
+func (s *sessionGCP) DescribePrivateLinkStatus(region, ruleName string) (string, error) {
+	resp, err := s.computeService.ForwardingRules.Get(s.gProjectID, region, ruleName).Context(context.Background()).Do()
+	if err != nil {
+		return "", fmt.Errorf("computeService.Addresses.Get: %v", err)
+	}
+	return resp.PscConnectionStatus, nil
 }
 
 func (s *sessionGCP) formNetworkURL(network string) string {

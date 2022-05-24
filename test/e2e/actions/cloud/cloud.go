@@ -89,6 +89,7 @@ func (peActions *PEActions) DeletePrivateEndpoint(name string) error {
 
 // privateID is different for different clouds: privateID for AWS or PEname for AZURE
 // AWS = PrivateID, AZURE = privateEndpoint Name
+// GCP = prefix
 func (peActions *PEActions) IsStatusPrivateEndpointPending(privateID string) bool {
 	return peActions.CloudActions.statusPrivateEndpointPending(peActions.PrivateEndpoint.Region, privateID)
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
-	// "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
@@ -67,19 +66,18 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			})
 
 		}
-		// By("Clean Cloud", func() {
-		// 	DeleteAllPrivateEndpoints(&data)
-		// })
-		// By("Delete Resources, Project with PEService", func() {
-		// 	actions.DeleteUserResourcesProject(&data)
-		// })
+		By("Clean Cloud", func() {
+			DeleteAllPrivateEndpoints(&data)
+		})
+		By("Delete Resources, Project with PEService", func() {
+			actions.DeleteUserResourcesProject(&data)
+		})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
 		func(test model.TestDataProvider, pe []privateEndpoint) {
 			data = test
 			privateFlow(&data, pe)
-
 		},
 		// Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 		// 	model.NewTestDataProvider(
@@ -237,21 +235,9 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			// privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			output, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
 			Expect(err).ShouldNot(HaveOccurred())
-			// // Expect(privateLinkID).ShouldNot(BeEmpty())
-			// Eventually(
-			// 	func() bool {
-			// 		return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
-			// 	},
-			// ).Should(BeTrue())
-			Expect(output.GoogleEndpoints[0].EndpointName).ShouldNot(BeEmpty())
-			Expect(output.GoogleEndpoints[0].IPAddress).ShouldNot(BeEmpty())
-			GinkgoWriter.Printf("RESULT-OUTPUT0000000000000000000000000: %v", output)
-			GinkgoWriter.Printf("RESULT-OUTPUT: %v", userData.Resources.Project.Spec.PrivateEndpoints)
 			userData.Resources.Project = userData.Resources.Project.UpdatePrivateLinkID(output)
-			GinkgoWriter.Printf("RESULT: %v", userData.Resources.Project.Spec.PrivateEndpoints)
 		}
 	})
 
@@ -261,7 +247,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
+		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointReady' is not'True'")
 		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
 		project, err := kube.GetProjectResource(userData)
@@ -269,11 +255,10 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
-			Expect(privateEndpointID).ShouldNot(BeEmpty())
+			Expect(peitem.ID).ShouldNot(BeEmpty())
 			Eventually(
 				func() bool {
-					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
+					return cloudTest.IsStatusPrivateEndpointAvailable(peitem.ID)
 				},
 			).Should(BeTrue())
 		}
@@ -288,7 +273,7 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest, err := cloud.CreatePEActions(peitem)
 		if err == nil {
-			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			privateEndpointID := peitem.ID
 			if privateEndpointID != "" {
 				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
 				if err != nil {

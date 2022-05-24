@@ -15,7 +15,7 @@ var (
 	googleProjectID     = "atlasoperator"             // Google Cloud Project ID
 	googleVPC           = "atlas-operator-test"       // VPC Name
 	googleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
-	googleConnectPrefix = "leo-test"                  // Private Service Connect Endpoint Prefix
+	googleConnectPrefix = "ao"                        // Private Service Connect Endpoint Prefix
 )
 
 func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (CloudResponse, error) {
@@ -25,43 +25,73 @@ func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 	}
 	var cResponse CloudResponse
 	for i, target := range pe.ServiceAttachmentNames {
-		addressName := googleConnectPrefix + privatelinkName + "-ip-" + fmt.Sprint(i)
-		ruleName := googleConnectPrefix + privatelinkName + fmt.Sprint(i)
+		addressName := formAddressName(privatelinkName, i)
+		ruleName := formRuleName(privatelinkName, i)
 		ip, err := session.AddIPAdress(pe.Region, addressName, googleSubnetName)
 		if err != nil {
 			return CloudResponse{}, err
 		}
+
 		cResponse.GoogleEndpoints = append(cResponse.GoogleEndpoints, v1.GCPEndpoint{
-			EndpointName: addressName,
+			EndpointName: ruleName,
 			IPAddress:    ip,
 		})
 		cResponse.GoogleVPC = googleVPC
 		cResponse.Region = pe.Region
 		cResponse.Provider = pe.Provider
+		cResponse.GoogleProjectID = googleProjectID
+
 		session.AddForwardRule(pe.Region, ruleName, addressName, googleVPC, googleSubnetName, target)
 	}
 	return cResponse, nil
 }
 
 func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
 	session, err := gcp.SessionGCP(googleProjectID)
 	if err != nil {
 		return err
 	}
 	for i := range pe.Endpoints {
-		session.DeleteForwardRule(pe.Region, googleConnectPrefix+fmt.Sprint(i))
-		session.DeleteIPAdress(pe.Region, googleConnectPrefix+fmt.Sprint(i))
+		session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i))
+		session.DeleteIPAdress(pe.Region, formAddressName(privatelinkName, i))
 	}
 	return nil
 }
 
 func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID string) bool {
-	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
-	return true
+	session, err := gcp.SessionGCP(googleProjectID)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	ruleName := formRuleName(privateID, 1)
+	result, err := session.DescribePrivateLinkStatus(region, ruleName)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	return (result == "PENDING")
 }
 
 func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
-	fmt.Print("NOT IMPLEMENTED delete GCP LINK")
-	return true
+	session, err := gcp.SessionGCP(googleProjectID)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	ruleName := formRuleName(privateID, 1)
+	result, err := session.DescribePrivateLinkStatus(region, ruleName)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	return (result == "ACCEPTED")
+}
+
+func formAddressName(name string, i int) string {
+	return fmt.Sprintf("%s%s-ip-%d", googleConnectPrefix, name, i)
+}
+
+func formRuleName(name string, i int) string {
+	return fmt.Sprintf("%s%s-%d", googleConnectPrefix, name, i)
 }
