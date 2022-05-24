@@ -7,10 +7,13 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/RHEcosystemAppEng/dbaas-operator v0.1.5
 	github.com/aws/aws-sdk-go v1.44.15
 	github.com/fatih/structtag v1.2.0
+	github.com/fgrosse/zaptest v1.1.0
 	github.com/go-logr/zapr v1.2.3
 	github.com/google/go-cmp v0.5.7
+	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mongodb-forks/digest v1.0.3
 	github.com/mxschmitt/playwright-go v0.1400.0
@@ -26,8 +29,8 @@ require (
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
 	k8s.io/client-go v0.23.4
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.11.1
-	github.com/RHEcosystemAppEng/dbaas-operator v0.1.5
 )
 
 require (
@@ -100,7 +103,6 @@ require (
 	k8s.io/component-base v0.23.4 // indirect
 	k8s.io/klog/v2 v2.40.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf // indirect
-	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

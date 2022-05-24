@@ -5,6 +5,8 @@ resources:
   - bases/atlas.mongodb.com_atlasdeployments.yaml
   - bases/atlas.mongodb.com_atlasprojects.yaml
   - bases/atlas.mongodb.com_atlasdatabaseusers.yaml
+  - bases/atlas.mongodb.com_atlasbackuppolicies.yaml
+  - bases/atlas.mongodb.com_atlasbackupschedules.yaml
   - bases/dbaas.redhat.com_mongodbatlasconnections.yaml
   - bases/dbaas.redhat.com_mongodbatlasinventories.yaml
   - bases/dbaas.redhat.com_mongodbatlasinstances.yaml

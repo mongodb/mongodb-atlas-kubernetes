@@ -40,6 +40,7 @@ import (
 
 	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	status "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 )
@@ -277,25 +278,27 @@ func TestSetInstanceStatusWithClusterInfo(t *testing.T) {
 	}
 	for tcName, tc := range testCase {
 		t.Run(tcName, func(t *testing.T) {
-			atlasCluster := &v1.AtlasCluster{
+			atlasDeployment := &v1.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-cluster-free",
 					Namespace: namespace,
 				},
-				Spec: v1.AtlasClusterSpec{
-					Name: tc.clusterName,
-					Project: v1.ResourceRefNamespaced{
+				Spec: v1.AtlasDeploymentSpec{
+					Project: common.ResourceRefNamespaced{
 						Name:      "my-atlas-project-free",
 						Namespace: namespace,
 					},
-					ProviderSettings: &v1.ProviderSettingsSpec{
-						BackingProviderName: "AWS",
-						InstanceSizeName:    "M0",
-						ProviderName:        "TENANT",
-						RegionName:          "US_EAST_1",
+					DeploymentSpec: &v1.DeploymentSpec{
+						Name: tc.clusterName,
+						ProviderSettings: &v1.ProviderSettingsSpec{
+							BackingProviderName: "AWS",
+							InstanceSizeName:    "M0",
+							ProviderName:        "TENANT",
+							RegionName:          "US_EAST_1",
+						},
 					},
 				},
-				Status: status.AtlasClusterStatus{
+				Status: status.AtlasDeploymentStatus{
 					Common: status.Common{
 						Conditions: []status.Condition{
 							{
@@ -328,7 +331,7 @@ func TestSetInstanceStatusWithClusterInfo(t *testing.T) {
 					},
 				},
 			}
-			result := setInstanceStatusWithClusterInfo(atlasClient, inst, atlasCluster, tc.projectName)
+			result := setInstanceStatusWithClusterInfo(atlasClient, inst, atlasDeployment, tc.projectName)
 			if len(tc.expErrMsg) == 0 {
 				cond := dbaas.GetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType)
 				assert.NotNil(t, cond)
