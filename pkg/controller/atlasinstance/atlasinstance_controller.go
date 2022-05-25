@@ -192,13 +192,19 @@ func (r *MongoDBAtlasInstanceReconciler) reconcileAtlasDeployment(cx context.Con
 	atlasDeployment := getOwnedAtlasDeployment(inst)
 	if err := r.Client.Get(cx, types.NamespacedName{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Name}, atlasDeployment); err != nil {
 		if apiErrors.IsNotFound(err) { // The AtlasDeployment CR does not exist
-			_, result := atlasinventory.GetClusterInfo(atlasClient, atlasProject.Spec.Name, inst.Spec.Name)
-			if result.IsOk() {
-				// The cluster already exists in Atlas. Mark provisioning phase as failed and return
-				inst.Status.Phase = PhaseFailed
-				dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, ClusterAlreadyExistsInAtlas, ClusterAlreadyExistsInAtlasMsg)
-				// No requeue
-				return ctrl.Result{}, nil
+			// If the instance has been previously associated with an AtlasCluster CR, its phase is not in pending status (ie, is in creating, updating or ready)
+			// This allows the operator to migrate from a previous AtlasCluster CR to an AtlasDeployment CR
+			if len(inst.Status.Phase) == 0 || inst.Status.Phase == PhasePending {
+				_, result := atlasinventory.GetClusterInfo(atlasClient, atlasProject.Spec.Name, inst.Spec.Name)
+				if result.IsOk() {
+					// The cluster already exists in Atlas. Mark provisioning phase as failed and return
+					inst.Status.Phase = PhaseFailed
+					dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, ClusterAlreadyExistsInAtlas, ClusterAlreadyExistsInAtlasMsg)
+					// No requeue
+					return ctrl.Result{}, nil
+				}
+			} else {
+				log.Info("This instance has been reconciled previously but no AtlasDeployment CR is found. Creating a new AtlasDeployment CR.")
 			}
 		} else {
 			return ctrl.Result{}, err
@@ -206,20 +212,20 @@ func (r *MongoDBAtlasInstanceReconciler) reconcileAtlasDeployment(cx context.Con
 	}
 	_, err = controllerutil.CreateOrUpdate(cx, r.Client, atlasDeployment, instanceMutateFn(atlasProject, atlasDeployment, instData))
 	if err != nil {
-		log.Error(err, "Failed to create or update atlas cluster resource")
+		log.Error(err, "Failed to create or update AtlasDeployment resource")
 		return ctrl.Result{}, err
 	}
 
 	// Update the status
 	if err := r.Client.Get(cx, types.NamespacedName{Namespace: atlasDeployment.Namespace, Name: atlasDeployment.Name}, atlasDeployment); err != nil {
 		if apiErrors.IsNotFound(err) {
-			// The corresponding Atlas Cluster is not found, no reqeue.
-			log.Info("Atlas Cluster resource not found, has been deleted")
-			result := workflow.InProgress(workflow.MongoDBAtlasInstanceClusterNotFound, "Atlas Cluster not found")
+			// The corresponding AtlasDeployment is not found, no reqeue.
+			log.Info("AtlasDeployment resource not found, has been deleted")
+			result := workflow.InProgress(workflow.MongoDBAtlasInstanceClusterNotFound, "AtlasDeployment not found")
 			dbaas.SetInstanceCondition(inst, dbaasv1alpha1.DBaaSInstanceProviderSyncType, metav1.ConditionFalse, string(result.Reason()), result.Message())
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "Error fetching Atlas Cluster")
+		log.Error(err, "Error fetching AtlasDeployment")
 		return ctrl.Result{}, err
 	}
 
