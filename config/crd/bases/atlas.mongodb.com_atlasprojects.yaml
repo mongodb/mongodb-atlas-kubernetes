@@ -158,17 +158,9 @@ spec:
                       required:
                       - name
                       type: object
-<<<<<<< HEAD
                     scheme:
                       type: string
                     secretRef:
-=======
-<<<<<<< Updated upstream
-                    secret:
-=======
-                    secretRef:
->>>>>>> Stashed changes
->>>>>>> 790f9ad (add gcp api)
                       description: ResourceRefNamespaced is a reference to a Kubernetes
                         Resource that allows to configure the namespace
                       properties:
