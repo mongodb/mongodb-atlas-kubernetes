@@ -17,7 +17,7 @@ type sessionGCP struct {
 func SessionGCP(gProjectID string) (sessionGCP, error) {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {
-		return sessionGCP{}, fmt.Errorf("compute.NewClient: %v", err)
+		return sessionGCP{}, fmt.Errorf("compute.NewClient: %w", err)
 	}
 	return sessionGCP{computeService, gProjectID}, nil
 }
@@ -34,11 +34,11 @@ func (s *sessionGCP) AddIPAdress(region, addressName, subnet string) (string, er
 	}
 	_, err := s.computeService.Addresses.Insert(s.gProjectID, region, address).Context(context.Background()).Do()
 	if err != nil {
-		return "", fmt.Errorf("computeService.Addresses.Insert: %v", err)
+		return "", fmt.Errorf("computeService.Addresses.Insert: %w", err)
 	}
 	ip, err := s.GetIP(region, addressName, 20, 10)
 	if err != nil {
-		return "", fmt.Errorf("computeService.Addresses.Get: %v", err)
+		return "", fmt.Errorf("computeService.Addresses.Get: %w", err)
 	}
 	return ip, nil
 }
@@ -60,7 +60,7 @@ func (s *sessionGCP) GetIP(region, addressName string, try, interval int) (strin
 func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 	_, err := s.computeService.Addresses.Delete(s.gProjectID, region, addressName).Context(context.Background()).Do()
 	if err != nil {
-		return fmt.Errorf("computeService.Addresses.Delete: %v", err)
+		return fmt.Errorf("computeService.Addresses.Delete: %w", err)
 	}
 	return nil
 }
@@ -68,37 +68,19 @@ func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) error {
 	rules := &compute.ForwardingRule{
 		IPAddress:                     s.formAddressURL(region, addressName),
-		IPProtocol:                    "",
-		AllPorts:                      false,
-		AllowGlobalAccess:             false,
-		BackendService:                "",
-		Description:                   "",
-		Fingerprint:                   "",
-		IpVersion:                     "",
-		IsMirroringCollector:          false,
-		Kind:                          "",
-		LabelFingerprint:              "",
 		Labels:                        map[string]string{},
-		LoadBalancingScheme:           "",
-		MetadataFilters:               []*compute.MetadataFilter{},
 		Name:                          ruleName,
 		Network:                       s.formNetworkURL(network),
-		NetworkTier:                   "",
-		PortRange:                     "",
 		Ports:                         []string{},
-		PscConnectionId:               0,
-		PscConnectionStatus:           "",
 		Region:                        region,
-		SelfLink:                      "",
 		ServiceDirectoryRegistrations: []*compute.ForwardingRuleServiceDirectoryRegistration{},
-		ServiceLabel:                  "",
 		Subnetwork:                    "",
 		Target:                        target,
 		ServerResponse:                googleapi.ServerResponse{},
 	}
 	_, err := s.computeService.ForwardingRules.Insert(s.gProjectID, region, rules).Context(context.Background()).Do()
 	if err != nil {
-		return fmt.Errorf("computeService.ForwardingRules.Insert: %v", err)
+		return fmt.Errorf("computeService.ForwardingRules.Insert: %w", err)
 	}
 	return nil
 }
@@ -106,7 +88,7 @@ func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subn
 func (s *sessionGCP) DeleteForwardRule(region, ruleName string, try int, interval time.Duration) error {
 	_, err := s.computeService.ForwardingRules.Delete(s.gProjectID, region, ruleName).Do()
 	if err != nil {
-		return fmt.Errorf("computeService.ForwardingRules.Delete: %v", err)
+		return fmt.Errorf("computeService.ForwardingRules.Delete: %w", err)
 	}
 
 	contain := func(list []*compute.ForwardingRule, name string) bool {
@@ -122,7 +104,7 @@ func (s *sessionGCP) DeleteForwardRule(region, ruleName string, try int, interva
 	for i := 0; i < try; i++ {
 		r, err := s.computeService.ForwardingRules.List(s.gProjectID, region).Do()
 		if err != nil {
-			return fmt.Errorf("computeService.ForwardingRule.List: %v", err)
+			return fmt.Errorf("computeService.ForwardingRule.List: %w", err)
 		}
 		if !contain(r.Items, ruleName) {
 			deleted = true
@@ -147,7 +129,7 @@ func (s *sessionGCP) DeleteForwardRule(region, ruleName string, try int, interva
 func (s *sessionGCP) DescribePrivateLinkStatus(region, ruleName string) (string, error) {
 	resp, err := s.computeService.ForwardingRules.Get(s.gProjectID, region, ruleName).Context(context.Background()).Do()
 	if err != nil {
-		return "", fmt.Errorf("computeService.Addresses.Get: %v", err)
+		return "", fmt.Errorf("computeService.Addresses.Get: %w", err)
 	}
 	return resp.PscConnectionStatus, nil
 }

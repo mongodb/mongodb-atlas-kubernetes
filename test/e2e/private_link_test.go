@@ -35,7 +35,7 @@ type privateEndpoint struct {
 
 var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var data model.TestDataProvider
- 
+
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		checkUpAWSEnviroment()
