@@ -7,7 +7,6 @@ import (
 
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/api/option"
 )
 
 type sessionGCP struct {
@@ -16,7 +15,7 @@ type sessionGCP struct {
 }
 
 func SessionGCP(gProjectID string) (sessionGCP, error) {
-	computeService, err := compute.NewService(context.Background(), option.WithCredentialsFile("my-atlasoperator-ba1b0d70afc5.json")) // TODO
+	computeService, err := compute.NewService(context.Background())
 	if err != nil {
 		return sessionGCP{}, fmt.Errorf("compute.NewClient: %v", err)
 	}

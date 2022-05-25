@@ -35,11 +35,12 @@ type privateEndpoint struct {
 
 var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var data model.TestDataProvider
-
+ 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		// checkUpAWSEnviroment()
-		// checkUpAzureEnviroment()
+		checkUpAWSEnviroment()
+		checkUpAzureEnviroment()
+		checkNSetUpGCPEnviroment()
 	})
 
 	_ = AfterEach(func() {
@@ -64,7 +65,6 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 					data.Resources.Namespace,
 				)
 			})
-
 		}
 		By("Clean Cloud", func() {
 			DeleteAllPrivateEndpoints(&data)
@@ -79,104 +79,104 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			data = test
 			privateFlow(&data, pe)
 		},
-		// Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
-		// 	model.NewTestDataProvider(
-		// 		"privatelink-aws-1",
-		// 		model.AProject{},
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "eu-west-2",
-		// 		},
-		// 	},
-		// ),
-		// Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
-		// 	model.NewTestDataProvider(
-		// 		"privatelink-azure-1",
-		// 		model.AProject{},
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{{
-		// 		provider: "AZURE",
-		// 		region:   "northeurope",
-		// 	}},
-		// ),
-		// Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
-		// 	model.NewTestDataProvider(
-		// 		"privatelink-aws-2",
-		// 		model.AProject{},
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "eu-west-2",
-		// 		},
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "us-east-1",
-		// 		},
-		// 	},
-		// ),
-		// Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-azure-2"),
-		// 	model.NewTestDataProvider(
-		// 		"privatelink-aws-azure",
-		// 		model.AProject{},
-		// 		model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-		// 		[]string{"data/atlascluster_backup.yaml"},
-		// 		[]string{},
-		// 		[]model.DBUser{
-		// 			*model.NewDBUser("user1").
-		// 				WithSecretRef("dbuser-secret-u1").
-		// 				AddBuildInAdminRole(),
-		// 		},
-		// 		40000,
-		// 		[]func(*model.TestDataProvider){},
-		// 	),
-		// 	[]privateEndpoint{
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "eu-west-2",
-		// 		},
-		// 		{
-		// 			provider: "AWS",
-		// 			region:   "us-east-1",
-		// 		},
-		// 		{
-		// 			provider: "AZURE",
-		// 			region:   "northeurope",
-		// 		},
-		// 	},
-		// ),
+		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
+			model.NewTestDataProvider(
+				"privatelink-aws-1",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+			},
+		),
+		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
+			model.NewTestDataProvider(
+				"privatelink-azure-1",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{{
+				provider: "AZURE",
+				region:   "northeurope",
+			}},
+		),
+		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
+			model.NewTestDataProvider(
+				"privatelink-aws-2",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+				{
+					provider: "AWS",
+					region:   "us-east-1",
+				},
+			},
+		),
+		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-azure-2"),
+			model.NewTestDataProvider(
+				"privatelink-aws-azure",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "AWS",
+					region:   "eu-west-2",
+				},
+				{
+					provider: "AWS",
+					region:   "us-east-1",
+				},
+				{
+					provider: "AZURE",
+					region:   "northeurope",
+				},
+			},
+		),
 		Entry("Test[privatelink-gpc-1]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-gpc-1"),
 			model.NewTestDataProvider(
 				"privatelink-gpc-1",
