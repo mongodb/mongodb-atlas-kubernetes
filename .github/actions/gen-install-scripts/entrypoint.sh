@@ -67,7 +67,7 @@ else
 fi
 
 # add additional LABELs to bundle.Docker file
-label="LABEL com.redhat.openshift.versions=\"v4.5-v4.7\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
+label="LABEL com.redhat.openshift.versions=\"v4.5-v4.10\"\nLABEL com.redhat.delivery.backport=true\nLABEL com.redhat.delivery.operator.bundle=true"
 awk -v rep="FROM scratch\n\n$label" '{sub(/FROM scratch/, rep); print}' bundle.Dockerfile > tmp && mv tmp bundle.Dockerfile
 
 operator-sdk bundle validate ./bundle
