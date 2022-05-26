@@ -95,13 +95,15 @@ func (p *AProject) UpdatePrivateLinkID(test cloud.CloudResponse) *AProject {
 	return p
 }
 
-func (p *AProject) GetPrivateIDByProviderRegion(provider provider.ProviderName, region string) string {
-	for i, peItem := range p.Spec.PrivateEndpoints {
-		if (peItem.Provider == provider) && (peItem.Region == region) {
-			return p.Spec.PrivateEndpoints[i].ID
+func (p *AProject) GetPrivateIDByProviderRegion(statusItem status.ProjectPrivateEndpoint) string {
+	if statusItem.Provider == provider.ProviderAWS {
+		for i, peItem := range p.Spec.PrivateEndpoints {
+			if (peItem.Provider == statusItem.Provider) && (peItem.Region == statusItem.Region) {
+				return p.Spec.PrivateEndpoints[i].ID
+			}
 		}
 	}
-	return ""
+	return statusItem.ID
 }
 
 func (p *AProject) DeletePrivateLink(id string) *AProject {

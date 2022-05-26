@@ -235,7 +235,11 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			output, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
+
+			privateEndpointID := peitem.ID
+			Expect(privateEndpointID).ShouldNot(BeEmpty())
+
+			output, err := cloudTest.CreatePrivateEndpoint(privateEndpointID)
 			Expect(err).ShouldNot(HaveOccurred())
 			userData.Resources.Project = userData.Resources.Project.UpdatePrivateLinkID(output)
 		}
@@ -255,10 +259,11 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(peitem.ID).ShouldNot(BeEmpty())
+			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)
+			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
 				func() bool {
-					return cloudTest.IsStatusPrivateEndpointAvailable(peitem.ID)
+					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
 				},
 			).Should(BeTrue())
 		}
@@ -273,7 +278,7 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest, err := cloud.CreatePEActions(peitem)
 		if err == nil {
-			privateEndpointID := peitem.ID
+			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem)
 			if privateEndpointID != "" {
 				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
 				if err != nil {
