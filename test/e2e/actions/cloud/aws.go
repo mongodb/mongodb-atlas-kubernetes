@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	aws "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
@@ -11,23 +12,23 @@ import (
 
 type awsAction struct{}
 
-func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (CloudResponse, error) {
+func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
 	fmt.Print("create AWS LINK")
 	session := aws.SessionAWS(pe.Region)
 	vpcID, err := session.GetVPCID()
 	if err != nil {
-		return CloudResponse{}, err
+		return v1.PrivateEndpoint{}, err
 	}
 	subnetID, err := session.GetSubnetID()
 	if err != nil {
-		return CloudResponse{}, err
+		return v1.PrivateEndpoint{}, err
 	}
 
 	privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, pe.ServiceName, privatelinkName)
 	if err != nil {
-		return CloudResponse{}, err
+		return v1.PrivateEndpoint{}, err
 	}
-	cResponse := CloudResponse{
+	cResponse := v1.PrivateEndpoint{
 		ID:       privateEndpointID,
 		IP:       "",
 		Provider: provider.ProviderAWS,

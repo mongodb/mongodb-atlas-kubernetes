@@ -8,7 +8,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
@@ -81,15 +80,10 @@ func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	return p
 }
 
-func (p *AProject) UpdatePrivateLinkID(test cloud.CloudResponse) *AProject {
+func (p *AProject) UpdatePrivateLinkID(test v1.PrivateEndpoint) *AProject {
 	for i, peItem := range p.Spec.PrivateEndpoints {
 		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
-			p.Spec.PrivateEndpoints[i].ID = test.ID // in case AWS/Azure
-			p.Spec.PrivateEndpoints[i].IP = test.IP // in case Azure
-			// in case of GCP
-			p.Spec.PrivateEndpoints[i].GCPProjectID = test.GoogleProjectID
-			p.Spec.PrivateEndpoints[i].EndpointGroupName = test.GoogleVPC
-			p.Spec.PrivateEndpoints[i].Endpoints = test.GoogleEndpoints
+			p.Spec.PrivateEndpoints[i] = test
 		}
 	}
 	return p

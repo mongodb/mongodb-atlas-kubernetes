@@ -19,28 +19,28 @@ var (
 	googleConnectPrefix = "ao"                        // Private Service Connect Endpoint Prefix
 )
 
-func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (CloudResponse, error) {
+func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
 	session, err := gcp.SessionGCP(googleProjectID)
 	if err != nil {
-		return CloudResponse{}, err
+		return v1.PrivateEndpoint{}, err
 	}
-	var cResponse CloudResponse
+	var cResponse v1.PrivateEndpoint
 	for i, target := range pe.ServiceAttachmentNames {
 		addressName := formAddressName(privatelinkName, i)
 		ruleName := formRuleName(privatelinkName, i)
 		ip, err := session.AddIPAdress(pe.Region, addressName, googleSubnetName)
 		if err != nil {
-			return CloudResponse{}, err
+			return v1.PrivateEndpoint{}, err
 		}
 
-		cResponse.GoogleEndpoints = append(cResponse.GoogleEndpoints, v1.GCPEndpoint{
+		cResponse.Endpoints = append(cResponse.Endpoints, v1.GCPEndpoint{
 			EndpointName: ruleName,
 			IPAddress:    ip,
 		})
-		cResponse.GoogleVPC = googleVPC
+		cResponse.EndpointGroupName = googleVPC
 		cResponse.Region = pe.Region
 		cResponse.Provider = pe.Provider
-		cResponse.GoogleProjectID = googleProjectID
+		cResponse.GCPProjectID = googleProjectID
 
 		session.AddForwardRule(pe.Region, ruleName, addressName, googleVPC, googleSubnetName, target)
 	}
