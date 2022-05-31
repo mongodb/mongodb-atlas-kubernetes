@@ -77,11 +77,11 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 	)
 })
 
-func x509Flow(userData *model.TestDataProvider) {
+func x509Flow(data *model.TestDataProvider) {
 	By("Deploy Project with standart configuration", func() {
-		actions.PrepareUsersConfigurations(userData)
-		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, "1")
+		actions.PrepareUsersConfigurations(data)
+		deploy.NamespacedOperator(data)
+		actions.DeployProjectAndWait(data, "1")
 	})
 
 	secretName := "x509cert"
@@ -91,16 +91,16 @@ func x509Flow(userData *model.TestDataProvider) {
 	})
 
 	By("Create X.509 cert via the secret", func() {
-		userData.Resources.Project.WithX509(secretName)
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData, "2")
+		data.Resources.Project.WithX509(secretName, data.Resources.Namespace)
+		actions.PrepareUsersConfigurations(data)
+		actions.DeployProject(data, "2")
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"),
+		Eventually(kube.GetReadyProjectStatus(data)).Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
 
-		actions.UpdateProjectID(userData)
-		Expect(userData.Resources.ProjectID).ShouldNot(BeEmpty())
+		actions.UpdateProjectID(data)
+		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
 	})
 }
