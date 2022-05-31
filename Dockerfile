@@ -22,7 +22,7 @@ ENV PRODUCT_VERSION=${VERSION}
 
 RUN make manager
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-230
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
 
 RUN microdnf install yum &&\
     yum -y update &&\
