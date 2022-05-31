@@ -91,7 +91,7 @@ issues:
       linters:
         - stylecheck
         - noctx
-    - path: pkg/controller/atlascluster/advanced_cluster.go
+    - path: pkg/controller
       linters:
         - prealloc
         - dupl
