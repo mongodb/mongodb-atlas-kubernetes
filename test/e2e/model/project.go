@@ -80,23 +80,24 @@ func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	return p
 }
 
-func (p *AProject) UpdatePrivateLinkID(provider provider.ProviderName, region, id, ip string) *AProject {
+func (p *AProject) UpdatePrivateLinkID(test v1.PrivateEndpoint) *AProject {
 	for i, peItem := range p.Spec.PrivateEndpoints {
-		if (peItem.Provider == provider) && (peItem.Region == region) {
-			p.Spec.PrivateEndpoints[i].ID = id
-			p.Spec.PrivateEndpoints[i].IP = ip
+		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
+			p.Spec.PrivateEndpoints[i] = test
 		}
 	}
 	return p
 }
 
-func (p *AProject) GetPrivateIDByProviderRegion(provider provider.ProviderName, region string) string {
-	for i, peItem := range p.Spec.PrivateEndpoints {
-		if (peItem.Provider == provider) && (peItem.Region == region) {
-			return p.Spec.PrivateEndpoints[i].ID
+func (p *AProject) GetPrivateIDByProviderRegion(statusItem status.ProjectPrivateEndpoint) string {
+	if statusItem.Provider == provider.ProviderAWS {
+		for i, peItem := range p.Spec.PrivateEndpoints {
+			if (peItem.Provider == statusItem.Provider) && (peItem.Region == statusItem.Region) {
+				return p.Spec.PrivateEndpoints[i].ID
+			}
 		}
 	}
-	return ""
+	return statusItem.ID
 }
 
 func (p *AProject) DeletePrivateLink(id string) *AProject {

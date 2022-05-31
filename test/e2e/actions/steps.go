@@ -64,7 +64,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 }
 
 func WaitProject(data *model.TestDataProvider, generation string) {
-	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "5m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
 	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	atlasProject, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
