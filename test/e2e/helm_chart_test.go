@@ -67,11 +67,11 @@ var _ = Describe("HELM charts", func() {
 			GinkgoWriter.Println(data.Resources.KeyName)
 			switch cType {
 			case "advanced":
-				data.Resources.Clusters[0].Spec.AdvancedClusterSpec.Name = data.Resources.KeyName
+				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = data.Resources.KeyName
 			case "serverless":
 				data.Resources.Clusters[0].Spec.ServerlessSpec.Name = data.Resources.KeyName
 			default:
-				data.Resources.Clusters[0].Spec.ClusterSpec.Name = data.Resources.KeyName
+				data.Resources.Clusters[0].Spec.DeploymentSpec.Name = data.Resources.KeyName
 			}
 			data.Resources.Clusters[0].ObjectMeta.Name = data.Resources.KeyName
 
