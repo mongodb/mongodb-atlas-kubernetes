@@ -1,11 +1,17 @@
 package utils
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
+	"time"
 
 	yaml "gopkg.in/yaml.v3"
 
@@ -108,4 +114,37 @@ func CopyFile(source, target string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func GenerateX509Cert() ([]byte, *rsa.PrivateKey, *rsa.PublicKey, error) {
+	template := &x509.Certificate{
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		SubjectKeyId:          []byte{1, 2, 3},
+		SerialNumber:          big.NewInt(1234),
+		Issuer: pkix.Name{
+			CommonName: "x509-user",
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().AddDate(5, 5, 5),
+		DNSNames:  []string{"x509-user"},
+		// see http://golang.org/pkg/crypto/x509/#KeyUsage
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	privatekey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	publickey := &privatekey.PublicKey
+
+	var parent = template
+	cert, err := x509.CreateCertificate(rand.Reader, template, parent, publickey, privatekey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return cert, privatekey, publickey, nil
 }

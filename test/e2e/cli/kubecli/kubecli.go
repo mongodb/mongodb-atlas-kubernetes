@@ -2,6 +2,7 @@ package kube
 
 import (
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strings"
@@ -16,6 +17,7 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 // GenKubeVersion
@@ -187,6 +189,36 @@ func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) {
 func DeleteApiKeySecret(keyName, ns string) {
 	session := cli.Execute("kubectl", "delete", "secret", keyName, "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
+func CreateX509Secret(keyName, ns string) {
+	cert, _, _, err := utils.GenerateX509Cert()
+	Expect(err).To(BeNil())
+
+	certFileName := "x509cert.pem"
+	certFile, err := os.Create(certFileName)
+	Expect(err).To(BeNil())
+
+	err = pem.Encode(certFile, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	})
+	Expect(err).To(BeNil())
+	err = certFile.Close()
+	Expect(err).To(BeNil())
+
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
+		"--from-file="+certFileName,
+		"-n", ns,
+	)
+	result := cli.GetSessionExitMsg(session)
+	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
+
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
+	result = cli.GetSessionExitMsg(session)
+
+	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
+	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
 func GetManagerLogs(ns string) []byte {

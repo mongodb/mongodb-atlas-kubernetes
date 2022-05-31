@@ -1,0 +1,13 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDeployment
+metadata:
+  name: atlascluster-standard
+spec:
+  projectRef:
+    name: my-project
+  deploymentSpec:
+    name: cluster-standard
+    providerSettings:
+      instanceSizeName: M10
+      providerName: AWS
+      regionName: US_EAST_1
