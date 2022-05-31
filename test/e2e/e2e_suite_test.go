@@ -9,6 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 const (
@@ -59,4 +61,11 @@ func checkUpAzureEnviroment() {
 	Expect(os.Getenv("AZURE_TENANT_ID")).ShouldNot(BeEmpty(), "Please, setup AZURE_TENANT_ID environment variable for test with Azure")
 	Expect(os.Getenv("AZURE_CLIENT_SECRET")).ShouldNot(BeEmpty(), "Please, setup AZURE_CLIENT_SECRET environment variable for test with Azure")
 	Expect(os.Getenv("AZURE_SUBSCRIPTION_ID")).ShouldNot(BeEmpty(), "Please, setup AZURE_SUBSCRIPTION_ID environment variable for test with Azure")
+}
+
+func checkNSetUpGCPEnviroment() {
+	Expect(os.Getenv("GCP_SA_CRED")).ShouldNot(BeEmpty(), "Please, setup GCP_SA_CRED environment variable for test with GCP (req. Service Account)")
+	Expect(utils.SaveToFile(config.FileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")))).ShouldNot(HaveOccurred())
+	Expect(os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)).ShouldNot(HaveOccurred())
+	Expect(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")).ShouldNot(BeEmpty(), "Please, setup GOOGLE_APPLICATION_CREDENTIALS environment variable for test with GCP")
 }

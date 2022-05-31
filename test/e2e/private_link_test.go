@@ -12,6 +12,7 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
@@ -39,6 +40,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		checkUpAWSEnviroment()
 		checkUpAzureEnviroment()
+		checkNSetUpGCPEnviroment()
 	})
 
 	_ = AfterEach(func() {
@@ -63,7 +65,6 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 					data.Resources.Namespace,
 				)
 			})
-
 		}
 		By("Clean Cloud", func() {
 			DeleteAllPrivateEndpoints(&data)
@@ -176,6 +177,28 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
+		Entry("Test[privatelink-gpc-1]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-gpc-1"),
+			model.NewTestDataProvider(
+				"privatelink-gpc-1",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlascluster_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]privateEndpoint{
+				{
+					provider: "GCP",
+					region:   "europe-west1",
+				},
+			},
+		),
 	)
 })
 
@@ -212,15 +235,13 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateLinkID, ip, err := cloudTest.CreatePrivateEndpoint(peitem.ID)
+
+			privateEndpointID := peitem.ID
+			Expect(privateEndpointID).ShouldNot(BeEmpty())
+
+			output, err := cloudTest.CreatePrivateEndpoint(privateEndpointID)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(privateLinkID).ShouldNot(BeEmpty())
-			Eventually(
-				func() bool {
-					return cloudTest.IsStatusPrivateEndpointPending(privateLinkID)
-				},
-			).Should(BeTrue())
-			userData.Resources.Project.UpdatePrivateLinkID(peitem.Provider, peitem.Region, privateLinkID, ip)
+			userData.Resources.Project = userData.Resources.Project.UpdatePrivateLinkID(output)
 		}
 	})
 
@@ -230,7 +251,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointServiceReady' is not'True'")
+		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointReady' is not'True'")
 		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
 		project, err := kube.GetProjectResource(userData)
@@ -238,7 +259,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
 				func() bool {
@@ -257,7 +278,7 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest, err := cloud.CreatePEActions(peitem)
 		if err == nil {
-			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem.Provider, peitem.Region)
+			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem)
 			if privateEndpointID != "" {
 				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
 				if err != nil {

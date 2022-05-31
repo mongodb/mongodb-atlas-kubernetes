@@ -29,4 +29,7 @@ const (
 	// AWS Tags for test
 	TagName = "atlas-operator-test"
 	TagBusy = "busy"
+
+	// GCP
+	FileNameSAGCP = "gcp_service_account.json"
 )

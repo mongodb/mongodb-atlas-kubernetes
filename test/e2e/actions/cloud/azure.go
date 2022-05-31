@@ -5,6 +5,8 @@ import (
 	"os"
 	"path"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/azure"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -19,20 +21,26 @@ var (
 	subnetName    = "default"
 )
 
-func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
+func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
 	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
 	err = session.DisableNetworkPolicies(resourceGroup, vpc, subnetName)
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
 	id, ip, err := session.CreatePrivateEndpoint(pe.Region, resourceGroup, privatelinkName, pe.ServiceResourceID)
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
-	return id, ip, nil
+	cResponse := v1.PrivateEndpoint{
+		ID:       id,
+		IP:       ip,
+		Provider: provider.ProviderAzure,
+		Region:   pe.Region,
+	}
+	return cResponse, nil
 }
 
 func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {

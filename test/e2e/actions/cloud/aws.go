@@ -4,30 +4,37 @@ import (
 	"errors"
 	"fmt"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	aws "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
 )
 
 type awsAction struct{}
 
-func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (string, string, error) {
+func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
 	fmt.Print("create AWS LINK")
 	session := aws.SessionAWS(pe.Region)
 	vpcID, err := session.GetVPCID()
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
 	subnetID, err := session.GetSubnetID()
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
 
 	privateEndpointID, err := session.CreatePrivateEndpoint(vpcID, subnetID, pe.ServiceName, privatelinkName)
 	if err != nil {
-		return "", "", err
+		return v1.PrivateEndpoint{}, err
 	}
-
-	return privateEndpointID, "", nil
+	cResponse := v1.PrivateEndpoint{
+		ID:       privateEndpointID,
+		IP:       "",
+		Provider: provider.ProviderAWS,
+		Region:   pe.Region,
+	}
+	return cResponse, nil
 }
 
 func (awsAction *awsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkID string) error {
