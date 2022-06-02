@@ -89,8 +89,7 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		// interfaceEndpoint.Status is for the AZURE and GCP interface endpoints
-		if !(isAvailable(interfaceEndpoint.AWSConnectionStatus) || isAvailable(interfaceEndpoint.Status)) {
+		if isInterfaceAvailable(ctx, statusPeService.Provider, interfaceEndpoint) {
 			result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
 			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
 			return result
@@ -100,6 +99,20 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 	}
 
 	return workflow.OK()
+}
+
+func isInterfaceAvailable(ctx *workflow.Context, peProvider provider.ProviderName, interfaceEndpoint *mongodbatlas.InterfaceEndpointConnection) bool {
+	switch peProvider {
+	case provider.ProviderAWS:
+		return isAvailable(interfaceEndpoint.AWSConnectionStatus)
+	case provider.ProviderAzure:
+		return isAvailable(interfaceEndpoint.Status)
+	case provider.ProviderGCP:
+		return isGCPInterfaceAvailable(interfaceEndpoint)
+	default:
+		ctx.Log.Warnf("unsupported provider value for Private Endpoints: %s", peProvider)
+		return false
+	}
 }
 
 func allEnpointsAreAvailable(atlasPeConnections []mongodbatlas.PrivateEndpointConnection) bool {
@@ -331,6 +344,20 @@ func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint s
 	log.Debugw("Result of getGCPEndpointData", "endpoint.ID", endpoint.ID, "listOfInterfaces", listOfInterfaces)
 
 	return listOfInterfaces, nil
+}
+
+func isGCPInterfaceAvailable(interfaceEndpointConn *mongodbatlas.InterfaceEndpointConnection) bool {
+	if !isAvailable(interfaceEndpointConn.Status) {
+		return false
+	}
+
+	for _, endpoint := range interfaceEndpointConn.Endpoints {
+		if !isAvailable(endpoint.Status) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func isAvailable(status string) bool {
