@@ -62,10 +62,10 @@ var _ = Describe("HELM charts", func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
-		func(test model.TestDataProvider, cType string) { // cType - probably will be moved later ()
+		func(test model.TestDataProvider, clusterType string) { // clusterType - probably will be moved later ()
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)
-			switch cType {
+			switch clusterType {
 			case "advanced":
 				data.Resources.Clusters[0].Spec.AdvancedDeploymentSpec.Name = data.Resources.KeyName
 			case "serverless":
@@ -92,7 +92,7 @@ var _ = Describe("HELM charts", func() {
 			})
 			deleteClusterAndOperator(&data)
 		},
-		Entry("Several actions with helm update",
+		Entry("Several actions with helm update", Label("helm-ns-flow"),
 			model.NewTestDataProvider(
 				"helm-ns",
 				model.AProject{},
