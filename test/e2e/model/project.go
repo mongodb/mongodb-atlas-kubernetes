@@ -75,11 +75,8 @@ func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
 	return p
 }
 
-func (p *AProject) WithX509(name, namespace string) *AProject {
-	p.Spec.X509CertRef = &common.ResourceRefNamespaced{
-		Name:      name,
-		Namespace: namespace,
-	}
+func (p *AProject) WithX509(certRef *common.ResourceRefNamespaced) *AProject {
+	p.Spec.X509CertRef = certRef
 	return p
 }
 

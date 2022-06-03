@@ -65,6 +65,13 @@ func (s *DBUser) WithSecretRef(name string) *DBUser {
 	return s
 }
 
+func (s *DBUser) WithX509(username string) *DBUser {
+	s.Spec.Username = username
+	s.Spec.DatabaseName = "$external"
+	s.Spec.X509Type = "CUSTOMER"
+	return s
+}
+
 func (s *DBUser) AddBuildInAdminRole() *DBUser {
 	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
 		RoleName:       RoleBuildInAdmin,

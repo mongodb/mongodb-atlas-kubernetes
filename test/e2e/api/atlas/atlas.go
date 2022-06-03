@@ -111,3 +111,12 @@ func (a *Atlas) GetIntegrationbyType(projectId, iType string) (*mongodbatlas.Thi
 	}
 	return integraion, nil
 }
+
+func (a *Atlas) GetUserByName(projectID, username, database string) (*mongodbatlas.DatabaseUser, error) {
+	dbUser, _, err := a.Client.DatabaseUsers.Get(context.Background(), database, projectID, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbUser, nil
+}

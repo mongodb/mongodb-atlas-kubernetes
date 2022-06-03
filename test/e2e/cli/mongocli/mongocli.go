@@ -104,17 +104,23 @@ func GetVersionOutput() {
 	session.Wait()
 }
 
-func GetUser(userName, projectID string) mongodbatlas.DatabaseUser {
-	EventuallyWithOffset(1, IsUserExist(userName, projectID), "7m", "10s").Should(BeTrue(), "User doesn't exist")
-	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--projectId", projectID, "-o", "json")
+func GetUser(database, userName, projectID string) *mongodbatlas.DatabaseUser {
+	EventuallyWithOffset(1, IsUserExist(database, userName, projectID), "7m", "10s").Should(BeTrue(), "User doesn't exist")
+	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--authDB", database, "--projectId", projectID, "-o", "json")
 	cli.SessionShouldExit(session)
 	output := session.Out.Contents()
 	var user mongodbatlas.DatabaseUser
 	ExpectWithOffset(1, json.Unmarshal(output, &user)).ShouldNot(HaveOccurred())
-	return user
+	return &user
 }
 
-func IsUserExist(userName, projectID string) bool {
+func IsUserExist(database, userName, projectID string) bool {
+	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--authDB", database, "--projectId", projectID, "-o", "json")
+	cli.SessionShouldExit(session)
+	return session.ExitCode() == 0
+}
+
+func IsUserExistForAdmin(userName, projectID string) bool {
 	session := cli.Execute("mongocli", "atlas", "dbusers", "get", userName, "--projectId", projectID, "-o", "json")
 	cli.SessionShouldExit(session)
 	return session.ExitCode() == 0
