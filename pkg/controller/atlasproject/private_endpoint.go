@@ -70,13 +70,19 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 	}
 
 	if len(atlasPeConnections) != 0 {
-		if allEnpointsAreAvailable(atlasPeConnections) {
-			ctx.SetConditionTrue(status.PrivateEndpointServiceReadyType)
-		} else {
+		allAvailable, anyFailed := areServicesAvailableOrFailed(atlasPeConnections)
+		if anyFailed {
+			result := workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service failed")
+			ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
+			return result
+		}
+		if !allAvailable {
 			result := workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready")
 			ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
 			return result
 		}
+
+		ctx.SetConditionTrue(status.PrivateEndpointServiceReadyType)
 	}
 
 	for _, statusPeService := range convertAllToStatus(ctx, projectID, atlasPeConnections) {
@@ -89,8 +95,13 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		// interfaceEndpoint.Status is for the AZURE and GCP interface endpoints
-		if !(isAvailable(interfaceEndpoint.AWSConnectionStatus) || isAvailable(interfaceEndpoint.Status)) {
+		interfaceIsAvailable, interfaceHasFailed := isInterfaceAvailableOrFailed(ctx, statusPeService.Provider, interfaceEndpoint)
+		if interfaceHasFailed {
+			result := workflow.Terminate(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint has failed")
+			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+			return result
+		}
+		if !interfaceIsAvailable {
 			result := workflow.InProgress(workflow.ProjectPrivateEndpointIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
 			ctx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
 			return result
@@ -102,14 +113,35 @@ func getStatusForInterfaceConnections(ctx *workflow.Context, projectID string) w
 	return workflow.OK()
 }
 
-func allEnpointsAreAvailable(atlasPeConnections []mongodbatlas.PrivateEndpointConnection) bool {
+func areServicesAvailableOrFailed(atlasPeConnections []mongodbatlas.PrivateEndpointConnection) (allAvailable, anyFailed bool) {
+	allAvailable = true
+	anyFailed = false
+
 	for _, conn := range atlasPeConnections {
 		if !isAvailable(conn.Status) {
-			return false
+			allAvailable = false
+		}
+		if isFailed(conn.Status) {
+			anyFailed = true
+			return
 		}
 	}
 
-	return true
+	return allAvailable, anyFailed
+}
+
+func isInterfaceAvailableOrFailed(ctx *workflow.Context, peProvider provider.ProviderName, interfaceEndpoint *mongodbatlas.InterfaceEndpointConnection) (interfaceAvailable, hasFailed bool) {
+	switch peProvider {
+	case provider.ProviderAWS:
+		return isAvailable(interfaceEndpoint.AWSConnectionStatus), isFailed(interfaceEndpoint.AWSConnectionStatus)
+	case provider.ProviderAzure:
+		return isAvailable(interfaceEndpoint.Status), isFailed(interfaceEndpoint.Status)
+	case provider.ProviderGCP:
+		return isGCPInterfaceAvailableOrFailed(interfaceEndpoint)
+	default:
+		ctx.Log.Warnf("unsupported provider value for Private Endpoints: %s", peProvider)
+		return false, true
+	}
 }
 
 func syncPEConnections(ctx *workflow.Context, projectID string) ([]mongodbatlas.PrivateEndpointConnection, error) {
@@ -333,6 +365,35 @@ func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint s
 	return listOfInterfaces, nil
 }
 
+func isGCPInterfaceAvailableOrFailed(interfaceEndpointConn *mongodbatlas.InterfaceEndpointConnection) (allAvailable, anyFailed bool) {
+	allAvailable = true
+	anyFailed = false
+
+	if !isAvailable(interfaceEndpointConn.Status) {
+		allAvailable = false
+	}
+	if isFailed(interfaceEndpointConn.Status) {
+		anyFailed = true
+		return
+	}
+
+	for _, endpoint := range interfaceEndpointConn.Endpoints {
+		if !isAvailable(endpoint.Status) {
+			allAvailable = false
+		}
+		if isFailed(endpoint.Status) {
+			anyFailed = true
+			return
+		}
+	}
+
+	return
+}
+
 func isAvailable(status string) bool {
 	return status == "AVAILABLE"
+}
+
+func isFailed(status string) bool {
+	return status == "FAILED"
 }
