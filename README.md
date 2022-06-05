@@ -61,7 +61,7 @@ EOF
 
 The example below is a minimal configuration to create an M10 Atlas cluster in the AWS US East region. For a full list
 of properties, check
-`atlasclusters.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml)):
+`atlasdeployments.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml)):
 
 ```
 cat <<EOF | kubectl apply -f -
