@@ -28,7 +28,7 @@ jobs:
     - name: Create deploy configurations
       uses: ./.github/actions/gen-install-scripts
       with:
-        IMAGE_URL_DOCKER: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
+        IMAGE_URL: ${{ env.DOCKER_RELEASE_REPO }}:${{ env.VERSION }}
         VERSION: ${{ env.VERSION }}
         ENV: prod
 

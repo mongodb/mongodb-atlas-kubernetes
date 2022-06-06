@@ -78,7 +78,7 @@ jobs:
       - name: Now Prepare RedHadConnect image
         uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL_DOCKER: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ env.VERSION }}
+          IMAGE_URL: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ env.VERSION }}
           VERSION: ${{ env.VERSION }}
           ENV: prod
 
