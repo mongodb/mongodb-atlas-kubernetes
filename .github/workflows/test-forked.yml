@@ -176,7 +176,7 @@ jobs:
       - name: Generate configuration for the tests
         uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL_DOCKER: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           VERSION: ${{ steps.prepare.outputs.tag }}
           ENV: dev
 

@@ -18,7 +18,7 @@ image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env
 echo "Using docker image: ${image}"
 bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_BUNDLES_REPO" .env | cut -d "=" -f 2):${branch}-${commit} #Registry is nessary
 export BUNDLE_IMAGE="${bundle_image}"
-export INPUT_IMAGE_URL_DOCKER="${image}"
+export INPUT_IMAGE_URL="${image}"
 export INPUT_ENV=dev
 
 if [[ "${build}" == "true" ]]; then
