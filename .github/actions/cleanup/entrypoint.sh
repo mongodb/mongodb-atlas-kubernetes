@@ -111,6 +111,21 @@ delete_all() {
     echo "${output[@]}"
 }
 
+# ------------------------------------------------------------------------------
+# delete global API key by API request (mongocli does not support it yet)
+BASE_URL="https://cloud-qa.mongodb.com/api/atlas/v1.0"
+
+get_api_keys() {
+    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys"
+}
+
+delete_test_apikeys() {
+    API_KEY_ID=$1
+    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest --request DELETE "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys/${API_KEY_ID}"
+}
+
+# ------------------------------------------------------------------------------
+
 echo "The process could take a while. Please, wait..."
 
 projects=$(mongocli iam projects list -o json | jq -c .)
@@ -136,6 +151,24 @@ for elkey in $(echo "$projects" | jq '.results | keys | .[]'); do
         delete_old_project &
     fi
 done
-
 wait
+echo "Finish project deletion"
+
+# ------------------------------------------------------------------------------
+if [[ "${INPUT_CLEAN_ALL:-}" == "true" ]]; then
+    echo "Delete all global API keys with a particular description"
+    echo "Please, remember running tests will fail (run CLEAN_ALL = false, if need soft deletion)"
+    test_description="created from the AO test"
+    all_keys=$(get_api_keys)
+    for key in $(echo "$all_keys" | jq '.results | keys | .[]'); do
+        element=$(echo "$all_keys" | jq ".results[$key]")
+        desc=$(echo "$element" | jq -r '.desc')
+        if [[ "${desc}" == "${test_description}" ]]; then
+            key_id=$(echo "$element" | jq -r '.id')
+            echo "Key to delete: $key_id"
+            delete_test_apikeys "$key_id"
+        fi
+    done
+fi
+
 echo "Job Done"
