@@ -41,4 +41,4 @@ node_modules
 tmp/
 
 # ready to work samples
-deploy/
+./deploy/*

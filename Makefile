@@ -6,7 +6,7 @@ SHELL := /usr/bin/env bash
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.8.0
+VERSION ?= 1.0.0
 
 ifndef PRODUCT_VERSION
 PRODUCT_VERSION := $(shell git describe --tags --dirty --broken)
@@ -37,13 +37,13 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 REGISTRY ?= quay.io/mongodb
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-controller-bundle:$(VERSION)
+BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-bundle:$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= mongodb-atlas-controller:latest
+IMG ?= mongodb-atlas-kubernetes-operator:latest
 #BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator-bundle
-OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator
-CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-catalog
+OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator
+CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-catalog
 OPERATOR_IMAGE ?= ${OPERATOR_REGISTRY}:${VERSION}
 CATALOG_IMAGE ?= ${CATALOG_REGISTRY}:${VERSION}
 TARGET_NAMESPACE ?= mongodb-atlas-operator-system-test
@@ -158,9 +158,12 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 
-.PHONY: image
-image: manager ## Build the operator image
+.PHONY: image-build
+image-build: manager ## Build the operator image
 	docker build -t $(OPERATOR_IMAGE) .
+
+.PHONY: image-push
+image-push: image-build
 	docker push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
@@ -175,7 +178,7 @@ bundle-push: bundle bundle-build ## Publish the bundle image
 CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
 #catalog-build: IMG=
 catalog-build: ## bundle bundle-push ## Build file-based bundle
-	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
+	$(MAKE) image-build IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
 	CATALOG_DIR=$(CATALOG_DIR) \
 	CHANNEL=$(DEFAULT_CHANNEL) \
 	CATALOG_IMAGE=$(CATALOG_IMAGE) \
