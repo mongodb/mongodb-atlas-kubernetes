@@ -100,11 +100,7 @@ func CheckIfUsersExist(input model.UserInputs) func() bool {
 		}
 
 		for _, user := range input.Users {
-			dbName := user.Spec.DatabaseName
-			if dbName == "" {
-				dbName = "admin"
-			}
-			dbUser, err := atlasClient.GetUserByName(input.ProjectID, user.Spec.Username, dbName)
+			dbUser, err := atlasClient.GetUserByName(setAdminIfEmpty(user.Spec.DatabaseName), input.ProjectID, user.Spec.Username)
 			if err != nil && dbUser == nil {
 				return false
 			}
@@ -244,7 +240,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 			var atlasUser *mongodbatlas.DatabaseUser
 
 			getUser := func() bool {
-				atlasUser = mongocli.GetUser(user.Spec.DatabaseName, user.Spec.Username, input.ProjectID)
+				atlasUser = mongocli.GetUser(setAdminIfEmpty(user.Spec.DatabaseName), user.Spec.Username, input.ProjectID)
 				return atlasUser != nil
 			}
 
@@ -482,4 +478,12 @@ func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 		Expect(kubecli.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
+}
+
+func setAdminIfEmpty(input string) string {
+	if input == "" {
+		return "admin"
+	}
+
+	return input
 }

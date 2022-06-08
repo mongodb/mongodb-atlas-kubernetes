@@ -67,7 +67,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 				[]string{"data/atlascluster_standard.yaml"},
 				[]string{},
 				[]model.DBUser{},
-				40000,
+				30000,
 				[]func(*model.TestDataProvider){},
 			),
 			common.ResourceRefNamespaced{
