@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	a "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
@@ -45,13 +45,13 @@ func WaitCluster(input model.UserInputs, generation string) {
 	cluster := input.Clusters[0]
 	switch {
 	case cluster.Spec.AdvancedDeploymentSpec != nil:
-		atlasClient, err := a.AClient()
+		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
 		advancedCluster, err := atlasClient.GetAdvancedDeployment(input.ProjectID, cluster.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedCluster.StateName).To(Equal("IDLE"))
 	case cluster.Spec.ServerlessSpec != nil:
-		atlasClient, err := a.AClient()
+		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
 		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, cluster.Spec.ServerlessSpec.Name)
 		Expect(err).To(BeNil())
@@ -94,8 +94,14 @@ func CheckIfClusterExist(input model.UserInputs) func() bool {
 
 func CheckIfUsersExist(input model.UserInputs) func() bool {
 	return func() bool {
+		atlasClient, err := atlas.AClient()
+		if err != nil {
+			return false
+		}
+
 		for _, user := range input.Users {
-			if !mongocli.IsUserExist(user.Spec.Username, input.ProjectID) {
+			dbUser, err := atlasClient.GetUserByName(setAdminIfEmpty(user.Spec.DatabaseName), input.ProjectID, user.Spec.Username)
+			if err != nil && dbUser == nil {
 				return false
 			}
 		}
@@ -105,7 +111,7 @@ func CheckIfUsersExist(input model.UserInputs) func() bool {
 
 func CheckIfUserExist(username, projecID string) func() bool {
 	return func() bool {
-		return mongocli.IsUserExist(username, projecID)
+		return mongocli.IsUserExistForAdmin(username, projecID)
 	}
 }
 
@@ -231,7 +237,14 @@ func CheckUsersAttributes(input model.UserInputs) {
 
 	for _, cluster := range input.Clusters {
 		for _, user := range input.Users {
-			EventuallyWithOffset(1, mongocli.IsUserExist(user.Spec.Username, input.ProjectID), "7m", "10s").Should(BeTrue())
+			var atlasUser *mongodbatlas.DatabaseUser
+
+			getUser := func() bool {
+				atlasUser = mongocli.GetUser(setAdminIfEmpty(user.Spec.DatabaseName), user.Spec.Username, input.ProjectID)
+				return atlasUser != nil
+			}
+
+			EventuallyWithOffset(1, getUser, "7m", "10s").Should(BeTrue())
 			EventuallyWithOffset(1,
 				func() string {
 					return kubecli.GetStatusCondition("Ready", input.Namespace, userDBResourceName(cluster.ObjectMeta.Name, user))
@@ -239,9 +252,8 @@ func CheckUsersAttributes(input model.UserInputs) {
 				"7m", "1m",
 			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
 
-			atlasUser := mongocli.GetUser(user.Spec.Username, input.ProjectID)
 			// Required fields
-			ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+			ExpectWithOffset(1, *atlasUser).To(MatchFields(IgnoreExtras, Fields{
 				"Username":     Equal(user.Spec.Username),
 				"GroupID":      Equal(input.ProjectID),
 				"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
@@ -318,7 +330,9 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 			By("Create dbuser spec", func() {
 				for _, user := range data.Resources.Users {
 					user.SaveConfigurationTo(data.Resources.ProjectPath)
-					kubecli.CreateRandomUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+					if user.Spec.PasswordSecret != nil {
+						kubecli.CreateRandomUserSecret(user.Spec.PasswordSecret.Name, data.Resources.Namespace)
+					}
 				}
 			})
 		}
@@ -348,7 +362,7 @@ func createConnectionAtlasKeyFrom(data *model.TestDataProvider, public, private 
 
 func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
-		aClient, err := a.AClient()
+		aClient, err := atlas.AClient()
 		Expect(err).ShouldNot(HaveOccurred())
 		public, private, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
 		Expect(err).ShouldNot(HaveOccurred())
@@ -464,4 +478,12 @@ func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 		Expect(kubecli.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
+}
+
+func setAdminIfEmpty(input string) string {
+	if input == "" {
+		return "admin"
+	}
+
+	return input
 }

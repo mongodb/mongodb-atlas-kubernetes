@@ -155,6 +155,7 @@ jobs:
             "multinamespaced",
             "privatelink",
             "integration-ns",
+            "x509auth",
           ]
         include:
           - k8s: "latest-openshift"

@@ -31,7 +31,7 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 		})
 		updatedCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.GetClusterName())
 		CompareClustersSpec(data.Resources.Clusters[0].Spec, updatedCluster)
-		user := mongocli.GetUser(data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
+		user := mongocli.GetUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
 		ExpectWithOffset(1, user.Roles[0].RoleName).Should(Equal(model.RoleBuildInAdmin))
 	})
 }

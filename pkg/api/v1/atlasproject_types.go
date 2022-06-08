@@ -64,7 +64,7 @@ type AtlasProjectSpec struct {
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 
 	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
-	X509CertRef *common.ResourceRef `json:"x509CertRef,omitempty"`
+	X509CertRef *common.ResourceRefNamespaced `json:"x509CertRef,omitempty"`
 
 	// Integrations is a list of MongoDB Atlas integrations for the project
 	// +optional

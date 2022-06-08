@@ -633,7 +633,7 @@ func (in *AtlasProjectSpec) DeepCopyInto(out *AtlasProjectSpec) {
 	}
 	if in.X509CertRef != nil {
 		in, out := &in.X509CertRef, &out.X509CertRef
-		*out = new(common.ResourceRef)
+		*out = new(common.ResourceRefNamespaced)
 		**out = **in
 	}
 	if in.Integrations != nil {

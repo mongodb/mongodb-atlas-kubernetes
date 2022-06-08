@@ -75,6 +75,11 @@ func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
 	return p
 }
 
+func (p *AProject) WithX509(certRef *common.ResourceRefNamespaced) *AProject {
+	p.Spec.X509CertRef = certRef
+	return p
+}
+
 func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	p.Spec.PrivateEndpoints[i].ID = id
 	return p
