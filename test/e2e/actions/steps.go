@@ -257,7 +257,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
 
 			// Required fields
-			ExpectWithOffset(1, atlasUser).To(MatchFields(IgnoreExtras, Fields{
+			ExpectWithOffset(1, *atlasUser).To(MatchFields(IgnoreExtras, Fields{
 				"Username":     Equal(user.Spec.Username),
 				"GroupID":      Equal(input.ProjectID),
 				"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
