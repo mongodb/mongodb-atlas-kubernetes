@@ -110,6 +110,15 @@ func x509Flow(data *model.TestDataProvider, certRef *common.ResourceRefNamespace
 			WithX509(userName)
 		data.Resources.Users = append(data.Resources.Users, *x509User)
 		actions.PrepareUsersConfigurations(data)
-		actions.DeployUsers(data)
+	})
+
+	By("Deploy User", func() {
+		By("Create users", func() {
+			kubecli.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
+		})
+		By("Check database users Attibutes", func() {
+			Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
+			actions.CheckUsersAttributes(data.Resources)
+		})
 	})
 }
