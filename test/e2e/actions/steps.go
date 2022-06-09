@@ -350,12 +350,12 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	})
 }
 
-func createConnectionAtlasKeyFrom(data *model.TestDataProvider, public, private string) {
+func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
 		} else {
-			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
 		}
 	})
 }
@@ -364,13 +364,14 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
 		aClient, err := atlas.AClient()
 		Expect(err).ShouldNot(HaveOccurred())
-		public, private, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
+		globalKey, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(public).ShouldNot(BeEmpty())
-		Expect(private).ShouldNot(BeEmpty())
+		Expect(globalKey.PublicKey).ShouldNot(BeEmpty())
+		Expect(globalKey.PrivateKey).ShouldNot(BeEmpty())
+		data.Resources.AtlasKeyAccessType.GlobalKeyAttached = globalKey
 
 		kubecli.DeleteApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
-		createConnectionAtlasKeyFrom(data, public, private)
+		createConnectionAtlasKeyFrom(data, globalKey)
 	}
 }
 

@@ -1,5 +1,7 @@
 package model
 
+import "go.mongodb.org/atlas/mongodbatlas"
+
 type AtlasRoles = string
 
 const (
@@ -18,10 +20,12 @@ const (
 )
 
 type AtlasKeyType struct {
-	GlobalLevelKey       bool         // if true, tests create "<operator-deployment-name>-api-key"
 	DefaultFullAccessKey bool         // use full access key provided with github secrets
 	Roles                []AtlasRoles // specify role for non default
 	Whitelist            []string
+
+	GlobalLevelKey    bool // if true, tests create "<operator-deployment-name>-api-key"
+	GlobalKeyAttached *mongodbatlas.APIKey
 }
 
 func NewAtlasKeyType(r []AtlasRoles, wl []string) *AtlasKeyType {
