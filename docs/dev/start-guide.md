@@ -41,7 +41,3 @@ When running integration tests from an IDE the following environment variables n
 `ATLAS_PUBLIC_KEY=<..>`
 `ATLAS_PRIVATE_KEY=<..>`
 `GINKGO_EDITOR_INTEGRATION=true`
-
-# Known issues
-If you get an error `controller-gen: command not found` or `kustomize: command not found` while running `make deploy`
-then you need to install the `kubebuilder` and `kustomize` packages and make sure that the $GOPATH/bin is in your PATH.
