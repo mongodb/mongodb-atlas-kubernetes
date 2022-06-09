@@ -13,6 +13,10 @@ import (
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+<<<<<<< HEAD
+=======
+	a "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+>>>>>>> c6cdf89 (add step)
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
@@ -472,11 +476,23 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 	})
 }
 
+func DeleteGlobalKeyIfExist(data *model.TestDataProvider) {
+	if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+		By("Delete Global API key for test", func() {
+			client, err := atlas.AClient()
+			Expect(err).ShouldNot(HaveOccurred())
+			err = client.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+	}
+}
+
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
-	for i := range datas {
+	for _, data := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
-		DeleteDBUsersApps(&datas[i])
-		Expect(kubecli.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		DeleteDBUsersApps(&data)
+		Expect(kubecli.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		DeleteGlobalKeyIfExist(&data)
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }

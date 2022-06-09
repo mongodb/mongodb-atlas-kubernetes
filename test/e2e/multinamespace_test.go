@@ -41,6 +41,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 						data.Resources.Namespace,
 					)
 				}
+				actions.AfterEachFinalCleanup(listData)
 			}
 		})
 	})

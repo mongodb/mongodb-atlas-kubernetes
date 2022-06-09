@@ -57,6 +57,7 @@ var _ = Describe("HELM charts", func() {
 					data.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(data.Resources)
+				actions.DeleteGlobalKeyIfExist(&data)
 			}
 		})
 	})
