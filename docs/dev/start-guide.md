@@ -4,6 +4,8 @@
 2. Install dependencies
 ```
 # on Mac
+brew install kubebuilder # or https://book.kubebuilder.io/quick-start.html
+brew install kustomize # or https://kubectl.docs.kubernetes.io/installation/kustomize/
 brew install act # or https://github.com/nektos/act#installation
 brew install yq # or https://pypi.org/project/yq/
 brew install shellcheck # or https://github.com/koalaman/shellcheck#installing
@@ -23,7 +25,7 @@ pre-commit install # from the root of the project
 
 Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
 
-#How-To
+# How-To
 ## Run integration tests
 ### make
 When running the tests using `make` the Atlas credentials from `.actrc` will be used automatically to export environment
