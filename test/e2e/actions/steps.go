@@ -13,10 +13,6 @@ import (
 
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-<<<<<<< HEAD
-=======
-	a "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
->>>>>>> c6cdf89 (add step)
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
@@ -119,7 +115,7 @@ func CheckIfUserExist(username, projecID string) func() bool {
 	}
 }
 
-func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
+func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) {
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
@@ -441,7 +437,7 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 	DeployUsers(data)
 }
 
-func DeleteDBUsersApps(data *model.TestDataProvider) {
+func DeleteDBUsersApps(data model.TestDataProvider) {
 	By("Delete dbusers applications", func() {
 		for _, user := range data.Resources.Users {
 			helm.Uninstall("test-app-"+user.Spec.Username, data.Resources.Namespace)
@@ -476,7 +472,7 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 	})
 }
 
-func DeleteGlobalKeyIfExist(data *model.TestDataProvider) {
+func DeleteGlobalKeyIfExist(data model.TestDataProvider) {
 	if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
 		By("Delete Global API key for test", func() {
 			client, err := atlas.AClient()
@@ -490,9 +486,9 @@ func DeleteGlobalKeyIfExist(data *model.TestDataProvider) {
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 	for _, data := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
-		DeleteDBUsersApps(&data)
+		DeleteDBUsersApps(data)
 		Expect(kubecli.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
-		DeleteGlobalKeyIfExist(&data)
+		DeleteGlobalKeyIfExist(data)
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }

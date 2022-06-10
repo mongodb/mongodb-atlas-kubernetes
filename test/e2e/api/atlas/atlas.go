@@ -121,8 +121,9 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*mongodbatl
 	if err != nil {
 		return nil, err
 	}
-
 	return dbUser, nil
+}
+
 func (a *Atlas) DeleteGlobalKey(key mongodbatlas.APIKey) error {
 	_, err := a.Client.APIKeys.Delete(context.Background(), a.OrgID, key.ID)
 	if err != nil {

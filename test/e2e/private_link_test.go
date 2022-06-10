@@ -71,7 +71,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		})
 		By("Delete Resources, Project with PEService", func() {
 			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(&data)
+			actions.DeleteGlobalKeyIfExist(data)
 		})
 	})
 

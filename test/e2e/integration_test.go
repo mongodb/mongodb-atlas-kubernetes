@@ -51,7 +51,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("integration-
 				data.Resources.Namespace,
 			)
 			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(&data)
+			actions.DeleteGlobalKeyIfExist(data)
 		}
 	})
 
