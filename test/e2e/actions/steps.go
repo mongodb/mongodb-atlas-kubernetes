@@ -115,7 +115,7 @@ func CheckIfUserExist(username, projecID string) func() bool {
 	}
 }
 
-func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) { // TODO
+func CompareClustersSpec(requested model.ClusterSpec, created mongodbatlas.Cluster) {
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
 		"MongoURI":            Not(BeEmpty()),
 		"MongoURIWithOptions": Not(BeEmpty()),
@@ -350,12 +350,12 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	})
 }
 
-func createConnectionAtlasKeyFrom(data *model.TestDataProvider, public, private string) {
+func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
 		} else {
-			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), public, private)
+			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
 		}
 	})
 }
@@ -364,13 +364,14 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
 		aClient, err := atlas.AClient()
 		Expect(err).ShouldNot(HaveOccurred())
-		public, private, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
+		globalKey, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(public).ShouldNot(BeEmpty())
-		Expect(private).ShouldNot(BeEmpty())
+		Expect(globalKey.PublicKey).ShouldNot(BeEmpty())
+		Expect(globalKey.PrivateKey).ShouldNot(BeEmpty())
+		data.Resources.AtlasKeyAccessType.GlobalKeyAttached = globalKey
 
 		kubecli.DeleteApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
-		createConnectionAtlasKeyFrom(data, public, private)
+		createConnectionAtlasKeyFrom(data, globalKey)
 	}
 }
 
@@ -436,7 +437,7 @@ func DeployUserResourcesAction(data *model.TestDataProvider) {
 	DeployUsers(data)
 }
 
-func DeleteDBUsersApps(data *model.TestDataProvider) {
+func DeleteDBUsersApps(data model.TestDataProvider) {
 	By("Delete dbusers applications", func() {
 		for _, user := range data.Resources.Users {
 			helm.Uninstall("test-app-"+user.Spec.Username, data.Resources.Namespace)
@@ -471,11 +472,23 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 	})
 }
 
+func DeleteGlobalKeyIfExist(data model.TestDataProvider) {
+	if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+		By("Delete Global API key for test", func() {
+			client, err := atlas.AClient()
+			Expect(err).ShouldNot(HaveOccurred())
+			err = client.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+	}
+}
+
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
-	for i := range datas {
+	for _, data := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
-		DeleteDBUsersApps(&datas[i])
-		Expect(kubecli.DeleteNamespace(datas[i].Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		DeleteDBUsersApps(data)
+		Expect(kubecli.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		DeleteGlobalKeyIfExist(data)
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }

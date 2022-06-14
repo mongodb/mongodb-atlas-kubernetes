@@ -24,6 +24,10 @@ type Atlas struct {
 	Client  *mongodbatlas.Client
 }
 
+const (
+	keyDescription = "created from the AO test"
+)
+
 func AClient() (Atlas, error) {
 	var A Atlas
 	A.OrgID = os.Getenv("MCLI_ORG_ID")
@@ -40,21 +44,21 @@ func AClient() (Atlas, error) {
 	return A, nil
 }
 
-func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (public string, private string, err error) {
+func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (*mongodbatlas.APIKey, error) {
 	createKeyRequest := &mongodbatlas.APIKeyInput{
-		Desc:  "created from the AO test",
+		Desc:  keyDescription,
 		Roles: roles,
 	}
 	newKey, _, err := a.Client.ProjectAPIKeys.Create(context.Background(), projectID, createKeyRequest)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	createAccessRequest := formAccessRequest(access)
 	_, _, err = a.Client.WhitelistAPIKeys.Create(context.Background(), a.OrgID, newKey.ID, createAccessRequest)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	return newKey.PublicKey, newKey.PrivateKey, nil
+	return newKey, nil
 }
 
 func formAccessRequest(access []string) []*mongodbatlas.WhitelistAPIKeysReq {
@@ -117,6 +121,13 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*mongodbatl
 	if err != nil {
 		return nil, err
 	}
-
 	return dbUser, nil
+}
+
+func (a *Atlas) DeleteGlobalKey(key mongodbatlas.APIKey) error {
+	_, err := a.Client.APIKeys.Delete(context.Background(), a.OrgID, key.ID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
