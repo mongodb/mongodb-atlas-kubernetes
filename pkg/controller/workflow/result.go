@@ -74,6 +74,11 @@ func (r Result) WithoutRetry() Result {
 	return r
 }
 
+func (r Result) WithMessage(message string) Result {
+	r.message = message
+	return r
+}
+
 func (r Result) IsOk() bool {
 	return !r.terminated
 }
