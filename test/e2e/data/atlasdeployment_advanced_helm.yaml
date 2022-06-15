@@ -1,13 +1,13 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlas-cluster-advanced
+  name: atlas-deployment-advanced
 spec:
   projectRef:
     name: my-project
   advancedDeploymentSpec:
-    clusterType: REPLICASET
-    name: advanced-cluster
+    DeploymentType: REPLICASET
+    name: advanced-deployment
     replicationSpecs:
       - regionConfigs:
           - electableSpecs:

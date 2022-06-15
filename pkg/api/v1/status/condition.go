@@ -43,7 +43,7 @@ const (
 
 // AtlasDeployment condition types
 const (
-	ClusterReadyType ConditionType = "ClusterReady"
+	DeploymentReadyType ConditionType = "DeploymentReady"
 )
 
 // AtlasDatabaseUser condition types

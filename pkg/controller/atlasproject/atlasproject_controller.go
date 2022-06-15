@@ -110,7 +110,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	if err != nil {
 		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
 			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			setCondition(ctx, status.ClusterReadyType, result)
+			setCondition(ctx, status.DeploymentReadyType, result)
 		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		setCondition(ctx, status.ProjectReadyType, result)
@@ -121,7 +121,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(ctx, status.ClusterReadyType, result)
+		setCondition(ctx, status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
@@ -146,7 +146,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
 			if err := r.addDeletionFinalizer(context, project); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				setCondition(ctx, status.ClusterReadyType, result)
+				setCondition(ctx, status.DeploymentReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -164,14 +164,14 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 				if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					setCondition(ctx, status.ClusterReadyType, result)
+					setCondition(ctx, status.DeploymentReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 			}
 
 			if err = r.removeDeletionFinalizer(context, project); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				setCondition(ctx, status.ClusterReadyType, result)
+				setCondition(ctx, status.DeploymentReadyType, result)
 				return result.ReconcileResult(), nil
 			}
 		}

@@ -72,7 +72,7 @@ func InstallTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Deployments[0].Spec.GetDeploymentName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 	)
@@ -82,7 +82,7 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 	Upgrade(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Clusters[0].Spec.GetClusterName(), user.Spec.Username),
+		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Deployments[0].Spec.GetDeploymentName(), user.Spec.Username),
 		"--set-string", fmt.Sprintf("nodePort=%s", port),
 		"-n", input.Namespace,
 		"--recreate-pods",
@@ -167,15 +167,15 @@ func AddMongoDBRepo() {
 	cli.SessionShouldExit(session)
 }
 
-// InstallClusterSubmodule install the Atlas Cluster Helm Chart from submodule.
-func InstallClusterSubmodule(input model.UserInputs) {
+// InstallDeploymentSubmodule install the Atlas Deployment Helm Chart from submodule.
+func InstallDeploymentSubmodule(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
 	args := prepareHelmChartArgs(input, config.AtlasDeploymentHelmChartPath)
 	Install(args...)
 }
 
-// InstallClusterRelease from repo
-func InstallClusterRelease(input model.UserInputs) {
+// InstallDeploymentRelease from repo
+func InstallDeploymentRelease(input model.UserInputs) {
 	PrepareHelmChartValuesFile(input)
 	args := prepareHelmChartArgs(input, "mongodb/atlas-deployment")
 	Install(args...)
@@ -207,7 +207,7 @@ func packageChart(sPath, dPath string) {
 
 func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 	args := []string{
-		input.Clusters[0].Spec.GetClusterName(),
+		input.Deployments[0].Spec.GetDeploymentName(),
 		chartName,
 		"--set-string", fmt.Sprintf("atlas.secret.orgId=%s", os.Getenv("MCLI_ORG_ID")),
 		"--set-string", fmt.Sprintf("atlas.secret.publicApiKey=%s", os.Getenv("MCLI_PUBLIC_API_KEY")),
@@ -216,7 +216,7 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 
 		"--set-string", fmt.Sprintf("project.fullnameOverride=%s", input.Project.GetK8sMetaName()),
 		"--set-string", fmt.Sprintf("project.atlasProjectName=%s", input.Project.GetProjectName()),
-		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Clusters[0].ObjectMeta.Name),
+		"--set-string", fmt.Sprintf("fullnameOverride=%s", input.Deployments[0].ObjectMeta.Name),
 
 		"-f", pathToAtlasDeploymentValuesFile(input),
 		"--namespace=" + input.Namespace,

@@ -111,14 +111,14 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(deployment, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Connection = connection
@@ -126,7 +126,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient
@@ -136,13 +136,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	handleCluster := r.selectClusterHandler(deployment)
 	if result, _ := handleCluster(ctx, project, deployment, req); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	if !deployment.IsServerless() {
 		if result := r.handleAdvancedOptions(ctx, project, deployment); !result.IsOk() {
-			ctx.SetConditionFromResult(status.ClusterReadyType, result)
+			ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 	}
@@ -290,7 +290,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 
 	if err := r.handleClusterBackupSchedule(ctx, cluster, project.ID(), c.Name, *c.BackupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
 	}
 
@@ -299,7 +299,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 	}
 
 	ctx.
-		SetConditionTrue(status.ClusterReadyType).
+		SetConditionTrue(status.DeploymentReadyType).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(c.MongoDBVersion)).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(c.ConnectionStrings))
 
@@ -326,7 +326,7 @@ func (r *AtlasDeploymentReconciler) handleRegularCluster(ctx *workflow.Context, 
 
 	if err := r.handleClusterBackupSchedule(ctx, cluster, project.ID(), c.Name, *c.ProviderBackupEnabled || *c.BackupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
 	}
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, cluster, result, c)
@@ -348,7 +348,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(c
 	}
 
 	ctx.
-		SetConditionTrue(status.ClusterReadyType).
+		SetConditionTrue(status.DeploymentReadyType).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(c.MongoDBVersion)).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(c.ConnectionStrings)).
 		EnsureStatusOption(status.AtlasDeploymentMongoURIUpdatedOption(c.MongoURIUpdated))
@@ -425,7 +425,7 @@ func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
 		return nil
 	}
 
-	log := r.Log.With("atlascluster", kube.ObjectKeyFromObject(cluster))
+	log := r.Log.With("atlasdeployment", kube.ObjectKeyFromObject(cluster))
 
 	log.Infow("-> Starting AtlasDeployment deletion", "spec", cluster.Spec)
 

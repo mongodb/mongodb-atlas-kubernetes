@@ -32,7 +32,7 @@ func setupLogger() *zap.SugaredLogger {
 	return log.Sugar()
 }
 
-// createK8sClient creates an in cluster client which can be used to fetch the current state of the AtlasDeployment
+// createK8sClient creates an in deployment client which can be used to fetch the current state of the AtlasDeployment
 // resource.
 func createK8sClient() (client.Client, error) {
 	restCfg, err := rest.InClusterConfig()
@@ -50,9 +50,9 @@ func createK8sClient() (client.Client, error) {
 	return k8sClient, nil
 }
 
-// isClusterReady returns a boolean indicating if the cluster has reached the ready state and is
+// isDeploymentReady returns a boolean indicating if the deployment has reached the ready state and is
 // ready to be used.
-func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
+func isDeploymentReady(logger *zap.SugaredLogger) (bool, error) {
 	k8sClient, err := createK8sClient()
 	if err != nil {
 		return false, err
@@ -61,7 +61,7 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 	ticker := time.NewTicker(pollingInterval)
 	defer ticker.Stop()
 
-	clusterName := os.Getenv("CLUSTER_NAME")
+	deploymentName := os.Getenv("CLUSTER_NAME")
 	namespace := os.Getenv("NAMESPACE")
 
 	totalTime := time.Duration(0)
@@ -71,18 +71,18 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 		}
 		totalTime += pollingInterval
 
-		atlasCluster := mdbv1.AtlasDeployment{}
-		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, clusterName), &atlasCluster); err != nil {
+		atlasDeployment := mdbv1.AtlasDeployment{}
+		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, deploymentName), &atlasDeployment); err != nil {
 			return false, err
 		}
 
-		// the atlas project has reached the ClusterReady state.
-		for _, cond := range atlasCluster.Status.Conditions {
-			if cond.Type == status.ClusterReadyType {
+		// the atlas project has reached the DeploymentReady state.
+		for _, cond := range atlasDeployment.Status.Conditions {
+			if cond.Type == status.DeploymentReadyType {
 				if cond.Status == corev1.ConditionTrue {
 					return true, nil
 				}
-				logger.Infof("Atlas Cluster %s is not yet ready", atlasCluster.Name)
+				logger.Infof("Atlas Deployment %s is not yet ready", atlasDeployment.Name)
 			}
 		}
 	}
@@ -92,14 +92,14 @@ func isClusterReady(logger *zap.SugaredLogger) (bool, error) {
 func main() {
 	logger := setupLogger()
 
-	clusterIsReady, err := isClusterReady(logger)
+	deploymentIsReady, err := isDeploymentReady(logger)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}
 
 	exitCode := 1
-	if clusterIsReady {
+	if deploymentIsReady {
 		exitCode = 0
 	}
 	os.Exit(exitCode)

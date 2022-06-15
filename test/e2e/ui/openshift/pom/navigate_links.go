@@ -5,7 +5,7 @@ const (
 	loginEndPoint            = "/auth/login"
 	dashboardEndPoint        = "/dashboards"
 	operatorHubEndPoint      = "/operatorhub"
-	installedOeratorEndPoint = "/k8s/all-namespaces/operators.coreos.com~v1alpha1~ClusterServiceVersion"
+	installedOeratorEndPoint = "/k8s/all-namespaces/operators.coreos.com~v1alpha1~DeploymentServiceVersion"
 	serverAPI                = "https://api.kubeteam-oshift.2g12.p1.openshiftapps.com:6443"
 	tokenAuthLink            = "https://oauth-openshift.apps.kubeteam-oshift.2g12.p1.openshiftapps.com/oauth/token/request" //#nosec
 )

@@ -1,27 +1,27 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlascluster-multiregion-gcp
+  name: atlas-deployment-multiregion-aws
 spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: cluster-multiregion-gcp
+    name: deployment-multiregion-aws
     providerBackupEnabled: true
-    clusterType: REPLICASET
+    DeploymentType: REPLICASET
     providerSettings:
       instanceSizeName: M10
-      providerName: GCP
+      providerName: AWS
     replicationSpecs:
       - numShards: 1
         zoneName: US-Zone
         regionsConfig:
-          CENTRAL_US:
+          US_EAST_1:
             analyticsNodes: 0
             electableNodes: 1
             priority: 6
             readOnlyNodes: 0
-          EASTERN_US:
+          US_WEST_2:
             analyticsNodes: 0
             electableNodes: 2
             priority: 7

@@ -23,20 +23,20 @@ const (
 	DevMode            = false
 	UserPasswordSecret = "user-password-secret"
 	DBUserPassword     = "Passw0rd!"
-	// M2 clusters take longer time to apply changes
+	// M2 Deployments take longer time to apply changes
 	DBUserUpdateTimeout    = 170
 	ProjectCreationTimeout = 40
 )
 
-var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
+var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 	const interval = time.Second * 1
 
 	var (
-		connectionSecret  corev1.Secret
-		createdProject    *mdbv1.AtlasProject
-		createdClusterAWS *mdbv1.AtlasDeployment
-		createdDBUser     *mdbv1.AtlasDatabaseUser
-		secondDBUser      *mdbv1.AtlasDatabaseUser
+		connectionSecret     corev1.Secret
+		createdProject       *mdbv1.AtlasProject
+		createdDeploymentAWS *mdbv1.AtlasDeployment
+		createdDBUser        *mdbv1.AtlasDatabaseUser
+		secondDBUser         *mdbv1.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
@@ -80,7 +80,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
 
 			for i := range list.Items {
-				By("Removing Atlas Cluster " + list.Items[i].Name)
+				By("Removing Atlas Deployment " + list.Items[i].Name)
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
@@ -93,10 +93,10 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 		}
 	})
 
-	Describe("Create user and cluster in different namespaces", func() {
+	Describe("Create user and deployment in different namespaces", func() {
 		It("Should Succeed", func() {
-			clusterNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-cluster"}}
-			Expect(k8sClient.Create(context.Background(), &clusterNS)).ToNot(HaveOccurred())
+			DeploymentNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-Deployment"}}
+			Expect(k8sClient.Create(context.Background(), &DeploymentNS)).ToNot(HaveOccurred())
 
 			userNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-user"}}
 			Expect(k8sClient.Create(context.Background(), &userNS)).ToNot(HaveOccurred())
@@ -105,15 +105,15 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-			createdClusterAWS = mdbv1.DefaultAWSDeployment(clusterNS.Name, createdProject.Name).Lightweight()
-			// The project namespace is different from the cluster one - need to specify explicitly
-			createdClusterAWS.Spec.Project.Namespace = namespace.Name
+			createdDeploymentAWS = mdbv1.DefaultAWSDeployment(DeploymentNS.Name, createdProject.Name).Lightweight()
+			// The project namespace is different from the deployment one - need to specify explicitly
+			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
 
-			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
+			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 
 			Eventually(
 				func(g Gomega) {
-					success := testutil.WaitFor(k8sClient, createdClusterAWS, status.TrueCondition(status.ReadyType), validateClusterCreatingFuncGContext(g))()
+					success := testutil.WaitFor(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
 					g.Expect(success).To(BeTrue())
 				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
 
@@ -123,9 +123,9 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 			Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
 				DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
 
-			By("Removing the cluster", func() {
-				Expect(k8sClient.Delete(context.Background(), createdClusterAWS)).To(Succeed())
-				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdClusterAWS.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
+			By("Removing the deployment", func() {
+				Expect(k8sClient.Delete(context.Background(), createdDeploymentAWS)).To(Succeed())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdDeploymentAWS.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
 			})
 		})
 	})
@@ -164,9 +164,9 @@ func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUse
 	}
 }
 
-func checkAtlasDeploymentRemoved(projectID string, clusterName string) func() bool {
+func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, clusterName)
+		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, deploymentName)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -189,7 +189,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
+func validateDeploymentCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
 		c := a.(*mdbv1.AtlasDeployment)
@@ -200,21 +200,21 @@ func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResou
 		if startedCreation {
 			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
+				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
+			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
 			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
 	}
 }
 
 // nolint
-func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
+func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
 		c := a.(*mdbv1.AtlasDeployment)
@@ -225,14 +225,14 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if startedCreation {
 			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
+				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
 			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.ClusterReadyType)
+			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
 			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
 	}

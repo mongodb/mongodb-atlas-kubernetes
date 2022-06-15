@@ -7,16 +7,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-// Prepare chart values file for project, clusters, users https://github.com/mongodb/helm-charts/blob/main/charts/atlas-cluster/values.yaml
+// Prepare chart values file for project, Deployments, users https://github.com/mongodb/helm-charts/blob/main/charts/atlas-Deployment/values.yaml
 func PrepareHelmChartValuesFile(input model.UserInputs) {
 	type usersType struct {
 		model.UserSpec
 		Password string `json:"password,omitempty"`
 	}
 	type values struct {
-		Project  model.ProjectSpec   `json:"project,omitempty"`
-		Clusters []model.ClusterSpec `json:"deployments,omitempty"`
-		Users    []usersType         `json:"users,omitempty"`
+		Project     model.ProjectSpec      `json:"project,omitempty"`
+		Deployments []model.DeploymentSpec `json:"deployments,omitempty"`
+		Users       []usersType            `json:"users,omitempty"`
 	}
 	convertType := func(user model.DBUser) usersType {
 		var newUser usersType
@@ -29,9 +29,9 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 		newUser.DeleteAfterDate = user.Spec.DeleteAfterDate
 		return newUser
 	}
-	newValues := values{input.Project.Spec, []model.ClusterSpec{}, []usersType{}}
-	for i := range input.Clusters {
-		newValues.Clusters = append(newValues.Clusters, input.Clusters[i].Spec)
+	newValues := values{input.Project.Spec, []model.DeploymentSpec{}, []usersType{}}
+	for i := range input.Deployments {
+		newValues.Deployments = append(newValues.Deployments, input.Deployments[i].Spec)
 	}
 	for i := range input.Users {
 		secret, _ := password.Generate(10, 3, 0, false, false)

@@ -1,14 +1,14 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlascluster-multiregion-aws
+  name: atlas-deployment-multiregion-aws
 spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: cluster-multiregion-aws
+    name: deployment-multiregion-aws
     providerBackupEnabled: false
-    clusterType: REPLICASET
+    DeploymentType: REPLICASET
     providerSettings:
       instanceSizeName: M20
       providerName: AWS

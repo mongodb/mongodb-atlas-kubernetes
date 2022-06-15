@@ -9,15 +9,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-type AC struct {
+type AtlasDeployment struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec            ClusterSpec        `json:"spec,omitempty"`
+	Spec            DeploymentSpec     `json:"spec,omitempty"`
 }
 
-type ClusterSpec v1.AtlasDeploymentSpec
+type DeploymentSpec v1.AtlasDeploymentSpec
 
-func (c ClusterSpec) GetClusterName() string {
+func (c DeploymentSpec) GetDeploymentName() string {
 	if c.AdvancedDeploymentSpec != nil {
 		return c.AdvancedDeploymentSpec.Name
 	}
@@ -27,18 +27,18 @@ func (c ClusterSpec) GetClusterName() string {
 	return c.DeploymentSpec.Name
 }
 
-// LoadUserClusterConfig load configuration into object
-func LoadUserClusterConfig(path string) AC {
-	var config AC
+// LoadUserDeploymentConfig load configuration into object
+func LoadUserDeploymentConfig(path string) AtlasDeployment {
+	var config AtlasDeployment
 	utils.ReadInYAMLFileAndConvert(path, &config)
 	return config
 }
 
-func (ac *AC) ClusterFileName(input UserInputs) string {
-	// return "data/cluster-" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
+func (ac *AtlasDeployment) DeploymentFileName(input UserInputs) string {
+	// return "data/deployment-" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
 	return filepath.Dir(input.ProjectPath) + "/" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
 }
 
-func (ac *AC) GetClusterNameResource() string {
+func (ac *AtlasDeployment) GetDeploymentNameResource() string {
 	return "atlasdeployment.atlas.mongodb.com/" + ac.ObjectMeta.Name
 }

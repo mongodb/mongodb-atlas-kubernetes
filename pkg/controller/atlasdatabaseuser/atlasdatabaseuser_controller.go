@@ -115,7 +115,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.ClusterReadyType, result)
+		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.Client = atlasClient

@@ -17,43 +17,43 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-func UpdateCluster(newData *model.TestDataProvider) {
+func UpdateDeployment(newData *model.TestDataProvider) {
 	var generation int
-	By("Update cluster\n", func() {
+	By("Update Deployment\n", func() {
 		utils.SaveToFile(
-			newData.Resources.Clusters[0].ClusterFileName(newData.Resources),
-			utils.JSONToYAMLConvert(newData.Resources.Clusters[0]),
+			newData.Resources.Deployments[0].DeploymentFileName(newData.Resources),
+			utils.JSONToYAMLConvert(newData.Resources.Deployments[0]),
 		)
-		generation, _ = strconv.Atoi(kubecli.GetGeneration(newData.Resources.Namespace, newData.Resources.Clusters[0].GetClusterNameResource()))
-		kubecli.Apply(newData.Resources.Clusters[0].ClusterFileName(newData.Resources), "-n", newData.Resources.Namespace)
+		generation, _ = strconv.Atoi(kubecli.GetGeneration(newData.Resources.Namespace, newData.Resources.Deployments[0].GetDeploymentNameResource()))
+		kubecli.Apply(newData.Resources.Deployments[0].DeploymentFileName(newData.Resources), "-n", newData.Resources.Namespace)
 		generation++
 	})
 
-	By("Wait cluster updating\n", func() {
-		WaitCluster(newData.Resources, strconv.Itoa(generation))
+	By("Wait Deployment updating\n", func() {
+		WaitDeployment(newData.Resources, strconv.Itoa(generation))
 	})
 
 	By("Check attributes\n", func() {
-		uCluster := mongocli.GetClustersInfo(newData.Resources.ProjectID, newData.Resources.Clusters[0].Spec.GetClusterName())
-		CompareClustersSpec(newData.Resources.Clusters[0].Spec, uCluster)
+		uDeployment := mongocli.GetDeploymentsInfo(newData.Resources.ProjectID, newData.Resources.Deployments[0].Spec.GetDeploymentName())
+		CompareDeploymentsSpec(newData.Resources.Deployments[0].Spec, uDeployment)
 	})
 }
 
-func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) {
-	By("Load new cluster config", func() {
-		data.Resources.Clusters = []model.AC{} // TODO for range
+func UpdateDeploymentFromUpdateConfig(data *model.TestDataProvider) {
+	By("Load new Deployment config", func() {
+		data.Resources.Deployments = []model.AtlasDeployment{} // TODO for range
 		GinkgoWriter.Write([]byte(data.ConfUpdatePaths[0]))
-		data.Resources.Clusters = append(data.Resources.Clusters, model.LoadUserClusterConfig(data.ConfUpdatePaths[0]))
-		data.Resources.Clusters[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
+		data.Resources.Deployments = append(data.Resources.Deployments, model.LoadUserDeploymentConfig(data.ConfUpdatePaths[0]))
+		data.Resources.Deployments[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
 		utils.SaveToFile(
-			data.Resources.Clusters[0].ClusterFileName(data.Resources),
-			utils.JSONToYAMLConvert(data.Resources.Clusters[0]),
+			data.Resources.Deployments[0].DeploymentFileName(data.Resources),
+			utils.JSONToYAMLConvert(data.Resources.Deployments[0]),
 		)
 	})
 
-	UpdateCluster(data)
+	UpdateDeployment(data)
 
-	By("Check user data still in the cluster\n", func() {
+	By("Check user data still in the Deployment\n", func() {
 		for i := range data.Resources.Users { // TODO in parallel(?)
 			port := strconv.Itoa(i + data.PortGroup)
 			key := port
@@ -64,22 +64,22 @@ func UpdateClusterFromUpdateConfig(data *model.TestDataProvider) {
 	})
 }
 
-func activateCluster(data *model.TestDataProvider, paused bool) {
-	data.Resources.Clusters[0].Spec.DeploymentSpec.Paused = &paused
-	UpdateCluster(data)
-	By("Check additional cluster field `paused`\n")
-	uCluster := mongocli.GetClustersInfo(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.GetClusterName())
-	Expect(uCluster.Paused).Should(Equal(data.Resources.Clusters[0].Spec.DeploymentSpec.Paused))
+func activateDeployment(data *model.TestDataProvider, paused bool) {
+	data.Resources.Deployments[0].Spec.DeploymentSpec.Paused = &paused
+	UpdateDeployment(data)
+	By("Check additional Deployment field `paused`\n")
+	uDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
+	Expect(uDeployment.Paused).Should(Equal(data.Resources.Deployments[0].Spec.DeploymentSpec.Paused))
 }
 
-func SuspendCluster(data *model.TestDataProvider) {
+func SuspendDeployment(data *model.TestDataProvider) {
 	paused := true
-	activateCluster(data, paused)
+	activateDeployment(data, paused)
 }
 
-func ReactivateCluster(data *model.TestDataProvider) {
+func ReactivateDeployment(data *model.TestDataProvider) {
 	paused := false
-	activateCluster(data, paused)
+	activateDeployment(data, paused)
 }
 
 func DeleteFirstUser(data *model.TestDataProvider) {
