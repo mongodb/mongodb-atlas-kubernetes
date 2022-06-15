@@ -75,15 +75,15 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 	requeue := false
 	secrets := make([]string, 0)
 
-	for _, cs := range deploymentSecrets {
+	for _, ds := range deploymentSecrets {
 		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, cs.name) {
+		if len(scopes) != 0 && !stringutil.Contains(scopes, ds.name) {
 			continue
 		}
 		// Deployment may be not ready yet, so no connection urls - skipping
 		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if cs.connectionStrings == nil || cs.connectionStrings.StandardSrv == "" {
-			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", cs.name)
+		if ds.connectionStrings == nil || ds.connectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", ds.name)
 			requeue = true
 			continue
 		}
@@ -94,13 +94,13 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		data := connectionsecret.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
-			ConnURL:    cs.connectionStrings.Standard,
-			SrvConnURL: cs.connectionStrings.StandardSrv,
+			ConnURL:    ds.connectionStrings.Standard,
+			SrvConnURL: ds.connectionStrings.StandardSrv,
 		}
-		fillPrivateConnStrings(cs.connectionStrings, &data)
+		fillPrivateConnStrings(ds.connectionStrings, &data)
 
 		var secretName string
-		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cs.name, data); err != nil {
+		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)

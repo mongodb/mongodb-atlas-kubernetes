@@ -194,7 +194,7 @@ func prepareControllers() {
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	// Note on the syncPeriod - decreasing this to a smaller time allows to test its work for the long-running tests
-	// (Deployments, database users). The prod value is much higher
+	// (deployments, database users). The prod value is much higher
 	syncPeriod := time.Minute * 30
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:             scheme.Scheme,

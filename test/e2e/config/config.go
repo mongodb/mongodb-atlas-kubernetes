@@ -4,8 +4,8 @@ const (
 
 	// Kubernetes configuration samples for users in deploy directory
 	DefaultDeployConfig              = "../../deploy/" // Released generated files
-	DefaultclusterwideCRDConfig      = "../../deploy/clusterwide/crds.yaml"
-	DefaultclusterwideOperatorConfig = "../../deploy/clusterwide/clusterwide-config.yaml"
+	DefaultClusterWideCRDConfig      = "../../deploy/clusterwide/crds.yaml"
+	DefaultClusterWideOperatorConfig = "../../deploy/clusterwide/clusterwide-config.yaml"
 	DefaultNamespacedCRDConfig       = "../../deploy/namespaced/crds.yaml"
 	DefaultNamespacedOperatorConfig  = "../../deploy/namespaced/namespaced-config.yaml"
 

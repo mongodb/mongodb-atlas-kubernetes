@@ -63,10 +63,10 @@ var _ = Describe("HELM charts", func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
-		func(test model.TestDataProvider, DeploymentType string) { // DeploymentType - probably will be moved later ()
+		func(test model.TestDataProvider, deploymentType string) { // deploymentType - probably will be moved later ()
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)
-			switch DeploymentType {
+			switch deploymentType {
 			case "advanced":
 				data.Resources.Deployments[0].Spec.AdvancedDeploymentSpec.Name = data.Resources.KeyName
 			case "serverless":
@@ -82,7 +82,7 @@ var _ = Describe("HELM charts", func() {
 			By("User use helm for deploying namespaces operator", func() {
 				helm.InstallOperatorNamespacedSubmodule(data.Resources)
 			})
-			By("User deploy Deployment by helm", func() {
+			By("User deploy the deployment via helm", func() {
 				helm.InstallDeploymentSubmodule(data.Resources)
 			})
 			waitDeploymentWithChecks(&data)
@@ -115,7 +115,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"default",
 		),
-		Entry("Advanced Deployment by helm chart",
+		Entry("Advanced deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-advanced",
 				model.AProject{},
@@ -133,7 +133,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"advanced",
 		),
-		Entry("Advanced multiregion Deployment by helm chart",
+		Entry("Advanced multiregion deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-advanced-multiregion",
 				model.AProject{},
@@ -151,7 +151,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"advanced",
 		),
-		Entry("Serverless Deployment by helm chart",
+		Entry("Serverless deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-serverless",
 				model.AProject{},

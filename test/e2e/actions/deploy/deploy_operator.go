@@ -35,8 +35,8 @@ func prepareNamespaceOperatorResources(input model.UserInputs) {
 func prepareWideOperatorResources(input model.UserInputs) {
 	fullPath := input.GetOperatorFolder()
 	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile(config.DefaultclusterwideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultclusterwideOperatorConfig, filepath.Join(fullPath, "clusterwide-config.yaml"))
+	utils.CopyFile(config.DefaultClusterWideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
+	utils.CopyFile(config.DefaultClusterWideOperatorConfig, filepath.Join(fullPath, "clusterwide-config.yaml"))
 }
 
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
@@ -44,8 +44,8 @@ func prepareMultiNamespaceOperatorResources(input model.UserInputs, watchedNames
 	fullPath := input.GetOperatorFolder()
 	err := os.Mkdir(fullPath, os.ModePerm)
 	Expect(err).ShouldNot(HaveOccurred())
-	utils.CopyFile(config.DefaultclusterwideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultclusterwideOperatorConfig, filepath.Join(fullPath, "multinamespace-config.yaml"))
+	utils.CopyFile(config.DefaultClusterWideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
+	utils.CopyFile(config.DefaultClusterWideOperatorConfig, filepath.Join(fullPath, "multinamespace-config.yaml"))
 	namespaces := strings.Join(watchedNamespaces, ",")
 	patchWatch := []byte(
 		"apiVersion: apps/v1\n" +
@@ -89,7 +89,7 @@ func NamespacedOperator(data *model.TestDataProvider) {
 	})
 }
 
-func clusterwideOperator(data *model.TestDataProvider) {
+func ClusterWideOperator(data *model.TestDataProvider) {
 	prepareWideOperatorResources(data.Resources)
 	By("Deploy clusterwide Operator \n", func() {
 		kubecli.Apply("-k", data.Resources.GetOperatorFolder())

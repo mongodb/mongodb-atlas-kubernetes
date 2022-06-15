@@ -6,7 +6,7 @@ spec:
   projectRef:
     name: my-project
   advancedDeploymentSpec:
-    DeploymentType: REPLICASET
+    clusterType: REPLICASET
     name: advanced-deployment
     replicationSpecs:
       - regionConfigs:

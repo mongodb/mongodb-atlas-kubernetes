@@ -2,9 +2,9 @@ package model
 
 // Full Data set for the current test case
 type TestDataProvider struct {
-	ConfPaths                []string                  // init Deployments configuration
+	ConfPaths                []string                  // init deployments configuration
 	ConfUpdatePaths          []string                  // update configuration
-	Resources                UserInputs                // struct of all user resoucers project,Deployments,databaseusers
+	Resources                UserInputs                // struct of all user resoucers project,deployments,databaseusers
 	Actions                  []func(*TestDataProvider) // additional actions for the current data set
 	PortGroup                int                       // ports for the test application starts from _
 	SkipAppConnectivityCheck bool

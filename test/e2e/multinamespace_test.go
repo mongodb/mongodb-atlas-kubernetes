@@ -47,7 +47,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 	})
 
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
-	It("Deploy Deployment multinamespaced operator and create resources in each of them", func() {
+	It("Deploy deployment multinamespaced operator and create resources in each of them", func() {
 		By("Set up test data configuration", func() {
 			watched1 := model.NewTestDataProvider(
 				"multinamestace-watched1",
@@ -92,7 +92,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			listData = []model.TestDataProvider{watched1, watchedGlobal, notWatched, notWatchedGlobal}
 			watchedNamespace = []string{watched1.Resources.Namespace, watchedGlobal.Resources.Namespace}
 		})
-		By("User Install CRD, Deployment multinamespace Operator", func() {
+		By("User Install CRD, deployment multinamespace Operator", func() {
 			for i := range listData {
 				actions.PrepareUsersConfigurations(&listData[i])
 			}

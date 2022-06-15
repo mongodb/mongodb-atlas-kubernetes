@@ -8,7 +8,7 @@ spec:
   deploymentSpec:
     name: deployment-multiregion-aws
     providerBackupEnabled: false
-    DeploymentType: REPLICASET
+    clusterType: REPLICASET
     providerSettings:
       instanceSizeName: M20
       providerName: AWS

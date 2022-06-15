@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deployment-ns"), func() {
+var _ = Describe("Configuration namespaced. Deploy deployment", Label("deployment-ns"), func() {
 	var data model.TestDataProvider
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 			)
 			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasDeployments", "atlasdatabaseusers", "atlasprojects"},
+				[]string{"deploy", "atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 				data.Resources.Namespace,
 			)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
@@ -55,7 +55,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-trial",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasDeployment_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -73,8 +73,8 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-prodlike",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasDeployment_backup.yaml"},
-				[]string{"data/atlasDeployment_backup_update.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
+				[]string{"data/atlasdeployment_backup_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("admin").
 						WithSecretRef("dbuser-admin-secret-u1").
@@ -97,8 +97,8 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-multiregion-aws",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasDeployment_multiregion_aws.yaml"},
-				[]string{"data/atlasDeployment_multiregion_aws_update.yaml"},
+				[]string{"data/atlasdeployment_multiregion_aws.yaml"},
+				[]string{"data/atlasdeployment_multiregion_aws_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
@@ -120,7 +120,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-multiregion-azure",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlasDeployment_multiregion_azure.yaml"},
+				[]string{"data/atlasdeployment_multiregion_azure.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -138,7 +138,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-multiregion-gcp",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlasDeployment_multiregion_gcp.yaml"},
+				[]string{"data/atlasdeployment_multiregion_gcp.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -156,8 +156,8 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-product-owner",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
-				[]string{"data/atlasDeployment_backup.yaml"},
-				[]string{"data/atlasDeployment_backup_update_remove_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
+				[]string{"data/atlasdeployment_backup_update_remove_backup.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
@@ -174,7 +174,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-trial-global",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlasDeployment_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -192,7 +192,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-free",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasDeployment_basic_free.yaml"},
+				[]string{"data/atlasdeployment_basic_free.yaml"},
 				[]string{""},
 				[]model.DBUser{
 					*model.NewDBUser("user").
@@ -210,7 +210,7 @@ var _ = Describe("Configuration namespaced. Deploy Deployment", Label("Deploymen
 				"operator-ns-free",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlasDeployment_basic_free.yaml"},
+				[]string{"data/atlasdeployment_basic_free.yaml"},
 				[]string{""},
 				[]model.DBUser{
 					*model.NewDBUser("user").
