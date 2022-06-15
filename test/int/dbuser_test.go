@@ -739,9 +739,9 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, deploym
 		"password":                    []byte(password),
 	}
 	expectedLabels := map[string]string{
-		"atlas.mongodb.com/project-id":      project.ID(),
-		"atlas.mongodb.com/deployment-name": deployment.GetDeploymentName(),
-		connectionsecret.TypeLabelKey:       connectionsecret.CredLabelVal,
+		"atlas.mongodb.com/project-id":   project.ID(),
+		"atlas.mongodb.com/cluster-name": deployment.GetDeploymentName(),
+		connectionsecret.TypeLabelKey:    connectionsecret.CredLabelVal,
 	}
 	Expect(secret.Data).To(Equal(expectedData))
 	Expect(secret.Labels).To(Equal(expectedLabels))
@@ -823,7 +823,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 }
 
 //nolint
-func validateDatabaseUserWaitingForDeployment() func(a mdbv1.AtlasCustomResource) {
+func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
 		// this is the first status that db user gets after update
