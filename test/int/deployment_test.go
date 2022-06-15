@@ -178,10 +178,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			atlasCluster, _, err := atlasClient.Clusters.Get(context.Background(), createdProject.Status.ID, createdCluster.Spec.DeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedCluster, err := atlasdeployment.MergedCluster(*atlasCluster, createdCluster.Spec)
+			mergedCluster, err := atlasdeployment.MergedDeployment(*atlasCluster, createdCluster.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasdeployment.ClustersEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
+			Expect(atlasdeployment.DeploymentsEqual(zap.S(), *atlasCluster, mergedCluster)).To(BeTrue())
 
 			for _, check := range additionalChecks {
 				check(atlasCluster)
@@ -225,7 +225,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create cluster & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(cluster *mongodbatlas.Cluster) {
@@ -270,7 +270,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create cluster & increase DiskSizeGB", func() {
 		It("Should Succeed", func() {
-			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -294,7 +294,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create cluster & change it to GEOSHARDED", Label("int", "geosharded", "slow"), func() {
 		It("Should Succeed", func() {
-			expectedCluster := mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			expectedCluster := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(expectedCluster)), func() {
 				createdCluster.ObjectMeta = expectedCluster.ObjectMeta
@@ -338,7 +338,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create/Update the cluster (more complex scenario)", func() {
 		It("Should be created", func() {
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdCluster.Spec.DeploymentSpec.ClusterType = mdbv1.TypeReplicaSet
 			createdCluster.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
 				Compute: &mdbv1.ComputeSpec{
@@ -367,7 +367,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			createdCluster.Spec.DeploymentSpec.DiskSizeGB = intptr(10)
 
 			replicationSpecsCheckFunc := func(c *mongodbatlas.Cluster) {
-				cluster, err := createdCluster.Spec.Cluster()
+				cluster, err := createdCluster.Spec.Deployment()
 				Expect(err).NotTo(HaveOccurred())
 				expectedReplicationSpecs := cluster.ReplicationSpecs
 
@@ -426,7 +426,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				doRegularClusterStatusChecks()
 
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
-					cluster, err := createdCluster.Spec.Cluster()
+					cluster, err := createdCluster.Spec.Deployment()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.AutoScaling.Compute).To(Equal(cluster.AutoScaling.Compute))
@@ -437,7 +437,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed (GCP)", func() {
-			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name).WithAtlasName("")
+			createdCluster = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("")
 
 			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
@@ -473,7 +473,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 
 		It("Should Succeed (AWS)", func() {
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
@@ -532,7 +532,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
 							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
 					),
 					60,
@@ -569,7 +569,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						createdCluster,
 						status.
 							FalseCondition(status.ClusterReadyType).
-							WithReason(string(workflow.ClusterNotUpdatedInAtlas)).
+							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
 							WithMessageRegexp("INVALID_ENUM_VALUE"),
 					),
 					60,
@@ -606,7 +606,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			createdDBUserFakeScope := mdbv1.DefaultDBUser(namespace.Name, "test-db-user-fake-scope", createdProject.Name).
 				WithPasswordSecret(UserPasswordSecret).
-				WithScope(mdbv1.ClusterScopeType, "fake-cluster")
+				WithScope(mdbv1.DeploymentScopeType, "fake-deployment")
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUserFakeScope)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUserFakeScope)).ToNot(HaveOccurred())
 
@@ -615,7 +615,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
@@ -636,7 +636,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Create cluster, user, delete cluster and check secrets are removed", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
@@ -674,7 +674,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	Describe("Deleting the cluster (not cleaning Atlas)", func() {
 		It("Should Succeed", func() {
 			By(`Creating the cluster with retention policy "keep" first`, func() {
-				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				createdCluster.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
 				manualDeletion = true // We need to remove the cluster in Atlas manually to let project get removed
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
@@ -698,7 +698,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		It("Should Succeed", func() {
 
 			By(`Creating the cluster with reconciliation policy "skip" first`, func() {
-				createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdCluster)).ToNot(HaveOccurred())
 
 				Eventually(
@@ -752,7 +752,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	Describe("Set advanced cluster options", func() {
 		It("Should Succeed", func() {
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdCluster.Spec.ProcessArgs = &mdbv1.ProcessArgs{
 				JavascriptEnabled:  boolptr(true),
 				DefaultReadConcern: "available",
@@ -837,7 +837,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).NotTo(HaveOccurred())
 			Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).NotTo(HaveOccurred())
 
-			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).WithBackupScheduleRef(common.ResourceRefNamespaced{
+			createdCluster = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).WithBackupScheduleRef(common.ResourceRefNamespaced{
 				Name:      backupScheduleDefault.Name,
 				Namespace: backupScheduleDefault.Namespace,
 			})
@@ -900,7 +900,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if startedCreation {
 			Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
@@ -924,7 +924,7 @@ func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResou
 		if startedCreation {
 			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
@@ -949,7 +949,7 @@ func validateClusterUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if !isIdle {
 			Expect(c.Status.StateName).To(Or(Equal("UPDATING"), Equal("REPAIRING")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterUpdating)).WithMessageRegexp("cluster is updating"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentUpdating)).WithMessageRegexp("cluster is updating"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)

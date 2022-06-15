@@ -150,10 +150,10 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 
 	byCreatingDefaultAWSandAzureClusters := func() {
 		By("Creating clusters", func() {
-			createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+			createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 			Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
-			createdClusterAzure = mdbv1.DefaultAzureCluster(namespace.Name, createdProject.Name).Lightweight()
+			createdClusterAzure = mdbv1.DefaultAzureDeployment(namespace.Name, createdProject.Name).Lightweight()
 			Expect(k8sClient.Create(context.Background(), createdClusterAzure)).ToNot(HaveOccurred())
 
 			Eventually(
@@ -228,7 +228,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWrite", "someDB", "thisIsTheOnlyAllowedCollection").
 					// Cluster doesn't exist
-					WithScope(mdbv1.ClusterScopeType, createdClusterAzure.GetClusterName()+"-foo")
+					WithScope(mdbv1.DeploymentScopeType, createdClusterAzure.GetClusterName()+"-foo")
 
 				Expect(k8sClient.Create(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -246,12 +246,12 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				).Should(BeTrue())
 			})
 			By("Fixing second user", func() {
-				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
 				// First we need to wait for "such cluster doesn't exist in Atlas" error to be gone
-				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges))),
+				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges))),
 					20, intervalShort).Should(BeTrue())
 
 				Eventually(testutil.WaitFor(k8sClient, secondDBUser, status.TrueCondition(status.ReadyType), validateDatabaseUserUpdatingFunc()),
@@ -315,7 +315,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
 			By("Creating cluster", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
 				// We don't wait for the full cluster creation - only when it has started the process
@@ -352,7 +352,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 	Describe("Check the password Secret is watched", func() {
 		It("Should succeed", func() {
 			By("Creating clusters", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
 				Eventually(
@@ -450,7 +450,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(tryConnect(createdProject.ID(), *createdClusterAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Changing the scopes - one stale secret is expected to be removed", func() {
-				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.ClusterScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdClusterAzure.Spec.DeploymentSpec.Name)
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
@@ -467,7 +467,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 	Describe("Check the user expiration", func() {
 		It("Should succeed", func() {
 			By("Creating a AWS cluster", func() {
-				createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+				createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdClusterAWS)).To(Succeed())
 
 				Eventually(
@@ -537,7 +537,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 		Describe("Deleting the db user (not cleaning Atlas)", func() {
 			It("Should Succeed", func() {
 				By(`Creating the db user with retention policy "keep" first`, func() {
-					createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+					createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 					Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 
 					Eventually(
@@ -567,7 +567,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 			It("Should Succeed", func() {
 
 				By(`Creating the user with reconciliation policy "skip" first`, func() {
-					createdClusterAWS = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name).Lightweight()
+					createdClusterAWS = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 					Expect(k8sClient.Create(context.Background(), createdClusterAWS)).ToNot(HaveOccurred())
 					Eventually(
 						func(g Gomega) {
@@ -814,7 +814,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
 		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
+			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
 		)
@@ -828,7 +828,7 @@ func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
 		// this is the first status that db user gets after update
 		userChangesApplied := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
+			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
 		)

@@ -47,9 +47,9 @@ func WaitCluster(input model.UserInputs, generation string) {
 	case cluster.Spec.AdvancedDeploymentSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		advancedCluster, err := atlasClient.GetAdvancedDeployment(input.ProjectID, cluster.Spec.AdvancedDeploymentSpec.Name)
+		advancedDeployment, err := atlasClient.GetAdvancedDeployment(input.ProjectID, cluster.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
-		Expect(advancedCluster.StateName).To(Equal("IDLE"))
+		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case cluster.Spec.ServerlessSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())

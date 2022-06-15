@@ -105,7 +105,7 @@ var _ = Describe("ClusterWide", Label("int", "ClusterWide"), func() {
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-			createdClusterAWS = mdbv1.DefaultAWSCluster(clusterNS.Name, createdProject.Name).Lightweight()
+			createdClusterAWS = mdbv1.DefaultAWSDeployment(clusterNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the cluster one - need to specify explicitly
 			createdClusterAWS.Spec.Project.Namespace = namespace.Name
 
@@ -200,7 +200,7 @@ func validateClusterCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResou
 		if startedCreation {
 			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
@@ -225,7 +225,7 @@ func validateClusterCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		if startedCreation {
 			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.ClusterCreating)).WithMessageRegexp("cluster is provisioning"),
+				status.FalseCondition(status.ClusterReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
@@ -242,7 +242,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
 		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserClustersAppliedChanges)),
+			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
 		)

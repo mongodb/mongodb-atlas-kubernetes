@@ -25,12 +25,12 @@ const (
 
 // Atlas Cluster reasons
 const (
-	ClusterNotCreatedInAtlas           ConditionReason = "ClusterNotCreatedInAtlas"
-	ClusterNotUpdatedInAtlas           ConditionReason = "ClusterNotUpdatedInAtlas"
-	ClusterCreating                    ConditionReason = "ClusterCreating"
-	ClusterUpdating                    ConditionReason = "ClusterUpdating"
-	ClusterConnectionSecretsNotCreated ConditionReason = "ClusterConnectionSecretsNotCreated"
-	ClusterAdvancedOptionsAreNotReady  ConditionReason = "ClusterAdvancedOptionsAreNotReady"
+	DeploymentNotCreatedInAtlas           ConditionReason = "DeploymentNotCreatedInAtlas"
+	DeploymentNotUpdatedInAtlas           ConditionReason = "DeploymentNotUpdatedInAtlas"
+	DeploymentCreating                    ConditionReason = "DeploymentCreating"
+	DeploymentUpdating                    ConditionReason = "DeploymentUpdating"
+	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
+	DeploymentAdvancedOptionsAreNotReady  ConditionReason = "DeploymentAdvancedOptionsAreNotReady"
 )
 
 // Atlas Database User reasons
@@ -39,7 +39,7 @@ const (
 	DatabaseUserNotUpdatedInAtlas           ConditionReason = "DatabaseUserNotUpdatedInAtlas"
 	DatabaseUserConnectionSecretsNotCreated ConditionReason = "DatabaseUserConnectionSecretsNotCreated"
 	DatabaseUserStaleConnectionSecrets      ConditionReason = "DatabaseUserStaleConnectionSecrets"
-	DatabaseUserClustersAppliedChanges      ConditionReason = "ClustersAppliedDatabaseUsersChanges"
+	DatabaseUserDeploymentAppliedChanges    ConditionReason = "DeploymentAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
 	DatabaseUserExpired                     ConditionReason = "DatabaseUserExpired"
 )

@@ -15,94 +15,94 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
-func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	advancedClusterSpec := cluster.Spec.AdvancedDeploymentSpec
+func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+	advancedDeploymentSpec := deployment.Spec.AdvancedDeploymentSpec
 
-	advancedCluster, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedClusterSpec.Name)
+	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedDeploymentSpec.Name)
 
 	if err != nil {
 		if resp == nil {
-			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		if resp.StatusCode != http.StatusNotFound {
-			return advancedCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
-		advancedCluster, err = advancedClusterSpec.AdvancedDeployment()
+		advancedDeployment, err = advancedDeploymentSpec.AdvancedDeployment()
 		if err != nil {
-			return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Advanced Cluster %s doesn't exist in Atlas - creating", advancedClusterSpec.Name)
-		advancedCluster, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedCluster)
+		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", advancedDeploymentSpec.Name)
+		advancedDeployment, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedDeployment)
 		if err != nil {
-			return advancedCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	switch advancedCluster.StateName {
+	switch advancedDeployment.StateName {
 	case "IDLE":
-		return advancedClusterIdle(ctx, project, cluster, advancedCluster)
+		return advancedDeploymentIdle(ctx, project, deployment, advancedDeployment)
 
 	case "CREATING":
-		return advancedCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+		return advancedDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return advancedCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return advancedDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return advancedCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", advancedCluster.StateName))
+		return advancedDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", advancedDeployment.StateName))
 	}
 }
 
-func advancedClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, advancedCluster *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	resultingCluster, err := MergedAdvancedDeployment(*advancedCluster, cluster.Spec)
+func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, advancedDeployment *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+	resultingDeployment, err := MergedAdvancedDeployment(*advancedDeployment, deployment.Spec)
 	if err != nil {
-		return advancedCluster, workflow.Terminate(workflow.Internal, err.Error())
+		return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if done := AdvancedDeploymentsEqual(ctx.Log, *advancedCluster, resultingCluster); done {
-		return advancedCluster, workflow.OK()
+	if done := AdvancedDeploymentsEqual(ctx.Log, *advancedDeployment, resultingDeployment); done {
+		return advancedDeployment, workflow.OK()
 	}
 
-	if cluster.Spec.AdvancedDeploymentSpec.Paused != nil {
-		if advancedCluster.Paused == nil || *advancedCluster.Paused != *cluster.Spec.AdvancedDeploymentSpec.Paused {
+	if deployment.Spec.AdvancedDeploymentSpec.Paused != nil {
+		if advancedDeployment.Paused == nil || *advancedDeployment.Paused != *deployment.Spec.AdvancedDeploymentSpec.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
-			resultingCluster = mongodbatlas.AdvancedCluster{
-				Paused: cluster.Spec.AdvancedDeploymentSpec.Paused,
+			resultingDeployment = mongodbatlas.AdvancedCluster{
+				Paused: deployment.Spec.AdvancedDeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
-			resultingCluster.Paused = nil
+			resultingDeployment.Paused = nil
 		}
 	}
 
-	resultingCluster = cleanupAdvancedDeployment(resultingCluster)
+	resultingDeployment = cleanupAdvancedDeployment(resultingDeployment)
 
-	advancedCluster, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, cluster.Spec.AdvancedDeploymentSpec.Name, &resultingCluster)
+	advancedDeployment, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, &resultingDeployment)
 	if err != nil {
-		return advancedCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
+		return advancedDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}
 
-	return nil, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupAdvancedDeployment(cluster mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
-	cluster.ID = ""
-	cluster.MongoDBVersion = ""
-	cluster.StateName = ""
-	cluster.ConnectionStrings = nil
-	return cluster
+func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
+	deployment.ID = ""
+	deployment.MongoDBVersion = ""
+	deployment.StateName = ""
+	deployment.ConnectionStrings = nil
+	return deployment
 }
 
-// MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Cluster
-func MergedAdvancedDeployment(advancedCluster mongodbatlas.AdvancedCluster, spec mdbv1.AtlasDeploymentSpec) (mongodbatlas.AdvancedCluster, error) {
+// MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
+func MergedAdvancedDeployment(advancedDeployment mongodbatlas.AdvancedCluster, spec mdbv1.AtlasDeploymentSpec) (mongodbatlas.AdvancedCluster, error) {
 	result := mongodbatlas.AdvancedCluster{}
-	if err := compat.JSONCopy(&result, advancedCluster); err != nil {
+	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
 		return result, err
 	}
 
@@ -110,7 +110,7 @@ func MergedAdvancedDeployment(advancedCluster mongodbatlas.AdvancedCluster, spec
 		return result, err
 	}
 
-	for i, replicationSpec := range advancedCluster.ReplicationSpecs {
+	for i, replicationSpec := range advancedDeployment.ReplicationSpecs {
 		for k, v := range replicationSpec.RegionConfigs {
 			// the response does not return backing provider names in some situations.
 			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
@@ -122,48 +122,48 @@ func MergedAdvancedDeployment(advancedCluster mongodbatlas.AdvancedCluster, spec
 	return result, nil
 }
 
-// AdvancedDeploymentsEqual compares two Atlas Advanced Clusters
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.AdvancedCluster, clusterOperator mongodbatlas.AdvancedCluster) bool {
-	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
+// AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mongodbatlas.AdvancedCluster, deploymentOperator mongodbatlas.AdvancedCluster) bool {
+	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Clusters are different: %s", d)
+		log.Debugf("Deployments are different: %s", d)
 	}
 
 	return d == ""
 }
 
-// GetAllClusterNames returns all cluster names including regular and advanced clusters.
-func GetAllClusterNames(client mongodbatlas.Client, projectID string) ([]string, error) {
-	var clusterNames []string
-	clusters, _, err := client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+// GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
+func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]string, error) {
+	var deploymentNames []string
+	deployment, _, err := client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	advancedClusters, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	advancedDeployments, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, c := range clusters {
-		clusterNames = append(clusterNames, c.Name)
+	for _, c := range deployment {
+		deploymentNames = append(deploymentNames, c.Name)
 	}
 
-	for _, c := range advancedClusters.Results {
-		// based on configuration settings, some advanced clusters also show up in the regular clusters API.
-		// For these clusters, we don't want to duplicate the secret so we skip them.
+	for _, d := range advancedDeployments.Results {
+		// based on configuration settings, some advanced deployment also show up in the regular deployments API.
+		// For these deployments, we don't want to duplicate the secret so we skip them.
 		found := false
-		for _, regularCluster := range clusters {
-			if regularCluster.Name == c.Name {
+		for _, regularDeployment := range deployment {
+			if regularDeployment.Name == d.Name {
 				found = true
 				break
 			}
 		}
 
-		// we only include cluster names which have not been handled by the regular cluster API.
+		// we only include deployment names which have not been handled by the regular deployment API.
 		if !found {
-			clusterNames = append(clusterNames, c.Name)
+			deploymentNames = append(deploymentNames, d.Name)
 		}
 	}
-	return clusterNames, nil
+	return deploymentNames, nil
 }
