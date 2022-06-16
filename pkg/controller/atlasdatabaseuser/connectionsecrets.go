@@ -87,25 +87,18 @@ func createOrUpdateConnectionSecretsFromClusterSecrets(ctx *workflow.Context, k8
 			requeue = true
 			continue
 		}
-		// Cluster may be not ready yet, so no connection urls - skipping
-		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if cs.connectionStrings == nil || cs.connectionStrings.StandardSrv == "" {
-			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cs.name)
-			requeue = true
-			continue
-		}
 		password, err := dbUser.ReadPassword(k8sClient)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		data := connectionsecret.ConnectionData{
-			DBUserName:    dbUser.Spec.Username,
-			ConnURL:       cs.connectionStrings.Standard,
-			SrvConnURL:    cs.connectionStrings.StandardSrv,
-			PvtConnURL:    cs.connectionStrings.Private,
-			PvtSrvConnURL: cs.connectionStrings.PrivateSrv,
-			Password:      password,
+			DBUserName: dbUser.Spec.Username,
+			Password:   password,
+			ConnURL:    cs.connectionStrings.Standard,
+			SrvConnURL: cs.connectionStrings.StandardSrv,
 		}
+		fillPrivateConnStrings(cs.connectionStrings, &data)
+
 		var secretName string
 		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cs.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
@@ -186,4 +179,17 @@ func removeStaleSecretsByUserName(k8sClient client.Client, projectID, userName s
 		log.Infof("Removed %d connection secrets", removed)
 	}
 	return lastError
+}
+
+func fillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *connectionsecret.ConnectionData) {
+	if connStrings.Private != "" {
+		data.PvtConnURL = connStrings.Private
+		data.PvtSrvConnURL = connStrings.PrivateSrv
+	}
+
+	if len(connStrings.PrivateEndpoint) == 1 {
+		pe := connStrings.PrivateEndpoint[0]
+		data.PvtConnURL = pe.ConnectionString
+		data.PvtSrvConnURL = pe.SRVConnectionString
+	}
 }
