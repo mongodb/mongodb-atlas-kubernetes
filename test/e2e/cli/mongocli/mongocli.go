@@ -72,6 +72,11 @@ func DeleteCluster(projectID, clusterName string) *Buffer {
 	return session.Wait().Out
 }
 
+func DeleteProject(projectID string) *Buffer {
+	session := cli.Execute("mongocli", "iam", "projects", "delete", projectID, "--force")
+	return session.Wait().Out
+}
+
 func IsProjectExist(name string) bool {
 	projects := GetProjects().Results
 	for _, p := range projects {
