@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	preLoginButton = "text=\"Deployment-Admin\""
+	preLoginButton = "text=\"Cluster-Admin\""
 	userName       = "#inputUsername"
 	userPassword   = "#inputPassword"
 	loginLocator   = "text=\"Log in\""

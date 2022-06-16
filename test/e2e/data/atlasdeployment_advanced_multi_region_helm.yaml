@@ -6,7 +6,7 @@ spec:
   projectRef:
     name: my-project
   advancedDeploymentSpec:
-    DeploymentType: GEOSHARDED
+    clusterType: GEOSHARDED
     name: advanced-deployment
     replicationSpecs:
       - numShards: 1

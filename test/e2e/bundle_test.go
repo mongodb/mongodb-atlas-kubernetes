@@ -25,7 +25,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	_ = AfterEach(func() {
-		By("Atfer each.", func() {
+		By("After each.", func() {
 			if CurrentSpecReport().Failed() {
 				actions.SaveK8sResources(
 					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},

@@ -32,7 +32,7 @@ var _ = Describe("HELM charts", func() {
 	})
 
 	_ = AfterEach(func() {
-		By("Atfer each.", func() {
+		By("After each.", func() {
 			GinkgoWriter.Write([]byte("\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
@@ -190,8 +190,8 @@ var _ = Describe("HELM charts", func() {
 					[]func(*model.TestDataProvider){},
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Deployments[0].ObjectMeta.Name = "Deployment-from-helm-wide"
-				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "Deployment-from-helm-wide"
+				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-wide"
+				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-wide"
 			})
 			By("User use helm for deploying operator", func() {
 				helm.InstallOperatorWideSubmodule(data.Resources)
@@ -223,8 +223,8 @@ var _ = Describe("HELM charts", func() {
 					[]func(*model.TestDataProvider){},
 				)
 				// helm template has equal ObjectMeta.Name and Spec.Name
-				data.Resources.Deployments[0].ObjectMeta.Name = "Deployment-from-helm-upgrade"
-				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "Deployment-from-helm-upgrade"
+				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-upgrade"
+				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-upgrade"
 			})
 			By("User use helm for last released version of operator and deploy his resouces", func() {
 				helm.AddMongoDBRepo()

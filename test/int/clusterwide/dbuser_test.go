@@ -95,8 +95,8 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 	Describe("Create user and deployment in different namespaces", func() {
 		It("Should Succeed", func() {
-			DeploymentNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-Deployment"}}
-			Expect(k8sClient.Create(context.Background(), &DeploymentNS)).ToNot(HaveOccurred())
+			deploymentNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-deployment"}}
+			Expect(k8sClient.Create(context.Background(), &deploymentNS)).ToNot(HaveOccurred())
 
 			userNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-user"}}
 			Expect(k8sClient.Create(context.Background(), &userNS)).ToNot(HaveOccurred())
@@ -105,7 +105,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-			createdDeploymentAWS = mdbv1.DefaultAWSDeployment(DeploymentNS.Name, createdProject.Name).Lightweight()
+			createdDeploymentAWS = mdbv1.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the deployment one - need to specify explicitly
 			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
 

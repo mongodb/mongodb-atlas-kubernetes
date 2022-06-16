@@ -15,7 +15,7 @@ import (
 )
 
 func GetDeployments(projectID string) []mongodbatlas.Cluster {
-	session := cli.Execute("mongocli", "atlas", "Deployments", "list", "--projectId", projectID, "-o", "json")
+	session := cli.Execute("mongocli", "atlas", "clusters", "list", "--projectId", projectID, "-o", "json")
 	output := session.Wait("1m").Out.Contents()
 	var deployments []mongodbatlas.Cluster
 	ExpectWithOffset(1, json.Unmarshal(output, &deployments)).ShouldNot(HaveOccurred())
@@ -53,7 +53,7 @@ func GetProjectID(name string) string {
 }
 
 func GetDeploymentsInfo(projectID string, name string) mongodbatlas.Cluster {
-	session := cli.Execute("mongocli", "atlas", "Deployments", "describe", name, "--projectId", projectID, "-o", "json")
+	session := cli.Execute("mongocli", "atlas", "clusters", "describe", name, "--projectId", projectID, "-o", "json")
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 	output := session.Out.Contents()
 	var deployment mongodbatlas.Cluster

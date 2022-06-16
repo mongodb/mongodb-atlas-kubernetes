@@ -22,7 +22,7 @@ import (
 
 // NOTES
 // Feature unavailable in Free and Shared-Tier Deployments
-// This feature is not available for M0 free Deployments, M2, and M5 Deployments.
+// This feature is not available for M0 free deployments, M2, and M5 deployments.
 
 // tag for test resources "atlas-operator-test" (config.Tag)
 
