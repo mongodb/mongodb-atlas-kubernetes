@@ -471,6 +471,42 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 	})
 }
 
+// DeployAdvancedResourcesAction deploy project and cluster, wait, and check result
+func DeployAdvancedResourcesAction(data *model.TestDataProvider) {
+	DeployProjectAndWait(data, "1")
+	DeployCluster(data, "1")
+}
+
+// DeleteAdvancedResources delete project and cluster resources
+func DeleteAdvancedResources(data *model.TestDataProvider) {
+	DeleteAdvancedResourcesCluster(data)
+	DeleteAdvancedResourcesProject(data)
+}
+
+func DeleteAdvancedResourcesCluster(data *model.TestDataProvider) {
+	By("Delete cluster", func() {
+		// We cannot use kubectl to delete resource because we deleted the CRD
+		mongocli.DeleteCluster(data.Resources.ProjectID, data.Resources.Clusters[0].Spec.GetClusterName())
+		Eventually(
+			CheckIfClusterExist(data.Resources),
+			"10m", "1m",
+		).Should(BeFalse(), "Cluster should be deleted from Atlas")
+	})
+}
+
+func DeleteAdvancedResourcesProject(data *model.TestDataProvider) {
+	// We cannot use kubectl to delete resource because we deleted the CRD
+	mongocli.DeleteProject(data.Resources.ProjectID)
+	By("Delete project", func() {
+		Eventually(
+			func() bool {
+				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+			},
+			"5m", "20s",
+		).Should(BeFalse(), "Project should be deleted from Atlas")
+	})
+}
+
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 	for i := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
