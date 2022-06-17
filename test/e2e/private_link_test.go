@@ -221,7 +221,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	By("Check if project statuses are updating, get project ID", func() {
 		Eventually(kube.GetProjectPEndpointServiceStatus(userData), "15m", "10s").Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"),
+		Eventually(kube.GetReadyProjectStatus(userData), "2m", "20s").Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
 		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")

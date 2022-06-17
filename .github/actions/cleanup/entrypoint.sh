@@ -25,7 +25,10 @@ delete_endpoints_for_project() {
     provider=$2
 
     endpoints=$(mongocli atlas privateEndpoints "$provider" list --projectId "$projectID" -o json | jq -c . )
-    [[ "$provider" == "aws" ]] && field=".interfaceEndpoints" || field=".privateEndpoints"
+    [[ "$provider" == "aws" ]] && field=".interfaceEndpoints"
+    [[ "$provider" == "azure" ]] && field=".privateEndpoints"
+    [[ "$provider" == "gcp" ]] && field=".endpointGroupNames"
+    [[ "$field" == "" ]] && echo "Please check provider" && exit 1
 
     # shellcheck disable=SC2068
     # multiline
@@ -85,6 +88,7 @@ delete_old_project() {
             echo "====== Cleaning Project: $id"
             delete_endpoints_for_project "$id" "aws"
             delete_endpoints_for_project "$id" "azure"
+            delete_endpoints_for_project "$id" "gcp"
             delete_project
         fi
     )
@@ -104,6 +108,7 @@ delete_all() {
             echo "====== Cleaning Project: $id"
             delete_endpoints_for_project "$id" "aws"
             delete_endpoints_for_project "$id" "azure"
+            delete_endpoints_for_project "$id" "gcp"
             delete_clusters "$id"
             delete_project
         fi
