@@ -425,7 +425,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				s2 := validateSecret(k8sClient, *createdProject, *createdDeploymentAzure, *createdDBUser)
 
 				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
-					fmt.Sprintf("Connection Secrets were created/updated: %s, %s", s1.Name, s2.Name))
+					fmt.Sprintf("Connection Secrets were created/updated: (%s|%s|, ){3}", s1.Name, s2.Name))
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
 				oldName := createdDBUser.Spec.Username
