@@ -25,7 +25,10 @@ delete_endpoints_for_project() {
     provider=$2
 
     endpoints=$(mongocli atlas privateEndpoints "$provider" list --projectId "$projectID" -o json | jq -c . )
-    [[ "$provider" == "aws" ]] && field=".interfaceEndpoints" || field=".privateEndpoints"
+    [[ "$provider" == "aws" ]] && field=".interfaceEndpoints"
+    [[ "$provider" == "azure" ]] && field=".privateEndpoints"
+    [[ "$provider" == "gcp" ]] && field=".endpointGroupNames"
+    [[ "$field" == "" ]] && echo "Please check provider" && exit 1
 
     # shellcheck disable=SC2068
     # multiline
@@ -85,6 +88,7 @@ delete_old_project() {
             echo "====== Cleaning Project: $id"
             delete_endpoints_for_project "$id" "aws"
             delete_endpoints_for_project "$id" "azure"
+            delete_endpoints_for_project "$id" "gcp"
             delete_project
         fi
     )
@@ -104,6 +108,7 @@ delete_all() {
             echo "====== Cleaning Project: $id"
             delete_endpoints_for_project "$id" "aws"
             delete_endpoints_for_project "$id" "azure"
+            delete_endpoints_for_project "$id" "gcp"
             delete_clusters "$id"
             delete_project
         fi
@@ -116,12 +121,12 @@ delete_all() {
 BASE_URL="https://cloud-qa.mongodb.com/api/atlas/v1.0"
 
 get_api_keys() {
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys"
+    curl -s -u "${MCLI_PUBLIC_API_KEY}:${MCLI_PRIVATE_API_KEY}" --digest "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys"
 }
 
 delete_test_apikeys() {
     API_KEY_ID=$1
-    curl -s -u "${INPUT_ATLAS_PUBLIC_KEY}:${INPUT_ATLAS_PRIVATE_KEY}" --digest --request DELETE "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys/${API_KEY_ID}"
+    curl -s -u "${MCLI_PUBLIC_API_KEY}:${MCLI_PRIVATE_API_KEY}" --digest --request DELETE "${BASE_URL}/orgs/${MCLI_ORG_ID}/apiKeys/${API_KEY_ID}"
 }
 
 # ------------------------------------------------------------------------------
@@ -160,7 +165,7 @@ if [[ "${INPUT_CLEAN_ALL:-}" == "true" ]]; then
     echo "Please, remember running tests will fail (run CLEAN_ALL = false, if need soft deletion)"
     test_description="created from the AO test"
     all_keys=$(get_api_keys)
-    for key in $(echo "$all_keys" | jq '.results | keys | .[]'); do
+    for key in $(echo "$all_keys" | jq 'select(.results | length > 0) | .results | keys | .[]'); do
         element=$(echo "$all_keys" | jq ".results[$key]")
         desc=$(echo "$element" | jq -r '.desc')
         if [[ "${desc}" == "${test_description}" ]]; then
