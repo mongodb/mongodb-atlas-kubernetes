@@ -15,6 +15,8 @@ const (
 	ProjectNotCreatedInAtlas                ConditionReason = "ProjectNotCreatedInAtlas"
 	ProjectIPAccessInvalid                  ConditionReason = "ProjectIPAccessListInvalid"
 	ProjectIPNotCreatedInAtlas              ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
+	ProjectWindowInvalid                    ConditionReason = "ProjectWindowInvalid"
+	ProjectWindowNotCreatedInAtlas          ConditionReason = "ProjectWindowNotCreatedInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"

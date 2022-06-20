@@ -201,6 +201,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	if result = ensureMaintenanceWindow(ctx, projectID, project); !result.IsOk() {
+		// TODO setcondition ?
+		return result.ReconcileResult(), nil
+	}
+
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
