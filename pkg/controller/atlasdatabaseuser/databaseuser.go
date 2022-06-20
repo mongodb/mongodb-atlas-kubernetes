@@ -207,10 +207,10 @@ func filterScopeDeployments(user mdbv1.AtlasDatabaseUser, allDeploymentsInProjec
 	var deploymentsToCheck []string
 	if len(scopeDeployments) > 0 {
 		// filtering the scope deployments by the ones existing in Atlas
-		for _, c := range scopeDeployments {
-			for _, a := range allDeploymentsInProject {
-				if a == c {
-					deploymentsToCheck = append(deploymentsToCheck, c)
+		for _, scopeDep := range scopeDeployments {
+			for _, projectDep := range allDeploymentsInProject {
+				if projectDep == scopeDep {
+					deploymentsToCheck = append(deploymentsToCheck, scopeDep)
 					break
 				}
 			}

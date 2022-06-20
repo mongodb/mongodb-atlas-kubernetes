@@ -17,14 +17,14 @@ type AtlasDeployment struct {
 
 type DeploymentSpec v1.AtlasDeploymentSpec
 
-func (c DeploymentSpec) GetDeploymentName() string {
-	if c.AdvancedDeploymentSpec != nil {
-		return c.AdvancedDeploymentSpec.Name
+func (spec DeploymentSpec) GetDeploymentName() string {
+	if spec.AdvancedDeploymentSpec != nil {
+		return spec.AdvancedDeploymentSpec.Name
 	}
-	if c.ServerlessSpec != nil {
-		return c.ServerlessSpec.Name
+	if spec.ServerlessSpec != nil {
+		return spec.ServerlessSpec.Name
 	}
-	return c.DeploymentSpec.Name
+	return spec.DeploymentSpec.Name
 }
 
 // LoadUserDeploymentConfig load configuration into object
@@ -34,11 +34,11 @@ func LoadUserDeploymentConfig(path string) AtlasDeployment {
 	return config
 }
 
-func (ac *AtlasDeployment) DeploymentFileName(input UserInputs) string {
+func (ad *AtlasDeployment) DeploymentFileName(input UserInputs) string {
 	// return "data/deployment-" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
-	return filepath.Dir(input.ProjectPath) + "/" + ac.ObjectMeta.Name + "-" + ac.Spec.Project.Name + ".yaml"
+	return filepath.Dir(input.ProjectPath) + "/" + ad.ObjectMeta.Name + "-" + ad.Spec.Project.Name + ".yaml"
 }
 
-func (ac *AtlasDeployment) GetDeploymentNameResource() string {
-	return "atlasdeployment.atlas.mongodb.com/" + ac.ObjectMeta.Name
+func (ad *AtlasDeployment) GetDeploymentNameResource() string {
+	return "atlasdeployment.atlas.mongodb.com/" + ad.ObjectMeta.Name
 }

@@ -68,7 +68,7 @@ func IsProjectInfoExist(projectID string) bool {
 }
 
 func DeleteDeployment(projectID, deploymentName string) *Buffer {
-	session := cli.Execute("mongocli", "atlas", "Deployment", "delete", deploymentName, "--projectId", projectID, "--force")
+	session := cli.Execute("mongocli", "atlas", "cluster", "delete", deploymentName, "--projectId", projectID, "--force")
 	return session.Wait().Out
 }
 

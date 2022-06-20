@@ -32,7 +32,7 @@ func setupLogger() *zap.SugaredLogger {
 	return log.Sugar()
 }
 
-// createK8sClient creates an in deployment client which can be used to fetch the current state of the AtlasDeployment
+// createK8sClient creates a client which can be used to fetch the current state of the AtlasDeployment
 // resource.
 func createK8sClient() (client.Client, error) {
 	restCfg, err := rest.InClusterConfig()
@@ -61,7 +61,7 @@ func isDeploymentReady(logger *zap.SugaredLogger) (bool, error) {
 	ticker := time.NewTicker(pollingInterval)
 	defer ticker.Stop()
 
-	deploymentName := os.Getenv("CLUSTER_NAME")
+	deploymentName := os.Getenv("DEPLOYMENT_NAME")
 	namespace := os.Getenv("NAMESPACE")
 
 	totalTime := time.Duration(0)

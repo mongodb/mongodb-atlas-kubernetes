@@ -287,6 +287,6 @@ func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 
 func GetDeploymentDump(output string) {
 	outputFolder := fmt.Sprintf("--output-directory=%s", output)
-	session := cli.Execute("kubectl", "deployment-info", "dump", "--all-namespaces", outputFolder)
+	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
 }
