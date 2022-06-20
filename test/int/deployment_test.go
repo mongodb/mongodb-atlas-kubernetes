@@ -533,7 +533,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						status.
 							FalseCondition(status.DeploymentReadyType).
 							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
-							WithMessageRegexp("CANNOT_UPDATE_PAUSED_Deployment"),
+							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
 					),
 					60,
 					interval,

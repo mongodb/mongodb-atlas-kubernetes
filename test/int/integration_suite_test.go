@@ -115,7 +115,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
 	return b.Bytes()
 }, func(data []byte) {
-	if os.Getenv("USE_EXISTING_Deployment") != "" {
+	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
 		var err error
 		// For the existing deployment we read the kubeconfig
 		cfg, err = config.GetConfig()
