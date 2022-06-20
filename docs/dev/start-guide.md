@@ -9,6 +9,7 @@ brew install kustomize # or https://kubectl.docs.kubernetes.io/installation/kust
 brew install act # or https://github.com/nektos/act#installation
 brew install yq # or https://pypi.org/project/yq/
 brew install shellcheck # or https://github.com/koalaman/shellcheck#installing
+brew install coreutils # or https://www.gnu.org/software/coreutils/
 brew install pre-commit # or https://pre-commit.com/index.html#install
 pre-commit install # from the root of the project
 ```
