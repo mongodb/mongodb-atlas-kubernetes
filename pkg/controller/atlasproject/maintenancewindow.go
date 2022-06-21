@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -16,25 +17,40 @@ func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, project *m
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
 	}
 
-	if result := createOrUpdateInAtlas(ctx.Client, projectID, project.Spec.ProjectMaintenanceWindow); !result.IsOk() {
-		return result
+	ctx.Log.Debugw(fmt.Sprintf("%s%t", "Checking if Window is empty : ", isEmptyWindow(project.Spec.ProjectMaintenanceWindow)))
+	if isEmptyWindow(project.Spec.ProjectMaintenanceWindow) {
+		ctx.Log.Debugw("Deleting in Atlas")
+		if result := deleteInAtlas(ctx.Client, projectID); !result.IsOk() {
+			return result
+		}
+	} else {
+		ctx.Log.Debugw("Updating in Atlas")
+		if result := createOrUpdateInAtlas(ctx.Client, projectID, project.Spec.ProjectMaintenanceWindow); !result.IsOk() {
+			return result
+		}
 	}
+
 	return workflow.OK()
+}
+
+func isEmptyWindow(window project.MaintenanceWindow) bool {
+	return isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.AutoDeferOnceEnabled && !window.StartASAP
 }
 
 func validateMaintenanceWindow(window project.MaintenanceWindow) error {
 	// TODO verify we make correct checks here
+	// If StartASAP is specified, it should be the only field
 	if window.StartASAP {
 		if noneSpecified := isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.AutoDeferOnceEnabled; !noneSpecified {
 			return errors.New("none of 'dayOfWeek', 'hourOfDay' and 'autoDeferOnceEnabled' should be specified if" +
 				" 'startASAP is true")
 		}
+	} else {
+		// Query is valid if either all fields are empty, or both day and hour are specified
+		if !isEmptyWindow(window) && (isEmpty(window.DayOfWeek) || isEmpty(window.HourOfDay)) {
+			return errors.New("both 'dayOfWeek' and 'hourOfDay' must be specified")
+		}
 	}
-
-	if isEmpty(window.DayOfWeek) || isEmpty(window.HourOfDay) {
-		return errors.New("both 'dayOfWeek' and 'hourOfDay' must be specified")
-	}
-
 	// Atlas will check if dayOfWeek and hourOfDay are in the bounds
 	return nil
 }
@@ -57,6 +73,13 @@ func createOrUpdateInAtlas(client mongodbatlas.Client, projectID string, mainten
 
 	if _, err := client.MaintenanceWindows.Update(context.Background(), projectID, operatorWindow); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err.Error())
+	}
+	return workflow.OK()
+}
+
+func deleteInAtlas(client mongodbatlas.Client, projectID string) workflow.Result {
+	if _, err := client.MaintenanceWindows.Reset(context.Background(), projectID); err != nil {
+		return workflow.Terminate(workflow.ProjectWindowNotDeletedInAtlas, err.Error())
 	}
 	return workflow.OK()
 }
