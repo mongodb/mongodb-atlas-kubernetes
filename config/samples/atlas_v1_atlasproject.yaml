@@ -11,3 +11,6 @@ spec:
     dayOfWeek: 7
     hourOfDay: 18
     autoDeferOnceEnabled: false
+    #startASAP: true
+    #defer: true
+    #autoDefer: true

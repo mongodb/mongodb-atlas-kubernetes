@@ -18,6 +18,8 @@ const (
 	ProjectWindowInvalid                    ConditionReason = "ProjectWindowInvalid"
 	ProjectWindowNotCreatedInAtlas          ConditionReason = "ProjectWindowNotCreatedInAtlas"
 	ProjectWindowNotDeletedInAtlas          ConditionReason = "projectWindowNotDeletedInAtlas"
+	ProjectWindowNotDeferredInAtlas         ConditionReason = "ProjectWindowNotDeferredInAtlas"
+	ProjectWindowNotAutoDeferredInAtlas     ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
