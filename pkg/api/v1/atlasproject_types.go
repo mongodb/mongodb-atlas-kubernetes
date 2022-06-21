@@ -176,7 +176,6 @@ func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasPro
 }
 
 func (p *AtlasProject) WithMaintenanceWindow(window project.MaintenanceWindow) *AtlasProject {
-	// TODO should I check for validity of "window" here ?
 	p.Spec.ProjectMaintenanceWindow = window
 	return p
 }

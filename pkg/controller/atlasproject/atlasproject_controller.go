@@ -202,7 +202,8 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	if result = ensureMaintenanceWindow(ctx, projectID, project); !result.IsOk() {
-		// TODO setcondition ?
+		ctx.SetConditionTrue(status.MaintenanceWindowReadyType)
+		r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
 		return result.ReconcileResult(), nil
 	}
 
