@@ -30,10 +30,6 @@ func (m MaintenanceWindow) ToAtlas() (*mongodbatlas.MaintenanceWindow, error) {
 	return result, err
 }
 
-func (m MaintenanceWindow) Identifier() interface{} {
-	return m.DayOfWeek // TODO complete, is it needed ?
-}
-
 // ************************************ Builder methods *************************************************
 // Note, that we don't use pointers here as the AtlasProject uses this without pointers
 
