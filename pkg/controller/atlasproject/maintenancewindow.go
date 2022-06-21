@@ -12,6 +12,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
+// ensureMaintenanceWindow ensures that the state of the Atlas Maintenance Window matches the
+// state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
+// in Atlas but is not specified in the CR, it is deleted.
 func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateMaintenanceWindow(project.Spec.ProjectMaintenanceWindow); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
@@ -37,8 +40,9 @@ func isEmptyWindow(window project.MaintenanceWindow) bool {
 	return isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.AutoDeferOnceEnabled && !window.StartASAP
 }
 
+// validateMaintenanceWindow performs validation of the Maintenance Window. Note, that we intentionally don't validate
+// hour of day and day of week - this will be done by Atlas.
 func validateMaintenanceWindow(window project.MaintenanceWindow) error {
-	// TODO verify we make correct checks here
 	// If StartASAP is specified, it should be the only field
 	if window.StartASAP {
 		if noneSpecified := isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.AutoDeferOnceEnabled; !noneSpecified {
@@ -47,11 +51,11 @@ func validateMaintenanceWindow(window project.MaintenanceWindow) error {
 		}
 	} else {
 		// Query is valid if either all fields are empty, or both day and hour are specified
+		// Atlas will check if dayOfWeek and hourOfDay are in the bounds
 		if !isEmptyWindow(window) && (isEmpty(window.DayOfWeek) || isEmpty(window.HourOfDay)) {
 			return errors.New("both 'dayOfWeek' and 'hourOfDay' must be specified")
 		}
 	}
-	// Atlas will check if dayOfWeek and hourOfDay are in the bounds
 	return nil
 }
 
