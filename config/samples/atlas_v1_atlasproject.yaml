@@ -7,3 +7,7 @@ spec:
   projectIpAccessList:
     - ipAddress: "192.0.2.15"
       comment: "IP address for Application Server A"
+  projectMaintenanceWindow:
+    dayOfWeek: 7
+    hourOfDay: 18
+    autoDeferOnceEnabled: false
