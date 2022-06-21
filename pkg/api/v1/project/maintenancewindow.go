@@ -21,6 +21,12 @@ type MaintenanceWindow struct {
 	// Flag indicating whether project maintenance has been directed to start immediately.
 	// +optional
 	StartASAP bool `json:"startASAP,omitempty"`
+	// Flag indicating whether the next scheduled project maintenance should be deferred for one week.
+	// +optional
+	Defer bool `json:"defer,omitempty"`
+	// Flag indicating whether any scheduled project maintenance should be deferred automatically for one week.
+	// +optional
+	AutoDefer bool `json:"autoDefer,omitempty"`
 }
 
 // ToAtlas converts the ProjectMaintenanceWindow to native Atlas client format.
@@ -47,12 +53,22 @@ func (m MaintenanceWindow) WithHour(hour int) MaintenanceWindow {
 	return m
 }
 
-func (m MaintenanceWindow) WithAutoDefer(autoDefer bool) MaintenanceWindow {
-	m.AutoDeferOnceEnabled = autoDefer
+func (m MaintenanceWindow) WithAutoDeferOnceEnabled(autoDeferOnceEnabled bool) MaintenanceWindow {
+	m.AutoDeferOnceEnabled = autoDeferOnceEnabled
 	return m
 }
 
 func (m MaintenanceWindow) WithStartASAP(startASAP bool) MaintenanceWindow {
 	m.StartASAP = startASAP
+	return m
+}
+
+func (m MaintenanceWindow) WithDefer(isDefer bool) MaintenanceWindow {
+	m.Defer = isDefer
+	return m
+}
+
+func (m MaintenanceWindow) WithAutoDefer(autoDefer bool) MaintenanceWindow {
+	m.AutoDefer = autoDefer
 	return m
 }
