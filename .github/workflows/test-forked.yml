@@ -274,7 +274,7 @@ jobs:
 
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.1 && \
           go install github.com/onsi/gomega/...
-          ginkgo --label-filter="${TEST_NAME}" --nodes=10 -v test/e2e/
+          ginkgo --label-filter="${TEST_NAME}" --timeout 120m --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}
