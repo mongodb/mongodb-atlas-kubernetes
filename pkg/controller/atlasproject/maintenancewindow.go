@@ -110,7 +110,7 @@ func validateMaintenanceWindow(window project.MaintenanceWindow) error {
 				2) startASAP is true, deferral fields are empty, autoDeferOnceEnabled is false or empty
 				3) defer is true, all other fields are empty
 				4) autoDefer is true, all other fields are empty
-				5) all fields are empty
+				5) all fields are empty (will delete the window if it exists)
 		`)
 	}
 }
