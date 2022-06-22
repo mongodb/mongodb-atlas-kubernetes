@@ -106,11 +106,11 @@ func validateMaintenanceWindow(window project.MaintenanceWindow) error {
 		return errors.New(`
 			projectMaintenanceWindow must respect one of the following constraints :
 				1) both hourOfDay and dayOfWeek are specified (!= 0), deferral fields are empty,
-				   only one or none of startASAP and autoDeferOnceEnabled are true
+				   only one or none of startASAP and autoDeferOnceEnabled is true
 				2) startASAP is true, deferral fields are empty, autoDeferOnceEnabled is false or empty
 				3) defer is true, all other fields are empty
 				4) autoDefer is true, all other fields are empty
-				5) projectMaintenanceWindow isn't specified, or all fields are empty
+				5) all fields are empty
 		`)
 	}
 }
