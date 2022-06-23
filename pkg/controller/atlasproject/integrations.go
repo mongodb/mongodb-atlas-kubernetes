@@ -45,11 +45,13 @@ func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projec
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
+
+	ctx.SetConditionTrue(status.IntegrationReadyType)
+
 	if len(project.Spec.Integrations) == 0 {
 		ctx.UnsetCondition(status.IntegrationReadyType)
 	}
 
-	ctx.SetConditionTrue(status.IntegrationReadyType)
 	return workflow.OK()
 }
 

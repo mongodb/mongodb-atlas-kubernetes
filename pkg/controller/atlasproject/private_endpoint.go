@@ -44,6 +44,7 @@ func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, specPEs []
 	if len(specPEs) == 0 && len(statusPEs) == 0 {
 		ctx.UnsetCondition(status.PrivateEndpointServiceReadyType)
 		ctx.UnsetCondition(status.PrivateEndpointReadyType)
+		return workflow.OK()
 	}
 
 	endpointsToDelete := set.Difference(statusPEs, specPEs)

@@ -46,13 +46,14 @@ func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.
 	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
 	if result := createOrDeleteInAtlas(ctx.Client, projectID, active, ctx.Log); !result.IsOk() {
+		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
 
 	allReady, result := allIPAccessListsAreReady(context.Background(), ctx, projectID)
 	if !result.IsOk() {
-		ctx.SetConditionFalse(status.IPAccessListReadyType)
+		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result
 	}
 
@@ -61,12 +62,12 @@ func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.
 		return workflow.InProgress(workflow.ProjectIPAccessListNotActive, "IP Access List not ready")
 	}
 
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
+
 	if len(project.Spec.ProjectIPAccessList) == 0 {
 		ctx.UnsetCondition(status.IPAccessListReadyType)
-		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.IPAccessListReadyType)
 	return workflow.OK()
 }
 
