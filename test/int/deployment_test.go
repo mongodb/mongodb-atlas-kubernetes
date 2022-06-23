@@ -435,8 +435,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create/Update the cluster (GCP)", func() {
-		It("Should fail, then be fixed", func() {
+	Describe("Create/Update the cluster", func() {
+		It("Should fail, then be fixed (GCP)", func() {
 			createdCluster = mdbv1.DefaultGCPCluster(namespace.Name, createdProject.Name).WithAtlasName("")
 
 			By(fmt.Sprintf("Creating the Cluster %s with invalid parameters", kube.ObjectKeyFromObject(createdCluster)), func() {
@@ -472,7 +472,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		It("Should Succeed", func() {
+		It("Should Succeed (AWS)", func() {
 			createdCluster = mdbv1.DefaultAWSCluster(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Cluster %s", kube.ObjectKeyFromObject(createdCluster)), func() {
