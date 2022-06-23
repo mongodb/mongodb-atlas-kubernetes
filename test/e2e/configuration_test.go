@@ -68,7 +68,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				},
 			),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db"),
+		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db", "long-run"),
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
 				model.AProject{},
@@ -151,7 +151,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				},
 			),
 		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update Deployment to have backup", Label("ns-owner"),
+		Entry("Product Owner - Simplest configuration with ProjectOwner and update deployment to have backup", Label("ns-owner", "long-run"),
 			model.NewTestDataProvider(
 				"operator-ns-product-owner",
 				model.AProject{},

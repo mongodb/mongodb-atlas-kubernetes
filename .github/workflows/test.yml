@@ -149,13 +149,12 @@ jobs:
             "helm-ns",
             "helm-wide",
             "helm-update",
-            "helm-advanced-cluster",
-            "helm-advanced-cluster-multi-region",
             "serverless-instance",
             "multinamespaced",
             "privatelink",
             "integration-ns",
             "x509auth",
+            "long-run",
           ]
         include:
           - k8s: "latest-openshift"
