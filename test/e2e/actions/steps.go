@@ -35,7 +35,7 @@ func WaitCluster(input model.UserInputs, generation string) {
 		func() string {
 			return kubecli.GetStatusCondition("Ready", input.Namespace, input.Clusters[0].GetClusterNameResource())
 		},
-		"45m", "1m",
+		"60m", "1m",
 	).Should(Equal("True"), "Kubernetes resource: Cluster status `Ready` should be 'True'")
 
 	ExpectWithOffset(1, kubecli.GetK8sClusterStateName(
