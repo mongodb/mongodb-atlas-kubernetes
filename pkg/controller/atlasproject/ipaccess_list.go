@@ -50,25 +50,23 @@ func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
 
-	if len(active) == 0 {
-		ctx.UnsetCondition(status.IPAccessListReadyType)
-		return workflow.OK()
-	}
-
 	allReady, result := allIPAccessListsAreReady(context.Background(), ctx, projectID)
 	if !result.IsOk() {
 		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return result
 	}
 
-	if allReady {
-		ctx.SetConditionTrue(status.IPAccessListReadyType)
-	} else {
+	if !allReady {
 		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return workflow.InProgress(workflow.ProjectIPAccessListNotActive, "IP Access List not ready")
 	}
 
-	setCondition(ctx, status.IPAccessListReadyType, result)
+	if len(project.Spec.ProjectIPAccessList) == 0 {
+		ctx.UnsetCondition(status.IPAccessListReadyType)
+		return workflow.OK()
+	}
+
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
 	return workflow.OK()
 }
 
