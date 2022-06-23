@@ -83,13 +83,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	checkAtlasProjectIsReady := func() {
 		projectReadyConditions := testutil.MatchConditions(
 			status.TrueCondition(status.ProjectReadyType),
-			status.TrueCondition(status.IPAccessListReadyType),
-			status.TrueCondition(status.MaintenanceWindowReadyType),
 			status.TrueCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(createdProject.Status.ID).NotTo(BeNil())
-		Expect(createdProject.Status.Conditions).To(ConsistOf(projectReadyConditions))
+		Expect(createdProject.Status.Conditions).To(ContainElements((projectReadyConditions)))
 		Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 	}
 
@@ -497,12 +495,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.TrueCondition(status.IPAccessListReadyType),
-				status.TrueCondition(status.MaintenanceWindowReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
-			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdProject.Status.Conditions).To(ContainElements(expectedConditionsMatchers))
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 		})
 		It("Should Fail if the global Secret doesn't exist", func() {
