@@ -14,7 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-func (r *AtlasProjectReconciler) ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	specPEs := project.Spec.DeepCopy().PrivateEndpoints
 	statusPEs := project.Status.DeepCopy().PrivateEndpoints
 
@@ -39,6 +39,11 @@ func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, specPEs []
 	if result := clearOutNotLinkedPEs(ctx, projectID, atlasPeConnections, statusPEs); !result.IsOk() {
 		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, result)
 		return result
+	}
+
+	if len(specPEs) == 0 && len(statusPEs) == 0 {
+		ctx.UnsetCondition(status.PrivateEndpointServiceReadyType)
+		ctx.UnsetCondition(status.PrivateEndpointReadyType)
 	}
 
 	endpointsToDelete := set.Difference(statusPEs, specPEs)

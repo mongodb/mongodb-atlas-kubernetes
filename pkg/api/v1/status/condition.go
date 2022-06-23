@@ -111,6 +111,16 @@ func EnsureConditionExists(condition Condition, source []Condition) []Condition 
 	return target
 }
 
+func RemoveConditionIfExists(conditionType ConditionType, source []Condition) []Condition {
+	updatedConditions := []Condition{}
+	for _, cond := range source {
+		if cond.Type != conditionType {
+			updatedConditions = append(updatedConditions, cond)
+		}
+	}
+	return updatedConditions
+}
+
 func (c Condition) WithReason(reason string) Condition {
 	c.Reason = reason
 	return c

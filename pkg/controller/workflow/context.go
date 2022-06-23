@@ -99,3 +99,8 @@ func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context 
 	})
 	return c
 }
+
+func (c *Context) UnsetCondition(conditionType status.ConditionType) *Context {
+	status.RemoveConditionIfExists(conditionType, c.status.conditions)
+	return c
+}
