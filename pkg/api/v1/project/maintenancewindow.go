@@ -2,8 +2,6 @@ package project
 
 import (
 	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
 type MaintenanceWindow struct {
@@ -32,9 +30,13 @@ type MaintenanceWindow struct {
 
 // ToAtlas converts the ProjectMaintenanceWindow to native Atlas client format.
 func (m MaintenanceWindow) ToAtlas() (*mongodbatlas.MaintenanceWindow, error) {
-	result := &mongodbatlas.MaintenanceWindow{}
-	err := compat.JSONCopy(result, m)
-	return result, err
+	return &mongodbatlas.MaintenanceWindow{
+		DayOfWeek:            m.DayOfWeek,
+		HourOfDay:            &m.HourOfDay,
+		StartASAP:            &m.StartASAP,
+		NumberOfDeferrals:    0,
+		AutoDeferOnceEnabled: &m.AutoDefer,
+	}, nil
 }
 
 // ************************************ Builder methods *************************************************
