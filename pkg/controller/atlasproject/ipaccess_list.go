@@ -40,32 +40,39 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
 func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	result := syncIPAccessListWithAtlas(ctx, projectID, project)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		return result
+	}
+
+	if len(project.Spec.ProjectIPAccessList) == 0 {
+		ctx.UnsetCondition(status.IPAccessListReadyType)
+		return workflow.OK()
+	}
+
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	return result
+}
+
+func syncIPAccessListWithAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
 	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
 
 	if result := createOrDeleteInAtlas(ctx.Client, projectID, active, ctx.Log); !result.IsOk() {
-		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
 
 	allReady, result := allIPAccessListsAreReady(context.Background(), ctx, projectID)
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
 		return result
 	}
 
 	if !allReady {
-		ctx.SetConditionFalse(status.IPAccessListReadyType)
 		return workflow.InProgress(workflow.ProjectIPAccessListNotActive, "IP Access List not ready")
-	}
-
-	ctx.SetConditionTrue(status.IPAccessListReadyType)
-
-	if len(project.Spec.ProjectIPAccessList) == 0 {
-		ctx.UnsetCondition(status.IPAccessListReadyType)
 	}
 
 	return workflow.OK()

@@ -182,18 +182,19 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
 	if result := ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
+		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 
 	if result = ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
-		setCondition(ctx, status.PrivateEndpointReadyType, result)
+		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
-		setCondition(ctx, status.IntegrationReadyType, result)
+		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
@@ -286,6 +287,10 @@ func removeString(slice []string, s string) (result []string) {
 // setCondition sets the condition from the result and logs the warnings
 func setCondition(ctx *workflow.Context, condition status.ConditionType, result workflow.Result) {
 	ctx.SetConditionFromResult(condition, result)
+	logIfWarning(ctx, result)
+}
+
+func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}
