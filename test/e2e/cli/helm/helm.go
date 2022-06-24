@@ -56,7 +56,7 @@ func Install(args ...string) {
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
 	msg := cli.GetSessionExitMsg(session)
-	ExpectWithOffset(1, msg).Should(SatisfyAny(Say("STATUS: deployed"), Say("resource that already exists"), BeEmpty()),
+	ExpectWithOffset(1, msg).Should(SatisfyAny(Say("STATUS: deployed"), Say("already exists"), BeEmpty()),
 		"HELM. Can't install release",
 	)
 }

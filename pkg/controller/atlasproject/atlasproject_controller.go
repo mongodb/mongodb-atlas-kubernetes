@@ -202,7 +202,6 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 
 	if result = r.ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
-		setCondition(ctx, status.PrivateEndpointReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
