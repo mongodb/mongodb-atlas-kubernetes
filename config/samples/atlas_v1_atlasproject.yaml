@@ -10,7 +10,6 @@ spec:
   projectMaintenanceWindow:
     dayOfWeek: 7
     hourOfDay: 18
-    autoDeferOnceEnabled: false
+    autoDefer: false
     #startASAP: true
     #defer: true
-    #autoDefer: true
