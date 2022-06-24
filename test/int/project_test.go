@@ -498,6 +498,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
 				status.TrueCondition(status.IPAccessListReadyType),
+				status.TrueCondition(status.MaintenanceWindowReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)

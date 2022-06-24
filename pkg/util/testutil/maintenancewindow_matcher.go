@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"reflect"
+
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -21,10 +23,11 @@ type maintenanceWindowMatcher struct {
 }
 
 func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err error) {
-	var c mongodbatlas.MaintenanceWindow
+	var c *mongodbatlas.MaintenanceWindow
 	var ok bool
-	if c, ok = actual.(mongodbatlas.MaintenanceWindow); !ok {
-		panic("Expected mongodbatlas.ProjectMaintenanceWindow")
+	if c, ok = actual.(*mongodbatlas.MaintenanceWindow); !ok {
+		actualType := reflect.TypeOf(actual)
+		panic("Expected *mongodbatlas.MaintenanceWindow but received type " + actualType.String())
 	}
 	if c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
 		return false, nil
