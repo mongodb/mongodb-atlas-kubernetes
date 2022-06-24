@@ -33,12 +33,7 @@ func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdb
 		return workflow.OK()
 	}
 
-	atlasPEs, err := getAllPrivateEndpoints(ctx.Client, projectID)
-	if err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	serviceStatus := getStatusForServices(ctx, projectID, atlasPEs)
+	serviceStatus, atlasPEs := getStatusForServices(ctx, projectID)
 	if !serviceStatus.IsOk() {
 		ctx.SetConditionFromResult(status.PrivateEndpointReadyType, serviceStatus)
 		return serviceStatus
@@ -92,16 +87,21 @@ func createOrDeletePEInAtlas(ctx *workflow.Context, projectID string, specPEs []
 	return workflow.OK(), status.PrivateEndpointReadyType
 }
 
-func getStatusForServices(ctx *workflow.Context, projectID string, atlasPEs []mongodbatlas.PrivateEndpointConnection) workflow.Result {
-	allAvailable, failureMessage := areServicesAvailableOrFailed(atlasPEs)
-	if failureMessage != "" {
-		return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, failureMessage)
-	}
-	if !allAvailable {
-		return workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready")
+func getStatusForServices(ctx *workflow.Context, projectID string) (workflow.Result, []mongodbatlas.PrivateEndpointConnection) {
+	atlasPEs, err := getAllPrivateEndpoints(ctx.Client, projectID)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error()), atlasPEs
 	}
 
-	return workflow.OK()
+	allAvailable, failureMessage := areServicesAvailableOrFailed(atlasPEs)
+	if failureMessage != "" {
+		return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, failureMessage), atlasPEs
+	}
+	if !allAvailable {
+		return workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready"), atlasPEs
+	}
+
+	return workflow.OK(), atlasPEs
 }
 
 func getStatusForInterfaces(ctx *workflow.Context, projectID string, atlasPEs []mongodbatlas.PrivateEndpointConnection) workflow.Result {
