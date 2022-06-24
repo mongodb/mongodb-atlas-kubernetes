@@ -24,7 +24,7 @@ func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err 
 	var c mongodbatlas.MaintenanceWindow
 	var ok bool
 	if c, ok = actual.(mongodbatlas.MaintenanceWindow); !ok {
-		panic("Expected mongodbatlas.ProjectIPAccessList")
+		panic("Expected mongodbatlas.ProjectMaintenanceWindow")
 	}
 	if c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
 		return false, nil
