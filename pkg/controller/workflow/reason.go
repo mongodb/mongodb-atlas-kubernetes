@@ -16,6 +16,7 @@ const (
 	ProjectIPAccessInvalid                  ConditionReason = "ProjectIPAccessListInvalid"
 	ProjectIPNotCreatedInAtlas              ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
 	ProjectWindowInvalid                    ConditionReason = "ProjectWindowInvalid"
+	ProjectWindowNotObtainedFromAtlas       ConditionReason = "ProjectWindowNotObtainedFromAtlas"
 	ProjectWindowNotCreatedInAtlas          ConditionReason = "ProjectWindowNotCreatedInAtlas"
 	ProjectWindowNotDeletedInAtlas          ConditionReason = "projectWindowNotDeletedInAtlas"
 	ProjectWindowNotDeferredInAtlas         ConditionReason = "ProjectWindowNotDeferredInAtlas"

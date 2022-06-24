@@ -15,18 +15,15 @@ type MaintenanceWindow struct {
 	// This parameter uses the 24-hour clock, where midnight is 0, noon is 12.
 	// +optional
 	HourOfDay int `json:"hourOfDay,omitempty"`
-	// Flag that indicates whether you want to defer all maintenance windows one week they would be triggered.
+	// Flag indicating whether any scheduled project maintenance should be deferred automatically for one week.
 	// +optional
-	AutoDeferOnceEnabled bool `json:"autoDeferOnceEnabled,omitempty"`
+	AutoDefer bool `json:"autoDefer,omitempty"`
 	// Flag indicating whether project maintenance has been directed to start immediately.
 	// +optional
 	StartASAP bool `json:"startASAP,omitempty"`
 	// Flag indicating whether the next scheduled project maintenance should be deferred for one week.
 	// +optional
 	Defer bool `json:"defer,omitempty"`
-	// Flag indicating whether any scheduled project maintenance should be deferred automatically for one week.
-	// +optional
-	AutoDefer bool `json:"autoDefer,omitempty"`
 }
 
 // ToAtlas converts the ProjectMaintenanceWindow to native Atlas client format.
@@ -53,8 +50,8 @@ func (m MaintenanceWindow) WithHour(hour int) MaintenanceWindow {
 	return m
 }
 
-func (m MaintenanceWindow) WithAutoDeferOnceEnabled(autoDeferOnceEnabled bool) MaintenanceWindow {
-	m.AutoDeferOnceEnabled = autoDeferOnceEnabled
+func (m MaintenanceWindow) WithAutoDefer(autoDefer bool) MaintenanceWindow {
+	m.AutoDefer = autoDefer
 	return m
 }
 
@@ -65,10 +62,5 @@ func (m MaintenanceWindow) WithStartASAP(startASAP bool) MaintenanceWindow {
 
 func (m MaintenanceWindow) WithDefer(isDefer bool) MaintenanceWindow {
 	m.Defer = isDefer
-	return m
-}
-
-func (m MaintenanceWindow) WithAutoDefer(autoDefer bool) MaintenanceWindow {
-	m.AutoDefer = autoDefer
 	return m
 }

@@ -16,155 +16,95 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 		// All fields empty, valid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: false,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 0,
+				HourOfDay: 0,
+				StartASAP: false,
+				Defer:     false,
+				AutoDefer: false,
 			},
 			valid: true,
 		},
 
-		// Modify just the window (hour and day), valid
+		// Only dayOfWeek specified, valid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            1, // Sunday
-				HourOfDay:            2, // 2am
-				AutoDeferOnceEnabled: false,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 1, // Sunday
+				HourOfDay: 0, // Will default to midnight
+				StartASAP: false,
+				Defer:     false,
+				AutoDefer: false,
 			},
 			valid: true,
 		},
 
-		// Modify window and autoDefer, valid
+		// Specify window and autoDefer, valid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            3,  // Tuesday
-				HourOfDay:            14, // 2pm
-				AutoDeferOnceEnabled: true,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 3,  // Tuesday
+				HourOfDay: 14, // 2pm
+				StartASAP: false,
+				Defer:     false,
+				AutoDefer: true,
 			},
 			valid: true,
 		},
 
-		// Modify window and startASAP, valid
+		// Specify window, autoDefer, and startASAP, valid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            3,  // Tuesday
-				HourOfDay:            14, // 2pm
-				AutoDeferOnceEnabled: false,
-				StartASAP:            true,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 3,  // Tuesday
+				HourOfDay: 14, // 2pm
+				StartASAP: true,
+				Defer:     false,
+				AutoDefer: true,
 			},
 			valid: true,
 		},
 
-		// startASAP only, valid
+		// Specify window, autoDefer, and defer, valid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: false,
-				StartASAP:            true,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 3,  // Tuesday
+				HourOfDay: 14, // 2pm
+				StartASAP: false,
+				Defer:     true,
+				AutoDefer: true,
 			},
 			valid: true,
 		},
 
-		// Defer only, valid
+		// StartASAP only, invalid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: false,
-				StartASAP:            false,
-				Defer:                true,
-				AutoDefer:            false,
-			},
-			valid: true,
-		},
-
-		// Auto-defer only, valid
-		{
-			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: false,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            true,
-			},
-			valid: true,
-		},
-
-		// Modify window, both startASAP and autoDeferOnceEnabled activated, invalid
-		{
-			in: project.MaintenanceWindow{
-				DayOfWeek:            1, // Sunday
-				HourOfDay:            2, // 2am
-				AutoDeferOnceEnabled: true,
-				StartASAP:            true,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 0,
+				HourOfDay: 0,
+				StartASAP: true,
+				Defer:     false,
+				AutoDefer: false,
 			},
 			valid: false,
 		},
 
-		// Defer and other fields enabled, invalid
+		// AutoDefer only, invalid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            1,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: false,
-				StartASAP:            true,
-				Defer:                true,
-				AutoDefer:            false,
+				DayOfWeek: 0,
+				HourOfDay: 0,
+				StartASAP: false,
+				Defer:     false,
+				AutoDefer: true,
 			},
 			valid: false,
 		},
 
-		// Auto-defer and another field enabled, invalid
+		// Both startASAP and Defer specified, invalid
 		{
 			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: true,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            true,
-			},
-			valid: false,
-		},
-
-		// AutoDeferOnceEnabled only, invalid
-		{
-			in: project.MaintenanceWindow{
-				DayOfWeek:            0,
-				HourOfDay:            0,
-				AutoDeferOnceEnabled: true,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            false,
-			},
-			valid: false,
-		},
-
-		// One out of two fields of the window specified, invalid
-		{
-			in: project.MaintenanceWindow{
-				DayOfWeek:            2, // Monday
-				HourOfDay:            0, // Empty
-				AutoDeferOnceEnabled: true,
-				StartASAP:            false,
-				Defer:                false,
-				AutoDefer:            false,
+				DayOfWeek: 3,  // Tuesday
+				HourOfDay: 14, // 2pm
+				StartASAP: true,
+				Defer:     true,
+				AutoDefer: true,
 			},
 			valid: false,
 		},
