@@ -1,16 +1,16 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlascluster-multiregion-azure
+  name: atlas-deployment-multiregion-azure
 spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: cluster-multiregion-azure
+    name: deployment-multiregion-azure
     providerBackupEnabled: true
     clusterType: REPLICASET
     providerSettings:
-      instanceSizeName: M20
+      instanceSizeName: M10
       providerName: AZURE
     replicationSpecs:
       - numShards: 1

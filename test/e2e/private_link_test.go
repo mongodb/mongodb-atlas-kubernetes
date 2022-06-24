@@ -21,8 +21,8 @@ import (
 )
 
 // NOTES
-// Feature unavailable in Free and Shared-Tier Clusters
-// This feature is not available for M0 free clusters, M2, and M5 clusters.
+// Feature unavailable in Free and Shared-Tier Deployments
+// This feature is not available for M0 free deployments, M2, and M5 deployments.
 
 // tag for test resources "atlas-operator-test" (config.Tag)
 
@@ -85,7 +85,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -107,7 +107,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-azure-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -127,7 +127,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-2",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -153,7 +153,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-azure",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -183,7 +183,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-gpc-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").

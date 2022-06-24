@@ -1,13 +1,12 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlascluster-backup
+  name: atlas-deployment-standard
 spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: cluster-backup
-    providerBackupEnabled: true
+    name: deployment-standard
     providerSettings:
       instanceSizeName: M10
       providerName: AWS

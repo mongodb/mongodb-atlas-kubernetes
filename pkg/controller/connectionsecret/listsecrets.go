@@ -11,8 +11,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
-// ListByClusterName returns all secrets in the specified namespace that have labels for 'projectID' and 'clusterName'
-func ListByClusterName(k8sClient client.Client, namespace, projectID, clusterName string) ([]corev1.Secret, error) {
+// ListByDeploymentName returns all secrets in the specified namespace that have labels for 'projectID' and 'clusterName'
+func ListByDeploymentName(k8sClient client.Client, namespace, projectID, clusterName string) ([]corev1.Secret, error) {
 	return list(k8sClient, namespace, projectID, clusterName, "")
 }
 

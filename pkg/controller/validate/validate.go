@@ -9,22 +9,22 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
-func ClusterSpec(clusterSpec mdbv1.AtlasDeploymentSpec) error {
+func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 	var err error
 
-	if allAreNil(clusterSpec.AdvancedDeploymentSpec, clusterSpec.ServerlessSpec, clusterSpec.DeploymentSpec) {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec or spec.advancedClusterSpec or spec.serverlessSpec to be present, but none were"))
+	if allAreNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
+		err = multierror.Append(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDepploymentSpec or spec.serverlessSpec to be present, but none were"))
 	}
 
-	if moreThanOneIsNonNil(clusterSpec.AdvancedDeploymentSpec, clusterSpec.ServerlessSpec, clusterSpec.DeploymentSpec) {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.clusterSpec, spec.advancedClusterSpec or spec.serverlessSpec, more than one were present"))
+	if moreThanOneIsNonNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
+		err = multierror.Append(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDepploymentSpec or spec.serverlessSpec, more than one were present"))
 	}
 
-	if clusterSpec.DeploymentSpec != nil {
-		if clusterSpec.DeploymentSpec.ProviderSettings != nil && (clusterSpec.DeploymentSpec.ProviderSettings.InstanceSizeName == "" && clusterSpec.DeploymentSpec.ProviderSettings.ProviderName != "SERVERLESS") {
+	if deploymentSpec.DeploymentSpec != nil {
+		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName == "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName != "SERVERLESS") {
 			err = multierror.Append(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
 		}
-		if clusterSpec.DeploymentSpec.ProviderSettings != nil && (clusterSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && clusterSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
+		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
 			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
 		}
 	}

@@ -67,7 +67,7 @@ func TestEnums(t *testing.T) {
 			ClusterType: TypeGeoSharded,
 		},
 	}
-	transformedCluster, err := operatorCluster.Cluster()
+	transformedCluster, err := operatorCluster.Deployment()
 	assert.NoError(t, err)
 	assert.Equal(t, atlasCluster, *transformedCluster)
 }

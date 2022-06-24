@@ -19,71 +19,71 @@ import (
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	clusters, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	deployments, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
-	advancedClusters, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
-	var clusterSecrets []clusterSecret
-	for _, c := range clusters {
-		clusterSecrets = append(clusterSecrets, clusterSecret{
+	var deploymentSecrets []deploymentSecret
+	for _, c := range deployments {
+		deploymentSecrets = append(deploymentSecrets, deploymentSecret{
 			name:              c.Name,
 			connectionStrings: c.ConnectionStrings,
 		})
 	}
 
-	for _, c := range advancedClusters.Results {
-		// based on configuration settings, some advanced clusters also show up in the regular clusters API.
-		// For these clusters, we don't want to duplicate the secret so we skip them.
+	for _, c := range advancedDeployments.Results {
+		// based on configuration settings, some advanced deployments also show up in the regular deployments API.
+		// For these deployments, we don't want to duplicate the secret so we skip them.
 		found := false
-		for _, regularCluster := range clusters {
-			if regularCluster.Name == c.Name {
+		for _, regularDeployment := range deployments {
+			if regularDeployment.Name == c.Name {
 				found = true
 				break
 			}
 		}
 
-		// we only include secrets which have not been handled by the regular cluster API.
+		// we only include secrets which have not been handled by the regular deployment API.
 		if !found {
-			clusterSecrets = append(clusterSecrets, clusterSecret{
+			deploymentSecrets = append(deploymentSecrets, deploymentSecret{
 				name:              c.Name,
 				connectionStrings: c.ConnectionStrings,
 			})
 		}
 	}
 
-	// ensure secrets for both clusters and advanced cluster.
-	if result := createOrUpdateConnectionSecretsFromClusterSecrets(ctx, k8sClient, recorder, project, dbUser, clusterSecrets); !result.IsOk() {
+	// ensure secrets for both deployments and advanced deployment.
+	if result := createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx, k8sClient, recorder, project, dbUser, deploymentSecrets); !result.IsOk() {
 		return result
 	}
 
 	return workflow.OK()
 }
 
-// clusterSecret holds the information required to ensure a secret for a user in a given cluster.
-type clusterSecret struct {
+// deploymentSecret holds the information required to ensure a secret for a user in a given deployment.
+type deploymentSecret struct {
 	name              string
 	connectionStrings *mongodbatlas.ConnectionStrings
 }
 
-func createOrUpdateConnectionSecretsFromClusterSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, clusterSecrets []clusterSecret) workflow.Result {
+func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, deploymentSecrets []deploymentSecret) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
-	for _, cs := range clusterSecrets {
-		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
-		if len(scopes) != 0 && !stringutil.Contains(scopes, cs.name) {
+	for _, ds := range deploymentSecrets {
+		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		if len(scopes) != 0 && !stringutil.Contains(scopes, ds.name) {
 			continue
 		}
-		// Cluster may be not ready yet, so no connection urls - skipping
+		// Deployment may be not ready yet, so no connection urls - skipping
 		// Note, that Atlas usually returns the not-nil connection strings with empty fields in it
-		if cs.connectionStrings == nil || cs.connectionStrings.StandardSrv == "" {
-			ctx.Log.Debugw("Cluster is not ready yet - not creating a connection Secret", "cluster", cs.name)
+		if ds.connectionStrings == nil || ds.connectionStrings.StandardSrv == "" {
+			ctx.Log.Debugw("Deployment is not ready yet - not creating a connection Secret", "deployment", ds.name)
 			requeue = true
 			continue
 		}
@@ -94,13 +94,13 @@ func createOrUpdateConnectionSecretsFromClusterSecrets(ctx *workflow.Context, k8
 		data := connectionsecret.ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
-			ConnURL:    cs.connectionStrings.Standard,
-			SrvConnURL: cs.connectionStrings.StandardSrv,
+			ConnURL:    ds.connectionStrings.Standard,
+			SrvConnURL: ds.connectionStrings.StandardSrv,
 		}
-		fillPrivateConnStrings(cs.connectionStrings, &data)
+		fillPrivateConnStrings(ds.connectionStrings, &data)
 
 		var secretName string
-		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), cs.name, data); err != nil {
+		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
@@ -116,7 +116,7 @@ func createOrUpdateConnectionSecretsFromClusterSecrets(ctx *workflow.Context, k8
 	}
 
 	if requeue {
-		return workflow.InProgress(workflow.DatabaseUserConnectionSecretsNotCreated, "Waiting for clusters to get created/updated")
+		return workflow.InProgress(workflow.DatabaseUserConnectionSecretsNotCreated, "Waiting for deployments to get created/updated")
 	}
 	return workflow.OK()
 }
@@ -135,7 +135,7 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 
 // removeStaleByScope removes the secrets that are not relevant due to changes to 'scopes' field for the AtlasDatabaseUser.
 func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
-	scopes := user.GetScopes(mdbv1.ClusterScopeType)
+	scopes := user.GetScopes(mdbv1.DeploymentScopeType)
 	if len(scopes) == 0 {
 		return nil
 	}
@@ -144,11 +144,11 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 		return err
 	}
 	for i, s := range secrets {
-		cluster, ok := s.Labels[connectionsecret.ClusterLabelKey]
+		deployment, ok := s.Labels[connectionsecret.ClusterLabelKey]
 		if !ok {
 			continue
 		}
-		if !stringutil.Contains(scopes, cluster) {
+		if !stringutil.Contains(scopes, deployment) {
 			if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
 				return err
 			}

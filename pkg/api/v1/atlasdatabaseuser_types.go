@@ -44,8 +44,8 @@ func init() {
 type ScopeType string
 
 const (
-	ClusterScopeType  ScopeType = "CLUSTER"
-	DataLakeScopeType ScopeType = "DATA_LAKE"
+	DeploymentScopeType ScopeType = "CLUSTER" // todo: potentially rename to "DEPLOYMENT"
+	DataLakeScopeType   ScopeType = "DATA_LAKE"
 )
 
 // AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
