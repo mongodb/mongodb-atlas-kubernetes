@@ -9,7 +9,7 @@ import (
 )
 
 // MatchMaintenanceWindow returns the GomegaMatcher that checks if the 'actual' mongodbatlas.MaintenanceWindow matches
-// the 'expected' mdbv1.MaintenanceWindow  one.
+// the 'expected' mdbv1.MaintenanceWindow one.
 // Note, that we cannot compare them by all the fields as Atlas tends to set default fields after MaintenanceWindow
 // requests execution so we need to compare only the fields that remain in the same state
 func MatchMaintenanceWindow(expected project.MaintenanceWindow) types.GomegaMatcher {
@@ -26,13 +26,12 @@ func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err 
 	if c, ok = actual.(mongodbatlas.MaintenanceWindow); !ok {
 		panic("Expected mongodbatlas.ProjectIPAccessList")
 	}
-	if m.ExpectedMaintenanceWindow.DayOfWeek != 0 && c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
+	if c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
 		return false, nil
 	}
 	if *c.HourOfDay != m.ExpectedMaintenanceWindow.HourOfDay {
 		return false, nil
 	}
-	// TODO : check assumption : an autoDefer POST request enable the field AutoDeferOnceEnabled of the maintenance object
 	if *c.AutoDeferOnceEnabled != m.ExpectedMaintenanceWindow.AutoDefer {
 		return false, nil
 	}
