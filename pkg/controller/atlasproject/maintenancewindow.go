@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -21,9 +20,8 @@ func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, atlasProje
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
 	}
 
-	ctx.Log.Debugw(fmt.Sprintf("%s%t", "Checking if projectMaintenanceWindow field is empty or undefined : ", isEmptyWindow(windowSpec)))
 	if isEmptyWindow(windowSpec) {
-		ctx.Log.Debugw("Deleting in Atlas")
+		ctx.Log.Debugw("Window empty or undefined, deleting in Atlas")
 		if result := deleteInAtlas(ctx.Client, projectID); !result.IsOk() {
 			return result
 		}
@@ -37,20 +35,19 @@ func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, atlasProje
 			return result
 		}
 
-		if *windowInAtlas.HourOfDay != windowSpec.HourOfDay || windowInAtlas.DayOfWeek != windowSpec.DayOfWeek {
+		if windowInAtlas.DayOfWeek == 0 || windowInAtlas.HourOfDay == nil ||
+			*windowInAtlas.HourOfDay != windowSpec.HourOfDay || windowInAtlas.DayOfWeek != windowSpec.DayOfWeek {
 			ctx.Log.Debugw("Creating or updating window")
 			// We set startASAP to false because the operator takes care of calling the API a second time if both
 			// startASAP and the new maintenance timeslots are defined
 			if result := createOrUpdateInAtlas(ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
 				return result
 			}
-		} else {
-			ctx.Log.Debugw("Toggling autoDefer")
+		} else if *windowInAtlas.AutoDeferOnceEnabled != windowSpec.AutoDefer {
 			// If autoDefer flag is different in Atlas, and we haven't updated the window previously, we toggle the flag
-			if *windowInAtlas.AutoDeferOnceEnabled != windowSpec.AutoDefer {
-				if result := toggleAutoDeferInAtlas(ctx.Client, projectID); !result.IsOk() {
-					return result
-				}
+			ctx.Log.Debugw("Toggling autoDefer")
+			if result := toggleAutoDeferInAtlas(ctx.Client, projectID); !result.IsOk() {
+				return result
 			}
 		}
 	}
