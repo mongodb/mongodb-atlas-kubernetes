@@ -320,10 +320,6 @@ spec:
                     description: Flag indicating whether any scheduled project maintenance
                       should be deferred automatically for one week.
                     type: boolean
-                  autoDeferOnceEnabled:
-                    description: Flag that indicates whether you want to defer all
-                      maintenance windows one week they would be triggered.
-                    type: boolean
                   dayOfWeek:
                     description: Day of the week when you would like the maintenance
                       window to start as a 1-based integer. Sunday 1, Monday 2, Tuesday
