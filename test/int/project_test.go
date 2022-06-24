@@ -446,7 +446,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 	})
 
-	// Here we do not test defer and startASAP request because we cannot check for the maintenance status from the API
+	// Here we do not test defer and startASAP requests because we cannot check the maintenance status from the API
 	Describe("Updating the project Maintenance Window", func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
@@ -458,10 +458,19 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringCreate),
 					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
-			By("Updating the IP Access List comment and delete date", func() {
-				// Just a note: Atlas doesn't allow to make the "permanent" entity "temporary". But it works the other way
+			By("Updating the project maintenance window hour and enabling auto-defer", func() {
 				createdProject.Spec.ProjectMaintenanceWindow.HourOfDay = 3
 				createdProject.Spec.ProjectMaintenanceWindow.AutoDefer = true
+				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+
+				checkAtlasProjectIsReady()
+				checkMaintenanceWindowInAtlas()
+			})
+			By("Toggling auto-defer to false", func() {
+				createdProject.Spec.ProjectMaintenanceWindow.AutoDefer = false
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),
