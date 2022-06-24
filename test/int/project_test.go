@@ -482,8 +482,6 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 	})
 
-	// TODO : more integration tests ? e.g trying invalid spec (multiple flags activated), but this is also tested by unit tests
-
 	Describe("Using the global Connection Secret", func() {
 		It("Should Succeed", func() {
 			globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
