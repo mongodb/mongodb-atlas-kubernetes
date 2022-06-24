@@ -30,12 +30,15 @@ type MaintenanceWindow struct {
 
 // ToAtlas converts the ProjectMaintenanceWindow to native Atlas client format.
 func (m MaintenanceWindow) ToAtlas() (*mongodbatlas.MaintenanceWindow, error) {
+	hourOfDayValue := m.HourOfDay
+	startASAPValue := m.StartASAP
+	autoDeferValue := m.AutoDefer
 	return &mongodbatlas.MaintenanceWindow{
 		DayOfWeek:            m.DayOfWeek,
-		HourOfDay:            &m.HourOfDay,
-		StartASAP:            &m.StartASAP,
+		HourOfDay:            &hourOfDayValue,
+		StartASAP:            &startASAPValue,
 		NumberOfDeferrals:    0,
-		AutoDeferOnceEnabled: &m.AutoDefer,
+		AutoDeferOnceEnabled: &autoDeferValue,
 	}, nil
 }
 
