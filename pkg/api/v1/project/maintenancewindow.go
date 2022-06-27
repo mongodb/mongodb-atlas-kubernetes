@@ -31,14 +31,14 @@ type MaintenanceWindow struct {
 }
 
 // ToAtlas converts the MaintenanceWindow to native Atlas client format.
-func (m MaintenanceWindow) ToAtlas() (*mongodbatlas.MaintenanceWindow, error) {
+func (m MaintenanceWindow) ToAtlas() *mongodbatlas.MaintenanceWindow {
 	return &mongodbatlas.MaintenanceWindow{
 		DayOfWeek:            m.DayOfWeek,
 		HourOfDay:            &m.HourOfDay,
 		StartASAP:            &m.StartASAP,
 		NumberOfDeferrals:    0,
 		AutoDeferOnceEnabled: &m.AutoDefer,
-	}, nil
+	}
 }
 
 // ************************************ Builder methods *************************************************

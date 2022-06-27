@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/onsi/gomega/format"
@@ -27,7 +28,7 @@ func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err 
 	var ok bool
 	if c, ok = actual.(*mongodbatlas.MaintenanceWindow); !ok {
 		actualType := reflect.TypeOf(actual)
-		panic("Expected *mongodbatlas.MaintenanceWindow but received type " + actualType.String())
+		return false, errors.New("Expected *mongodbatlas.MaintenanceWindow but received type " + actualType.String())
 	}
 	if c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
 		return false, nil

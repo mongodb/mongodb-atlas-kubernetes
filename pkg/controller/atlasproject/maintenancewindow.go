@@ -97,20 +97,16 @@ func validateMaintenanceWindow(window project.MaintenanceWindow) error {
 	if isEmptyWindow(window) || (windowSpecified(window) && maxOneFlag(window)) {
 		return nil
 	}
-	return errors.New(`
-		projectMaintenanceWindow must respect the following constraints, or be empty :
-			1) dayOfWeek must be specified, hourOfDay is 0 by default, autoDeferral is false by default
-			2) only one of (startASAP, defer) is true
-	`)
+	errorString := "projectMaintenanceWindow must respect the following constraints, or be empty : " +
+		"1) dayOfWeek must be specified (hourOfDay is 0 by default, autoDeferral is false by default) " +
+		"2) only one of (startASAP, defer) is true"
+	return errors.New(errorString)
 }
 
 // operatorToAtlasMaintenanceWindow converts the maintenanceWindow specified in the project CR to the format
 // expected by the Atlas API.
 func operatorToAtlasMaintenanceWindow(maintenanceWindow project.MaintenanceWindow) (*mongodbatlas.MaintenanceWindow, workflow.Result) {
-	operatorWindow, err := maintenanceWindow.ToAtlas()
-	if err != nil {
-		return nil, workflow.Terminate(workflow.Internal, err.Error())
-	}
+	operatorWindow := maintenanceWindow.ToAtlas()
 	return operatorWindow, workflow.OK()
 }
 

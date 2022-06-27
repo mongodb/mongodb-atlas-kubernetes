@@ -11,5 +11,4 @@ spec:
     dayOfWeek: 3
     hourOfDay: 5
     autoDefer: true
-    startASAP: false
-    defer: false
+
