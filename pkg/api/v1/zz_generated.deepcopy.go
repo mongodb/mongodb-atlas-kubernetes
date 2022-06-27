@@ -624,7 +624,7 @@ func (in *AtlasProjectSpec) DeepCopyInto(out *AtlasProjectSpec) {
 		*out = make([]project.IPAccessList, len(*in))
 		copy(*out, *in)
 	}
-	out.ProjectMaintenanceWindow = in.ProjectMaintenanceWindow
+	out.MaintenanceWindow = in.MaintenanceWindow
 	if in.PrivateEndpoints != nil {
 		in, out := &in.PrivateEndpoints, &out.PrivateEndpoints
 		*out = make([]PrivateEndpoint, len(*in))

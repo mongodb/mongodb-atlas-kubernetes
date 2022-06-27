@@ -77,7 +77,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	checkMaintenanceWindowInAtlas := func() {
 		window, _, err := atlasClient.MaintenanceWindows.Get(context.Background(), createdProject.ID())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(window).To(testutil.MatchMaintenanceWindow(createdProject.Spec.ProjectMaintenanceWindow))
+		Expect(window).To(testutil.MatchMaintenanceWindow(createdProject.Spec.MaintenanceWindow))
 	}
 
 	checkAtlasProjectIsReady := func() {
@@ -245,7 +245,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			By("Updating the project")
 
 			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{CIDRBlock: "0.0.0.0/0"}}
-			createdProject.Spec.ProjectMaintenanceWindow = project.MaintenanceWindow{
+			createdProject.Spec.MaintenanceWindow = project.MaintenanceWindow{
 				DayOfWeek: 4,
 				HourOfDay: 11,
 				AutoDefer: true,
@@ -459,8 +459,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					ProjectCreationTimeout, interval).Should(BeTrue())
 			})
 			By("Updating the project maintenance window hour and enabling auto-defer", func() {
-				createdProject.Spec.ProjectMaintenanceWindow.HourOfDay = 3
-				createdProject.Spec.ProjectMaintenanceWindow.AutoDefer = true
+				createdProject.Spec.MaintenanceWindow.HourOfDay = 3
+				createdProject.Spec.MaintenanceWindow.AutoDefer = true
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),
@@ -470,7 +470,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				checkMaintenanceWindowInAtlas()
 			})
 			By("Toggling auto-defer to false", func() {
-				createdProject.Spec.ProjectMaintenanceWindow.AutoDefer = false
+				createdProject.Spec.MaintenanceWindow.AutoDefer = false
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),

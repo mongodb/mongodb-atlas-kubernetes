@@ -15,7 +15,7 @@ import (
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
 func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, atlasProject *mdbv1.AtlasProject) workflow.Result {
-	windowSpec := atlasProject.Spec.ProjectMaintenanceWindow
+	windowSpec := atlasProject.Spec.MaintenanceWindow
 	if err := validateMaintenanceWindow(windowSpec); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
 	}
@@ -88,14 +88,7 @@ func windowSpecified(window project.MaintenanceWindow) bool {
 }
 
 func maxOneFlag(window project.MaintenanceWindow) bool {
-	sum := 0
-	if window.StartASAP {
-		sum++
-	}
-	if window.Defer {
-		sum++
-	}
-	return sum <= 1
+	return !(window.StartASAP && window.Defer)
 }
 
 // validateMaintenanceWindow performs validation of the Maintenance Window. Note, that we intentionally don't validate

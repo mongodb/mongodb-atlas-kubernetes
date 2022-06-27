@@ -55,10 +55,10 @@ type AtlasProjectSpec struct {
 	// +optional
 	ProjectIPAccessList []project.IPAccessList `json:"projectIpAccessList,omitempty"`
 
-	// ProjectMaintenanceWindow allow to specify a preferred time in the week to run maintenance operations. See more
+	// MaintenanceWindow allows to specify a preferred time in the week to run maintenance operations. See more
 	// information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
 	// +optional
-	ProjectMaintenanceWindow project.MaintenanceWindow `json:"projectMaintenanceWindow,omitempty"`
+	MaintenanceWindow project.MaintenanceWindow `json:"maintenanceWindow,omitempty"`
 
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
@@ -176,7 +176,7 @@ func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasPro
 }
 
 func (p *AtlasProject) WithMaintenanceWindow(window project.MaintenanceWindow) *AtlasProject {
-	p.Spec.ProjectMaintenanceWindow = window
+	p.Spec.MaintenanceWindow = window
 	return p
 }
 

@@ -21,24 +21,23 @@ type MaintenanceWindow struct {
 	// +optional
 	AutoDefer bool `json:"autoDefer,omitempty"`
 	// Flag indicating whether project maintenance has been directed to start immediately.
+	// Cannot be specified if defer is true
 	// +optional
 	StartASAP bool `json:"startASAP,omitempty"`
 	// Flag indicating whether the next scheduled project maintenance should be deferred for one week.
+	// Cannot be specified if startASAP is true
 	// +optional
 	Defer bool `json:"defer,omitempty"`
 }
 
-// ToAtlas converts the ProjectMaintenanceWindow to native Atlas client format.
+// ToAtlas converts the MaintenanceWindow to native Atlas client format.
 func (m MaintenanceWindow) ToAtlas() (*mongodbatlas.MaintenanceWindow, error) {
-	hourOfDayValue := m.HourOfDay
-	startASAPValue := m.StartASAP
-	autoDeferValue := m.AutoDefer
 	return &mongodbatlas.MaintenanceWindow{
 		DayOfWeek:            m.DayOfWeek,
-		HourOfDay:            &hourOfDayValue,
-		StartASAP:            &startASAPValue,
+		HourOfDay:            &m.HourOfDay,
+		StartASAP:            &m.StartASAP,
 		NumberOfDeferrals:    0,
-		AutoDeferOnceEnabled: &autoDeferValue,
+		AutoDeferOnceEnabled: &m.AutoDefer,
 	}, nil
 }
 
