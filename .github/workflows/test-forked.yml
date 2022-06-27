@@ -62,6 +62,7 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
       - name: Run testing
         uses: ./.github/actions/int-test
         with:
@@ -149,13 +150,12 @@ jobs:
             "helm-ns",
             "helm-wide",
             "helm-update",
-            "helm-advanced-cluster",
-            "helm-advanced-cluster-multi-region",
             "serverless-instance",
             "multinamespaced",
             "privatelink",
             "integration-ns",
             "x509auth",
+            "long-run",
           ]
         include:
           - k8s: "latest-openshift"
@@ -272,9 +272,12 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.1 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.4 && \
           go install github.com/onsi/gomega/...
-          ginkgo --label-filter="${TEST_NAME}" --timeout 120m --nodes=10 -v test/e2e/
+
+          # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
+          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken'
+          ginkgo --label-filter=\'"${filter}"\' --timeout 120m --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}
