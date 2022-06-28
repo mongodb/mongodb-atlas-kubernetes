@@ -6,7 +6,6 @@ on:
 jobs:
   prepare-e2e:
     name: Prepare E2E configuration and image
-    needs: unit-test
     runs-on: ubuntu-latest
     env:
       # uncomment the below for local testing

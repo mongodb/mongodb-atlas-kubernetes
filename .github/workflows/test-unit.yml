@@ -6,7 +6,6 @@ on:
 jobs:
   unit-test:
     name: Unit tests
-    needs: allowed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3.0.0
@@ -21,6 +20,8 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: "1.17"
+
       - run: go version
+
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./pkg/...)

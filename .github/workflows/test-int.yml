@@ -6,7 +6,6 @@ on:
 jobs:
   int-test:
     name: Integration tests
-    needs: allowed
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -33,7 +32,6 @@ jobs:
 
   int-test-clusterwide:
     name: Integration tests (Clusterwide)
-    needs: allowed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3.0.0
