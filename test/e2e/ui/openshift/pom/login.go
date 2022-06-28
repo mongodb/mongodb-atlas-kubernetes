@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	preLoginButton = "text=\"Cluster-Admin\""
+	preLoginButton = "text=\"HTPasswd\""
 	userName       = "#inputUsername"
 	userPassword   = "#inputPassword"
 	loginLocator   = "text=\"Log in\""
@@ -24,7 +24,7 @@ func NewLogin(page playwright.Page) *LoginPage {
 
 func NavigateLogin(page playwright.Page) *LoginPage {
 	_, err := page.Goto(LoginPageLink(), playwright.PageGotoOptions{
-		WaitUntil: playwright.WaitUntilStateNetworkidle,
+		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
 	})
 	Expect(err).ShouldNot(HaveOccurred(), "Could not navigate to login page")
 	return &LoginPage{
