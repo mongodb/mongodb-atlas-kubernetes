@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -57,7 +58,7 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 		return result
 	}
 
-	setPrometheusStatus(project, integrationsInAtlas)
+	setPrometheusStatus(ctx, project, integrationsInAtlas)
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
@@ -161,12 +162,12 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 	return result
 }
 
-func setPrometheusStatus(project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
+func setPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
 	for _, atlasIntegration := range atlasIntegrations.Results {
 		if isPrometheusType(atlasIntegration.Type) {
 			project.Status.Prometheus = status.Prometheus{
 				Scheme:       atlasIntegration.Scheme,
-				DiscoveryURL: buildPrometheusDiscoveryURL(project.ID()),
+				DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
 			}
 		}
 	}
@@ -183,7 +184,7 @@ func isPrometheusType(typeName string) bool {
 	return typeName == "PROMETHEUS"
 }
 
-func buildPrometheusDiscoveryURL(projectID string) string {
-	api := "https://cloud.mongodb.com/api/atlas/v1.0"
+func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
+	api := fmt.Sprintf("%s/prometheus/v1.0", baseURL.Host)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }
