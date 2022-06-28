@@ -20,7 +20,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.7.5
 	go.mongodb.org/atlas v0.16.0
-	go.mongodb.org/mongo-driver v1.8.3
+	go.mongodb.org/mongo-driver v1.9.1
 	go.uber.org/zap v1.21.0
 	google.golang.org/api v0.70.0
 	gopkg.in/yaml.v3 v3.0.1
