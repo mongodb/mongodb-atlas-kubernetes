@@ -36,6 +36,7 @@ const (
 const (
 	ProjectReadyType                ConditionType = "ProjectReady"
 	IPAccessListReadyType           ConditionType = "IPAccessListReady"
+	MaintenanceWindowReadyType      ConditionType = "MaintenanceWindowReady"
 	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
 	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
