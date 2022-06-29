@@ -58,7 +58,7 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 		return result
 	}
 
-	setPrometheusStatus(ctx, project, integrationsInAtlas)
+	syncPrometheusStatus(ctx, project, integrationsInAtlas)
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
@@ -162,15 +162,27 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 	return result
 }
 
-func setPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
-	for _, atlasIntegration := range atlasIntegrations.Results {
-		if isPrometheusType(atlasIntegration.Type) {
-			project.Status.Prometheus = status.Prometheus{
-				Scheme:       atlasIntegration.Scheme,
-				DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
-			}
+func syncPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
+	prometheusIntegration, found := searchAtlasIntegration(atlasIntegrations.Results, isPrometheusType)
+	if !found {
+		project.Status.Prometheus = status.Prometheus{}
+		return
+	}
+
+	project.Status.Prometheus = status.Prometheus{
+		Scheme:       prometheusIntegration.Scheme,
+		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
+	}
+}
+
+func searchAtlasIntegration(atlasIntegrations []*mongodbatlas.ThirdPartyIntegration, filterFunc func(typeName string) bool) (integration *mongodbatlas.ThirdPartyIntegration, found bool) {
+	for _, aIntegration := range atlasIntegrations {
+		if filterFunc(aIntegration.Type) {
+			return aIntegration, true
 		}
 	}
+
+	return nil, false
 }
 
 func arePrometheusesEqual(atlas aliasThirdPartyIntegration, spec project.Integration) bool {
@@ -185,6 +197,6 @@ func isPrometheusType(typeName string) bool {
 }
 
 func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
-	api := fmt.Sprintf("%s/prometheus/v1.0", baseURL.Host)
+	api := fmt.Sprintf("https://%s/prometheus/v1.0", baseURL.Host)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }
