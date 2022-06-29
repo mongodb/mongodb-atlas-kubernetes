@@ -19,7 +19,7 @@ import (
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	result := r.createOrDeleteIntegrations(ctx, projectID, project)
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		ctx.SetConditionFromResult(status.IntegrationReadyType, result)
 		return result
 	}
 
