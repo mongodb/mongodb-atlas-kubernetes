@@ -22,7 +22,7 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 				Defer:     false,
 				AutoDefer: false,
 			},
-			valid: true,
+			valid: false,
 		},
 
 		// Only dayOfWeek specified, valid

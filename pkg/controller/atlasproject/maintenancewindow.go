@@ -112,7 +112,7 @@ func daysOrHoursAreDifferent(windowInAtlas *mongodbatlas.MaintenanceWindow, wind
 // validateMaintenanceWindow performs validation of the Maintenance Window. Note, that we intentionally don't validate
 // that hour of day and day of week are in the bounds - this will be done by Atlas.
 func validateMaintenanceWindow(window project.MaintenanceWindow) error {
-	if isEmptyWindow(window) || (windowSpecified(window) && maxOneFlag(window)) {
+	if windowSpecified(window) && maxOneFlag(window) {
 		return nil
 	}
 	errorString := "projectMaintenanceWindow must respect the following constraints, or be empty : " +
