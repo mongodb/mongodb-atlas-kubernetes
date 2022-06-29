@@ -17,6 +17,22 @@ import (
 )
 
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	result := r.createOrDeleteIntegrations(ctx, projectID, project)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.IntegrationReadyType, result)
+		return result
+	}
+
+	if len(project.Spec.Integrations) == 0 {
+		ctx.UnsetCondition(status.IntegrationReadyType)
+		return workflow.OK()
+	}
+
+	ctx.SetConditionTrue(status.IntegrationReadyType)
+	return workflow.OK()
+}
+
+func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	integrationsInAtlas, err := fetchIntegrations(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err.Error())
@@ -45,9 +61,7 @@ func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projec
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
-	if len(project.Spec.Integrations) > 0 {
-		ctx.SetConditionTrue(status.IntegrationReadyType)
-	}
+
 	return workflow.OK()
 }
 
