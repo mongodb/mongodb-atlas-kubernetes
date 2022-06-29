@@ -23,7 +23,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Cache multiple paths
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
