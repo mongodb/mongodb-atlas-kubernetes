@@ -200,12 +200,10 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 
 	if result = ensureMaintenanceWindow(ctx, projectID, project); !result.IsOk() {
-		setCondition(ctx, status.MaintenanceWindowReadyType, result)
-		r.Log.Warnf("maintenance window reconciliation failed with error : %s", result.GetMessage())
+		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
-	ctx.SetConditionTrue(status.MaintenanceWindowReadyType)
 
 	ctx.SetConditionTrue(status.ReadyType)
 	return workflow.OK().ReconcileResult(), nil

@@ -46,6 +46,10 @@ func (c Context) Conditions() []status.Condition {
 	return c.status.conditions
 }
 
+func (c Context) GetCondition(conditionType status.ConditionType) (condition status.Condition, found bool) {
+	return c.status.GetCondition(conditionType)
+}
+
 func (c Context) StatusOptions() []status.Option {
 	return c.status.options
 }

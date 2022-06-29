@@ -22,6 +22,16 @@ func (s *Status) EnsureCondition(condition status.Condition) {
 	s.conditions = status.EnsureConditionExists(condition, s.conditions)
 }
 
+func (s *Status) GetCondition(conditionType status.ConditionType) (condition status.Condition, found bool) {
+	for _, condition := range s.conditions {
+		if condition.Type == conditionType {
+			return condition, true
+		}
+	}
+
+	return condition, false
+}
+
 func (s *Status) RemoveCondition(conditionType status.ConditionType) {
 	s.conditions = status.RemoveConditionIfExists(conditionType, s.conditions)
 }

@@ -8,6 +8,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
@@ -15,40 +16,52 @@ import (
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
 func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, atlasProject *mdbv1.AtlasProject) workflow.Result {
-	windowSpec := atlasProject.Spec.MaintenanceWindow
+	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
+		if condition, found := ctx.GetCondition(status.MaintenanceWindowReadyType); found {
+			ctx.Log.Debugw("Window is empty, deleting in Atlas")
+			if result := deleteInAtlas(ctx.Client, projectID); !result.IsOk() {
+				ctx.SetConditionFromResult(condition.Type, result)
+				return result
+			}
+			ctx.UnsetCondition(condition.Type)
+		}
+
+		return workflow.OK()
+	}
+
+	if result := syncAtlasWithSpec(ctx, projectID, atlasProject.Spec.MaintenanceWindow); !result.IsOk() {
+		ctx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
+		return result
+	}
+
+	ctx.SetConditionTrue(status.MaintenanceWindowReadyType)
+	return workflow.OK()
+}
+
+func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec project.MaintenanceWindow) workflow.Result {
+	ctx.Log.Debugw("Validate the maintenance window")
 	if err := validateMaintenanceWindow(windowSpec); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowInvalid, err.Error())
 	}
 
-	if isEmptyWindow(windowSpec) {
-		ctx.Log.Debugw("Window empty or undefined, deleting in Atlas")
-		if result := deleteInAtlas(ctx.Client, projectID); !result.IsOk() {
-			return result
-		}
-		return workflow.OK()
+	ctx.Log.Debugw("Checking if window needs update")
+	windowInAtlas, result := getInAtlas(ctx.Client, projectID)
+	if !result.IsOk() {
+		return result
 	}
 
-	if windowSpecified(windowSpec) {
-		ctx.Log.Debugw("Checking if window needs update")
-		windowInAtlas, result := getInAtlas(ctx.Client, projectID)
-		if !result.IsOk() {
+	if daysOrHoursAreDifferent(windowInAtlas, windowSpec) {
+		ctx.Log.Debugw("Creating or updating window")
+		// We set startASAP to false because the operator takes care of calling the API a second time if both
+		// startASAP and the new maintenance timeslots are defined
+		if result := createOrUpdateInAtlas(ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
 			return result
 		}
-
-		if windowInAtlas.DayOfWeek == 0 || windowInAtlas.HourOfDay == nil ||
-			*windowInAtlas.HourOfDay != windowSpec.HourOfDay || windowInAtlas.DayOfWeek != windowSpec.DayOfWeek {
-			ctx.Log.Debugw("Creating or updating window")
-			// We set startASAP to false because the operator takes care of calling the API a second time if both
-			// startASAP and the new maintenance timeslots are defined
-			if result := createOrUpdateInAtlas(ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
-				return result
-			}
-		} else if *windowInAtlas.AutoDeferOnceEnabled != windowSpec.AutoDefer {
-			// If autoDefer flag is different in Atlas, and we haven't updated the window previously, we toggle the flag
-			ctx.Log.Debugw("Toggling autoDefer")
-			if result := toggleAutoDeferInAtlas(ctx.Client, projectID); !result.IsOk() {
-				return result
-			}
+	} else if *windowInAtlas.AutoDeferOnceEnabled != windowSpec.AutoDefer {
+		// If autoDefer flag is different in Atlas, and we haven't updated the window previously, we toggle the flag
+		ctx.Log.Debugw("Toggling autoDefer")
+		if result := toggleAutoDeferInAtlas(ctx.Client, projectID); !result.IsOk() {
+			return result
 		}
 	}
 
@@ -89,6 +102,11 @@ func windowSpecified(window project.MaintenanceWindow) bool {
 
 func maxOneFlag(window project.MaintenanceWindow) bool {
 	return !(window.StartASAP && window.Defer)
+}
+
+func daysOrHoursAreDifferent(windowInAtlas *mongodbatlas.MaintenanceWindow, windowSpec project.MaintenanceWindow) bool {
+	return windowInAtlas.DayOfWeek == 0 || windowInAtlas.HourOfDay == nil ||
+		*windowInAtlas.HourOfDay != windowSpec.HourOfDay || windowInAtlas.DayOfWeek != windowSpec.DayOfWeek
 }
 
 // validateMaintenanceWindow performs validation of the Maintenance Window. Note, that we intentionally don't validate
