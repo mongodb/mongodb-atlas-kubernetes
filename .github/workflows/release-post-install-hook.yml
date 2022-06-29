@@ -47,7 +47,7 @@ jobs:
           exit 1
 
       - name: Push Post Install Hook To Registry
-        uses: docker/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           username: ${{ env.QUAY_ROBOT_NAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
