@@ -21,7 +21,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		By("User Install CRD, deployment wide Operator", func() {
+		By("User Install CRD, cluster wide Operator", func() {
 			Eventually(kubecli.Apply(DefaultDeployConfig)).Should(
 				Say("customresourcedefinition.apiextensions.k8s.io/atlasdeployments.atlas.mongodb.com"),
 			)
