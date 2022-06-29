@@ -2,6 +2,11 @@ name: Integration tests.
 
 on:
   workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   int-test:
@@ -12,7 +17,16 @@ jobs:
       matrix:
         test: ["AtlasProject", "AtlasDeployment", "AtlasDatabaseUser"]
     steps:
-      - uses: actions/checkout@v3.0.0
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Cache multiple paths
         uses: actions/cache@v2
@@ -34,13 +48,23 @@ jobs:
     name: Integration tests (Clusterwide)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.0.0
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Cache multiple paths
         uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
       - name: Run testing
         uses: ./.github/actions/int-test
         with:

@@ -2,6 +2,11 @@ name: E2E tests.
 
 on:
   workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   prepare-e2e:
@@ -12,9 +17,18 @@ jobs:
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
-      - name: Check out code
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
         uses: actions/checkout@v3.0.0
         with:
+          fetch-depth: 0 # required for tags
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0 # required for tags
 
       - name: Prepare tag
@@ -65,9 +79,19 @@ jobs:
             test: "openshift"
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
         with:
+          # Make sure we also get the helm-charts submodule!
+          submodules: recursive
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
           # Make sure we also get the helm-charts submodule!
           submodules: recursive
 
