@@ -1,0 +1,76 @@
+name: Integration tests.
+
+on:
+  workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  int-test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ["AtlasProject", "AtlasDeployment", "AtlasDatabaseUser"]
+    steps:
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Run testing
+        uses: ./.github/actions/int-test
+        with:
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          TEST_NAME: ${{ matrix.test }}
+          TEST_PATH: ./test/int
+          PARALLEL_NODES: 12
+
+  int-test-clusterwide:
+    name: Integration tests (Clusterwide)
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Run testing
+        uses: ./.github/actions/int-test
+        with:
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_ORG_ID }}
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          TEST_NAME: "ClusterWide"
+          TEST_PATH: ./test/int/clusterwide
+          PARALLEL_NODES: 1
