@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  allowed:
+  allowed-forked:
     name: Allowed action
     runs-on: ubuntu-latest
     if: contains(github.actor == 'dependabot[bot]') || contains(github.event.pull_request.labels.*.name, 'safe-to-test')
@@ -19,21 +19,21 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run"
 
-  unit-tests:
+  unit-tests-forked:
     needs: allowed
     uses: ./.github/workflows/test-unit.yml
     secrets: inherit
     with:
       forked: true
 
-  int-tests:
+  int-tests-forked:
     needs: allowed
     uses: ./.github/workflows/test-int.yml
     secrets: inherit
     with:
       forked: true
 
-  e2e-tests:
+  e2e-tests-forked:
     needs: allowed
     uses: ./.github/workflows/test-e2e.yml
     secrets: inherit
