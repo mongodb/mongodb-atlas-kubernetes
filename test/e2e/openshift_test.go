@@ -44,7 +44,7 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 
 		operatorTag = strings.Split(s["BUNDLE_IMAGE"], ":")[1]
 		operatorTag = strings.ToLower(operatorTag)
-		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "Could not get a image name. Please, set up BUNDLE_IMAGE environment variable")
+		Expect(s["BUNDLE_IMAGE"]).ShouldNot(BeEmpty(), "!!!!Could not get a image name. Please, set up BUNDLE_IMAGE environment variable")
 		Expect(operatorTag).ShouldNot(BeEmpty())
 
 		pw, browser, page = prepareBrowser()
