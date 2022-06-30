@@ -16,14 +16,14 @@ scrape_configs:
     metrics_path: /metrics
     scheme : https
     basic_auth:
-      username: user
-      password: {password}
+      username: <user>
+      password: <password>
     http_sd_configs:
       - url: https://cloud.mongodb.com/prometheus/v1.0/groups/{group-ID}/discovery
         refresh_interval: 60s
         basic_auth:
-          username: user
-          password: {password}
+          username: <user>
+          password: <password>
 ```
 
 You can find the URL in atlasproject status via a command:
