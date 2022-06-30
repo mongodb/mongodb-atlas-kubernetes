@@ -71,6 +71,12 @@ func AtlasProjectAuthModesOption(authModes []authmode.AuthMode) AtlasProjectStat
 	}
 }
 
+func AtlasProjectPrometheusOption(prometheus *Prometheus) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.Prometheus = prometheus
+	}
+}
+
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
 	Common `json:",inline"`
@@ -94,5 +100,5 @@ type AtlasProjectStatus struct {
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL
 	// +optional
-	Prometheus Prometheus `json:"prometheus,omitempty"`
+	Prometheus *Prometheus `json:"prometheus,omitempty"`
 }

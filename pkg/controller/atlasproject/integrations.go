@@ -58,7 +58,7 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 		return result
 	}
 
-	syncPrometheusStatus(ctx, project, integrationsInAtlas)
+	syncPrometheusStatus(ctx, project, integrationsToUpdate)
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
@@ -99,7 +99,7 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 		if _, err := ctx.Client.Integrations.Delete(context.Background(), projectID, integration.Identifier().(string)); err != nil {
 			return err
 		}
-		ctx.Log.Debugw("Third Party Integration deleted: ", integration.Identifier())
+		ctx.Log.Debugf("Third Party Integration deleted: %s", integration.Identifier())
 	}
 	return nil
 }
@@ -162,27 +162,28 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 	return result
 }
 
-func syncPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
-	prometheusIntegration, found := searchAtlasIntegration(atlasIntegrations.Results, isPrometheusType)
+func syncPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, integrationPairs [][]set.Identifiable) {
+	prometheusIntegration, found := searchAtlasIntegration(integrationPairs, isPrometheusType)
 	if !found {
-		project.Status.Prometheus = status.Prometheus{}
+		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
 		return
 	}
 
-	project.Status.Prometheus = status.Prometheus{
+	ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
 		Scheme:       prometheusIntegration.Scheme,
 		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
-	}
+	}))
 }
 
-func searchAtlasIntegration(atlasIntegrations []*mongodbatlas.ThirdPartyIntegration, filterFunc func(typeName string) bool) (integration *mongodbatlas.ThirdPartyIntegration, found bool) {
-	for _, aIntegration := range atlasIntegrations {
-		if filterFunc(aIntegration.Type) {
-			return aIntegration, true
+func searchAtlasIntegration(integrationPairs [][]set.Identifiable, filterFunc func(typeName string) bool) (integration mongodbatlas.ThirdPartyIntegration, found bool) {
+	for _, pair := range integrationPairs {
+		integrationAlias := pair[0].(aliasThirdPartyIntegration)
+		if filterFunc(integrationAlias.Type) {
+			return mongodbatlas.ThirdPartyIntegration(integrationAlias), true
 		}
 	}
 
-	return nil, false
+	return integration, false
 }
 
 func arePrometheusesEqual(atlas aliasThirdPartyIntegration, spec project.Integration) bool {
