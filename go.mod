@@ -12,7 +12,7 @@ require (
 	github.com/go-logr/zapr v1.2.3
 	github.com/google/go-cmp v0.5.7
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mongodb-forks/digest v1.0.3
+	github.com/mongodb-forks/digest v1.0.4
 	github.com/mxschmitt/playwright-go v0.1400.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
