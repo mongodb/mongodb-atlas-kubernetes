@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.16
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.3
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mongodb-forks/digest v1.0.4
 	github.com/mxschmitt/playwright-go v0.1400.0
@@ -91,7 +91,6 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf // indirect
