@@ -67,5 +67,5 @@ func checkNSetUpGCPEnviroment() {
 	Expect(os.Getenv("GCP_SA_CRED")).ShouldNot(BeEmpty(), "Please, setup GCP_SA_CRED environment variable for test with GCP (req. Service Account)")
 	Expect(utils.SaveToFile(config.FileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")))).ShouldNot(HaveOccurred())
 	Expect(os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)).ShouldNot(HaveOccurred())
-	Expect(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")).ShouldNot(BeEmpty(), "Please, setup GOOGLE_APPLICATION_CREDENTIALS environment variable for test with GCP")
+	Expect(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")).ShouldNot(BeEmpty(), "Please, setup GOOGLE_APPLICATION_CREDENTIALS environment variable for test with GCP cloud")
 }
