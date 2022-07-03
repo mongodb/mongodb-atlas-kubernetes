@@ -1,0 +1,42 @@
+name: Test
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: test-openshift-operator-upgrade
+  cancel-in-progress: true
+
+jobs:
+  e2e-tests:
+    name: Prepare E2E configuration and image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          fetch-depth: 0 # required for tags
+
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
+
+      - name: Download tools for openshift test
+        run: |
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz -q
+          tar xvf opm.tar.gz
+          chmod +x opm && sudo mv opm /usr/local/bin/opm
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
+          tar xvf openshift.tar.gz
+          chmod +x oc && sudo mv oc /usr/local/bin/oc
+
+          opm version
+          oc version
+          podman --version
+
+      - name: Run openshift upgrade test
+        run: ./scripts/openshift-upgrade-test
+        env:
+          OC_TOKEN: ${{ secrets.TOKEN }}
+          CLUSTER_API_URL: ${{ secret.OPENSHIFT_SERVER_API }}
+          REGISTRY: ${{ secret.DOCKER_REGISTRY }}
