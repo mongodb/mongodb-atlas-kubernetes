@@ -254,7 +254,7 @@ type AutoScalingSpec struct {
 type AdvancedAutoScalingSpec struct {
 	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
 	// +optional
-	DiskGBEnabled *DiskGB `json:"diskGB,omitempty"`
+	DiskGB *DiskGB `json:"diskGB,omitempty"`
 
 	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
 	// +optional
