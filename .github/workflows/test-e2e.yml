@@ -140,7 +140,7 @@ jobs:
           wait: 180s
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: "1.17"
 
@@ -206,7 +206,7 @@ jobs:
 
       - name: Upload operator logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: logs
           path: test/e2e/output/**
