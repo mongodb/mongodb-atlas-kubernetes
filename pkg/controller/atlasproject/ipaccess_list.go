@@ -40,6 +40,22 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
 func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	result := syncIPAccessListWithAtlas(ctx, projectID, project)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		return result
+	}
+
+	if len(project.Spec.ProjectIPAccessList) == 0 {
+		ctx.UnsetCondition(status.IPAccessListReadyType)
+		return workflow.OK()
+	}
+
+	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	return result
+}
+
+func syncIPAccessListWithAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
 		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
 	}
@@ -49,7 +65,36 @@ func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.
 		return result
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
+
+	allReady, result := allIPAccessListsAreReady(context.Background(), ctx, projectID)
+	if !result.IsOk() {
+		return result
+	}
+
+	if !allReady {
+		return workflow.InProgress(workflow.ProjectIPAccessListNotActive, "IP Access List not ready")
+	}
+
 	return workflow.OK()
+}
+
+// allIPAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
+func allIPAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
+	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return false, workflow.Terminate(workflow.Internal, err.Error())
+	}
+	for _, ipAccessList := range atlasAccess.Results {
+		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
+		if err != nil {
+			return false, workflow.Terminate(workflow.Internal, err.Error())
+		}
+		if ipStatus.Status != string(IPAccessListActive) {
+			ctx.Log.Infof("IP Access List %v is not active", ipAccessList)
+			return false, workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
+		}
+	}
+	return true, workflow.OK()
 }
 
 func validateIPAccessLists(ipAccessList []project.IPAccessList) error {

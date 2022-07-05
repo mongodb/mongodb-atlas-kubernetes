@@ -1,14 +1,14 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasDeployment
 metadata:
-  name: atlascluster-basic-free
+  name: atlas-deployment-basic
 spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: cluster-basic
+    name: deployment-basic
     providerSettings:
-      instanceSizeName: M0
+      instanceSizeName: M5
       providerName: TENANT
       regionName: US_EAST_1
       backingProviderName: AWS

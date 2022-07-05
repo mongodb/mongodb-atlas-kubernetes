@@ -15,6 +15,12 @@ const (
 	ProjectNotCreatedInAtlas                ConditionReason = "ProjectNotCreatedInAtlas"
 	ProjectIPAccessInvalid                  ConditionReason = "ProjectIPAccessListInvalid"
 	ProjectIPNotCreatedInAtlas              ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
+	ProjectWindowInvalid                    ConditionReason = "ProjectWindowInvalid"
+	ProjectWindowNotObtainedFromAtlas       ConditionReason = "ProjectWindowNotObtainedFromAtlas"
+	ProjectWindowNotCreatedInAtlas          ConditionReason = "ProjectWindowNotCreatedInAtlas"
+	ProjectWindowNotDeletedInAtlas          ConditionReason = "projectWindowNotDeletedInAtlas"
+	ProjectWindowNotDeferredInAtlas         ConditionReason = "ProjectWindowNotDeferredInAtlas"
+	ProjectWindowNotAutoDeferredInAtlas     ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
@@ -25,12 +31,12 @@ const (
 
 // Atlas Cluster reasons
 const (
-	ClusterNotCreatedInAtlas           ConditionReason = "ClusterNotCreatedInAtlas"
-	ClusterNotUpdatedInAtlas           ConditionReason = "ClusterNotUpdatedInAtlas"
-	ClusterCreating                    ConditionReason = "ClusterCreating"
-	ClusterUpdating                    ConditionReason = "ClusterUpdating"
-	ClusterConnectionSecretsNotCreated ConditionReason = "ClusterConnectionSecretsNotCreated"
-	ClusterAdvancedOptionsAreNotReady  ConditionReason = "ClusterAdvancedOptionsAreNotReady"
+	DeploymentNotCreatedInAtlas           ConditionReason = "DeploymentNotCreatedInAtlas"
+	DeploymentNotUpdatedInAtlas           ConditionReason = "DeploymentNotUpdatedInAtlas"
+	DeploymentCreating                    ConditionReason = "DeploymentCreating"
+	DeploymentUpdating                    ConditionReason = "DeploymentUpdating"
+	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
+	DeploymentAdvancedOptionsAreNotReady  ConditionReason = "DeploymentAdvancedOptionsAreNotReady"
 )
 
 // Atlas Database User reasons
@@ -39,7 +45,7 @@ const (
 	DatabaseUserNotUpdatedInAtlas           ConditionReason = "DatabaseUserNotUpdatedInAtlas"
 	DatabaseUserConnectionSecretsNotCreated ConditionReason = "DatabaseUserConnectionSecretsNotCreated"
 	DatabaseUserStaleConnectionSecrets      ConditionReason = "DatabaseUserStaleConnectionSecrets"
-	DatabaseUserClustersAppliedChanges      ConditionReason = "ClustersAppliedDatabaseUsersChanges"
+	DatabaseUserDeploymentAppliedChanges    ConditionReason = "DeploymentAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
 	DatabaseUserExpired                     ConditionReason = "DatabaseUserExpired"
 )

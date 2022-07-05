@@ -84,21 +84,21 @@ func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.P
 	return enpointsList, nil
 }
 
-func (a *Atlas) GetAdvancedDeployment(projectId, clusterName string) (*mongodbatlas.AdvancedCluster, error) {
-	advancedCluster, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, clusterName)
+func (a *Atlas) GetAdvancedDeployment(projectId, deploymentName string) (*mongodbatlas.AdvancedCluster, error) {
+	advancedDeployment, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, deploymentName)
 	if err != nil {
 		return nil, err
 	}
-	ginkgoPrettyPrintf(advancedCluster, "getting advanced cluster %s in project %s", clusterName, projectId)
-	return advancedCluster, nil
+	ginkgoPrettyPrintf(advancedDeployment, "getting advanced deployment %s in project %s", deploymentName, projectId)
+	return advancedDeployment, nil
 }
 
-func (a *Atlas) GetServerlessInstance(projectId, clusterName string) (*mongodbatlas.Cluster, error) {
-	serverlessInstance, _, err := a.Client.ServerlessInstances.Get(context.Background(), projectId, clusterName)
+func (a *Atlas) GetServerlessInstance(projectId, deploymentName string) (*mongodbatlas.Cluster, error) {
+	serverlessInstance, _, err := a.Client.ServerlessInstances.Get(context.Background(), projectId, deploymentName)
 	if err != nil {
 		return nil, err
 	}
-	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", clusterName, projectId)
+	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", deploymentName, projectId)
 	return serverlessInstance, nil
 }
 

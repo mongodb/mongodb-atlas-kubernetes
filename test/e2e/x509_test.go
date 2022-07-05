@@ -64,7 +64,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 				"x509auth",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_standard.yaml"},
+				[]string{"data/atlasdeployment_standard.yaml"},
 				[]string{},
 				[]model.DBUser{},
 				30000,

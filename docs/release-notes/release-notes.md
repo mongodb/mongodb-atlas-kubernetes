@@ -7,6 +7,7 @@
 ## AtlasProject Resource
   * [3rd Party Integration](https://docs.atlas.mongodb.com/reference/api/third-party-integration-settings/) are supported `spec.integrations`
   * [GCP Private Endpoints](https://www.mongodb.com/docs/atlas/reference/api/private-endpoints/) are now supported
+  * [Maintenance Windows](https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/) are now supported
 
 ## AtlasDeployment Resource
 * Changes

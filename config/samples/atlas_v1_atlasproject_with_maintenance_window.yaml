@@ -1,0 +1,14 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasProject
+metadata:
+  name: my-project
+spec:
+  name: Test Atlas Operator Project
+  projectIpAccessList:
+    - ipAddress: "192.0.2.15"
+      comment: "IP address for Application Server A"
+  maintenanceWindow:
+    dayOfWeek: 3
+    hourOfDay: 5
+    autoDefer: true
+

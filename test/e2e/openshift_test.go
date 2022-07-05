@@ -66,7 +66,7 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 				"operator-in-openshift",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").

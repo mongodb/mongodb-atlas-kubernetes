@@ -11,7 +11,7 @@ const (
 	OrgBillingAdmin AtlasRoles = "ORG_BILLING_ADMIN"
 	OrgReadOnly     AtlasRoles = "ORG_READ_ONLY"
 
-	GroupClusterManager      AtlasRoles = "GROUP_CLUSTER_MANAGER"
+	GroupDeploymentManager   AtlasRoles = "GROUP_CLUSTER_MANAGER"
 	GroupDataAccessAdmin     AtlasRoles = "GROUP_DATA_ACCESS_ADMIN"
 	GropuDataAccessReadOnly  AtlasRoles = "GROUP_DATA_ACCESS_READ_ONLY"
 	GroupDataAccessReadWrite AtlasRoles = "GROUP_DATA_ACCESS_READ_WRITE"

@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns"), func() {
+var _ = Describe("Configuration namespaced. Deploy deployment", Label("deployment-ns"), func() {
 	var data model.TestDataProvider
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 			)
 			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+				[]string{"deploy", "atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 				data.Resources.Namespace,
 			)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
@@ -55,7 +55,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-ns-trial",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -68,13 +68,13 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db"),
+		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db", "long-run"),
 			model.NewTestDataProvider(
 				"operator-ns-prodlike",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
-				[]string{"data/atlascluster_backup_update.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
+				[]string{"data/atlasdeployment_backup_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("admin").
 						WithSecretRef("dbuser-admin-secret-u1").
@@ -85,9 +85,9 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 				30001,
 				[]func(*model.TestDataProvider){
-					actions.UpdateClusterFromUpdateConfig,
-					actions.SuspendCluster,
-					actions.ReactivateCluster,
+					actions.UpdateDeploymentFromUpdateConfig,
+					actions.SuspendDeployment,
+					actions.ReactivateDeployment,
 					actions.DeleteFirstUser,
 				},
 			),
@@ -97,8 +97,8 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-ns-multiregion-aws",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_multiregion_aws.yaml"},
-				[]string{"data/atlascluster_multiregion_aws_update.yaml"},
+				[]string{"data/atlasdeployment_multiregion_aws.yaml"},
+				[]string{"data/atlasdeployment_multiregion_aws_update.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
@@ -109,8 +109,8 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 				30003,
 				[]func(*model.TestDataProvider){
-					actions.SuspendCluster,
-					actions.ReactivateCluster,
+					actions.SuspendDeployment,
+					actions.ReactivateDeployment,
 					actions.DeleteFirstUser,
 				},
 			),
@@ -120,7 +120,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-multiregion-azure",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlascluster_multiregion_azure.yaml"},
+				[]string{"data/atlasdeployment_multiregion_azure.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -138,7 +138,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-multiregion-gcp",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlascluster_multiregion_gcp.yaml"},
+				[]string{"data/atlasdeployment_multiregion_gcp.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -151,13 +151,13 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 			),
 		),
-		Entry("Product Owner - Simplest configuration with ProjectOwner and update cluster to have backup", Label("ns-owner"),
+		Entry("Product Owner - Simplest configuration with ProjectOwner and update deployment to have backup", Label("ns-owner", "long-run"),
 			model.NewTestDataProvider(
 				"operator-ns-product-owner",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
-				[]string{"data/atlascluster_backup.yaml"},
-				[]string{"data/atlascluster_backup_update_remove_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
+				[]string{"data/atlasdeployment_backup_update_remove_backup.yaml"},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
 						WithSecretRef("dbuser-secret-u1").
@@ -165,7 +165,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				},
 				30010,
 				[]func(*model.TestDataProvider){
-					actions.UpdateClusterFromUpdateConfig,
+					actions.UpdateDeploymentFromUpdateConfig,
 				},
 			),
 		),
@@ -174,7 +174,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-ns-trial-global",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlascluster_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -192,7 +192,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-ns-free",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{"data/atlasdeployment_basic_free.yaml"},
 				[]string{""},
 				[]model.DBUser{
 					*model.NewDBUser("user").
@@ -210,7 +210,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("cluster-ns")
 				"operator-ns-free",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
-				[]string{"data/atlascluster_basic_free.yaml"},
+				[]string{"data/atlasdeployment_basic_free.yaml"},
 				[]string{""},
 				[]model.DBUser{
 					*model.NewDBUser("user").

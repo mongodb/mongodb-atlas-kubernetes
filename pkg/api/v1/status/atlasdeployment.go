@@ -90,7 +90,7 @@ type Endpoint struct {
 
 // +k8s:deepcopy-gen=false
 
-// AtlasDeploymentStatusOption is the option that is applied to Atlas Cluster Status.
+// AtlasDeploymentStatusOption is the option that is applied to Atlas Deployment Status.
 type AtlasDeploymentStatusOption func(s *AtlasDeploymentStatus)
 
 func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOption {

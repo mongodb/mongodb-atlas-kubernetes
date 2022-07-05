@@ -74,15 +74,20 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		Expect(currentStatusIPs).To(Equal(lists))
 	}
 
+	checkMaintenanceWindowInAtlas := func() {
+		window, _, err := atlasClient.MaintenanceWindows.Get(context.Background(), createdProject.ID())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(window).To(testutil.MatchMaintenanceWindow(createdProject.Spec.MaintenanceWindow))
+	}
+
 	checkAtlasProjectIsReady := func() {
 		projectReadyConditions := testutil.MatchConditions(
 			status.TrueCondition(status.ProjectReadyType),
-			status.TrueCondition(status.IPAccessListReadyType),
 			status.TrueCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
 		)
 		Expect(createdProject.Status.ID).NotTo(BeNil())
-		Expect(createdProject.Status.Conditions).To(ConsistOf(projectReadyConditions))
+		Expect(createdProject.Status.Conditions).To(ContainElements((projectReadyConditions)))
 		Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 	}
 
@@ -238,6 +243,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			By("Updating the project")
 
 			createdProject.Spec.ProjectIPAccessList = []project.IPAccessList{{CIDRBlock: "0.0.0.0/0"}}
+			createdProject.Spec.MaintenanceWindow = project.MaintenanceWindow{
+				DayOfWeek: 4,
+				HourOfDay: 11,
+				AutoDefer: true,
+				StartASAP: false,
+				Defer:     false,
+			}
 			Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
 			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
@@ -432,6 +444,42 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 	})
 
+	// Here we do not test defer and startASAP requests because we cannot check the maintenance status from the API
+	Describe("Updating the project Maintenance Window", func() {
+		It("Should Succeed (single)", func() {
+			By("Creating the project first", func() {
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+					WithMaintenanceWindow(project.NewMaintenanceWindow().WithDay(2).WithHour(2).WithAutoDefer(false))
+
+				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringCreate),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+			})
+			By("Updating the project maintenance window hour and enabling auto-defer", func() {
+				createdProject.Spec.MaintenanceWindow.HourOfDay = 3
+				createdProject.Spec.MaintenanceWindow.AutoDefer = true
+				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+
+				checkAtlasProjectIsReady()
+				checkMaintenanceWindowInAtlas()
+			})
+			By("Toggling auto-defer to false", func() {
+				createdProject.Spec.MaintenanceWindow.AutoDefer = false
+				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+
+				Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate),
+					ProjectCreationTimeout, interval).Should(BeTrue())
+
+				checkAtlasProjectIsReady()
+				checkMaintenanceWindowInAtlas()
+			})
+		})
+	})
+
 	Describe("Using the global Connection Secret", func() {
 		It("Should Succeed", func() {
 			globalConnectionSecret := buildConnectionSecret("atlas-operator-api-key")
@@ -447,11 +495,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.TrueCondition(status.ProjectReadyType),
-				status.TrueCondition(status.IPAccessListReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
-			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			Expect(createdProject.Status.Conditions).To(ContainElements(expectedConditionsMatchers))
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 		})
 		It("Should Fail if the global Secret doesn't exist", func() {
@@ -509,7 +556,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-// validateNoErrorsIPAccessListDuringCreate performs check that no problems happen to IP Access list during the create.
+// validateNoErrorsIPAccessListDuringCreate performs check that no problems happen to IP Access list during the creation.
 // This allows the test to fail fast instead by timeout if there are any troubles.
 func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
 	c := a.(*mdbv1.AtlasProject)
@@ -523,6 +570,24 @@ func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
 func validateNoErrorsIPAccessListDuringUpdate(a mdbv1.AtlasCustomResource) {
 	c := a.(*mdbv1.AtlasProject)
 	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
+	Expect(ok).To(BeTrue())
+	Expect(condition.Reason).To(BeEmpty())
+}
+
+// validateNoErrorsMaintenanceWindowDuringCreate performs check that no problems happen to Maintenance Window during the creation.
+// This allows the test to fail fast instead by timeout if there are any troubles.
+func validateNoErrorsMaintenanceWindowDuringCreate(a mdbv1.AtlasCustomResource) {
+	c := a.(*mdbv1.AtlasProject)
+
+	if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType); ok {
+		Expect(condition.Status).To(Equal(status.TrueCondition(status.MaintenanceWindowReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+	}
+}
+
+// validateNoErrorsMaintenanceWindowDuringUpdate performs check that no problems happen to Maintenance Window during the update.
+func validateNoErrorsMaintenanceWindowDuringUpdate(a mdbv1.AtlasCustomResource) {
+	c := a.(*mdbv1.AtlasProject)
+	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType)
 	Expect(ok).To(BeTrue())
 	Expect(condition.Reason).To(BeEmpty())
 }

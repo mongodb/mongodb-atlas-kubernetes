@@ -69,17 +69,17 @@ func GetProjectResource(namespace, rName string) []byte {
 	return session.Wait("1m").Out.Contents()
 }
 
-// GetClusterResource
-func GetClusterResource(namespace, rName string) v1.AtlasDeployment {
+// GetDeploymentResource
+func GetDeploymentResource(namespace, rName string) v1.AtlasDeployment {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
 	output := session.Wait("1m").Out.Contents()
-	var cluster v1.AtlasDeployment
-	ExpectWithOffset(1, json.Unmarshal(output, &cluster)).ShouldNot(HaveOccurred())
-	return cluster
+	var deployment v1.AtlasDeployment
+	ExpectWithOffset(1, json.Unmarshal(output, &deployment)).ShouldNot(HaveOccurred())
+	return deployment
 }
 
-func GetK8sClusterStateName(ns, rName string) string {
-	return GetClusterResource(ns, rName).Status.StateName
+func GetK8sDeploymentStateName(ns, rName string) string {
+	return GetDeploymentResource(ns, rName).Status.StateName
 }
 
 func DeleteNamespace(ns string) *Buffer {
@@ -285,7 +285,7 @@ func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 	return session.Out.Contents()
 }
 
-func GetClusterDump(output string) {
+func GetDeploymentDump(output string) {
 	outputFolder := fmt.Sprintf("--output-directory=%s", output)
 	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
