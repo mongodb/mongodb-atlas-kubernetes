@@ -1,6 +1,9 @@
 # fix for some Linux distros (i.e. WSL)
 SHELL := /usr/bin/env bash
 
+# CONTAINER ENGINE: docker | podman
+CONTAINER_ENGINE?=docker
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -17,7 +20,7 @@ endif
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
 # - use the CHANNELS as arg of the bundle target (e.g make bundle CHANNELS=preview,fast,stable)
 # - use environment variables to overwrite this value (e.g export CHANNELS="preview,fast,stable")
-CHANNELS = beta
+CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
@@ -27,7 +30,7 @@ endif
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
 # - use the DEFAULT_CHANNEL as arg of the bundle target (e.g make bundle DEFAULT_CHANNEL=stable)
 # - use environment variables to overwrite this value (e.g export DEFAULT_CHANNEL="stable")
-DEFAULT_CHANNEL=beta
+DEFAULT_CHANNEL ?= beta
 ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
@@ -87,6 +90,9 @@ int-test: generate manifests ## Run integration tests. Sample with labels: `make
 .PHONY: e2e
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
+
+.PHONY: e2e-openshift
+	OC_USERNAME=kube-admin OC_PASSWORD=RKQcf-8p8cU-7KMXc-7zcjz
 
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
@@ -160,20 +166,19 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 
 .PHONY: image
 image: manager ## Build the operator image
-	docker build -t $(OPERATOR_IMAGE) .
-	docker push $(OPERATOR_IMAGE)
+	$(CONTAINER_ENGINE) build -t $(OPERATOR_IMAGE) .
+	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_ENGINE) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
-bundle-push: bundle bundle-build ## Publish the bundle image
-	docker push $(BUNDLE_IMG)
+bundle-push:
+	$(CONTAINER_ENGINE) push $(BUNDLE_IMG)
 
 .PHONY: catalog-build
 CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
-#catalog-build: IMG=
 catalog-build: ## bundle bundle-push ## Build file-based bundle
 	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
 	CATALOG_DIR=$(CATALOG_DIR) \
@@ -185,7 +190,7 @@ catalog-build: ## bundle bundle-push ## Build file-based bundle
 
 .PHONY: catalog-push
 catalog-push:
-	docker push $(CATALOG_IMAGE)
+	$(CONTAINER_ENGINE) push $(CATALOG_IMAGE)
 
 .PHONY: build-subscription
 build-subscription:
@@ -216,9 +221,9 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 ## docker-login-olm:
 ## docker login -u $(shell oc whoami) -p $(shell oc whoami -t) $(REGISTRY)
 
-.PHONY: docker-push
-docker-push: ## Push the docker image
-	docker push ${IMG}
+.PHONY: image-push
+image-push: ## Push the docker image
+	$(CONTAINER_ENGINE) push ${IMG}
 
 # Additional make goals
 .PHONY: run-kind

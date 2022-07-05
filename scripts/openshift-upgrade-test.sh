@@ -4,9 +4,10 @@ set -eou pipefail
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
 # Test conf
-LATEST_RELEASE_VERSION="${LATEST_RELEASE_VERSION:-1.0.0}"
 TEST_NAMESPACE=${TEST_NAMESPACE:-"atlas-upgrade-test"}
-REGISTRY=${REGISTRY:-"quay.io/mongodb"}
+LATEST_RELEASE_VERSION="${LATEST_RELEASE_VERSION:-1.0.0}"
+LATEST_RELEASE_REGISTRY=${LATEST_RELEASE_REGISTRY:-"quay.io/mongodb"}
+REGISTRY=${REGISTRY:-"quay.io/igorkarpukhin"}
 
 # This is used to build directory-based Openshift catalog
 CATALOG_DIR="${CATALOG_DIR:-./openshift/atlas-catalog}"
@@ -20,7 +21,7 @@ fi
 OPERATOR_NAME="mongodb-atlas-kubernetes-operator"
 OPERATOR_IMAGE="${REGISTRY}/${OPERATOR_NAME}:${CURRENT_VERSION}"
 OPERATOR_BUNDLE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-bundle:${CURRENT_VERSION}"
-LATEST_RELEASE_BUNDLE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
+LATEST_RELEASE_BUNDLE_IMAGE="${LATEST_RELEASE_REGISTRY}/${OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
 OPERATOR_CATALOG_NAME="${OPERATOR_NAME}-catalog"
 OPERATOR_CATALOG_IMAGE="${REGISTRY}/${OPERATOR_NAME}-catalog:${CURRENT_VERSION}"
 OPERATOR_CATALOGSOURCE_NAME="${OPERATOR_CATALOG_NAME}-catalogsource"
@@ -114,22 +115,19 @@ deploy_latest_release() {
 
 cleanup_previous_installation() {
   echo "Removing previous installation"
-  expect_success "oc delete namespace ${TEST_NAMESPACE} --ignore-not-found"
   expect_success "oc -n openshift-marketplace delete catalogsource ${OPERATOR_CATALOGSOURCE_NAME} --ignore-not-found"
-  expect_success "oc -n openshift-marketplace delete subscription ${OPERATOR_SUBSCRIPTION_NAME} --ignore-not-found"
 }
 
-build_and_publish_bundle() {
+build_and_publish_image_and_bundle() {
   echo "Building and publishing bundle..."
-  cd ../ && VERSION="${CURRENT_VERSION}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=alpha --default-channel=alpha" make bundle bundle-build bundle-push
+  cd ../ && VERSION="${CURRENT_VERSION}" IMG="${OPERATOR_IMAGE}" OPERATOR_IMAGE="${OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle bundle-build bundle-push
   echo "Bundle has been build and published"
   cd -
 }
 
 build_and_publish_catalog_with_two_channels() {
   echo "Building catalog with both bundles"
-  rm -f "${CATALOG_DIR}"/operator.yaml
-  rm -f "${CATALOG_DIR}"/channel*.yaml
+  rm -f "${CATALOG_DIR}"/*.yaml
   rm -f "$(dirname "${CATALOG_DIR}")"/atlas-catalog.Dockerfile
 
   mkdir -p "${CATALOG_DIR}"
@@ -137,7 +135,7 @@ build_and_publish_catalog_with_two_channels() {
   opm alpha generate dockerfile "${CATALOG_DIR}"
   echo "Generating the catalog"
 
-  # Stable - latest release, alpha - current version
+  # Stable - latest release, candidate - current version
   opm init mongodb-atlas-kubernetes \
   	--default-channel="stable" \
   	--output=yaml \
@@ -149,21 +147,21 @@ build_and_publish_catalog_with_two_channels() {
   echo "Adding ${OPERATOR_BUNDLE_IMAGE} to the catalog"
   opm render "${OPERATOR_BUNDLE_IMAGE}" --output=yaml >> "${CATALOG_DIR}"/operator.yaml
 
-  echo "Adding previous release channel as STABLE to ${CATALOG_DIR}/channel-stable.yaml"
+  echo "Adding previous release channel as STABLE to ${CATALOG_DIR}/operator.yaml"
   echo "---
 schema: olm.channel
 package: mongodb-atlas-kubernetes
 name: stable
 entries:
-  - name: mongodb-atlas-kubernetes.v${LATEST_RELEASE_VERSION}" > "${CATALOG_DIR}"/operator.yaml
+  - name: mongodb-atlas-kubernetes.v${LATEST_RELEASE_VERSION}" >> "${CATALOG_DIR}"/operator.yaml
 
-  echo "Adding current version channel as ALPHA to ${CATALOG_DIR}/channel-alpha.yaml"
+  echo "Adding current version channel as CANDIDATE to ${CATALOG_DIR}/operator.yaml"
   echo "---
 schema: olm.channel
 package: mongodb-atlas-kubernetes
-name: alpha
+name: candidate
 entries:
-  - name: mongodb-atlas-kubernetes.v${CURRENT_VERSION}" > "${CATALOG_DIR}"/operator.yaml
+  - name: mongodb-atlas-kubernetes.v${CURRENT_VERSION}" >> "${CATALOG_DIR}"/operator.yaml
 
   echo "Validating catalog"
   expect_success "opm validate ${CATALOG_DIR}"
@@ -172,6 +170,7 @@ entries:
   cd "$(dirname "${CATALOG_DIR}")" && docker build . -f atlas-catalog.Dockerfile -t "${OPERATOR_CATALOG_IMAGE}"
   expect_success "docker push ${OPERATOR_CATALOG_IMAGE}"
   echo "Catalog has been build and published"
+  cd -
 }
 
 build_and_deploy_catalog_source() {
@@ -189,8 +188,7 @@ spec:
   publisher: MongoDB
   updateStrategy:
     registryPoll:
-      interval: 5m
-" > "${CATALOG_DIR}"/catalogsource.yaml
+      interval: 5m" > "${CATALOG_DIR}"/catalogsource.yaml
   echo "Applying catalogsource to openshift-marketplace namespace"
   expect_success "oc -n openshift-marketplace apply -f ${CATALOG_DIR}/catalogsource.yaml"
 }
@@ -204,13 +202,27 @@ metadata:
   name: ${OPERATOR_SUBSCRIPTION_NAME}
   namespace: ${TEST_NAMESPACE}
 spec:
-  channel: stable
-  name: mongodb-atlas-kubernetes-${CURRENT_VERSION}
+  channel: candidate
+  name: mongodb-atlas-kubernetes
   source: ${OPERATOR_CATALOGSOURCE_NAME}
   sourceNamespace: openshift-marketplace
-  installPlanApproval: Automatic
-EOF
-  " > "${CATALOG_DIR}"/subscription.yaml
+  installPlanApproval: Automatic" > "${CATALOG_DIR}"/subscription.yaml
+  expect_success "oc -n ${TEST_NAMESPACE} apply -f ${CATALOG_DIR}/subscription.yaml"
+}
+
+build_and_deploy_operator_group() {
+  echo "Deploying operator group to ${TEST_NAMESPACE}"
+  echo "
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: mongodb-group
+  namespace: ${TEST_NAMESPACE}
+spec:
+  targetNamespaces:
+    - ${TEST_NAMESPACE}
+  " > "${CATALOG_DIR}"/operatorgroup.yaml
+  expect_success "oc -n ${TEST_NAMESPACE} apply -f ${CATALOG_DIR}/operatorgroup.yaml"
 }
 
 main() {
@@ -220,18 +232,14 @@ main() {
   opm_version
 
   # Build and install previous version of the operator
+  cleanup_previous_installation
   prepare_test_namespace
-#  cleanup_previous_installation
-#  build_and_publish_bundle
-#  build_and_publish_catalog_with_two_channels
+  build_and_publish_image_and_bundle
+  build_and_publish_catalog_with_two_channels
   build_and_deploy_catalog_source
+  build_and_deploy_operator_group
   build_and_deploy_subscription
 #  wait_for_olm_to_install_operator
-#
-#  # Create atlas project and deployment
-#  deploy_atlas_project
-#  deploy_atlas_deployment
-#  wait_for_atlas_project
 #
 #  # Perform operator upgrade
 #  patch_subscription
