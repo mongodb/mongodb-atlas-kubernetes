@@ -170,11 +170,6 @@ spec:
                                 description: AdvancedAutoScalingSpec configures your
                                   deployment to automatically scale its storage
                                 properties:
-                                  autoIndexingEnabled:
-                                    description: Flag that indicates whether autopilot
-                                      mode for Performance Advisor is enabled. The
-                                      default is false.
-                                    type: boolean
                                   compute:
                                     description: Collection of settings that configure
                                       how a deployment might scale its deployment

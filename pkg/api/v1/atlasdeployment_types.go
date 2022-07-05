@@ -252,20 +252,17 @@ type AutoScalingSpec struct {
 
 // AdvancedAutoScalingSpec configures your deployment to automatically scale its storage
 type AdvancedAutoScalingSpec struct {
-	// Flag that indicates whether autopilot mode for Performance Advisor is enabled.
-	// The default is false.
-	AutoIndexingEnabled *bool `json:"autoIndexingEnabled,omitempty"`
 	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
 	// +optional
-	DiskGBEnabled *DiskGBEnabled `json:"diskGB,omitempty"`
+	DiskGBEnabled *DiskGB `json:"diskGB,omitempty"`
 
 	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
 	// +optional
 	Compute *ComputeSpec `json:"compute,omitempty"`
 }
 
-// DiskGBEnabled specifies whether disk auto-scaling is enabled. The default is true.
-type DiskGBEnabled struct {
+// DiskGB specifies whether disk auto-scaling is enabled. The default is true.
+type DiskGB struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
