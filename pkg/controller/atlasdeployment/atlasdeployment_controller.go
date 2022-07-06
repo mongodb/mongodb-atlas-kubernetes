@@ -207,7 +207,7 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	}
 
 	if !backupEnabled {
-		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.Name)
+		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.GetDeploymentName())
 	}
 
 	resourcesToWatch := []watch.WatchedObject{}
