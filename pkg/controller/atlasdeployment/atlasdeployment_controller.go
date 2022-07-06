@@ -207,7 +207,7 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	}
 
 	if !backupEnabled {
-		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.ClusterName)
+		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.Name)
 	}
 
 	resourcesToWatch := []watch.WatchedObject{}
@@ -263,6 +263,11 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	if err != nil {
 		r.Log.Debugf("unable to delete current backup policy for project: %v:%v, %v", projectID, cName, err)
 	}
+	if currentSchedule == nil {
+		r.Log.Debugf("got empty response for deleting backup schedule for project: %v:%v", projectID, cName)
+		return fmt.Errorf("can't delete сurrent backupschedule. got an empty response from the api: %v", currentSchedule)
+	}
+
 	r.Log.Debugf("successfully deleted backup policy. Default schedule received: %v", currentSchedule)
 
 	apiScheduleRes.ClusterID = currentSchedule.ClusterID
