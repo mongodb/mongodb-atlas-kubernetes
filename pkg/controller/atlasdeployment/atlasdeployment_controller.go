@@ -293,7 +293,12 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		return result, nil
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), c.Name, *c.BackupEnabled, req); err != nil {
+	backupEnabled := false
+	if c.BackupEnabled != nil {
+		backupEnabled = *c.BackupEnabled
+	}
+
+	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), c.Name, backupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
@@ -329,7 +334,16 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		return result, nil
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), atlasDeployment.Name, *atlasDeployment.ProviderBackupEnabled || *atlasDeployment.BackupEnabled, req); err != nil {
+	backupEnabled := false
+	providerBackupEnabled := false
+	if atlasDeployment.ProviderBackupEnabled != nil {
+		providerBackupEnabled = *atlasDeployment.ProviderBackupEnabled
+	}
+	if atlasDeployment.BackupEnabled != nil {
+		backupEnabled = *atlasDeployment.BackupEnabled
+	}
+
+	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), atlasDeployment.Name, providerBackupEnabled || backupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
