@@ -37,7 +37,7 @@ spec:
             description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
             properties:
               advancedDeploymentSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
                     type: boolean
@@ -377,6 +377,7 @@ spec:
                   name:
                     description: Name of the deployment as it appears in Atlas. After
                       Atlas creates the deployment, you can't change its name.
+                    pattern: ^[\w-]+$
                     type: string
                   numShards:
                     description: Positive integer that specifies the number of shards
@@ -598,11 +599,12 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
                 properties:
                   name:
                     description: Name of the deployment as it appears in Atlas. After
                       Atlas creates the deployment, you can't change its name.
+                    pattern: ^[\w-]+$
                     type: string
                   providerSettings:
                     description: Configuration for the provisioned hosts on which

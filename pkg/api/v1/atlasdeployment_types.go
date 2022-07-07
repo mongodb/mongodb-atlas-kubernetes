@@ -84,6 +84,7 @@ type DeploymentSpec struct {
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
 	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// +kubebuilder:validation:Pattern:=^[\w-]+$
 	Name string `json:"name"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded deployment.
@@ -122,7 +123,7 @@ type AtlasDeploymentSpec struct {
 	// +optional
 	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
 
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
 	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
 
@@ -130,7 +131,7 @@ type AtlasDeploymentSpec struct {
 	// +optional
 	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
 	// +optional
 	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
 
@@ -142,6 +143,7 @@ type AtlasDeploymentSpec struct {
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
 type ServerlessSpec struct {
 	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// +kubebuilder:validation:Pattern:=^[\w-]+$
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`

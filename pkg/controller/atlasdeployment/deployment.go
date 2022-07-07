@@ -154,7 +154,7 @@ func MergedDeployment(atlasDeployment mongodbatlas.Cluster, spec mdbv1.AtlasDepl
 
 	mergeRegionConfigs(result.ReplicationSpecs, spec.DeploymentSpec.ReplicationSpecs)
 
-	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/deployments-create-one/):
+	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
 	// "Don't specify this parameter when creating a multi-region deployment using the replicationSpec object or a Global
 	// Deployment with the replicationSpecs array."
 	// The problem is that Atlas API accepts the create/update request but then returns the 'ProviderSettings.RegionName' empty in GET request
