@@ -44,7 +44,6 @@ const (
 )
 
 type DeploymentSpec struct {
-
 	// Collection of settings that configures auto-scaling information for the deployment.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
 	// +optional
@@ -150,25 +149,27 @@ type ServerlessSpec struct {
 }
 
 type AdvancedDeploymentSpec struct {
-	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
-	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
-	ClusterType              string                     `json:"clusterType,omitempty"`
-	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
-	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
-	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
-	GroupID                  string                     `json:"groupId,omitempty"`
-	ID                       string                     `json:"id,omitempty"`
-	Labels                   []common.LabelSpec         `json:"labels,omitempty"`
-	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
-	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
-	Name                     string                     `json:"name,omitempty"`
-	Paused                   *bool                      `json:"paused,omitempty"`
-	PitEnabled               *bool                      `json:"pitEnabled,omitempty"`
-	StateName                string                     `json:"stateName,omitempty"`
-	ReplicationSpecs         []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	CreateDate               string                     `json:"createDate,omitempty"`
-	RootCertType             string                     `json:"rootCertType,omitempty"`
-	VersionReleaseSystem     string                     `json:"versionReleaseSystem,omitempty"`
+	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
+	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
+	ClusterType              string             `json:"clusterType,omitempty"`
+	ConnectionStrings        *ConnectionStrings `json:"connectionStrings,omitempty"`
+	DiskSizeGB               *int               `json:"diskSizeGB,omitempty"`
+	EncryptionAtRestProvider string             `json:"encryptionAtRestProvider,omitempty"`
+	GroupID                  string             `json:"groupId,omitempty"`
+	ID                       string             `json:"id,omitempty"`
+	Labels                   []common.LabelSpec `json:"labels,omitempty"`
+	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
+	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
+	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// +kubebuilder:validation:Pattern:=^[\w-]+$
+	Name                 string                     `json:"name,omitempty"`
+	Paused               *bool                      `json:"paused,omitempty"`
+	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
+	StateName            string                     `json:"stateName,omitempty"`
+	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
+	CreateDate           string                     `json:"createDate,omitempty"`
+	RootCertType         string                     `json:"rootCertType,omitempty"`
+	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
 }
 
 // AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.

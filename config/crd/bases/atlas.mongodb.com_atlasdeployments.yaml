@@ -139,6 +139,9 @@ spec:
                   mongoDBVersion:
                     type: string
                   name:
+                    description: Name of the deployment as it appears in Atlas. After
+                      Atlas creates the deployment, you can't change its name.
+                    pattern: ^[\w-]+$
                     type: string
                   paused:
                     type: boolean
