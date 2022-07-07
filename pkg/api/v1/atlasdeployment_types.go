@@ -43,6 +43,32 @@ const (
 	TypeGeoSharded DeploymentType = "GEOSHARDED"
 )
 
+// AtlasDeploymentSpec defines the desired state of AtlasDeployment
+type AtlasDeploymentSpec struct {
+	// Project is a reference to AtlasProject resource the deployment belongs to
+	Project common.ResourceRefNamespaced `json:"projectRef"`
+
+	// Configuration for the advanced deployment API
+	// +optional
+	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
+
+	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
+
+	// Backup schedule for the AtlasDeployment
+	// +optional
+	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
+
+	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// +optional
+	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
+
+	// ProcessArgs allows to modify Advanced Configuration Options
+	// +optional
+	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
 type DeploymentSpec struct {
 	// Collection of settings that configures auto-scaling information for the deployment.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
@@ -113,41 +139,6 @@ type DeploymentSpec struct {
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
 }
 
-// AtlasDeploymentSpec defines the desired state of AtlasDeployment
-type AtlasDeploymentSpec struct {
-	// Project is a reference to AtlasProject resource the deployment belongs to
-	Project common.ResourceRefNamespaced `json:"projectRef"`
-
-	// Configuration for the advanced deployment API
-	// +optional
-	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
-
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
-	// +optional
-	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
-
-	// Backup schedule for the AtlasDeployment
-	// +optional
-	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
-
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
-	// +optional
-	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
-
-	// ProcessArgs allows to modify Advanced Configuration Options
-	// +optional
-	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
-}
-
-// ServerlessSpec defines the desired state of Atlas Serverless Instance
-type ServerlessSpec struct {
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
-	// +kubebuilder:validation:Pattern:=^[\w-]+$
-	Name string `json:"name"`
-	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
-}
-
 type AdvancedDeploymentSpec struct {
 	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
 	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
@@ -170,6 +161,15 @@ type AdvancedDeploymentSpec struct {
 	CreateDate           string                     `json:"createDate,omitempty"`
 	RootCertType         string                     `json:"rootCertType,omitempty"`
 	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
+}
+
+// ServerlessSpec defines the desired state of Atlas Serverless Instance
+type ServerlessSpec struct {
+	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// +kubebuilder:validation:Pattern:=^[\w-]+$
+	Name string `json:"name"`
+	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
+	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 }
 
 // AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.
