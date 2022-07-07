@@ -141,7 +141,7 @@ spec:
                   name:
                     description: Name of the deployment as it appears in Atlas. After
                       Atlas creates the deployment, you can't change its name.
-                    pattern: ^[\w-]+$
+                    pattern: ^[A-Za-z0-9-]+$
                     type: string
                   paused:
                     type: boolean
@@ -380,7 +380,7 @@ spec:
                   name:
                     description: Name of the deployment as it appears in Atlas. After
                       Atlas creates the deployment, you can't change its name.
-                    pattern: ^[\w-]+$
+                    pattern: ^[A-Za-z0-9-]+$
                     type: string
                   numShards:
                     description: Positive integer that specifies the number of shards
@@ -607,7 +607,7 @@ spec:
                   name:
                     description: Name of the deployment as it appears in Atlas. After
                       Atlas creates the deployment, you can't change its name.
-                    pattern: ^[\w-]+$
+                    pattern: ^[A-Za-z0-9-]+$
                     type: string
                   providerSettings:
                     description: Configuration for the provisioned hosts on which
