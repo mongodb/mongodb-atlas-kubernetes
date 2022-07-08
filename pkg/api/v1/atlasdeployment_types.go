@@ -228,14 +228,14 @@ type AdvancedReplicationSpec struct {
 }
 
 type AdvancedRegionConfig struct {
-	AnalyticsSpecs      *Specs           `json:"analyticsSpecs,omitempty"`
-	ElectableSpecs      *Specs           `json:"electableSpecs,omitempty"`
-	ReadOnlySpecs       *Specs           `json:"readOnlySpecs,omitempty"`
-	AutoScaling         *AutoScalingSpec `json:"autoScaling,omitempty"`
-	BackingProviderName string           `json:"backingProviderName,omitempty"`
-	Priority            *int             `json:"priority,omitempty"`
-	ProviderName        string           `json:"providerName,omitempty"`
-	RegionName          string           `json:"regionName,omitempty"`
+	AnalyticsSpecs      *Specs                   `json:"analyticsSpecs,omitempty"`
+	ElectableSpecs      *Specs                   `json:"electableSpecs,omitempty"`
+	ReadOnlySpecs       *Specs                   `json:"readOnlySpecs,omitempty"`
+	AutoScaling         *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
+	BackingProviderName string                   `json:"backingProviderName,omitempty"`
+	Priority            *int                     `json:"priority,omitempty"`
+	ProviderName        string                   `json:"providerName,omitempty"`
+	RegionName          string                   `json:"regionName,omitempty"`
 }
 
 type Specs struct {
@@ -257,6 +257,22 @@ type AutoScalingSpec struct {
 	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
 	// +optional
 	Compute *ComputeSpec `json:"compute,omitempty"`
+}
+
+// AdvancedAutoScalingSpec configures your deployment to automatically scale its storage
+type AdvancedAutoScalingSpec struct {
+	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
+	// +optional
+	DiskGB *DiskGB `json:"diskGB,omitempty"`
+
+	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
+	// +optional
+	Compute *ComputeSpec `json:"compute,omitempty"`
+}
+
+// DiskGB specifies whether disk auto-scaling is enabled. The default is true.
+type DiskGB struct {
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // ComputeSpec Specifies whether the deployment automatically scales its deployment tier and whether the deployment can scale down.

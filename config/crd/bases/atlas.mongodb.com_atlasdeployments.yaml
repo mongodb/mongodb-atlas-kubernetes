@@ -171,14 +171,9 @@ spec:
                                     type: integer
                                 type: object
                               autoScaling:
-                                description: AutoScalingSpec configures your deployment
-                                  to automatically scale its storage
+                                description: AdvancedAutoScalingSpec configures your
+                                  deployment to automatically scale its storage
                                 properties:
-                                  autoIndexingEnabled:
-                                    description: Flag that indicates whether autopilot
-                                      mode for Performance Advisor is enabled. The
-                                      default is false.
-                                    type: boolean
                                   compute:
                                     description: Collection of settings that configure
                                       how a deployment might scale its deployment
@@ -209,10 +204,13 @@ spec:
                                           : true.'
                                         type: boolean
                                     type: object
-                                  diskGBEnabled:
+                                  diskGB:
                                     description: Flag that indicates whether disk
                                       auto-scaling is enabled. The default is true.
-                                    type: boolean
+                                    properties:
+                                      enabled:
+                                        type: boolean
+                                    type: object
                                 type: object
                               backingProviderName:
                                 type: string
