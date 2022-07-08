@@ -173,7 +173,8 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 		if address.Subnetwork == subnet {
 			_, errDelete := computeService.Addresses.Delete(projectID, region, address.Name).Do()
 			if errDelete != nil {
-				return errDelete
+				log.Printf("error while deleting address: %v", errDelete)
+				//return errDelete
 			}
 		}
 	}
