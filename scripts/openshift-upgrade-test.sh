@@ -19,7 +19,7 @@ if [ -z "${CURRENT_VERSION+x}" ]; then
 fi
 
 OPERATOR_NAME="mongodb-atlas-kubernetes-operator"
-OPERATOR_IMAGE="${REGISTRY}/${OPERATOR_NAME}:${CURRENT_VERSION}"
+NEW_OPERATOR_IMAGE="${REGISTRY}/${OPERATOR_NAME}:${CURRENT_VERSION}"
 OPERATOR_BUNDLE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-bundle:${CURRENT_VERSION}"
 LATEST_RELEASE_BUNDLE_IMAGE="${LATEST_RELEASE_REGISTRY}/${OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
 OPERATOR_CATALOG_NAME="${OPERATOR_NAME}-catalog"
@@ -59,13 +59,13 @@ try_until_success() {
   local interval=${3:-0.2}
   local now
   now="$(date +%s%3)"
-  local expire=$(($now + $timeout))
+  local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     if $cmd ; then
       echo "Passed"
       return 0
     fi
-    sleep $interval
+    sleep "$interval"
     now=$(date +%s%3)
   done
   echo "Fail"
@@ -79,7 +79,7 @@ try_until_text() {
   local interval=${4:-1}
   local now
   now="$(date +%s%3)"
-  local expire=$(($now + $timeout))
+  local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     echo "Running ${cmd}"
     res=$($cmd)
@@ -88,7 +88,7 @@ try_until_text() {
         echo "Passed"
         return 0
     fi
-    sleep $interval
+    sleep "$interval"
     now=$(date +%s%3)
   done
   echo "Fail"
@@ -143,7 +143,7 @@ cleanup_previous_installation() {
 
 build_and_publish_image_and_bundle() {
   echo "Building and publishing bundle..."
-  cd ../ && VERSION="${CURRENT_VERSION}" IMG="${OPERATOR_IMAGE}" OPERATOR_IMAGE="${OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle bundle-build bundle-push
+  cd ../ && VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle bundle-build bundle-push
   echo "Bundle has been build and published"
   cd -
 }
