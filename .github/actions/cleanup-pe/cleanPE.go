@@ -83,12 +83,14 @@ func cleanAllAWSPE(region, tagName, tagValue string) error {
 	for _, endpoint := range endpoints.VpcEndpoints {
 		endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 	}
-	input := &ec2.DeleteVpcEndpointsInput{
-		VpcEndpointIds: endpointIDs,
-	}
-	_, err = svc.DeleteVpcEndpoints(input)
-	if err != nil {
-		return fmt.Errorf("error deleting vpcEP: %v", err)
+	if len(endpointIDs) > 0 {
+		input := &ec2.DeleteVpcEndpointsInput{
+			VpcEndpointIds: endpointIDs,
+		}
+		_, err = svc.DeleteVpcEndpoints(input)
+		if err != nil {
+			return fmt.Errorf("error deleting vpcEP: %v", err)
+		}
 	}
 	return nil
 }
