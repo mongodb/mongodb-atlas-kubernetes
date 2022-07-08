@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 )
@@ -22,14 +24,14 @@ func SessionGCP(gProjectID string) (sessionGCP, error) {
 	return sessionGCP{computeService, gProjectID}, nil
 }
 
-func (s *sessionGCP) AddIPAdress(region, addressName, subnet string) (string, error) {
+func (s *sessionGCP) AddIPAddress(region, addressName, subnet string) (string, error) {
 	address := &compute.Address{
 		AddressType:    "INTERNAL",
 		Description:    addressName,
 		Name:           addressName,
 		Network:        "",
 		Region:         region,
-		Subnetwork:     s.formSubnetURL(region, subnet),
+		Subnetwork:     FormSubnetURL(region, subnet, s.gProjectID),
 		ServerResponse: googleapi.ServerResponse{},
 	}
 	_, err := s.computeService.Addresses.Insert(s.gProjectID, region, address).Context(context.Background()).Do()
@@ -67,10 +69,12 @@ func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 
 func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) error {
 	rules := &compute.ForwardingRule{
-		IPAddress:                     s.formAddressURL(region, addressName),
-		Labels:                        map[string]string{},
+		IPAddress: s.formAddressURL(region, addressName),
+		Labels: map[string]string{
+			config.TagForTestKey: config.TagForTestValue,
+		},
 		Name:                          ruleName,
-		Network:                       s.formNetworkURL(network),
+		Network:                       FormNetworkURL(network, s.gProjectID),
 		Ports:                         []string{},
 		Region:                        region,
 		ServiceDirectoryRegistrations: []*compute.ForwardingRuleServiceDirectoryRegistration{},
@@ -134,15 +138,15 @@ func (s *sessionGCP) DescribePrivateLinkStatus(region, ruleName string) (string,
 	return resp.PscConnectionStatus, nil
 }
 
-func (s *sessionGCP) formNetworkURL(network string) string {
+func FormNetworkURL(network, projectID string) string {
 	return fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s",
-		s.gProjectID, network,
+		projectID, network,
 	)
 }
 
-func (s *sessionGCP) formSubnetURL(region, subnet string) string {
+func FormSubnetURL(region, subnet, projectID string) string {
 	return fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s",
-		s.gProjectID, region, subnet,
+		projectID, region, subnet,
 	)
 }
 

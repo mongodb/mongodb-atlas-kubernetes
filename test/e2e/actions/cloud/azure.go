@@ -14,9 +14,9 @@ import (
 
 type azureAction struct{}
 
-var (
+const (
 	// TODO get from Azure
-	resourceGroup = "svet-test"
+	ResourceGroup = "svet-test"
 	vpc           = "svet-test-vpc"
 	subnetName    = "default"
 )
@@ -26,11 +26,11 @@ func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEn
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
-	err = session.DisableNetworkPolicies(resourceGroup, vpc, subnetName)
+	err = session.DisableNetworkPolicies(ResourceGroup, vpc, subnetName)
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
-	id, ip, err := session.CreatePrivateEndpoint(pe.Region, resourceGroup, privatelinkName, pe.ServiceResourceID)
+	id, ip, err := session.CreatePrivateEndpoint(pe.Region, ResourceGroup, privatelinkName, pe.ServiceResourceID)
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
@@ -48,7 +48,7 @@ func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEn
 	if err != nil {
 		return err
 	}
-	err = session.DeletePrivateEndpoint(resourceGroup, path.Base(privatelinkName))
+	err = session.DeletePrivateEndpoint(ResourceGroup, path.Base(privatelinkName))
 	return err
 }
 
@@ -57,7 +57,7 @@ func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelink
 	if err != nil {
 		return false
 	}
-	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
+	status, err := session.GetPrivateEndpointStatus(ResourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)
 		return false
@@ -71,7 +71,7 @@ func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privateli
 		fmt.Print(err)
 		return false
 	}
-	status, err := session.GetPrivateEndpointStatus(resourceGroup, path.Base(privatelinkName))
+	status, err := session.GetPrivateEndpointStatus(ResourceGroup, path.Base(privatelinkName))
 	if err != nil {
 		fmt.Print(err)
 		return false

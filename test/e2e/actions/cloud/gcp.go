@@ -11,16 +11,16 @@ import (
 
 type gcpAction struct{}
 
-var (
+const (
 	// TODO get from GCP
-	googleProjectID     = "atlasoperator"             // Google Cloud Project ID
-	googleVPC           = "atlas-operator-test"       // VPC Name
-	googleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
+	GoogleProjectID     = "atlasoperator"             // Google Cloud Project ID
+	GoogleVPC           = "atlas-operator-test"       // VPC Name
+	GoogleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
 	googleConnectPrefix = "ao"                        // Private Service Connect Endpoint Prefix
 )
 
 func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
-	session, err := gcp.SessionGCP(googleProjectID)
+	session, err := gcp.SessionGCP(GoogleProjectID)
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
@@ -28,7 +28,7 @@ func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 	for i, target := range pe.ServiceAttachmentNames {
 		addressName := formAddressName(privatelinkName, i)
 		ruleName := formRuleName(privatelinkName, i)
-		ip, err := session.AddIPAdress(pe.Region, addressName, googleSubnetName)
+		ip, err := session.AddIPAddress(pe.Region, addressName, GoogleSubnetName)
 		if err != nil {
 			return v1.PrivateEndpoint{}, err
 		}
@@ -37,18 +37,18 @@ func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 			EndpointName: ruleName,
 			IPAddress:    ip,
 		})
-		cResponse.EndpointGroupName = googleVPC
+		cResponse.EndpointGroupName = GoogleVPC
 		cResponse.Region = pe.Region
 		cResponse.Provider = pe.Provider
-		cResponse.GCPProjectID = googleProjectID
+		cResponse.GCPProjectID = GoogleProjectID
 
-		session.AddForwardRule(pe.Region, ruleName, addressName, googleVPC, googleSubnetName, target)
+		session.AddForwardRule(pe.Region, ruleName, addressName, GoogleVPC, GoogleSubnetName, target)
 	}
 	return cResponse, nil
 }
 
 func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	session, err := gcp.SessionGCP(googleProjectID)
+	session, err := gcp.SessionGCP(GoogleProjectID)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoi
 }
 
 func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID string) bool {
-	session, err := gcp.SessionGCP(googleProjectID)
+	session, err := gcp.SessionGCP(GoogleProjectID)
 	if err != nil {
 		fmt.Print(err)
 		return false
@@ -75,7 +75,7 @@ func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID strin
 }
 
 func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
-	session, err := gcp.SessionGCP(googleProjectID)
+	session, err := gcp.SessionGCP(GoogleProjectID)
 	if err != nil {
 		fmt.Print(err)
 		return false
