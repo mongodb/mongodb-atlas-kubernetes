@@ -108,8 +108,10 @@ type DeploymentSpec struct {
 	// Version of the deployment to deploy.
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
-	// +kubebuilder:validation:Pattern:=^[A-Za-z0-9-]+$
+	// Name of the deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded deployment.
@@ -151,8 +153,10 @@ type AdvancedDeploymentSpec struct {
 	Labels                   []common.LabelSpec `json:"labels,omitempty"`
 	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
-	// +kubebuilder:validation:Pattern:=^[A-Za-z0-9-]+$
+	// Name of the advanced deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name                 string                     `json:"name,omitempty"`
 	Paused               *bool                      `json:"paused,omitempty"`
 	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
@@ -165,8 +169,10 @@ type AdvancedDeploymentSpec struct {
 
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
 type ServerlessSpec struct {
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
-	// +kubebuilder:validation:Pattern:=^[A-Za-z0-9-]+$
+	// Name of the serverless deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
