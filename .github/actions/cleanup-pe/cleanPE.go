@@ -12,13 +12,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"google.golang.org/api/compute/v1"
+	"log"
 	"os"
 )
 
 func main() {
-	cleanAllPE := os.Getenv("CLEAN_ALL_PE")
-	if cleanAllPE == "true" {
-		fmt.Println(CleanAllPE())
+	err := CleanAllPE()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
