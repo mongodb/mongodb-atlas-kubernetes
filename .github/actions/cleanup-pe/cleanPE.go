@@ -11,13 +11,18 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 	"google.golang.org/api/compute/v1"
 	"log"
 	"os"
 )
 
 func main() {
-	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)
+	err := utils.SaveToFile(config.FileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")))
+	if err != nil {
+		log.Fatal("error saving gcp sa cred to file", err)
+	}
+	err = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)
 	if err != nil {
 		log.Fatal("error setting GOOGLE_APPLICATION_CREDENTIALS", err)
 	}
