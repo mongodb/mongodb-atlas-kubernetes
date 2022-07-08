@@ -72,6 +72,29 @@ try_until_success() {
   return 1
 }
 
+try_until_text() {
+  local cmd=$1
+  local expected=$2
+  local timeout=$3
+  local interval=${4:-1}
+  local now
+  now="$(date +%s%3)"
+  local expire=$(($now + $timeout))
+  while [ "$now" -lt $expire ]; do
+    echo "Running ${cmd}"
+    res=$($cmd)
+    echo "Result: ${res}, Expected: ${expected}"
+    if [[ ${res} == "${expected}" ]] ; then
+        echo "Passed"
+        return 0
+    fi
+    sleep $interval
+    now=$(date +%s%3)
+  done
+  echo "Fail"
+  return 1
+}
+
 expect_success_silent(){
   local cmd=$1
   if $cmd ; then
@@ -202,7 +225,7 @@ metadata:
   name: ${OPERATOR_SUBSCRIPTION_NAME}
   namespace: ${TEST_NAMESPACE}
 spec:
-  channel: candidate
+  channel: stable
   name: mongodb-atlas-kubernetes
   source: ${OPERATOR_CATALOGSOURCE_NAME}
   sourceNamespace: openshift-marketplace
@@ -225,6 +248,16 @@ spec:
   expect_success "oc -n ${TEST_NAMESPACE} apply -f ${CATALOG_DIR}/operatorgroup.yaml"
 }
 
+wait_for_olm_to_install_operator() {
+  try_until_text "oc -n ${TEST_NAMESPACE} get deployment mongodb-atlas-operator -o jsonpath='{.status.readyReplicas}'" "'1'" ${DEFAULT_TIMEOUT}
+}
+
+patch_subscription() {
+  echo "Patching subscription"
+  patch='[{"op": "replace", "path":"/spec/channel", "value": "candidate"}]'
+  oc -n "${TEST_NAMESPACE}" patch subscription "${OPERATOR_SUBSCRIPTION_NAME}" --type json -p "${patch}"
+}
+
 main() {
   echo "Test upgrade from ${LATEST_RELEASE_VERSION} to ${CURRENT_VERSION}"
   oc_login
@@ -239,33 +272,11 @@ main() {
   build_and_deploy_catalog_source
   build_and_deploy_operator_group
   build_and_deploy_subscription
-#  wait_for_olm_to_install_operator
-#
-#  # Perform operator upgrade
-#  patch_subscription
-#  wait_for_olm_to_install_operator
+  wait_for_olm_to_install_operator
 
-
-  # make sure the is a PODMAN, OC and KUBECTL commands
-  # Login to cluster with oc
-  # Delete previous test namespace
-  # Delete previous catalogsource if exists
-  # Delete previous subscription if exists
-
-  # Create test namespace
-  # Build catalog from the current version
-  # Create new catalog with the old bundle (e.g. 1.0.0) and a new one (e.g. 1.1.0)
-  # Add catalogsource to the openshift-marketplace
-  # Add subscription to the test namespace
-  # Wait for the OLM to install the previous version of the operator
-  # Create atlas project
-  # Create atlas deployment
-  # Wait for deployment
-
-  # Patch subscription to point to the new bundle
-  # Wait for the OLM to install new version
-  # Check if the pod is up and running
-  # Check if project and deployment are still exist
+  # Perform operator upgrade
+  patch_subscription
+  wait_for_olm_to_install_operator
 }
 
 # Entrypoint to the test
