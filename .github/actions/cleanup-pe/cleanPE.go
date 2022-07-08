@@ -142,11 +142,12 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
-	subnet := gcp.FormSubnetURL(region, subnetName, projectID)
 
-	addressFilter := fmt.Sprintf("subnet=%s", subnet)
+	subnet := gcp.FormSubnetURL(region, subnetName, projectID)
+	addressFilter := fmt.Sprintf("subnetwork=%s", subnet)
+
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
-	forwardRuleFilter := fmt.Sprintf("(%s) AND (network=%s)", addressFilter, networkURL)
+	forwardRuleFilter := fmt.Sprintf("network=%s", networkURL)
 
 	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Filter(forwardRuleFilter).Do()
 	if err != nil {
