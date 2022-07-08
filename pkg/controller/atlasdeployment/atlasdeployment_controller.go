@@ -207,7 +207,7 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	}
 
 	if !backupEnabled {
-		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.ClusterName)
+		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.GetDeploymentName())
 	}
 
 	resourcesToWatch := []watch.WatchedObject{}
@@ -263,6 +263,11 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	if err != nil {
 		r.Log.Debugf("unable to delete current backup policy for project: %v:%v, %v", projectID, cName, err)
 	}
+	if currentSchedule == nil {
+		r.Log.Debugf("got empty response for deleting backup schedule for project: %v:%v", projectID, cName)
+		return fmt.Errorf("can't delete сurrent backupschedule. got an empty response from the api: %v", currentSchedule)
+	}
+
 	r.Log.Debugf("successfully deleted backup policy. Default schedule received: %v", currentSchedule)
 
 	apiScheduleRes.ClusterID = currentSchedule.ClusterID
@@ -288,7 +293,12 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		return result, nil
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), c.Name, *c.BackupEnabled, req); err != nil {
+	backupEnabled := false
+	if c.BackupEnabled != nil {
+		backupEnabled = *c.BackupEnabled
+	}
+
+	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), c.Name, backupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
@@ -324,7 +334,16 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		return result, nil
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), atlasDeployment.Name, *atlasDeployment.ProviderBackupEnabled || *atlasDeployment.BackupEnabled, req); err != nil {
+	backupEnabled := false
+	providerBackupEnabled := false
+	if atlasDeployment.ProviderBackupEnabled != nil {
+		providerBackupEnabled = *atlasDeployment.ProviderBackupEnabled
+	}
+	if atlasDeployment.BackupEnabled != nil {
+		backupEnabled = *atlasDeployment.BackupEnabled
+	}
+
+	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), atlasDeployment.Name, providerBackupEnabled || backupEnabled, req); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil

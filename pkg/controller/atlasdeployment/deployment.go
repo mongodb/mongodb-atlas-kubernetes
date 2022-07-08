@@ -266,7 +266,7 @@ func handleSharedDeploymentUpgrade(ctx *workflow.Context, current *mongodbatlas.
 
 	// TODO: Replace with the go-atlas-client when this method will be added to go-atlas-client
 	atlasClient := ctx.Client
-	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/deployments/tenantUpgrade", current.GroupID)
+	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/clusters/tenantUpgrade", current.GroupID)
 	req, err := atlasClient.NewRequest(context.Background(), http.MethodPost, urlStr, new)
 	if err != nil {
 		return false, fmt.Errorf(baseErr, err)
