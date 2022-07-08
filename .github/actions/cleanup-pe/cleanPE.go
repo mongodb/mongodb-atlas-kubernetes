@@ -144,19 +144,19 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 	}
 
 	subnet := gcp.FormSubnetURL(region, subnetName, projectID)
-	addressFilter := fmt.Sprintf("subnetwork=%s", subnet)
+	//addressFilter := fmt.Sprintf("subnetwork=%s", subnet)
 
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
-	forwardRuleFilter := fmt.Sprintf("network=%s", networkURL)
+	//forwardRuleFilter := fmt.Sprintf("network=%s", networkURL)
 
-	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Filter(forwardRuleFilter).Do()
+	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
 	if err != nil {
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
 	for _, forwardRule := range forwardRules.Items {
 		forwardRuleLabels := forwardRule.Labels
-		if forwardRuleLabels[tagName] == tagValue {
+		if forwardRuleLabels[tagName] == tagValue && forwardRule.Network == networkURL {
 			_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
 			if err != nil {
 				return fmt.Errorf("error while deleting forwarding rule: %v", err)
@@ -164,15 +164,17 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 		}
 	}
 
-	addresses, err := computeService.Addresses.List(projectID, region).Filter(addressFilter).Do()
+	addresses, err := computeService.Addresses.List(projectID, region).Do()
 	if err != nil {
 		return fmt.Errorf("error while listing addresses: %v", err)
 	}
 
 	for _, address := range addresses.Items {
-		_, errDelete := computeService.Addresses.Delete(projectID, region, address.Name).Do()
-		if errDelete != nil {
-			return errDelete
+		if address.Subnetwork == subnet {
+			_, errDelete := computeService.Addresses.Delete(projectID, region, address.Name).Do()
+			if errDelete != nil {
+				return errDelete
+			}
 		}
 	}
 	return nil
