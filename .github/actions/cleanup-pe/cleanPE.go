@@ -17,7 +17,11 @@ import (
 )
 
 func main() {
-	err := CleanAllPE()
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)
+	if err != nil {
+		log.Fatal("error setting GOOGLE_APPLICATION_CREDENTIALS", err)
+	}
+	err = CleanAllPE()
 	if err != nil {
 		log.Fatal(err)
 	}
