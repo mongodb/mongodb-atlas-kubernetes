@@ -60,11 +60,16 @@ func cleanAllAWSPE(region, tagName, tagValue string) error {
 		return fmt.Errorf("error creating awsSession: %v", err)
 	}
 	svc := ec2.New(awsSession)
-	tagFilter := fmt.Sprintf("tag=%s", tagName)
 	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name: aws.String(tagFilter),
+				Name: aws.String("tag:Name"),
+				Values: []*string{
+					aws.String(tagName),
+				},
+			},
+			{
+				Name: aws.String("tag:Value"),
 				Values: []*string{
 					aws.String(tagValue),
 				},
