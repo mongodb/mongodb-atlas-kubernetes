@@ -140,6 +140,11 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
+	if result := r.ensureDeletionFinalizer(ctx, atlasClient, projectID, project, context); !result.IsOk() {
+		setCondition(ctx, status.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	var authModes authmode.AuthModes
 	if authModes, result = r.ensureX509(ctx, projectID, project); !result.IsOk() {
 		setCondition(ctx, status.ProjectReadyType, result)
@@ -148,13 +153,27 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	authModes.AddAuthMode(authmode.Scram) // add the default auth method
 	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
 
+	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
+	ctx.SetConditionTrue(status.ProjectReadyType)
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
+
+	if result := r.ensureProjectResources(ctx, projectID, project); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result.ReconcileResult(), nil
+	}
+
+	ctx.SetConditionTrue(status.ReadyType)
+	return workflow.OK().ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, atlasClient mongodbatlas.Client, projectID string, project *mdbv1.AtlasProject, context context.Context) (result workflow.Result) {
+	log := ctx.Log
+
 	if project.GetDeletionTimestamp().IsZero() {
 		if !isDeletionFinalizerPresent(project) {
 			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
 			if err := r.addDeletionFinalizer(context, project); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
-				setCondition(ctx, status.DeploymentReadyType, result)
-				return result.ReconcileResult(), nil
+				return workflow.Terminate(workflow.Internal, err.Error())
 			}
 		}
 	}
@@ -166,42 +185,39 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			} else {
 				if result = DeleteAllPrivateEndpoints(ctx, projectID); !result.IsOk() {
 					setCondition(ctx, status.PrivateEndpointReadyType, result)
-					return result.ReconcileResult(), nil
+					return result
 				}
 				if result = DeleteAllNetworkPeers(context, projectID, ctx.Client.Peers, ctx.Log); !result.IsOk() {
 					setCondition(ctx, status.NetworkPeerReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 
-				if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
+				if err := r.deleteAtlasProject(context, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
 					setCondition(ctx, status.DeploymentReadyType, result)
-					return result.ReconcileResult(), nil
+					return result
 				}
 			}
 
-			if err = r.removeDeletionFinalizer(context, project); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
-				setCondition(ctx, status.DeploymentReadyType, result)
-				return result.ReconcileResult(), nil
+			if err := r.removeDeletionFinalizer(context, project); err != nil {
+				return workflow.Terminate(workflow.Internal, err.Error())
 			}
 		}
-		return result.ReconcileResult(), nil
+		return result
 	}
 
-	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
-	ctx.SetConditionTrue(status.ProjectReadyType)
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
+	return workflow.OK()
+}
 
-	if result := ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+// ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
+func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (result workflow.Result) {
+	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 
 	if result = ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
@@ -218,19 +234,16 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 
 	if result = ensureMaintenanceWindow(ctx, projectID, project); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
 
-	ctx.SetConditionTrue(status.ReadyType)
-	return workflow.OK().ReconcileResult(), nil
+	return workflow.OK()
 }
 
 func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
