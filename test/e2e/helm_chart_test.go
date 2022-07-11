@@ -15,7 +15,6 @@ import (
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -270,7 +269,8 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 			Expect(err).To(BeNil())
 			actions.CompareServerlessSpec(deployment.Spec, *serverlessInstance)
 		default:
-			uDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
+			atlasClient := atlas.NewClientOrFail()
+			uDeployment := atlasClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
 			actions.CompareDeploymentsSpec(deployment.Spec, uDeployment)
 		}
 	})
@@ -292,7 +292,8 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 		helm.Uninstall(data.Resources.Deployments[0].Spec.GetDeploymentName(), data.Resources.Namespace)
 		Eventually(
 			func() bool {
-				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+				aClient := atlas.NewClientOrFail()
+				return aClient.IsProjectExists(data.Resources.ProjectID)
 			},
 			"7m", "20s",
 		).Should(BeFalse(), "Project and deployment should be deleted from Atlas")

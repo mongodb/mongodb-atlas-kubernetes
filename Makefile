@@ -111,6 +111,9 @@ manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
+.PHONY: lint
+lint:
+	golangci-lint run
 
 .PHONY: fmt
 fmt: ## Run go fmt against code

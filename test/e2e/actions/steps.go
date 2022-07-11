@@ -17,7 +17,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -57,9 +56,8 @@ func WaitDeployment(input model.UserInputs, generation string) {
 		Expect(err).To(BeNil())
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
-		ExpectWithOffset(
-			1, mongocli.GetDeploymentStateName(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()),
-		).Should(Equal("IDLE"), "Atlas: Deployment status should be IDLE")
+		aClient := atlas.NewClientOrFail()
+		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
 	}
 }
 
@@ -95,7 +93,8 @@ func WaitTestApplication(ns, label string) {
 
 func CheckIfDeploymentExist(input model.UserInputs) func() bool {
 	return func() bool {
-		return mongocli.IsDeploymentExist(input.ProjectID, input.Deployments[0].Spec.DeploymentSpec.Name)
+		aClient := atlas.NewClientOrFail()
+		return aClient.IsDeploymentExist(input.ProjectID, input.Deployments[0].Spec.DeploymentSpec.Name)
 	}
 }
 
@@ -116,17 +115,9 @@ func CheckIfUsersExist(input model.UserInputs) func() bool {
 	}
 }
 
-func CheckIfUserExist(username, projecID string) func() bool {
-	return func() bool {
-		return mongocli.IsUserExistForAdmin(username, projecID)
-	}
-}
-
 func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas.Cluster) {
 	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
-		"MongoURI":            Not(BeEmpty()),
-		"MongoURIWithOptions": Not(BeEmpty()),
-		"Name":                Equal(requested.DeploymentSpec.Name),
+		"Name": Equal(requested.DeploymentSpec.Name),
 		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
 			"InstanceSizeName": Equal(requested.DeploymentSpec.ProviderSettings.InstanceSizeName),
 			"ProviderName":     Equal(string(requested.DeploymentSpec.ProviderSettings.ProviderName)),
@@ -242,12 +233,18 @@ func CheckUsersAttributes(input model.UserInputs) {
 		return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s", user.ObjectMeta.Name)
 	}
 
+	aClient := atlas.NewClientOrFail()
+
 	for _, deployment := range input.Deployments {
 		for _, user := range input.Users {
 			var atlasUser *mongodbatlas.DatabaseUser
 
 			getUser := func() bool {
-				atlasUser = mongocli.GetUser(setAdminIfEmpty(user.Spec.DatabaseName), user.Spec.Username, input.ProjectID)
+				var err error
+				atlasUser, err = aClient.GetDBUser(setAdminIfEmpty(user.Spec.DatabaseName), user.Spec.Username, input.ProjectID)
+				if err != nil {
+					return false
+				}
 				return atlasUser != nil
 			}
 
@@ -419,7 +416,9 @@ func DeployDeployment(data *model.TestDataProvider, generation string) {
 		WaitDeployment(data.Resources, "1")
 	})
 	By("check deployment Attribute", func() {
-		deployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
+		aClient, err := atlas.AClient()
+		Expect(err).NotTo(HaveOccurred())
+		deployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
 		CompareDeploymentsSpec(data.Resources.Deployments[0].Spec, deployment)
 	})
 }
@@ -472,7 +471,8 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 		kubecli.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
 		Eventually(
 			func() bool {
-				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+				aClient := atlas.NewClientOrFail()
+				return aClient.IsProjectExists(data.Resources.ProjectID)
 			},
 			"5m", "20s",
 		).Should(BeFalse(), "Project should be deleted from Atlas")
