@@ -136,6 +136,7 @@ func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subne
 		return fmt.Errorf("error while listing addresses: %v", err)
 	}
 	for _, address := range addressList.Items {
+		log.Printf("deleting address %s. subnet %s. %v", address.Name, address.Subnetwork, *address) // TODO: remove this line
 		if address.Subnetwork == subnetURL {
 			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
 			if err != nil {
