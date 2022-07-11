@@ -96,20 +96,20 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	return nil
 }
 
-func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
+func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) error {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
 
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
+	subnetURL := gcp.FormSubnetURL(subnet, projectID, region)
 
 	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
 	if err != nil {
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
-	var addressesToDelete []string
 	for _, forwardRule := range forwardRules.Items {
 		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
 		if forwardRule.Network == networkURL {
@@ -119,11 +119,10 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
 			}
 			ruleName := forwardRule.Name
 			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
-			addressesToDelete = append(addressesToDelete, forwardRule.Target)
 		}
 	}
 
-	err = deleteGCPAddressByTarget(computeService, projectID, region, addressesToDelete)
+	err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
 	if err != nil {
 		return fmt.Errorf("error while deleting GCP address: %v", err)
 	}
@@ -131,14 +130,13 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
 	return nil
 }
 
-func deleteGCPAddressByTarget(service *compute.Service, projectID, region string, addressesToDelete []string) error {
+func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subnetURL string) error {
 	addressList, err := service.Addresses.List(projectID, region).Do()
 	if err != nil {
 		return fmt.Errorf("error while listing addresses: %v", err)
 	}
 	for _, address := range addressList.Items {
-		log.Printf("deleting address %v ", *address) // TODO: remove this line
-		if contains(addressesToDelete, address.Address) {
+		if address.Subnetwork == subnetURL {
 			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
 			if err != nil {
 				return fmt.Errorf("error while deleting address: %v", err)
@@ -147,15 +145,6 @@ func deleteGCPAddressByTarget(service *compute.Service, projectID, region string
 		}
 	}
 	return nil
-}
-
-func contains(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
 }
 
 func containsPtr(slice []*string, elem *string) bool {
