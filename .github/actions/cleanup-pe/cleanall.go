@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go/aws"
@@ -23,7 +27,32 @@ func cleanAllAWSPE(region string) error {
 		return fmt.Errorf("error creating awsSession: %v", err)
 	}
 	svc := ec2.New(awsSession)
-	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{})
+
+	subnetInput := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("tag:Name"),
+			Values: []*string{
+				aws.String(config.TagName),
+			},
+		}},
+	}
+	subnetOutput, err := svc.DescribeSubnets(subnetInput)
+	if err != nil {
+		return fmt.Errorf("error while listing subnets: %v", err)
+	}
+	if len(subnetOutput.Subnets) == 0 {
+		return fmt.Errorf("no subnets found")
+	}
+	subnetID := subnetOutput.Subnets[0].SubnetId
+
+	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("subnet-id"),
+			Values: []*string{
+				subnetID,
+			},
+		}},
+	})
 	if err != nil {
 		return fmt.Errorf("error fething all vpcEP: %v", err)
 	}
@@ -58,7 +87,10 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	}
 	var endpointNames []string
 	for _, endpoint := range peList.Values() {
-		endpointNames = append(endpointNames, *endpoint.Name)
+		if *endpoint.Subnet.Name == cloud.SubnetName {
+			endpointNames = append(endpointNames, *endpoint.Name)
+		}
+
 	}
 
 	for _, peName := range endpointNames {

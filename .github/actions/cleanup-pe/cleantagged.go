@@ -48,12 +48,15 @@ func cleanAllTaggedAWSPE(region, tagName, tagValue string) error {
 		endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 	}
 	if len(endpointIDs) > 0 {
-		input := &ec2.DeleteVpcEndpointsInput{
-			VpcEndpointIds: endpointIDs,
-		}
-		_, err = svc.DeleteVpcEndpoints(input)
-		if err != nil {
-			return fmt.Errorf("error deleting vpcEP: %v", err)
+		endpointsIDByPortion := chunkSlice(endpointIDs, 25) // aws has a limit of 25 endpointIDs per request
+		for _, endpointsIDPortion := range endpointsIDByPortion {
+			input := &ec2.DeleteVpcEndpointsInput{
+				VpcEndpointIds: endpointsIDPortion,
+			}
+			_, err = svc.DeleteVpcEndpoints(input)
+			if err != nil {
+				return fmt.Errorf("error deleting vpcEP: %v", err)
+			}
 		}
 	}
 	log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
@@ -137,4 +140,24 @@ func deleteGCPAddressByForwardRuleName(service *compute.Service, projectID, regi
 	}
 	log.Printf("successfully deleted GCP address: %s", addressName)
 	return nil
+}
+
+func chunkSlice(slice []*string, chunkSize int) [][]*string {
+	var chunks [][]*string
+	for {
+		if len(slice) == 0 {
+			break
+		}
+
+		// necessary check to avoid slicing beyond
+		// slice capacity
+		if len(slice) < chunkSize {
+			chunkSize = len(slice)
+		}
+		chunk := slice[:chunkSize]
+		chunks = append(chunks, chunk)
+		slice = slice[chunkSize:]
+	}
+
+	return chunks
 }

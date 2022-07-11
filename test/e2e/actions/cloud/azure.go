@@ -18,7 +18,7 @@ const (
 	// TODO get from Azure
 	ResourceGroup = "svet-test"
 	vpc           = "svet-test-vpc"
-	subnetName    = "default"
+	SubnetName    = "default"
 )
 
 func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
@@ -26,7 +26,7 @@ func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEn
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
-	err = session.DisableNetworkPolicies(ResourceGroup, vpc, subnetName)
+	err = session.DisableNetworkPolicies(ResourceGroup, vpc, SubnetName)
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
