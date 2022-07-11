@@ -45,20 +45,15 @@ func cleanAllAWSPE(region string) error {
 	}
 	subnetID := subnetOutput.Subnets[0].SubnetId
 
-	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
-		Filters: []*ec2.Filter{{
-			Name: aws.String("subnet-id"),
-			Values: []*string{
-				subnetID,
-			},
-		}},
-	})
+	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{})
 	if err != nil {
 		return fmt.Errorf("error fething all vpcEP: %v", err)
 	}
 	var endpointIDs []*string
 	for _, endpoint := range endpoints.VpcEndpoints {
-		endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
+		if contains(endpoint.SubnetIds, subnetID) {
+			endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
+		}
 	}
 	if len(endpointIDs) > 0 {
 		input := &ec2.DeleteVpcEndpointsInput{
@@ -133,4 +128,15 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 	}
 
 	return nil
+}
+
+func contains(slice []*string, elem *string) bool {
+	for _, s := range slice {
+		if s != nil && elem != nil {
+			if *s == *elem {
+				return true
+			}
+		}
+	}
+	return false
 }
