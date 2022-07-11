@@ -113,6 +113,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 	}
 
 	for _, forwardRule := range forwardRules.Items {
+		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
 		if forwardRule.Network == networkURL && forwardRule.Subnetwork == subnetURL {
 			_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
 			if err != nil {
