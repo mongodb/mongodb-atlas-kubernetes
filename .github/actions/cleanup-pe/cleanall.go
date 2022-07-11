@@ -103,7 +103,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 	}
 
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
-	subnetURL := gcp.FormSubnetURL(subnet, projectID, region)
+	subnetURL := gcp.FormSubnetURL(region, subnet, projectID)
 
 	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
 	if err != nil {
@@ -136,7 +136,6 @@ func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subne
 		return fmt.Errorf("error while listing addresses: %v", err)
 	}
 	for _, address := range addressList.Items {
-		log.Printf("subnet url: %s. deleting address %s. subnet %s. %v", subnetURL, address.Name, address.Subnetwork, *address) // TODO: remove this line
 		if address.Subnetwork == subnetURL {
 			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
 			if err != nil {
