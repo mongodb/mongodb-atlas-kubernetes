@@ -80,7 +80,7 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	}
 	var endpointNames []string
 	for _, endpoint := range peList.Values() {
-		if endpoint.Name != nil {
+		if endpoint.Subnet.Name != nil {
 			if *endpoint.Subnet.Name == cloud.SubnetName {
 				endpointNames = append(endpointNames, *endpoint.Name)
 			}
