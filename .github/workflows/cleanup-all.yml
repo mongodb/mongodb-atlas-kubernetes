@@ -13,6 +13,10 @@ on:
         description: "Timelife of project in hours"
         default: "3"
         required: true
+      cleanPE:
+        description: "Clean PE(true) or not(false)?"
+        default: "false"
+        required: true
 
 env:
   GOLANG_VERSION: '1.17'
@@ -51,4 +55,5 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          CLEAN_PE: ${{ github.event.inputs.cleanPE }}
         run: go run .github/actions/cleanup-pe/cleanPE.go

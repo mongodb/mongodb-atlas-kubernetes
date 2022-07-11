@@ -2,6 +2,8 @@ package cloud
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -42,7 +44,10 @@ func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 		cResponse.Provider = pe.Provider
 		cResponse.GCPProjectID = GoogleProjectID
 
-		session.AddForwardRule(pe.Region, ruleName, addressName, GoogleVPC, GoogleSubnetName, target)
+		err = session.AddForwardRule(pe.Region, ruleName, addressName, GoogleVPC, GoogleSubnetName, target)
+		if err != nil {
+			return v1.PrivateEndpoint{}, err
+		}
 	}
 	return cResponse, nil
 }
@@ -53,8 +58,14 @@ func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoi
 		return err
 	}
 	for i := range pe.Endpoints {
-		session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i), 10, 20*time.Second)
-		session.DeleteIPAdress(pe.Region, formAddressName(privatelinkName, i))
+		err = session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i), 10, 20*time.Second)
+		if err != nil {
+			return err
+		}
+		err = session.DeleteIPAdress(pe.Region, formAddressName(privatelinkName, i))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -71,7 +82,7 @@ func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID strin
 		fmt.Print(err)
 		return false
 	}
-	return (result == "PENDING")
+	return result == "PENDING"
 }
 
 func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
@@ -86,11 +97,30 @@ func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID str
 		fmt.Print(err)
 		return false
 	}
-	return (result == "ACCEPTED")
+	return result == "ACCEPTED"
 }
 
 func formAddressName(name string, i int) string {
 	return fmt.Sprintf("%s%s-ip-%d", googleConnectPrefix, name, i)
+}
+
+func FormAddressNameByRuleName(ruleName string) (string, error) {
+	if !strings.HasPrefix(ruleName, googleConnectPrefix) {
+		return "", fmt.Errorf("invalid rule name. should contains %s: %s", googleConnectPrefix, ruleName)
+	}
+	ruleName = strings.TrimPrefix(ruleName, googleConnectPrefix)
+
+	parts := strings.Split(ruleName, "-")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid rule name. should contains - : %s", ruleName)
+	}
+
+	name := parts[0]
+	i, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return "", fmt.Errorf("invalid rule name. should contains number after - : %s", ruleName)
+	}
+	return formAddressName(name, i), nil
 }
 
 func formRuleName(name string, i int) string {
