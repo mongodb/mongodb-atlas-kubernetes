@@ -67,7 +67,7 @@ func CleanAllPE() error {
 	}
 
 	gcpRegion := config.GCPRegion
-	err = cleanAllGCPPE(ctx, cloud.GoogleProjectID, cloud.GoogleVPC, cloud.GoogleSubnetName,
+	err = cleanAllGCPPE(ctx, cloud.GoogleProjectID, cloud.GoogleVPC,
 		gcpRegion, config.TagForTestKey, config.TagForTestValue)
 	if err != nil {
 		return fmt.Errorf("error while cleaning all gcp pe: %v", err)
@@ -153,13 +153,12 @@ func cleanAllAzurePE(ctx context.Context, tagName, tagValue, resourceGroupName, 
 	return nil
 }
 
-func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagName, tagValue string) error {
+func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, tagName, tagValue string) error {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
 
-	subnet := gcp.FormSubnetURL(region, subnetName, projectID)
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
 
 	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
@@ -167,7 +166,6 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
-	var expectedAddressNames []string
 	for _, forwardRule := range forwardRules.Items {
 		forwardRuleLabels := forwardRule.Labels
 		if forwardRuleLabels[tagName] == tagValue && forwardRule.Network == networkURL {
@@ -176,39 +174,26 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, subnetName, region, tagN
 				return fmt.Errorf("error while deleting forwarding rule: %v", err)
 			}
 			ruleName := forwardRule.Name
-			expectedAddressName, errForm := cloud.FormAddressNameByRuleName(ruleName)
-			if errForm != nil {
-				log.Printf("unexpected forvard rule name pattern: %v", errForm)
-			}
-			expectedAddressNames = append(expectedAddressNames, expectedAddressName)
 			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
-		}
-	}
-
-	addresses, err := computeService.Addresses.List(projectID, region).Do()
-	if err != nil {
-		return fmt.Errorf("error while listing addresses: %v", err)
-	}
-
-	for _, address := range addresses.Items {
-		if address.Subnetwork == subnet {
-			if contains(expectedAddressNames, address.Name) {
-				_, errDelete := computeService.Addresses.Delete(projectID, region, address.Name).Do()
-				if errDelete != nil {
-					return errDelete
-				}
-				log.Printf("successfully deleted GCP address: %s", address.Name)
+			err = deleteGCPAddressByForwardRuleName(computeService, projectID, region, ruleName)
+			if err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
+func deleteGCPAddressByForwardRuleName(service *compute.Service, projectID, region, ruleName string) error {
+	addressName, err := cloud.FormAddressNameByRuleName(ruleName)
+	if err != nil {
+		return fmt.Errorf("unexpected forvard rule name pattern: %v", err)
 	}
-	return false
+	_, err = service.Addresses.Delete(projectID, region, addressName).Do()
+	if err != nil {
+		return fmt.Errorf("error while deleting address: %v", err)
+	}
+	log.Printf("successfully deleted GCP address: %s", addressName)
+	return nil
 }
