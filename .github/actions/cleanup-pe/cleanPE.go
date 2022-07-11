@@ -79,8 +79,7 @@ func CleanAllPE(onlyTagged bool) error {
 			}
 		}
 
-		err = cleanAllGCPPE(ctx, cloud.GoogleProjectID, cloud.GoogleVPC,
-			gcpRegion, cloud.GoogleSubnetName)
+		err = cleanAllGCPPE(ctx, cloud.GoogleProjectID, cloud.GoogleVPC, gcpRegion)
 		if err != nil {
 			return fmt.Errorf("error while cleaning all gcp pe: %v", err)
 		}

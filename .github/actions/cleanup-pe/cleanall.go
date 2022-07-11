@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,7 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"google.golang.org/api/compute/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 func cleanAllAWSPE(region string) error {
@@ -98,14 +96,13 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	return nil
 }
 
-func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) error {
+func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
 
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
-	subnetURL := gcp.FormSubnetURL(region, subnet, projectID)
 
 	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
 	if err != nil {
@@ -114,17 +111,18 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 
 	for _, forwardRule := range forwardRules.Items {
 		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
-		if forwardRule.Network == networkURL && forwardRule.Subnetwork == subnetURL {
+		if forwardRule.Network == networkURL {
 			_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
 			if err != nil {
 				return fmt.Errorf("error while deleting forwarding rule: %v", err)
 			}
 			ruleName := forwardRule.Name
 			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
-			err = deleteGCPAddressByForwardRuleName(computeService, projectID, region, ruleName)
+			_, err = computeService.Addresses.Delete(projectID, region, forwardRule.Target).Do()
 			if err != nil {
 				return err
 			}
+			log.Printf("successfully deleted GCP address: %s", forwardRule.Target)
 		}
 	}
 

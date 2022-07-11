@@ -78,7 +78,7 @@ func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subn
 		Ports:                         []string{},
 		Region:                        region,
 		ServiceDirectoryRegistrations: []*compute.ForwardingRuleServiceDirectoryRegistration{},
-		Subnetwork:                    FormSubnetURL(region, subnet, s.gProjectID),
+		Subnetwork:                    "",
 		Target:                        target,
 		ServerResponse:                googleapi.ServerResponse{},
 	}
