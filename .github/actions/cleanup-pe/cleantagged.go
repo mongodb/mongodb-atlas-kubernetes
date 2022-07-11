@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -110,6 +111,7 @@ func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, tagName, t
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
+	var ruleNames []string
 	for _, forwardRule := range forwardRules.Items {
 		forwardRuleLabels := forwardRule.Labels
 		if forwardRuleLabels[tagName] == tagValue && forwardRule.Network == networkURL {
@@ -118,14 +120,18 @@ func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, tagName, t
 				return fmt.Errorf("error while deleting forwarding rule: %v", err)
 			}
 			ruleName := forwardRule.Name
+			ruleNames = append(ruleNames, ruleName)
 			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
-			err = deleteGCPAddressByForwardRuleName(computeService, projectID, region, ruleName)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
+	time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
+	for _, ruleName := range ruleNames {
+		err = deleteGCPAddressByForwardRuleName(computeService, projectID, region, ruleName)
+		if err != nil {
+			return fmt.Errorf("error while deleting GCP address: %v", err)
+		}
+	}
 	return nil
 }
 

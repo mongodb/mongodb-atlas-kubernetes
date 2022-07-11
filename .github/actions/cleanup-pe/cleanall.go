@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -124,6 +125,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 		}
 	}
 
+	time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
 	err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
 	if err != nil {
 		return fmt.Errorf("error while deleting GCP address: %v", err)
