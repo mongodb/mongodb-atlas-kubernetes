@@ -49,7 +49,7 @@ func cleanAllAWSPE(region string) error {
 	}
 	var endpointIDs []*string
 	for _, endpoint := range endpoints.VpcEndpoints {
-		if contains(endpoint.SubnetIds, subnetID) {
+		if containsPtr(endpoint.SubnetIds, subnetID) {
 			endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 		}
 	}
@@ -109,6 +109,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
+	var addressesToDelete []string
 	for _, forwardRule := range forwardRules.Items {
 		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
 		if forwardRule.Network == networkURL {
@@ -118,18 +119,46 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string) error {
 			}
 			ruleName := forwardRule.Name
 			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
-			_, err = computeService.Addresses.Delete(projectID, region, forwardRule.Target).Do()
-			if err != nil {
-				return err
-			}
-			log.Printf("successfully deleted GCP address: %s", forwardRule.Target)
+			addressesToDelete = append(addressesToDelete, forwardRule.Target)
 		}
+	}
+
+	err = deleteGCPAddressByTarget(computeService, projectID, region, addressesToDelete)
+	if err != nil {
+		return fmt.Errorf("error while deleting GCP address: %v", err)
 	}
 
 	return nil
 }
 
-func contains(slice []*string, elem *string) bool {
+func deleteGCPAddressByTarget(service *compute.Service, projectID, region string, addressesToDelete []string) error {
+	addressList, err := service.Addresses.List(projectID, region).Do()
+	if err != nil {
+		return fmt.Errorf("error while listing addresses: %v", err)
+	}
+	for _, address := range addressList.Items {
+		log.Printf("deleting address %v ", *address) // TODO: remove this line
+		if contains(addressesToDelete, address.Address) {
+			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
+			if err != nil {
+				return fmt.Errorf("error while deleting address: %v", err)
+			}
+			log.Printf("successfully deleted GCP address: %s", address.Name)
+		}
+	}
+	return nil
+}
+
+func contains(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPtr(slice []*string, elem *string) bool {
 	for _, s := range slice {
 		if s != nil && elem != nil {
 			if *s == *elem {
