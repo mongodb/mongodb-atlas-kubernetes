@@ -91,8 +91,9 @@ int-test: generate manifests ## Run integration tests. Sample with labels: `make
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
-.PHONY: e2e-openshift
-	OC_USERNAME=kube-admin OC_PASSWORD=RKQcf-8p8cU-7KMXc-7zcjz
+.PHONY: e2e-openshift-upgrade
+e2e-openshift-upgrade:
+	cd scripts && ./openshift-upgrade-test.sh
 
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
