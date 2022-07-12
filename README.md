@@ -73,7 +73,7 @@ spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: Test Deployment
+    name: test-deployment
     providerSettings:
       instanceSizeName: M10
       providerName: AWS
