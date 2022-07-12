@@ -115,7 +115,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"default",
 		),
-		Entry("Advanced deployment by helm chart", Label("helm-advanced"),
+		Entry("Advanced deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-advanced",
 				model.AProject{},
@@ -133,7 +133,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"advanced",
 		),
-		Entry("Advanced multiregion deployment by helm chart", Label("helm-advanced-multiregion"),
+		Entry("Advanced multiregion deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-advanced-multiregion",
 				model.AProject{},
@@ -151,7 +151,7 @@ var _ = Describe("HELM charts", func() {
 			),
 			"advanced",
 		),
-		Entry("Serverless deployment by helm chart", Label("helm-serverless"),
+		Entry("Serverless deployment by helm chart",
 			model.NewTestDataProvider(
 				"helm-serverless",
 				model.AProject{},
