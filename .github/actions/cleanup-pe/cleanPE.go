@@ -13,8 +13,13 @@ import (
 
 func main() {
 	cleanOnlyTaggedPE := false
-	if os.Getenv("CLEAN_PE") == "true" {
+	cleanAllEnv := os.Getenv("CLEAN_TAGGED_PE")
+	switch cleanAllEnv {
+	case "true":
 		cleanOnlyTaggedPE = true
+	case "false":
+	default:
+		log.Fatal("CLEAN_TAGGED_PE must be set to true or false")
 	}
 	err := SetGCPCredentials()
 	if err != nil {

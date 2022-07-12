@@ -154,7 +154,6 @@ func chunkSlice(slice []*string, chunkSize int) [][]*string {
 		if len(slice) == 0 {
 			break
 		}
-
 		// necessary check to avoid slicing beyond
 		// slice capacity
 		if len(slice) < chunkSize {
