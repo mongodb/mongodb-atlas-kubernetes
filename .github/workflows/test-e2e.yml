@@ -61,18 +61,18 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-            "cluster-ns",
-            "cluster-wide",
-            "bundle-test",
-            "helm-ns",
-            "helm-wide",
-            "helm-update",
-            "serverless-instance",
-            "multinamespaced",
-            "privatelink",
-            "integration-ns",
-            "x509auth",
-            "long-run",
+              "cluster-ns",
+              "cluster-wide",
+              "bundle-test",
+              "helm-ns",
+              "helm-wide",
+              "helm-update",
+              "serverless-instance",
+              "multinamespaced",
+              "privatelink",
+              "integration-ns",
+              "x509auth",
+              "long-run",
           ]
         include:
           - k8s: "latest-openshift"
@@ -180,7 +180,7 @@ jobs:
           BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
-          TEST_NAME: "${{ matrix.test }}"
+          test: "${{ matrix.test }}"
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
@@ -201,8 +201,9 @@ jobs:
           go install github.com/onsi/gomega/...
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
-          [[ $TEST_NAME == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$TEST_NAME"' && !long-run && !broken' \
+          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken' && \
           ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/
+
 
       - name: Upload operator logs
         if: ${{ failure() }}
