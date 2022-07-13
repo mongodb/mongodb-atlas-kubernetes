@@ -123,6 +123,28 @@ func FormAddressNameByRuleName(ruleName string) (string, error) {
 	return formAddressName(name, i), nil
 }
 
+func FormForwardRuleNameByAddressName(addressName string) (string, error) {
+	if !strings.HasPrefix(addressName, googleConnectPrefix) {
+		return "", fmt.Errorf("invalid address name. should contains %s: %s", googleConnectPrefix, addressName)
+	}
+	addressName = strings.TrimPrefix(addressName, googleConnectPrefix)
+
+	parts := strings.Split(addressName, "-")
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid address name. should contains - : %s", addressName)
+	}
+	if parts[1] != "ip" {
+		return "", fmt.Errorf("invalid address name. should contains ip : %s", addressName)
+	}
+
+	name := parts[0]
+	i, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return "", fmt.Errorf("invalid address name. should contains number after - : %s", addressName)
+	}
+	return formRuleName(name, i), nil
+}
+
 func formRuleName(name string, i int) string {
 	return fmt.Sprintf("%s%s-%d", googleConnectPrefix, name, i)
 }

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 )
@@ -69,10 +67,7 @@ func (s *sessionGCP) DeleteIPAdress(region, addressName string) error {
 
 func (s *sessionGCP) AddForwardRule(region, ruleName, addressName, network, subnet, target string) error {
 	rules := &compute.ForwardingRule{
-		IPAddress: s.formAddressURL(region, addressName),
-		Labels: map[string]string{
-			config.TagForTestKey: config.TagForTestValue,
-		},
+		IPAddress:                     s.formAddressURL(region, addressName),
 		Name:                          ruleName,
 		Network:                       FormNetworkURL(network, s.gProjectID),
 		Ports:                         []string{},

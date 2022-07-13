@@ -98,53 +98,55 @@ func cleanAllTaggedAzurePE(ctx context.Context, tagName, tagValue, resourceGroup
 	return nil
 }
 
-func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, tagName, tagValue string) error {
+func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, subnet string) error {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
 
 	networkURL := gcp.FormNetworkURL(vpc, projectID)
+	subnetURL := gcp.FormSubnetURL(region, subnet, projectID)
 
-	forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
+	addressList, err := computeService.Addresses.List(projectID, region).Do()
 	if err != nil {
-		return fmt.Errorf("error while listing forwarding rules: %v", err)
+		return fmt.Errorf("error while listing addresses: %v", err)
+	}
+	var addressNamesToDelete []string
+	for _, address := range addressList.Items {
+		if address.Network == networkURL && address.Subnetwork == subnetURL {
+			addressNamesToDelete = append(addressNamesToDelete, address.Name)
+		}
 	}
 
-	var ruleNames []string
-	for _, forwardRule := range forwardRules.Items {
-		forwardRuleLabels := forwardRule.Labels
-		if forwardRuleLabels[tagName] == tagValue && forwardRule.Network == networkURL {
-			_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
-			if err != nil {
-				return fmt.Errorf("error while deleting forwarding rule: %v", err)
-			}
-			ruleName := forwardRule.Name
-			ruleNames = append(ruleNames, ruleName)
-			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
+	for _, addressName := range addressNamesToDelete {
+		err = deleteGCPForwardRuleByAddressName(computeService, projectID, region, addressName)
+		if err != nil {
+			return err
 		}
 	}
 
 	time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
-	for _, ruleName := range ruleNames {
-		err = deleteGCPAddressByForwardRuleName(computeService, projectID, region, ruleName)
+	for _, addressName := range addressNamesToDelete {
+		_, err = computeService.Addresses.Delete(projectID, region, addressName).Do()
 		if err != nil {
-			return fmt.Errorf("error while deleting GCP address: %v", err)
+			return fmt.Errorf("error while deleting address: %v", err)
 		}
+		log.Printf("successfully deleted GCP PE %s", addressName)
 	}
+
 	return nil
 }
 
-func deleteGCPAddressByForwardRuleName(service *compute.Service, projectID, region, ruleName string) error {
-	addressName, err := cloud.FormAddressNameByRuleName(ruleName)
+func deleteGCPForwardRuleByAddressName(service *compute.Service, projectID, region, addressName string) error {
+	ruleName, err := cloud.FormForwardRuleNameByAddressName(addressName)
 	if err != nil {
-		return fmt.Errorf("unexpected forvard rule name pattern: %v", err)
+		return fmt.Errorf("error while forming forward rule name: %v", err)
 	}
-	_, err = service.Addresses.Delete(projectID, region, addressName).Do()
+	_, err = service.ForwardingRules.Delete(projectID, region, ruleName).Do()
 	if err != nil {
-		return fmt.Errorf("error while deleting address: %v", err)
+		return fmt.Errorf("error while deleting forwarding rule: %v", err)
 	}
-	log.Printf("successfully deleted GCP address: %s", addressName)
+	log.Printf("successfully deleted forwarding rule %s", ruleName)
 	return nil
 }
 
