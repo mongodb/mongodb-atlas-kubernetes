@@ -201,7 +201,8 @@ jobs:
           go install github.com/onsi/gomega/...
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
-          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken' \
+          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken' && \
+          echo 'Running: ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/' && \
           ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
