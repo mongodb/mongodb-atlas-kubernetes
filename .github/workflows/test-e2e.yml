@@ -75,6 +75,7 @@ jobs:
               "long-run",
               "networkpeering",
               "cloud-access-role",
+              "encryption-at-rest",
               "deployment-annotations-ns",
           ]
 

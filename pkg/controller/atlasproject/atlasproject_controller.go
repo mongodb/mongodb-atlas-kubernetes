@@ -157,7 +157,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	if result := r.ensureProjectResources(ctx, projectID, project); !result.IsOk() {
+	if result := r.ensureProjectResources(ctx, projectID, project, context); !result.IsOk() {
 		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil
 	}
@@ -189,7 +189,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, 
 				}
 				if result = DeleteAllNetworkPeers(context, projectID, ctx.Client.Peers, ctx.Log); !result.IsOk() {
 					setCondition(ctx, status.NetworkPeerReadyType, result)
-					return result.ReconcileResult(), nil
+					return result
 				}
 
 				if err := r.deleteAtlasProject(context, atlasClient, project); err != nil {
@@ -210,7 +210,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, 
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (result workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, context context.Context) (result workflow.Result) {
 	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
 		return result
 	}
@@ -223,13 +223,13 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 
 	if result = ensureProviderAccessStatus(context, ctx, project, projectID); !result.IsOk() {
 		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
 
 	if result = ensureNetworkPeers(ctx, projectID, project); !result.IsOk() {
 		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 
@@ -242,6 +242,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 		return result
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
+
+	if result = ensureEncryptionAtRest(ctx, projectID, project); !result.IsOk() {
+		return result
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 
 	return workflow.OK()
 }

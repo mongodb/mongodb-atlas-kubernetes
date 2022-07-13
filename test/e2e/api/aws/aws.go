@@ -11,21 +11,25 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/kms"
 )
 
 type sessionAWS struct {
 	ec2 *ec2.EC2
+	kms *kms.KMS
 }
 
 func SessionAWS(region string) sessionAWS {
 	session, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
-	)
+		Region:   aws.String(region),
+		Endpoint: nil,
+	})
 	if err != nil {
 		fmt.Println(err)
 	}
 	svc := ec2.New(session)
-	return sessionAWS{svc}
+	kms := kms.New(session)
+	return sessionAWS{svc, kms}
 }
 
 func (s sessionAWS) GetVPCID() (string, error) {
@@ -42,7 +46,7 @@ func (s sessionAWS) GetVPCID() (string, error) {
 		return "", getError(err)
 	}
 	if len(result.Vpcs) < 1 {
-		return "", errors.New("Can not find VPC")
+		return "", errors.New("can not find VPC")
 	}
 	fmt.Println(result)
 	return *result.Vpcs[0].VpcId, nil
@@ -106,7 +110,7 @@ func (s sessionAWS) GetSubnetID() (string, error) {
 		return "", getError(err)
 	}
 	if len(result.Subnets) < 1 {
-		return "", errors.New("Can not find Subnet")
+		return "", errors.New("can not find Subnet")
 	}
 	fmt.Println(result)
 	return *result.Subnets[0].SubnetId, nil
@@ -214,4 +218,24 @@ func (s sessionAWS) GetFuncPrivateEndpointStatus(privateEndpointID string) func(
 		}
 		return r
 	}
+}
+
+func (s sessionAWS) GetCustomerMasterKeyID() (result string, err error) {
+	kmsInput := &kms.CreateKeyInput{
+		Description: aws.String("Atlas Operator Test Key"),
+	}
+	kmsKey, err := s.kms.CreateKey(kmsInput)
+	if err != nil || kmsKey == nil {
+		return "", err
+	}
+
+	return *kmsKey.KeyMetadata.KeyId, nil
+}
+
+func (s sessionAWS) DeleteCustomerMasterKey(keyID string) error {
+	kmsInput := &kms.ScheduleKeyDeletionInput{
+		KeyId: aws.String(keyID),
+	}
+	_, err := s.kms.ScheduleKeyDeletion(kmsInput)
+	return err
 }

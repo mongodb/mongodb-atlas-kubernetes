@@ -27,16 +27,11 @@ type Endpoints struct {
 
 func CreatePEActions(pe status.ProjectPrivateEndpoint) (PEActions, error) {
 	peActions := PEActions{PrivateEndpoint: pe}
-	switch pe.Provider {
-	case provider.ProviderAWS:
-		peActions.CloudActions = &awsAction{}
-	case provider.ProviderAzure:
-		peActions.CloudActions = &azureAction{}
-	case provider.ProviderGCP:
-		peActions.CloudActions = &gcpAction{}
-	default:
-		return peActions, errors.New("Check Provider")
+	cloudActions, err := selectCloudAction(pe.Provider)
+	if err != nil {
+		return peActions, err
 	}
+	peActions.CloudActions = cloudActions
 	if err := peActions.validation(); err != nil {
 		return peActions, err
 	}
@@ -86,4 +81,17 @@ func (peActions *PEActions) IsStatusPrivateEndpointPending(privateID string) boo
 
 func (peActions *PEActions) IsStatusPrivateEndpointAvailable(privateID string) bool {
 	return peActions.CloudActions.statusPrivateEndpointAvailable(peActions.PrivateEndpoint.Region, privateID)
+}
+
+func selectCloudAction(providerName provider.ProviderName) (CloudActions, error) {
+	switch providerName {
+	case provider.ProviderAWS:
+		return &AwsAction{}, nil
+	case provider.ProviderAzure:
+		return &azureAction{}, nil
+	case provider.ProviderGCP:
+		return &gcpAction{}, nil
+	default:
+		return nil, errors.New("check Provider")
+	}
 }
