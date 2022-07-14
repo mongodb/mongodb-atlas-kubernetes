@@ -112,6 +112,13 @@ func WaitProject(data *model.TestDataProvider, generation string) {
 	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
 }
 
+func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
+	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	atlasProject, err := kube.GetProjectResource(data)
+	Expect(err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
+}
+
 func WaitTestApplication(ns, label string) {
 	// temp
 	isAppRunning := func() func() bool {

@@ -230,7 +230,7 @@ var _ = Describe("HELM charts", func() {
 				helm.AddMongoDBRepo()
 				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
 				helm.InstallDeploymentRelease(data.Resources)
-				waitDeploymentWithGREQChecks(&data)
+				waitDeploymentWithChecks(&data)
 			})
 			By("User update new released operator", func() {
 				backup := true
@@ -245,19 +245,15 @@ var _ = Describe("HELM charts", func() {
 	})
 })
 
-func waitDeploymentWithGREQChecks(data *model.TestDataProvider) {
+func waitDeploymentWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
-		actions.WaitProjectGREQ(data, 1)
+		actions.WaitProjectWithoutGenerationCheck(data)
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID
 		actions.WaitDeployment(data.Resources, "1")
 	})
 
-	deploymentCheck(data)
-}
-
-func deploymentCheck(data *model.TestDataProvider) {
 	By("Check attributes", func() {
 		deployment := data.Resources.Deployments[0]
 		switch {
@@ -289,18 +285,6 @@ func deploymentCheck(data *model.TestDataProvider) {
 			actions.CheckUsersCanUseApp(data)
 		})
 	}
-}
-
-func waitDeploymentWithChecks(data *model.TestDataProvider) {
-	By("Wait creation until is done", func() {
-		actions.WaitProject(data, "1")
-		resource, err := kube.GetProjectResource(data)
-		Expect(err).Should(BeNil())
-		data.Resources.ProjectID = resource.Status.ID
-		actions.WaitDeployment(data.Resources, "1")
-	})
-
-	deploymentCheck(data)
 }
 
 func deleteDeploymentAndOperator(data *model.TestDataProvider) {
