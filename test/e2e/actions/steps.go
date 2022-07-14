@@ -63,6 +63,47 @@ func WaitDeployment(input model.UserInputs, generation string) {
 	}
 }
 
+type greaterOrEqualIntMatcher struct {
+	expected int
+}
+
+func (g greaterOrEqualIntMatcher) Match(actual interface{}) (success bool, err error) {
+	switch v := actual.(type) {
+	case int:
+		return v >= g.expected, nil
+	case string:
+		i, errAtoi := strconv.Atoi(v)
+		if errAtoi != nil {
+			return false, fmt.Errorf("%v is not a number", v)
+		}
+		return i >= g.expected, nil
+	default:
+		return false, fmt.Errorf("expected %v to be an int or a string that can be parsed as int", actual)
+	}
+}
+
+func (g greaterOrEqualIntMatcher) FailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("Expected %v to be greater or equal to %v. "+
+		"Also it should be int or string that can be parsed as int", actual, g.expected)
+}
+
+func (g greaterOrEqualIntMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("%v is not expected to be a nubmer or a string that can be parsed as int. "+
+		"If it's a number then it expeted to be less then %v", actual, g.expected)
+}
+
+func GreaterOrEqualMatcher(expected int) OmegaMatcher {
+	return &greaterOrEqualIntMatcher{expected}
+}
+
+func WaitProjectGREQ(data *model.TestDataProvider, generation int) {
+	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(GreaterOrEqualMatcher(generation), "Kubernetes resource: Generation should be upgraded")
+	atlasProject, err := kube.GetProjectResource(data)
+	Expect(err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
+}
+
 func WaitProject(data *model.TestDataProvider, generation string) {
 	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
 	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
