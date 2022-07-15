@@ -95,6 +95,7 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 		}
 		log.Printf("successfully deleted Azure PE %s", peName)
 	}
+	log.Printf("deleted %d Azure PEs", len(endpointNames))
 	return nil
 }
 
@@ -112,6 +113,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 		return fmt.Errorf("error while listing forwarding rules: %v", err)
 	}
 
+	counter := 0
 	for _, forwardRule := range forwardRules.Items {
 		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
 		if forwardRule.Network == networkURL {
@@ -119,10 +121,12 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 			if err != nil {
 				return fmt.Errorf("error while deleting forwarding rule: %v", err)
 			}
-			ruleName := forwardRule.Name
-			log.Printf("successfully deleted GCP forward rule: %s", ruleName)
+
+			counter++
+			log.Printf("successfully deleted GCP forward rule: %s", forwardRule.Name)
 		}
 	}
+	log.Printf("deleted %d GCP Forfard rusel", counter)
 
 	time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
 	err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
@@ -138,15 +142,18 @@ func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subne
 	if err != nil {
 		return fmt.Errorf("error while listing addresses: %v", err)
 	}
+	counter := 0
 	for _, address := range addressList.Items {
 		if address.Subnetwork == subnetURL {
 			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
 			if err != nil {
 				return fmt.Errorf("error while deleting address: %v", err)
 			}
-			log.Printf("successfully deleted GCP address: %s", address.Name)
+			counter++
+			log.Printf("successfully deleted GCP address: %s. subnet: %s", address.Name, address.Subnetwork)
 		}
 	}
+	log.Printf("deleted %d GCP addresses", counter)
 	return nil
 }
 

@@ -95,6 +95,7 @@ func cleanAllTaggedAzurePE(ctx context.Context, tagName, tagValue, resourceGroup
 		}
 		log.Printf("successfully deleted Azure PE %s", peName)
 	}
+	log.Printf("deleted %d Azure PEs", len(endpointNames))
 	return nil
 }
 
@@ -133,6 +134,7 @@ func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, subnet str
 		}
 		log.Printf("successfully deleted GCP PE %s", addressName)
 	}
+	log.Printf("deleted %d GCP PEs", len(addressNamesToDelete))
 
 	return nil
 }
