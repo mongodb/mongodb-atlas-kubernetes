@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
@@ -67,7 +66,7 @@ func cleanAllAWSPE(region string) error {
 	return nil
 }
 
-func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID string) error {
+func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID, subnet string) error {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("error creating authorizer: %v", err)
@@ -82,7 +81,7 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	var endpointNames []string
 	for _, endpoint := range peList.Values() {
 		if endpoint.Subnet.Name != nil {
-			if *endpoint.Subnet.Name == cloud.SubnetName {
+			if *endpoint.Subnet.Name == subnet {
 				endpointNames = append(endpointNames, *endpoint.Name)
 			}
 		}
