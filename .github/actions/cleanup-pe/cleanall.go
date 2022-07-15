@@ -115,7 +115,6 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 
 	counter := 0
 	for _, forwardRule := range forwardRules.Items {
-		log.Printf("deleting forwarding rule %s. subnet %s. network %s", forwardRule.Name, forwardRule.Subnetwork, forwardRule.Network) // TODO: remove this line
 		if forwardRule.Network == networkURL {
 			_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
 			if err != nil {
@@ -123,7 +122,8 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 			}
 
 			counter++
-			log.Printf("successfully deleted GCP forward rule: %s", forwardRule.Name)
+			log.Printf("successfully deleted GCP forward rule: %s. network:  %s",
+				forwardRule.Name, forwardRule.Network)
 		}
 	}
 	log.Printf("deleted %d GCP Forfard rusel", counter)
