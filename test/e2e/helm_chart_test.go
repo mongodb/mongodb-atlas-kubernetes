@@ -247,7 +247,7 @@ var _ = Describe("HELM charts", func() {
 
 func waitDeploymentWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
-		actions.WaitProject(data, "1")
+		actions.WaitProjectWithoutGenerationCheck(data)
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID

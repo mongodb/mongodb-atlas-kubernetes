@@ -68,7 +68,14 @@ func WaitProject(data *model.TestDataProvider, generation string) {
 	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	atlasProject, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
-	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Status has field with ProjectID")
+	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Project status should have non-empty ID field")
+}
+
+func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
+	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	atlasProject, err := kube.GetProjectResource(data)
+	Expect(err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Project status should have non-empty ID field")
 }
 
 func WaitTestApplication(ns, label string) {

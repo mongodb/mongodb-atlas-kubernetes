@@ -58,21 +58,21 @@ jobs:
       fail-fast: false
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
-        k8s: ["v1.21.1-kind"] # <K8sGitVersion>-<Platform>
+        k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-            "cluster-ns",
-            "cluster-wide",
-            "bundle-test",
-            "helm-ns",
-            "helm-wide",
-            "helm-update",
-            "serverless-instance",
-            "multinamespaced",
-            "privatelink",
-            "integration-ns",
-            "x509auth",
-            "long-run",
+              "cluster-ns",
+              "cluster-wide",
+              "bundle-test",
+              "helm-ns",
+              "helm-wide",
+              "helm-update",
+              "serverless-instance",
+              "multinamespaced",
+              "privatelink",
+              "integration-ns",
+              "x509auth",
+              "long-run",
           ]
         include:
           - k8s: "latest-openshift"
@@ -164,9 +164,9 @@ jobs:
           sudo dpkg -i mongocli.deb
           mongocli --version
 
-      - name: Install operator-sdk-v1.16.0
+      - name: Install operator-sdk-v1.22.0
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.16.0/operator-sdk_linux_amd64 -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
@@ -201,8 +201,9 @@ jobs:
           go install github.com/onsi/gomega/...
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
-          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken'
-          ginkgo --label-filter=\'"${filter}"\' --timeout 120m --nodes=10 -v test/e2e/
+          [[ $TEST_NAME == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$TEST_NAME"' && !long-run && !broken' && \
+          echo 'Running: ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/' && \
+          ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/
 
       - name: Upload operator logs
         if: ${{ failure() }}
