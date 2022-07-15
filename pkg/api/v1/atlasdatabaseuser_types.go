@@ -196,6 +196,19 @@ func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.Data
 	return result, err
 }
 
+// AtlasDatabaseUserFromAtlas converts a DatabaseUser in the native Atlas client format to Atlas Database User.
+func AtlasDatabaseUserFromAtlas(databaseUser *mongodbatlas.DatabaseUser, kubeClient client.Client) (*AtlasDatabaseUser, error) {
+	result := &AtlasDatabaseUser{}
+	err := compat.JSONCopy(&result.Spec, databaseUser)
+	if err != nil {
+		return nil, err
+	}
+	// TODO store password as secret and store
+	result.Spec.PasswordSecret = nil
+
+	return result, err
+}
+
 func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {
 	var scopeClusters []string
 	for _, scope := range p.Spec.Scopes {

@@ -41,6 +41,27 @@ func (m MaintenanceWindow) ToAtlas() *mongodbatlas.MaintenanceWindow {
 	}
 }
 
+// MaintenanceWindowFromAtlas converts a window in the native Atlas client format to MaintenanceWindow.
+func MaintenanceWindowFromAtlas(atlasWindow *mongodbatlas.MaintenanceWindow) *MaintenanceWindow {
+	result := &MaintenanceWindow{
+		DayOfWeek: atlasWindow.DayOfWeek,
+		HourOfDay: 0,
+		AutoDefer: false,
+		StartASAP: false,
+		Defer:     false,
+	}
+	if atlasWindow.HourOfDay != nil {
+		result.HourOfDay = *atlasWindow.HourOfDay
+	}
+	if atlasWindow.AutoDeferOnceEnabled != nil {
+		result.AutoDefer = *atlasWindow.AutoDeferOnceEnabled
+	}
+	if atlasWindow.StartASAP != nil {
+		result.StartASAP = *atlasWindow.StartASAP
+	}
+	return result
+}
+
 // ************************************ Builder methods *************************************************
 // Note, that we don't use pointers here as the AtlasProject uses this without pointers
 

@@ -49,7 +49,36 @@ func (i PrivateEndpoint) ToAtlas() (*mongodbatlas.PrivateEndpoint, error) {
 	return result, err
 }
 
-// Identifier is required to satisfy "Identifiable" iterface
+// PrivateEndpointFromAtlas converts a PrivateEndpoint in the native Atlas client format to PrivateEndpoint.
+func PrivateEndpointFromAtlas(atlasEndpoint *mongodbatlas.PrivateEndpointConnection) (*PrivateEndpoint, error) {
+	// There should be only one InterfaceEndpoint in the array, used to fill ID for Azure/AWS and EndpointGroupName for GCP
+	// If no InterfaceEndpoints : not fully configured, can ignore them
+	// If more than one : we don't support
+	if len(atlasEndpoint.InterfaceEndpoints) != 1 {
+		return nil, errors.New("endpoint is either not ready, or contains multiple interface")
+	}
+	// Len of InterfaceEndpoints is guaranteed to be 1
+	interfaceEndpoint := atlasEndpoint.InterfaceEndpoints[0]
+
+	result := &PrivateEndpoint{
+		Provider:          provider.ProviderName(atlasEndpoint.ProviderName),
+		Region:            atlasEndpoint.Region,
+		ID:                "",
+		IP:                "",
+		GCPProjectID:      "",
+		EndpointGroupName: "",
+		Endpoints:         nil,
+	}
+
+	if atlasEndpoint.ProviderName == "GCP" {
+		result.EndpointGroupName = interfaceEndpoint
+	} else {
+		result.ID = interfaceEndpoint
+	}
+	return result, nil
+}
+
+// Identifier is required to satisfy "Identifiable" interface
 func (i PrivateEndpoint) Identifier() interface{} {
 	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }

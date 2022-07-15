@@ -1,7 +1,11 @@
 package project
 
 import (
+	"context"
+
 	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 
@@ -59,6 +63,7 @@ type Integration struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
+// ToAtlas converts the Third Party Integration to native Atlas client format. Reads the password from the Secret
 func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodbatlas.ThirdPartyIntegration, err error) {
 	result = &mongodbatlas.ThirdPartyIntegration{
 		Type:                     i.Type,
@@ -96,6 +101,76 @@ func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodb
 	readPassword(i.RoutingKeyRef, &result.RoutingKey, &errorList)
 	readPassword(i.SecretRef, &result.Secret, &errorList)
 	readPassword(i.PasswordRef, &result.Password, &errorList)
+
+	if len(errorList) != 0 {
+		firstError := (errorList)[0]
+		return nil, firstError
+	}
+
+	return result, nil
+}
+
+func IntegrationFromAtlas(atlasIntegration *mongodbatlas.ThirdPartyIntegration, kubeClient client.Client, nameSpace string, projectID string) (*Integration, error) {
+	result := &Integration{
+		Type:                     atlasIntegration.Type,
+		LicenseKeyRef:            common.ResourceRefNamespaced{},
+		AccountID:                atlasIntegration.AccountID,
+		WriteTokenRef:            common.ResourceRefNamespaced{},
+		ReadTokenRef:             common.ResourceRefNamespaced{},
+		APIKeyRef:                common.ResourceRefNamespaced{},
+		Region:                   atlasIntegration.Region,
+		ServiceKeyRef:            common.ResourceRefNamespaced{},
+		APITokenRef:              common.ResourceRefNamespaced{},
+		TeamName:                 atlasIntegration.TeamName,
+		ChannelName:              atlasIntegration.ChannelName,
+		RoutingKeyRef:            common.ResourceRefNamespaced{},
+		FlowName:                 atlasIntegration.FlowName,
+		OrgName:                  atlasIntegration.OrgName,
+		URL:                      atlasIntegration.URL,
+		SecretRef:                common.ResourceRefNamespaced{},
+		Name:                     atlasIntegration.Name,
+		MicrosoftTeamsWebhookURL: atlasIntegration.MicrosoftTeamsWebhookURL,
+		UserName:                 atlasIntegration.UserName,
+		PasswordRef:              common.ResourceRefNamespaced{},
+		ServiceDiscovery:         atlasIntegration.ServiceDiscovery,
+		Scheme:                   atlasIntegration.Scheme,
+		Enabled:                  atlasIntegration.Enabled,
+	}
+
+	writePassword := func(password string, resourceRef *common.ResourceRefNamespaced, errors *[]error, integrationType string, secretName string) {
+		if password == "" {
+			return
+		}
+		// To ensure the resource name is unique in the cluster, we combine the projectID, the integration type and the name of the field
+		// There is only one integration of each type in a project
+		//https://www.mongodb.com/docs/atlas/reference/api/third-party-integration-settings-get-one/
+		passwordSecretName := projectID + integrationType + secretName
+
+		resourceRef.Name = passwordSecretName
+		resourceRef.Namespace = nameSpace
+
+		data := map[string][]byte{
+			"password": []byte(password),
+		}
+		object := metav1.ObjectMeta{Name: passwordSecretName}
+		secret := &corev1.Secret{Data: data, ObjectMeta: object}
+
+		if err := kubeClient.Create(context.Background(), secret); err != nil {
+			storeError(err, errors)
+		}
+	}
+
+	// Store any secret in kubernetes and store reference in operator Integration struct
+	errorList := make([]error, 0)
+	writePassword(atlasIntegration.LicenseKey, &result.LicenseKeyRef, &errorList, atlasIntegration.Type, "LicenseKey")
+	writePassword(atlasIntegration.WriteToken, &result.WriteTokenRef, &errorList, atlasIntegration.Type, "WriteToken")
+	writePassword(atlasIntegration.ReadToken, &result.ReadTokenRef, &errorList, atlasIntegration.Type, "ReadToken")
+	writePassword(atlasIntegration.APIKey, &result.APIKeyRef, &errorList, atlasIntegration.Type, "APIKey")
+	writePassword(atlasIntegration.ServiceKey, &result.ServiceKeyRef, &errorList, atlasIntegration.Type, "ServiceKey")
+	writePassword(atlasIntegration.APIToken, &result.APITokenRef, &errorList, atlasIntegration.Type, "APIToken")
+	writePassword(atlasIntegration.RoutingKey, &result.RoutingKeyRef, &errorList, atlasIntegration.Type, "RoutingKey")
+	writePassword(atlasIntegration.Secret, &result.SecretRef, &errorList, atlasIntegration.Type, "Secret")
+	writePassword(atlasIntegration.Password, &result.PasswordRef, &errorList, atlasIntegration.Type, "Password")
 
 	if len(errorList) != 0 {
 		firstError := (errorList)[0]
