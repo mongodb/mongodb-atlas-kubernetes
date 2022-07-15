@@ -31,6 +31,13 @@ func (i IPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
 	return result, err
 }
 
+// IPAccessListFromAtlas converts an IpAccessList in the native Atlas client format to IPAccessList.
+func IPAccessListFromAtlas(list *mongodbatlas.ProjectIPAccessList) (*IPAccessList, error) {
+	result := &IPAccessList{}
+	err := compat.JSONCopy(result, list)
+	return result, err
+}
+
 // Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
 // fields - the business layer must validate this beforehand
 func (i IPAccessList) Identifier() interface{} {
