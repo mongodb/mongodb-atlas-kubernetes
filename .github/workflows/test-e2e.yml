@@ -164,9 +164,9 @@ jobs:
           sudo dpkg -i mongocli.deb
           mongocli --version
 
-      - name: Install operator-sdk-v1.16.0
+      - name: Install operator-sdk-v1.22.0
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.16.0/operator-sdk_linux_amd64 -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
 
@@ -180,7 +180,7 @@ jobs:
           BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
-          test: "${{ matrix.test }}"
+          TEST_NAME: "${{ matrix.test }}"
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
@@ -201,9 +201,9 @@ jobs:
           go install github.com/onsi/gomega/...
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
-          [[ $test == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$test"' && !long-run && !broken' && \
+          [[ $TEST_NAME == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$TEST_NAME"' && !long-run && !broken' && \
+          echo 'Running: ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/' && \
           ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/
-
 
       - name: Upload operator logs
         if: ${{ failure() }}
