@@ -99,13 +99,12 @@ func cleanAllTaggedAzurePE(ctx context.Context, tagName, tagValue, resourceGroup
 	return nil
 }
 
-func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, subnet string) error {
+func cleanAllTaggedGCPPE(ctx context.Context, projectID, region, subnet string) error {
 	computeService, err := compute.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("error while creating new compute service: %v", err)
 	}
 
-	networkURL := gcp.FormNetworkURL(vpc, projectID)
 	subnetURL := gcp.FormSubnetURL(region, subnet, projectID)
 
 	addressList, err := computeService.Addresses.List(projectID, region).Do()
@@ -114,7 +113,7 @@ func cleanAllTaggedGCPPE(ctx context.Context, projectID, vpc, region, subnet str
 	}
 	var addressNamesToDelete []string
 	for _, address := range addressList.Items {
-		if address.Network == networkURL && address.Subnetwork == subnetURL {
+		if address.Subnetwork == subnetURL {
 			addressNamesToDelete = append(addressNamesToDelete, address.Name)
 		}
 	}
