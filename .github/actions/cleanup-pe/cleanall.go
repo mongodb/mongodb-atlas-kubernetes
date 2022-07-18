@@ -54,12 +54,15 @@ func cleanAllAWSPE(region string) error {
 		}
 	}
 	if len(endpointIDs) > 0 {
-		input := &ec2.DeleteVpcEndpointsInput{
-			VpcEndpointIds: endpointIDs,
-		}
-		_, err = svc.DeleteVpcEndpoints(input)
-		if err != nil {
-			return fmt.Errorf("error deleting vpcEP: %v", err)
+		endpointsIDByPortion := chunkSlice(endpointIDs, 25) // aws has a limit of 25 endpointIDs per request
+		for _, endpointsIDPortion := range endpointsIDByPortion {
+			input := &ec2.DeleteVpcEndpointsInput{
+				VpcEndpointIds: endpointsIDPortion,
+			}
+			_, err = svc.DeleteVpcEndpoints(input)
+			if err != nil {
+				return fmt.Errorf("error deleting vpcEP: %v", err)
+			}
 		}
 	}
 	log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
@@ -126,7 +129,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region, subnet string) e
 				forwardRule.Name, forwardRule.Network)
 		}
 	}
-	log.Printf("deleted %d GCP Forfard rusel", counter)
+	log.Printf("deleted %d GCP Forfard rules", counter)
 
 	time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
 	err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
