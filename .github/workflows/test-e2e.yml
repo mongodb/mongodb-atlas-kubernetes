@@ -158,12 +158,6 @@ jobs:
           oc version
           podman --version
 
-      - name: Install MongoCLI
-        run: |
-          wget https://github.com/mongodb/mongocli/releases/download/v1.14.0/mongocli_1.14.0_linux_x86_64.deb -O mongocli.deb -q
-          sudo dpkg -i mongocli.deb
-          mongocli --version
-
       - name: Install operator-sdk-v1.22.0
         run: |
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q

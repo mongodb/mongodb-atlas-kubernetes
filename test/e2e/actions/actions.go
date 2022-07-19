@@ -5,6 +5,9 @@ package actions
 import (
 	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,7 +15,6 @@ import (
 
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -34,7 +36,8 @@ func UpdateDeployment(newData *model.TestDataProvider) {
 	})
 
 	By("Check attributes\n", func() {
-		uDeployment := mongocli.GetDeploymentsInfo(newData.Resources.ProjectID, newData.Resources.Deployments[0].Spec.GetDeploymentName())
+		aClient := atlas.GetClientOrFail()
+		uDeployment := aClient.GetDeployment(newData.Resources.ProjectID, newData.Resources.Deployments[0].Spec.GetDeploymentName())
 		CompareDeploymentsSpec(newData.Resources.Deployments[0].Spec, uDeployment)
 	})
 }
@@ -67,9 +70,11 @@ func UpdateDeploymentFromUpdateConfig(data *model.TestDataProvider) {
 func activateDeployment(data *model.TestDataProvider, paused bool) {
 	data.Resources.Deployments[0].Spec.DeploymentSpec.Paused = &paused
 	UpdateDeployment(data)
-	By("Check additional Deployment field `paused`\n")
-	uDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
-	Expect(uDeployment.Paused).Should(Equal(data.Resources.Deployments[0].Spec.DeploymentSpec.Paused))
+	By("Check additional Deployment field `paused`\n", func() {
+		aClient := atlas.GetClientOrFail()
+		uDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
+		Expect(uDeployment.Paused).Should(Equal(data.Resources.Deployments[0].Spec.DeploymentSpec.Paused))
+	})
 }
 
 func SuspendDeployment(data *model.TestDataProvider) {
@@ -91,7 +96,12 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		// - check Atlas doesn't have the initial user and have the rest
 		By("Delete k8s resources")
 		Eventually(kubecli.Delete(data.Resources.GetResourceFolder()+"/user/user-"+data.Resources.Users[0].ObjectMeta.Name+".yaml", "-n", data.Resources.Namespace)).Should(Say("deleted"))
-		Eventually(CheckIfUserExist(data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)).Should(BeFalse())
+		Eventually(func(g Gomega) {
+			aClient := atlas.GetClientOrFail()
+			user, err := aClient.GetDBUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
+			g.Expect(err).To(BeNil())
+			g.Expect(user).To(BeNil())
+		}).WithTimeout(10 * time.Second).WithPolling(1 * time.Minute).Should(Succeed())
 
 		// the rest users should be still there
 		data.Resources.Users = data.Resources.Users[1:]
