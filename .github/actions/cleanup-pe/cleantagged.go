@@ -17,20 +17,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 )
 
-func cleanAllTaggedAWSPE(region, tagName string) error {
+func cleanAllTaggedAWSPE(region, tagName, tagValue string) error {
 	awsSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
 	if err != nil {
 		return fmt.Errorf("error creating awsSession: %v", err)
 	}
+	filterName := aws.String(fmt.Sprintf("tag:%s", tagName))
 	svc := ec2.New(awsSession)
 	endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name: aws.String("tag:Name"),
+				Name: filterName,
 				Values: []*string{
-					aws.String(tagName),
+					aws.String(tagValue),
 				},
 			},
 		},
