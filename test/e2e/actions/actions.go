@@ -99,7 +99,7 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		Eventually(func(g Gomega) {
 			aClient := atlas.NewClientOrFail()
 			user, err := aClient.GetDBUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
-			g.Expect(err).NotTo(BeNil())
+			g.Expect(err).To(BeNil())
 			g.Expect(user).To(BeNil())
 		}).WithTimeout(10 * time.Second).WithPolling(1 * time.Minute).Should(Succeed())
 
