@@ -210,14 +210,14 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 					By(fmt.Sprintf("Deleting the project: %s", projectName))
 					Expect(k8sClient.Delete(context.Background(), createdProjects[i])).Should(Succeed())
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
 					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 1*time.Minute, 5*time.Second).Should(BeTrue())
 
 					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
 					time.Sleep(1 * time.Minute)
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
+					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
 					Expect(checkAtlasProjectRemoved(createdProjects[i].Status.ID)()).Should(BeTrue())
