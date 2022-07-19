@@ -1,6 +1,9 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
+)
 
 type ProjectPrivateEndpoint struct {
 	// Unique identifier for AWS or AZURE Private Link Connection.
@@ -28,5 +31,5 @@ type GCPEndpoint struct {
 }
 
 func (pe ProjectPrivateEndpoint) Identifier() interface{} {
-	return string(pe.Provider) + pe.Region
+	return string(pe.Provider) + stringutil.SimplifyAndSort(pe.Region)
 }
