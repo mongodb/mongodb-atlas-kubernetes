@@ -13,6 +13,13 @@ on:
         description: "Timelife of project in hours"
         default: "3"
         required: true
+      cleanTaggedPE:
+        description: "Clean only tagged PE(true) or all PE(false)?"
+        default: "false"
+        required: true
+
+env:
+  GOLANG_VERSION: '1.17'
 
 concurrency:
   group: cleanup
@@ -34,3 +41,19 @@ jobs:
         with:
           CLEAN_ALL: ${{ github.event.inputs.clean }}
           MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+      - name: Run cleanup PE
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          CLEAN_TAGGED_PE: ${{ github.event.inputs.cleanTaggedPE }}
+        run: go run .github/actions/cleanup-pe/cleanall.go .github/actions/cleanup-pe/cleantagged.go .github/actions/cleanup-pe/cleanPE.go

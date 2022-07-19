@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -98,7 +100,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 			},
 		),
@@ -119,7 +121,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			),
 			[]privateEndpoint{{
 				provider: "AZURE",
-				region:   "northeurope",
+				region:   config.AzureRegion,
 			}},
 		),
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
@@ -140,11 +142,11 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 				{
 					provider: "AWS",
-					region:   "us-east-1",
+					region:   config.AWSRegionUS,
 				},
 			},
 		),
@@ -166,15 +168,15 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 				{
 					provider: "AWS",
-					region:   "us-east-1",
+					region:   config.AWSRegionUS,
 				},
 				{
 					provider: "AZURE",
-					region:   "northeurope",
+					region:   config.AzureRegion,
 				},
 			},
 		),
@@ -196,7 +198,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "GCP",
-					region:   "europe-west1",
+					region:   config.GCPRegion,
 				},
 			},
 		),
