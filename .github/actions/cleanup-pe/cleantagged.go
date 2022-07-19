@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
 )
 
-func cleanAllTaggedAWSPE(region, tagName, tagValue string) error {
+func cleanAllTaggedAWSPE(region, tagName string) error {
 	awsSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
@@ -31,12 +31,6 @@ func cleanAllTaggedAWSPE(region, tagName, tagValue string) error {
 				Name: aws.String("tag:Name"),
 				Values: []*string{
 					aws.String(tagName),
-				},
-			},
-			{
-				Name: aws.String("tag:Value"),
-				Values: []*string{
-					aws.String(tagValue),
 				},
 			},
 		},

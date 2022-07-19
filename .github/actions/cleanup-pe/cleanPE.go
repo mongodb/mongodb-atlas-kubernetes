@@ -60,7 +60,7 @@ func CleanAllPE(onlyTagged bool) error {
 		}
 
 		for _, awsRegion := range awsRegions {
-			errClean := cleanAllTaggedAWSPE(awsRegion, config.TagForTestKey, config.TagForTestValue)
+			errClean := cleanAllTaggedAWSPE(awsRegion, config.TagForTestKey)
 			if errClean != nil {
 				return fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean)
 			}
