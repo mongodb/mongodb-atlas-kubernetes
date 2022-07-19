@@ -20,6 +20,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
+var globalAtlas *Atlas
+
 type Atlas struct {
 	OrgID   string
 	Public  string
@@ -47,10 +49,14 @@ func AClient() (Atlas, error) {
 	return A, nil
 }
 
-func NewClientOrFail() *Atlas {
+func GetClientOrFail() *Atlas {
+	if globalAtlas != nil {
+		return globalAtlas
+	}
 	c, err := AClient()
 	Expect(err).NotTo(HaveOccurred())
-	return &c
+	globalAtlas = &c
+	return globalAtlas
 }
 
 func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (*mongodbatlas.APIKey, error) {

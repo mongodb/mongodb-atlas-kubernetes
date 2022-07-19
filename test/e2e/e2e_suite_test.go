@@ -22,8 +22,9 @@ const (
 
 var (
 	// default
-	Platform   = "kind"
-	K8sVersion = "v1.17.17"
+	Platform    = "kind"
+	K8sVersion  = "v1.17.17"
+	atlasClient *atlas.Atlas
 )
 
 func TestE2e(t *testing.T) {
@@ -49,7 +50,7 @@ func checkUpEnvironment() {
 	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PUBLIC_API_KEY environment variable")
 	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PRIVATE_API_KEY environment variable")
 	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty(), "Please, setup MCLI_OPS_MANAGER_URL environment variable")
-	_ = atlas.NewClientOrFail()
+	atlasClient = atlas.GetClientOrFail()
 }
 
 func checkUpAWSEnviroment() {

@@ -56,7 +56,7 @@ func WaitDeployment(input model.UserInputs, generation string) {
 		Expect(err).To(BeNil())
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
-		aClient := atlas.NewClientOrFail()
+		aClient := atlas.GetClientOrFail()
 		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
 	}
 }
@@ -93,7 +93,7 @@ func WaitTestApplication(ns, label string) {
 
 func CheckIfDeploymentExist(input model.UserInputs) func() bool {
 	return func() bool {
-		aClient := atlas.NewClientOrFail()
+		aClient := atlas.GetClientOrFail()
 		return aClient.IsDeploymentExist(input.ProjectID, input.Deployments[0].Spec.DeploymentSpec.Name)
 	}
 }
@@ -233,7 +233,7 @@ func CheckUsersAttributes(input model.UserInputs) {
 		return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s", user.ObjectMeta.Name)
 	}
 
-	aClient := atlas.NewClientOrFail()
+	aClient := atlas.GetClientOrFail()
 
 	for _, deployment := range input.Deployments {
 		for _, user := range input.Users {
@@ -471,7 +471,7 @@ func DeleteUserResourcesProject(data *model.TestDataProvider) {
 		kubecli.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
 		Eventually(
 			func() bool {
-				aClient := atlas.NewClientOrFail()
+				aClient := atlas.GetClientOrFail()
 				return aClient.IsProjectExists(data.Resources.ProjectID)
 			},
 			"5m", "20s",

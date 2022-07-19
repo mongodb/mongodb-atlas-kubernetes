@@ -36,7 +36,7 @@ func UpdateDeployment(newData *model.TestDataProvider) {
 	})
 
 	By("Check attributes\n", func() {
-		aClient := atlas.NewClientOrFail()
+		aClient := atlas.GetClientOrFail()
 		uDeployment := aClient.GetDeployment(newData.Resources.ProjectID, newData.Resources.Deployments[0].Spec.GetDeploymentName())
 		CompareDeploymentsSpec(newData.Resources.Deployments[0].Spec, uDeployment)
 	})
@@ -71,7 +71,7 @@ func activateDeployment(data *model.TestDataProvider, paused bool) {
 	data.Resources.Deployments[0].Spec.DeploymentSpec.Paused = &paused
 	UpdateDeployment(data)
 	By("Check additional Deployment field `paused`\n", func() {
-		aClient := atlas.NewClientOrFail()
+		aClient := atlas.GetClientOrFail()
 		uDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
 		Expect(uDeployment.Paused).Should(Equal(data.Resources.Deployments[0].Spec.DeploymentSpec.Paused))
 	})
@@ -97,7 +97,7 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		By("Delete k8s resources")
 		Eventually(kubecli.Delete(data.Resources.GetResourceFolder()+"/user/user-"+data.Resources.Users[0].ObjectMeta.Name+".yaml", "-n", data.Resources.Namespace)).Should(Say("deleted"))
 		Eventually(func(g Gomega) {
-			aClient := atlas.NewClientOrFail()
+			aClient := atlas.GetClientOrFail()
 			user, err := aClient.GetDBUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
 			g.Expect(err).To(BeNil())
 			g.Expect(user).To(BeNil())

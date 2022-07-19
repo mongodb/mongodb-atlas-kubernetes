@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -257,19 +255,14 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 		deployment := data.Resources.Deployments[0]
 		switch {
 		case deployment.Spec.AdvancedDeploymentSpec != nil:
-			atlasClient, err := atlas.AClient()
-			Expect(err).To(BeNil())
 			advancedDeployment, err := atlasClient.GetAdvancedDeployment(data.Resources.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareAdvancedDeploymentsSpec(deployment.Spec, *advancedDeployment)
 		case deployment.Spec.ServerlessSpec != nil:
-			atlasClient, err := atlas.AClient()
-			Expect(err).To(BeNil())
 			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, deployment.Spec.ServerlessSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareServerlessSpec(deployment.Spec, *serverlessInstance)
 		default:
-			atlasClient := atlas.NewClientOrFail()
 			uDeployment := atlasClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
 			actions.CompareDeploymentsSpec(deployment.Spec, uDeployment)
 		}
@@ -292,8 +285,7 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 		helm.Uninstall(data.Resources.Deployments[0].Spec.GetDeploymentName(), data.Resources.Namespace)
 		Eventually(
 			func() bool {
-				aClient := atlas.NewClientOrFail()
-				return aClient.IsProjectExists(data.Resources.ProjectID)
+				return atlasClient.IsProjectExists(data.Resources.ProjectID)
 			},
 			"7m", "20s",
 		).Should(BeFalse(), "Project and deployment should be deleted from Atlas")
