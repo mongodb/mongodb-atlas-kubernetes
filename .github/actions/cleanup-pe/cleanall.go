@@ -53,19 +53,27 @@ func cleanAllAWSPE(region string) error {
 			endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 		}
 	}
+	err = deleteAWSPEsByID(svc, endpointIDs)
+	if err != nil {
+		return err
+	}
+	log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
+	return nil
+}
+
+func deleteAWSPEsByID(svc *ec2.EC2, endpointIDs []*string) error {
 	if len(endpointIDs) > 0 {
 		endpointsIDByPortion := chunkSlice(endpointIDs, 25) // aws has a limit of 25 endpointIDs per request
 		for _, endpointsIDPortion := range endpointsIDByPortion {
 			input := &ec2.DeleteVpcEndpointsInput{
 				VpcEndpointIds: endpointsIDPortion,
 			}
-			_, err = svc.DeleteVpcEndpoints(input)
+			_, err := svc.DeleteVpcEndpoints(input)
 			if err != nil {
 				return fmt.Errorf("error deleting vpcEP: %v", err)
 			}
 		}
 	}
-	log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
 	return nil
 }
 

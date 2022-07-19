@@ -43,17 +43,9 @@ func cleanAllTaggedAWSPE(region, tagName, tagValue string) error {
 	for _, endpoint := range endpoints.VpcEndpoints {
 		endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 	}
-	if len(endpointIDs) > 0 {
-		endpointsIDByPortion := chunkSlice(endpointIDs, 25) // aws has a limit of 25 endpointIDs per request
-		for _, endpointsIDPortion := range endpointsIDByPortion {
-			input := &ec2.DeleteVpcEndpointsInput{
-				VpcEndpointIds: endpointsIDPortion,
-			}
-			_, err = svc.DeleteVpcEndpoints(input)
-			if err != nil {
-				return fmt.Errorf("error deleting vpcEP: %v", err)
-			}
-		}
+	err = deleteAWSPEsByID(svc, endpointIDs)
+	if err != nil {
+		return err
 	}
 	log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
 	return nil
