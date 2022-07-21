@@ -378,7 +378,7 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	}
 }
 
-func DeployProject(data *model.TestDataProvider, generation string) {
+func DeployProject(data *model.TestDataProvider) {
 	By("Create users resources: keys, project", func() {
 		CreateConnectionAtlasKey(data)
 		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
@@ -407,7 +407,7 @@ func DeployProjectAndWait(data *model.TestDataProvider, generation string) {
 	})
 }
 
-func DeployDeployment(data *model.TestDataProvider, generation string) {
+func DeployDeployment(data *model.TestDataProvider) {
 	By("Create deployment", func() {
 		kubecli.Apply(data.Resources.Deployments[0].DeploymentFileName(data.Resources), "-n", data.Resources.Namespace)
 	})
@@ -438,7 +438,7 @@ func DeployUsers(data *model.TestDataProvider) {
 // DeployUserResourcesAction deploy all user resources, wait, and check results
 func DeployUserResourcesAction(data *model.TestDataProvider) {
 	DeployProjectAndWait(data, "1")
-	DeployDeployment(data, "1")
+	DeployDeployment(data)
 	DeployUsers(data)
 }
 

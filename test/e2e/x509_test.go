@@ -91,7 +91,7 @@ func x509Flow(data *model.TestDataProvider, certRef *common.ResourceRefNamespace
 
 	By("Add X.509 cert to the project", func() {
 		data.Resources.Project.WithX509(certRef)
-		actions.DeployProject(data, "2")
+		actions.DeployProject(data)
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
