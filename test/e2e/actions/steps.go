@@ -130,7 +130,7 @@ func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas
 	if len(requested.DeploymentSpec.ReplicationSpecs) > 0 {
 		for i, replica := range requested.DeploymentSpec.ReplicationSpecs {
 			for key, region := range replica.RegionsConfig {
-				// diffent type
+				// different type
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ElectableNodes).Should(PointTo(Equal(*region.ElectableNodes)), "Replica Spec: ElectableNodes is not the same")
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].Priority).Should(PointTo(Equal(*region.Priority)), "Replica Spec: Priority is not the same")
@@ -145,7 +145,7 @@ func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas
 	if requested.DeploymentSpec.ProviderSettings.ProviderName == "TENANT" {
 		ExpectWithOffset(1, requested.DeploymentSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
-		})), "Deployment should be the same as requested by the user: Backking Provider Name")
+		})), "Deployment should be the same as requested by the user: Backing Provider Name")
 	}
 }
 
@@ -426,7 +426,7 @@ func DeployUsers(data *model.TestDataProvider) {
 	By("create users", func() {
 		kubecli.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})
-	By("check database users Attibutes", func() {
+	By("check database users Attributes", func() {
 		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
 		CheckUsersAttributes(data.Resources)
 	})

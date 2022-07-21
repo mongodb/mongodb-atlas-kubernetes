@@ -40,9 +40,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		checkUpAWSEnviroment()
-		checkUpAzureEnviroment()
-		checkNSetUpGCPEnviroment()
+		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
