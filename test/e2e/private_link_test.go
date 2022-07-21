@@ -262,11 +262,10 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		for _, peitem := range project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)
-			Expect(privateEndpointID).ShouldNot(BeEmpty())
+			Expect(peitem.ID).ShouldNot(BeEmpty())
 			Eventually(
 				func() bool {
-					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
+					return cloudTest.IsStatusPrivateEndpointAvailable(peitem.ID)
 				},
 			).Should(BeTrue())
 		}
@@ -281,9 +280,8 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	for _, peitem := range project.Status.PrivateEndpoints {
 		cloudTest, err := cloud.CreatePEActions(peitem)
 		if err == nil {
-			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem)
-			if privateEndpointID != "" {
-				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
+			if peitem.ID != "" {
+				err = cloudTest.DeletePrivateEndpoint(peitem.ID)
 				if err != nil {
 					GinkgoWriter.Write([]byte(err.Error()))
 					errorList = append(errorList, err.Error())
