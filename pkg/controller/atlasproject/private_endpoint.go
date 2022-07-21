@@ -262,12 +262,12 @@ func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService a
 }
 
 func DeleteAllPrivateEndpoints(ctx *workflow.Context, projectID string) workflow.Result {
-	atlasPeConnections, err := getAllPrivateEndpoints(ctx.Client, projectID)
+	atlasPEs, err := getAllPrivateEndpoints(ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	endpointsToDelete := set.Difference(atlasPeConnections, []atlasPE{})
+	endpointsToDelete := set.Difference(atlasPEs, []atlasPE{})
 	ctx.Log.Debugw("List of endpoints to delete", "endpointsToDelete", endpointsToDelete)
 	return deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete)
 }
@@ -280,6 +280,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 	for _, item := range listsToRemove {
 		peService := item.(atlasPE)
 		if isDeleting(peService.Status) {
+			ctx.Log.Debugf("%s Private Endpoint Service for the region %s is being deleted", peService.ProviderName, peService.RegionName)
 			continue
 		}
 
