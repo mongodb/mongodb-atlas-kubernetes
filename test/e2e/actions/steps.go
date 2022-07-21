@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -357,9 +356,9 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
+			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
 		} else {
-			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
+			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
 		}
 	})
 }
