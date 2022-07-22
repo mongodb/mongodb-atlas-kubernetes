@@ -26,16 +26,21 @@ func DeleteDeploymentCRD(data *model.TestDataProvider) {
 			Expect(state).ShouldNot(Equal("DELETING"), "Deployment is being deleted despite the keep annotation")
 		})
 	})
+}
 
-	// Remove annotation so actions.AfterEachFinalCleanup can cleanup successfully
+func ReDeployOperator(data *model.TestDataProvider) {
 	By(fmt.Sprintf("Recreating %s", atlasDeploymentCRD), func() {
 		deploy.NamespacedOperator(data)
-		By("Removing keep annotation", func() {
-			annotations := data.Resources.Deployments[0].ObjectMeta.GetAnnotations()
-			// remove keep annotations from map
-			delete(annotations, customresource.ResourcePolicyAnnotation)
-			data.Resources.Deployments[0].ObjectMeta.SetAnnotations(annotations)
-			UpdateDeployment(data)
-		})
+	})
+}
+
+func RemoveKeepAnnotation(data *model.TestDataProvider) {
+	// Remove annotation so actions.AfterEachFinalCleanup can cleanup successfully
+	By("Removing keep annotation", func() {
+		annotations := data.Resources.Deployments[0].ObjectMeta.GetAnnotations()
+		// remove keep annotations from map
+		delete(annotations, customresource.ResourcePolicyAnnotation)
+		data.Resources.Deployments[0].ObjectMeta.SetAnnotations(annotations)
+		UpdateDeployment(data)
 	})
 }

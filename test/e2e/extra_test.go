@@ -60,6 +60,8 @@ var _ = Describe("Deploy cluster", Label("cluster-extra-ns"), func() {
 				30000,
 				[]func(*model.TestDataProvider){
 					actions.DeleteDeploymentCRD,
+					actions.ReDeployOperator,
+					actions.RemoveKeepAnnotation,
 				},
 			),
 		),
