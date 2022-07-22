@@ -9,8 +9,10 @@ LATEST_RELEASE_VERSION="${LATEST_RELEASE_VERSION:-1.0.0}"
 LATEST_RELEASE_REGISTRY=${LATEST_RELEASE_REGISTRY:-"quay.io/mongodb"}
 REGISTRY=${REGISTRY:-"quay.io/igorkarpukhin"}
 
-# This is used to build directory-based Openshift catalog
+# This is used to build directory-based Openshift catalog for current version
 CATALOG_DIR="${CATALOG_DIR:-./openshift/atlas-catalog}"
+# This is used to build directory-based Openshift catalog for current RELEASE version
+CATALOG_RELEASE_DIR="${CATALOG_RELEASE_DIR:-./openshift/atlas-catalog-release}"
 
 if [ -z "${CURRENT_VERSION+x}" ]; then
   # opm doesn't allow 'v' prefix for versions
@@ -24,7 +26,9 @@ OPERATOR_BUNDLE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-bundle:${CURRENT_VERSION}"
 LATEST_RELEASE_BUNDLE_IMAGE="${LATEST_RELEASE_REGISTRY}/${OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
 OPERATOR_CATALOG_NAME="${OPERATOR_NAME}-catalog"
 OPERATOR_CATALOG_IMAGE="${REGISTRY}/${OPERATOR_NAME}-catalog:${CURRENT_VERSION}"
-OPERATOR_CATALOGSOURCE_NAME="${OPERATOR_CATALOG_NAME}-catalogsource"
+OPERATOR_CATALOG_RELEASE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-catalog:${LATEST_RELEASE_VERSION}"
+OPERATOR_CATALOGSOURCE_NAME="${OPERATOR_CATALOG_NAME}"
+OPERATOR_CATALOGSOURCE_NAME_RELEASE="${OPERATOR_CATALOG_NAME}-released"
 OPERATOR_SUBSCRIPTION_NAME="${OPERATOR_NAME}-subscription"
 
 millisecond=1
@@ -82,7 +86,7 @@ try_until_text() {
   local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     echo "Running ${cmd}"
-    res=$($cmd)
+    res=$($cmd || true)
     echo "Result: ${res}, Expected: ${expected}"
     if [[ ${res} == "${expected}" ]] ; then
         echo "Passed"
@@ -139,12 +143,55 @@ deploy_latest_release() {
 cleanup_previous_installation() {
   echo "Removing previous installation"
   expect_success "oc -n openshift-marketplace delete catalogsource ${OPERATOR_CATALOGSOURCE_NAME} --ignore-not-found"
+  expect_success "oc -n openshift-marketplace delete catalogsource ${OPERATOR_CATALOGSOURCE_NAME_RELEASE} --ignore-not-found"
 }
 
 build_and_publish_image_and_bundle() {
-  echo "Building and publishing bundle..."
-  cd ../ && VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle bundle-build bundle-push
+  echo "Building bundle"
+  cd ../
+  VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle
+  echo "Adding REPLACE parameter to the CSV"
+  value="v1.0.0" yq e -i '.spec.replaces = env(value)' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+  echo "Publishing bundle"
+  VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make bundle-build bundle-push
+  cd -
   echo "Bundle has been build and published"
+}
+
+build_and_publish_previous_release_catalog () {
+  echo "Building catalog with previous release"
+  rm -f "${CATALOG_RELEASE_DIR}"/*.yaml
+  rm -f "$(dirname "${CATALOG_RELEASE_DIR}")"/atlas-catalog-release.Dockerfile
+
+  mkdir -p "${CATALOG_RELEASE_DIR}"
+  echo "Generating the dockerfile"
+  opm alpha generate dockerfile "${CATALOG_RELEASE_DIR}"
+  echo "Generating the catalog"
+
+  # Stable - latest release, candidate - current version
+  opm init mongodb-atlas-kubernetes \
+    --default-channel="stable" \
+    --output=yaml \
+    > "${CATALOG_RELEASE_DIR}"/operator.yaml
+
+  echo "Adding previous release ${LATEST_RELEASE_BUNDLE_IMAGE} to the catalog"
+  opm render "${LATEST_RELEASE_BUNDLE_IMAGE}" --output=yaml >> "${CATALOG_RELEASE_DIR}"/operator.yaml
+
+  echo "Adding previous release channel as STABLE to ${CATALOG_RELEASE_DIR}/operator.yaml"
+  echo "---
+schema: olm.channel
+package: mongodb-atlas-kubernetes
+name: stable
+entries:
+  - name: mongodb-atlas-kubernetes.v${LATEST_RELEASE_VERSION}" >> "${CATALOG_RELEASE_DIR}"/operator.yaml
+
+  echo "Validating catalog"
+  expect_success "opm validate ${CATALOG_RELEASE_DIR}"
+  echo "Catalog is valid"
+  echo "Building catalog image"
+  cd "$(dirname "${CATALOG_RELEASE_DIR}")" && docker build . -f atlas-catalog-release.Dockerfile -t "${OPERATOR_CATALOG_RELEASE_IMAGE}"
+  expect_success "docker push ${OPERATOR_CATALOG_RELEASE_IMAGE}"
+  echo "Catalog has been build and published"
   cd -
 }
 
@@ -196,6 +243,26 @@ entries:
   cd -
 }
 
+build_and_deploy_catalog_source_released() {
+  echo "Creating catalog source with previous release"
+  echo "
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: ${OPERATOR_CATALOGSOURCE_NAME_RELEASE}
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: ${OPERATOR_CATALOG_RELEASE_IMAGE}
+  displayName: MongoDB Atlas operator upgrade test - ${LATEST_RELEASE_VERSION}
+  publisher: MongoDB
+  updateStrategy:
+    registryPoll:
+      interval: 5m" > "${CATALOG_RELEASE_DIR}"/catalogsource.yaml
+  echo "Applying catalogsource to openshift-marketplace namespace"
+  expect_success "oc -n openshift-marketplace apply -f ${CATALOG_RELEASE_DIR}/catalogsource.yaml"
+}
+
 build_and_deploy_catalog_source() {
   echo "Creating catalog source"
   echo "
@@ -227,7 +294,7 @@ metadata:
 spec:
   channel: stable
   name: mongodb-atlas-kubernetes
-  source: ${OPERATOR_CATALOGSOURCE_NAME}
+  source: ${OPERATOR_CATALOGSOURCE_NAME_RELEASE}
   sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic" > "${CATALOG_DIR}"/subscription.yaml
   expect_success "oc -n ${TEST_NAMESPACE} apply -f ${CATALOG_DIR}/subscription.yaml"
@@ -253,29 +320,45 @@ wait_for_olm_to_install_operator() {
 }
 
 patch_subscription() {
-  echo "Patching subscription"
-  patch='[{"op": "replace", "path":"/spec/channel", "value": "candidate"}]'
+  echo "Patching subscription to point to NEW catalog"
+  patch="[{\"op\": \"replace\", \"path\":\"/spec/channel\", \"value\": \"candidate\"},{\"op\":\"replace\", \"path\":\"/spec/source\", \"value\":\"${OPERATOR_CATALOGSOURCE_NAME}\"}]"
   oc -n "${TEST_NAMESPACE}" patch subscription "${OPERATOR_SUBSCRIPTION_NAME}" --type json -p "${patch}"
+}
+
+wait_for_new_deployment() {
+  echo "Waiting for OLM to create deployment with the new image"
+  try_until_text "oc -n ${TEST_NAMESPACE} get deployment mongodb-atlas-operator -o json='{.spec.template.spec.containers[0].image}'" "'${NEW_OPERATOR_IMAGE}'" ${DEFAULT_TIMEOUT}
 }
 
 main() {
   echo "Test upgrade from ${LATEST_RELEASE_VERSION} to ${CURRENT_VERSION}"
   oc_login
-  podman_version
   opm_version
 
   # Build and install previous version of the operator
   cleanup_previous_installation
   prepare_test_namespace
   build_and_publish_image_and_bundle
+
+  # Build and publish release and current catalogs
+  build_and_publish_previous_release_catalog
   build_and_publish_catalog_with_two_channels
+
+  # Deploy released and current catalogs
+  build_and_deploy_catalog_source_released
   build_and_deploy_catalog_source
+
+  # Deploy operatorgroup, subscription that points to released catalog
   build_and_deploy_operator_group
   build_and_deploy_subscription
+
+  # Await for 1 replica to be ready
   wait_for_olm_to_install_operator
 
   # Perform operator upgrade
+  # Patch subscription to point to the catalog with new version of the operator
   patch_subscription
+  wait_for_new_deployment
   wait_for_olm_to_install_operator
 }
 
