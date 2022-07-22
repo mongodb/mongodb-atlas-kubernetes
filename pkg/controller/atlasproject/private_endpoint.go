@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
@@ -67,24 +66,22 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 
 	endpointsToCreate := set.Difference(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
-	newPEs, err := createPeServiceInAtlas(ctx.Client, projectID, endpointsToCreate)
-	if err != nil {
+	if err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate); err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
-	addPEStatusOption(ctx, projectID, newPEs)
 
 	endpointsToSync := set.Intersection(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to sync", "difference", endpointsToSync)
-	if err := syncPeInterfaceInAtlas(ctx.Client, projectID, endpointsToSync, log); err != nil {
+	if err := syncPeInterfaceInAtlas(ctx, projectID, endpointsToSync); err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointReadyType, "Failed to sync PE Interface in Atlas", err)
 	}
-	updatePEStatusOption(ctx, projectID, endpointsToSync)
 
 	return workflow.OK(), status.PrivateEndpointReadyType
 }
 
 func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Result {
 	allAvailable, failureMessage := areServicesAvailableOrFailed(atlasPEs)
+	ctx.Log.Debugw("Get Status for Services", "allAvailable", allAvailable, "failureMessage", failureMessage)
 	if failureMessage != "" {
 		return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, failureMessage)
 	}
@@ -197,17 +194,17 @@ func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (resul
 	return
 }
 
-func createPeServiceInAtlas(client mongodbatlas.Client, projectID string, endpointsToCreate []set.Identifiable) ([]atlasPE, error) {
+func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []set.Identifiable) error {
 	newConnections := []atlasPE{}
 	for _, item := range endpointsToCreate {
 		pe := item.(mdbv1.PrivateEndpoint)
 
-		conn, _, err := client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
+		conn, _, err := ctx.Client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
 			ProviderName: string(pe.Provider),
 			Region:       pe.Region,
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		conn.ProviderName = string(pe.Provider)
@@ -215,15 +212,16 @@ func createPeServiceInAtlas(client mongodbatlas.Client, projectID string, endpoi
 		newConnections = append(newConnections, atlasPE(*conn))
 	}
 
-	return newConnections, nil
+	addPEStatusOption(ctx, projectID, newConnections)
+	return nil
 }
 
-func syncPeInterfaceInAtlas(client mongodbatlas.Client, projectID string, endpointsToUpdate [][]set.Identifiable, log *zap.SugaredLogger) error {
+func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsToUpdate [][]set.Identifiable) error {
 	for _, pair := range endpointsToUpdate {
 		specPeService := pair[0].(mdbv1.PrivateEndpoint)
 		atlasPeService := pair[1].(atlasPE)
 
-		log.Debugw("endpointNeedsUpdating", "output", endpointNeedsUpdating(specPeService, atlasPeService))
+		ctx.Log.Debugw("endpointNeedsUpdating", "output", endpointNeedsUpdating(specPeService, atlasPeService))
 		if endpointNeedsUpdating(specPeService, atlasPeService) {
 			interfaceConn := &mongodbatlas.InterfaceEndpointConnection{
 				ID:                       specPeService.ID,
@@ -235,11 +233,11 @@ func syncPeInterfaceInAtlas(client mongodbatlas.Client, projectID string, endpoi
 				interfaceConn.Endpoints = gcpEndpoints
 			}
 
-			interfaceConn, response, err := client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(specPeService.Provider), atlasPeService.ID, interfaceConn)
-			log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
+			interfaceConn, response, err := ctx.Client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(specPeService.Provider), atlasPeService.ID, interfaceConn)
+			ctx.Log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
 			if err != nil {
 				if response.StatusCode == 400 || response.StatusCode == 409 {
-					log.Debugw("failed to create PE Interface", "error", err)
+					ctx.Log.Debugw("failed to create PE Interface", "error", err)
 					continue
 				}
 
@@ -248,6 +246,7 @@ func syncPeInterfaceInAtlas(client mongodbatlas.Client, projectID string, endpoi
 		}
 	}
 
+	updatePEStatusOption(ctx, projectID, endpointsToUpdate)
 	return nil
 }
 
