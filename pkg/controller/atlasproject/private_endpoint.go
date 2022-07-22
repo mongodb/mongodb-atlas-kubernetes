@@ -30,6 +30,11 @@ func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdb
 		return result
 	}
 
+	atlasPEs, err = getAllPrivateEndpoints(ctx.Client, projectID)
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+
 	if len(specPEs) == 0 && len(atlasPEs) == 0 {
 		ctx.UnsetCondition(status.PrivateEndpointServiceReadyType)
 		ctx.UnsetCondition(status.PrivateEndpointReadyType)
@@ -64,16 +69,16 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 		return result, status.PrivateEndpointServiceReadyType
 	}
 
-	endpointsToCreate := set.Difference(specPEs, atlasPEs)
-	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
-	if err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate); err != nil {
-		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
-	}
-
 	endpointsToSync := set.Intersection(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to sync", "difference", endpointsToSync)
 	if err := syncPeInterfaceInAtlas(ctx, projectID, endpointsToSync); err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointReadyType, "Failed to sync PE Interface in Atlas", err)
+	}
+
+	endpointsToCreate := set.Difference(specPEs, atlasPEs)
+	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
+	if err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate); err != nil {
+		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
 
 	return workflow.OK(), status.PrivateEndpointReadyType
