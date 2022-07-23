@@ -108,10 +108,9 @@ var _ = Describe("Openshift UI test", Label("openshift"), func() {
 		By("Delete installed operator, install new one", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
 
-			pagereport.MakeScreenshot(page, "deleted") // TODO delete
 			pom.NavigateOperatorHub(page).ChooseProviderType(operatorTag).Search("MongoDB Atlas Operator").InstallAtlasOperator()
-			pagereport.MakeScreenshot(page, "installed") // TODO delete
 		})
+
 		By("Final screenshot, clean", func() {
 			pom.NavigateInstalledOperators(page).SearchByName("Atlas").DeleteAOperator()
 			pagereport.MakeScreenshot(page, "final")
