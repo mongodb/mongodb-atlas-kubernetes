@@ -438,6 +438,27 @@ func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.Cluster, error) {
 	return result, err
 }
 
+// DeploymentFromAtlas converts specs of a normal deployment in native atlas format to DeploymentSpec
+func DeploymentFromAtlas(cluster *mongodbatlas.Cluster) (*DeploymentSpec, error) {
+	result := &DeploymentSpec{}
+	err := compat.JSONCopy(result, *cluster)
+	return result, err
+}
+
+// AdvancedDeploymentFromAtlas converts specs of an advanced deployment in native atlas format to AdvancedDeploymentSpec
+func AdvancedDeploymentFromAtlas(cluster *mongodbatlas.AdvancedCluster) (*AdvancedDeploymentSpec, error) {
+	result := &AdvancedDeploymentSpec{}
+	err := compat.JSONCopy(result, *cluster)
+	return result, err
+}
+
+// ServerlessDeploymentFromAtlas converts specs of a serverless deployment in native atlas format to DeploymentSpec
+func ServerlessDeploymentFromAtlas(cluster *mongodbatlas.Cluster) (*ServerlessSpec, error) {
+	result := &ServerlessSpec{}
+	err := compat.JSONCopy(result, *cluster)
+	return result, err
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
