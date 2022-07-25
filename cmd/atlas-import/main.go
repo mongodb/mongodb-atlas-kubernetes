@@ -23,6 +23,7 @@ import (
 )
 
 func main() {
+	// TODO use right logger
 	log, _ = zap.NewDevelopment()
 	zap.ReplaceGlobals(log)
 	log.Debug("Beginning import procedure")
@@ -54,7 +55,7 @@ func generateExampleConfig() atlasImportConfig {
 
 	exampleConfig := atlasImportConfig{
 		orgID:           "62a9dbe9fb598f6e67d540c5",
-		publicKey:       "usrgnqxh",
+		publicKey:       "SECRET",
 		privateKey:      "SECRET",
 		importNamespace: "test-namespace",
 		atlasDomain:     "https://cloud-qa.mongodb.com/",
@@ -86,7 +87,7 @@ var log *zap.Logger
 
 func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, error) {
 	// Retrieve all projects associated to credentials
-	// TODO for each paginated call, make sure to retrieve every items
+	// TODO for each paginated API call, make sure to retrieve every items
 	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -198,27 +199,152 @@ func runImports(importConfig atlasImportConfig) error {
 			return err
 		}
 
+		projectRef := &common.ResourceRefNamespaced{
+			Name:      kubernetesProject.ObjectMeta.Name,
+			Namespace: importConfig.importNamespace,
+		}
+
 		// Retrieve deployments, db users, backup schedules/policies associated
 		kubernetesDatabaseUsers, err := getAndConvertDBUsers(atlasProject, atlasClient, importConfig)
 		if err != nil {
 			return err
 		}
 
-		// Add these resources to k8s cluster
-		projectRef := common.ResourceRefNamespaced{
-			Name:      kubernetesProject.ObjectMeta.Name,
-			Namespace: importConfig.importNamespace,
+		kubernetesDeployments, err := getAndConvertDeployments(atlasProject, atlasClient, importConfig, projectRef)
+		if err != nil {
+			return err
 		}
+
+		// Add these resources to k8s cluster
 		log.Debug("Instantiating database users")
 		for _, kubernetesDatabaseUser := range kubernetesDatabaseUsers {
-			kubernetesDatabaseUser.Spec.Project = projectRef
+			kubernetesDatabaseUser.Spec.Project = *projectRef
 			if err := kubeClient.Create(backgroundCtx, kubernetesDatabaseUser); err != nil {
+				return err
+			}
+		}
+
+		log.Debug("Instantiating deployments")
+		for _, kubernetesDeployment := range kubernetesDeployments {
+			if err := kubeClient.Create(backgroundCtx, kubernetesDeployment); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
+	/*
+		Atlas separates deployments in 3 types : normal, advanced and serverless
+		Normal and Serverless are returned as type "Cluster", Advanced is returned as "AdvancedCluster"
+		But the API call for returning normal clusters returns the advanced ones as well, and the API call for
+		advanced clusters returns the normal ones
+	*/
+	atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	atlasAdvancedDeployments, _, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	atlasServerlessDeployments, _, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO operator crashes when disk size = 0.5
+
+	// Get advanced, serverless and normal from Atlas
+	// Normal and serverless are both of type cluster in Atlas API, but are returned by different API calls
+	// Advanced needs to be mapped to a different set of specs
+	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments.Results)+len(atlasServerlessDeployments.Results))
+
+	for i := range atlasDeployments {
+		// If a deployment has a different provider than "tenant", then it is an advanced deployment.
+		isAdvanced := len(atlasAdvancedDeployments.Results[i].ReplicationSpecs) >= 1 &&
+			len(atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs) >= 1 &&
+			atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs[0].ProviderName != "TENANT"
+		println("normal " + atlasDeployments[i].Name)
+		if isAdvanced {
+			println("skipped because advanced")
+			// Will be managed later, skip
+			// TODO improve ?
+			continue
+		}
+
+		kubernetesDeploymentSpec, err := mdbv1.DeploymentFromAtlas(&atlasDeployments[i])
+		if err != nil {
+			return nil, err
+		}
+		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(kubernetesDeploymentSpec, nil,
+			nil, importConfig, kubernetesDeploymentSpec.Name, projectRef)
+		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
+	}
+
+	for i := range atlasAdvancedDeployments.Results {
+		// If a deployment has only one replication spec and its provider is "tenant", then it is a normal deployment.
+		isNormal := len(atlasAdvancedDeployments.Results[i].ReplicationSpecs) == 1 &&
+			len(atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs) == 1 &&
+			atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs[0].ProviderName == "TENANT"
+		println("advanced " + atlasAdvancedDeployments.Results[i].Name)
+		if isNormal {
+			println("skipped because normal")
+			// Already managed previously, skip
+			// TODO improve ?
+			continue
+		}
+
+		kubernetesAdvancedDeploymentSpec, err := mdbv1.AdvancedDeploymentFromAtlas(atlasAdvancedDeployments.Results[i])
+		if err != nil {
+			return nil, err
+		}
+		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(nil, kubernetesAdvancedDeploymentSpec,
+			nil, importConfig, kubernetesAdvancedDeploymentSpec.Name, projectRef)
+		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
+	}
+
+	for i := range atlasServerlessDeployments.Results {
+		kubernetesServerlessDeploymentSpec, err := mdbv1.ServerlessDeploymentFromAtlas(atlasServerlessDeployments.Results[i])
+		println("serverless " + atlasServerlessDeployments.Results[i].Name)
+		if err != nil {
+			return nil, err
+		}
+		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(nil, nil,
+			kubernetesServerlessDeploymentSpec, importConfig, kubernetesServerlessDeploymentSpec.Name, projectRef)
+		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
+	}
+
+	return kubernetesDeployments, nil
+}
+
+func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
+	advancedSpec *mdbv1.AdvancedDeploymentSpec, serverlessSpec *mdbv1.ServerlessSpec, importConfig atlasImportConfig,
+	deploymentName string, projectRef *common.ResourceRefNamespaced) *mdbv1.AtlasDeployment {
+	kubernetesDeployment := mdbv1.AtlasDeployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AtlasDeployment",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			// Deployment names in Atlas are not case-sensitive, so we cannot have collisions even when simplifying the
+			// name with toLowercaseAlphaNumeric
+			Name:      projectRef.Name + "-" + toLowercaseAlphaNumeric(deploymentName),
+			Namespace: importConfig.importNamespace,
+		},
+		Spec: mdbv1.AtlasDeploymentSpec{
+			Project:                *projectRef,
+			DeploymentSpec:         normalSpec,
+			AdvancedDeploymentSpec: advancedSpec,
+			BackupScheduleRef:      common.ResourceRefNamespaced{}, // TODO add backup schedule
+			ServerlessSpec:         serverlessSpec,
+			ProcessArgs:            nil,
+		},
+		Status: status.AtlasDeploymentStatus{},
+	}
+	return &kubernetesDeployment
 }
 
 func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
