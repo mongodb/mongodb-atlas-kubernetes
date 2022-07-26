@@ -735,7 +735,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By(fmt.Sprintf("Updating the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M10"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(

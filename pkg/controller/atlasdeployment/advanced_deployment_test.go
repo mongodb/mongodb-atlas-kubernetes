@@ -11,7 +11,11 @@ import (
 
 func TestMergedAdvancedDeployment(t *testing.T) {
 	defaultAtlas := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
 	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
+	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &v1.Specs{
+		InstanceSize: "M5",
+	}
 
 	t.Run("Test merging clusters removes backing provider name if empty", func(t *testing.T) {
 		advancedCluster := mongodbatlas.AdvancedCluster{

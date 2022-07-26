@@ -82,6 +82,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	}
 
 	resultingDeployment = cleanupAdvancedDeployment(resultingDeployment)
+	ctx.Log.Debugw("Advanced Deployment after clean up", "resultingDeployment", resultingDeployment)
 
 	advancedDeployment, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, &resultingDeployment)
 	if err != nil {
@@ -93,10 +94,14 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 
 func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
 	deployment.ID = ""
+	deployment.GroupID = ""
 	deployment.MongoDBVersion = ""
 	deployment.CreateDate = ""
 	deployment.StateName = ""
 	deployment.ConnectionStrings = nil
+	for i := range deployment.ReplicationSpecs {
+		deployment.ReplicationSpecs[i].ID = ""
+	}
 	return deployment
 }
 

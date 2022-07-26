@@ -545,10 +545,10 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 }
 
 func NewAwsAdvancedDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
-	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
+	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1", 3)
 }
 
-func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasDeployment {
+func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, providerName, regionName string, nodeCount int) *AtlasDeployment {
 	priority := 7
 	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -566,10 +566,10 @@ func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backin
 								Priority: &priority,
 								ElectableSpecs: &Specs{
 									InstanceSize: instanceSize,
+									NodeCount:    &nodeCount,
 								},
-								BackingProviderName: backingProviderName,
-								ProviderName:        "TENANT",
-								RegionName:          regionName,
+								ProviderName: providerName,
+								RegionName:   regionName,
 							},
 						},
 					}},
