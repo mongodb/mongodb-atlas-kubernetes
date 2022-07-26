@@ -46,13 +46,6 @@ spec:
                         instance of the corresponding FrequencyType. The only accepted
                         value you can set for frequency interval with NVMe clusters
                         is 12.
-                      enum:
-                      - 1
-                      - 2
-                      - 4
-                      - 6
-                      - 8
-                      - 12
                       type: integer
                     frequencyType:
                       description: 'Frequency associated with the backup policy item.
