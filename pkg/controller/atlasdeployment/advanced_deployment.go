@@ -94,6 +94,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
 	deployment.ID = ""
 	deployment.MongoDBVersion = ""
+	deployment.CreateDate = ""
 	deployment.StateName = ""
 	deployment.ConnectionStrings = nil
 	return deployment
