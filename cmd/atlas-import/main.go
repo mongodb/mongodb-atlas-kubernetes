@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -224,8 +225,27 @@ func runImports(importConfig atlasImportConfig) error {
 			}
 		}
 
-		log.Debug("Instantiating deployments")
+		log.Debug("Instantiating deployments and their backup policies")
 		for _, kubernetesDeployment := range kubernetesDeployments {
+			deploymentName, err := getDeploymentName(kubernetesDeployment)
+			if err != nil {
+				return err
+			}
+			schedule, policy, err := retrieveBackupSchedule(atlasClient, atlasProject.ID, deploymentName, importConfig)
+			if err != nil {
+				return err
+			}
+			// Linking deployment to its schedule (policy is already linked to the schedule)
+			kubernetesDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
+				Name:      schedule.Name,
+				Namespace: importConfig.importNamespace,
+			}
+			if err := kubeClient.Create(backgroundCtx, schedule); err != nil {
+				return err
+			}
+			if err := kubeClient.Create(backgroundCtx, policy); err != nil {
+				return err
+			}
 			if err := kubeClient.Create(backgroundCtx, kubernetesDeployment); err != nil {
 				return err
 			}
@@ -235,7 +255,21 @@ func runImports(importConfig atlasImportConfig) error {
 	return nil
 }
 
-func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
+func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
+	switch {
+	case deployment.Spec.DeploymentSpec != nil:
+		return deployment.Spec.DeploymentSpec.Name, nil
+	case deployment.Spec.AdvancedDeploymentSpec != nil:
+		return deployment.Spec.AdvancedDeploymentSpec.Name, nil
+	case deployment.Spec.ServerlessSpec != nil:
+		return deployment.Spec.ServerlessSpec.Name, nil
+	default:
+		return "", errors.New("deployment resource contains no specification")
+	}
+}
+
+func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
+	importConfig atlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
 	/*
 		Atlas separates deployments in 3 types : normal, advanced and serverless
 		Normal and Serverless are returned as type "Cluster", Advanced is returned as "AdvancedCluster"
@@ -262,23 +296,14 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	// Advanced needs to be mapped to a different set of specs
 	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments.Results)+len(atlasServerlessDeployments.Results))
 
-	for i := range atlasDeployments {
-		// If a deployment has a different provider than "tenant", then it is an advanced deployment.
-		isAdvanced := len(atlasAdvancedDeployments.Results[i].ReplicationSpecs) >= 1 &&
-			len(atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs) >= 1 &&
-			atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs[0].ProviderName != "TENANT"
-		println("normal " + atlasDeployments[i].Name)
-		if isAdvanced {
-			println("skipped because advanced")
-			// Will be managed later, skip
-			// TODO improve ?
-			continue
-		}
+	normalDeploymentSet := make(map[string]bool)
 
+	for i := range atlasDeployments {
 		kubernetesDeploymentSpec, err := mdbv1.DeploymentFromAtlas(&atlasDeployments[i])
 		if err != nil {
 			return nil, err
 		}
+		normalDeploymentSet[kubernetesDeploymentSpec.Name] = true
 		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(kubernetesDeploymentSpec, nil,
 			nil, importConfig, kubernetesDeploymentSpec.Name, projectRef)
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
@@ -286,14 +311,11 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 
 	for i := range atlasAdvancedDeployments.Results {
 		// If a deployment has only one replication spec and its provider is "tenant", then it is a normal deployment.
-		isNormal := len(atlasAdvancedDeployments.Results[i].ReplicationSpecs) == 1 &&
-			len(atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs) == 1 &&
-			atlasAdvancedDeployments.Results[i].ReplicationSpecs[0].RegionConfigs[0].ProviderName == "TENANT"
+		isNormal := normalDeploymentSet[atlasAdvancedDeployments.Results[i].Name]
 		println("advanced " + atlasAdvancedDeployments.Results[i].Name)
 		if isNormal {
 			println("skipped because normal")
 			// Already managed previously, skip
-			// TODO improve ?
 			continue
 		}
 
@@ -345,6 +367,56 @@ func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 		Status: status.AtlasDeploymentStatus{},
 	}
 	return &kubernetesDeployment
+}
+
+func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, deploymentName string,
+	importConfig atlasImportConfig) (*mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, error) {
+	atlasBackupPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(backgroundCtx, projectID, deploymentName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	scheduleSpec, policySpec, err := mdbv1.BackupScheduleFromAtlas(atlasBackupPolicy)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	prefix := toLowercaseAlphaNumeric(projectID) + "-" + toLowercaseAlphaNumeric(deploymentName)
+	backupScheduleName := prefix + "-" + "backup-schedule"
+	backupPolicyName := prefix + "-" + "backup-policy"
+
+	backupPolicy := &mdbv1.AtlasBackupPolicy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AtlasBackupPolicy",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      backupPolicyName,
+			Namespace: importConfig.importNamespace,
+		},
+		Spec:   *policySpec,
+		Status: mdbv1.AtlasBackupPolicyStatus{},
+	}
+
+	backupSchedule := &mdbv1.AtlasBackupSchedule{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AtlasBackupSchedule",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      backupScheduleName,
+			Namespace: importConfig.importNamespace,
+		},
+		Spec:   *scheduleSpec,
+		Status: mdbv1.AtlasBackupScheduleStatus{},
+	}
+
+	backupSchedule.Spec.PolicyRef = common.ResourceRefNamespaced{
+		Name:      backupPolicyName,
+		Namespace: importConfig.importNamespace,
+	}
+
+	return backupSchedule, backupPolicy, nil
 }
 
 func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
