@@ -9,7 +9,12 @@ a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 package v1
 
 import (
+	"errors"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 )
@@ -88,4 +93,42 @@ type AtlasBackupScheduleList struct {
 
 func init() {
 	SchemeBuilder.Register(&AtlasBackupSchedule{}, &AtlasBackupScheduleList{})
+}
+
+// BackupScheduleFromAtlas converts specs of a backup schedule in native atlas format to AtlasBackupSchedule
+func BackupScheduleFromAtlas(policy *mongodbatlas.CloudProviderSnapshotBackupPolicy) (*AtlasBackupScheduleSpec, *AtlasBackupPolicySpec, error) {
+	scheduleSpec := &AtlasBackupScheduleSpec{}
+	err := compat.JSONCopy(&scheduleSpec, policy)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	policySpec := &AtlasBackupPolicySpec{}
+
+	// Atlas backup schedule doesn't contain any policy
+	if len(policy.Policies) < 1 {
+		return scheduleSpec, policySpec, nil
+	}
+
+	if len(policy.Policies) > 1 {
+		return nil, nil, errors.New("more than one policy found in Atlas Backup Schedule")
+	}
+
+	// There must be only one policy
+	firstPolicy := policy.Policies[0]
+
+	policyItems := make([]AtlasBackupPolicyItem, 0, len(firstPolicy.PolicyItems))
+
+	policySpec.Items = policyItems
+
+	for _, atlasPolicyItem := range firstPolicy.PolicyItems {
+		newElem := AtlasBackupPolicyItem{}
+		err := compat.JSONCopy(&newElem, atlasPolicyItem)
+		if err != nil {
+			return nil, nil, err
+		}
+		policySpec.Items = append(policySpec.Items, newElem)
+	}
+
+	return scheduleSpec, policySpec, err
 }
