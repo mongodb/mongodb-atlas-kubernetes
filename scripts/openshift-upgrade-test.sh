@@ -48,12 +48,14 @@ cleanup() {
   local exit_code="$?"
   set +e
   echo "Cleaning up..."
-  #TODO: Added log collecting procedure
+  # TODO: Added log collecting data if needed
+  oc delete namespace "${TEST_NAMESPACE}"
+  oc -n openshift-marketplace delete catalogsource "${OPERATOR_CATALOGSOURCE_NAME}" --ignore-not-found
   echo "Done"
   return ${exit_code}
 }
 # Collect logs and remove all resources before exiting
-#trap cleanup exit
+trap cleanup exit
 
 try_until_success() {
   local cmd=$1
@@ -141,7 +143,6 @@ deploy_latest_release() {
 cleanup_previous_installation() {
   echo "Removing previous installation"
   expect_success "oc -n openshift-marketplace delete catalogsource ${OPERATOR_CATALOGSOURCE_NAME} --ignore-not-found"
-  expect_success "oc -n openshift-marketplace delete catalogsource ${OPERATOR_CATALOGSOURCE_NAME_RELEASE} --ignore-not-found"
 }
 
 build_and_publish_image_and_bundle() {
@@ -266,12 +267,18 @@ patch_subscription() {
   echo "Patching subscription to point to FAST channel"
   patch="[{\"op\": \"replace\", \"path\":\"/spec/channel\", \"value\": \"fast\"},{\"op\":\"replace\", \"path\":\"/spec/source\", \"value\":\"${OPERATOR_CATALOGSOURCE_NAME}\"}]"
   oc -n "${TEST_NAMESPACE}" patch subscription "${OPERATOR_SUBSCRIPTION_NAME}" --type json -p "${patch}"
-  sleep ${DEFAULT_TIMEOUT}
+  # Let the OLM approve the new InstallPlan
+  sleep 20
 }
 
 wait_for_new_deployment() {
   echo "Waiting for OLM to create a pod with the new image..."
   try_until_success "oc -n ${TEST_NAMESPACE} rollout status deployment/mongodb-atlas-operator" ${DEFAULT_TIMEOUT}
+}
+
+verify_deployment () {
+  echo "Validating deployment image to be ${NEW_OPERATOR_IMAGE}"
+  try_until_text "oc -n ${TEST_NAMESPACE} get deployment mongodb-atlas-operator -o jsonpath='{.spec.template.spec.containers[0].image}'" "'${NEW_OPERATOR_IMAGE}'" ${DEFAULT_TIMEOUT}
 }
 
 main() {
@@ -287,10 +294,10 @@ main() {
   # Build and publish catalog with two bundles
   build_and_publish_catalog_with_two_channels
 
-  # Deploy released and current catalogs
+  # Build catalog and deploy CatalogSource
   build_and_deploy_catalog_source
 
-  # Deploy operatorgroup, subscription that points to released catalog
+  # Deploy OperatorGroup, subscription that points to the previous release
   build_and_deploy_operator_group
   build_and_deploy_subscription
 
@@ -301,6 +308,7 @@ main() {
   # Patch subscription to point to the catalog with new version of the operator
   patch_subscription
   wait_for_new_deployment
+  verify_deployment
 
   echo "Test passed!"
 }
