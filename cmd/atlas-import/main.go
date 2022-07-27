@@ -105,28 +105,6 @@ var maxListOptions = &mongodbatlas.ListOptions{
 }
 var log *zap.Logger
 
-func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, error) {
-	// Retrieve all projects associated to credentials
-	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, maxListOptions)
-	if err != nil {
-		return nil, err
-	}
-	projects := allProjects.Results
-	return projects, nil
-}
-
-func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []importedProject) ([]*mongodbatlas.Project, error) {
-	projects := make([]*mongodbatlas.Project, 0, len(importConfig))
-	for _, importProject := range importConfig {
-		atlasProject, _, err := atlasClient.Projects.GetOneProject(backgroundCtx, importProject.id)
-		if err != nil {
-			return nil, err
-		}
-		projects = append(projects, atlasProject)
-	}
-	return projects, nil
-}
-
 // setUpAtlasClient instantiate the client to interact with the Atlas API
 // Credentials are provided in the import configuration
 func setUpAtlasClient(config *atlasImportConfig) (*mongodbatlas.Client, error) {
@@ -217,7 +195,6 @@ func runImports(importConfig atlasImportConfig) error {
 	} else {
 		projects, err = getListedProjects(atlasClient, importConfig.importedProjects)
 	}
-
 	if err != nil {
 		return err
 	}
@@ -289,6 +266,8 @@ func runImports(importConfig atlasImportConfig) error {
 	}
 	return nil
 }
+
+// ======================= ATLAS DEPLOYMENTS =======================
 
 func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	switch {
@@ -454,6 +433,30 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 	return backupSchedule, backupPolicy, nil
 }
 
+// ======================= ATLAS PROJECTS =======================
+
+func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, error) {
+	// Retrieve all projects associated to credentials
+	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, maxListOptions)
+	if err != nil {
+		return nil, err
+	}
+	projects := allProjects.Results
+	return projects, nil
+}
+
+func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []importedProject) ([]*mongodbatlas.Project, error) {
+	projects := make([]*mongodbatlas.Project, 0, len(importConfig))
+	for _, importProject := range importConfig {
+		atlasProject, _, err := atlasClient.Projects.GetOneProject(backgroundCtx, importProject.id)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, atlasProject)
+	}
+	return projects, nil
+}
+
 func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
 	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
@@ -595,6 +598,8 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 
 	return kubernetesProject, nil
 }
+
+// ======================= HELPER METHODS =======================
 
 // toLowercaseAlphaNumeric only keeps characters a-z, A-Z and 0-9 from a string, and turns uppercase chars to lowercase
 func toLowercaseAlphaNumeric(s string) string {
