@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -32,6 +33,14 @@ func main() {
 	zap.ReplaceGlobals(log)
 	log.Debug("Beginning import procedure")
 	exampleConfig := generateExampleConfig()
+
+	argsWithoutProg := os.Args[1:]
+	publicK := argsWithoutProg[0]
+	privateK := argsWithoutProg[1]
+
+	exampleConfig.publicKey = publicK
+	exampleConfig.privateKey = privateK
+
 	err := runImports(exampleConfig)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -58,9 +67,9 @@ func generateExampleConfig() atlasImportConfig {
 	// deploymentIDS := []string{"deploymentID1", "deploymentID2"}
 
 	exampleConfig := atlasImportConfig{
-		orgID:            "SECRET",
+		orgID:            "62a9dbe9fb598f6e67d540c5",
 		publicKey:        "SECRET",
-		privateKey:       "f98c4f72-aa42-4c07-9f6d-2993cd491b9c",
+		privateKey:       "SECRET",
 		importNamespace:  "test-namespace",
 		atlasDomain:      "https://cloud-qa.mongodb.com/",
 		importAll:        true,
