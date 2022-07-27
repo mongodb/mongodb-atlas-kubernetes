@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -22,6 +23,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 )
+
+// TODO for each paginated API call, make sure to retrieve every items
 
 func main() {
 	// TODO use right logger
@@ -42,7 +45,7 @@ type atlasImportConfig struct {
 	atlasDomain      string
 	importNamespace  string
 	importAll        bool
-	projectsToImport []importedProject
+	importedProjects []importedProject
 }
 
 type importedProject struct {
@@ -55,12 +58,13 @@ func generateExampleConfig() atlasImportConfig {
 	// deploymentIDS := []string{"deploymentID1", "deploymentID2"}
 
 	exampleConfig := atlasImportConfig{
-		orgID:           "62a9dbe9fb598f6e67d540c5",
-		publicKey:       "SECRET",
-		privateKey:      "SECRET",
-		importNamespace: "test-namespace",
-		atlasDomain:     "https://cloud-qa.mongodb.com/",
-		importAll:       true,
+		orgID:            "SECRET",
+		publicKey:        "SECRET",
+		privateKey:       "f98c4f72-aa42-4c07-9f6d-2993cd491b9c",
+		importNamespace:  "test-namespace",
+		atlasDomain:      "https://cloud-qa.mongodb.com/",
+		importAll:        true,
+		importedProjects: nil,
 		//projectsToImport: []importedProject{
 		//	{
 		//		id:          "projectID1",
@@ -83,18 +87,23 @@ func generateExampleConfig() atlasImportConfig {
 	return exampleConfig
 }
 
+// Global variables
 var backgroundCtx = context.Background()
+var maxListOptions = &mongodbatlas.ListOptions{
+	PageNum:      0,
+	ItemsPerPage: 500,
+	IncludeCount: false,
+}
 var log *zap.Logger
 
 func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, error) {
 	// Retrieve all projects associated to credentials
-	// TODO for each paginated API call, make sure to retrieve every items
-	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, &mongodbatlas.ListOptions{})
+	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
 	projects := allProjects.Results
-	return projects, err
+	return projects, nil
 }
 
 func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []importedProject) ([]*mongodbatlas.Project, error) {
@@ -123,7 +132,6 @@ func setUpAtlasClient(config *atlasImportConfig) (*mongodbatlas.Client, error) {
 		atlasDomain = config.atlasDomain
 	}
 	atlasClient, err := atlas.Client(atlasDomain, credentials, log.Sugar())
-
 	return &atlasClient, err
 }
 
@@ -151,18 +159,31 @@ func setUpKubernetesClient() (client.Client, error) {
 	kubeClient, err := client.New(kubeConfig, client.Options{
 		Scheme: scheme,
 	})
-
 	if err != nil {
 		log.Error("Failed to create kube client")
 		return nil, err
 	}
-
 	return kubeClient, nil
 }
 
-func runImports(importConfig atlasImportConfig) error {
-	// TODO check namespace exists
+func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
+	// The namespace object should be part of global namespace
+	objKey := client.ObjectKey{
+		Namespace: "global",
+		Name:      namespace,
+	}
+	nameSpaceObject := v1.Namespace{}
+	if err := kubeClient.Get(backgroundCtx, objKey, &nameSpaceObject); err != nil {
+		return err
+	}
+	if nameSpaceObject.Name != namespace {
+		log.Error("the specified import namespace couldn't be retrieved from kubernetes cluster")
+		return errors.New("namespace " + namespace + " doesn't exist")
+	}
+	return nil
+}
 
+func runImports(importConfig atlasImportConfig) error {
 	atlasClient, err := setUpAtlasClient(&importConfig)
 	if err != nil {
 		return err
@@ -173,13 +194,19 @@ func runImports(importConfig atlasImportConfig) error {
 		return err
 	}
 
+	// Verifying that import namespace exists
+	err = ensureNamespaceExists(kubeClient, importConfig.importNamespace)
+	if err != nil {
+		return err
+	}
+
 	log.Debug("Importing projects")
 	// Import all project if flag is set, otherwise import the ones specified by User
 	var projects []*mongodbatlas.Project
 	if importConfig.importAll {
 		projects, err = getAllProjects(atlasClient)
 	} else {
-		projects, err = getListedProjects(atlasClient, importConfig.projectsToImport)
+		projects, err = getListedProjects(atlasClient, importConfig.importedProjects)
 	}
 
 	if err != nil {
@@ -251,7 +278,6 @@ func runImports(importConfig atlasImportConfig) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -276,15 +302,15 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		But the API call for returning normal clusters returns the advanced ones as well, and the API call for
 		advanced clusters returns the normal ones
 	*/
-	atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
-	atlasAdvancedDeployments, _, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	atlasAdvancedDeployments, _, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
-	atlasServerlessDeployments, _, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	atlasServerlessDeployments, _, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +446,7 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 }
 
 func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
-	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, &mongodbatlas.ListOptions{})
+	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +479,7 @@ func getWindow(atlasClient *mongodbatlas.Client, projectID string) (*project.Mai
 
 // Retrieve the IpAccessLists associated to the project ID and convert them to kubernetes type.
 func getAccessLists(atlasClient *mongodbatlas.Client, projectID string) ([]project.IPAccessList, error) {
-	atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, &mongodbatlas.ListOptions{})
+	atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, maxListOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +520,7 @@ func getPrivateEndpoints(atlasClient *mongodbatlas.Client, projectID string) ([]
 	var kubernetesPrivateEndpoints []mdbv1.PrivateEndpoint
 	// Retrieving endpoints for each cloud provider
 	for _, cloudProvider := range []string{"AWS", "GCP", "AZURE"} {
-		atlasProviderEndpoints, _, err := atlasClient.PrivateEndpoints.List(backgroundCtx, projectID, cloudProvider, &mongodbatlas.ListOptions{})
+		atlasProviderEndpoints, _, err := atlasClient.PrivateEndpoints.List(backgroundCtx, projectID, cloudProvider, maxListOptions)
 		if err != nil {
 			return nil, err
 		}
