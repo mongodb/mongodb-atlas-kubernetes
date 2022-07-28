@@ -145,11 +145,8 @@ type AdvancedDeploymentSpec struct {
 	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
 	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
 	ClusterType              string             `json:"clusterType,omitempty"`
-	ConnectionStrings        *ConnectionStrings `json:"connectionStrings,omitempty"`
 	DiskSizeGB               *int               `json:"diskSizeGB,omitempty"`
 	EncryptionAtRestProvider string             `json:"encryptionAtRestProvider,omitempty"`
-	GroupID                  string             `json:"groupId,omitempty"`
-	ID                       string             `json:"id,omitempty"`
 	Labels                   []common.LabelSpec `json:"labels,omitempty"`
 	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
@@ -160,9 +157,7 @@ type AdvancedDeploymentSpec struct {
 	Name                 string                     `json:"name,omitempty"`
 	Paused               *bool                      `json:"paused,omitempty"`
 	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
-	StateName            string                     `json:"stateName,omitempty"`
 	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	CreateDate           string                     `json:"createDate,omitempty"`
 	RootCertType         string                     `json:"rootCertType,omitempty"`
 	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
 }
@@ -222,8 +217,6 @@ type EndpointSpec struct {
 
 type AdvancedReplicationSpec struct {
 	NumShards     int                     `json:"numShards,omitempty"`
-	ID            string                  `json:"id,omitempty"`
-	ZoneName      string                  `json:"zoneName,omitempty"`
 	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
 }
 
@@ -440,6 +433,13 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
 	err := compat.JSONCopy(result, *spec.DeploymentSpec)
+	return result, err
+}
+
+// AdvancedDeployment converts the Spec to native Atlas client format.
+func (spec *AtlasDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, *spec.AdvancedDeploymentSpec)
 	return result, err
 }
 

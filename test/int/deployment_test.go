@@ -26,6 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 const (
@@ -191,13 +192,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
+			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
 			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeployment, createdDeployment.Spec)
+			atlasDeploymentConverted, err := atlasdeployment.AdvancedDeploymentFromAtlas(*atlasDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), *atlasDeployment, mergedDeployment)).To(BeTrue())
+			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), specDeployment, atlasDeploymentConverted)).To(BeTrue())
 
 			for _, check := range additionalChecks {
 				check(atlasDeployment)
@@ -735,9 +737,31 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By(fmt.Sprintf("Updating the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M20"
 				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M20"
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+			})
+
+			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled:          toptr.Boolptr(true),
+						MaxInstanceSize:  "M20",
+						MinInstanceSize:  "M10",
+						ScaleDownEnabled: toptr.Boolptr(true),
+					},
+					DiskGB: &mdbv1.DiskGB{
+						Enabled: toptr.Boolptr(true),
+					},
+				}
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(

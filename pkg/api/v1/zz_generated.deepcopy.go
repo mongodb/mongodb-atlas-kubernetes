@@ -57,11 +57,6 @@ func (in *AdvancedDeploymentSpec) DeepCopyInto(out *AdvancedDeploymentSpec) {
 		*out = new(BiConnectorSpec)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ConnectionStrings != nil {
-		in, out := &in.ConnectionStrings, &out.ConnectionStrings
-		*out = new(ConnectionStrings)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.DiskSizeGB != nil {
 		in, out := &in.DiskSizeGB, &out.DiskSizeGB
 		*out = new(int)

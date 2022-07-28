@@ -58,52 +58,55 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, advancedDeployment *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	resultingDeployment, err := MergedAdvancedDeployment(*advancedDeployment, deployment.Spec)
+func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+	specDeployment := *deployment.Spec.AdvancedDeploymentSpec
+	atlasDeployment, err := AdvancedDeploymentFromAtlas(*atlasDeploymentAsAtlas)
 	if err != nil {
-		return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if done := AdvancedDeploymentsEqual(ctx.Log, *advancedDeployment, resultingDeployment); done {
-		return advancedDeployment, workflow.OK()
+	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
+		return atlasDeploymentAsAtlas, workflow.OK()
 	}
 
-	if deployment.Spec.AdvancedDeploymentSpec.Paused != nil {
-		if advancedDeployment.Paused == nil || *advancedDeployment.Paused != *deployment.Spec.AdvancedDeploymentSpec.Paused {
+	if specDeployment.Paused != nil {
+		if atlasDeployment.Paused == nil || *atlasDeployment.Paused != *specDeployment.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
-			resultingDeployment = mongodbatlas.AdvancedCluster{
+			specDeployment = mdbv1.AdvancedDeploymentSpec{
 				Paused: deployment.Spec.AdvancedDeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
-			resultingDeployment.Paused = nil
+			specDeployment.Paused = nil
 		}
 	}
 
-	resultingDeployment = cleanupAdvancedDeployment(resultingDeployment)
-	ctx.Log.Debugw("Advanced Deployment after clean up", "resultingDeployment", resultingDeployment)
-
-	advancedDeployment, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, &resultingDeployment)
+	deploymentAsAtlas, err := specDeployment.AdvancedDeployment()
 	if err != nil {
-		return advancedDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, deploymentAsAtlas)
+	if err != nil {
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}
 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
-	deployment.ID = ""
-	deployment.GroupID = ""
-	deployment.MongoDBVersion = ""
-	deployment.CreateDate = ""
-	deployment.StateName = ""
-	deployment.ConnectionStrings = nil
-	for i := range deployment.ReplicationSpecs {
-		deployment.ReplicationSpecs[i].ID = ""
-	}
-	return deployment
-}
+// func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
+// 	deployment.ID = ""
+// 	deployment.GroupID = ""
+// 	deployment.MongoDBVersion = ""
+// 	deployment.CreateDate = ""
+// 	deployment.StateName = ""
+// 	deployment.ConnectionStrings = nil
+// 	for i := range deployment.ReplicationSpecs {
+// 		deployment.ReplicationSpecs[i].ID = ""
+// 	}
+// 	return deployment
+// }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
 func MergedAdvancedDeployment(advancedDeployment mongodbatlas.AdvancedCluster, spec mdbv1.AtlasDeploymentSpec) (mongodbatlas.AdvancedCluster, error) {
@@ -128,8 +131,17 @@ func MergedAdvancedDeployment(advancedDeployment mongodbatlas.AdvancedCluster, s
 	return result, nil
 }
 
+func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {
+	result := mdbv1.AdvancedDeploymentSpec{}
+	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mongodbatlas.AdvancedCluster, deploymentOperator mongodbatlas.AdvancedCluster) bool {
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
 	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
