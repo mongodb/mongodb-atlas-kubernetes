@@ -1,6 +1,0 @@
----
-schema: olm.channel
-package: mongodb-atlas-kubernetes
-name: beta
-entries:
-  - name: mongodb-atlas-kubernetes.v0.5.0
