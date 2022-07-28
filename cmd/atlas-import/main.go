@@ -27,42 +27,7 @@ import (
 
 // TODO for each paginated API call, make sure to retrieve every items
 
-func main() {
-	// TODO use right logger
-	log, _ = zap.NewDevelopment()
-	zap.ReplaceGlobals(log)
-	log.Debug("Beginning import procedure")
-	exampleConfig := generateExampleConfig()
-
-	argsWithoutProg := os.Args[1:]
-	publicK := argsWithoutProg[0]
-	privateK := argsWithoutProg[1]
-
-	exampleConfig.publicKey = publicK
-	exampleConfig.privateKey = privateK
-
-	err := runImports(exampleConfig)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-}
-
-type atlasImportConfig struct {
-	orgID            string
-	publicKey        string
-	privateKey       string
-	atlasDomain      string
-	importNamespace  string
-	importAll        bool
-	importedProjects []importedProject
-}
-
-type importedProject struct {
-	id string
-	// importAll   bool
-	// deployments []string
-}
-
+// TODO delete this and retrieve config from file
 func generateExampleConfig() atlasImportConfig {
 	// deploymentIDS := []string{"deploymentID1", "deploymentID2"}
 
@@ -94,6 +59,43 @@ func generateExampleConfig() atlasImportConfig {
 	}
 
 	return exampleConfig
+}
+
+func main() {
+	// TODO use right logger
+	log, _ = zap.NewDevelopment()
+	zap.ReplaceGlobals(log)
+	log.Debug("Beginning import procedure")
+	exampleConfig := generateExampleConfig()
+
+	argsWithoutProg := os.Args[1:]
+	publicK := argsWithoutProg[0]
+	privateK := argsWithoutProg[1]
+
+	exampleConfig.publicKey = publicK
+	exampleConfig.privateKey = privateK
+
+	err := runImports(exampleConfig)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+// Import configuration data structures
+type atlasImportConfig struct {
+	orgID            string
+	publicKey        string
+	privateKey       string
+	atlasDomain      string
+	importNamespace  string
+	importAll        bool
+	importedProjects []importedProject
+}
+
+type importedProject struct {
+	id string
+	// importAll   bool
+	// deployments []string
 }
 
 // Global variables
@@ -170,19 +172,27 @@ func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
 	return nil
 }
 
-func runImports(importConfig atlasImportConfig) error {
+func fullSetUp(importConfig atlasImportConfig) (*mongodbatlas.Client, client.Client, error) {
 	atlasClient, err := setUpAtlasClient(&importConfig)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	kubeClient, err := setUpKubernetesClient()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	// Verifying that import namespace exists
-	err = ensureNamespaceExists(kubeClient, importConfig.importNamespace)
+	if err = ensureNamespaceExists(kubeClient, importConfig.importNamespace); err != nil {
+		return nil, nil, err
+	}
+
+	return atlasClient, kubeClient, nil
+}
+
+func runImports(importConfig atlasImportConfig) error {
+	atlasClient, kubeClient, err := fullSetUp(importConfig)
 	if err != nil {
 		return err
 	}
@@ -208,34 +218,29 @@ func runImports(importConfig atlasImportConfig) error {
 		}
 		// Add resource to k8s cluster
 		log.Debug(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
-		if err := kubeClient.Create(backgroundCtx, kubernetesProject); err != nil {
-			log.Error("Error when instantiating project in Cluster")
-			return err
-		}
+		instantiateKubernetesObject(kubeClient, kubernetesProject)
 
 		projectRef := &common.ResourceRefNamespaced{
 			Name:      kubernetesProject.ObjectMeta.Name,
 			Namespace: importConfig.importNamespace,
 		}
 
-		// Retrieve deployments, db users, backup schedules/policies associated
+		// Retrieve and instantiate associated db users
 		kubernetesDatabaseUsers, err := getAndConvertDBUsers(atlasProject, atlasClient, importConfig)
 		if err != nil {
 			return err
 		}
 
-		kubernetesDeployments, err := getAndConvertDeployments(atlasProject, atlasClient, importConfig, projectRef)
-		if err != nil {
-			return err
-		}
-
-		// Add these resources to k8s cluster
 		log.Debug("Instantiating database users")
 		for _, kubernetesDatabaseUser := range kubernetesDatabaseUsers {
 			kubernetesDatabaseUser.Spec.Project = *projectRef
-			if err := kubeClient.Create(backgroundCtx, kubernetesDatabaseUser); err != nil {
-				return err
-			}
+			instantiateKubernetesObject(kubeClient, kubernetesDatabaseUser)
+		}
+
+		// Retrieve and instantiate associated deployments
+		kubernetesDeployments, err := getAndConvertDeployments(atlasProject, atlasClient, importConfig, projectRef)
+		if err != nil {
+			return err
 		}
 
 		log.Debug("Instantiating deployments and their backup policies")
@@ -253,15 +258,9 @@ func runImports(importConfig atlasImportConfig) error {
 				Name:      schedule.Name,
 				Namespace: importConfig.importNamespace,
 			}
-			if err := kubeClient.Create(backgroundCtx, schedule); err != nil {
-				return err
-			}
-			if err := kubeClient.Create(backgroundCtx, policy); err != nil {
-				return err
-			}
-			if err := kubeClient.Create(backgroundCtx, kubernetesDeployment); err != nil {
-				return err
-			}
+			instantiateKubernetesObject(kubeClient, schedule)
+			instantiateKubernetesObject(kubeClient, policy)
+			instantiateKubernetesObject(kubeClient, kubernetesDeployment)
 		}
 	}
 	return nil
@@ -302,8 +301,6 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO operator crashes when disk size = 0.5
 
 	// Get advanced, serverless and normal from Atlas
 	// Normal and serverless are both of type cluster in Atlas API, but are returned by different API calls
@@ -374,9 +371,10 @@ func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 			Project:                *projectRef,
 			DeploymentSpec:         normalSpec,
 			AdvancedDeploymentSpec: advancedSpec,
-			BackupScheduleRef:      common.ResourceRefNamespaced{}, // TODO add backup schedule
-			ServerlessSpec:         serverlessSpec,
-			ProcessArgs:            nil,
+			// Schedule ref is updated before instantiation of the resources in the k8s cluster
+			BackupScheduleRef: common.ResourceRefNamespaced{},
+			ServerlessSpec:    serverlessSpec,
+			ProcessArgs:       nil,
 		},
 		Status: status.AtlasDeploymentStatus{},
 	}
@@ -611,4 +609,12 @@ func toLowercaseAlphaNumeric(s string) string {
 		}
 	}
 	return strings.ToLower(result.String())
+}
+
+// Instantiates a kubernetes object in the cluster, using default ctx
+// Terminates the program if an error occurs
+func instantiateKubernetesObject(kubeClient client.Client, object client.Object) {
+	if err := kubeClient.Create(backgroundCtx, object); err != nil {
+		log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster")
+	}
 }
