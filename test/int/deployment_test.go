@@ -439,30 +439,16 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		It("Should fail, then be fixed (GCP)", func() {
 			createdDeployment = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("")
 
-			By(fmt.Sprintf("Creating the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
-
-				Eventually(
-					testutil.WaitFor(
-						k8sClient,
-						createdDeployment,
-						status.
-							FalseCondition(status.DeploymentReadyType).
-							WithReason(string(workflow.Internal)). // Internal due to reconciliation failing on the initial GET request
-							WithMessageRegexp("name is invalid because must be set"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
-				testutil.EventExists(k8sClient, createdDeployment, "Warning", string(workflow.Internal), "name is invalid because must be set")
-
-				lastGeneration++
+			By(fmt.Sprintf("Trying to create the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				err := k8sClient.Create(context.Background(), createdDeployment)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("is invalid: spec.deploymentSpec.name"))
 			})
 
-			By("Fixing the deployment", func() {
+			By("Creating the fixed deployment", func() {
 				createdDeployment.Spec.DeploymentSpec.Name = "fixed-deployment"
 
-				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).To(Succeed())
 
 				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType)),
 					20*time.Minute, interval).Should(BeTrue())
@@ -830,7 +816,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					ReferenceMinuteOfHour: 10,
 					RestoreWindowDays:     5,
 					UpdateSnapshots:       false,
-					Export:                mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
+					Export:                &mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
 				},
 			}
 

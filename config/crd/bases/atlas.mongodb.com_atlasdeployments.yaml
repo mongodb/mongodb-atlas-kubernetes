@@ -37,7 +37,7 @@ spec:
             description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
             properties:
               advancedDeploymentSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
                     type: boolean
@@ -139,6 +139,10 @@ spec:
                   mongoDBVersion:
                     type: string
                   name:
+                    description: Name of the advanced deployment as it appears in
+                      Atlas. After Atlas creates the deployment, you can't change
+                      its name. Can only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   paused:
                     type: boolean
@@ -167,14 +171,9 @@ spec:
                                     type: integer
                                 type: object
                               autoScaling:
-                                description: AutoScalingSpec configures your deployment
-                                  to automatically scale its storage
+                                description: AdvancedAutoScalingSpec configures your
+                                  deployment to automatically scale its storage
                                 properties:
-                                  autoIndexingEnabled:
-                                    description: Flag that indicates whether autopilot
-                                      mode for Performance Advisor is enabled. The
-                                      default is false.
-                                    type: boolean
                                   compute:
                                     description: Collection of settings that configure
                                       how a deployment might scale its deployment
@@ -205,10 +204,13 @@ spec:
                                           : true.'
                                         type: boolean
                                     type: object
-                                  diskGBEnabled:
+                                  diskGB:
                                     description: Flag that indicates whether disk
                                       auto-scaling is enabled. The default is true.
-                                    type: boolean
+                                    properties:
+                                      enabled:
+                                        type: boolean
+                                    type: object
                                 type: object
                               backingProviderName:
                                 type: string
@@ -376,7 +378,9 @@ spec:
                     type: string
                   name:
                     description: Name of the deployment as it appears in Atlas. After
-                      Atlas creates the deployment, you can't change its name.
+                      Atlas creates the deployment, you can't change its name. Can
+                      only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   numShards:
                     description: Positive integer that specifies the number of shards
@@ -598,11 +602,13 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
+                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
                 properties:
                   name:
-                    description: Name of the deployment as it appears in Atlas. After
-                      Atlas creates the deployment, you can't change its name.
+                    description: Name of the serverless deployment as it appears in
+                      Atlas. After Atlas creates the deployment, you can't change
+                      its name. Can only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   providerSettings:
                     description: Configuration for the provisioned hosts on which

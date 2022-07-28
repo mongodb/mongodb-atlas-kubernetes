@@ -2,12 +2,15 @@ package atlas
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils/debug"
 
@@ -16,6 +19,8 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
+
+var globalAtlas *Atlas
 
 type Atlas struct {
 	OrgID   string
@@ -42,6 +47,16 @@ func AClient() (Atlas, error) {
 	u, _ := url.Parse(config.AtlasHost)
 	A.Client.BaseURL = u
 	return A, nil
+}
+
+func GetClientOrFail() *Atlas {
+	if globalAtlas != nil {
+		return globalAtlas
+	}
+	c, err := AClient()
+	Expect(err).NotTo(HaveOccurred())
+	globalAtlas = &c
+	return globalAtlas
 }
 
 func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (*mongodbatlas.APIKey, error) {
@@ -76,12 +91,48 @@ func formAccessRequest(access []string) []*mongodbatlas.WhitelistAPIKeysReq {
 }
 
 func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.PrivateEndpointConnection, error) {
-	enpointsList, _, err := a.Client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
+	endpointsList, _, err := a.Client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	ginkgoPrettyPrintf(enpointsList, "listing private endpoints in project %s", projectID)
-	return enpointsList, nil
+	ginkgoPrettyPrintf(endpointsList, "listing private endpoints in project %s", projectID)
+	return endpointsList, nil
+}
+
+func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
+	for _, c := range a.GetDeployments(projectID) {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *Atlas) IsProjectExists(projectID string) bool {
+	project, _, err := a.Client.Projects.GetOneProject(context.Background(), projectID)
+	if err != nil {
+		var apiError *mongodbatlas.ErrorResponse
+		if errors.As(err, &apiError) && (apiError.ErrorCode == "GROUP_NOT_FOUND" || apiError.ErrorCode == "RESOURCE_NOT_FOUND") {
+			return false
+		}
+		Fail(err.Error())
+	}
+	return project != nil
+}
+
+func (a *Atlas) GetDeployments(projectID string) []mongodbatlas.Cluster {
+	deployments, _, err := a.Client.Clusters.List(context.Background(), projectID, nil)
+	Expect(err).NotTo(HaveOccurred())
+	ginkgoPrettyPrintf(deployments, "listing legacy deployments in project %s", projectID)
+	return deployments
+}
+
+func (a *Atlas) GetDeployment(projectID string, name string) mongodbatlas.Cluster {
+	deployment, _, err := a.Client.Clusters.Get(context.Background(), projectID, name)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(deployment).NotTo(BeNil())
+	ginkgoPrettyPrintf(deployment, "getting legacy deployment %s in project %s", projectID, name)
+	return *deployment
 }
 
 func (a *Atlas) GetAdvancedDeployment(projectId, deploymentName string) (*mongodbatlas.AdvancedCluster, error) {
@@ -100,6 +151,21 @@ func (a *Atlas) GetServerlessInstance(projectId, deploymentName string) (*mongod
 	}
 	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", deploymentName, projectId)
 	return serverlessInstance, nil
+}
+
+func (a *Atlas) GetDBUser(database, userName, projectID string) (*mongodbatlas.DatabaseUser, error) {
+	user, _, err := a.Client.DatabaseUsers.Get(context.Background(), database, projectID, userName)
+	if err != nil {
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) &&
+				(apiError.ErrorCode == "USERNAME_NOT_FOUND" || apiError.ErrorCode == "RESOURCE_NOT_FOUND" || apiError.ErrorCode == "USER_NOT_IN_GROUP" || apiError.Response.StatusCode == 400) {
+				return nil, nil
+			}
+			return nil, err
+		}
+	}
+	return user, nil
 }
 
 // ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.

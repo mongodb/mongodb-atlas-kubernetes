@@ -26,9 +26,18 @@ const (
 	AtlasDeploymentHelmChartPath  = "../../helm-charts/charts/atlas-deployment"
 	HelmChartDirectory            = "../../helm-charts/charts"
 
-	// AWS Tags for test
-	TagName = "atlas-operator-test"
-	TagBusy = "busy"
+	// Tags for test
+	TagName         = "atlas-operator-test"
+	TagForTestValue = "atlas-operator-e2e-test"
+	TagForTestKey   = "atlas-operator-e2e-key"
+	TagBusy         = "busy"
+
+	// Regions for tests
+
+	GCPRegion   = "europe-west1"
+	AWSRegionUS = "us-east-1"
+	AWSRegionEU = "eu-west-2"
+	AzureRegion = "northeurope"
 
 	// GCP
 	FileNameSAGCP = "gcp_service_account.json"

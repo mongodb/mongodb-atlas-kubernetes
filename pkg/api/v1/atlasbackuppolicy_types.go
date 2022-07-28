@@ -25,7 +25,7 @@ type AtlasBackupPolicyItem struct {
 
 	// Desired frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
 	// The only accepted value you can set for frequency interval with NVMe clusters is 12.
-	// +kubebuilder:validation:Enum:=1;2;4;6;8;12
+	// +kubebuilder:validation:Enum:=1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;40
 	FrequencyInterval int `json:"frequencyInterval"`
 
 	// Scope of the backup policy item: days, weeks, or months

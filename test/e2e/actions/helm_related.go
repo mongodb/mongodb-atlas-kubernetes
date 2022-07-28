@@ -1,14 +1,17 @@
 package actions
 
 import (
+	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	mongocli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
@@ -29,10 +32,20 @@ func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
 			WaitDeployment(data.Resources, strconv.Itoa(generation+1))
 			ExpectWithOffset(1, data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
-		updatedDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
+		aClient := atlas.GetClientOrFail()
+		updatedDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
 		CompareDeploymentsSpec(data.Resources.Deployments[0].Spec, updatedDeployment)
-		user := mongocli.GetUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
-		ExpectWithOffset(1, user.Roles[0].RoleName).Should(Equal(model.RoleBuildInAdmin))
+		Eventually(func() error {
+			aClient := atlas.GetClientOrFail()
+			user, err := aClient.GetDBUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
+			if err != nil {
+				return err
+			}
+			if user.Roles[0].RoleName != model.RoleBuildInAdmin {
+				return fmt.Errorf("user role %s not equal to %s", user.Roles[0].RoleName, model.RoleBuildInAdmin)
+			}
+			return nil
+		}).WithTimeout(7 * time.Minute).WithPolling(10 * time.Second).ShouldNot(HaveOccurred())
 	})
 }
 
@@ -72,8 +85,8 @@ func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 
 		By("Wait updating")
 		WaitDeployment(data.Resources, strconv.Itoa(generation+1))
-
-		updatedDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
+		aClient := atlas.GetClientOrFail()
+		updatedDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
 		CompareDeploymentsSpec(data.Resources.Deployments[0].Spec, updatedDeployment)
 		CheckUsersAttributes(data.Resources)
 	})
