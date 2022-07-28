@@ -14,7 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Deploy cluster", Label("cluster-extra-ns"), func() {
+var _ = Describe("Deploy deployment", Label("deployment-annotations-ns"), func() {
 	var data model.TestDataProvider
 
 	BeforeEach(func() {
@@ -37,7 +37,7 @@ var _ = Describe("Deploy cluster", Label("cluster-extra-ns"), func() {
 			)
 			actions.SaveTestAppLogs(data.Resources)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasclusters", "atlasprojects"},
+				[]string{"deploy", "atlasdeployments", "atlasprojects"},
 				data.Resources.Namespace,
 			)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
@@ -54,7 +54,7 @@ var _ = Describe("Deploy cluster", Label("cluster-extra-ns"), func() {
 				"operator-ns-crd",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_basic_with_keep_resource_policy.yaml"},
+				[]string{"data/atlasdeployment_basic_with_keep_resource_policy.yaml"},
 				[]string{},
 				[]model.DBUser{},
 				30000,
