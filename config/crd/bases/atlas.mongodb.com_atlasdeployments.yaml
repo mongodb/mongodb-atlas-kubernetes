@@ -35,9 +35,12 @@ spec:
             type: object
           spec:
             description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
+              Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec
+              should be defined
             properties:
               advancedDeploymentSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the advanced (v1.5) deployment API
+                  https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
                     type: boolean
@@ -270,7 +273,7 @@ spec:
                 - name
                 type: object
               deploymentSpec:
-                description: Configuration for the advanced deployment API
+                description: Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
                 properties:
                   autoScaling:
                     description: Collection of settings that configures auto-scaling
@@ -602,7 +605,7 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
                   name:
                     description: Name of the serverless deployment as it appears in

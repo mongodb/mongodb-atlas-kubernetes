@@ -44,15 +44,16 @@ const (
 )
 
 // AtlasDeploymentSpec defines the desired state of AtlasDeployment
+// Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
 type AtlasDeploymentSpec struct {
 	// Project is a reference to AtlasProject resource the deployment belongs to
 	Project common.ResourceRefNamespaced `json:"projectRef"`
 
-	// Configuration for the advanced deployment API
+	// Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
 	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
 
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
 	// +optional
 	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
 
@@ -60,7 +61,7 @@ type AtlasDeploymentSpec struct {
 	// +optional
 	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
 
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+	// Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
 	// +optional
 	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
 
