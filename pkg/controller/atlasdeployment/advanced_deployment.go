@@ -138,7 +138,7 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
 func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
-	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty())
+	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
