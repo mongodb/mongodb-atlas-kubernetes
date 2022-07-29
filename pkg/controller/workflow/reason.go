@@ -23,6 +23,7 @@ const (
 	ProjectWindowNotAutoDeferredInAtlas     ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
 	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
+	ProjectNetworkPeerIsNotReadyInAtlas     ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
 	ProjectIntegrationInternal              ConditionReason = "ProjectIntegrationInternalError"
 	ProjectIntegrationRequest               ConditionReason = "ProjectIntegrationRequestError"

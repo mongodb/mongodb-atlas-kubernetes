@@ -265,6 +265,47 @@ spec:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
                 type: string
+              networkPeers:
+                description: NetworkPeers is a list of Network Peers configured for
+                  the current Project.
+                items:
+                  properties:
+                    accepterRegionName:
+                      description: AccepterRegionName is Atlas region where the container
+                        resides.
+                      type: string
+                    atlasCidrBlock:
+                      type: string
+                    awsAccountId:
+                      type: string
+                    azureDirectoryId:
+                      type: string
+                    azureSubscriptionId:
+                      type: string
+                    containerId:
+                      type: string
+                    containerRegion:
+                      type: string
+                    gcpProjectId:
+                      type: string
+                    id:
+                      type: string
+                    networkName:
+                      type: string
+                    providerName:
+                      description: ProviderName is the name of the provider. If not
+                        set, it will be set to "aws"
+                      type: string
+                    resourceGroupName:
+                      type: string
+                    routeTableCidrBlock:
+                      type: string
+                    vnetName:
+                      type: string
+                    vpcId:
+                      type: string
+                  type: object
+                type: array
               privateEndpoints:
                 description: PrivateEndpoints is a list of Private Endpoints configured
                   for the current Project.
@@ -438,6 +479,42 @@ spec:
               id:
                 description: The ID of the Atlas Project
                 type: string
+              networkPeers:
+                description: The list of network peers that are configured for current
+                  project
+                items:
+                  properties:
+                    connectionId:
+                      type: string
+                    errorMessage:
+                      type: string
+                    errorState:
+                      type: string
+                    errorStateName:
+                      type: string
+                    id:
+                      description: Unique identifier for NetworkPeer
+                      type: string
+                    name:
+                      type: string
+                    providerName:
+                      description: Cloud provider for which you want to retrieve a
+                        network peer
+                      type: string
+                    region:
+                      description: Region for which you want to create the network
+                        peer
+                      type: string
+                    status:
+                      type: string
+                    statusName:
+                      type: string
+                  required:
+                  - id
+                  - providerName
+                  - region
+                  type: object
+                type: array
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator

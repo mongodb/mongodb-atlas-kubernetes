@@ -160,6 +160,10 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 					setCondition(ctx, status.PrivateEndpointReadyType, result)
 					return result.ReconcileResult(), nil
 				}
+				if result = DeleteAllNetworkPeers(context, projectID, ctx.Client.Peers, ctx.Log); !result.IsOk() {
+					setCondition(ctx, status.NetworkPeerReadyType, result)
+					return result.ReconcileResult(), nil
+				}
 
 				if err = r.deleteAtlasProject(context, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
@@ -192,6 +196,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
+
+	if result = ensureNetworkPeers(ctx, projectID, project); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result.ReconcileResult(), nil
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
 		logIfWarning(ctx, result)
