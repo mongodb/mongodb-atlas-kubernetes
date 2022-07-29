@@ -29,7 +29,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
-		advancedDeployment, err = advancedDeploymentSpec.AdvancedDeployment()
+		advancedDeployment, err = advancedDeploymentSpec.ToAtlas()
 		if err != nil {
 			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -59,8 +59,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	specDeployment := *deployment.Spec.AdvancedDeploymentSpec
-	atlasDeployment, err := AdvancedDeploymentFromAtlas(*atlasDeploymentAsAtlas)
+	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -82,7 +81,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	deploymentAsAtlas, err := specDeployment.AdvancedDeployment()
+	deploymentAsAtlas, err := cleanupTheSpec(specDeployment).ToAtlas()
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -95,40 +94,37 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-// func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
-// 	deployment.ID = ""
-// 	deployment.GroupID = ""
-// 	deployment.MongoDBVersion = ""
-// 	deployment.CreateDate = ""
-// 	deployment.StateName = ""
-// 	deployment.ConnectionStrings = nil
-// 	for i := range deployment.ReplicationSpecs {
-// 		deployment.ReplicationSpecs[i].ID = ""
-// 	}
-// 	return deployment
-// }
+func cleanupTheSpec(deployment mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
+	deployment.MongoDBVersion = ""
+	return &deployment
+}
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
-func MergedAdvancedDeployment(advancedDeployment mongodbatlas.AdvancedCluster, spec mdbv1.AtlasDeploymentSpec) (mongodbatlas.AdvancedCluster, error) {
-	result := mongodbatlas.AdvancedCluster{}
-	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
-		return result, err
+func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment mdbv1.AdvancedDeploymentSpec) (mergedDeployment mdbv1.AdvancedDeploymentSpec, atlasDeployment mdbv1.AdvancedDeploymentSpec, err error) {
+	atlasDeployment, err = AdvancedDeploymentFromAtlas(atlasDeploymentAsAtlas)
+	if err != nil {
+		return
 	}
 
-	if err := compat.JSONCopy(&result, spec.AdvancedDeploymentSpec); err != nil {
-		return result, err
+	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
+	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
+		return
 	}
 
-	for i, replicationSpec := range advancedDeployment.ReplicationSpecs {
+	if err = compat.JSONCopy(&mergedDeployment, specDeployment); err != nil {
+		return
+	}
+
+	for i, replicationSpec := range atlasDeployment.ReplicationSpecs {
 		for k, v := range replicationSpec.RegionConfigs {
 			// the response does not return backing provider names in some situations.
 			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
 			if v.BackingProviderName == "" {
-				result.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
+				mergedDeployment.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
 			}
 		}
 	}
-	return result, nil
+	return
 }
 
 func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {

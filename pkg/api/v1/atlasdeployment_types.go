@@ -173,8 +173,8 @@ type ServerlessSpec struct {
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 }
 
-// AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.
-func (s *AdvancedDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
+// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
+func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
 	result := &mongodbatlas.AdvancedCluster{}
 	err := compat.JSONCopy(result, s)
 	return result, err

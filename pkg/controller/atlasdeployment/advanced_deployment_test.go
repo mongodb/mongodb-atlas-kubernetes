@@ -34,7 +34,7 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 			},
 		}
 
-		merged, err := MergedAdvancedDeployment(advancedCluster, defaultAtlas.Spec)
+		merged, _, err := MergedAdvancedDeployment(advancedCluster, *defaultAtlas.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
 		assert.Empty(t, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
@@ -56,7 +56,7 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 			},
 		}
 
-		merged, err := MergedAdvancedDeployment(advancedCluster, defaultAtlas.Spec)
+		merged, _, err := MergedAdvancedDeployment(advancedCluster, *defaultAtlas.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
 		assert.Equal(t, "AWS", merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})

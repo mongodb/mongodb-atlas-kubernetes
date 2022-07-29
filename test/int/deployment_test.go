@@ -193,16 +193,16 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
 			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
-			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			atlasDeploymentConverted, err := atlasdeployment.AdvancedDeploymentFromAtlas(*atlasDeployment)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, specDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), specDeployment, atlasDeploymentConverted)).To(BeTrue())
+			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)).To(BeTrue())
 
 			for _, check := range additionalChecks {
-				check(atlasDeployment)
+				check(atlasDeploymentAsAtlas)
 			}
 		})
 	}
