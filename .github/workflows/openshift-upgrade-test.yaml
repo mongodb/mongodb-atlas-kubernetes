@@ -46,6 +46,9 @@ jobs:
           opm version
           oc version
 
+      - name: Login to registry
+        run: docker login -u "${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" quay.io
+
       - name: Run openshift upgrade test
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
