@@ -42,3 +42,10 @@ func FromAtlas(peer mongodbatlas.Peer, providerName provider.ProviderName, vpcNa
 		Name:           vpcName, //TODO: is it unique?
 	}
 }
+
+func (in *AtlasNetworkPeer) GetStatus() string {
+	if in.StatusName == "" {
+		return in.Status
+	}
+	return in.StatusName
+}

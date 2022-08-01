@@ -8,8 +8,6 @@ import (
 )
 
 type NetworkPeer struct {
-	// +optional
-	ID string `json:"id"`
 	//AccepterRegionName is Atlas region where the container resides.
 	// +optional
 	AccepterRegionName string `json:"accepterRegionName"`

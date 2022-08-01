@@ -288,8 +288,6 @@ spec:
                       type: string
                     gcpProjectId:
                       type: string
-                    id:
-                      type: string
                     networkName:
                       type: string
                     providerName:

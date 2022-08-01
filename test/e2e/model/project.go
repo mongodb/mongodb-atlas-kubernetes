@@ -70,6 +70,11 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 	return p
 }
 
+func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
+	p.Spec.NetworkPeers = append(p.Spec.NetworkPeers, peer)
+	return p
+}
+
 func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
 	p.Spec.Integrations = append(p.Spec.Integrations, project.Integration(spec))
 	return p

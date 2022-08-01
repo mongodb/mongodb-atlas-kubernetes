@@ -73,6 +73,7 @@ jobs:
               "integration-ns",
               "x509auth",
               "long-run",
+              "networkpeering",
           ]
         include:
           - k8s: "latest-openshift"

@@ -162,13 +162,16 @@ func createNetworkPeers(context context.Context, mongoClient mongodbatlas.Client
 
 		atlasPeer, err := createNetworkPeer(context, groupID, mongoClient.Peers, peer, logger)
 		if err != nil {
-			logger.Errorf("failed to create network peer %s: %v", peer.ID, err)
+			logger.Errorf("failed to create network peer: %v", err)
 			newPeerStatuses = append(newPeerStatuses,
-				failedPeerStatus(fmt.Errorf("failed to create network peer %s: %w", peer.ID, err).Error(), peer))
+				failedPeerStatus(fmt.Errorf("failed to create network peer: %w", err).Error(), peer))
 			continue
 		}
 		if atlasPeer != nil {
 			vpc := formVPC(*atlasPeer)
+			if atlasPeer.AccepterRegionName == "" {
+				atlasPeer.AccepterRegionName = peer.AccepterRegionName
+			}
 			newPeerStatuses = append(newPeerStatuses, status.FromAtlas(*atlasPeer, peer.ProviderName, vpc))
 		}
 	}
@@ -219,6 +222,7 @@ func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPe
 				logger.Debugf("peer %v is equal to expected peer %v", existedPeer, expectedPeer)
 				//expectedPeer.ID = existedPeer.ID
 				existedPeer.ProviderName = string(expectedPeer.ProviderName)
+				existedPeer.AccepterRegionName = expectedPeer.AccepterRegionName
 				diff.PeersToUpdate = append(diff.PeersToUpdate, existedPeer)
 				peersToUpdate = append(peersToUpdate, expectedPeer)
 				needToDelete = false
