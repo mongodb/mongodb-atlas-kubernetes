@@ -187,6 +187,8 @@ spec:
                                 type: string
                             type: object
                           type: array
+                        zoneName:
+                          type: string
                       type: object
                     type: array
                   rootCertType:
