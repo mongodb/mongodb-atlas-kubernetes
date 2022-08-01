@@ -96,11 +96,7 @@ func (p *AProject) UpdatePrivateLinkID(test v1.PrivateEndpoint) *AProject {
 
 func (p *AProject) GetPrivateIDByProviderRegion(statusItem status.ProjectPrivateEndpoint) string {
 	if statusItem.Provider == provider.ProviderAWS {
-		for i, peItem := range p.Spec.PrivateEndpoints {
-			if (peItem.Provider == statusItem.Provider) && (peItem.Region == statusItem.Region) {
-				return p.Spec.PrivateEndpoints[i].ID
-			}
-		}
+		return statusItem.InterfaceEndpointID
 	}
 	return statusItem.ID
 }
