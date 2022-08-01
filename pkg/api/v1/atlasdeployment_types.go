@@ -162,6 +162,13 @@ type AdvancedDeploymentSpec struct {
 	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
 }
 
+// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
+func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
+}
+
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
 type ServerlessSpec struct {
 	// Name of the serverless deployment as it appears in Atlas.
@@ -171,13 +178,6 @@ type ServerlessSpec struct {
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
-}
-
-// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
-func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
@@ -434,13 +434,6 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
 	err := compat.JSONCopy(result, *spec.DeploymentSpec)
-	return result, err
-}
-
-// AdvancedDeployment converts the Spec to native Atlas client format.
-func (spec *AtlasDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	err := compat.JSONCopy(result, *spec.AdvancedDeploymentSpec)
 	return result, err
 }
 
