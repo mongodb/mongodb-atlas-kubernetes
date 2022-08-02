@@ -146,11 +146,8 @@ type AdvancedDeploymentSpec struct {
 	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
 	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
 	ClusterType              string             `json:"clusterType,omitempty"`
-	ConnectionStrings        *ConnectionStrings `json:"connectionStrings,omitempty"`
 	DiskSizeGB               *int               `json:"diskSizeGB,omitempty"`
 	EncryptionAtRestProvider string             `json:"encryptionAtRestProvider,omitempty"`
-	GroupID                  string             `json:"groupId,omitempty"`
-	ID                       string             `json:"id,omitempty"`
 	Labels                   []common.LabelSpec `json:"labels,omitempty"`
 	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
 	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
@@ -161,11 +158,16 @@ type AdvancedDeploymentSpec struct {
 	Name                 string                     `json:"name,omitempty"`
 	Paused               *bool                      `json:"paused,omitempty"`
 	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
-	StateName            string                     `json:"stateName,omitempty"`
 	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	CreateDate           string                     `json:"createDate,omitempty"`
 	RootCertType         string                     `json:"rootCertType,omitempty"`
 	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
+}
+
+// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
+func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
 }
 
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
@@ -177,13 +179,6 @@ type ServerlessSpec struct {
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
-}
-
-// AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.
-func (s *AdvancedDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
@@ -223,7 +218,6 @@ type EndpointSpec struct {
 
 type AdvancedReplicationSpec struct {
 	NumShards     int                     `json:"numShards,omitempty"`
-	ID            string                  `json:"id,omitempty"`
 	ZoneName      string                  `json:"zoneName,omitempty"`
 	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
 }
@@ -546,10 +540,10 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 }
 
 func NewAwsAdvancedDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
-	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
+	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1", 3)
 }
 
-func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasDeployment {
+func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, providerName, regionName string, nodeCount int) *AtlasDeployment {
 	priority := 7
 	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -567,10 +561,10 @@ func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backin
 								Priority: &priority,
 								ElectableSpecs: &Specs{
 									InstanceSize: instanceSize,
+									NodeCount:    &nodeCount,
 								},
-								BackingProviderName: backingProviderName,
-								ProviderName:        "TENANT",
-								RegionName:          regionName,
+								ProviderName: providerName,
+								RegionName:   regionName,
 							},
 						},
 					}},

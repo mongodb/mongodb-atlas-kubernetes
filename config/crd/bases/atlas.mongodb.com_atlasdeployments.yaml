@@ -61,66 +61,9 @@ spec:
                     type: object
                   clusterType:
                     type: string
-                  connectionStrings:
-                    description: ConnectionStrings configuration for applications
-                      use to connect to this deployment.
-                    properties:
-                      awsPrivateLink:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      awsPrivateLinkSrv:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      private:
-                        type: string
-                      privateEndpoint:
-                        items:
-                          description: PrivateEndpointSpec connection strings. Each
-                            object describes the connection strings you can use to
-                            connect to this deployment through a private endpoint.
-                            Atlas returns this parameter only if you deployed a private
-                            endpoint to all regions to which you deployed this deployment's
-                            nodes.
-                          properties:
-                            connectionString:
-                              type: string
-                            endpoints:
-                              items:
-                                description: EndpointSpec through which you connect
-                                  to Atlas.
-                                properties:
-                                  endpointId:
-                                    type: string
-                                  providerName:
-                                    type: string
-                                  region:
-                                    type: string
-                                type: object
-                              type: array
-                            srvConnectionString:
-                              type: string
-                            type:
-                              type: string
-                          type: object
-                        type: array
-                      privateSrv:
-                        type: string
-                      standard:
-                        type: string
-                      standardSrv:
-                        type: string
-                    type: object
-                  createDate:
-                    type: string
                   diskSizeGB:
                     type: integer
                   encryptionAtRestProvider:
-                    type: string
-                  groupId:
-                    type: string
-                  id:
                     type: string
                   labels:
                     items:
@@ -154,8 +97,6 @@ spec:
                   replicationSpecs:
                     items:
                       properties:
-                        id:
-                          type: string
                         numShards:
                           type: integer
                         regionConfigs:
@@ -254,8 +195,6 @@ spec:
                       type: object
                     type: array
                   rootCertType:
-                    type: string
-                  stateName:
                     type: string
                   versionReleaseSystem:
                     type: string
