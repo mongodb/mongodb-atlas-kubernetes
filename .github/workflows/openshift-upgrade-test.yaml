@@ -46,12 +46,15 @@ jobs:
           opm version
           oc version
 
+      - name: Login to registry
+        run: docker login -u "${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
+
       - name: Run openshift upgrade test
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
           OC_TOKEN: ${{ secrets.TOKEN }}
-          CLUSTER_API_URL: ${{ secret.OPENSHIFT_SERVER_API }}
+          CLUSTER_API_URL: ${{ secrets.OPENSHIFT_SERVER_API }}
           LATEST_RELEASE_REGISTRY: ${{ github.event.inputs.previousReleaseRegistry }}
-          REGISTRY: ${{ secret.DOCKER_REGISTRY }}
+          REGISTRY: ${{ github.event.inputs.registryForNewRelease }}
 
 
