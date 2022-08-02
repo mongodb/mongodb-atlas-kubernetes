@@ -164,11 +164,15 @@ func (a atlasPE) Identifier() interface{} {
 }
 
 func (a atlasPE) InterfaceEndpointID() string {
-	if len(a.InterfaceEndpoints) == 0 {
-		return ""
+	if len(a.InterfaceEndpoints) != 0 {
+		return a.InterfaceEndpoints[0]
 	}
 
-	return a.InterfaceEndpoints[0]
+	if len(a.PrivateEndpoints) != 0 {
+		return a.PrivateEndpoints[0]
+	}
+
+	return ""
 }
 
 func (a atlasPE) EndpointGroupName() string {
