@@ -6,7 +6,7 @@ name: Create Release.
 
 on:
   pull_request:
-    types: [closed]
+    types: [ closed ]
   workflow_dispatch:
     inputs:
       version:
@@ -92,6 +92,11 @@ jobs:
           tags: ${{ steps.tag.outputs.version }}
           labels: version=${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
+
+      - name: Certify image and create release for Certified Operators repo
+        uses: ./.github/actions/certify-openshift-images
+        with:
+
 
       - name: Create Release
         id: create_release
