@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -27,75 +26,21 @@ import (
 
 // TODO for each paginated API call, make sure to retrieve every items
 
-// TODO delete this and retrieve config from file
-func generateExampleConfig() atlasImportConfig {
-	// deploymentIDS := []string{"deploymentID1", "deploymentID2"}
-
-	exampleConfig := atlasImportConfig{
-		orgID:            "62a9dbe9fb598f6e67d540c5",
-		publicKey:        "SECRET",
-		privateKey:       "SECRET",
-		importNamespace:  "test-namespace",
-		atlasDomain:      "https://cloud-qa.mongodb.com/",
-		importAll:        true,
-		importedProjects: nil,
-		//projectsToImport: []importedProject{
-		//	{
-		//		id:          "projectID1",
-		//		importAll:   false,
-		//		deployments: deploymentIDS,
-		//	},
-		//	{
-		//		id:          "projectID2",
-		//		importAll:   false,
-		//		deployments: deploymentIDS,
-		//	},
-		//	{
-		//		id:          "projectID3",
-		//		importAll:   true,
-		//		deployments: nil,
-		//	},
-		// },
-	}
-
-	return exampleConfig
+// AtlasImportConfig contains the full import configuration
+type AtlasImportConfig struct {
+	OrgID            string            `yaml:"OrgID"`
+	PublicKey        string            `yaml:"PublicKey"`
+	PrivateKey       string            `yaml:"PrivateKey"`
+	AtlasDomain      string            `yaml:"AtlasDomain"`
+	ImportNamespace  string            `yaml:"ImportNamespace"`
+	ImportAll        bool              `yaml:"ImportAll"`
+	ImportedProjects []ImportedProject `yaml:"ImportedProjects"`
 }
 
-func main() {
-	// TODO use right logger
-	log, _ = zap.NewDevelopment()
-	zap.ReplaceGlobals(log)
-	log.Debug("Beginning import procedure")
-	exampleConfig := generateExampleConfig()
-
-	argsWithoutProg := os.Args[1:]
-	publicK := argsWithoutProg[0]
-	privateK := argsWithoutProg[1]
-
-	exampleConfig.publicKey = publicK
-	exampleConfig.privateKey = privateK
-
-	err := runImports(exampleConfig)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-}
-
-// Import configuration data structures
-type atlasImportConfig struct {
-	orgID            string
-	publicKey        string
-	privateKey       string
-	atlasDomain      string
-	importNamespace  string
-	importAll        bool
-	importedProjects []importedProject
-}
-
-type importedProject struct {
-	id string
-	// importAll   bool
-	// deployments []string
+type ImportedProject struct {
+	ID          string   `yaml:"Id"`
+	ImportAll   bool     `yaml:"ImportAll"`
+	Deployments []string `yaml:"Deployments"`
 }
 
 // Global variables
@@ -106,19 +51,20 @@ var maxListOptions = &mongodbatlas.ListOptions{
 	IncludeCount: false,
 }
 var log *zap.Logger
+var kubeAPIVersion = "v1"
 
 // setUpAtlasClient instantiate the client to interact with the Atlas API
 // Credentials are provided in the import configuration
-func setUpAtlasClient(config *atlasImportConfig) (*mongodbatlas.Client, error) {
+func setUpAtlasClient(config *AtlasImportConfig) (*mongodbatlas.Client, error) {
 	log.Debug("Creating AtlasClient")
 	credentials := atlas.Connection{
-		OrgID:      config.orgID,
-		PublicKey:  config.publicKey,
-		PrivateKey: config.privateKey,
+		OrgID:      config.OrgID,
+		PublicKey:  config.PublicKey,
+		PrivateKey: config.PrivateKey,
 	}
 	atlasDomain := "https://cloud.mongodb.com/"
-	if config.atlasDomain != "" {
-		atlasDomain = config.atlasDomain
+	if config.AtlasDomain != "" {
+		atlasDomain = config.AtlasDomain
 	}
 	atlasClient, err := atlas.Client(atlasDomain, credentials, log.Sugar())
 	return &atlasClient, err
@@ -172,7 +118,11 @@ func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
 	return nil
 }
 
-func fullSetUp(importConfig atlasImportConfig) (*mongodbatlas.Client, client.Client, error) {
+func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Client, error) {
+	// TODO use right logger
+	log, _ = zap.NewDevelopment()
+	zap.ReplaceGlobals(log)
+
 	atlasClient, err := setUpAtlasClient(&importConfig)
 	if err != nil {
 		return nil, nil, err
@@ -184,14 +134,14 @@ func fullSetUp(importConfig atlasImportConfig) (*mongodbatlas.Client, client.Cli
 	}
 
 	// Verifying that import namespace exists
-	if err = ensureNamespaceExists(kubeClient, importConfig.importNamespace); err != nil {
+	if err = ensureNamespaceExists(kubeClient, importConfig.ImportNamespace); err != nil {
 		return nil, nil, err
 	}
 
 	return atlasClient, kubeClient, nil
 }
 
-func runImports(importConfig atlasImportConfig) error {
+func runImports(importConfig AtlasImportConfig) error {
 	atlasClient, kubeClient, err := fullSetUp(importConfig)
 	if err != nil {
 		return err
@@ -200,10 +150,10 @@ func runImports(importConfig atlasImportConfig) error {
 	log.Debug("Importing projects")
 	// Import all project if flag is set, otherwise import the ones specified by User
 	var projects []*mongodbatlas.Project
-	if importConfig.importAll {
+	if importConfig.ImportAll {
 		projects, err = getAllProjects(atlasClient)
 	} else {
-		projects, err = getListedProjects(atlasClient, importConfig.importedProjects)
+		projects, err = getListedProjects(atlasClient, importConfig.ImportedProjects)
 	}
 	if err != nil {
 		return err
@@ -222,7 +172,7 @@ func runImports(importConfig atlasImportConfig) error {
 
 		projectRef := &common.ResourceRefNamespaced{
 			Name:      kubernetesProject.ObjectMeta.Name,
-			Namespace: importConfig.importNamespace,
+			Namespace: importConfig.ImportNamespace,
 		}
 
 		// Retrieve and instantiate associated db users
@@ -237,13 +187,15 @@ func runImports(importConfig atlasImportConfig) error {
 			instantiateKubernetesObject(kubeClient, kubernetesDatabaseUser)
 		}
 
-		// Retrieve and instantiate associated deployments
+		//TODO retrieve only list of Deployments
+
+		// Retrieve and instantiate associated Deployments
 		kubernetesDeployments, err := getAndConvertDeployments(atlasProject, atlasClient, importConfig, projectRef)
 		if err != nil {
 			return err
 		}
 
-		log.Debug("Instantiating deployments and their backup policies")
+		log.Debug("Instantiating Deployments and their backup policies")
 		for _, kubernetesDeployment := range kubernetesDeployments {
 			deploymentName, err := getDeploymentName(kubernetesDeployment)
 			if err != nil {
@@ -256,7 +208,7 @@ func runImports(importConfig atlasImportConfig) error {
 			// Linking deployment to its schedule (policy is already linked to the schedule)
 			kubernetesDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 				Name:      schedule.Name,
-				Namespace: importConfig.importNamespace,
+				Namespace: importConfig.ImportNamespace,
 			}
 			instantiateKubernetesObject(kubeClient, schedule)
 			instantiateKubernetesObject(kubeClient, policy)
@@ -267,6 +219,8 @@ func runImports(importConfig atlasImportConfig) error {
 }
 
 // ======================= ATLAS DEPLOYMENTS =======================
+
+//TODO import advanced only
 
 func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	switch {
@@ -281,15 +235,42 @@ func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	}
 }
 
+//func getAllPaginatedResources[resource any](paginatedCall func(options mongodbatlas.ListOptions) ([]resource, mongodbatlas.Response)) []resource {
+//	maxItems := 500
+//	listOptions := mongodbatlas.ListOptions{
+//		PageNum:      0,
+//		ItemsPerPage: maxItems,
+//		IncludeCount: true,
+//	}
+//	shouldContinue := true
+//	resources := make([]resource, 0)
+//	for currPageNum := 1; shouldContinue; currPageNum++ {
+//		listOptions.PageNum = currPageNum
+//		newResources, res := paginatedCall(listOptions)
+//		resources = append(resources, newResources...)
+//		if res.IsLastPage() {
+//			shouldContinue = false
+//		}
+//	}
+//	return resources
+//}
+
 func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
-	importConfig atlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
+	importConfig AtlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
 	/*
-		Atlas separates deployments in 3 types : normal, advanced and serverless
+		Atlas separates Deployments in 3 types : normal, advanced and serverless
 		Normal and Serverless are returned as type "Cluster", Advanced is returned as "AdvancedCluster"
-		But the API call for returning normal clusters returns the advanced ones as well, and the API call for
-		advanced clusters returns the normal ones
+		But the API call for advanced clusters returns the normal ones as well
+		Under the hood, they are the same thing in Atlas, normal is a legacy version which doesn't
+		support multi-cloud Deployments
 	*/
 	atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
+	//atlasDeployments := getAllPaginatedResources(
+	//	func(options mongodbatlas.ListOptions) ([]resource, mongodbatlas.Response) {
+	//		atlasDeployments, res, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, options)
+	//		return atlasDeployments, res
+	//	}
+	//)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +285,6 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 
 	// Get advanced, serverless and normal from Atlas
 	// Normal and serverless are both of type cluster in Atlas API, but are returned by different API calls
-	// Advanced needs to be mapped to a different set of specs
 	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments.Results)+len(atlasServerlessDeployments.Results))
 
 	normalDeploymentSet := make(map[string]bool)
@@ -321,8 +301,10 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	}
 
 	for i := range atlasAdvancedDeployments.Results {
-		// If a deployment has only one replication spec and its provider is "tenant", then it is a normal deployment.
-		isNormal := normalDeploymentSet[atlasAdvancedDeployments.Results[i].Name]
+		isNormal, ok := normalDeploymentSet[atlasAdvancedDeployments.Results[i].Name]
+		if !ok {
+			continue
+		}
 		println("advanced " + atlasAdvancedDeployments.Results[i].Name)
 		if isNormal {
 			println("skipped because normal")
@@ -354,18 +336,18 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 }
 
 func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
-	advancedSpec *mdbv1.AdvancedDeploymentSpec, serverlessSpec *mdbv1.ServerlessSpec, importConfig atlasImportConfig,
+	advancedSpec *mdbv1.AdvancedDeploymentSpec, serverlessSpec *mdbv1.ServerlessSpec, importConfig AtlasImportConfig,
 	deploymentName string, projectRef *common.ResourceRefNamespaced) *mdbv1.AtlasDeployment {
 	kubernetesDeployment := mdbv1.AtlasDeployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AtlasDeployment",
-			APIVersion: "v1",
+			APIVersion: kubeAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			// Deployment names in Atlas are not case-sensitive, so we cannot have collisions even when simplifying the
 			// name with toLowercaseAlphaNumeric
-			Name:      projectRef.Name + "-" + toLowercaseAlphaNumeric(deploymentName),
-			Namespace: importConfig.importNamespace,
+			Name:      stringNameConcatenation(projectRef.Name, toLowercaseAlphaNumeric(deploymentName)),
+			Namespace: importConfig.ImportNamespace,
 		},
 		Spec: mdbv1.AtlasDeploymentSpec{
 			Project:                *projectRef,
@@ -382,7 +364,7 @@ func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 }
 
 func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, deploymentName string,
-	importConfig atlasImportConfig) (*mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, error) {
+	importConfig AtlasImportConfig) (*mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, error) {
 	atlasBackupPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(backgroundCtx, projectID, deploymentName)
 	if err != nil {
 		return nil, nil, err
@@ -393,18 +375,18 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 		return nil, nil, err
 	}
 
-	prefix := toLowercaseAlphaNumeric(projectID) + "-" + toLowercaseAlphaNumeric(deploymentName)
-	backupScheduleName := prefix + "-" + "backup-schedule"
-	backupPolicyName := prefix + "-" + "backup-policy"
+	prefix := stringNameConcatenation(toLowercaseAlphaNumeric(projectID), toLowercaseAlphaNumeric(deploymentName))
+	backupScheduleName := stringNameConcatenation(prefix, "backup-schedule")
+	backupPolicyName := stringNameConcatenation(prefix, "backup-policy")
 
 	backupPolicy := &mdbv1.AtlasBackupPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AtlasBackupPolicy",
-			APIVersion: "v1",
+			APIVersion: kubeAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      backupPolicyName,
-			Namespace: importConfig.importNamespace,
+			Namespace: importConfig.ImportNamespace,
 		},
 		Spec:   *policySpec,
 		Status: mdbv1.AtlasBackupPolicyStatus{},
@@ -413,11 +395,11 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 	backupSchedule := &mdbv1.AtlasBackupSchedule{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AtlasBackupSchedule",
-			APIVersion: "v1",
+			APIVersion: kubeAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      backupScheduleName,
-			Namespace: importConfig.importNamespace,
+			Namespace: importConfig.ImportNamespace,
 		},
 		Spec:   *scheduleSpec,
 		Status: mdbv1.AtlasBackupScheduleStatus{},
@@ -425,7 +407,7 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 
 	backupSchedule.Spec.PolicyRef = common.ResourceRefNamespaced{
 		Name:      backupPolicyName,
-		Namespace: importConfig.importNamespace,
+		Namespace: importConfig.ImportNamespace,
 	}
 
 	return backupSchedule, backupPolicy, nil
@@ -443,10 +425,10 @@ func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, 
 	return projects, nil
 }
 
-func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []importedProject) ([]*mongodbatlas.Project, error) {
+func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []ImportedProject) ([]*mongodbatlas.Project, error) {
 	projects := make([]*mongodbatlas.Project, 0, len(importConfig))
 	for _, importProject := range importConfig {
-		atlasProject, _, err := atlasClient.Projects.GetOneProject(backgroundCtx, importProject.id)
+		atlasProject, _, err := atlasClient.Projects.GetOneProject(backgroundCtx, importProject.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -455,7 +437,7 @@ func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []imported
 	return projects, nil
 }
 
-func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig atlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
+func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig AtlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
 	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
@@ -466,7 +448,7 @@ func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongo
 		convertedUser, err := mdbv1.AtlasDatabaseUserFromAtlas(&atlasDatabaseUsers[i], nil)
 		// Username should already be alphanumeric according to Atlas API
 		convertedUser.ObjectMeta.Name = toLowercaseAlphaNumeric(convertedUser.Spec.Username)
-		convertedUser.Namespace = importConfig.importNamespace
+		convertedUser.Namespace = importConfig.ImportNamespace
 		if err != nil {
 			return nil, err
 		}
@@ -487,27 +469,39 @@ func getWindow(atlasClient *mongodbatlas.Client, projectID string) (*project.Mai
 
 // TODO refactor 3 methods below with Generics
 
-// Retrieve the IpAccessLists associated to the project ID and convert them to kubernetes type.
-func getAccessLists(atlasClient *mongodbatlas.Client, projectID string) ([]project.IPAccessList, error) {
-	atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, maxListOptions)
+func getAndConvertAssociatedResource[kubernetesResource interface{}, atlasResource interface{}](
+	projectID string, conversionMethod func(*atlasResource) (*kubernetesResource, error),
+	getMethod func(context.Context, string) ([]atlasResource, error)) (
+	[]kubernetesResource, error) {
+	atlasResourceList, err := getMethod(backgroundCtx, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	kubernetesAccessLists := make([]project.IPAccessList, 0, len(atlasAccessLists.Results))
-	for i := range atlasAccessLists.Results {
-		convertedList, err := project.IPAccessListFromAtlas(&atlasAccessLists.Results[i])
+	resourceList := make([]kubernetesResource, 0, len(atlasResourceList))
+	for i := range atlasResourceList {
+		convertedResource, err := conversionMethod(&atlasResourceList[i])
 		if err != nil {
 			return nil, err
 		}
-		kubernetesAccessLists = append(kubernetesAccessLists, *convertedList)
+		resourceList = append(resourceList, *convertedResource)
 	}
 
-	return kubernetesAccessLists, nil
+	return resourceList, nil
+}
+
+// Retrieve the IpAccessLists associated to the project ID and convert them to kubernetes type.
+func getAccessLists(atlasClient *mongodbatlas.Client, projectID string) ([]project.IPAccessList, error) {
+	getMethod := func(context.Context, string) ([]mongodbatlas.ProjectIPAccessList, error) {
+		atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, maxListOptions)
+		return atlasAccessLists.Results, err
+	}
+	ipAccessList, err := getAndConvertAssociatedResource[project.IPAccessList, mongodbatlas.ProjectIPAccessList](projectID, project.IPAccessListFromAtlas, getMethod)
+	return ipAccessList, err
 }
 
 // Retrieve the Integrations associated to the project ID and convert them to kubernetes type.
-func getIntegrations(atlasClient *mongodbatlas.Client, projectID string, kubeClient client.Client, importConfig atlasImportConfig) ([]project.Integration, error) {
+func getIntegrations(atlasClient *mongodbatlas.Client, projectID string, kubeClient client.Client, importConfig AtlasImportConfig) ([]project.Integration, error) {
 	atlasIntegrations, _, err := atlasClient.Integrations.List(backgroundCtx, projectID)
 	if err != nil {
 		return nil, err
@@ -515,7 +509,7 @@ func getIntegrations(atlasClient *mongodbatlas.Client, projectID string, kubeCli
 
 	kubernetesIntegrations := make([]project.Integration, 0, len(atlasIntegrations.Results))
 	for _, atlasIntegration := range atlasIntegrations.Results {
-		convertedIntegration, err := project.IntegrationFromAtlas(atlasIntegration, kubeClient, importConfig.importNamespace, projectID)
+		convertedIntegration, err := project.IntegrationFromAtlas(atlasIntegration, kubeClient, importConfig.ImportNamespace, projectID)
 		if err != nil {
 			return nil, err
 		}
@@ -547,7 +541,7 @@ func getPrivateEndpoints(atlasClient *mongodbatlas.Client, projectID string) ([]
 	return kubernetesPrivateEndpoints, nil
 }
 
-func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, kubeClient client.Client, importConfig atlasImportConfig) (*mdbv1.AtlasProject, error) {
+func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, kubeClient client.Client, importConfig AtlasImportConfig) (*mdbv1.AtlasProject, error) {
 	kubernetesWindow, err := getWindow(atlasClient, atlasProject.ID)
 	if err != nil {
 		return nil, err
@@ -568,17 +562,17 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 	kubernetesProject := &mdbv1.AtlasProject{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AtlasProject",
-			APIVersion: "v1",
+			APIVersion: kubeAPIVersion,
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
 			// Concatenate the "sanitized" human-readable name with project ID to guarantee the name to be unique
-			Name:      toLowercaseAlphaNumeric(atlasProject.Name) + "-" + atlasProject.ID,
-			Namespace: importConfig.importNamespace,
+			Name:      stringNameConcatenation(toLowercaseAlphaNumeric(atlasProject.Name), atlasProject.ID),
+			Namespace: importConfig.ImportNamespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
 			Name:             atlasProject.Name,
-			ConnectionSecret: nil, // Create a secret containing the three connection fields from atlasImportConfig and link it, as for integrations
+			ConnectionSecret: nil, // Create a secret containing the three connection fields from AtlasImportConfig and link it, as for integrations
 			// TODO maybe better to just not specify connection secret (the operator's default is used in that case)
 			ProjectIPAccessList:       kubernetesAccessLists,
 			MaintenanceWindow:         *kubernetesWindow,
@@ -617,4 +611,9 @@ func instantiateKubernetesObject(kubeClient client.Client, object client.Object)
 	if err := kubeClient.Create(backgroundCtx, object); err != nil {
 		log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster")
 	}
+}
+
+// Defines how we concatenate different fields to generate unique resource names
+func stringNameConcatenation(str1 string, str2 string) string {
+	return str1 + "-" + str2
 }
