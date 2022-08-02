@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
@@ -18,6 +18,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.5
 	go.mongodb.org/atlas v0.16.0
 	go.mongodb.org/mongo-driver v1.8.3
@@ -61,6 +62,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
