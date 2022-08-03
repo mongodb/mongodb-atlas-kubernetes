@@ -145,7 +145,10 @@ controller-gen: ## Download controller-gen locally if necessary
 .PHONY: kustomize
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.0.1)
+	rm -f ./kustomize
+	wget "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -O kinstall.sh
+	chmod +x ./kinstall.sh && bash -c ./kinstall.sh && mv ./kustomize $GOBIN/kustomize
+	rm -f ./kinstall.sh
 
 # go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
