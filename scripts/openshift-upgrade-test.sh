@@ -63,7 +63,7 @@ try_until_success() {
   local timeout=$2
   local interval=${3:-0.2}
   local now
-  now="$(date +%s%3)"
+  now="$(date +%s)"
   local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     if $cmd ; then
@@ -71,7 +71,7 @@ try_until_success() {
       return 0
     fi
     sleep "$interval"
-    now=$(date +%s%3)
+    now=$(date +%s)
   done
   echo "Fail"
   return 1
@@ -83,7 +83,7 @@ try_until_text() {
   local timeout=$3
   local interval=${4:-1}
   local now
-  now="$(date +%s%3)"
+  now="$(date +%s)"
   local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     echo "Running ${cmd}"
@@ -94,7 +94,7 @@ try_until_text() {
         return 0
     fi
     sleep "$interval"
-    now=$(date +%s%3)
+    now=$(date +%s)
   done
   echo "Fail"
   return 1
