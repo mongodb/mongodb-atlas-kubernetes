@@ -48,8 +48,12 @@ jobs:
           tar xvf kustomize.tar.gz
           chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
 
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.2/operator-sdk_linux_amd64 -O operator-sdk -q
+          chmod +x operator-sdk && sudo mv oc /usr/local/bin/operator-sdk
+
           opm version
           oc version
+          operator-sdk version
 
       - name: Login to registry
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
