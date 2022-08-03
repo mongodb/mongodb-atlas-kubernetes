@@ -59,7 +59,7 @@ func failedPeerStatus(errMessage string, peer mdbv1.NetworkPeer) status.AtlasNet
 	return status.AtlasNetworkPeer{
 		Status:       StatusFailed,
 		ErrorMessage: errMessage,
-		Name:         vpc,
+		VPC:          vpc,
 	}
 }
 
@@ -96,10 +96,45 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 
 	peersStatus = createNetworkPeers(context, mongoClient, groupID, diff.PeersToCreate, logger)
 
-	for _, peerToUpdate := range diff.PeersToUpdate {
+	for _, peerToUpdate := range diff.PeersToUpdate { // TODO: move to a separate function
 		vpc := formVPC(peerToUpdate)
-		peersStatus = append(peersStatus, status.FromAtlas(peerToUpdate,
-			provider.ProviderName(peerToUpdate.ProviderName), vpc))
+		switch peerToUpdate.ProviderName {
+		case string(provider.ProviderGCP):
+			var container mongodbatlas.Container
+
+			if peerToUpdate.ContainerID != "" {
+				atlasContainer, _, err := mongoClient.Containers.Get(context, groupID, peerToUpdate.ContainerID)
+				if err != nil {
+					logger.Errorf("failed to get container for gcp status %s: %v", peerToUpdate.ContainerID, err)
+					return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+						"failed to get container for gcp status"), status.NetworkPeerReadyType
+				}
+				if atlasContainer != nil {
+					container = *atlasContainer
+				}
+			} else if peerToUpdate.AtlasCIDRBlock != "" {
+				list, _, err := mongoClient.Containers.List(context, groupID, &mongodbatlas.ContainersListOptions{
+					ProviderName: string(provider.ProviderGCP),
+				})
+				if err != nil {
+					logger.Errorf("failed to list containers for gcp status %v", err)
+					return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+						"failed to list containers for gcp status"), status.NetworkPeerReadyType
+				}
+				for _, cont := range list {
+					if cont.AtlasCIDRBlock == peerToUpdate.AtlasCIDRBlock {
+						container = cont
+						break
+					}
+				}
+			}
+
+			peersStatus = append(peersStatus, status.NewNetworkPeerStatus(peerToUpdate,
+				provider.ProviderName(peerToUpdate.ProviderName), vpc, container))
+		default:
+			peersStatus = append(peersStatus, status.NewNetworkPeerStatus(peerToUpdate,
+				provider.ProviderName(peerToUpdate.ProviderName), vpc, mongodbatlas.Container{}))
+		}
 	}
 
 	return ensurePeerStatus(peersStatus, logger)
@@ -121,7 +156,12 @@ func ensurePeerStatus(peersStatus []status.AtlasNetworkPeer, logger *zap.Sugared
 		switch peerStatus.ProviderName {
 		case provider.ProviderGCP:
 			if peerStatus.Status != StatusReady {
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.Name, peerStatus.Status)
+				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
+				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
+					status.NetworkPeerReadyType
+			}
+			if peerStatus.AtlasNetworkName == "" || peerStatus.AtlasGCPProjectID == "" {
+				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.Status)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					status.NetworkPeerReadyType
 			}
@@ -129,7 +169,7 @@ func ensurePeerStatus(peersStatus []status.AtlasNetworkPeer, logger *zap.Sugared
 			// TODO: check Azure network peer. status vs statusName
 		default:
 			if peerStatus.StatusName != StatusReady {
-				logger.Debugf("network peer %s is not ready .%s.", peerStatus.Name, peerStatus.StatusName)
+				logger.Debugf("network peer %s is not ready .%s.", peerStatus.VPC, peerStatus.StatusName)
 				return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "not all network peers are ready"),
 					status.NetworkPeerReadyType
 			}
@@ -172,7 +212,27 @@ func createNetworkPeers(context context.Context, mongoClient mongodbatlas.Client
 			if atlasPeer.AccepterRegionName == "" {
 				atlasPeer.AccepterRegionName = peer.AccepterRegionName
 			}
-			newPeerStatuses = append(newPeerStatuses, status.FromAtlas(*atlasPeer, peer.ProviderName, vpc))
+			switch peer.ProviderName {
+			case provider.ProviderGCP:
+				var container mongodbatlas.Container
+
+				atlasContainer, _, err := mongoClient.Containers.Get(context, groupID, peer.ContainerID)
+				if err != nil {
+					logger.Errorf("failed to get container for gcp status %s: %v", peer.ContainerID, err)
+					newPeerStatuses = append(newPeerStatuses,
+						failedPeerStatus(fmt.Errorf("failed to get container for gcp status %w", err).Error(), peer))
+					continue
+				}
+				if atlasContainer != nil {
+					container = *atlasContainer
+				}
+
+				newPeerStatuses = append(newPeerStatuses, status.NewNetworkPeerStatus(*atlasPeer, peer.ProviderName, vpc,
+					container))
+			default:
+				newPeerStatuses = append(newPeerStatuses, status.NewNetworkPeerStatus(*atlasPeer, peer.ProviderName, vpc,
+					mongodbatlas.Container{}))
+			}
 		}
 	}
 	return newPeerStatuses
@@ -223,6 +283,8 @@ func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPe
 				//expectedPeer.ID = existedPeer.ID
 				existedPeer.ProviderName = string(expectedPeer.ProviderName)
 				existedPeer.AccepterRegionName = expectedPeer.AccepterRegionName
+				existedPeer.ContainerID = expectedPeer.ContainerID
+				existedPeer.AtlasCIDRBlock = expectedPeer.AtlasCIDRBlock
 				diff.PeersToUpdate = append(diff.PeersToUpdate, existedPeer)
 				peersToUpdate = append(peersToUpdate, expectedPeer)
 				needToDelete = false
@@ -357,9 +419,11 @@ func createContainer(ctx context.Context, containerService mongodbatlas.Containe
 				return "", errList
 			}
 			for _, container := range list {
+				logger.Debugf("container %v", container)
+				logger.Debugf("peer atlascidr %s, container atlascidr %s", peer.AtlasCIDRBlock, container.AtlasCIDRBlock)
+				logger.Debugf("peer region %s, container region %s", peer.GetContainerRegion(), container.RegionName)
 				if container.AtlasCIDRBlock == peer.AtlasCIDRBlock &&
-					container.RegionName == containerRegionMatcher(peer.GetContainerRegion(), peer.ProviderName) &&
-					container.GCPProjectID == peer.GCPProjectID { //TODO: check if its work with azure
+					container.RegionName == containerRegionMatcher(peer.GetContainerRegion(), peer.ProviderName) { //TODO: check if its work with azure
 					return container.ID, nil
 				}
 			}
@@ -412,8 +476,8 @@ func validateInitNetworkPeer(peer mdbv1.NetworkPeer) error {
 		if peer.GCPProjectID == "" {
 			return fmt.Errorf("gcpProjectId is required for GCP")
 		}
-		if peer.AccepterRegionName == "" {
-			return fmt.Errorf("accepterRegionName is required for GCP")
+		if peer.NetworkName == "" {
+			return fmt.Errorf("networkName is required for GCP")
 		}
 		return nil
 	case provider.ProviderAzure:

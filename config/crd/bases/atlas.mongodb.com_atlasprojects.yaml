@@ -482,13 +482,21 @@ spec:
                   project
                 items:
                   properties:
+                    atlasGcpProjectId:
+                      type: string
+                    atlasNetworkName:
+                      type: string
                     connectionId:
+                      type: string
+                    containerId:
                       type: string
                     errorMessage:
                       type: string
                     errorState:
                       type: string
                     errorStateName:
+                      type: string
+                    gcpProjectId:
                       type: string
                     id:
                       description: Unique identifier for NetworkPeer

@@ -26,20 +26,32 @@ type AtlasNetworkPeer struct {
 
 	Status string `json:"status,omitempty"`
 
-	Name string `json:"name,omitempty"`
+	VPC string `json:"name,omitempty"`
+
+	GCPProjectID string `json:"gcpProjectId,omitempty"`
+
+	AtlasNetworkName string `json:"atlasNetworkName,omitempty"`
+
+	AtlasGCPProjectID string `json:"atlasGcpProjectId,omitempty"`
+
+	ContainerID string `json:"containerId,omitempty"`
 }
 
-func FromAtlas(peer mongodbatlas.Peer, providerName provider.ProviderName, vpcName string) AtlasNetworkPeer {
+func NewNetworkPeerStatus(atlasPeer mongodbatlas.Peer, providerName provider.ProviderName, vpcName string, container mongodbatlas.Container) AtlasNetworkPeer {
 	return AtlasNetworkPeer{
-		ID:             peer.ID,
-		ProviderName:   providerName,
-		Region:         peer.AccepterRegionName,
-		StatusName:     peer.StatusName,
-		ErrorState:     peer.ErrorState,
-		ErrorStateName: peer.ErrorStateName,
-		ConnectionID:   peer.ConnectionID,
-		Status:         peer.Status,
-		Name:           vpcName, //TODO: is it unique?
+		ID:                atlasPeer.ID,
+		ProviderName:      providerName,
+		Region:            atlasPeer.AccepterRegionName,
+		StatusName:        atlasPeer.StatusName,
+		ErrorState:        atlasPeer.ErrorState,
+		ErrorStateName:    atlasPeer.ErrorStateName,
+		ConnectionID:      atlasPeer.ConnectionID,
+		Status:            atlasPeer.Status,
+		VPC:               vpcName,
+		AtlasNetworkName:  container.NetworkName,
+		AtlasGCPProjectID: container.GCPProjectID,
+		ContainerID:       container.ID,
+		GCPProjectID:      atlasPeer.GCPProjectID,
 	}
 }
 

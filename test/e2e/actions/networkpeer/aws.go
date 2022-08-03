@@ -48,10 +48,10 @@ func (p *AWSNetworkPeer) CreateVPC(appCidr string, testID string) (string, strin
 
 func EstablishPeerConnection(peer status.AtlasNetworkPeer) error {
 	if peer.Region == "" {
-		return fmt.Errorf("region is required for %s", peer.Name)
+		return fmt.Errorf("region is required for %s", peer.VPC)
 	}
 	if peer.ProviderName == "" {
-		return fmt.Errorf("providerName is required for %s", peer.Name)
+		return fmt.Errorf("providerName is required for %s", peer.VPC)
 	}
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(peer.Region)},
