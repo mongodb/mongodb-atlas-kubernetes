@@ -3,6 +3,14 @@
 set -eou pipefail
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
+#
+# Before running, make sure you have the following tools:
+# * opm 4.9+
+# * kustomize
+# * operator-sdk
+# * controller-gen
+# * yq
+#
 # Test conf
 TEST_NAMESPACE=${TEST_NAMESPACE:-"atlas-upgrade-test"}
 LATEST_RELEASE_VERSION="${LATEST_RELEASE_VERSION:-1.0.0}"
@@ -30,9 +38,9 @@ OPERATOR_CATALOG_IMAGE="${REGISTRY}/${OPERATOR_NAME}-catalog:${CURRENT_VERSION}"
 OPERATOR_CATALOGSOURCE_NAME="${OPERATOR_CATALOG_NAME}"
 OPERATOR_SUBSCRIPTION_NAME="${OPERATOR_NAME}-subscription"
 
-millisecond=1
-second=$(( 1000 * millisecond ))
-DEFAULT_TIMEOUT=$((2 * second))
+second=1
+minute=$(( 60 * second ))
+DEFAULT_TIMEOUT=$((4 * minute))
 
 if [ -z "${OC_TOKEN+x}" ]; then
 	echo "OC_TOKEN is not set"
