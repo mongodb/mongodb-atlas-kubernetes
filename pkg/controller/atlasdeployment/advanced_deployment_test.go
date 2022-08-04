@@ -61,3 +61,95 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 		assert.Equal(t, "AWS", merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
 }
+
+func TestAdvancedDeploymentOutdatedFields(t *testing.T) {
+	autoScalingEnabled := true
+	autoScalingDisabled := !autoScalingEnabled
+
+	t.Run("Operator unset instanceSize of autoscaled deployment", func(t *testing.T) {
+		autoScalingDisabledInstanceSize := "M30"
+
+		advancedCluster := v1.AdvancedDeploymentSpec{
+			ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*v1.AdvancedRegionConfig{
+						{
+							RegionName: "US_EAST_1",
+							ElectableSpecs: &v1.Specs{
+								InstanceSize: "M10",
+							},
+							AnalyticsSpecs: &v1.Specs{
+								InstanceSize: "M10",
+							},
+							AutoScaling: &v1.AdvancedAutoScalingSpec{
+								Compute: &v1.ComputeSpec{
+									Enabled: &autoScalingEnabled,
+								},
+							},
+						},
+						{
+							RegionName: "US_EAST_2",
+							ElectableSpecs: &v1.Specs{
+								InstanceSize: "M20",
+							},
+							AutoScaling: &v1.AdvancedAutoScalingSpec{
+								Compute: &v1.ComputeSpec{
+									Enabled: &autoScalingEnabled,
+								},
+							},
+						},
+						{
+							RegionName: "US_EAST_1",
+							ElectableSpecs: &v1.Specs{
+								InstanceSize: autoScalingDisabledInstanceSize,
+							},
+							AutoScaling: &v1.AdvancedAutoScalingSpec{
+								Compute: &v1.ComputeSpec{
+									Enabled: &autoScalingDisabled,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		c := cleanupTheSpec(advancedCluster)
+		// first regionConfig
+		assert.Equal(t, c.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize, "")
+		assert.Equal(t, c.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize, "")
+		// second regionConfig
+		assert.Equal(t, c.ReplicationSpecs[0].RegionConfigs[1].ElectableSpecs.InstanceSize, "")
+		// third regionConfig with disabled autoscaling
+		assert.Equal(t, c.ReplicationSpecs[0].RegionConfigs[2].ElectableSpecs.InstanceSize, autoScalingDisabledInstanceSize)
+	})
+
+	t.Run("Operator unset diskSizeGB of autoscaled deployment", func(t *testing.T) {
+		diskSize := 40
+		advancedCluster := v1.AdvancedDeploymentSpec{
+			DiskSizeGB: &diskSize,
+			ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*v1.AdvancedRegionConfig{
+						{
+							RegionName: "US_EAST_1",
+							ElectableSpecs: &v1.Specs{
+								InstanceSize: "M10",
+							},
+							AnalyticsSpecs: &v1.Specs{
+								InstanceSize: "M10",
+							},
+							AutoScaling: &v1.AdvancedAutoScalingSpec{
+								DiskGB: &v1.DiskGB{
+									Enabled: &autoScalingEnabled,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		c := cleanupTheSpec(advancedCluster)
+		assert.Nil(t, c.DiskSizeGB)
+	})
+}
