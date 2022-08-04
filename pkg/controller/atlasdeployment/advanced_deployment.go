@@ -96,7 +96,47 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 
 func cleanupTheSpec(deployment mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
 	deployment.MongoDBVersion = ""
+	deployment = removeAdvancedDeploymentOutdatedFields(&deployment, nil)
 	return &deployment
+}
+
+// removeOutdatedFields unsets fields which are should be empty based on flags
+func removeAdvancedDeploymentOutdatedFields(removeFrom *mdbv1.AdvancedDeploymentSpec, lookAt *mdbv1.AdvancedDeploymentSpec) mdbv1.AdvancedDeploymentSpec {
+	if lookAt == nil {
+		lookAt = removeFrom
+	}
+
+	result := *removeFrom
+
+	for i := range lookAt.ReplicationSpecs {
+		for j := range lookAt.ReplicationSpecs[i].RegionConfigs {
+			regionConfig := lookAt.ReplicationSpecs[i].RegionConfigs[j]
+			if regionConfig.AutoScaling != nil && regionConfig.AutoScaling.Compute != nil {
+				if *regionConfig.AutoScaling.Compute.Enabled {
+					// unset InstanceSize from all specs when compute autoscaling is enabled
+					resultRegionConfig := result.ReplicationSpecs[i].RegionConfigs[j]
+
+					unsetInstanceSize(resultRegionConfig.ElectableSpecs)
+					unsetInstanceSize(resultRegionConfig.ReadOnlySpecs)
+					unsetInstanceSize(resultRegionConfig.AnalyticsSpecs)
+				} else {
+					// Shouldn't be able to set max, min InstanceSize if autoscaling is not enabled
+					result.ReplicationSpecs[i].RegionConfigs[j].AutoScaling.Compute = &mdbv1.ComputeSpec{}
+				}
+			}
+			if regionConfig.AutoScaling.DiskGB != nil && *regionConfig.AutoScaling.DiskGB.Enabled {
+				// unset diskSizeGB when if disk autoscaling is enabled
+				result.DiskSizeGB = nil
+			}
+		}
+	}
+	return result
+}
+
+func unsetInstanceSize(spec *mdbv1.Specs) {
+	if spec != nil && spec.InstanceSize != "" {
+		spec.InstanceSize = ""
+	}
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
@@ -138,6 +178,9 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
 func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
+	deploymentAtlas = removeAdvancedDeploymentOutdatedFields(&deploymentAtlas, &deploymentOperator)
+	deploymentOperator = removeAdvancedDeploymentOutdatedFields(&deploymentOperator, nil)
+
 	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
