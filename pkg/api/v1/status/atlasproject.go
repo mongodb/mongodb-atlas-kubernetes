@@ -28,7 +28,7 @@ func AtlasProjectAddPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpo
 	}
 }
 
-func AtlasProjectUpdatePrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectSetPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.PrivateEndpoints = privateEndpoints
 	}
