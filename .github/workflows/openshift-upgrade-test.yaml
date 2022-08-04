@@ -65,7 +65,7 @@ jobs:
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
-          CLUSTER_API_URL: ${{ secrets.OPENSHIFT_SERVER_API }}
+          CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}
           LATEST_RELEASE_REGISTRY: ${{ github.event.inputs.previousReleaseRegistry }}
           REGISTRY: ${{ github.event.inputs.registryForNewRelease }}
 
