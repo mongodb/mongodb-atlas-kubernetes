@@ -36,11 +36,23 @@ func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdb
 		return workflow.OK()
 	}
 
-	serviceStatus, endpointsAreFullyDefined := getStatusForServices(ctx, atlasPEs)
-	ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
-	if !endpointsAreFullyDefined {
-		ctx.UnsetCondition(status.PrivateEndpointReadyType)
+	serviceStatus := getStatusForServices(ctx, atlasPEs)
+	if !serviceStatus.IsOk() {
+		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
 		return serviceStatus
+	}
+
+	unconfiguredAmount := countNotConfiguredEndpoints(specPEs)
+	if unconfiguredAmount != 0 {
+		serviceStatus = serviceStatus.WithMessage("Interface Private Endpoint awaits configuration")
+		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
+
+		if len(specPEs) == unconfiguredAmount {
+			ctx.UnsetCondition(status.PrivateEndpointReadyType)
+			return serviceStatus
+		} else {
+			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Not All Interface Private Endpoint are fully configured")
+		}
 	}
 
 	interfaceStatus := getStatusForInterfaces(ctx, atlasPEs, projectID)
@@ -53,21 +65,20 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 	log := ctx.Log
 
 	log.Debugw("PE Connections", "atlasPEs", atlasPEs, "specPEs", specPEs)
-
-	endpointsToDelete := set.Difference(atlasPEs, specPEs)
+	endpointsToDelete := getEndpointsNotInSpec(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to delete", "difference", endpointsToDelete)
 	if result := deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete); !result.IsOk() {
 		return result, status.PrivateEndpointServiceReadyType
 	}
 
-	endpointsToCreate := set.Difference(specPEs, atlasPEs)
+	endpointsToCreate := getEndpointsNotInAtlas(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
 	newConnections, err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate)
 	if err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
 
-	endpointsToSync := set.Intersection(specPEs, atlasPEs)
+	endpointsToSync := getEndpointsIntersection(specPEs, atlasPEs)
 	log.Debugw("Private Endpoints to sync", "difference", endpointsToSync)
 	syncedConnections, err := syncPeInterfaceInAtlas(ctx, projectID, endpointsToSync)
 	if err != nil {
@@ -92,32 +103,27 @@ func determineResult(newConnections, syncedConnections, atlasPEs []atlasPE) (wor
 	return workflow.OK(), status.PrivateEndpointReadyType
 }
 
-func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) (result workflow.Result, allDefined bool) {
-	allAvailable, allDefined, failureMessage := areServicesAvailableOrFailed(atlasPEs)
+func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Result {
+	allAvailable, failureMessage := areServicesAvailableOrFailed(atlasPEs)
 	ctx.Log.Debugw("Get Status for Services", "allAvailable", allAvailable, "failureMessage", failureMessage)
 	if failureMessage != "" {
-		result = workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, failureMessage)
-		return
+		return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, failureMessage)
 	}
 	if !allAvailable {
-		result = notReadyServiceResult
-		return
-	}
-	if !allDefined {
-		result = workflow.OK().WithMessage("Awaiting additional user configuration")
-		return
+		return notReadyServiceResult
 	}
 
-	return
+	return workflow.OK()
 }
 
 func getStatusForInterfaces(ctx *workflow.Context, atlasPEs []atlasPE, projectID string) workflow.Result {
-	for _, statusPeService := range convertAllToStatus(ctx, projectID, atlasPEs) {
-		if statusPeService.InterfaceEndpointID == "" {
-			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "InterfaceEndpointID is empty")
+	for _, atlasPeService := range atlasPEs {
+		interfaceEndpointID := atlasPeService.InterfaceEndpointID()
+		if interfaceEndpointID == "" {
+			return notReadyInterfaceResult
 		}
 
-		interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, string(statusPeService.Provider), statusPeService.ID, statusPeService.InterfaceEndpointID)
+		interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, atlasPeService.ProviderName, atlasPeService.ID, interfaceEndpointID)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -134,14 +140,10 @@ func getStatusForInterfaces(ctx *workflow.Context, atlasPEs []atlasPE, projectID
 	return workflow.OK()
 }
 
-func areServicesAvailableOrFailed(atlasPeConnections []atlasPE) (allAvailable, allDefined bool, failureMessage string) {
+func areServicesAvailableOrFailed(atlasPeConnections []atlasPE) (allAvailable bool, failureMessage string) {
 	allAvailable = true
-	allDefined = true
 
 	for _, conn := range atlasPeConnections {
-		if conn.InterfaceEndpointID() == "" {
-			allDefined = false
-		}
 		if isFailed(conn.Status) {
 			failureMessage = conn.ErrorMessage
 			return
@@ -215,11 +217,9 @@ func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (resul
 	return
 }
 
-func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []set.Identifiable) (newConnections []atlasPE, err error) {
+func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []mdbv1.PrivateEndpoint) (newConnections []atlasPE, err error) {
 	newConnections = make([]atlasPE, 0)
-	for _, item := range endpointsToCreate {
-		pe := item.(mdbv1.PrivateEndpoint)
-
+	for _, pe := range endpointsToCreate {
 		conn, _, err := ctx.Client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
 			ProviderName: string(pe.Provider),
 			Region:       pe.Region,
@@ -236,11 +236,11 @@ func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 	return newConnections, nil
 }
 
-func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsToUpdate [][]set.Identifiable) (syncedEndpoints []atlasPE, err error) {
+func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsToUpdate []intersectionPair) (syncedEndpoints []atlasPE, err error) {
 	syncedEndpoints = make([]atlasPE, 0)
 	for _, pair := range endpointsToUpdate {
-		specPeService := pair[0].(mdbv1.PrivateEndpoint)
-		atlasPeService := pair[1].(atlasPE)
+		specPeService := pair.spec
+		atlasPeService := pair.atlas
 
 		ctx.Log.Debugw("endpointNeedsUpdating", "output", endpointNeedsUpdating(specPeService, atlasPeService))
 		if endpointNeedsUpdating(specPeService, atlasPeService) {
@@ -275,13 +275,34 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 }
 
 func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService atlasPE) bool {
-	if isAvailable(atlasPeService.Status) {
+	if isAvailable(atlasPeService.Status) && endpointDefinedInSpec(specPeService) {
 		switch specPeService.Provider {
 		case provider.ProviderAWS, provider.ProviderAzure:
-			return specPeService.ID != "" && specPeService.ID != atlasPeService.InterfaceEndpointID()
+			return specPeService.ID != atlasPeService.InterfaceEndpointID()
 		case provider.ProviderGCP:
-			return specPeService.EndpointGroupName != "" && specPeService.EndpointGroupName != atlasPeService.EndpointGroupName() && len(atlasPeService.EndpointServiceName) != 0
+			return specPeService.EndpointGroupName != atlasPeService.EndpointGroupName() && len(atlasPeService.EndpointServiceName) != 0
 		}
+	}
+
+	return false
+}
+
+func countNotConfiguredEndpoints(endpoints []mdbv1.PrivateEndpoint) (count int) {
+	for _, pe := range endpoints {
+		if !endpointDefinedInSpec(pe) {
+			count++
+		}
+	}
+
+	return count
+}
+
+func endpointDefinedInSpec(specPeService mdbv1.PrivateEndpoint) bool {
+	switch specPeService.Provider {
+	case provider.ProviderAWS, provider.ProviderAzure:
+		return specPeService.ID != ""
+	case provider.ProviderGCP:
+		return specPeService.EndpointGroupName != ""
 	}
 
 	return false
@@ -293,18 +314,16 @@ func DeleteAllPrivateEndpoints(ctx *workflow.Context, projectID string) workflow
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	endpointsToDelete := set.Difference(atlasPEs, []atlasPE{})
-	ctx.Log.Debugw("List of endpoints to delete", "endpointsToDelete", endpointsToDelete)
+	endpointsToDelete := getEndpointsNotInSpec([]mdbv1.PrivateEndpoint{}, atlasPEs)
 	return deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete)
 }
 
-func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, listsToRemove []set.Identifiable) workflow.Result {
+func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, listsToRemove []atlasPE) workflow.Result {
 	if len(listsToRemove) == 0 {
 		return workflow.OK()
 	}
 
-	for _, item := range listsToRemove {
-		peService := item.(atlasPE)
+	for _, peService := range listsToRemove {
 		if isDeleting(peService.Status) {
 			ctx.Log.Debugf("%s Private Endpoint Service for the region %s is being deleted", peService.ProviderName, peService.RegionName)
 			continue
@@ -441,3 +460,38 @@ func terminateWithError(ctx *workflow.Context, conditionType status.ConditionTyp
 
 var notReadyServiceResult = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready")
 var notReadyInterfaceResult = workflow.InProgress(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
+
+func getEndpointsNotInSpec(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []atlasPE {
+	difference := set.Difference(atlasPEs, specPEs)
+	result := []atlasPE{}
+	for _, item := range difference {
+		result = append(result, item.(atlasPE))
+	}
+	return result
+}
+
+func getEndpointsNotInAtlas(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []mdbv1.PrivateEndpoint {
+	difference := set.Difference(specPEs, atlasPEs)
+	result := []mdbv1.PrivateEndpoint{}
+	for _, item := range difference {
+		result = append(result, item.(mdbv1.PrivateEndpoint))
+	}
+	return result
+}
+
+func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
+	intersection := set.Intersection(specPEs, atlasPEs)
+	result := []intersectionPair{}
+	for _, item := range intersection {
+		pair := intersectionPair{}
+		pair.spec = item[0].(mdbv1.PrivateEndpoint)
+		pair.atlas = item[1].(atlasPE)
+		result = append(result, pair)
+	}
+	return result
+}
+
+type intersectionPair struct {
+	spec  mdbv1.PrivateEndpoint
+	atlas atlasPE
+}
