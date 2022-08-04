@@ -36,7 +36,7 @@ jobs:
 
       - name: Download tools for openshift test
         run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz -q
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
           tar xvf opm.tar.gz
           chmod +x opm && sudo mv opm /usr/local/bin/opm
 
@@ -50,6 +50,9 @@ jobs:
 
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.2/operator-sdk_linux_amd64 -O operator-sdk -q
           chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/operator-sdk
+
+          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq -q
+          chmod +x yq && sudo mv yq /usr/local/bin/yq
 
           opm version
           oc version
