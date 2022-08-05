@@ -66,20 +66,20 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 
 	log.Debugw("PE Connections", "atlasPEs", atlasPEs, "specPEs", specPEs)
 	endpointsToDelete := getEndpointsNotInSpec(specPEs, atlasPEs)
-	log.Debugw("Private Endpoints to delete", "difference", endpointsToDelete)
+	log.Debugf("Number of Private Endpoints to delete: %d", len(endpointsToDelete))
 	if result := deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete); !result.IsOk() {
 		return result, status.PrivateEndpointServiceReadyType
 	}
 
 	endpointsToCreate := getEndpointsNotInAtlas(specPEs, atlasPEs)
-	log.Debugw("Private Endpoints to create", "difference", endpointsToCreate)
+	log.Debugf("Number of Private Endpoints to create: %d", len(endpointsToCreate))
 	newConnections, err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate)
 	if err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
 
 	endpointsToSync := getEndpointsIntersection(specPEs, atlasPEs)
-	log.Debugw("Private Endpoints to sync", "difference", endpointsToSync)
+	log.Debugf("Number of Private Endpoints to sync: %d", len(endpointsToSync))
 	syncedConnections, err := syncPeInterfaceInAtlas(ctx, projectID, endpointsToSync)
 	if err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointReadyType, "Failed to sync PE Interface in Atlas", err)
@@ -88,16 +88,8 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 	log.Debugw("PE Changes", "newConnections", newConnections, "syncedConnections", syncedConnections)
 	updatePEStatusOption(ctx, projectID, newConnections, syncedConnections)
 
-	return determineResult(newConnections, syncedConnections, atlasPEs)
-}
-
-func determineResult(newConnections, syncedConnections, atlasPEs []atlasPE) (workflow.Result, status.ConditionType) {
 	if len(newConnections) != 0 {
 		return notReadyServiceResult, status.PrivateEndpointServiceReadyType
-	}
-
-	if len(syncedConnections) != len(atlasPEs) {
-		return notReadyInterfaceResult, status.PrivateEndpointReadyType
 	}
 
 	return workflow.OK(), status.PrivateEndpointReadyType
@@ -186,15 +178,11 @@ func (a atlasPE) InterfaceEndpointID() string {
 		return a.PrivateEndpoints[0]
 	}
 
-	return ""
-}
-
-func (a atlasPE) EndpointGroupName() string {
-	if len(a.EndpointGroupNames) == 0 {
-		return ""
+	if len(a.EndpointGroupNames) != 0 {
+		return a.EndpointGroupNames[0]
 	}
 
-	return a.EndpointGroupNames[0]
+	return ""
 }
 
 func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
@@ -242,7 +230,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 		specPeService := pair.spec
 		atlasPeService := pair.atlas
 
-		ctx.Log.Debugw("endpointNeedsUpdating", "output", endpointNeedsUpdating(specPeService, atlasPeService))
+		ctx.Log.Debugw("endpointNeedsUpdating", "specPeService", specPeService, "atlasPeService", atlasPeService, "endpointNeedsUpdating", endpointNeedsUpdating(specPeService, atlasPeService))
 		if endpointNeedsUpdating(specPeService, atlasPeService) {
 			interfaceConn := &mongodbatlas.InterfaceEndpointConnection{
 				ID:                       specPeService.ID,
@@ -280,7 +268,7 @@ func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService a
 		case provider.ProviderAWS, provider.ProviderAzure:
 			return specPeService.ID != atlasPeService.InterfaceEndpointID()
 		case provider.ProviderGCP:
-			return specPeService.EndpointGroupName != atlasPeService.EndpointGroupName() && len(atlasPeService.EndpointServiceName) != 0
+			return specPeService.EndpointGroupName != atlasPeService.InterfaceEndpointID() && len(atlasPeService.EndpointServiceName) != len(specPeService.Endpoints)
 		}
 	}
 
@@ -297,15 +285,8 @@ func countNotConfiguredEndpoints(endpoints []mdbv1.PrivateEndpoint) (count int) 
 	return count
 }
 
-func endpointDefinedInSpec(specPeService mdbv1.PrivateEndpoint) bool {
-	switch specPeService.Provider {
-	case provider.ProviderAWS, provider.ProviderAzure:
-		return specPeService.ID != ""
-	case provider.ProviderGCP:
-		return specPeService.EndpointGroupName != ""
-	}
-
-	return false
+func endpointDefinedInSpec(specEndpoint mdbv1.PrivateEndpoint) bool {
+	return specEndpoint.ID != "" || specEndpoint.EndpointGroupName != ""
 }
 
 func DeleteAllPrivateEndpoints(ctx *workflow.Context, projectID string) workflow.Result {
