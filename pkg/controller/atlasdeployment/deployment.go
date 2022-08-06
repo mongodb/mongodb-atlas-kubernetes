@@ -133,10 +133,6 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 		} else {
 			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
 		}
-
-		if lookAt.AutoScaling.DiskGBEnabled != nil && *lookAt.AutoScaling.DiskGBEnabled {
-			result.DiskSizeGB = nil
-		}
 	}
 
 	return result
