@@ -479,7 +479,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Decreasing the Deployment disk size", func() {
 				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(12)
-				performUpdate(20 * time.Minute)
+				performUpdate(30 * time.Minute)
 				doRegularDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
