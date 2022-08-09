@@ -271,36 +271,51 @@ spec:
                 items:
                   properties:
                     accepterRegionName:
-                      description: AccepterRegionName is Atlas region where the container
-                        resides.
+                      description: AccepterRegionName is the provider region name
+                        of user's vpc.
                       type: string
                     atlasCidrBlock:
+                      description: Atlas CIDR. It needs to be set if ContainerID is
+                        not set.
                       type: string
                     awsAccountId:
+                      description: AccountID of the user's vpc.
                       type: string
                     azureDirectoryId:
                       type: string
                     azureSubscriptionId:
                       type: string
                     containerId:
+                      description: ID of the network peer container. If not set, operator
+                        will create a new container with ContainerRegion and AtlasCIDRBlock
+                        input.
                       type: string
                     containerRegion:
+                      description: ContainerRegion is the provider region name of
+                        Atlas network peer container. If not set, AccepterRegionName
+                        is used.
                       type: string
                     gcpProjectId:
+                      description: User GCP Project ID. Its applicable only for GCP.
                       type: string
                     networkName:
+                      description: GCP Network Peer Name. Its applicable only for
+                        GCP.
                       type: string
                     providerName:
                       description: ProviderName is the name of the provider. If not
-                        set, it will be set to "aws"
+                        set, it will be set to "AWS".
                       type: string
                     resourceGroupName:
                       type: string
                     routeTableCidrBlock:
+                      description: User VPC CIDR.
                       type: string
                     vnetName:
+                      description: VNet Name. Its applicable only for Azure.
                       type: string
                     vpcId:
+                      description: AWS VPC ID.
                       type: string
                   type: object
                 type: array
@@ -483,37 +498,59 @@ spec:
                 items:
                   properties:
                     atlasGcpProjectId:
+                      description: ProjectID of Atlas container. Applicable only for
+                        GCP. It's needed to add network peer connection.
                       type: string
                     atlasNetworkName:
+                      description: Atlas Network Name. Applicable only for GCP. It's
+                        needed to add network peer connection.
                       type: string
                     connectionId:
+                      description: Unique identifier of the network peer connection.
+                        Applicable only for AWS.
                       type: string
                     containerId:
+                      description: ContainerID of Atlas network peer container.
                       type: string
                     errorMessage:
+                      description: Error state of the network peer. Applicable only
+                        for GCP.
                       type: string
                     errorState:
+                      description: Error state of the network peer. Applicable only
+                        for Azure.
                       type: string
                     errorStateName:
+                      description: Error state of the network peer. Applicable only
+                        for AWS.
                       type: string
                     gcpProjectId:
+                      description: ProjectID of the user's vpc. Applicable only for
+                        GCP.
                       type: string
                     id:
-                      description: Unique identifier for NetworkPeer
-                      type: string
-                    name:
+                      description: Unique identifier for NetworkPeer.
                       type: string
                     providerName:
                       description: Cloud provider for which you want to retrieve a
-                        network peer
+                        network peer.
                       type: string
                     region:
                       description: Region for which you want to create the network
-                        peer
+                        peer. It isn't needed for GCP
                       type: string
                     status:
+                      description: Status of the network peer. Applicable only for
+                        GCP and Azure.
                       type: string
                     statusName:
+                      description: Status of the network peer. Applicable only for
+                        AWS.
+                      type: string
+                    vpc:
+                      description: VPC is general purpose field for storing the name
+                        of the VPC. VPC is vpcID for AWS, user networkName for GCP,
+                        and vnetName for Azure.
                       type: string
                   required:
                   - id

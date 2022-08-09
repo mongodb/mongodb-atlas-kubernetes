@@ -8,22 +8,28 @@ import (
 )
 
 type NetworkPeer struct {
-	//AccepterRegionName is Atlas region where the container resides.
+	//AccepterRegionName is the provider region name of user's vpc.
 	// +optional
 	AccepterRegionName string `json:"accepterRegionName"`
+	// ContainerRegion is the provider region name of Atlas network peer container. If not set, AccepterRegionName is used.
 	// +optional
 	ContainerRegion string `json:"containerRegion"`
+	// AccountID of the user's vpc.
 	// +optional
 	AWSAccountID string `json:"awsAccountId,omitempty"`
+	// ID of the network peer container. If not set, operator will create a new container with ContainerRegion and AtlasCIDRBlock input.
 	// +optional
 	ContainerID string `json:"containerId"`
-	//ProviderName is the name of the provider. If not set, it will be set to "aws"
+	//ProviderName is the name of the provider. If not set, it will be set to "AWS".
 	// +optional
 	ProviderName provider.ProviderName `json:"providerName,omitempty"`
+	//User VPC CIDR.
 	// +optional
 	RouteTableCIDRBlock string `json:"routeTableCidrBlock,omitempty"`
+	//AWS VPC ID.
 	// +optional
 	VpcID string `json:"vpcId,omitempty"`
+	//Atlas CIDR. It needs to be set if ContainerID is not set.
 	// +optional
 	AtlasCIDRBlock string `json:"atlasCidrBlock"`
 	// +optional
@@ -33,9 +39,12 @@ type NetworkPeer struct {
 	// +optional
 	ResourceGroupName string `json:"resourceGroupName,omitempty"`
 	// +optional
+	// VNet Name. Its applicable only for Azure.
 	VNetName string `json:"vnetName,omitempty"`
 	// +optional
+	// User GCP Project ID. Its applicable only for GCP.
 	GCPProjectID string `json:"gcpProjectId,omitempty"`
+	// GCP Network Peer Name. Its applicable only for GCP.
 	// +optional
 	NetworkName string `json:"networkName,omitempty"`
 }

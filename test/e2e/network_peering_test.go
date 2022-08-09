@@ -38,8 +38,13 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		checkUpAWSEnviroment()
-		//checkUpAzureEnviroment()
+		checkUpAzureEnviroment()
 		checkNSetUpGCPEnviroment()
+
+		By("Checking azure login", func() {
+			err := networkpeer.AzureLogin()
+			Expect(err).ShouldNot(HaveOccurred(), "Failed to login to azure")
+		})
 	})
 
 	_ = AfterEach(func() {
