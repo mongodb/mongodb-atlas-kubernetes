@@ -94,7 +94,7 @@ func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID str
 	ruleName := formRuleName(privateID, 1)
 	result, err := session.DescribePrivateLinkStatus(region, ruleName)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("Failed to describe PrivateLink Status: %s", err.Error())
 		return false
 	}
 	return result == "ACCEPTED"
