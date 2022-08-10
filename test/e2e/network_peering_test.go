@@ -22,16 +22,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-type networkPeer struct {
-	provider        string
-	peerRegion      string
-	containerRegion string
-	atlasCidr       string
-	appCidr         string
-	accountID       string
-	vpc             string
-}
-
 var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var data model.TestDataProvider
 
@@ -81,7 +71,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	})
 
 	DescribeTable("aueoueo",
-		func(test model.TestDataProvider, networkPeers []networkPeer) {
+		func(test model.TestDataProvider, networkPeers []v1.NetworkPeer) {
 			data = test
 			networkPeerFlow(&data, networkPeers)
 		},
@@ -101,13 +91,13 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			),
-			[]networkPeer{
+			[]v1.NetworkPeer{
 				{
-					provider:        "AWS",
-					peerRegion:      config.AWSRegionUS,
-					containerRegion: config.AWSRegionUS,
-					appCidr:         "10.0.0.0/24",
-					atlasCidr:       "10.8.0.0/22",
+					ProviderName:        "AWS",
+					AccepterRegionName:  config.AWSRegionUS,
+					ContainerRegion:     config.AWSRegionUS,
+					RouteTableCIDRBlock: "10.0.0.0/24",
+					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -127,13 +117,13 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			),
-			[]networkPeer{
+			[]v1.NetworkPeer{
 				{
-					provider:        "AWS",
-					peerRegion:      config.AWSRegionEU,
-					containerRegion: config.AWSRegionUS,
-					appCidr:         "10.0.0.0/24",
-					atlasCidr:       "10.8.0.0/22",
+					ProviderName:        "AWS",
+					AccepterRegionName:  config.AWSRegionEU,
+					ContainerRegion:     config.AWSRegionUS,
+					RouteTableCIDRBlock: "10.0.0.0/24",
+					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -153,19 +143,19 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			),
-			[]networkPeer{
+			[]v1.NetworkPeer{
 				{
-					provider:        "AWS",
-					peerRegion:      config.AWSRegionEU,
-					containerRegion: config.AWSRegionUS,
-					appCidr:         "192.168.0.0/16",
-					atlasCidr:       "10.8.0.0/22",
+					ProviderName:        "AWS",
+					AccepterRegionName:  config.AWSRegionEU,
+					ContainerRegion:     config.AWSRegionUS,
+					RouteTableCIDRBlock: "192.168.0.0/16",
+					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 				{
-					provider:   "AWS",
-					peerRegion: config.AWSRegionUS,
-					appCidr:    "10.0.0.0/24",
-					atlasCidr:  "10.8.0.0/22",
+					ProviderName:        "AWS",
+					AccepterRegionName:  config.AWSRegionUS,
+					RouteTableCIDRBlock: "10.0.0.0/24",
+					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 			},
 		),
@@ -185,13 +175,14 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			),
-			[]networkPeer{
+			[]v1.NetworkPeer{
 				{
-					provider:   "GCP",
-					peerRegion: config.GCPRegion,
-					appCidr:    "192.168.0.0/16",
-					atlasCidr:  "10.8.0.0/18",
-					vpc:        "network-peering-gcp-1-vpc",
+					ProviderName:        "GCP",
+					AccepterRegionName:  config.GCPRegion,
+					RouteTableCIDRBlock: "192.168.0.0/16",
+					AtlasCIDRBlock:      "10.8.0.0/18",
+					NetworkName:         "network-peering-gcp-1-vpc",
+					GCPProjectID:        cloud.GoogleProjectID,
 				},
 			},
 		),
@@ -222,7 +213,7 @@ func DeleteAllNetworkPeering(data *model.TestDataProvider) {
 	Expect(errList).To(BeEmpty())
 }
 
-func networkPeerFlow(userData *model.TestDataProvider, peers []networkPeer) {
+func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(userData)
 		deploy.NamespacedOperator(userData)
@@ -231,17 +222,17 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []networkPeer) {
 
 	By("Prepare network peers cloud infrastructure", func() {
 		for i, peer := range peers { //TODO: refactor it
-			awsNetworkPeer, err := networkpeer.NewAWSNetworkPeer(peer.peerRegion)
+			awsNetworkPeer, err := networkpeer.NewAWSNetworkPeer(peer.AccepterRegionName)
 			Expect(err).ShouldNot(HaveOccurred())
 			testID := fmt.Sprintf("%s-%d", userData.Resources.Namespace, i)
-			switch peer.provider {
-			case string(provider.ProviderAWS):
-				accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.appCidr, testID)
+			switch peer.ProviderName {
+			case provider.ProviderAWS:
+				accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.RouteTableCIDRBlock, testID)
 				Expect(err).ShouldNot(HaveOccurred())
-				peers[i].accountID = accountID
-				peers[i].vpc = vpcID
-			case string(provider.ProviderGCP):
-				err = networkpeer.CreateVPC(cloud.GoogleProjectID, peer.vpc)
+				peers[i].AWSAccountID = accountID
+				peers[i].VpcID = vpcID
+			case provider.ProviderGCP:
+				err = networkpeer.CreateVPC(cloud.GoogleProjectID, peer.NetworkName)
 				Expect(err).ShouldNot(HaveOccurred())
 			}
 		}
@@ -249,8 +240,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []networkPeer) {
 
 	By("Create network peers", func() {
 		for _, peer := range peers {
-			networkPeerSpec := peerToPeerSpec(peer)
-			userData.Resources.Project.WithNetworkPeer(networkPeerSpec)
+			userData.Resources.Project.WithNetworkPeer(peer)
 		}
 		actions.PrepareUsersConfigurations(userData)
 		actions.DeployProject(userData, "2")
@@ -302,30 +292,4 @@ func EnsurePeersReadyToConnect(userData model.TestDataProvider, lenOfSpec int) b
 	}
 	By("Network peers are ready to connect", func() {})
 	return true
-}
-
-func peerToPeerSpec(peer networkPeer) v1.NetworkPeer {
-	switch peer.provider {
-	case string(provider.ProviderAWS):
-		return v1.NetworkPeer{
-			AccepterRegionName:  peer.peerRegion,
-			ContainerRegion:     peer.containerRegion,
-			AWSAccountID:        peer.accountID,
-			ProviderName:        provider.ProviderName(peer.provider),
-			RouteTableCIDRBlock: peer.appCidr,
-			VpcID:               peer.vpc,
-			AtlasCIDRBlock:      peer.atlasCidr,
-		}
-	case string(provider.ProviderGCP):
-		return v1.NetworkPeer{
-			AccepterRegionName:  peer.peerRegion,
-			ContainerRegion:     peer.containerRegion,
-			ProviderName:        provider.ProviderName(peer.provider),
-			RouteTableCIDRBlock: peer.appCidr,
-			NetworkName:         peer.vpc,
-			AtlasCIDRBlock:      peer.atlasCidr,
-			GCPProjectID:        cloud.GoogleProjectID,
-		}
-	}
-	return v1.NetworkPeer{}
 }
