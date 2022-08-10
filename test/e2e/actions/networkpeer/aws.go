@@ -16,7 +16,7 @@ type AWSNetworkPeer struct {
 	ec2 *ec2.EC2
 }
 
-func NewAWSNetworkPeer(region string) (AWSNetworkPeer, error) {
+func NewAWSNetworkPeerService(region string) (AWSNetworkPeer, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
@@ -46,7 +46,7 @@ func (p *AWSNetworkPeer) CreateVPC(appCidr string, testID string) (string, strin
 	return *vpc.Vpc.OwnerId, *vpc.Vpc.VpcId, nil
 }
 
-func EstablishPeerConnection(peer status.AtlasNetworkPeer) error {
+func EstablishAWSPeerConnection(peer status.AtlasNetworkPeer) error {
 	if peer.Region == "" {
 		return fmt.Errorf("region is required for %s", peer.VPC)
 	}

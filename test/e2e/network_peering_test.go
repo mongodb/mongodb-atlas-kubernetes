@@ -22,6 +22,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
+const (
+	statusPendingAcceptance = "PENDING_ACCEPTANCE"
+	statusWaitingUser       = "WAITING_FOR_USER"
+)
+
 var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var data model.TestDataProvider
 
@@ -221,21 +226,8 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 	})
 
 	By("Prepare network peers cloud infrastructure", func() {
-		for i, peer := range peers { //TODO: refactor it
-			awsNetworkPeer, err := networkpeer.NewAWSNetworkPeer(peer.AccepterRegionName)
-			Expect(err).ShouldNot(HaveOccurred())
-			testID := fmt.Sprintf("%s-%d", userData.Resources.Namespace, i)
-			switch peer.ProviderName {
-			case provider.ProviderAWS:
-				accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.RouteTableCIDRBlock, testID)
-				Expect(err).ShouldNot(HaveOccurred())
-				peers[i].AWSAccountID = accountID
-				peers[i].VpcID = vpcID
-			case provider.ProviderGCP:
-				err = networkpeer.CreateVPC(cloud.GoogleProjectID, peer.NetworkName)
-				Expect(err).ShouldNot(HaveOccurred())
-			}
-		}
+		err := networkpeer.PreparePeerVPC(peers, userData.Resources.Namespace)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	By("Create network peers", func() {
@@ -252,17 +244,8 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
 		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
-		for _, peerStatus := range project.Status.NetworkPeers {
-			switch peerStatus.ProviderName {
-			case provider.ProviderAWS:
-				errEstablish := networkpeer.EstablishPeerConnection(peerStatus)
-				Expect(errEstablish).ShouldNot(HaveOccurred())
-			case provider.ProviderGCP:
-				err = networkpeer.EstablishPeerConnectionWithVPC(peerStatus.GCPProjectID, peerStatus.VPC,
-					peerStatus.AtlasGCPProjectID, peerStatus.AtlasNetworkName)
-				Expect(err).ShouldNot(HaveOccurred())
-			}
-		}
+		err = networkpeer.EstablishPeerConnections(project.Status.NetworkPeers)
+		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(kube.GetProjectNetworkPeerStatus(userData), "1m", "20s").Should(Equal("True"), "NetworkPeerStatus should be True")
 	})
 
@@ -285,7 +268,7 @@ func EnsurePeersReadyToConnect(userData model.TestDataProvider, lenOfSpec int) b
 		return false
 	}
 	for _, networkPeering := range project.Status.NetworkPeers {
-		if networkPeering.GetStatus() != "PENDING_ACCEPTANCE" && networkPeering.GetStatus() != "WAITING_FOR_USER" { //TODO:  use constant
+		if networkPeering.GetStatus() != statusPendingAcceptance && networkPeering.GetStatus() != statusWaitingUser {
 			By(fmt.Sprintf("Status is %s", networkPeering.GetStatus()), func() {})
 			return false
 		}

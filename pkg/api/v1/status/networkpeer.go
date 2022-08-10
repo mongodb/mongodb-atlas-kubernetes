@@ -44,6 +44,7 @@ func NewNetworkPeerStatus(atlasPeer mongodbatlas.Peer, providerName provider.Pro
 		ProviderName:      providerName,
 		Region:            atlasPeer.AccepterRegionName,
 		StatusName:        atlasPeer.StatusName,
+		ErrorMessage:      atlasPeer.ErrorMessage,
 		ErrorState:        atlasPeer.ErrorState,
 		ErrorStateName:    atlasPeer.ErrorStateName,
 		ConnectionID:      atlasPeer.ConnectionID,
