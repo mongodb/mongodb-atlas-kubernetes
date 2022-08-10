@@ -22,12 +22,13 @@ const (
 	ProjectWindowNotDeferredInAtlas         ConditionReason = "ProjectWindowNotDeferredInAtlas"
 	ProjectWindowNotAutoDeferredInAtlas     ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
 	ProjectPEServiceIsNotReadyInAtlas       ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
-	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
-	ProjectNetworkPeerIsNotReadyInAtlas     ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
+	ProjectPEInterfaceIsNotReadyInAtlas     ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectIPAccessListNotActive            ConditionReason = "ProjectIPAccessListNotActive"
 	ProjectIntegrationInternal              ConditionReason = "ProjectIntegrationInternalError"
 	ProjectIntegrationRequest               ConditionReason = "ProjectIntegrationRequestError"
 	ProjectIntegrationReady                 ConditionReason = "ProjectIntegrationReady"
+	ProjectPrivateEndpointIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
+	ProjectNetworkPeerIsNotReadyInAtlas     ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 )
 
 // Atlas Cluster reasons

@@ -156,7 +156,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
-				if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
+				if result = DeleteAllPrivateEndpoints(ctx, projectID); !result.IsOk() {
 					setCondition(ctx, status.PrivateEndpointReadyType, result)
 					return result.ReconcileResult(), nil
 				}

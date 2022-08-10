@@ -311,7 +311,7 @@ func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPe
 
 		if needToDelete {
 			logger.Debugf("peer %v will be deleted", existedPeer)
-			if !isDeleting(existedPeer) {
+			if !isPeerDeleting(existedPeer) {
 				logger.Debugf("peer %v will be deleted", existedPeer)
 				diff.PeersToDelete = append(diff.PeersToDelete, existedPeer.ID)
 			}
@@ -336,7 +336,7 @@ func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPe
 	return &diff, nil
 }
 
-func isDeleting(peer mongodbatlas.Peer) bool {
+func isPeerDeleting(peer mongodbatlas.Peer) bool {
 	return peer.Status == StatusDeleting || peer.StatusName == StatusDeleting || peer.StatusName == StatusTerminating
 }
 

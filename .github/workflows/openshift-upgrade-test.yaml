@@ -36,22 +36,37 @@ jobs:
 
       - name: Download tools for openshift test
         run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz -q
+          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
           tar xvf opm.tar.gz
           chmod +x opm && sudo mv opm /usr/local/bin/opm
+
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
           tar xvf openshift.tar.gz
           chmod +x oc && sudo mv oc /usr/local/bin/oc
 
+          wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.7/kustomize_v4.5.7_linux_amd64.tar.gz -O kustomize.tar.gz -q
+          tar xvf kustomize.tar.gz
+          chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
+
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.2/operator-sdk_linux_amd64 -O operator-sdk -q
+          chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/operator-sdk
+
+          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq -q
+          chmod +x yq && sudo mv yq /usr/local/bin/yq
+
           opm version
           oc version
+          operator-sdk version
+
+      - name: Login to registry
+        run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
 
       - name: Run openshift upgrade test
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
-          OC_TOKEN: ${{ secrets.TOKEN }}
-          CLUSTER_API_URL: ${{ secret.OPENSHIFT_SERVER_API }}
+          OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
+          CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}
           LATEST_RELEASE_REGISTRY: ${{ github.event.inputs.previousReleaseRegistry }}
-          REGISTRY: ${{ secret.DOCKER_REGISTRY }}
+          REGISTRY: ${{ github.event.inputs.registryForNewRelease }}
 
 

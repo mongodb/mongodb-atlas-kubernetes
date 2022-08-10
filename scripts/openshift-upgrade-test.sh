@@ -3,11 +3,19 @@
 set -eou pipefail
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
+#
+# Before running, make sure you have the following tools:
+# * opm 4.9+
+# * kustomize
+# * operator-sdk
+# * controller-gen
+# * yq
+#
 # Test conf
 TEST_NAMESPACE=${TEST_NAMESPACE:-"atlas-upgrade-test"}
 LATEST_RELEASE_VERSION="${LATEST_RELEASE_VERSION:-1.0.0}"
 LATEST_RELEASE_REGISTRY=${LATEST_RELEASE_REGISTRY:-"quay.io/mongodb"}
-REGISTRY=${REGISTRY:-"quay.io/igorkarpukhin"}
+REGISTRY=${REGISTRY:-"quay.io/mongodb"}
 
 # This is used to build directory-based Openshift catalog for current version
 CATALOG_DIR="${CATALOG_DIR:-./openshift/atlas-catalog}"
@@ -20,18 +28,19 @@ if [ -z "${CURRENT_VERSION+x}" ]; then
 	echo "CURRENT_VERSION is not set. Setting to default: ${CURRENT_VERSION}"
 fi
 
-OPERATOR_NAME="mongodb-atlas-kubernetes-operator"
+OPERATOR_NAME="mongodb-atlas-kubernetes-operator-prerelease"
+LATEST_RELEASE_OPERATOR_NAME="mongodb-atlas-kubernetes-operator"
 NEW_OPERATOR_IMAGE="${REGISTRY}/${OPERATOR_NAME}:${CURRENT_VERSION}"
 OPERATOR_BUNDLE_IMAGE="${REGISTRY}/${OPERATOR_NAME}-bundle:${CURRENT_VERSION}"
-LATEST_RELEASE_BUNDLE_IMAGE="${LATEST_RELEASE_REGISTRY}/${OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
+LATEST_RELEASE_BUNDLE_IMAGE="${LATEST_RELEASE_REGISTRY}/${LATEST_RELEASE_OPERATOR_NAME}-bundle:${LATEST_RELEASE_VERSION}"
 OPERATOR_CATALOG_NAME="${OPERATOR_NAME}-catalog"
 OPERATOR_CATALOG_IMAGE="${REGISTRY}/${OPERATOR_NAME}-catalog:${CURRENT_VERSION}"
 OPERATOR_CATALOGSOURCE_NAME="${OPERATOR_CATALOG_NAME}"
 OPERATOR_SUBSCRIPTION_NAME="${OPERATOR_NAME}-subscription"
 
-millisecond=1
-second=$(( 1000 * millisecond ))
-DEFAULT_TIMEOUT=$((2 * second))
+second=1
+minute=$(( 60 * second ))
+DEFAULT_TIMEOUT=$((4 * minute))
 
 if [ -z "${OC_TOKEN+x}" ]; then
 	echo "OC_TOKEN is not set"
@@ -62,7 +71,7 @@ try_until_success() {
   local timeout=$2
   local interval=${3:-0.2}
   local now
-  now="$(date +%s%3)"
+  now="$(date +%s)"
   local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     if $cmd ; then
@@ -70,7 +79,7 @@ try_until_success() {
       return 0
     fi
     sleep "$interval"
-    now=$(date +%s%3)
+    now=$(date +%s)
   done
   echo "Fail"
   return 1
@@ -82,7 +91,7 @@ try_until_text() {
   local timeout=$3
   local interval=${4:-1}
   local now
-  now="$(date +%s%3)"
+  now="$(date +%s)"
   local expire=$((now + timeout))
   while [ "$now" -lt $expire ]; do
     echo "Running ${cmd}"
@@ -93,7 +102,7 @@ try_until_text() {
         return 0
     fi
     sleep "$interval"
-    now=$(date +%s%3)
+    now=$(date +%s)
   done
   echo "Fail"
   return 1

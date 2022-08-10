@@ -26,6 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 const (
@@ -191,16 +192,17 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
-			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
+			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeployment, createdDeployment.Spec)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, specDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), *atlasDeployment, mergedDeployment)).To(BeTrue())
+			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)).To(BeTrue())
 
 			for _, check := range additionalChecks {
-				check(atlasDeployment)
+				check(atlasDeploymentAsAtlas)
 			}
 		})
 	}
@@ -717,12 +719,61 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create advanced deployment", func() {
+	Describe("Create the advanced deployment & change the InstanceSize", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				newInstanceSize := "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = newInstanceSize
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(
+					func(g Gomega) {
+						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
+						g.Expect(success).To(BeTrue())
+					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled:          toptr.Boolptr(true),
+						MaxInstanceSize:  "M20",
+						MinInstanceSize:  "M10",
+						ScaleDownEnabled: toptr.Boolptr(true),
+					},
+					DiskGB: &mdbv1.DiskGB{
+						Enabled: toptr.Boolptr(true),
+					},
+				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(
 					func(g Gomega) {
