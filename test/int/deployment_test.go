@@ -462,6 +462,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		It("Should Success (AWS) with enabled autoscaling", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
 				AutoIndexingEnabled: boolptr(true),
 				DiskGBEnabled:       boolptr(true),
@@ -493,6 +494,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment = createdDeployment.WithAutoscalingDisabled()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())

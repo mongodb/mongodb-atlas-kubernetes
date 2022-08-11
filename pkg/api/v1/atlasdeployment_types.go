@@ -670,9 +670,7 @@ func DefaultAWSDeployment(namespace, projectName string) *AtlasDeployment {
 	return NewDeployment(namespace, "test-deployment-aws-k8s", "test-deployment-aws").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAWS).
-		WithRegionName("US_WEST_2").
-		WithDiskSizeGB(20).
-		WithAutoscalingDisabled()
+		WithRegionName("US_WEST_2")
 }
 
 func DefaultAzureDeployment(namespace, projectName string) *AtlasDeployment {
