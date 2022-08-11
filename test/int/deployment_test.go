@@ -460,7 +460,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		FIt("Should Success (AWS) with enabled autoscaling", func() {
+		It("Should Success (AWS) with enabled autoscaling", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
 				AutoIndexingEnabled: boolptr(true),
