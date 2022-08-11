@@ -605,6 +605,26 @@ func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced
 	return c
 }
 
+func (c *AtlasDeployment) WithDiskSizeGB(size int) *AtlasDeployment {
+	c.Spec.DeploymentSpec.DiskSizeGB = &size
+	return c
+}
+
+func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
+	f := false
+	c.Spec.DeploymentSpec.AutoScaling = &AutoScalingSpec{
+		AutoIndexingEnabled: &f,
+		DiskGBEnabled:       &f,
+		Compute: &ComputeSpec{
+			Enabled:          &f,
+			ScaleDownEnabled: &f,
+			MinInstanceSize:  "",
+			MaxInstanceSize:  "",
+		},
+	}
+	return c
+}
+
 func (c *AtlasDeployment) WithInstanceSize(name string) *AtlasDeployment {
 	c.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = name
 	return c
@@ -650,7 +670,9 @@ func DefaultAWSDeployment(namespace, projectName string) *AtlasDeployment {
 	return NewDeployment(namespace, "test-deployment-aws-k8s", "test-deployment-aws").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAWS).
-		WithRegionName("US_WEST_2")
+		WithRegionName("US_WEST_2").
+		WithDiskSizeGB(20).
+		WithAutoscalingDisabled()
 }
 
 func DefaultAzureDeployment(namespace, projectName string) *AtlasDeployment {

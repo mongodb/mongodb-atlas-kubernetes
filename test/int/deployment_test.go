@@ -460,7 +460,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		It("Should Success (AWS) with enabled autoscaling", func() {
+		FIt("Should Success (AWS) with enabled autoscaling", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
 				AutoIndexingEnabled: boolptr(true),
@@ -477,12 +477,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState()
 			})
 
-			By("Decreasing the Deployment disk size", func() {
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(12)
+			By("Decreasing the Deployment disk size should not take effect", func() {
+				prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(14)
 				performUpdate(30 * time.Minute)
 				doRegularDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
-					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
+					Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
 					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
