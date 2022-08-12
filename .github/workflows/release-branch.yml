@@ -43,6 +43,7 @@ jobs:
 
     - name: Create the licence report file
       run: |
+        export PATH="$GOPATH/bin:$PATH"
         go install github.com/google/go-licenses@latest && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
 
     - name: Create branch and push it
@@ -83,4 +84,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: priyolahiri,fabritsius,leo-ri,chatton,igor-karpukhin
+        REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack
