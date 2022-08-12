@@ -43,6 +43,7 @@ jobs:
 
     - name: Create the licence report file
       run: |
+        export PATH="$GOPATH/bin:$PATH"
         go install github.com/google/go-licenses@latest && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
 
     - name: Create branch and push it
