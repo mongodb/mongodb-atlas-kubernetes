@@ -8,7 +8,7 @@ updates:
     reviewers:
       - "igor-karpukhin"
       - "fabritsius"
-      - "leo-ri"
+      - "sugar-pack"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -17,4 +17,4 @@ updates:
     reviewers:
       - "igor-karpukhin"
       - "fabritsius"
-      - "leo-ri"
+      - "sugar-pack"
