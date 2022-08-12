@@ -2,10 +2,11 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
+	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -18,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/networkpeer"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -27,6 +29,15 @@ const (
 	statusWaitingUser       = "WAITING_FOR_USER"
 )
 
+func newRandomVPCName(base string) string {
+	randomSuffix := uuid.New().String()[0:6]
+	return fmt.Sprintf("%s-%s", base, randomSuffix)
+}
+
+func TestName(t *testing.T) {
+	fmt.Println(newRandomVPCName("test"))
+}
+
 var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var data model.TestDataProvider
 
@@ -35,11 +46,6 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		checkUpAWSEnviroment()
 		checkUpAzureEnviroment()
 		checkNSetUpGCPEnviroment()
-
-		By("Checking azure login", func() {
-			err := networkpeer.AzureLogin()
-			Expect(err).ShouldNot(HaveOccurred(), "Failed to login to azure")
-		})
 	})
 
 	_ = AfterEach(func() {
@@ -75,7 +81,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		})
 	})
 
-	DescribeTable("aueoueo",
+	DescribeTable("NetworkPeering",
 		func(test model.TestDataProvider, networkPeers []v1.NetworkPeer) {
 			data = test
 			networkPeerFlow(&data, networkPeers)
@@ -186,8 +192,36 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 					AccepterRegionName:  config.GCPRegion,
 					RouteTableCIDRBlock: "192.168.0.0/16",
 					AtlasCIDRBlock:      "10.8.0.0/18",
-					NetworkName:         "network-peering-gcp-1-vpc",
+					NetworkName:         newRandomVPCName("network-peering-gcp-1-vpc"),
 					GCPProjectID:        cloud.GoogleProjectID,
+				},
+			},
+		),
+		Entry("Test[networkpeering-azure-1]: User has project which was updated with Azure PrivateEndpoint",
+			Label("network-peering-azure-1"),
+			model.NewTestDataProvider(
+				"networkpeering-azure-1",
+				model.AProject{},
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				[]string{"data/atlasdeployment_backup.yaml"},
+				[]string{},
+				[]model.DBUser{
+					*model.NewDBUser("user1").
+						WithSecretRef("dbuser-secret-u1").
+						AddBuildInAdminRole(),
+				},
+				40000,
+				[]func(*model.TestDataProvider){},
+			),
+			[]v1.NetworkPeer{
+				{
+					ProviderName:        "AZURE",
+					AccepterRegionName:  "US_EAST_2",
+					AtlasCIDRBlock:      "192.168.248.0/21",
+					VNetName:            newRandomVPCName("test-vnet"),
+					AzureSubscriptionID: os.Getenv(networkpeer.SubscriptionID),
+					ResourceGroupName:   networkpeer.AzureResourceGroupName,
+					AzureDirectoryID:    os.Getenv(networkpeer.DirectoryID),
 				},
 			},
 		),
@@ -199,22 +233,8 @@ func DeleteAllNetworkPeering(data *model.TestDataProvider) {
 	errList := make([]error, 0)
 	project, err := kube.GetProjectResource(data)
 	Expect(err).ToNot(HaveOccurred())
-
-	for _, networkPeering := range project.Status.NetworkPeers {
-		switch networkPeering.ProviderName {
-		case provider.ProviderAWS:
-			err = networkpeer.DeletePeerConnectionAndVPC(networkPeering.ConnectionID, networkPeering.Region)
-			if err != nil {
-				errList = append(errList, err)
-			}
-		case provider.ProviderGCP:
-			err = networkpeer.DeleteVPC(cloud.GoogleProjectID, networkPeering.VPC)
-			if err != nil {
-				errList = append(errList, err)
-			}
-		}
-	}
-
+	errors := networkpeer.DeletePeerVPC(project.Status.NetworkPeers)
+	errList = append(errList, errors...)
 	Expect(errList).To(BeEmpty())
 }
 
@@ -260,16 +280,16 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 func EnsurePeersReadyToConnect(userData model.TestDataProvider, lenOfSpec int) bool {
 	project, err := kube.GetProjectResource(&userData)
 	if err != nil {
-		By("Error getting project resource", func() {})
 		return false
 	}
 	if len(project.Status.NetworkPeers) != lenOfSpec {
-		By("Project status network peers len is not equal to spec", func() {})
 		return false
 	}
 	for _, networkPeering := range project.Status.NetworkPeers {
+		if networkPeering.ProviderName == provider.ProviderAzure {
+			continue
+		}
 		if networkPeering.GetStatus() != statusPendingAcceptance && networkPeering.GetStatus() != statusWaitingUser {
-			By(fmt.Sprintf("Status is %s", networkPeering.GetStatus()), func() {})
 			return false
 		}
 	}

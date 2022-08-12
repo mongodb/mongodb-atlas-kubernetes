@@ -32,14 +32,17 @@ type NetworkPeer struct {
 	//Atlas CIDR. It needs to be set if ContainerID is not set.
 	// +optional
 	AtlasCIDRBlock string `json:"atlasCidrBlock"`
+	//AzureDirectoryID is the unique identifier for an Azure AD directory.
 	// +optional
 	AzureDirectoryID string `json:"azureDirectoryId,omitempty"`
+	// AzureSubscriptionID is the unique identifier of the Azure subscription in which the VNet resides.
 	// +optional
 	AzureSubscriptionID string `json:"azureSubscriptionId,omitempty"`
+	//ResourceGroupName is the name of your Azure resource group.
 	// +optional
 	ResourceGroupName string `json:"resourceGroupName,omitempty"`
+	// VNetName is name of your Azure VNet. Its applicable only for Azure.
 	// +optional
-	// VNet Name. Its applicable only for Azure.
 	VNetName string `json:"vnetName,omitempty"`
 	// +optional
 	// User GCP Project ID. Its applicable only for GCP.

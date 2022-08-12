@@ -1,7 +1,9 @@
 package networkpeer
 
 import (
-	"fmt"
+	"os"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
@@ -10,16 +12,20 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 )
 
+const (
+	SubscriptionID = "AZURE_SUBSCRIPTION_ID"
+	DirectoryID    = "AZURE_TENANT_ID"
+)
+
 func PreparePeerVPC(peers []v1.NetworkPeer, namespace string) error {
-	for i, peer := range peers { //TODO: refactor it
+	for i, peer := range peers {
 		awsNetworkPeer, err := NewAWSNetworkPeerService(peer.AccepterRegionName)
 		if err != nil {
 			return err
 		}
-		testID := fmt.Sprintf("%s-%d", namespace, i)
 		switch peer.ProviderName {
 		case provider.ProviderAWS:
-			accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.RouteTableCIDRBlock, testID)
+			accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.RouteTableCIDRBlock)
 			if err != nil {
 				return err
 			}
@@ -27,10 +33,41 @@ func PreparePeerVPC(peers []v1.NetworkPeer, namespace string) error {
 			peers[i].VpcID = vpcID
 		case provider.ProviderGCP:
 			err = CreateVPC(cloud.GoogleProjectID, peer.NetworkName)
-			return err
+			if err != nil {
+				return err
+			}
+		case provider.ProviderAzure:
+			err = CreateAzureVPC(os.Getenv(SubscriptionID), config.AzureRegion, peer.ResourceGroupName, peer.VNetName)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func DeletePeerVPC(peers []status.AtlasNetworkPeer) []error {
+	var errList []error
+	for _, networkPeering := range peers {
+		switch networkPeering.ProviderName {
+		case provider.ProviderAWS:
+			err := DeleteAWSPeerConnectionAndVPC(networkPeering.ConnectionID, networkPeering.Region)
+			if err != nil {
+				errList = append(errList, err)
+			}
+		case provider.ProviderGCP:
+			err := DeleteGCPvpc(cloud.GoogleProjectID, networkPeering.VPC)
+			if err != nil {
+				errList = append(errList, err)
+			}
+		case provider.ProviderAzure:
+			err := DeleteAzureVPC(os.Getenv(SubscriptionID), AzureResourceGroupName, networkPeering.VPC)
+			if err != nil {
+				errList = append(errList, err)
+			}
+		}
+	}
+	return errList
 }
 
 func EstablishPeerConnections(peers []status.AtlasNetworkPeer) error {

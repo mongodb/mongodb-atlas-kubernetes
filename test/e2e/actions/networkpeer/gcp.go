@@ -42,7 +42,7 @@ func EstablishPeerConnectionWithVPC(gpcProjectID, vnetName, atlasGCPProjectID, a
 	return err
 }
 
-func DeleteVPC(gcpProjectID, vnetName string) error {
+func DeleteGCPvpc(gcpProjectID, vnetName string) error {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {
 		return err

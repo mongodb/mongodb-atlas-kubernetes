@@ -27,7 +27,7 @@ func NewAWSNetworkPeerService(region string) (AWSNetworkPeer, error) {
 	return AWSNetworkPeer{svc}, nil
 }
 
-func (p *AWSNetworkPeer) CreateVPC(appCidr string, testID string) (string, string, error) {
+func (p *AWSNetworkPeer) CreateVPC(appCidr string) (string, string, error) {
 	vpcInput := &ec2.CreateVpcInput{
 		AmazonProvidedIpv6CidrBlock: aws.Bool(false),
 		CidrBlock:                   aws.String(appCidr),
@@ -35,7 +35,6 @@ func (p *AWSNetworkPeer) CreateVPC(appCidr string, testID string) (string, strin
 			ResourceType: aws.String(ec2.ResourceTypeVpc),
 			Tags: []*ec2.Tag{
 				{Key: aws.String("Name"), Value: aws.String(config.TagName)},
-				{Key: aws.String("Test"), Value: aws.String(testID)},
 			},
 		}},
 	}
@@ -69,7 +68,7 @@ func EstablishAWSPeerConnection(peer status.AtlasNetworkPeer) error {
 	return nil
 }
 
-func DeletePeerConnectionAndVPC(conID string, region string) error {
+func DeleteAWSPeerConnectionAndVPC(conID string, region string) error {
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)

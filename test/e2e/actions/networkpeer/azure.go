@@ -8,7 +8,9 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
-func CreateAzureVPC(subscriptionID string, vnetName, resourceGroup string) error {
+const AzureResourceGroupName = "atlas-operator-test"
+
+func CreateAzureVPC(subscriptionID, location, resourceGroup, vnetName string) error {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("authError: %w", err)
@@ -16,7 +18,14 @@ func CreateAzureVPC(subscriptionID string, vnetName, resourceGroup string) error
 	networkClient := network.NewVirtualNetworksClient(subscriptionID)
 	networkClient.Authorizer = authorizer
 	_, err = networkClient.CreateOrUpdate(context.Background(), resourceGroup, vnetName, network.VirtualNetwork{
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{},
+		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
+			AddressSpace: &network.AddressSpace{
+				AddressPrefixes: &[]string{
+					"10.1.0.0/16", // default address space
+				},
+			},
+		},
+		Location: &location,
 	})
 	if err != nil {
 		return fmt.Errorf("can not create Virtual Network: %w", err)
@@ -24,7 +33,7 @@ func CreateAzureVPC(subscriptionID string, vnetName, resourceGroup string) error
 	return nil
 }
 
-func DeleteAzureVPC(subscriptionID string, vnetName, resourceGroup string) error {
+func DeleteAzureVPC(subscriptionID, resourceGroup, vnetName string) error {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("authError: %w", err)
