@@ -87,12 +87,10 @@ type DeploymentSpec struct {
 	// +optional
 	ClusterType DeploymentType `json:"clusterType,omitempty"`
 
-	// Capacity, in gigabytes, of the host's root volume.
+	// Capacity, in gigabytes, of the host's root volume. E.g: 10, 10.5, 20.5, etc
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
 	// This value must be a positive integer.
 	// The parameter is required if replicationSpecs are configured.
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=4096
 	// +optional
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
 
