@@ -824,7 +824,7 @@ func (in *DeploymentSpec) DeepCopyInto(out *DeploymentSpec) {
 	}
 	if in.DiskSizeGB != nil {
 		in, out := &in.DiskSizeGB, &out.DiskSizeGB
-		*out = new(int)
+		*out = new(float64)
 		**out = **in
 	}
 	if in.Labels != nil {

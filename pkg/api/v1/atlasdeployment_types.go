@@ -94,7 +94,7 @@ type DeploymentSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4096
 	// +optional
-	DiskSizeGB *int `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
+	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
 
 	// Cloud service provider that offers Encryption at Rest.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;NONE
@@ -605,7 +605,7 @@ func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced
 	return c
 }
 
-func (c *AtlasDeployment) WithDiskSizeGB(size int) *AtlasDeployment {
+func (c *AtlasDeployment) WithDiskSizeGB(size float64) *AtlasDeployment {
 	c.Spec.DeploymentSpec.DiskSizeGB = &size
 	return c
 }

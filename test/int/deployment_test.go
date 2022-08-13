@@ -366,7 +366,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					"US_WEST_2": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
 				},
 			}}
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(10)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = float64ptr(10.0)
 
 			replicationSpecsCheckFunc := func(c *mongodbatlas.Cluster) {
 				deployment, err := createdDeployment.Spec.Deployment()
@@ -462,7 +462,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		It("Should Success (AWS) with enabled autoscaling", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = float64ptr(20.0)
 			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
 				AutoIndexingEnabled: boolptr(true),
 				DiskGBEnabled:       boolptr(true),
@@ -480,7 +480,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Decreasing the Deployment disk size should not take effect", func() {
 				prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(14)
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = float64ptr(14.5)
 				performUpdate(30 * time.Minute)
 				doRegularDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
@@ -494,7 +494,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = float64ptr(20.0)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -524,7 +524,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By("Decreasing the Deployment disk size", func() {
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(15)
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = float64ptr(15.0)
 				performUpdate(20 * time.Minute)
 				doRegularDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {

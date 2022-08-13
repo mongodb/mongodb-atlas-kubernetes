@@ -822,7 +822,7 @@ func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
 	}
 }
 
-//nolint
+// nolint
 func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
