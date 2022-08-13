@@ -1049,10 +1049,6 @@ func int64ptr(i int64) *int64 {
 	return &i
 }
 
-func intptr(i int) *int {
-	return &i
-}
-
 func float64ptr(f float64) *float64 {
 	return &f
 }
