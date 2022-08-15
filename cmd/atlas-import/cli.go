@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO add a debug flag
+// TODO add a debug flag and instantiate logger based on that
 
 func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 	baseConfig := importer.AtlasImportConfig{
@@ -159,7 +159,7 @@ const orgFlag = "org"
 const publicKeyFlag = "publickey"
 const privateKeyFlag = "privatekey"
 
-const namespaceFlag = "namespace"
+const namespaceFlag = "import-namespace"
 const domainFlag = "domain"
 
 const allFlag = "all"
@@ -174,7 +174,7 @@ func init() {
 	rootCmd.PersistentFlags().String(orgFlag, "", "Your Atlas organization ID")
 	rootCmd.PersistentFlags().String(publicKeyFlag, "", "Your Atlas organization public key")
 	rootCmd.PersistentFlags().String(privateKeyFlag, "", "Your Atlas organization private key")
-	//TODO rename this flag to import-namespace
+
 	rootCmd.PersistentFlags().String(namespaceFlag, "", "Kubernetes namespace in which to instantiate resources")
 	rootCmd.PersistentFlags().String(domainFlag, "", "Atlas domain name")
 
