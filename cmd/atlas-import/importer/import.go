@@ -562,6 +562,11 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 		return nil, err
 	}
 
+	// Concatenate the "sanitized" human-readable name with project ID to guarantee the name to be unique
+	projectName := stringNameConcatenation(toLowercaseAlphaNumeric(atlasProject.Name), atlasProject.ID)
+
+	connectionSecret := storeAtlasSecret(projectName, importConfig, kubeClient)
+
 	kubernetesProject := &mdbv1.AtlasProject{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AtlasProject",
@@ -569,20 +574,18 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			// Concatenate the "sanitized" human-readable name with project ID to guarantee the name to be unique
-			Name:      stringNameConcatenation(toLowercaseAlphaNumeric(atlasProject.Name), atlasProject.ID),
+
+			Name:      projectName,
 			Namespace: importConfig.ImportNamespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name: atlasProject.Name,
-			// Create a secret containing the three connection fields from AtlasImportConfig and link it, as for integrations
-			// TODO add a reference to the secret used by the import script here
-			ConnectionSecret:          nil,
+			Name:                      atlasProject.Name,
+			ConnectionSecret:          connectionSecret,
 			ProjectIPAccessList:       kubernetesAccessLists,
 			MaintenanceWindow:         *kubernetesWindow,
 			PrivateEndpoints:          kubernetesPrivateEndpoints,
 			WithDefaultAlertsSettings: false,
-			X509CertRef:               nil, // TODO Double check with anton if it can be ignored or not
+			X509CertRef:               nil, // TODO import certificate for Atlas
 			Integrations:              kubernetesIntegrations,
 		},
 		Status: status.AtlasProjectStatus{},
@@ -593,6 +596,27 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 	}
 
 	return kubernetesProject, nil
+}
+
+func storeAtlasSecret(projectName string, importConfig AtlasImportConfig, kubeClient client.Client) *common.ResourceRef {
+	secretName := stringNameConcatenation(projectName, "secret")
+
+	connectionSecretRef := common.ResourceRef{
+		Name: secretName,
+	}
+
+	//TODO : import constants from pkg/api/controller/atlas/connection.go ?
+	data := map[string][]byte{
+		"orgId":         []byte(importConfig.OrgID),
+		"publicApiKey":  []byte(importConfig.PublicKey),
+		"privateApiKey": []byte(importConfig.PrivateKey),
+	}
+	object := metav1.ObjectMeta{Name: secretName}
+	secret := &v1.Secret{Data: data, ObjectMeta: object}
+
+	instantiateKubernetesObject(kubeClient, secret)
+
+	return &connectionSecretRef
 }
 
 // ======================= HELPER METHODS =======================
