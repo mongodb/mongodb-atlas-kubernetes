@@ -440,7 +440,8 @@ func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []Imported
 	return projects, nil
 }
 
-func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, importConfig AtlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
+func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
+	importConfig AtlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
 	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	if err != nil {
 		return nil, err
@@ -499,12 +500,14 @@ func getAccessLists(atlasClient *mongodbatlas.Client, projectID string) ([]proje
 		atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, maxListOptions)
 		return atlasAccessLists.Results, err
 	}
-	ipAccessList, err := getAndConvertAssociatedResource[project.IPAccessList, mongodbatlas.ProjectIPAccessList](projectID, project.IPAccessListFromAtlas, getMethod)
+	ipAccessList, err := getAndConvertAssociatedResource[project.IPAccessList, mongodbatlas.ProjectIPAccessList](
+		projectID, project.IPAccessListFromAtlas, getMethod)
 	return ipAccessList, err
 }
 
 // Retrieve the Integrations associated to the project ID and convert them to kubernetes type.
-func getIntegrations(atlasClient *mongodbatlas.Client, projectID string, kubeClient client.Client, importConfig AtlasImportConfig) ([]project.Integration, error) {
+func getIntegrations(atlasClient *mongodbatlas.Client, projectID string, kubeClient client.Client,
+	importConfig AtlasImportConfig) ([]project.Integration, error) {
 	atlasIntegrations, _, err := atlasClient.Integrations.List(backgroundCtx, projectID)
 	if err != nil {
 		return nil, err
@@ -544,7 +547,8 @@ func getPrivateEndpoints(atlasClient *mongodbatlas.Client, projectID string) ([]
 	return kubernetesPrivateEndpoints, nil
 }
 
-func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client, kubeClient client.Client, importConfig AtlasImportConfig) (*mdbv1.AtlasProject, error) {
+func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
+	kubeClient client.Client, importConfig AtlasImportConfig) (*mdbv1.AtlasProject, error) {
 	kubernetesWindow, err := getWindow(atlasClient, atlasProject.ID)
 	if err != nil {
 		return nil, err
@@ -605,7 +609,7 @@ func storeAtlasSecret(projectName string, importConfig AtlasImportConfig, kubeCl
 		Name: secretName,
 	}
 
-	//TODO : import constants from pkg/api/controller/atlas/connection.go ?
+	//TODO : import constants from pkg/api/controller/atlas/connection.go for field names ? Need to export them first
 	data := map[string][]byte{
 		"orgId":         []byte(importConfig.OrgID),
 		"publicApiKey":  []byte(importConfig.PublicKey),
