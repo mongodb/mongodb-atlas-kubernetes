@@ -28,6 +28,7 @@ import (
 // TODO improve credentials mgmt, see James suggestion
 // TODO import project by names instead of IDs
 // TODO improve logs (info level)
+// TODO depending on the team discussion issue about using Advanced API only for clusters, import advanced only
 
 // AtlasImportConfig contains the full import configuration
 type AtlasImportConfig struct {
@@ -205,25 +206,23 @@ func RunImports(importConfig AtlasImportConfig) error {
 				return err
 			}
 			schedule, policy, err := retrieveBackupSchedule(atlasClient, atlasProject.ID, deploymentName, importConfig)
-			if err != nil {
-				return err
+			// TODO check that the error is indeed a 404 (meaning there's no schedule) and can be ignored
+			if err == nil {
+				// Linking deployment to its schedule (policy is already linked to the schedule)
+				kubernetesDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
+					Name:      schedule.Name,
+					Namespace: importConfig.ImportNamespace,
+				}
+				instantiateKubernetesObject(kubeClient, schedule)
+				instantiateKubernetesObject(kubeClient, policy)
+				instantiateKubernetesObject(kubeClient, kubernetesDeployment)
 			}
-			// Linking deployment to its schedule (policy is already linked to the schedule)
-			kubernetesDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
-				Name:      schedule.Name,
-				Namespace: importConfig.ImportNamespace,
-			}
-			instantiateKubernetesObject(kubeClient, schedule)
-			instantiateKubernetesObject(kubeClient, policy)
-			instantiateKubernetesObject(kubeClient, kubernetesDeployment)
 		}
 	}
 	return nil
 }
 
 // ======================= ATLAS DEPLOYMENTS =======================
-
-//TODO import advanced only
 
 func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	switch {
@@ -238,25 +237,28 @@ func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	}
 }
 
-//func getAllPaginatedResources[resource any](paginatedCall func(options mongodbatlas.ListOptions) ([]resource, mongodbatlas.Response)) []resource {
-//	maxItems := 500
-//	listOptions := mongodbatlas.ListOptions{
-//		PageNum:      0,
-//		ItemsPerPage: maxItems,
-//		IncludeCount: true,
-//	}
-//	shouldContinue := true
-//	resources := make([]resource, 0)
-//	for currPageNum := 1; shouldContinue; currPageNum++ {
-//		listOptions.PageNum = currPageNum
-//		newResources, res := paginatedCall(listOptions)
-//		resources = append(resources, newResources...)
-//		if res.IsLastPage() {
-//			shouldContinue = false
-//		}
-//	}
-//	return resources
-//}
+func getAllPaginatedResources[resource any](paginatedCall func(options *mongodbatlas.ListOptions) ([]resource, *mongodbatlas.Response, error)) []resource {
+	maxItems := 1
+	listOptions := &mongodbatlas.ListOptions{
+		PageNum:      0,
+		ItemsPerPage: maxItems,
+		IncludeCount: true,
+	}
+	shouldContinue := true
+	resources := make([]resource, 0)
+	for currPageNum := 1; shouldContinue; currPageNum++ {
+		listOptions.PageNum = currPageNum
+		newResources, res, err := paginatedCall(listOptions)
+		if err != nil {
+			Log.Fatal("Impossible to fetch resource : " + err.Error())
+		}
+		resources = append(resources, newResources...)
+		if res.IsLastPage() {
+			shouldContinue = false
+		}
+	}
+	return resources
+}
 
 func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
 	importConfig AtlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
@@ -267,28 +269,28 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		Under the hood, they are the same thing in Atlas, normal is a legacy version which doesn't
 		support multi-cloud Deployments
 	*/
-	atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
-	//atlasDeployments := getAllPaginatedResources(
-	//	func(options mongodbatlas.ListOptions) ([]resource, mongodbatlas.Response) {
-	//		atlasDeployments, res, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, options)
-	//		return atlasDeployments, res
-	//	}
-	//)
-	if err != nil {
-		return nil, err
-	}
-	atlasAdvancedDeployments, _, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
-	if err != nil {
-		return nil, err
-	}
-	atlasServerlessDeployments, _, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, maxListOptions)
-	if err != nil {
-		return nil, err
-	}
+	//atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
+	atlasDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+			return atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, options)
+		},
+	)
+	atlasAdvancedDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, options)
+			return rep.Results, res, err
+		},
+	)
+	atlasServerlessDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, options)
+			return rep.Results, res, err
+		},
+	)
 
 	// Get advanced, serverless and normal from Atlas
 	// Normal and serverless are both of type cluster in Atlas API, but are returned by different API calls
-	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments.Results)+len(atlasServerlessDeployments.Results))
+	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments)+len(atlasServerlessDeployments))
 
 	normalDeploymentSet := make(map[string]bool)
 
@@ -303,19 +305,19 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
 	}
 
-	for i := range atlasAdvancedDeployments.Results {
-		isNormal, ok := normalDeploymentSet[atlasAdvancedDeployments.Results[i].Name]
+	for i := range atlasAdvancedDeployments {
+		isNormal, ok := normalDeploymentSet[atlasAdvancedDeployments[i].Name]
 		if !ok {
 			continue
 		}
-		println("advanced " + atlasAdvancedDeployments.Results[i].Name)
+		println("advanced " + atlasAdvancedDeployments[i].Name)
 		if isNormal {
 			println("skipped because normal")
 			// Already managed previously, skip
 			continue
 		}
 
-		kubernetesAdvancedDeploymentSpec, err := mdbv1.AdvancedDeploymentFromAtlas(atlasAdvancedDeployments.Results[i])
+		kubernetesAdvancedDeploymentSpec, err := mdbv1.AdvancedDeploymentFromAtlas(atlasAdvancedDeployments[i])
 		if err != nil {
 			return nil, err
 		}
@@ -324,9 +326,9 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
 	}
 
-	for i := range atlasServerlessDeployments.Results {
-		kubernetesServerlessDeploymentSpec, err := mdbv1.ServerlessDeploymentFromAtlas(atlasServerlessDeployments.Results[i])
-		println("serverless " + atlasServerlessDeployments.Results[i].Name)
+	for i := range atlasServerlessDeployments {
+		kubernetesServerlessDeploymentSpec, err := mdbv1.ServerlessDeploymentFromAtlas(atlasServerlessDeployments[i])
+		println("serverless " + atlasServerlessDeployments[i].Name)
 		if err != nil {
 			return nil, err
 		}
@@ -615,7 +617,7 @@ func storeAtlasSecret(projectName string, importConfig AtlasImportConfig, kubeCl
 		"publicApiKey":  []byte(importConfig.PublicKey),
 		"privateApiKey": []byte(importConfig.PrivateKey),
 	}
-	object := metav1.ObjectMeta{Name: secretName}
+	object := metav1.ObjectMeta{Name: secretName, Namespace: importConfig.ImportNamespace}
 	secret := &v1.Secret{Data: data, ObjectMeta: object}
 
 	instantiateKubernetesObject(kubeClient, secret)
@@ -641,7 +643,7 @@ func toLowercaseAlphaNumeric(s string) string {
 // Terminates the program if an error occurs
 func instantiateKubernetesObject(kubeClient client.Client, object client.Object) {
 	if err := kubeClient.Create(backgroundCtx, object); err != nil {
-		Log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster")
+		Log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster, error is : " + err.Error())
 	}
 }
 
