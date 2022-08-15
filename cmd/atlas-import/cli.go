@@ -23,11 +23,11 @@ func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 	baseConfig.PublicKey = publicKey
 	baseConfig.PrivateKey = privateKey
 	baseConfig.OrgID = orgID
-	domain, err := cmd.Flags().GetString("domain")
+	domain, err := cmd.Flags().GetString(domainFlag)
 	if err == nil && domain != "" {
 		baseConfig.AtlasDomain = domain
 	}
-	namespace, err := cmd.Flags().GetString("namespace")
+	namespace, err := cmd.Flags().GetString(namespaceFlag)
 	if err == nil && domain != "" {
 		baseConfig.ImportNamespace = namespace
 	}
@@ -35,20 +35,20 @@ func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 }
 
 func getConnectionStrings(cmd *cobra.Command) (string, string, string) {
-	orgID, err := cmd.Flags().GetString("org")
+	orgID, err := cmd.Flags().GetString(orgFlag)
 	if err != nil {
 		importer.Log.Error(err.Error())
-		importer.Log.Fatal("Please provide following arg : org")
+		importer.Log.Fatal("Please provide following arg : " + orgFlag)
 	}
-	publicKey, err := cmd.Flags().GetString("publickey")
+	publicKey, err := cmd.Flags().GetString(publicKeyFlag)
 	if err != nil {
 		importer.Log.Error(err.Error())
-		importer.Log.Fatal("Please provide following arg : publickey")
+		importer.Log.Fatal("Please provide following arg : " + publicKeyFlag)
 	}
-	privateKey, err := cmd.Flags().GetString("privatekey")
+	privateKey, err := cmd.Flags().GetString(privateKeyFlag)
 	if err != nil {
 		importer.Log.Error(err.Error())
-		importer.Log.Fatal("Please provide following arg : privatekey")
+		importer.Log.Fatal("Please provide following arg : " + privateKeyFlag)
 	}
 	return orgID, publicKey, privateKey
 }
@@ -121,8 +121,8 @@ var projectCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		importProjectID := args[0]
-		importAllDeployments, _ := cmd.Flags().GetBool("all")
-		deploymentsList, _ := cmd.Flags().GetStringSlice("Deployments")
+		importAllDeployments, _ := cmd.Flags().GetBool(allFlag)
+		deploymentsList, _ := cmd.Flags().GetStringSlice(deploymentsFlag)
 		importer.Log.Info("Importing project with ID : " + importProjectID)
 		config := generateBaseConfig(cmd)
 		config.ImportAll = false
@@ -155,21 +155,31 @@ func Execute() {
 	}
 }
 
+const orgFlag = "org"
+const publicKeyFlag = "publickey"
+const privateKeyFlag = "privatekey"
+
+const namespaceFlag = "namespace"
+const domainFlag = "domain"
+
+const allFlag = "all"
+const deploymentsFlag = "deployments"
+
 func init() {
 	rootCmd.AddCommand(fromConfigCmd)
 	rootCmd.AddCommand(projectCmd)
 	rootCmd.AddCommand(allCmd)
 
 	//TODO replace authentication method, can store a secret in cluster like for operator
-	rootCmd.PersistentFlags().String("org", "", "Your Atlas organization ID")
-	rootCmd.PersistentFlags().String("publickey", "", "Your Atlas organization public key")
-	rootCmd.PersistentFlags().String("privatekey", "", "Your Atlas organization private key")
+	rootCmd.PersistentFlags().String(orgFlag, "", "Your Atlas organization ID")
+	rootCmd.PersistentFlags().String(publicKeyFlag, "", "Your Atlas organization public key")
+	rootCmd.PersistentFlags().String(privateKeyFlag, "", "Your Atlas organization private key")
 	//TODO rename this flag to import-namespace
-	rootCmd.PersistentFlags().String("namespace", "", "Kubernetes namespace in which to instantiate resources")
-	rootCmd.PersistentFlags().String("domain", "", "Atlas domain name")
+	rootCmd.PersistentFlags().String(namespaceFlag, "", "Kubernetes namespace in which to instantiate resources")
+	rootCmd.PersistentFlags().String(domainFlag, "", "Atlas domain name")
 
 	//Will be true if --all is added, and false otherwise
-	projectCmd.PersistentFlags().Bool("all", false, "Import all Deployments for given project")
+	projectCmd.PersistentFlags().Bool(allFlag, false, "Import all Deployments for given project")
 	//Deployments should be specified as : --deployments="dep1,dep2,dep3"
-	projectCmd.PersistentFlags().StringSlice("deployments", []string{}, "List of Deployments ID to import for given project")
+	projectCmd.PersistentFlags().StringSlice(deploymentsFlag, []string{}, "List of Deployments ID to import for given project")
 }
