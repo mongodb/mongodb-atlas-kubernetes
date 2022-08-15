@@ -1,4 +1,4 @@
-package main
+package importer
 
 import (
 	"context"
@@ -25,6 +25,9 @@ import (
 )
 
 // TODO for each paginated API call, make sure to retrieve every items
+// TODO improve credentials mgmt, see James suggestion
+// TODO import project by names instead of IDs
+// TODO improve logs (info level)
 
 // AtlasImportConfig contains the full import configuration
 type AtlasImportConfig struct {
@@ -50,13 +53,13 @@ var maxListOptions = &mongodbatlas.ListOptions{
 	ItemsPerPage: 500,
 	IncludeCount: false,
 }
-var log *zap.Logger
+var Log *zap.Logger
 var kubeAPIVersion = "v1"
 
 // setUpAtlasClient instantiate the client to interact with the Atlas API
 // Credentials are provided in the import configuration
 func setUpAtlasClient(config *AtlasImportConfig) (*mongodbatlas.Client, error) {
-	log.Debug("Creating AtlasClient")
+	Log.Debug("Creating AtlasClient")
 	credentials := atlas.Connection{
 		OrgID:      config.OrgID,
 		PublicKey:  config.PublicKey,
@@ -66,7 +69,7 @@ func setUpAtlasClient(config *AtlasImportConfig) (*mongodbatlas.Client, error) {
 	if config.AtlasDomain != "" {
 		atlasDomain = config.AtlasDomain
 	}
-	atlasClient, err := atlas.Client(atlasDomain, credentials, log.Sugar())
+	atlasClient, err := atlas.Client(atlasDomain, credentials, Log.Sugar())
 	return &atlasClient, err
 }
 
@@ -78,7 +81,7 @@ func setUpAtlasClient(config *AtlasImportConfig) (*mongodbatlas.Client, error) {
 // * In-cluster config if running in cluster
 // * $HOME/.kube/config if exists.
 func setUpKubernetesClient() (client.Client, error) {
-	log.Debug("Creating kube client")
+	Log.Debug("Creating kube client")
 
 	// Add CRDs definitions to client scheme
 	scheme := runtime.NewScheme()
@@ -88,14 +91,14 @@ func setUpKubernetesClient() (client.Client, error) {
 	// Instantiate the client to interact with k8s cluster
 	kubeConfig, err := config.GetConfig()
 	if err != nil {
-		log.Error("Failed to retrieve kube config")
+		Log.Error("Failed to retrieve kube config")
 		return nil, err
 	}
 	kubeClient, err := client.New(kubeConfig, client.Options{
 		Scheme: scheme,
 	})
 	if err != nil {
-		log.Error("Failed to create kube client")
+		Log.Error("Failed to create kube client")
 		return nil, err
 	}
 	return kubeClient, nil
@@ -112,7 +115,7 @@ func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
 		return err
 	}
 	if nameSpaceObject.Name != namespace {
-		log.Error("the specified import namespace couldn't be retrieved from kubernetes cluster")
+		Log.Error("the specified import namespace couldn't be retrieved from kubernetes cluster")
 		return errors.New("namespace " + namespace + " doesn't exist")
 	}
 	return nil
@@ -120,8 +123,8 @@ func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
 
 func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Client, error) {
 	// TODO use right logger
-	log, _ = zap.NewDevelopment()
-	zap.ReplaceGlobals(log)
+	Log, _ = zap.NewDevelopment()
+	zap.ReplaceGlobals(Log)
 
 	atlasClient, err := setUpAtlasClient(&importConfig)
 	if err != nil {
@@ -141,13 +144,13 @@ func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Cli
 	return atlasClient, kubeClient, nil
 }
 
-func runImports(importConfig AtlasImportConfig) error {
+func RunImports(importConfig AtlasImportConfig) error {
 	atlasClient, kubeClient, err := fullSetUp(importConfig)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("Importing projects")
+	Log.Debug("Importing projects")
 	// Import all project if flag is set, otherwise import the ones specified by User
 	var projects []*mongodbatlas.Project
 	if importConfig.ImportAll {
@@ -159,7 +162,7 @@ func runImports(importConfig AtlasImportConfig) error {
 		return err
 	}
 
-	log.Debug("Populating all imported projects")
+	Log.Debug("Populating all imported projects")
 	for _, atlasProject := range projects {
 		// For each atlas project, retrieve associated information and convert to K8s kubernetesProject
 		kubernetesProject, err := completeAndConvertProject(atlasProject, atlasClient, kubeClient, importConfig)
@@ -167,7 +170,7 @@ func runImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 		// Add resource to k8s cluster
-		log.Debug(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
+		Log.Debug(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
 		instantiateKubernetesObject(kubeClient, kubernetesProject)
 
 		projectRef := &common.ResourceRefNamespaced{
@@ -181,7 +184,7 @@ func runImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		log.Debug("Instantiating database users")
+		Log.Debug("Instantiating database users")
 		for _, kubernetesDatabaseUser := range kubernetesDatabaseUsers {
 			kubernetesDatabaseUser.Spec.Project = *projectRef
 			instantiateKubernetesObject(kubeClient, kubernetesDatabaseUser)
@@ -195,7 +198,7 @@ func runImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		log.Debug("Instantiating Deployments and their backup policies")
+		Log.Debug("Instantiating Deployments and their backup policies")
 		for _, kubernetesDeployment := range kubernetesDeployments {
 			deploymentName, err := getDeploymentName(kubernetesDeployment)
 			if err != nil {
@@ -469,7 +472,7 @@ func getWindow(atlasClient *mongodbatlas.Client, projectID string) (*project.Mai
 
 // TODO refactor 3 methods below with Generics
 
-func getAndConvertAssociatedResource[kubernetesResource interface{}, atlasResource interface{}](
+func getAndConvertAssociatedResource[kubernetesResource any, atlasResource any](
 	projectID string, conversionMethod func(*atlasResource) (*kubernetesResource, error),
 	getMethod func(context.Context, string) ([]atlasResource, error)) (
 	[]kubernetesResource, error) {
@@ -571,14 +574,15 @@ func completeAndConvertProject(atlasProject *mongodbatlas.Project, atlasClient *
 			Namespace: importConfig.ImportNamespace,
 		},
 		Spec: mdbv1.AtlasProjectSpec{
-			Name:             atlasProject.Name,
-			ConnectionSecret: nil, // Create a secret containing the three connection fields from AtlasImportConfig and link it, as for integrations
-			// TODO maybe better to just not specify connection secret (the operator's default is used in that case)
+			Name: atlasProject.Name,
+			// Create a secret containing the three connection fields from AtlasImportConfig and link it, as for integrations
+			// TODO add a reference to the secret used by the import script here
+			ConnectionSecret:          nil,
 			ProjectIPAccessList:       kubernetesAccessLists,
 			MaintenanceWindow:         *kubernetesWindow,
 			PrivateEndpoints:          kubernetesPrivateEndpoints,
 			WithDefaultAlertsSettings: false,
-			X509CertRef:               nil, // Double check with anton if it can be ignored or not
+			X509CertRef:               nil, // TODO Double check with anton if it can be ignored or not
 			Integrations:              kubernetesIntegrations,
 		},
 		Status: status.AtlasProjectStatus{},
@@ -609,7 +613,7 @@ func toLowercaseAlphaNumeric(s string) string {
 // Terminates the program if an error occurs
 func instantiateKubernetesObject(kubeClient client.Client, object client.Object) {
 	if err := kubeClient.Create(backgroundCtx, object); err != nil {
-		log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster")
+		Log.Fatal("Failed to instantiate object " + object.GetName() + " in kube cluster")
 	}
 }
 
