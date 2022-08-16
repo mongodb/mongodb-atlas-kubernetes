@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+
+	"go.uber.org/zap/zapcore"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,10 +27,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 )
 
-// TODO improve credentials mgmt, see James suggestion
+// TODO improve credentials mgmt, see discussions on Spec document
 // TODO import project by names instead of IDs
 // TODO improve logs (info level)
-// TODO depending on the team discussion issue about using Advanced API only for clusters, import advanced only
+// TODO depending on the team discussion outcome about using Advanced API only for clusters, import advanced only
 
 // AtlasImportConfig contains the full import configuration
 type AtlasImportConfig struct {
@@ -38,6 +41,7 @@ type AtlasImportConfig struct {
 	ImportNamespace  string            `yaml:"ImportNamespace"`
 	ImportAll        bool              `yaml:"ImportAll"`
 	ImportedProjects []ImportedProject `yaml:"ImportedProjects"`
+	Verbose          bool              `yaml:"Verbose"`
 }
 
 type ImportedProject struct {
@@ -118,10 +122,49 @@ func ensureNamespaceExists(kubeClient client.Client, namespace string) error {
 	return nil
 }
 
+func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
+	lv := zap.AtomicLevel{}
+	err := lv.UnmarshalText([]byte(strings.ToLower(level)))
+	if err != nil {
+		return nil, err
+	}
+
+	enc := strings.ToLower(encoding)
+	if enc != "json" && enc != "console" {
+		return nil, errors.New("'encoding' parameter can only by either 'json' or 'console'")
+	}
+
+	cfg := zap.Config{
+		Level:             lv,
+		OutputPaths:       []string{"stdout"},
+		DisableCaller:     false,
+		DisableStacktrace: false,
+		Encoding:          enc,
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:  "msg",
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalLevelEncoder,
+			TimeKey:     "time",
+			EncodeTime:  zapcore.ISO8601TimeEncoder,
+		},
+	}
+	return cfg.Build()
+}
+
 func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Client, error) {
-	// TODO use right logger
-	Log, _ = zap.NewDevelopment()
+	var err error
+	logLevel := "info"
+	if importConfig.Verbose {
+		logLevel = "debug"
+	}
+	Log, err = initCustomZapLogger(logLevel, "json") //or "info"
+	if err != nil {
+		println("Impossible to initialize logger : " + err.Error())
+		os.Exit(1)
+	}
 	zap.ReplaceGlobals(Log)
+
+	Log.Info("Instantiating Atlas and Kubernetes Clients")
 
 	atlasClient, err := setUpAtlasClient(&importConfig)
 	if err != nil {
@@ -147,7 +190,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 		return err
 	}
 
-	Log.Debug("Importing projects")
+	Log.Info("Listing projects to import")
 	// Import all project if flag is set, otherwise import the ones specified by User
 	var projects []*mongodbatlas.Project
 	if importConfig.ImportAll {
@@ -159,7 +202,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 		return err
 	}
 
-	Log.Debug("Populating all imported projects")
+	Log.Info("Populating projects")
 	for _, atlasProject := range projects {
 		// For each atlas project, retrieve associated information and convert to K8s kubernetesProject
 		kubernetesProject, err := completeAndConvertProject(atlasProject, atlasClient, kubeClient, importConfig)
@@ -167,7 +210,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 		// Add resource to k8s cluster
-		Log.Debug(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
+		Log.Info(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
 		instantiateKubernetesObject(kubeClient, kubernetesProject)
 
 		projectRef := &common.ResourceRefNamespaced{
@@ -181,7 +224,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		Log.Debug("Instantiating database users")
+		Log.Info("Instantiating project database users")
 		for _, kubernetesDatabaseUser := range kubernetesDatabaseUsers {
 			kubernetesDatabaseUser.Spec.Project = *projectRef
 			instantiateKubernetesObject(kubeClient, kubernetesDatabaseUser)
@@ -195,7 +238,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		Log.Debug("Instantiating Deployments and their backup policies")
+		Log.Info("Instantiating project Deployments and their backup policies")
 		for _, kubernetesDeployment := range kubernetesDeployments {
 			deploymentName, err := getDeploymentName(kubernetesDeployment)
 			if err != nil {
@@ -294,7 +337,7 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 			return nil, err
 		}
 		normalDeploymentSet[kubernetesDeploymentSpec.Name] = true
-		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(kubernetesDeploymentSpec, nil,
+		kubernetesDeployment := generateKubeDeploymentCRDFromSpecs(kubernetesDeploymentSpec, nil,
 			nil, importConfig, kubernetesDeploymentSpec.Name, projectRef)
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
 	}
@@ -304,9 +347,8 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		if !ok {
 			continue
 		}
-		println("advanced " + atlasAdvancedDeployments[i].Name)
 		if isNormal {
-			println("skipped because normal")
+			Log.Debug("Skipping " + atlasAdvancedDeployments[i].Name + " because already imported as normal")
 			// Already managed previously, skip
 			continue
 		}
@@ -315,18 +357,17 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		if err != nil {
 			return nil, err
 		}
-		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(nil, kubernetesAdvancedDeploymentSpec,
+		kubernetesDeployment := generateKubeDeploymentCRDFromSpecs(nil, kubernetesAdvancedDeploymentSpec,
 			nil, importConfig, kubernetesAdvancedDeploymentSpec.Name, projectRef)
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
 	}
 
 	for i := range atlasServerlessDeployments {
 		kubernetesServerlessDeploymentSpec, err := mdbv1.ServerlessDeploymentFromAtlas(atlasServerlessDeployments[i])
-		println("serverless " + atlasServerlessDeployments[i].Name)
 		if err != nil {
 			return nil, err
 		}
-		kubernetesDeployment := instantiateKubernetesDeploymentFromSpecs(nil, nil,
+		kubernetesDeployment := generateKubeDeploymentCRDFromSpecs(nil, nil,
 			kubernetesServerlessDeploymentSpec, importConfig, kubernetesServerlessDeploymentSpec.Name, projectRef)
 		kubernetesDeployments = append(kubernetesDeployments, kubernetesDeployment)
 	}
@@ -334,7 +375,7 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	return kubernetesDeployments, nil
 }
 
-func instantiateKubernetesDeploymentFromSpecs(normalSpec *mdbv1.DeploymentSpec,
+func generateKubeDeploymentCRDFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 	advancedSpec *mdbv1.AdvancedDeploymentSpec, serverlessSpec *mdbv1.ServerlessSpec, importConfig AtlasImportConfig,
 	deploymentName string, projectRef *common.ResourceRefNamespaced) *mdbv1.AtlasDeployment {
 	kubernetesDeployment := mdbv1.AtlasDeployment{
