@@ -24,7 +24,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 )
 
-// TODO for each paginated API call, make sure to retrieve every items
 // TODO improve credentials mgmt, see James suggestion
 // TODO import project by names instead of IDs
 // TODO improve logs (info level)
@@ -49,13 +48,10 @@ type ImportedProject struct {
 
 // Global variables
 var backgroundCtx = context.Background()
-var maxListOptions = &mongodbatlas.ListOptions{
-	PageNum:      0,
-	ItemsPerPage: 500,
-	IncludeCount: false,
-}
 var Log *zap.Logger
 var kubeAPIVersion = "v1"
+
+const maxItemPerPageAtlas = 500
 
 // setUpAtlasClient instantiate the client to interact with the Atlas API
 // Credentials are provided in the import configuration
@@ -238,10 +234,9 @@ func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 }
 
 func getAllPaginatedResources[resource any](paginatedCall func(options *mongodbatlas.ListOptions) ([]resource, *mongodbatlas.Response, error)) []resource {
-	maxItems := 1
 	listOptions := &mongodbatlas.ListOptions{
 		PageNum:      0,
-		ItemsPerPage: maxItems,
+		ItemsPerPage: maxItemPerPageAtlas,
 		IncludeCount: true,
 	}
 	shouldContinue := true
@@ -269,7 +264,6 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		Under the hood, they are the same thing in Atlas, normal is a legacy version which doesn't
 		support multi-cloud Deployments
 	*/
-	//atlasDeployments, _, err := atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, maxListOptions)
 	atlasDeployments := getAllPaginatedResources(
 		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 			return atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, options)
@@ -422,11 +416,13 @@ func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, 
 
 func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, error) {
 	// Retrieve all projects associated to credentials
-	allProjects, _, err := atlasClient.Projects.GetAllProjects(backgroundCtx, maxListOptions)
-	if err != nil {
-		return nil, err
-	}
-	projects := allProjects.Results
+	allProjects := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.Project, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.Projects.GetAllProjects(backgroundCtx, options)
+			return rep.Results, res, err
+		},
+	)
+	projects := allProjects
 	return projects, nil
 }
 
@@ -444,11 +440,12 @@ func getListedProjects(atlasClient *mongodbatlas.Client, importConfig []Imported
 
 func getAndConvertDBUsers(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
 	importConfig AtlasImportConfig) ([]*mdbv1.AtlasDatabaseUser, error) {
-	atlasDatabaseUsers, _, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, maxListOptions)
-	if err != nil {
-		return nil, err
-	}
-
+	atlasDatabaseUsers := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.DatabaseUser, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.DatabaseUsers.List(backgroundCtx, atlasProject.ID, options)
+			return rep, res, err
+		},
+	)
 	kubernetesDatabaseUsers := make([]*mdbv1.AtlasDatabaseUser, 0, len(atlasDatabaseUsers))
 	for i := range atlasDatabaseUsers {
 		convertedUser, err := mdbv1.AtlasDatabaseUserFromAtlas(&atlasDatabaseUsers[i], nil)
@@ -499,8 +496,12 @@ func getAndConvertAssociatedResource[kubernetesResource any, atlasResource any](
 // Retrieve the IpAccessLists associated to the project ID and convert them to kubernetes type.
 func getAccessLists(atlasClient *mongodbatlas.Client, projectID string) ([]project.IPAccessList, error) {
 	getMethod := func(context.Context, string) ([]mongodbatlas.ProjectIPAccessList, error) {
-		atlasAccessLists, _, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, maxListOptions)
-		return atlasAccessLists.Results, err
+		atlasAccessLists := getAllPaginatedResources(
+			func(options *mongodbatlas.ListOptions) ([]mongodbatlas.ProjectIPAccessList, *mongodbatlas.Response, error) {
+				atlasAccessLists, res, err := atlasClient.ProjectIPAccessList.List(backgroundCtx, projectID, options)
+				return atlasAccessLists.Results, res, err
+			})
+		return atlasAccessLists, nil
 	}
 	ipAccessList, err := getAndConvertAssociatedResource[project.IPAccessList, mongodbatlas.ProjectIPAccessList](
 		projectID, project.IPAccessListFromAtlas, getMethod)
@@ -532,10 +533,10 @@ func getPrivateEndpoints(atlasClient *mongodbatlas.Client, projectID string) ([]
 	var kubernetesPrivateEndpoints []mdbv1.PrivateEndpoint
 	// Retrieving endpoints for each cloud provider
 	for _, cloudProvider := range []string{"AWS", "GCP", "AZURE"} {
-		atlasProviderEndpoints, _, err := atlasClient.PrivateEndpoints.List(backgroundCtx, projectID, cloudProvider, maxListOptions)
-		if err != nil {
-			return nil, err
-		}
+		atlasProviderEndpoints := getAllPaginatedResources(
+			func(options *mongodbatlas.ListOptions) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
+				return atlasClient.PrivateEndpoints.List(backgroundCtx, projectID, cloudProvider, options)
+			})
 
 		for i := range atlasProviderEndpoints {
 			kubernetesPrivateEndpoint, err := mdbv1.PrivateEndpointFromAtlas(&atlasProviderEndpoints[i])
