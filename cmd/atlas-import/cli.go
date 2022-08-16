@@ -18,6 +18,7 @@ func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 	baseConfig := importer.AtlasImportConfig{
 		AtlasDomain:     "https://cloud-qa.mongodb.com",
 		ImportNamespace: "default",
+		Verbose:         false,
 	}
 	orgID, publicKey, privateKey := getConnectionStrings(cmd)
 	baseConfig.PublicKey = publicKey
@@ -30,6 +31,10 @@ func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 	namespace, err := cmd.Flags().GetString(namespaceFlag)
 	if err == nil && domain != "" {
 		baseConfig.ImportNamespace = namespace
+	}
+	verbose, err := cmd.Flags().GetBool(verboseFlag)
+	if err == nil && verbose {
+		baseConfig.Verbose = true
 	}
 	return baseConfig
 }
@@ -159,6 +164,8 @@ const orgFlag = "org"
 const publicKeyFlag = "publickey"
 const privateKeyFlag = "privatekey"
 
+const verboseFlag = "verbose"
+
 const namespaceFlag = "import-namespace"
 const domainFlag = "domain"
 
@@ -174,6 +181,8 @@ func init() {
 	rootCmd.PersistentFlags().String(orgFlag, "", "Your Atlas organization ID")
 	rootCmd.PersistentFlags().String(publicKeyFlag, "", "Your Atlas organization public key")
 	rootCmd.PersistentFlags().String(privateKeyFlag, "", "Your Atlas organization private key")
+
+	rootCmd.PersistentFlags().Bool(verboseFlag, false, "Enable verbose mode")
 
 	rootCmd.PersistentFlags().String(namespaceFlag, "", "Kubernetes namespace in which to instantiate resources")
 	rootCmd.PersistentFlags().String(domainFlag, "", "Atlas domain name")
