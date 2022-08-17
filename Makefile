@@ -280,7 +280,7 @@ ORG=SECRET
 PUBLICKEY=SECRET
 PRIVATEKEY=SECRET
 run-import: prepare-import
-	./bin/atlas-import from-config "config.example.yaml"
+	./bin/atlas-import from-config "cmd/atlas-import/config.example.yaml"
 	#./bin/atlas-import project --org $(ORG) --publickey $(PUBLICKEY) --privatekey $(PRIVATEKEY) --namespace $(NAMESPACE) "62d03642c97b142723646b33" --all --verbose
 
 .PHONY: x509-cert
