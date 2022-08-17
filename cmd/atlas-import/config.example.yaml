@@ -1,0 +1,16 @@
+OrgID: SECRET
+PublicKey: SECRET
+PrivateKey: SECRET
+ImportNamespace: import-namespace
+AtlasDomain: https://cloud-qa.mongodb.com/
+Verbose: true
+ImportAll: false
+ImportedProjects:
+  - Id: 62fa27dc4672a605cc2d6d04
+    ImportAll: false
+    Deployments:
+      - Cluster0
+      - Cluster2
+      - ServerlessInstance0
+      - ServerlessInstance1
+      - Cluster1
