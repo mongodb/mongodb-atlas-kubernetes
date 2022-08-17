@@ -91,6 +91,13 @@ int-test: generate manifests ## Run integration tests. Sample with labels: `make
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
+.PHONY: e2e-importer
+e2e-importer: run-kind prepare-import
+	MCLI_ORG_ID=SECRET \
+    MCLI_PUBLIC_API_KEY=SECRET \
+    MCLI_PRIVATE_API_KEY=SECRET \
+	ginkgo --timeout=120m -v test/e2e-importer
+
 .PHONY: e2e-openshift-upgrade
 e2e-openshift-upgrade:
 	cd scripts && ./openshift-upgrade-test.sh
@@ -252,6 +259,25 @@ clear-atlas: ## Clear Atlas organization
 post-install-hook:
 	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
 	chmod +x bin/helm-post-install
+
+.PHONY: atlas-import
+atlas-import: generate manifests fmt vet ## Build atlas-import binary
+	go build -o bin/atlas-import -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/atlas-import/cli.go
+
+NAMESPACE="import-namespace"
+prepare-import: run-kind atlas-import
+	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	for atlas_type in "atlasprojects" "atlasdeployments" "atlasdatabaseusers" "atlasbackuppolicies" "atlasbackupschedules" "secrets" ; do \
+		kubectl apply -f config/crd/bases/atlas.mongodb.com_$${atlas_type}.yaml ; \
+		kubectl -n $(NAMESPACE) delete $$atlas_type --all ; \
+	done
+
+ORG=SECRET
+PUBLICKEY=SECRET
+PRIVATEKEY=SECRET
+run-import: prepare-import
+	./bin/atlas-import from-config "config.example.yaml"
+	#./bin/atlas-import project --org $(ORG) --publickey $(PUBLICKEY) --privatekey $(PRIVATEKEY) --namespace $(NAMESPACE) "62d03642c97b142723646b33" --all --verbose
 
 .PHONY: x509-cert
 x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
