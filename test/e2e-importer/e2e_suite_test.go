@@ -33,7 +33,7 @@ var _ = BeforeSuite(func() {
 		Fail("Failed to retrieve kube config")
 	}
 	k8sClient, _ = client.New(kubeConfig, client.Options{
-		Scheme: nil,
+		Scheme: scheme,
 	})
 
 	atlasClient = atlas.GetClientOrFail()

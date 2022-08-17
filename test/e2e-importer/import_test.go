@@ -6,6 +6,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/cmd/atlas-import/importer"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+
 	"crypto/rand"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -51,6 +54,7 @@ var _ = Describe("Importer should import from Atlas", func() {
 		Expect(deployment.ID).NotTo(BeEmpty())
 	})
 
+	// TODO clean cluster after each import
 	var _ = AfterEach(func() {
 		//Remove the deployment
 		atlasClient.Client.Clusters.Delete(context.Background(), project.ID, deployment.Name)
@@ -70,9 +74,34 @@ var _ = Describe("Importer should import from Atlas", func() {
 
 		// Configure the tool, and then run the entrypoint of the tool
 
+		importConfig := importer.AtlasImportConfig{
+			OrgID:            atlasClient.OrgID,
+			PublicKey:        atlasClient.Public,
+			PrivateKey:       atlasClient.Private,
+			AtlasDomain:      atlasClient.Client.BaseURL.String(),
+			ImportNamespace:  "import-namespace",
+			ImportAll:        true,
+			ImportedProjects: nil,
+			Verbose:          true,
+		}
+
+		err := importer.RunImports(importConfig)
+		Expect(err).NotTo(HaveOccurred())
+
 		// Check if resources are in the cluster are equal to the one we created
+		projectList := &v1.AtlasProjectList{}
 		// Get the project resource from the Cluster
+		Expect(k8sClient.List(context.Background(), projectList)).NotTo(HaveOccurred())
+
+		projectNameSet := make(map[string]bool)
+		for _, kubeProject := range projectList.Items {
+			projectNameSet[kubeProject.Spec.Name] = true
+		}
+
+		Expect(projectNameSet).Should(HaveKey(project.Name))
+
 		// Get the deployment resource
 		// How to correctly convert K8S Project to AtlasProject and Deployments
 	})
+
 })
