@@ -260,6 +260,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
 		for _, peitem := range project.Status.PrivateEndpoints {
+			Expect(peitem.Region).ShouldNot(BeEmpty())
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)

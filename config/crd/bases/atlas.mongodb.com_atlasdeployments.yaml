@@ -35,9 +35,12 @@ spec:
             type: object
           spec:
             description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
+              Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec
+              should be defined
             properties:
               advancedDeploymentSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the advanced (v1.5) deployment API
+                  https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
                     type: boolean
@@ -58,66 +61,9 @@ spec:
                     type: object
                   clusterType:
                     type: string
-                  connectionStrings:
-                    description: ConnectionStrings configuration for applications
-                      use to connect to this deployment.
-                    properties:
-                      awsPrivateLink:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      awsPrivateLinkSrv:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      private:
-                        type: string
-                      privateEndpoint:
-                        items:
-                          description: PrivateEndpointSpec connection strings. Each
-                            object describes the connection strings you can use to
-                            connect to this deployment through a private endpoint.
-                            Atlas returns this parameter only if you deployed a private
-                            endpoint to all regions to which you deployed this deployment's
-                            nodes.
-                          properties:
-                            connectionString:
-                              type: string
-                            endpoints:
-                              items:
-                                description: EndpointSpec through which you connect
-                                  to Atlas.
-                                properties:
-                                  endpointId:
-                                    type: string
-                                  providerName:
-                                    type: string
-                                  region:
-                                    type: string
-                                type: object
-                              type: array
-                            srvConnectionString:
-                              type: string
-                            type:
-                              type: string
-                          type: object
-                        type: array
-                      privateSrv:
-                        type: string
-                      standard:
-                        type: string
-                      standardSrv:
-                        type: string
-                    type: object
-                  createDate:
-                    type: string
                   diskSizeGB:
                     type: integer
                   encryptionAtRestProvider:
-                    type: string
-                  groupId:
-                    type: string
-                  id:
                     type: string
                   labels:
                     items:
@@ -151,8 +97,6 @@ spec:
                   replicationSpecs:
                     items:
                       properties:
-                        id:
-                          type: string
                         numShards:
                           type: integer
                         regionConfigs:
@@ -252,8 +196,6 @@ spec:
                     type: array
                   rootCertType:
                     type: string
-                  stateName:
-                    type: string
                   versionReleaseSystem:
                     type: string
                 type: object
@@ -270,7 +212,7 @@ spec:
                 - name
                 type: object
               deploymentSpec:
-                description: Configuration for the advanced deployment API
+                description: Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
                 properties:
                   autoScaling:
                     description: Collection of settings that configures auto-scaling
@@ -602,7 +544,7 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
                   name:
                     description: Name of the serverless deployment as it appears in
