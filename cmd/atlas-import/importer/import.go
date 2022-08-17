@@ -29,8 +29,8 @@ import (
 
 // TODO improve credentials mgmt, see discussions on Spec document
 // TODO import project by names instead of IDs
-// TODO improve logs (info level)
 // TODO depending on the team discussion outcome about using Advanced API only for clusters, import advanced only
+// TODO pre-requisite : having applied CRDs to the k8s cluster
 
 // AtlasImportConfig contains the full import configuration
 type AtlasImportConfig struct {
@@ -53,8 +53,8 @@ type ImportedProject struct {
 // Global variables
 var backgroundCtx = context.Background()
 var Log *zap.Logger
-var kubeAPIVersion = "v1"
 
+const kubeAPIVersion = "v1"
 const maxItemPerPageAtlas = 500
 
 // setUpAtlasClient instantiate the client to interact with the Atlas API
@@ -157,7 +157,7 @@ func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Cli
 	if importConfig.Verbose {
 		logLevel = "debug"
 	}
-	Log, err = initCustomZapLogger(logLevel, "json") //or "info"
+	Log, err = initCustomZapLogger(logLevel, "console")
 	if err != nil {
 		println("Impossible to initialize logger : " + err.Error())
 		os.Exit(1)
@@ -210,7 +210,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 		// Add resource to k8s cluster
-		Log.Info(fmt.Sprintf("Instantiating project %s in Cluster", atlasProject.Name))
+		Log.Info(fmt.Sprintf("Instantiating Project : %s in Cluster", atlasProject.Name))
 		instantiateKubernetesObject(kubeClient, kubernetesProject)
 
 		projectRef := &common.ResourceRefNamespaced{
@@ -224,13 +224,11 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		Log.Info("Instantiating project database users")
+		Log.Info("Instantiating project's Database Users")
 		for _, kubernetesDatabaseUser := range kubernetesDatabaseUsers {
 			kubernetesDatabaseUser.Spec.Project = *projectRef
 			instantiateKubernetesObject(kubeClient, kubernetesDatabaseUser)
 		}
-
-		//TODO retrieve only list of Deployments
 
 		// Retrieve and instantiate associated Deployments
 		kubernetesDeployments, err := getAndConvertDeployments(atlasProject, atlasClient, importConfig, projectRef)
@@ -238,7 +236,7 @@ func RunImports(importConfig AtlasImportConfig) error {
 			return err
 		}
 
-		Log.Info("Instantiating project Deployments and their backup policies")
+		Log.Info("Instantiating project's Deployments and their Backup Policies")
 		for _, kubernetesDeployment := range kubernetesDeployments {
 			deploymentName, err := getDeploymentName(kubernetesDeployment)
 			if err != nil {
@@ -254,8 +252,8 @@ func RunImports(importConfig AtlasImportConfig) error {
 				}
 				instantiateKubernetesObject(kubeClient, schedule)
 				instantiateKubernetesObject(kubeClient, policy)
-				instantiateKubernetesObject(kubeClient, kubernetesDeployment)
 			}
+			instantiateKubernetesObject(kubeClient, kubernetesDeployment)
 		}
 	}
 	return nil
@@ -298,6 +296,77 @@ func getAllPaginatedResources[resource any](paginatedCall func(options *mongodba
 	return resources
 }
 
+func getAllDeployments(atlasClient *mongodbatlas.Client, projectID string) ([]mongodbatlas.Cluster, []*mongodbatlas.AdvancedCluster, []*mongodbatlas.Cluster) {
+	atlasDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+			return atlasClient.Clusters.List(backgroundCtx, projectID, options)
+		},
+	)
+	atlasAdvancedDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.AdvancedClusters.List(backgroundCtx, projectID, options)
+			return rep.Results, res, err
+		},
+	)
+	atlasServerlessDeployments := getAllPaginatedResources(
+		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+			rep, res, err := atlasClient.ServerlessInstances.List(backgroundCtx, projectID, options)
+			return rep.Results, res, err
+		},
+	)
+	return atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments
+}
+
+func getListedDeployments(atlasClient *mongodbatlas.Client, projectID string, deploymentList []string) (
+	[]mongodbatlas.Cluster, []*mongodbatlas.AdvancedCluster, []*mongodbatlas.Cluster, error) {
+	var atlasDeployments []mongodbatlas.Cluster
+	var atlasAdvancedDeployments []*mongodbatlas.AdvancedCluster
+	var atlasServerlessDeployments []*mongodbatlas.Cluster
+	for _, deploymentName := range deploymentList {
+		// Here we need to find which type of deployment we need to import
+		deployment, res, err := atlasClient.Clusters.Get(backgroundCtx, projectID, deploymentName)
+		if err != nil && res.StatusCode != 400 && res.StatusCode != 404 {
+			// Atlas returns a 400 code when trying to import a Multi-Cloud cluster through the normal API
+			return nil, nil, nil, err
+		} else if err == nil {
+			atlasDeployments = append(atlasDeployments, *deployment)
+			continue
+		}
+		advancedDeployment, res, err := atlasClient.AdvancedClusters.Get(backgroundCtx, projectID, deploymentName)
+		if err != nil && res.StatusCode != 400 && res.StatusCode != 404 {
+			return nil, nil, nil, err
+		} else if err == nil {
+			atlasAdvancedDeployments = append(atlasAdvancedDeployments, advancedDeployment)
+			continue
+		}
+		serverlessDeployment, res, err := atlasClient.ServerlessInstances.Get(backgroundCtx, projectID, deploymentName)
+		if err != nil && res.StatusCode != 404 {
+			return nil, nil, nil, err
+		} else if err == nil {
+			atlasServerlessDeployments = append(atlasServerlessDeployments, serverlessDeployment)
+		} else {
+			Log.Fatal("Couldn't find any deployment with the name " + deploymentName + ". Error message : " + err.Error())
+		}
+	}
+	return atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments, nil
+}
+
+func getProjectConfig(importConfig AtlasImportConfig, projectID string) (bool, []string) {
+	var deploymentList []string
+	importAllDeployments := true
+	if !importConfig.ImportAll {
+		for _, configProject := range importConfig.ImportedProjects {
+			if configProject.ID == projectID {
+				importAllDeployments = configProject.ImportAll
+				if !importAllDeployments {
+					deploymentList = configProject.Deployments
+				}
+			}
+		}
+	}
+	return importAllDeployments, deploymentList
+}
+
 func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *mongodbatlas.Client,
 	importConfig AtlasImportConfig, projectRef *common.ResourceRefNamespaced) ([]*mdbv1.AtlasDeployment, error) {
 	/*
@@ -307,26 +376,24 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 		Under the hood, they are the same thing in Atlas, normal is a legacy version which doesn't
 		support multi-cloud Deployments
 	*/
-	atlasDeployments := getAllPaginatedResources(
-		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.Cluster, *mongodbatlas.Response, error) {
-			return atlasClient.Clusters.List(backgroundCtx, atlasProject.ID, options)
-		},
-	)
-	atlasAdvancedDeployments := getAllPaginatedResources(
-		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-			rep, res, err := atlasClient.AdvancedClusters.List(backgroundCtx, atlasProject.ID, options)
-			return rep.Results, res, err
-		},
-	)
-	atlasServerlessDeployments := getAllPaginatedResources(
-		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
-			rep, res, err := atlasClient.ServerlessInstances.List(backgroundCtx, atlasProject.ID, options)
-			return rep.Results, res, err
-		},
-	)
 
-	// Get advanced, serverless and normal from Atlas
 	// Normal and serverless are both of type cluster in Atlas API, but are returned by different API calls
+	var atlasDeployments []mongodbatlas.Cluster
+	var atlasAdvancedDeployments []*mongodbatlas.AdvancedCluster
+	var atlasServerlessDeployments []*mongodbatlas.Cluster
+
+	importAllDeployments, deploymentList := getProjectConfig(importConfig, atlasProject.ID)
+
+	if importAllDeployments {
+		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments = getAllDeployments(atlasClient, atlasProject.ID)
+	} else {
+		var err error
+		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments, err = getListedDeployments(atlasClient, atlasProject.ID, deploymentList)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	kubernetesDeployments := make([]*mdbv1.AtlasDeployment, 0, len(atlasAdvancedDeployments)+len(atlasServerlessDeployments))
 
 	normalDeploymentSet := make(map[string]bool)
@@ -343,16 +410,12 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	}
 
 	for i := range atlasAdvancedDeployments {
-		isNormal, ok := normalDeploymentSet[atlasAdvancedDeployments[i].Name]
-		if !ok {
-			continue
-		}
+		_, isNormal := normalDeploymentSet[atlasAdvancedDeployments[i].Name]
 		if isNormal {
 			Log.Debug("Skipping " + atlasAdvancedDeployments[i].Name + " because already imported as normal")
 			// Already managed previously, skip
 			continue
 		}
-
 		kubernetesAdvancedDeploymentSpec, err := mdbv1.AdvancedDeploymentFromAtlas(atlasAdvancedDeployments[i])
 		if err != nil {
 			return nil, err
@@ -393,7 +456,7 @@ func generateKubeDeploymentCRDFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 			Project:                *projectRef,
 			DeploymentSpec:         normalSpec,
 			AdvancedDeploymentSpec: advancedSpec,
-			// Schedule ref is updated before instantiation of the resources in the k8s cluster
+			// Schedule ref will be updated before instantiation of the resources in the k8s cluster
 			BackupScheduleRef: common.ResourceRefNamespaced{},
 			ServerlessSpec:    serverlessSpec,
 			ProcessArgs:       nil,
