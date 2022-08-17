@@ -93,9 +93,9 @@ e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-n
 
 .PHONY: e2e-importer
 e2e-importer: run-kind prepare-import
-	MCLI_ORG_ID=SECRET \
-    MCLI_PUBLIC_API_KEY=SECRET \
-    MCLI_PRIVATE_API_KEY=SECRET \
+    export MCLI_ORG_ID=$(shell grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
+	export MCLI_PUBLIC_API_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
+	export MCLI_PRIVATE_API_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 	ginkgo --timeout=120m -v test/e2e-importer
 
 .PHONY: e2e-openshift-upgrade
@@ -276,12 +276,12 @@ prepare-import: run-kind atlas-import
 		kubectl -n $(NAMESPACE) delete $$atlas_type --all ; \
 	done
 
-ORG=SECRET
-PUBLICKEY=SECRET
-PRIVATEKEY=SECRET
+ORG=$(shell grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
+PUBLICKEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
+PRIVATEKEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
 run-import: prepare-import
-	./bin/atlas-import from-config "cmd/atlas-import/config.example.yaml"
-	#./bin/atlas-import project --org $(ORG) --publickey $(PUBLICKEY) --privatekey $(PRIVATEKEY) --namespace $(NAMESPACE) "62d03642c97b142723646b33" --all --verbose
+	#./bin/atlas-import from-config "cmd/atlas-import/config.example.yaml"
+	./bin/atlas-import all --org $(ORG) --publickey $(PUBLICKEY) --privatekey $(PRIVATEKEY) --import-namespace $(NAMESPACE) --verbose
 
 .PHONY: x509-cert
 x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
