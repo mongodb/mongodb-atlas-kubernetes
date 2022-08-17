@@ -87,6 +87,14 @@ func main() {
 }
 
 func run(config importer.AtlasImportConfig) {
+	println(config.OrgID)
+	print(config.PrivateKey)
+	if config.OrgID == "" || config.PublicKey == "" || config.PrivateKey == "" {
+		importer.Log.Warn("Some of your Atlas credentials are empty")
+	}
+	if config.ImportNamespace == "" {
+		importer.Log.Info("Import Namespace is empty, the script will add the resources to the default namespace")
+	}
 	err := importer.RunImports(config)
 	if err != nil {
 		importer.Log.Fatal(err.Error())
