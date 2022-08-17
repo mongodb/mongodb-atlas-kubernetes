@@ -523,6 +523,9 @@ func getAllProjects(atlasClient *mongodbatlas.Client) ([]*mongodbatlas.Project, 
 	allProjects := getAllPaginatedResources(
 		func(options *mongodbatlas.ListOptions) ([]*mongodbatlas.Project, *mongodbatlas.Response, error) {
 			rep, res, err := atlasClient.Projects.GetAllProjects(backgroundCtx, options)
+			if err != nil {
+				return nil, res, err
+			}
 			return rep.Results, res, err
 		},
 	)
