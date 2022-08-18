@@ -18,6 +18,8 @@ import (
 
 // TODO possible test cases :
 //- Generate resources definitions, instantiate them in Atlas, import them, verify they are equivalent
+//- Create two projects with multiple deployments in atlas, configure the script to import only one project and one
+//  deployment, ensure the import is done correctly
 //- Ensure that no resource is modified during or after the importation, when the operator is running at the same time
 //- Ensure that import cannot “overwrite” or duplicate already existing resources ?
 
@@ -93,7 +95,7 @@ var _ = Describe("Importer should import from Atlas", func() {
 		err := importer.RunImports(importConfig)
 		Expect(err).NotTo(HaveOccurred())
 
-		// Check if resources are in the cluster are equal to the one we created
+		// Check if resources in the cluster are equal to the one we created
 		projectList := &v1.AtlasProjectList{}
 		// Get the project resource from the Cluster
 		Expect(k8sClient.List(context.Background(), projectList)).NotTo(HaveOccurred())
@@ -109,6 +111,7 @@ var _ = Describe("Importer should import from Atlas", func() {
 
 		// TODO write a method to compare the resources we added to Atlas at the beginning, to the one imported in k8s
 		// methods existing in atlasdeployment_types_test.go will probably be useful for that
+		// This method will also be useful to unit test every conversion method (MaintenanceWindowFromAtlas, IPAccessListFromAtlas...)
 	})
 
 })
