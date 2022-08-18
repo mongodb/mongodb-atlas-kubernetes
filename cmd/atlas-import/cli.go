@@ -12,8 +12,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO add a debug flag and instantiate logger based on that
-
 func generateBaseConfig(cmd *cobra.Command) importer.AtlasImportConfig {
 	baseConfig := importer.AtlasImportConfig{
 		AtlasDomain:     "https://cloud-qa.mongodb.com",

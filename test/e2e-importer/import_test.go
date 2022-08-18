@@ -16,6 +16,11 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
+// TODO possible test cases :
+//- Generate resources definitions, instantiate them in Atlas, import them, verify they are equivalent
+//- Ensure that no resource is modified during or after the importation, when the operator is running at the same time
+//- Ensure that import cannot “overwrite” or duplicate already existing resources ?
+
 var _ = Describe("Importer should import from Atlas", func() {
 
 	var project *mongodbatlas.Project
@@ -101,7 +106,9 @@ var _ = Describe("Importer should import from Atlas", func() {
 		Expect(projectNameSet).Should(HaveKey(project.Name))
 
 		// Get the deployment resource
-		// How to correctly convert K8S Project to AtlasProject and Deployments
+
+		// TODO write a method to compare the resources we added to Atlas at the beginning, to the one imported in k8s
+		// methods existing in atlasdeployment_types_test.go will probably be useful for that
 	})
 
 })
