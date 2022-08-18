@@ -193,6 +193,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 
+	if result = ensureProviderAccessStatus(ctx, project, projectID); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result.ReconcileResult(), nil
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
+
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
 		logIfWarning(ctx, result)
 		return result.ReconcileResult(), nil

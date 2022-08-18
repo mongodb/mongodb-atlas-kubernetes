@@ -12,21 +12,22 @@ const (
 
 // Atlas Project reasons
 const (
-	ProjectNotCreatedInAtlas            ConditionReason = "ProjectNotCreatedInAtlas"
-	ProjectIPAccessInvalid              ConditionReason = "ProjectIPAccessListInvalid"
-	ProjectIPNotCreatedInAtlas          ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
-	ProjectWindowInvalid                ConditionReason = "ProjectWindowInvalid"
-	ProjectWindowNotObtainedFromAtlas   ConditionReason = "ProjectWindowNotObtainedFromAtlas"
-	ProjectWindowNotCreatedInAtlas      ConditionReason = "ProjectWindowNotCreatedInAtlas"
-	ProjectWindowNotDeletedInAtlas      ConditionReason = "projectWindowNotDeletedInAtlas"
-	ProjectWindowNotDeferredInAtlas     ConditionReason = "ProjectWindowNotDeferredInAtlas"
-	ProjectWindowNotAutoDeferredInAtlas ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
-	ProjectPEServiceIsNotReadyInAtlas   ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
-	ProjectPEInterfaceIsNotReadyInAtlas ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
-	ProjectIPAccessListNotActive        ConditionReason = "ProjectIPAccessListNotActive"
-	ProjectIntegrationInternal          ConditionReason = "ProjectIntegrationInternalError"
-	ProjectIntegrationRequest           ConditionReason = "ProjectIntegrationRequestError"
-	ProjectIntegrationReady             ConditionReason = "ProjectIntegrationReady"
+	ProjectNotCreatedInAtlas                 ConditionReason = "ProjectNotCreatedInAtlas"
+	ProjectIPAccessInvalid                   ConditionReason = "ProjectIPAccessListInvalid"
+	ProjectIPNotCreatedInAtlas               ConditionReason = "ProjectIPAccessListNotCreatedInAtlas"
+	ProjectWindowInvalid                     ConditionReason = "ProjectWindowInvalid"
+	ProjectWindowNotObtainedFromAtlas        ConditionReason = "ProjectWindowNotObtainedFromAtlas"
+	ProjectWindowNotCreatedInAtlas           ConditionReason = "ProjectWindowNotCreatedInAtlas"
+	ProjectWindowNotDeletedInAtlas           ConditionReason = "projectWindowNotDeletedInAtlas"
+	ProjectWindowNotDeferredInAtlas          ConditionReason = "ProjectWindowNotDeferredInAtlas"
+	ProjectWindowNotAutoDeferredInAtlas      ConditionReason = "ProjectWindowNotAutoDeferredInAtlas"
+	ProjectPEServiceIsNotReadyInAtlas        ConditionReason = "ProjectPrivateEndpointServiceIsNotReadyInAtlas"
+	ProjectPEInterfaceIsNotReadyInAtlas      ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
+	ProjectIPAccessListNotActive             ConditionReason = "ProjectIPAccessListNotActive"
+	ProjectIntegrationInternal               ConditionReason = "ProjectIntegrationInternalError"
+	ProjectIntegrationRequest                ConditionReason = "ProjectIntegrationRequestError"
+	ProjectIntegrationReady                  ConditionReason = "ProjectIntegrationReady"
+	ProjectCloudAccessRolesIsNotReadyInAtlas ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
 )
 
 // Atlas Cluster reasons

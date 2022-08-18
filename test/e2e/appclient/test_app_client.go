@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -37,7 +37,7 @@ func (app *App) Get(endpoint string) string {
 		return ""
 	}
 	defer res.Body.Close()
-	data, _ := ioutil.ReadAll(res.Body)
+	data, _ := io.ReadAll(res.Body)
 	fmt.Print(string(data))
 	return string(data)
 }
