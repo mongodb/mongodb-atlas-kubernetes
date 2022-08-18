@@ -104,6 +104,40 @@ Create the PR to the main repository and wait until CI jobs get green.
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 See https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/98 as an example
 
+
+### Create a Pull Request for `openshift-certified-operators` with a new bundle
+
+This is necessary for the Operator to appear on "operators" tab in Openshift clusters in the "certified" section.
+
+**Prerequisites**:
+ - Ensure you have the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
+pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
+ - Add mongodb's fork of the `certified-operators` as a `mongodb`: 
+ - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
+ - Use the MongoDB's project ID: 606c70426b0681eb0f1fd1c3 as `RH_CERTIFICATION_OSPID`
+ - Use the image from the release process step "Push Atlas Operator to RedHat Connect" as `IMG`
+ - Use the version of the release as `VERSION`
+ - Get the MongoDB's token to access `scan.connect.redhat.com` registry: https://connect.redhat.com/projects/606c70426b0681eb0f1fd1c3/setup-preflight (see `registry key`) and use it as `RH_CERTIFICATION_TOKEN`
+ - Get the PYXIS token from the secrets and use it as `RH_CERTIFICATION_PYXIS_API_TOKEN`
+
+Invoke the following script:
+```
+IMAGE=<image pushed to scan.connect.redhat.com> \
+VERSION=<image-version> \
+RH_CERTIFICATION_OSPID=606c70426b0681eb0f1fd1c3 \
+RH_CERTIFICATION_TOKEN=<token to access scan.connect.redhat.com> \
+RH_CERTIFICATION_PYXIS_API_TOKEN=<pyxis token> \
+./scripts/release-redhat-certified.sh
+```
+
+If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) here https://connect.redhat.com/projects/606c70426b0681eb0f1fd1c3/images
+
+Then go the GitHub and create a PR
+from `mongodb` fork this repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).
+
+After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
+See https://github.com/redhat-openshift-ecosystem/certified-operators/pull as an example
+
 # Post install hook release
 
 If changes have been made to the post install hook (mongodb-atlas-kubernetes/cmd/post-install/main.go).
