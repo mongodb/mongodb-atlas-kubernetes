@@ -184,6 +184,9 @@ func fullSetUp(importConfig AtlasImportConfig) (*mongodbatlas.Client, client.Cli
 	return atlasClient, kubeClient, nil
 }
 
+// RunImports is the main function of the import script
+// Its argument importConfig contains the full configuration for running an importation
+// If it runs without returning any error, it means that all the resources have been imported correctly
 func RunImports(importConfig AtlasImportConfig) error {
 	atlasClient, kubeClient, err := fullSetUp(importConfig)
 	if err != nil {
@@ -274,7 +277,8 @@ func getDeploymentName(deployment *mdbv1.AtlasDeployment) (string, error) {
 	}
 }
 
-func getAllPaginatedResources[resource any](paginatedCall func(options *mongodbatlas.ListOptions) ([]resource, *mongodbatlas.Response, error)) []resource {
+func getAllPaginatedResources[resource any](paginatedCall func(options *mongodbatlas.ListOptions) (
+	[]resource, *mongodbatlas.Response, error)) []resource {
 	listOptions := &mongodbatlas.ListOptions{
 		PageNum:      0,
 		ItemsPerPage: maxItemPerPageAtlas,
@@ -296,7 +300,8 @@ func getAllPaginatedResources[resource any](paginatedCall func(options *mongodba
 	return resources
 }
 
-func getAllDeployments(atlasClient *mongodbatlas.Client, projectID string) ([]mongodbatlas.Cluster, []*mongodbatlas.AdvancedCluster, []*mongodbatlas.Cluster) {
+func getAllDeployments(atlasClient *mongodbatlas.Client, projectID string) (
+	[]mongodbatlas.Cluster, []*mongodbatlas.AdvancedCluster, []*mongodbatlas.Cluster) {
 	atlasDeployments := getAllPaginatedResources(
 		func(options *mongodbatlas.ListOptions) ([]mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 			return atlasClient.Clusters.List(backgroundCtx, projectID, options)
@@ -385,10 +390,12 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	importAllDeployments, deploymentList := getProjectConfig(importConfig, atlasProject.ID)
 
 	if importAllDeployments {
-		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments = getAllDeployments(atlasClient, atlasProject.ID)
+		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments =
+			getAllDeployments(atlasClient, atlasProject.ID)
 	} else {
 		var err error
-		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments, err = getListedDeployments(atlasClient, atlasProject.ID, deploymentList)
+		atlasDeployments, atlasAdvancedDeployments, atlasServerlessDeployments, err =
+			getListedDeployments(atlasClient, atlasProject.ID, deploymentList)
 		if err != nil {
 			return nil, err
 		}
@@ -410,6 +417,8 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	}
 
 	for i := range atlasAdvancedDeployments {
+		// Because advanced API also returns normal deployments, we should check if there are some and ignore them
+		// to avoid to import them twice
 		_, isNormal := normalDeploymentSet[atlasAdvancedDeployments[i].Name]
 		if isNormal {
 			Log.Debug("Skipping " + atlasAdvancedDeployments[i].Name + " because already imported as normal")
@@ -438,6 +447,7 @@ func getAndConvertDeployments(atlasProject *mongodbatlas.Project, atlasClient *m
 	return kubernetesDeployments, nil
 }
 
+// This function generates the Deployment CRD struct, but does not instantiate it into the k8s cluster
 func generateKubeDeploymentCRDFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 	advancedSpec *mdbv1.AdvancedDeploymentSpec, serverlessSpec *mdbv1.ServerlessSpec, importConfig AtlasImportConfig,
 	deploymentName string, projectRef *common.ResourceRefNamespaced) *mdbv1.AtlasDeployment {
@@ -466,6 +476,7 @@ func generateKubeDeploymentCRDFromSpecs(normalSpec *mdbv1.DeploymentSpec,
 	return &kubernetesDeployment
 }
 
+// Retrieve backup schedule and policy associated with the given deployment
 func retrieveBackupSchedule(atlasClient *mongodbatlas.Client, projectID string, deploymentName string,
 	importConfig AtlasImportConfig) (*mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, error) {
 	atlasBackupPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(backgroundCtx, projectID, deploymentName)
@@ -579,6 +590,8 @@ func getWindow(atlasClient *mongodbatlas.Client, projectID string) (*project.Mai
 
 // TODO refactor 3 methods below with Generics
 
+// Need to decide if this generic method indeed improves the code or not. It makes it harder to read but reduces
+// repetition
 func getAndConvertAssociatedResource[kubernetesResource any, atlasResource any](
 	projectID string, conversionMethod func(*atlasResource) (*kubernetesResource, error),
 	getMethod func(context.Context, string) ([]atlasResource, error)) (

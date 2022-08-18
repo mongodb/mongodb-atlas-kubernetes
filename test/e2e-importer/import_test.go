@@ -100,6 +100,7 @@ var _ = Describe("Importer should import from Atlas", func() {
 		// Get the project resource from the Cluster
 		Expect(k8sClient.List(context.Background(), projectList)).NotTo(HaveOccurred())
 
+		// For the moment we only check that there is a project with the same name
 		projectNameSet := make(map[string]bool)
 		for _, kubeProject := range projectList.Items {
 			projectNameSet[kubeProject.Spec.Name] = true
