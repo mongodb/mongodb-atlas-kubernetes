@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -138,7 +138,7 @@ type ModelShip struct {
 }
 
 func getShipFromRequest(r *http.Request) ModelShip {
-	reqBody, _ := ioutil.ReadAll(r.Body)
+	reqBody, _ := io.ReadAll(r.Body)
 	var ship ModelShip
 	json.Unmarshal(reqBody, &ship)
 	return ship

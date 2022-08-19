@@ -6,17 +6,15 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"time"
 
-	yaml "gopkg.in/yaml.v3"
-
 	"github.com/pborman/uuid"
 	"github.com/sethvargo/go-password/password"
+	yaml "gopkg.in/yaml.v3"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
@@ -33,7 +31,7 @@ func SaveToFile(path string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, data, os.ModePerm)
+	err = os.WriteFile(path, data, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -54,7 +52,7 @@ func JSONToYAMLConvert(cnfg interface{}) []byte {
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given
 func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface{} {
 	// Read in the yaml file at the path given
-	yamlFile, err := ioutil.ReadFile(filepath.Clean(pathToYamlFile))
+	yamlFile, err := os.ReadFile(filepath.Clean(pathToYamlFile))
 	if err != nil {
 		log.Printf("Error while parsing YAML file %v, error: %s", filepath.Clean(pathToYamlFile), err)
 	}
@@ -109,8 +107,8 @@ func GenID() string {
 }
 
 func CopyFile(source, target string) {
-	data, _ := ioutil.ReadFile(filepath.Clean(source))
-	err := ioutil.WriteFile(target, data, os.ModePerm)
+	data, _ := os.ReadFile(filepath.Clean(source))
+	err := os.WriteFile(target, data, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
