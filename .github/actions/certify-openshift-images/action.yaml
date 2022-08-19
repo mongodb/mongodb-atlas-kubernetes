@@ -1,20 +1,5 @@
 name: 'certify-openshift-images'
 description: 'push image to RedHat Connect for certification'
-inputs:
-  VERSION:
-    description: "Atlas public key"
-    required: true
-  ATLAS_PRIVATE_KEY:
-    description: "Atlas private key"
-    required: true
-  CLEAN_ALL:
-    description: "Terminate clusters. Actions accept only strings. Please choose 'true'/'false'"
-    default: "false"
-    required: false
-  MAX_PROJECT_LIFETIME:
-    description: "If CLEAN_ALL is false: Project will be deleted only if it older then MAX_PROJECT_LIFETIME. Recommended more than 2h because of tests"
-    default: "3"
-    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
