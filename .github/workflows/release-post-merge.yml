@@ -93,11 +93,6 @@ jobs:
           labels: version=${{ steps.tag.outputs.version }}
           build_args: VERSION=${{ steps.tag.outputs.tag }}
 
-      - name: Certify image and create release for Certified Operators repo
-        uses: ./.github/actions/certify-openshift-images
-        with:
-
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
