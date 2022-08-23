@@ -16,6 +16,11 @@ func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Con
 	roleStatuses := project.Status.DeepCopy().CloudProviderAccessRoles
 	roleSpecs := project.Spec.DeepCopy().CloudProviderAccessRoles
 
+	if len(roleSpecs) == 0 && len(roleStatuses) == 0 {
+		customContext.UnsetCondition(status.CloudProviderAccessReadyType)
+		return workflow.OK()
+	}
+
 	result, condition := syncProviderAccessStatus(ctx, customContext, roleSpecs, roleStatuses, groupID)
 	if result != workflow.OK() {
 		customContext.SetConditionFromResult(condition, result)
