@@ -246,7 +246,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 	})
 
 	By("Prepare network peers cloud infrastructure", func() {
-		err := networkpeer.PreparePeerVPC(peers, userData.Resources.Namespace)
+		err := networkpeer.PreparePeerVPC(peers)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

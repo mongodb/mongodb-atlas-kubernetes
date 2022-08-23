@@ -10,7 +10,13 @@ import (
 
 const AzureResourceGroupName = "atlas-operator-test"
 
-func CreateAzureVPC(subscriptionID, location, resourceGroup, vnetName string) error {
+/*
+For network peering to work with Azure, it's necessary to fulfill the requirements described in the documentation. https://www.mongodb.com/docs/atlas/reference/api/vpc-create-peering-connection/#request-path-parameters
+In order not to perform these actions every time, the definition of the role scope has been changed to /subscriptions/<azureSubscriptionId>/resourceGroups/<resourceGroupName> for role definition and role assigment.
+Note: For the QA environment, the service principal ID is different. It can be found when creating a network peer for Azure by Atlas UI.
+*/
+
+func CreateVPCForAzure(subscriptionID, location, resourceGroup, vnetName string) error {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("authError: %w", err)
@@ -33,7 +39,7 @@ func CreateAzureVPC(subscriptionID, location, resourceGroup, vnetName string) er
 	return nil
 }
 
-func DeleteAzureVPC(subscriptionID, resourceGroup, vnetName string) error {
+func DeleteVPCForAzure(subscriptionID, resourceGroup, vnetName string) error {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("authError: %w", err)

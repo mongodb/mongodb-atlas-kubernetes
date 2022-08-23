@@ -17,7 +17,7 @@ const (
 	DirectoryID    = "AZURE_TENANT_ID"
 )
 
-func PreparePeerVPC(peers []v1.NetworkPeer, namespace string) error {
+func PreparePeerVPC(peers []v1.NetworkPeer) error {
 	for i, peer := range peers {
 		awsNetworkPeer, err := NewAWSNetworkPeerService(peer.AccepterRegionName)
 		if err != nil {
@@ -25,19 +25,19 @@ func PreparePeerVPC(peers []v1.NetworkPeer, namespace string) error {
 		}
 		switch peer.ProviderName {
 		case provider.ProviderAWS:
-			accountID, vpcID, err := awsNetworkPeer.CreateVPC(peer.RouteTableCIDRBlock)
+			accountID, vpcID, err := awsNetworkPeer.CreateVPCForAWS(peer.RouteTableCIDRBlock)
 			if err != nil {
 				return err
 			}
 			peers[i].AWSAccountID = accountID
 			peers[i].VpcID = vpcID
 		case provider.ProviderGCP:
-			err = CreateVPC(cloud.GoogleProjectID, peer.NetworkName)
+			err = CreateVPCForGCP(cloud.GoogleProjectID, peer.NetworkName)
 			if err != nil {
 				return err
 			}
 		case provider.ProviderAzure:
-			err = CreateAzureVPC(os.Getenv(SubscriptionID), config.AzureRegion, peer.ResourceGroupName, peer.VNetName)
+			err = CreateVPCForAzure(os.Getenv(SubscriptionID), config.AzureRegion, peer.ResourceGroupName, peer.VNetName)
 			if err != nil {
 				return err
 			}
@@ -51,17 +51,17 @@ func DeletePeerVPC(peers []status.AtlasNetworkPeer) []error {
 	for _, networkPeering := range peers {
 		switch networkPeering.ProviderName {
 		case provider.ProviderAWS:
-			err := DeleteAWSPeerConnectionAndVPC(networkPeering.ConnectionID, networkPeering.Region)
+			err := DeletePeerConnectionAndVPCForAWS(networkPeering.ConnectionID, networkPeering.Region)
 			if err != nil {
 				errList = append(errList, err)
 			}
 		case provider.ProviderGCP:
-			err := DeleteGCPvpc(cloud.GoogleProjectID, networkPeering.VPC)
+			err := DeleteVPCForGCP(cloud.GoogleProjectID, networkPeering.VPC)
 			if err != nil {
 				errList = append(errList, err)
 			}
 		case provider.ProviderAzure:
-			err := DeleteAzureVPC(os.Getenv(SubscriptionID), AzureResourceGroupName, networkPeering.VPC)
+			err := DeleteVPCForAzure(os.Getenv(SubscriptionID), AzureResourceGroupName, networkPeering.VPC)
 			if err != nil {
 				errList = append(errList, err)
 			}
@@ -72,14 +72,14 @@ func DeletePeerVPC(peers []status.AtlasNetworkPeer) []error {
 
 func EstablishPeerConnections(peers []status.AtlasNetworkPeer) error {
 	for _, peerStatus := range peers {
-		switch peerStatus.ProviderName {
+		switch peerStatus.ProviderName { // For Azure, it does not need to establish a connection
 		case provider.ProviderAWS:
 			err := EstablishAWSPeerConnection(peerStatus)
 			if err != nil {
 				return err
 			}
 		case provider.ProviderGCP:
-			err := EstablishPeerConnectionWithVPC(peerStatus.GCPProjectID, peerStatus.VPC,
+			err := EstablishGCPPeerConnectionWithVPC(peerStatus.GCPProjectID, peerStatus.VPC,
 				peerStatus.AtlasGCPProjectID, peerStatus.AtlasNetworkName)
 			if err != nil {
 				return err

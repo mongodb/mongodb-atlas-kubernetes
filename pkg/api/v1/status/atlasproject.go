@@ -36,9 +36,7 @@ func AtlasProjectSetPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpo
 
 func AtlasProjectSetNetworkPeerOption(networkPeers *[]AtlasNetworkPeer) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
-		if networkPeers != nil {
-			s.NetworkPeers = *networkPeers
-		}
+		s.NetworkPeers = *networkPeers
 	}
 }
 

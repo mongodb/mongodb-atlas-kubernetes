@@ -8,7 +8,7 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-func CreateVPC(gcpProjectID string, vnetName string) error {
+func CreateVPCForGCP(gcpProjectID string, vnetName string) error {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func CreateVPC(gcpProjectID string, vnetName string) error {
 	return err
 }
 
-func EstablishPeerConnectionWithVPC(gpcProjectID, vnetName, atlasGCPProjectID, atlasVnetName string) error {
+func EstablishGCPPeerConnectionWithVPC(gpcProjectID, vnetName, atlasGCPProjectID, atlasVnetName string) error {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func EstablishPeerConnectionWithVPC(gpcProjectID, vnetName, atlasGCPProjectID, a
 	return err
 }
 
-func DeleteGCPvpc(gcpProjectID, vnetName string) error {
+func DeleteVPCForGCP(gcpProjectID, vnetName string) error {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {
 		return err

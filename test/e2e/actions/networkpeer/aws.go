@@ -17,17 +17,17 @@ type AWSNetworkPeer struct {
 }
 
 func NewAWSNetworkPeerService(region string) (AWSNetworkPeer, error) {
-	session, err := session.NewSession(&aws.Config{
+	newSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
 	if err != nil {
 		return AWSNetworkPeer{}, err
 	}
-	svc := ec2.New(session)
+	svc := ec2.New(newSession)
 	return AWSNetworkPeer{svc}, nil
 }
 
-func (p *AWSNetworkPeer) CreateVPC(appCidr string) (string, string, error) {
+func (p *AWSNetworkPeer) CreateVPCForAWS(appCidr string) (string, string, error) {
 	vpcInput := &ec2.CreateVpcInput{
 		AmazonProvidedIpv6CidrBlock: aws.Bool(false),
 		CidrBlock:                   aws.String(appCidr),
@@ -52,13 +52,13 @@ func EstablishAWSPeerConnection(peer status.AtlasNetworkPeer) error {
 	if peer.ProviderName == "" {
 		return fmt.Errorf("providerName is required for %s", peer.VPC)
 	}
-	session, err := session.NewSession(&aws.Config{
+	newSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(peer.Region)},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS session for status %v: %w", peer, err)
 	}
-	svc := ec2.New(session)
+	svc := ec2.New(newSession)
 	_, err = svc.AcceptVpcPeeringConnection(&ec2.AcceptVpcPeeringConnectionInput{
 		VpcPeeringConnectionId: aws.String(peer.ConnectionID),
 	})
@@ -68,14 +68,14 @@ func EstablishAWSPeerConnection(peer status.AtlasNetworkPeer) error {
 	return nil
 }
 
-func DeleteAWSPeerConnectionAndVPC(conID string, region string) error {
-	session, err := session.NewSession(&aws.Config{
+func DeletePeerConnectionAndVPCForAWS(conID string, region string) error {
+	newSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
 	if err != nil {
 		return err
 	}
-	svc := ec2.New(session)
+	svc := ec2.New(newSession)
 	connections, err := svc.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
 		VpcPeeringConnectionIds: []*string{aws.String(conID)},
 	})
