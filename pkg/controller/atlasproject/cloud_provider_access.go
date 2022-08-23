@@ -12,24 +12,23 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProviderAccessStatus(context *workflow.Context, project *v1.AtlasProject, groupID string) workflow.Result {
+func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Context, project *v1.AtlasProject, groupID string) workflow.Result {
 	roleStatuses := project.Status.DeepCopy().CloudProviderAccessRoles
 	roleSpecs := project.Spec.DeepCopy().CloudProviderAccessRoles
 
-	result, condition := syncProviderAccessStatus(context, roleSpecs, roleStatuses, groupID)
+	result, condition := syncProviderAccessStatus(ctx, customContext, roleSpecs, roleStatuses, groupID)
 	if result != workflow.OK() {
-		context.SetConditionFromResult(condition, result)
+		customContext.SetConditionFromResult(condition, result)
 		return result
 	}
-	context.SetConditionTrue(status.CloudProviderAccessReadyType)
+	customContext.SetConditionTrue(status.CloudProviderAccessReadyType)
 	return result
 }
 
-func syncProviderAccessStatus(customContext *workflow.Context, specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole, groupID string) (workflow.Result, status.ConditionType) {
+func syncProviderAccessStatus(ctx context.Context, customContext *workflow.Context, specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole, groupID string) (workflow.Result, status.ConditionType) {
 	client := customContext.Client
 	logger := customContext.Log
-	ctx := context.Background() // TODO: eoaueoaueoa
-	specToStatusMap := checkStatuses(logger, specs, statuses)
+	specToStatusMap := checkStatuses(specs, statuses)
 	defer func() {
 		SetNewStatuses(customContext, specToStatusMap)
 	}()
@@ -153,7 +152,7 @@ func deleteAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProvi
 	return nil
 }
 
-func checkStatuses(logger *zap.SugaredLogger, specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole) map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole {
+func checkStatuses(specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole) map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole {
 	result := make(map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole)
 	for _, spec := range specs {
 		isCreated := false
