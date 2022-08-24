@@ -72,6 +72,7 @@ type AtlasProjectStatus struct {
 	// "X509" signifies that self-managed X.509 authentication is configured
 	AuthModes authmode.AuthModes `json:"authModes,omitempty"`
 
+	// CloudProviderAccessRoles contains a list of configured cloud provider access roles. AWS support only
 	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration

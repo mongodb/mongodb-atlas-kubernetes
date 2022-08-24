@@ -397,6 +397,8 @@ spec:
                   type: string
                 type: array
               cloudProviderAccessRoles:
+                description: CloudProviderAccessRoles contains a list of configured
+                  cloud provider access roles. AWS support only
                 items:
                   properties:
                     atlasAWSAccountArn:
