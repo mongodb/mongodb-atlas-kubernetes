@@ -1,5 +1,9 @@
 # checkout other hooks in https://pre-commit.com/hooks.html
 repos:
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.46.2
+    hooks:
+      - id: golangci-lint
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.7.1.1
     hooks:

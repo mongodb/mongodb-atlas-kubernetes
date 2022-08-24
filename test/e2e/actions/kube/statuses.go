@@ -29,3 +29,9 @@ func GetProjectPEndpointServiceStatus(data *model.TestDataProvider) func() strin
 		return kubecli.GetStatusCondition("PrivateEndpointServiceReady", data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
 	}
 }
+
+func GetProjectCloudAccessRolesStatus(data *model.TestDataProvider) func() string {
+	return func() string {
+		return kubecli.GetStatusCondition(string(status.CloudProviderAccessReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+	}
+}

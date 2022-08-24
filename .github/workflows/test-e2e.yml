@@ -74,6 +74,7 @@ jobs:
               "x509auth",
               "long-run",
               "networkpeering",
+              "cloud-access-role",
           ]
         include:
           - k8s: "latest-openshift"

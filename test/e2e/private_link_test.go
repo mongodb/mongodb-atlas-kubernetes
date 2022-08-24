@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -14,12 +12,10 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
-
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 // NOTES
@@ -33,6 +29,25 @@ import (
 type privateEndpoint struct {
 	provider string
 	region   string
+}
+
+func SaveDump(data *model.TestDataProvider) {
+	By("Save logs to output directory ", func() {
+		GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
+		utils.SaveToFile(
+			fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
+			[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
+		)
+		utils.SaveToFile(
+			fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
+			kubecli.GetManagerLogs(data.Resources.Namespace),
+		)
+		actions.SaveTestAppLogs(data.Resources)
+		actions.SaveK8sResources(
+			[]string{"deploy", "atlasprojects"},
+			data.Resources.Namespace,
+		)
+	})
 }
 
 var _ = Describe("UserLogin", Label("privatelink"), func() {
@@ -51,22 +66,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(data.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(data.Resources)
-				actions.SaveK8sResources(
-					[]string{"deploy", "atlasprojects"},
-					data.Resources.Namespace,
-				)
-			})
+			SaveDump(&data)
 		}
 		By("Clean Cloud", func() {
 			DeleteAllPrivateEndpoints(&data)

@@ -41,6 +41,24 @@ spec:
             description: AtlasProjectSpec defines the desired state of Project in
               Atlas
             properties:
+              cloudProviderAccessRoles:
+                description: CloudProviderAccessRoles is a list of Cloud Provider
+                  Access Roles configured for the current Project.
+                items:
+                  properties:
+                    iamAssumedRoleArn:
+                      description: IamAssumedRoleArn is the ARN of the IAM role that
+                        is assumed by the Atlas cluster.
+                      type: string
+                    providerName:
+                      description: ProviderName is the name of the cloud provider.
+                        Currently only AWS is supported.
+                      type: string
+                  required:
+                  - iamAssumedRoleArn
+                  - providerName
+                  type: object
+                type: array
               connectionSecretRef:
                 description: ConnectionSecret is the name of the Kubernetes Secret
                   which contains the information about the way to connect to Atlas
@@ -438,6 +456,43 @@ spec:
                   is configured
                 items:
                   type: string
+                type: array
+              cloudProviderAccessRoles:
+                description: CloudProviderAccessRoles contains a list of configured
+                  cloud provider access roles. AWS support only
+                items:
+                  properties:
+                    atlasAWSAccountArn:
+                      type: string
+                    atlasAssumedRoleExternalId:
+                      type: string
+                    authorizedDate:
+                      type: string
+                    createdDate:
+                      type: string
+                    errorMessage:
+                      type: string
+                    featureUsages:
+                      items:
+                        properties:
+                          featureId:
+                            type: string
+                          featureType:
+                            type: string
+                        type: object
+                      type: array
+                    iamAssumedRoleArn:
+                      type: string
+                    providerName:
+                      type: string
+                    roleId:
+                      type: string
+                    status:
+                      type: string
+                  required:
+                  - atlasAssumedRoleExternalId
+                  - providerName
+                  type: object
                 type: array
               conditions:
                 description: Conditions is the list of statuses showing the current

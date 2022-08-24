@@ -6,16 +6,16 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"time"
 
-	yaml "gopkg.in/yaml.v3"
-
 	"github.com/pborman/uuid"
 	"github.com/sethvargo/go-password/password"
+	yaml "gopkg.in/yaml.v3"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
@@ -25,6 +25,11 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 	var config v1.AtlasProject
 	ReadInYAMLFileAndConvert(path, &config)
 	return &config
+}
+
+func RandomName(base string) string {
+	randomSuffix := uuid.New()[0:6]
+	return fmt.Sprintf("%s-%s", base, randomSuffix)
 }
 
 func SaveToFile(path string, data []byte) error {

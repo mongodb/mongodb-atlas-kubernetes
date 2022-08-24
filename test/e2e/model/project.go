@@ -75,6 +75,11 @@ func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
 	return p
 }
 
+func (p *AProject) WithCloudAccessRole(role v1.CloudProviderAccessRole) *AProject {
+	p.Spec.CloudProviderAccessRoles = append(p.Spec.CloudProviderAccessRoles, role)
+	return p
+}
+
 func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
 	p.Spec.Integrations = append(p.Spec.Integrations, project.Integration(spec))
 	return p
