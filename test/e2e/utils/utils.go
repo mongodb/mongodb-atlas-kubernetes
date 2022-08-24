@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 	"os"
@@ -24,6 +25,11 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 	var config v1.AtlasProject
 	ReadInYAMLFileAndConvert(path, &config)
 	return &config
+}
+
+func RandomName(base string) string {
+	randomSuffix := uuid.New()[0:6]
+	return fmt.Sprintf("%s-%s", base, randomSuffix)
 }
 
 func SaveToFile(path string, data []byte) error {

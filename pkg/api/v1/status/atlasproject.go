@@ -40,6 +40,12 @@ func AtlasProjectAuthModesOption(authModes []authmode.AuthMode) AtlasProjectStat
 	}
 }
 
+func AtlasProjectCloudAccessRolesOption(cloudAccessRoles []CloudProviderAccessRole) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.CloudProviderAccessRoles = cloudAccessRoles
+	}
+}
+
 func AtlasProjectPrometheusOption(prometheus *Prometheus) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.Prometheus = prometheus
@@ -65,6 +71,9 @@ type AtlasProjectStatus struct {
 	// "SCRAM" is default authentication method and requires a password for each user
 	// "X509" signifies that self-managed X.509 authentication is configured
 	AuthModes authmode.AuthModes `json:"authModes,omitempty"`
+
+	// CloudProviderAccessRoles contains a list of configured cloud provider access roles. AWS support only
+	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL
