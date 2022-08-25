@@ -73,6 +73,7 @@ jobs:
               "integration-ns",
               "x509auth",
               "long-run",
+              "networkpeering",
               "cloud-access-role",
           ]
         include:

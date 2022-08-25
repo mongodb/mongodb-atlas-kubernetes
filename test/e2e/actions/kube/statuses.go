@@ -18,6 +18,12 @@ func GetProjectPEndpointStatus(data *model.TestDataProvider) func() string {
 	}
 }
 
+func GetProjectNetworkPeerStatus(data *model.TestDataProvider) func() string {
+	return func() string {
+		return kubecli.GetStatusCondition(string(status.NetworkPeerReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+	}
+}
+
 func GetProjectPEndpointServiceStatus(data *model.TestDataProvider) func() string {
 	return func() string {
 		return kubecli.GetStatusCondition("PrivateEndpointServiceReady", data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())

@@ -34,6 +34,12 @@ func AtlasProjectSetPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpo
 	}
 }
 
+func AtlasProjectSetNetworkPeerOption(networkPeers *[]AtlasNetworkPeer) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.NetworkPeers = *networkPeers
+	}
+}
+
 func AtlasProjectAuthModesOption(authModes []authmode.AuthMode) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.AuthModes = authModes
@@ -66,6 +72,9 @@ type AtlasProjectStatus struct {
 
 	// The list of private endpoints configured for current project
 	PrivateEndpoints []ProjectPrivateEndpoint `json:"privateEndpoints,omitempty"`
+
+	// The list of network peers that are configured for current project
+	NetworkPeers []AtlasNetworkPeer `json:"networkPeers,omitempty"`
 
 	// AuthModes contains a list of configured authentication modes
 	// "SCRAM" is default authentication method and requires a password for each user

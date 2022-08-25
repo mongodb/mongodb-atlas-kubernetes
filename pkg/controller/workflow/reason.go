@@ -27,6 +27,8 @@ const (
 	ProjectIntegrationInternal               ConditionReason = "ProjectIntegrationInternalError"
 	ProjectIntegrationRequest                ConditionReason = "ProjectIntegrationRequestError"
 	ProjectIntegrationReady                  ConditionReason = "ProjectIntegrationReady"
+	ProjectPrivateEndpointIsNotReadyInAtlas  ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
+	ProjectNetworkPeerIsNotReadyInAtlas      ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 	ProjectCloudAccessRolesIsNotReadyInAtlas ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
 )
 

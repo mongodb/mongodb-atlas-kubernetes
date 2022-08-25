@@ -70,6 +70,11 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 	return p
 }
 
+func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
+	p.Spec.NetworkPeers = append(p.Spec.NetworkPeers, peer)
+	return p
+}
+
 func (p *AProject) WithCloudAccessRole(role v1.CloudProviderAccessRole) *AProject {
 	p.Spec.CloudProviderAccessRoles = append(p.Spec.CloudProviderAccessRoles, role)
 	return p
