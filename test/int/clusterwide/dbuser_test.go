@@ -24,8 +24,8 @@ const (
 	UserPasswordSecret = "user-password-secret"
 	DBUserPassword     = "Passw0rd!"
 	// M2 Deployments take longer time to apply changes
-	DBUserUpdateTimeout    = 170
-	ProjectCreationTimeout = 40
+	DBUserUpdateTimeout    = 170 * time.Second
+	ProjectCreationTimeout = 40 * time.Second
 )
 
 var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
@@ -59,8 +59,9 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			}
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
-			Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-				ProjectCreationTimeout, interval).Should(BeTrue())
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 		})
 	})
 
@@ -111,17 +112,16 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 
-			Eventually(
-				func(g Gomega) {
-					success := testutil.WaitFor(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
-					g.Expect(success).To(BeTrue())
-				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = mdbv1.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
-			Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-				DBUserUpdateTimeout, interval, validateDatabaseUserUpdatingFunc()).Should(BeTrue())
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(DBUserUpdateTimeout).WithPolling(interval).Should(BeTrue())
 
 			By("Removing the deployment", func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeploymentAWS)).To(Succeed())
@@ -189,31 +189,6 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-func validateDeploymentCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	startedCreation := false
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasDeployment)
-		if c.Status.StateName != "" {
-			startedCreation = true
-		}
-		// When the create request has been made to Atlas - we expect the following status
-		if startedCreation {
-			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
-			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
-				status.FalseCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
-			)
-			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-		} else {
-			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
-			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
-		}
-	}
-}
-
-// nolint
 func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
@@ -235,17 +210,5 @@ func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
 			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
-	}
-}
-
-func validateDatabaseUserUpdatingFunc() func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		d := a.(*mdbv1.AtlasDatabaseUser)
-		expectedConditionsMatchers := testutil.MatchConditions(
-			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)),
-			status.FalseCondition(status.ReadyType),
-			status.TrueCondition(status.ValidationSucceeded),
-		)
-		Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
 }
