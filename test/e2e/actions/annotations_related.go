@@ -17,7 +17,7 @@ const (
 	atlasDeploymentCRD = "atlasdeployments.atlas.mongodb.com"
 )
 
-func DeleteDeploymentCRD(data *model.TestDataProvider) {
+func DeleteDeploymentCRWithKeepAnnotation(data *model.TestDataProvider) {
 	By(fmt.Sprintf("Deleting %s", atlasDeploymentCRD), func() {
 		kubecli.DeleteClusterResource("crd", atlasDeploymentCRD)
 		By("Checking Cluster still existed", func() {

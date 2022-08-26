@@ -59,7 +59,7 @@ var _ = Describe("Deploy deployment", Label("deployment-annotations-ns"), func()
 				[]model.DBUser{},
 				30000,
 				[]func(*model.TestDataProvider){
-					actions.DeleteDeploymentCRD,
+					actions.DeleteDeploymentCRWithKeepAnnotation,
 					actions.ReDeployOperator,
 					actions.RemoveKeepAnnotation,
 				},
