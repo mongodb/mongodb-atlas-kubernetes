@@ -29,7 +29,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
-		advancedDeployment, err = advancedDeploymentSpec.AdvancedDeployment()
+		advancedDeployment, err = advancedDeploymentSpec.ToAtlas()
 		if err != nil {
 			return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -58,73 +58,87 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, advancedDeployment *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	resultingDeployment, err := MergedAdvancedDeployment(*advancedDeployment, deployment.Spec)
+func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
-		return advancedDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if done := AdvancedDeploymentsEqual(ctx.Log, *advancedDeployment, resultingDeployment); done {
-		return advancedDeployment, workflow.OK()
+	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
+		return atlasDeploymentAsAtlas, workflow.OK()
 	}
 
-	if deployment.Spec.AdvancedDeploymentSpec.Paused != nil {
-		if advancedDeployment.Paused == nil || *advancedDeployment.Paused != *deployment.Spec.AdvancedDeploymentSpec.Paused {
+	if specDeployment.Paused != nil {
+		if atlasDeployment.Paused == nil || *atlasDeployment.Paused != *specDeployment.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
-			resultingDeployment = mongodbatlas.AdvancedCluster{
+			specDeployment = mdbv1.AdvancedDeploymentSpec{
 				Paused: deployment.Spec.AdvancedDeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
-			resultingDeployment.Paused = nil
+			specDeployment.Paused = nil
 		}
 	}
 
-	resultingDeployment = cleanupAdvancedDeployment(resultingDeployment)
-
-	advancedDeployment, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, &resultingDeployment)
+	deploymentAsAtlas, err := cleanupTheSpec(specDeployment).ToAtlas()
 	if err != nil {
-		return advancedDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, deploymentAsAtlas)
+	if err != nil {
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}
 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupAdvancedDeployment(deployment mongodbatlas.AdvancedCluster) mongodbatlas.AdvancedCluster {
-	deployment.ID = ""
+func cleanupTheSpec(deployment mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
 	deployment.MongoDBVersion = ""
-	deployment.StateName = ""
-	deployment.ConnectionStrings = nil
-	return deployment
+	return &deployment
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
-func MergedAdvancedDeployment(advancedDeployment mongodbatlas.AdvancedCluster, spec mdbv1.AtlasDeploymentSpec) (mongodbatlas.AdvancedCluster, error) {
-	result := mongodbatlas.AdvancedCluster{}
-	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
-		return result, err
+func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment mdbv1.AdvancedDeploymentSpec) (mergedDeployment mdbv1.AdvancedDeploymentSpec, atlasDeployment mdbv1.AdvancedDeploymentSpec, err error) {
+	atlasDeployment, err = AdvancedDeploymentFromAtlas(atlasDeploymentAsAtlas)
+	if err != nil {
+		return
 	}
 
-	if err := compat.JSONCopy(&result, spec.AdvancedDeploymentSpec); err != nil {
-		return result, err
+	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
+	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
+		return
 	}
 
-	for i, replicationSpec := range advancedDeployment.ReplicationSpecs {
+	if err = compat.JSONCopy(&mergedDeployment, specDeployment); err != nil {
+		return
+	}
+
+	for i, replicationSpec := range atlasDeployment.ReplicationSpecs {
 		for k, v := range replicationSpec.RegionConfigs {
 			// the response does not return backing provider names in some situations.
 			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
 			if v.BackingProviderName == "" {
-				result.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
+				mergedDeployment.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
 			}
 		}
 	}
+	return
+}
+
+func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {
+	result := mdbv1.AdvancedDeploymentSpec{}
+	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
+		return result, err
+	}
+
 	return result, nil
 }
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mongodbatlas.AdvancedCluster, deploymentOperator mongodbatlas.AdvancedCluster) bool {
-	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty())
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
+	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}

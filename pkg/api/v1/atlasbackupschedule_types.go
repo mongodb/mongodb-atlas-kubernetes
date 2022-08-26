@@ -23,7 +23,7 @@ type AtlasBackupScheduleSpec struct {
 
 	// Export policy for automatically exporting cloud backup snapshots to AWS bucket.
 	// +optional
-	Export AtlasBackupExportSpec `json:"export,omitempty"`
+	Export *AtlasBackupExportSpec `json:"export,omitempty"`
 
 	// A reference (name & namespace) for backup policy in the desired updated backup policy.
 	PolicyRef common.ResourceRefNamespaced `json:"policy"`

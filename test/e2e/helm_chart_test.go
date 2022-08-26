@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -15,7 +13,6 @@ import (
 	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/mongocli"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -247,7 +244,7 @@ var _ = Describe("HELM charts", func() {
 
 func waitDeploymentWithChecks(data *model.TestDataProvider) {
 	By("Wait creation until is done", func() {
-		actions.WaitProject(data, "1")
+		actions.WaitProjectWithoutGenerationCheck(data)
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID
@@ -258,19 +255,15 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 		deployment := data.Resources.Deployments[0]
 		switch {
 		case deployment.Spec.AdvancedDeploymentSpec != nil:
-			atlasClient, err := atlas.AClient()
-			Expect(err).To(BeNil())
 			advancedDeployment, err := atlasClient.GetAdvancedDeployment(data.Resources.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareAdvancedDeploymentsSpec(deployment.Spec, *advancedDeployment)
 		case deployment.Spec.ServerlessSpec != nil:
-			atlasClient, err := atlas.AClient()
-			Expect(err).To(BeNil())
 			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, deployment.Spec.ServerlessSpec.Name)
 			Expect(err).To(BeNil())
 			actions.CompareServerlessSpec(deployment.Spec, *serverlessInstance)
 		default:
-			uDeployment := mongocli.GetDeploymentsInfo(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
+			uDeployment := atlasClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
 			actions.CompareDeploymentsSpec(deployment.Spec, uDeployment)
 		}
 	})
@@ -292,7 +285,7 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 		helm.Uninstall(data.Resources.Deployments[0].Spec.GetDeploymentName(), data.Resources.Namespace)
 		Eventually(
 			func() bool {
-				return mongocli.IsProjectInfoExist(data.Resources.ProjectID)
+				return atlasClient.IsProjectExists(data.Resources.ProjectID)
 			},
 			"7m", "20s",
 		).Should(BeFalse(), "Project and deployment should be deleted from Atlas")

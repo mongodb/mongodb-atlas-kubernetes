@@ -1,6 +1,9 @@
 # fix for some Linux distros (i.e. WSL)
 SHELL := /usr/bin/env bash
 
+# CONTAINER ENGINE: docker | podman
+CONTAINER_ENGINE?=docker
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -17,7 +20,7 @@ endif
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
 # - use the CHANNELS as arg of the bundle target (e.g make bundle CHANNELS=preview,fast,stable)
 # - use environment variables to overwrite this value (e.g export CHANNELS="preview,fast,stable")
-CHANNELS = beta
+CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
@@ -27,7 +30,7 @@ endif
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
 # - use the DEFAULT_CHANNEL as arg of the bundle target (e.g make bundle DEFAULT_CHANNEL=stable)
 # - use environment variables to overwrite this value (e.g export DEFAULT_CHANNEL="stable")
-DEFAULT_CHANNEL=beta
+DEFAULT_CHANNEL ?= beta
 ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
@@ -88,6 +91,10 @@ int-test: generate manifests ## Run integration tests. Sample with labels: `make
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	./scripts/e2e_local.sh $(label) $(build)
 
+.PHONY: e2e-openshift-upgrade
+e2e-openshift-upgrade:
+	cd scripts && ./openshift-upgrade-test.sh
+
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
 	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
@@ -111,6 +118,9 @@ manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
 
+.PHONY: lint
+lint:
+	golangci-lint run
 
 .PHONY: fmt
 fmt: ## Run go fmt against code
@@ -135,7 +145,12 @@ controller-gen: ## Download controller-gen locally if necessary
 .PHONY: kustomize
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.0.1)
+ifeq ("$(wildcard $(KUSTOMIZE))", "")
+	rm -f ./kustomize
+	wget "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -O kinstall.sh
+	chmod +x ./kinstall.sh && bash -c ./kinstall.sh && mv ./kustomize $(GOBIN)/kustomize
+	rm -f ./kinstall.sh
+endif
 
 # go-get-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -144,7 +159,6 @@ define go-get-tool
 set -e ;\
 TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
-go mod init tmp ;\
 echo "Downloading $(2)" ;\
 GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
@@ -160,20 +174,19 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 
 .PHONY: image
 image: manager ## Build the operator image
-	docker build -t $(OPERATOR_IMAGE) .
-	docker push $(OPERATOR_IMAGE)
+	$(CONTAINER_ENGINE) build -t $(OPERATOR_IMAGE) .
+	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_ENGINE) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
-bundle-push: bundle bundle-build ## Publish the bundle image
-	docker push $(BUNDLE_IMG)
+bundle-push:
+	$(CONTAINER_ENGINE) push $(BUNDLE_IMG)
 
 .PHONY: catalog-build
 CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
-#catalog-build: IMG=
 catalog-build: ## bundle bundle-push ## Build file-based bundle
 	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
 	CATALOG_DIR=$(CATALOG_DIR) \
@@ -185,7 +198,7 @@ catalog-build: ## bundle bundle-push ## Build file-based bundle
 
 .PHONY: catalog-push
 catalog-push:
-	docker push $(CATALOG_IMAGE)
+	$(CONTAINER_ENGINE) push $(CATALOG_IMAGE)
 
 .PHONY: build-subscription
 build-subscription:
@@ -216,9 +229,9 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 ## docker-login-olm:
 ## docker login -u $(shell oc whoami) -p $(shell oc whoami -t) $(REGISTRY)
 
-.PHONY: docker-push
-docker-push: ## Push the docker image
-	docker push ${IMG}
+.PHONY: image-push
+image-push: ## Push the docker image
+	$(CONTAINER_ENGINE) push ${IMG}
 
 # Additional make goals
 .PHONY: run-kind

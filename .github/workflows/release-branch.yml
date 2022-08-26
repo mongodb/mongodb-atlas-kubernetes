@@ -33,9 +33,9 @@ jobs:
         ENV: prod
 
     - name: Setup Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: "1.17"
+        go-version: "1.18"
 
     - name: Download dependencies
       run: |
@@ -43,7 +43,8 @@ jobs:
 
     - name: Create the licence report file
       run: |
-        go get github.com/google/go-licenses && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
+        export PATH="$GOPATH/bin:$PATH"
+        go install github.com/google/go-licenses@latest && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
 
     - name: Create branch and push it
       run: |
@@ -83,4 +84,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: priyolahiri,fabritsius,leo-ri,chatton,igor-karpukhin
+        REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack

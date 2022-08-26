@@ -72,7 +72,7 @@ pointing to the directory where `operatorhub-operator` repository was cloned in 
 
 For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
 
-Invoke:
+Invoke with <version> like `1.0.0`:
 ```
 ./scripts/release-redhat.sh <version>
 ```
@@ -91,7 +91,7 @@ pointing to the directory where `community-operators-prod` repository was cloned
 *(This is temporary, to be fixed)
 Change the `mongodb-atlas-kubernetes.clusterserviceversion.yaml` file and change the `replaces:` setting the previous version
 
-Invoke the following script:
+Invoke the following script with <version> like `1.0.0`:
 ```
 ./scripts/release-redhat-openshift.sh <version>
 ```

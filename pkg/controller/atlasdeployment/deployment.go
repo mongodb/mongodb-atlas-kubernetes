@@ -131,9 +131,17 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 		if *lookAt.AutoScaling.Compute.Enabled {
 			result.ProviderSettings.InstanceSizeName = ""
 		} else {
+			if result.ProviderSettings == nil {
+				result.ProviderSettings = &mongodbatlas.ProviderSettings{}
+			}
+			if result.ProviderSettings.AutoScaling == nil {
+				result.ProviderSettings.AutoScaling = &mongodbatlas.AutoScaling{}
+			}
 			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
 		}
+	}
 
+	if lookAt.AutoScaling != nil {
 		if lookAt.AutoScaling.DiskGBEnabled != nil && *lookAt.AutoScaling.DiskGBEnabled {
 			result.DiskSizeGB = nil
 		}
@@ -154,7 +162,7 @@ func MergedDeployment(atlasDeployment mongodbatlas.Cluster, spec mdbv1.AtlasDepl
 
 	mergeRegionConfigs(result.ReplicationSpecs, spec.DeploymentSpec.ReplicationSpecs)
 
-	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/deployments-create-one/):
+	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
 	// "Don't specify this parameter when creating a multi-region deployment using the replicationSpec object or a Global
 	// Deployment with the replicationSpecs array."
 	// The problem is that Atlas API accepts the create/update request but then returns the 'ProviderSettings.RegionName' empty in GET request
@@ -266,7 +274,7 @@ func handleSharedDeploymentUpgrade(ctx *workflow.Context, current *mongodbatlas.
 
 	// TODO: Replace with the go-atlas-client when this method will be added to go-atlas-client
 	atlasClient := ctx.Client
-	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/deployments/tenantUpgrade", current.GroupID)
+	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/clusters/tenantUpgrade", current.GroupID)
 	req, err := atlasClient.NewRequest(context.Background(), http.MethodPost, urlStr, new)
 	if err != nil {
 		return false, fmt.Errorf(baseErr, err)

@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
@@ -50,7 +51,7 @@ func (i PrivateEndpoint) ToAtlas() (*mongodbatlas.PrivateEndpoint, error) {
 
 // Identifier is required to satisfy "Identifiable" iterface
 func (i PrivateEndpoint) Identifier() interface{} {
-	return string(i.Provider) + i.Region
+	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }
 
 func (endpoints GCPEndpoints) ConvertToAtlas() ([]*mongodbatlas.GCPEndpoint, error) {

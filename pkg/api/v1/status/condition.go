@@ -39,6 +39,8 @@ const (
 	MaintenanceWindowReadyType      ConditionType = "MaintenanceWindowReady"
 	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
 	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
+	NetworkPeerReadyType            ConditionType = "NetworkPeerReady"
+	CloudProviderAccessReadyType    ConditionType = "CloudProviderAccessReady"
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 )
 

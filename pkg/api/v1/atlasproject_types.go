@@ -62,6 +62,11 @@ type AtlasProjectSpec struct {
 
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
+	// CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
+	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
+
+	// NetworkPeers is a list of Network Peers configured for the current Project.
+	NetworkPeers []NetworkPeer `json:"networkPeers,omitempty"`
 
 	// Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true
 	// +kubebuilder:default:=true

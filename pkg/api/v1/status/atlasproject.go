@@ -28,46 +28,27 @@ func AtlasProjectAddPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpo
 	}
 }
 
-func AtlasProjectUpdatePrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectSetPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
-		result := []ProjectPrivateEndpoint{}
+		s.PrivateEndpoints = privateEndpoints
+	}
+}
 
-		for _, currentPE := range privateEndpoints {
-			var matchedPE *ProjectPrivateEndpoint
-			for peIdx, statusPE := range s.PrivateEndpoints {
-				if currentPE.ID == statusPE.ID {
-					if currentPE.ServiceName != "" {
-						s.PrivateEndpoints[peIdx].ServiceName = currentPE.ServiceName
-					}
-					if currentPE.ServiceResourceID != "" {
-						s.PrivateEndpoints[peIdx].ServiceResourceID = currentPE.ServiceResourceID
-					}
-					if currentPE.InterfaceEndpointID != "" {
-						s.PrivateEndpoints[peIdx].InterfaceEndpointID = currentPE.InterfaceEndpointID
-					}
-					if len(currentPE.ServiceAttachmentNames) != 0 {
-						s.PrivateEndpoints[peIdx].ServiceAttachmentNames = currentPE.ServiceAttachmentNames
-					}
-					if len(currentPE.Endpoints) != 0 {
-						s.PrivateEndpoints[peIdx].Endpoints = currentPE.Endpoints
-					}
-
-					matchedPE = &s.PrivateEndpoints[peIdx]
-				}
-			}
-
-			if matchedPE != nil {
-				result = append(result, *matchedPE)
-			}
-		}
-
-		s.PrivateEndpoints = result
+func AtlasProjectSetNetworkPeerOption(networkPeers *[]AtlasNetworkPeer) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.NetworkPeers = *networkPeers
 	}
 }
 
 func AtlasProjectAuthModesOption(authModes []authmode.AuthMode) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.AuthModes = authModes
+	}
+}
+
+func AtlasProjectCloudAccessRolesOption(cloudAccessRoles []CloudProviderAccessRole) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.CloudProviderAccessRoles = cloudAccessRoles
 	}
 }
 
@@ -92,10 +73,16 @@ type AtlasProjectStatus struct {
 	// The list of private endpoints configured for current project
 	PrivateEndpoints []ProjectPrivateEndpoint `json:"privateEndpoints,omitempty"`
 
+	// The list of network peers that are configured for current project
+	NetworkPeers []AtlasNetworkPeer `json:"networkPeers,omitempty"`
+
 	// AuthModes contains a list of configured authentication modes
 	// "SCRAM" is default authentication method and requires a password for each user
 	// "X509" signifies that self-managed X.509 authentication is configured
 	AuthModes authmode.AuthModes `json:"authModes,omitempty"`
+
+	// CloudProviderAccessRoles contains a list of configured cloud provider access roles. AWS support only
+	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL

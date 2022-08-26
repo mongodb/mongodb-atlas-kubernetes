@@ -26,6 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 const (
@@ -77,8 +78,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		}
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
-		Eventually(testutil.WaitFor(k8sClient, createdProject, status.TrueCondition(status.ReadyType)),
-			ProjectCreationTimeout, intervalShort).Should(BeTrue())
+		Eventually(func() bool {
+			return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+		}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 	})
 
 	AfterEach(func() {
@@ -191,16 +193,17 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
-			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
+			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeployment, createdDeployment.Spec)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, specDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), *atlasDeployment, mergedDeployment)).To(BeTrue())
+			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)).To(BeTrue())
 
 			for _, check := range additionalChecks {
-				check(atlasDeployment)
+				check(atlasDeploymentAsAtlas)
 			}
 		})
 	}
@@ -214,11 +217,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	}
 
-	performUpdate := func(timeout interface{}) {
+	performUpdate := func(timeout time.Duration) {
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 
-		Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc()),
-			timeout, interval).Should(BeTrue())
+		Eventually(func() bool {
+			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc())
+		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
 
 		lastGeneration++
 	}
@@ -239,8 +243,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					30*time.Minute, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 
@@ -276,8 +281,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
 				Expect(k8sClient.Create(context.Background(), expectedDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					1800, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
@@ -300,8 +306,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
 				Expect(k8sClient.Create(context.Background(), expectedDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
@@ -381,8 +388,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Creating the Deployment", func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 
@@ -401,8 +409,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 				performUpdate(DeploymentUpdateTimeout)
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 
@@ -420,9 +429,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 				performUpdate(DeploymentUpdateTimeout)
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
-
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 				doRegularDeploymentStatusChecks()
 
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
@@ -439,47 +448,69 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		It("Should fail, then be fixed (GCP)", func() {
 			createdDeployment = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("")
 
-			By(fmt.Sprintf("Creating the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
-
-				Eventually(
-					testutil.WaitFor(
-						k8sClient,
-						createdDeployment,
-						status.
-							FalseCondition(status.DeploymentReadyType).
-							WithReason(string(workflow.Internal)). // Internal due to reconciliation failing on the initial GET request
-							WithMessageRegexp("name is invalid because must be set"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
-				testutil.EventExists(k8sClient, createdDeployment, "Warning", string(workflow.Internal), "name is invalid because must be set")
-
-				lastGeneration++
+			By(fmt.Sprintf("Trying to create the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				err := k8sClient.Create(context.Background(), createdDeployment)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(MatchRegexp("is invalid: spec.deploymentSpec.name"))
 			})
 
-			By("Fixing the deployment", func() {
+			By("Creating the fixed deployment", func() {
 				createdDeployment.Spec.DeploymentSpec.Name = "fixed-deployment"
 
-				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).To(Succeed())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType)),
-					20*time.Minute, interval).Should(BeTrue())
-
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
 			})
 		})
 
+		It("Should Success (AWS) with enabled autoscaling", func() {
+			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
+				AutoIndexingEnabled: boolptr(true),
+				DiskGBEnabled:       boolptr(true),
+			}
+
+			By(fmt.Sprintf("Creating the Deployment %s with autoscaling", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doRegularDeploymentStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Decreasing the Deployment disk size should not take effect", func() {
+				prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(14)
+				performUpdate(30 * time.Minute)
+				doRegularDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.Cluster) {
+					Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize))
+
+					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+				})
+			})
+		})
+
 		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment = createdDeployment.WithAutoscalingDisabled()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
@@ -502,7 +533,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By("Decreasing the Deployment disk size", func() {
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(10)
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(15)
 				performUpdate(20 * time.Minute)
 				doRegularDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.Cluster) {
@@ -526,18 +557,19 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(false)
 
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-				Eventually(
-					testutil.WaitFor(
+				Eventually(func() bool {
+					return testutil.CheckCondition(
 						k8sClient,
 						createdDeployment,
 						status.
 							FalseCondition(status.DeploymentReadyType).
 							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
 							WithMessageRegexp("CANNOT_UPDATE_PAUSED_CLUSTER"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
+					)
+				}).
+					WithTimeout(DeploymentUpdateTimeout).
+					WithPolling(interval).
+					Should(BeTrue())
 
 				lastGeneration++
 			})
@@ -563,18 +595,18 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M42"
 
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-				Eventually(
-					testutil.WaitFor(
+				Eventually(func() bool {
+					return testutil.CheckCondition(
 						k8sClient,
 						createdDeployment,
 						status.
 							FalseCondition(status.DeploymentReadyType).
 							WithReason(string(workflow.DeploymentNotUpdatedInAtlas)).
-							WithMessageRegexp("INVALID_ENUM_VALUE"),
-					),
-					60,
-					interval,
-				).Should(BeTrue())
+							WithMessageRegexp(".*INVALID_ENUM_VALUE.*"),
+					)
+				}).WithTimeout(DeploymentUpdateTimeout).
+					WithPolling(interval).
+					Should(BeTrue())
 
 				lastGeneration++
 
@@ -599,7 +631,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				checkUserInAtlas(createdProject.ID(), *createdDBUser)
 			})
@@ -610,8 +644,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUserFakeScope)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUserFakeScope)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec))),
-					20, intervalShort).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec)))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 			})
 			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 
@@ -619,8 +654,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
@@ -640,8 +676,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					DeploymentUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAtlasState()
@@ -653,8 +690,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			By(fmt.Sprintf("Creating the Database User %s", kube.ObjectKeyFromObject(createdDBUser)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDBUser)).ToNot(HaveOccurred())
-				Eventually(testutil.WaitFor(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType)),
-					DBUserUpdateTimeout, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 			})
 
 			By("Removing Atlas Deployment "+createdDeployment.Name, func() {
@@ -679,11 +717,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				manualDeletion = true // We need to remove the deployment in Atlas manually to let project get removed
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 			})
 			By("Deleting the deployment - stays in Atlas", func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
@@ -701,11 +737,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				createdDeployment.ObjectMeta.Annotations = map[string]string{customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip}
 				createdDeployment.Spec.DeploymentSpec.Labels = append(createdDeployment.Spec.DeploymentSpec.Labels, common.LabelSpec{
@@ -731,18 +765,61 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create advanced deployment", func() {
+	Describe("Create the advanced deployment & change the InstanceSize", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 
 			By(fmt.Sprintf("Creating the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				newInstanceSize := "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = newInstanceSize
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						Enabled:          toptr.Boolptr(true),
+						MaxInstanceSize:  "M20",
+						MinInstanceSize:  "M10",
+						ScaleDownEnabled: toptr.Boolptr(true),
+					},
+					DiskGB: &mdbv1.DiskGB{
+						Enabled: toptr.Boolptr(true),
+					},
+				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doAdvancedDeploymentStatusChecks()
 				checkAdvancedAtlasState()
@@ -761,8 +838,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment with Advanced Options %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc()),
-					30*time.Minute, interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doRegularDeploymentStatusChecks()
 				checkAdvancedDeploymentOptions(createdDeployment.Spec.ProcessArgs)
@@ -784,11 +862,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(
-					func(g Gomega) {
-						success := testutil.WaitFor(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFuncGContext(g))()
-						g.Expect(success).To(BeTrue())
-					}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 				doServerlessDeploymentStatusChecks()
 			})
@@ -830,7 +906,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					ReferenceMinuteOfHour: 10,
 					RestoreWindowDays:     5,
 					UpdateSnapshots:       false,
-					Export:                mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
+					Export:                &mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
 				},
 			}
 
@@ -909,30 +985,6 @@ func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
 			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
 			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
-		}
-	}
-}
-
-func validateDeploymentCreatingFuncGContext(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	startedCreation := false
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasDeployment)
-		if c.Status.StateName != "" {
-			startedCreation = true
-		}
-		// When the create request has been made to Atlas - we expect the following status
-		if startedCreation {
-			g.Expect(c.Status.StateName).To(Or(Equal("CREATING"), Equal("IDLE")), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
-			expectedConditionsMatchers := testutil.MatchConditions(
-				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
-				status.FalseCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
-			)
-			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
-		} else {
-			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
-			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
 	}
 }

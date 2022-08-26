@@ -43,8 +43,34 @@ const (
 	TypeGeoSharded DeploymentType = "GEOSHARDED"
 )
 
-type DeploymentSpec struct {
+// AtlasDeploymentSpec defines the desired state of AtlasDeployment
+// Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+type AtlasDeploymentSpec struct {
+	// Project is a reference to AtlasProject resource the deployment belongs to
+	Project common.ResourceRefNamespaced `json:"projectRef"`
 
+	// Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
+	// +optional
+	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
+
+	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
+	// +optional
+	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
+
+	// Backup schedule for the AtlasDeployment
+	// +optional
+	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
+
+	// Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
+	// +optional
+	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
+
+	// ProcessArgs allows to modify Advanced Configuration Options
+	// +optional
+	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
+type DeploymentSpec struct {
 	// Collection of settings that configures auto-scaling information for the deployment.
 	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
 	// +optional
@@ -83,7 +109,10 @@ type DeploymentSpec struct {
 	// Version of the deployment to deploy.
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
 
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// Name of the deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 
 	// Positive integer that specifies the number of shards to deploy for a sharded deployment.
@@ -113,67 +142,43 @@ type DeploymentSpec struct {
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
 }
 
-// AtlasDeploymentSpec defines the desired state of AtlasDeployment
-type AtlasDeploymentSpec struct {
-	// Project is a reference to AtlasProject resource the deployment belongs to
-	Project common.ResourceRefNamespaced `json:"projectRef"`
+type AdvancedDeploymentSpec struct {
+	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
+	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
+	ClusterType              string             `json:"clusterType,omitempty"`
+	DiskSizeGB               *int               `json:"diskSizeGB,omitempty"`
+	EncryptionAtRestProvider string             `json:"encryptionAtRestProvider,omitempty"`
+	Labels                   []common.LabelSpec `json:"labels,omitempty"`
+	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
+	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
+	// Name of the advanced deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
+	Name                 string                     `json:"name,omitempty"`
+	Paused               *bool                      `json:"paused,omitempty"`
+	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
+	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
+	RootCertType         string                     `json:"rootCertType,omitempty"`
+	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
+}
 
-	// Configuration for the advanced deployment API
-	// +optional
-	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
-
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
-	// +optional
-	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
-
-	// Backup schedule for the AtlasDeployment
-	// +optional
-	BackupScheduleRef common.ResourceRefNamespaced `json:"backupRef"`
-
-	// Configuration for the advanced deployment API. https://docs.atlas.mongodb.com/reference/api/deployments-advanced/
-	// +optional
-	ServerlessSpec *ServerlessSpec `json:"serverlessSpec,omitempty"`
-
-	// ProcessArgs allows to modify Advanced Configuration Options
-	// +optional
-	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+// ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
+func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error) {
+	result := &mongodbatlas.AdvancedCluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
 }
 
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
 type ServerlessSpec struct {
-	// Name of the deployment as it appears in Atlas. After Atlas creates the deployment, you can't change its name.
+	// Name of the serverless deployment as it appears in Atlas.
+	// After Atlas creates the deployment, you can't change its name.
+	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
-}
-
-type AdvancedDeploymentSpec struct {
-	BackupEnabled            *bool                      `json:"backupEnabled,omitempty"`
-	BiConnector              *BiConnectorSpec           `json:"biConnector,omitempty"`
-	ClusterType              string                     `json:"clusterType,omitempty"`
-	ConnectionStrings        *ConnectionStrings         `json:"connectionStrings,omitempty"`
-	DiskSizeGB               *int                       `json:"diskSizeGB,omitempty"`
-	EncryptionAtRestProvider string                     `json:"encryptionAtRestProvider,omitempty"`
-	GroupID                  string                     `json:"groupId,omitempty"`
-	ID                       string                     `json:"id,omitempty"`
-	Labels                   []common.LabelSpec         `json:"labels,omitempty"`
-	MongoDBMajorVersion      string                     `json:"mongoDBMajorVersion,omitempty"`
-	MongoDBVersion           string                     `json:"mongoDBVersion,omitempty"`
-	Name                     string                     `json:"name,omitempty"`
-	Paused                   *bool                      `json:"paused,omitempty"`
-	PitEnabled               *bool                      `json:"pitEnabled,omitempty"`
-	StateName                string                     `json:"stateName,omitempty"`
-	ReplicationSpecs         []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	CreateDate               string                     `json:"createDate,omitempty"`
-	RootCertType             string                     `json:"rootCertType,omitempty"`
-	VersionReleaseSystem     string                     `json:"versionReleaseSystem,omitempty"`
-}
-
-// AdvancedDeployment converts the AdvancedDeploymentSpec to native Atlas client AdvancedDeployment format.
-func (s *AdvancedDeploymentSpec) AdvancedDeployment() (*mongodbatlas.AdvancedCluster, error) {
-	result := &mongodbatlas.AdvancedCluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
@@ -213,20 +218,19 @@ type EndpointSpec struct {
 
 type AdvancedReplicationSpec struct {
 	NumShards     int                     `json:"numShards,omitempty"`
-	ID            string                  `json:"id,omitempty"`
 	ZoneName      string                  `json:"zoneName,omitempty"`
 	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
 }
 
 type AdvancedRegionConfig struct {
-	AnalyticsSpecs      *Specs           `json:"analyticsSpecs,omitempty"`
-	ElectableSpecs      *Specs           `json:"electableSpecs,omitempty"`
-	ReadOnlySpecs       *Specs           `json:"readOnlySpecs,omitempty"`
-	AutoScaling         *AutoScalingSpec `json:"autoScaling,omitempty"`
-	BackingProviderName string           `json:"backingProviderName,omitempty"`
-	Priority            *int             `json:"priority,omitempty"`
-	ProviderName        string           `json:"providerName,omitempty"`
-	RegionName          string           `json:"regionName,omitempty"`
+	AnalyticsSpecs      *Specs                   `json:"analyticsSpecs,omitempty"`
+	ElectableSpecs      *Specs                   `json:"electableSpecs,omitempty"`
+	ReadOnlySpecs       *Specs                   `json:"readOnlySpecs,omitempty"`
+	AutoScaling         *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
+	BackingProviderName string                   `json:"backingProviderName,omitempty"`
+	Priority            *int                     `json:"priority,omitempty"`
+	ProviderName        string                   `json:"providerName,omitempty"`
+	RegionName          string                   `json:"regionName,omitempty"`
 }
 
 type Specs struct {
@@ -248,6 +252,22 @@ type AutoScalingSpec struct {
 	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
 	// +optional
 	Compute *ComputeSpec `json:"compute,omitempty"`
+}
+
+// AdvancedAutoScalingSpec configures your deployment to automatically scale its storage
+type AdvancedAutoScalingSpec struct {
+	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
+	// +optional
+	DiskGB *DiskGB `json:"diskGB,omitempty"`
+
+	// Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
+	// +optional
+	Compute *ComputeSpec `json:"compute,omitempty"`
+}
+
+// DiskGB specifies whether disk auto-scaling is enabled. The default is true.
+type DiskGB struct {
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // ComputeSpec Specifies whether the deployment automatically scales its deployment tier and whether the deployment can scale down.
@@ -520,10 +540,10 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 }
 
 func NewAwsAdvancedDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
-	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M5", "AWS", "US_EAST_1")
+	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1", 3)
 }
 
-func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backingProviderName, regionName string) *AtlasDeployment {
+func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, providerName, regionName string, nodeCount int) *AtlasDeployment {
 	priority := 7
 	return &AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -541,10 +561,10 @@ func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, backin
 								Priority: &priority,
 								ElectableSpecs: &Specs{
 									InstanceSize: instanceSize,
+									NodeCount:    &nodeCount,
 								},
-								BackingProviderName: backingProviderName,
-								ProviderName:        "TENANT",
-								RegionName:          regionName,
+								ProviderName: providerName,
+								RegionName:   regionName,
 							},
 						},
 					}},
@@ -582,6 +602,26 @@ func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced
 	t := true
 	c.Spec.DeploymentSpec.ProviderBackupEnabled = &t
 	c.Spec.BackupScheduleRef = ref
+	return c
+}
+
+func (c *AtlasDeployment) WithDiskSizeGB(size int) *AtlasDeployment {
+	c.Spec.DeploymentSpec.DiskSizeGB = &size
+	return c
+}
+
+func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
+	f := false
+	c.Spec.DeploymentSpec.AutoScaling = &AutoScalingSpec{
+		AutoIndexingEnabled: &f,
+		DiskGBEnabled:       &f,
+		Compute: &ComputeSpec{
+			Enabled:          &f,
+			ScaleDownEnabled: &f,
+			MinInstanceSize:  "",
+			MaxInstanceSize:  "",
+		},
+	}
 	return c
 }
 

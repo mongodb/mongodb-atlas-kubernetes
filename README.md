@@ -73,7 +73,7 @@ spec:
   projectRef:
     name: my-project
   deploymentSpec:
-    name: Test Deployment
+    name: test-deployment
     providerSettings:
       instanceSizeName: M10
       providerName: AWS
@@ -143,6 +143,8 @@ containers:
 ```
 
 ## Additional information or features
+
+In certain cases you can modify the default operator behaviour via [annotations](docs/annotations.md).
 
 Operator support Third Party Integration.
 

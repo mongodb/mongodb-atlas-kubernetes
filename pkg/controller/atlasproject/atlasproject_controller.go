@@ -156,8 +156,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
-				if result = DeleteAllPrivateEndpoints(ctx, atlasClient, projectID, project.Status.PrivateEndpoints, log); !result.IsOk() {
+				if result = DeleteAllPrivateEndpoints(ctx, projectID); !result.IsOk() {
 					setCondition(ctx, status.PrivateEndpointReadyType, result)
+					return result.ReconcileResult(), nil
+				}
+				if result = DeleteAllNetworkPeers(context, projectID, ctx.Client.Peers, ctx.Log); !result.IsOk() {
+					setCondition(ctx, status.NetworkPeerReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 
@@ -192,6 +196,18 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
+
+	if result = ensureProviderAccessStatus(context, ctx, project, projectID); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result.ReconcileResult(), nil
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
+
+	if result = ensureNetworkPeers(ctx, projectID, project); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result.ReconcileResult(), nil
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
 		logIfWarning(ctx, result)

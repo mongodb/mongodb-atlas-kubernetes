@@ -7,6 +7,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
 
 	"github.com/Azure/go-autorest/autorest"
@@ -47,7 +49,8 @@ func SessionAzure(subscriptionID string, tagNameValue string) (sessionAzure, err
 		SubscriptionID: subscriptionID,
 		Authorizer:     authorizer,
 		Tags: map[string]*string{
-			"name": to.StringPtr(tagNameValue),
+			"name":               to.StringPtr(tagNameValue),
+			config.TagForTestKey: to.StringPtr(config.TagForTestValue),
 		},
 	}, nil
 }

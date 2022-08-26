@@ -1,7 +1,10 @@
+run:
+  go: 1.18
+
 linters:
   disable-all: true
   enable:
-    - bodyclose
+    #- bodyclose
     - deadcode
     - depguard
     - dogsled
@@ -9,7 +12,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
-    - gocritic
+    #- gocritic
     - gocyclo
     - goimports
     - goprintffuncname
