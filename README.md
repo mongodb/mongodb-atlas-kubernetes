@@ -144,7 +144,7 @@ containers:
 
 ## Additional information or features
 
-In sertain cases you can modify the default operator behaviour via [annotations](docs/annotations.md).
+In certain cases you can modify the default operator behaviour via [annotations](docs/annotations.md).
 
 Operator support Third Party Integration.
 
