@@ -14,7 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("Deploy deployment", Label("deployment-annotations-ns"), func() {
+var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), func() {
 	var data model.TestDataProvider
 
 	BeforeEach(func() {
