@@ -16,7 +16,7 @@ on:
 jobs:
   create-release:
     name: Create Release
-    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release')) || github.event.inputs.version != ''
+    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.sha, 'release')) || github.event.inputs.version != ''
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
@@ -32,7 +32,7 @@ jobs:
       - name: Print Env and Get version
         id: tag
         env:
-          BRANCH: ${{ github.event.pull_request.head.ref }}
+          BRANCH: ${{ github.event.pull_request.head.sha }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
           version=$VERSION
