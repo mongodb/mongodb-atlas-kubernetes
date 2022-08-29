@@ -59,24 +59,7 @@ jobs:
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
-        test:
-          [
-              "test-label",
-              "cluster-ns",
-              "cluster-wide",
-              "bundle-test",
-              "helm-ns",
-              "helm-wide",
-              "helm-update",
-              "serverless-instance",
-              "multinamespaced",
-              "privatelink",
-              "integration-ns",
-              "x509auth",
-              "long-run",
-              "networkpeering",
-              "cloud-access-role",
-          ]
+        test: [ "test-label", "cluster-ns", "cluster-wide", "bundle-test", "helm-ns", "helm-wide", "helm-update", "serverless-instance",  "multinamespaced", "privatelink", "integration-ns", "x509auth", "long-run", "networkpeering", "cloud-access-role"]
         include:
           - k8s: "latest-openshift"
             test: "openshift"
