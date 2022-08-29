@@ -28,9 +28,9 @@ you can create a Kuberentes Secret with:
 
 ```
 kubectl create secret generic mongodb-atlas-operator-api-key \
-         --from-literal="orgId=<the_atlas_organization_id>" \
-         --from-literal="publicApiKey=<the_atlas_api_public_key>" \
-         --from-literal="privateApiKey=<the_atlas_api_private_key>" \
+         --from-literal='orgId=<the_atlas_organization_id>' \
+         --from-literal='publicApiKey=<the_atlas_api_public_key>' \
+         --from-literal='privateApiKey=<the_atlas_api_private_key>' \
          -n mongodb-atlas-system
 
 kubectl label secret mongodb-atlas-operator-api-key atlas.mongodb.com/type=credentials -n mongodb-atlas-system
@@ -84,7 +84,7 @@ EOF
 **4.** Create a database user password Kubernetes Secret
 
 ```
-kubectl create secret generic the-user-password --from-literal="password=P@@sword%"
+kubectl create secret generic the-user-password --from-literal='password=P@@sword%'
 
 kubectl label secret the-user-password atlas.mongodb.com/type=credentials
 ```
