@@ -75,6 +75,7 @@ jobs:
               "long-run",
               "networkpeering",
               "cloud-access-role",
+              "deployment-annotations-ns",
           ]
         include:
           - k8s: "latest-openshift"

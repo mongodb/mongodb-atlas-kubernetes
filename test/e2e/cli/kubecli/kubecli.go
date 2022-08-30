@@ -120,6 +120,11 @@ func DeleteResource(rType, name, ns string) {
 	cli.SessionShouldExit(session)
 }
 
+func DeleteClusterResource(rType, name string) {
+	session := cli.Execute("kubectl", "delete", rType, name)
+	cli.SessionShouldExit(session)
+}
+
 func CreateNamespace(name string) *Buffer {
 	session := cli.Execute("kubectl", "create", "namespace", name)
 	result := cli.GetSessionExitMsg(session)
