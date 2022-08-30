@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -131,7 +130,7 @@ func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas
 	if len(requested.DeploymentSpec.ReplicationSpecs) > 0 {
 		for i, replica := range requested.DeploymentSpec.ReplicationSpecs {
 			for key, region := range replica.RegionsConfig {
-				// diffent type
+				// different type
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ElectableNodes).Should(PointTo(Equal(*region.ElectableNodes)), "Replica Spec: ElectableNodes is not the same")
 				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].Priority).Should(PointTo(Equal(*region.Priority)), "Replica Spec: Priority is not the same")
@@ -146,7 +145,7 @@ func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas
 	if requested.DeploymentSpec.ProviderSettings.ProviderName == "TENANT" {
 		ExpectWithOffset(1, requested.DeploymentSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
 			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
-		})), "Deployment should be the same as requested by the user: Backking Provider Name")
+		})), "Deployment should be the same as requested by the user: Backing Provider Name")
 	}
 }
 
@@ -357,9 +356,9 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
+			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
 		} else {
-			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, os.Getenv("MCLI_ORG_ID"), key.PublicKey, key.PrivateKey)
+			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
 		}
 	})
 }
@@ -379,7 +378,7 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 	}
 }
 
-func DeployProject(data *model.TestDataProvider, generation string) {
+func DeployProject(data *model.TestDataProvider) {
 	By("Create users resources: keys, project", func() {
 		CreateConnectionAtlasKey(data)
 		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
@@ -408,7 +407,7 @@ func DeployProjectAndWait(data *model.TestDataProvider, generation string) {
 	})
 }
 
-func DeployDeployment(data *model.TestDataProvider, generation string) {
+func DeployDeployment(data *model.TestDataProvider) {
 	By("Create deployment", func() {
 		kubecli.Apply(data.Resources.Deployments[0].DeploymentFileName(data.Resources), "-n", data.Resources.Namespace)
 	})
@@ -427,7 +426,7 @@ func DeployUsers(data *model.TestDataProvider) {
 	By("create users", func() {
 		kubecli.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
 	})
-	By("check database users Attibutes", func() {
+	By("check database users Attributes", func() {
 		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
 		CheckUsersAttributes(data.Resources)
 	})
@@ -439,7 +438,7 @@ func DeployUsers(data *model.TestDataProvider) {
 // DeployUserResourcesAction deploy all user resources, wait, and check results
 func DeployUserResourcesAction(data *model.TestDataProvider) {
 	DeployProjectAndWait(data, "1")
-	DeployDeployment(data, "1")
+	DeployDeployment(data)
 	DeployUsers(data)
 }
 

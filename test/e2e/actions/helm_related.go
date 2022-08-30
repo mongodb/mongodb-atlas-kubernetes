@@ -17,7 +17,7 @@ import (
 )
 
 // helm update should change at least 1 field: databaseusers, project, deployment
-func HelmDefaultUpgradeResouces(data *model.TestDataProvider) {
+func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 	By("User use HELM upgrade command for changing atlas resources\n", func() {
 		data.Resources.Project.Spec.ProjectIPAccessList[0].Comment = "updated"
 		enabled := true

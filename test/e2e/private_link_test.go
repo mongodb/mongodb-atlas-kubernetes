@@ -55,9 +55,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		checkUpAWSEnviroment()
-		checkUpAzureEnviroment()
-		checkNSetUpGCPEnviroment()
+		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -217,7 +217,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 			userData.Resources.Project.WithPrivateLink(provider.ProviderName(pe.provider), pe.region)
 		}
 		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData, "2")
+		actions.DeployProject(userData)
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {

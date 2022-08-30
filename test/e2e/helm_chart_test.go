@@ -105,7 +105,7 @@ var _ = Describe("HELM charts", func() {
 				},
 				30006,
 				[]func(*model.TestDataProvider){
-					actions.HelmDefaultUpgradeResouces,
+					actions.HelmDefaultUpgradeResources,
 					actions.HelmUpgradeUsersRoleAddAdminUser,
 					actions.HelmUpgradeDeleteFirstUser,
 				},
