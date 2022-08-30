@@ -1,7 +1,7 @@
 name: Test Forked
 
 on:
-  pull_request:
+  pull_request_target:
     types: [labeled]
     paths-ignore:
       - 'docs/**'
