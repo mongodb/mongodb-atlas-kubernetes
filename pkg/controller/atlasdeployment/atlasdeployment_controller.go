@@ -259,11 +259,15 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	}
 	apiScheduleRes.Policies = []mongodbatlas.Policy{apiPolicy}
 
-	currentSchedule, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(context.Background(), projectID, cName)
+	currentSchedule, response, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(context.Background(), projectID, cName)
 	if err != nil {
 		errMessage := "unable to delete current backup policy for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, cName, err)
 		return fmt.Errorf("%s: %s:%s, %w", errMessage, projectID, cName, err)
+	}
+
+	if currentSchedule == nil && response != nil {
+		return fmt.Errorf("can't delete сurrent backupschedule. response status: %s", response.Status)
 	}
 
 	r.Log.Debugf("successfully deleted backup policy. Default schedule received: %v", currentSchedule)
