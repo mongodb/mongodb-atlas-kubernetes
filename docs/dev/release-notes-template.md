@@ -46,4 +46,4 @@
 
 *The images can be found in:*
 
-https://quay.io/repository/mongodb/mongodb-atlas-operator
+https://quay.io/mongodb/mongodb-atlas-kubernetes-operator
