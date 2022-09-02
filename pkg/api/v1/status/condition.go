@@ -44,6 +44,11 @@ const (
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 )
 
+// AtlasCR deletion condition types
+const (
+	AtlasCRDeletionConditionType ConditionType = "AtlasCRDeletion"
+)
+
 // AtlasDeployment condition types
 const (
 	DeploymentReadyType ConditionType = "DeploymentReady"

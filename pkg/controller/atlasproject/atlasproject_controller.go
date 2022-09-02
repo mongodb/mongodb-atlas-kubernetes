@@ -109,7 +109,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	if err != nil {
 		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
 			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			setCondition(ctx, status.DeploymentReadyType, result)
+			ctx.SetConditionFromResult(status.AtlasCRDeletionConditionType, result)
 		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		setCondition(ctx, status.ProjectReadyType, result)
