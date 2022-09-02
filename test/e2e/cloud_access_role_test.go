@@ -25,7 +25,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		checkUpAWSEnviroment()
+		checkUpAWSEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -109,7 +109,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 			userData.Resources.Project.WithCloudAccessRole(role.AccessRole)
 		}
 		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData, "2")
+		actions.DeployProject(userData)
 	})
 
 	By("Establish connection between Atlas and cloud roles", func() {

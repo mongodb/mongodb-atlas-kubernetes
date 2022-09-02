@@ -43,9 +43,9 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		checkUpAWSEnviroment()
-		checkUpAzureEnviroment()
-		checkNSetUpGCPEnviroment()
+		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -255,7 +255,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 			userData.Resources.Project.WithNetworkPeer(peer)
 		}
 		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData, "2")
+		actions.DeployProject(userData)
 	})
 
 	By("Establish network peers connection", func() {
