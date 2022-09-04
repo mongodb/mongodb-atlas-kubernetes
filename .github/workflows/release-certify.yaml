@@ -33,10 +33,15 @@ jobs:
       - name: Download hub tool
         run: |
           wget https://github.com/github/hub/releases/download/v2.14.2/hub-linux-amd64-2.14.2.tgz -O hub.tar.gz -q
-          tar xvf gh.tar.gz
+          tar xvf hub.tar.gz
           chmod +x ./hub-linux-amd64-2.14.2/bin/hub && sudo mv ./hub-linux-amd64-2.14.2/bin/hub /usr/local/bin/hub
           
           hub version
+
+      - name: Download preflight tool
+        run: |
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.4.0/preflight-linux-amd64 -O preflight -q
+          chmod +x ./preflight && sudo mv ./preflight /usr/local/bin/preflight
 
       - name: Clone certified-operators repo
         uses: actions/checkout@master
