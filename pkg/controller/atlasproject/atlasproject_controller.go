@@ -83,6 +83,14 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
+		if !project.GetDeletionTimestamp().IsZero() {
+			err := r.removeDeletionFinalizer(context, project)
+			if err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				log.Errorw("Failed to remove finalizer", "error", err)
+				return result.ReconcileResult(), nil
+			}
+		}
 		return workflow.OK().ReconcileResult(), nil
 	}
 

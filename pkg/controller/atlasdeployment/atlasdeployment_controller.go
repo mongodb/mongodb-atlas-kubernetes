@@ -94,6 +94,14 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(deployment); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", deployment.Spec)
+		if !deployment.GetDeletionTimestamp().IsZero() {
+			err := r.removeDeletionFinalizer(ctx, deployment)
+			if err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				log.Errorw("Failed to remove finalizer", "error", err)
+				return result.ReconcileResult(), nil
+			}
+		}
 		return workflow.OK().ReconcileResult(), nil
 	}
 

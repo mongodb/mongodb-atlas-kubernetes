@@ -223,7 +223,7 @@ var _ = Describe("HELM charts", func() {
 				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-upgrade"
 				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-upgrade"
 			})
-			By("User use helm for last released version of operator and deploy his resouces", func() {
+			By("User use helm for last released version of operator and deploy his resources", func() {
 				helm.AddMongoDBRepo()
 				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
 				helm.InstallDeploymentRelease(data.Resources)
@@ -248,7 +248,7 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID
-		actions.WaitDeployment(data.Resources, "1")
+		actions.WaitDeploymentWithoutGenerationCheck(data.Resources)
 	})
 
 	By("Check attributes", func() {

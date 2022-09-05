@@ -100,8 +100,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			if createdDeployment != nil {
 				By("Removing Atlas Deployment " + createdDeployment.Name)
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
-
-				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
+				deploymentName := createdDeployment.GetDeploymentName()
+				if customresource.ResourceShouldBeLeftInAtlas(createdDeployment) || customresource.ReconciliationShouldBeSkipped(createdDeployment) {
+					By("Removing Atlas Deployment " + createdDeployment.Name + " from Atlas manually")
+					Expect(deleteAtlasDeployment(createdProject.Status.ID, deploymentName)).To(Succeed())
+				}
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, deploymentName), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -1024,6 +1028,11 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 		return false
 	}
+}
+
+func deleteAtlasDeployment(projectID string, deploymentName string) error {
+	_, err := atlasClient.Clusters.Delete(context.Background(), projectID, deploymentName)
+	return err
 }
 
 func int64ptr(i int64) *int64 {

@@ -29,6 +29,10 @@ func WaitDeployment(input model.UserInputs, generation string) {
 		"5m", "10s",
 	).Should(Equal(generation))
 
+	WaitDeploymentWithoutGenerationCheck(input)
+}
+
+func WaitDeploymentWithoutGenerationCheck(input model.UserInputs) {
 	EventuallyWithOffset(1,
 		func() string {
 			return kubecli.GetStatusCondition("Ready", input.Namespace, input.Deployments[0].GetDeploymentNameResource())
