@@ -155,12 +155,12 @@ func (r *AtlasDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 					customContext.SetConditionFromResult(status.AtlasCRDeletionConditionType, result)
 					return result.ReconcileResult(), nil
 				}
-				err = r.removeDeletionFinalizer(ctx, deployment)
-				if err != nil {
-					result = workflow.Terminate(workflow.Internal, err.Error())
-					customContext.SetConditionFromResult(status.DeploymentReadyType, result)
-					return result.ReconcileResult(), nil
-				}
+			}
+			err = r.removeDeletionFinalizer(ctx, deployment)
+			if err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				customContext.SetConditionFromResult(status.DeploymentReadyType, result)
+				return result.ReconcileResult(), nil
 			}
 		} else {
 			return result.ReconcileResult(), nil
