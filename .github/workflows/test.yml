@@ -49,3 +49,10 @@ jobs:
     secrets: inherit
     with:
       forked: false
+
+  openshift-upgrade-test:
+    needs: allowed
+    uses: ./.github/workflows/openshift-upgrade-test.yaml
+    secrets: inherit
+    with:
+      forked: false

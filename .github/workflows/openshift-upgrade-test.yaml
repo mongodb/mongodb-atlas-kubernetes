@@ -1,19 +1,27 @@
 name: Upgrade test on Openshift
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       previousVersion:
         description: "Previous operator release"
         default: "1.0.0"
+        type: string
         required: false
       previousReleaseRegistry:
         description: "Previous operator registry"
         default: "quay.io/mongodb"
+        type: string
         required: false
       registryForNewRelease:
         description: "Registry to push images of current build"
         default: "quay.io/mongodb"
+        type: string
+        required: false
+      forked:
+        description: "PR from forked repo"
+        default: false
+        type: boolean
         required: false
 
 concurrency:
@@ -25,9 +33,18 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
         uses: actions/checkout@v3.0.0
         with:
+          fetch-depth: 0 # required for tags
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0 # required for tags
 
       - name: Prepare tag
