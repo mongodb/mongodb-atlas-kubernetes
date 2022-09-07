@@ -77,9 +77,6 @@ jobs:
               "cloud-access-role",
               "deployment-annotations-ns",
           ]
-        include:
-          - k8s: "latest-openshift"
-            test: "openshift"
 
     steps:
       - if: ${{ inputs.forked == false }}
@@ -147,19 +144,6 @@ jobs:
         with:
           go-version: "1.18"
 
-      - name: Download tools for openshift ui tests
-        if: ${{ steps.properties.outputs.k8s_platform == 'openshift' && !env.ACT }}
-        run: |
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/opm-linux.tar.gz -O opm.tar.gz -q
-          tar xvf opm.tar.gz
-          chmod +x opm && sudo mv opm /usr/local/bin/opm
-          wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.6/openshift-client-linux.tar.gz -O openshift.tar.gz -q
-          tar xvf openshift.tar.gz
-          chmod +x oc && sudo mv oc /usr/local/bin/oc
-
-          opm version
-          oc version
-          podman --version
 
       - name: Install operator-sdk-v1.22.0
         run: |
