@@ -160,7 +160,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 				if err = r.deleteDeploymentFromAtlas(context, deployment, project, log); err != nil {
 					log.Errorf("Failed to remove deployment from Atlas: %s", err)
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(status.AtlasCRDeletionConditionType, result)
+					ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 			}
