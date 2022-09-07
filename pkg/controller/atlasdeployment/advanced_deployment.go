@@ -120,13 +120,13 @@ func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
 			if regConfig.AutoScaling != nil {
 				if regConfig.AutoScaling.DiskGB != nil &&
 					regConfig.AutoScaling.DiskGB.Enabled != nil &&
-					*regConfig.AutoScaling.DiskGB.Enabled == true {
+					*regConfig.AutoScaling.DiskGB.Enabled {
 					isDiskAutoScaled = true
 				}
 
 				if regConfig.AutoScaling.Compute != nil &&
 					regConfig.AutoScaling.Compute.Enabled != nil &&
-					*regConfig.AutoScaling.Compute.Enabled == true {
+					*regConfig.AutoScaling.Compute.Enabled {
 					cleanupInstanceSize(regConfig.ElectableSpecs)
 					cleanupInstanceSize(regConfig.AnalyticsSpecs)
 					cleanupInstanceSize(regConfig.ReadOnlySpecs)

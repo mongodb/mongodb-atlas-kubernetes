@@ -442,15 +442,15 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			handleAutoscaling(tt.input)
 			if !reflect.DeepEqual(tt.input, tt.expected) && !tt.shouldFail {
-				expJson, err := json.MarshalIndent(tt.expected, "", " ")
+				expJSON, err := json.MarshalIndent(tt.expected, "", " ")
 				if err != nil {
 					t.Fatalf("err: %v", err)
 				}
-				inpJson, err := json.MarshalIndent(tt.input, "", " ")
+				inpJSON, err := json.MarshalIndent(tt.input, "", " ")
 				if err != nil {
 					t.Fatalf("err: %v", err)
 				}
-				t.Errorf("FAIL. Expected: %v, Got: %v", string(expJson), string(inpJson))
+				t.Errorf("FAIL. Expected: %v, Got: %v", string(expJSON), string(inpJSON))
 			}
 		})
 	}

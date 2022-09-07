@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	"net/http"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 
@@ -888,7 +889,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				lastGeneration++
 			})
 
-			By(fmt.Sprintf("Updating the InstanceSize and DiskSizeGB of Advanced Deployment %s should not happend", kube.ObjectKeyFromObject(createdDeployment)), func() {
+			By(fmt.Sprintf("Updating the InstanceSize and DiskSizeGB of Advanced Deployment %s should not happened", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				previousDeployment := mdbv1.AtlasDeployment{}
 				err := compat.JSONCopy(&previousDeployment, createdDeployment)
 				Expect(err).NotTo(HaveOccurred())
