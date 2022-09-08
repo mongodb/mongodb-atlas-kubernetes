@@ -2,6 +2,7 @@ package atlasdeployment
 
 import (
 	"encoding/json"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"reflect"
 	"testing"
 
@@ -64,10 +65,6 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 	})
 }
 
-func MakePtr[T comparable](val T) *T {
-	return &val
-}
-
 func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 	testCases := []struct {
 		input      *v1.AdvancedDeploymentSpec
@@ -78,7 +75,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		{
 			testName: "One region and autoscaling ENABLED for compute AND disk",
 			input: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -89,14 +86,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -119,14 +116,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -142,7 +139,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		{
 			testName: "One region and autoscaling ENABLED for compute ONLY",
 			input: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -153,14 +150,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -172,7 +169,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 				},
 			},
 			expected: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -183,14 +180,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -206,7 +203,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		{
 			testName: "One region and autoscaling ENABLED for diskGB ONLY",
 			input: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -217,14 +214,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -247,14 +244,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -270,7 +267,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		{
 			testName: "Two regions and autoscaling ENABLED for compute AND disk in different regions",
 			input: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -282,14 +279,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -302,14 +299,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M30",
@@ -333,14 +330,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(true),
+										Enabled: toptr.MakePtr(true),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -353,14 +350,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(true),
+										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M30",
@@ -376,7 +373,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		{
 			testName: "One region and autoscaling DISABLED for diskGB AND compute",
 			input: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -387,14 +384,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",
@@ -406,7 +403,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 				},
 			},
 			expected: &v1.AdvancedDeploymentSpec{
-				DiskSizeGB: MakePtr(15),
+				DiskSizeGB: toptr.MakePtr(15),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -417,14 +414,14 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
-									NodeCount:     MakePtr(1),
+									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
 									DiskGB: &v1.DiskGB{
-										Enabled: MakePtr(false),
+										Enabled: toptr.MakePtr(false),
 									},
 									Compute: &v1.ComputeSpec{
-										Enabled:          MakePtr(false),
+										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
 										MaxInstanceSize:  "M40",

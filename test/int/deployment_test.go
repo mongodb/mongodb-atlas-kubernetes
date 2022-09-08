@@ -809,13 +809,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
-						Enabled:          toptr.Boolptr(true),
+						Enabled:          toptr.MakePtr(true),
 						MaxInstanceSize:  "M20",
 						MinInstanceSize:  "M10",
-						ScaleDownEnabled: toptr.Boolptr(true),
+						ScaleDownEnabled: toptr.MakePtr(true),
 					},
 					DiskGB: &mdbv1.DiskGB{
-						Enabled: toptr.Boolptr(true),
+						Enabled: toptr.MakePtr(true),
 					},
 				}
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
@@ -859,10 +859,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 								NodeCount:     intptr(1),
 							},
 							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								DiskGB: &mdbv1.DiskGB{Enabled: toptr.Boolptr(true)},
+								DiskGB: &mdbv1.DiskGB{Enabled: toptr.MakePtr(true)},
 								Compute: &mdbv1.ComputeSpec{
-									Enabled:          toptr.Boolptr(true),
-									ScaleDownEnabled: toptr.Boolptr(true),
+									Enabled:          toptr.MakePtr(true),
+									ScaleDownEnabled: toptr.MakePtr(true),
 									MinInstanceSize:  "M10",
 									MaxInstanceSize:  "M40",
 								},
