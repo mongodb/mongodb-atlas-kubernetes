@@ -502,9 +502,9 @@ func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
 
 	log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment.Spec)
 
-	ctx := context.Background()
+	context := context.Background()
 	project := &mdbv1.AtlasProject{}
-	if result := r.readProjectResource(ctx, deployment, project); !result.IsOk() {
+	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
 		return errors.New("cannot read project resource")
 	}
 
@@ -517,7 +517,7 @@ func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
 	}
 
 	for i := range secrets {
-		if err := r.Client.Delete(ctx, &secrets[i]); err != nil {
+		if err := r.Client.Delete(context, &secrets[i]); err != nil {
 			if k8serrors.IsNotFound(err) {
 				continue
 			}
@@ -563,9 +563,9 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx context.Contex
 	return nil
 }
 
-func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(ctx context.Context, deployment *mdbv1.AtlasDeployment) error {
+func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Context, deployment *mdbv1.AtlasDeployment) error {
 	deployment.Finalizers = removeString(deployment.Finalizers, finalizer)
-	if err := r.Client.Update(ctx, deployment); err != nil {
+	if err := r.Client.Update(context, deployment); err != nil {
 		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", deployment.GetDeploymentName(), err)
 	}
 	return nil
