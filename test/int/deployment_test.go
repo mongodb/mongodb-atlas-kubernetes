@@ -905,8 +905,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Eventually(func(g Gomega) bool {
 					GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
 					current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
-					Expect(err).NotTo(HaveOccurred())
-					Expect(current).NotTo(BeNil())
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(current).NotTo(BeNil())
 
 					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize).To(Equal(
 						previousDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize))
