@@ -55,7 +55,6 @@ spec:
                         Currently only AWS is supported.
                       type: string
                   required:
-                  - iamAssumedRoleArn
                   - providerName
                   type: object
                 type: array
