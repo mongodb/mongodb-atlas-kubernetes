@@ -34,6 +34,11 @@ jobs:
         id: prepare
         uses: ./.github/actions/set-tag
 
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.18"
+
       - name: Download tools for openshift test
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
