@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -905,9 +903,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {
-					client := atlas.GetClientOrFail()
 					GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
-					current, err := client.GetAdvancedDeployment(createdProject.ID(), createdDeployment.GetDeploymentName())
+					current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
 					Expect(err).NotTo(HaveOccurred())
 					Expect(current).NotTo(BeNil())
 
