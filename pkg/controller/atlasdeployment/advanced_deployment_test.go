@@ -2,9 +2,10 @@ package atlasdeployment
 
 import (
 	"encoding/json"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"reflect"
 	"testing"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
