@@ -1,8 +1,11 @@
 package aws
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -220,22 +223,129 @@ func (s sessionAWS) GetFuncPrivateEndpointStatus(privateEndpointID string) func(
 	}
 }
 
-func (s sessionAWS) GetCustomerMasterKeyID() (result string, err error) {
-	kmsInput := &kms.CreateKeyInput{
-		Description: aws.String("Atlas Operator Test Key"),
-	}
-	kmsKey, err := s.kms.CreateKey(kmsInput)
-	if err != nil || kmsKey == nil {
+func (s sessionAWS) GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn string) (keyId string, err error) {
+	keyId, adminARNs, err := getKeyIDAndAdminARNs()
+	if err != nil {
 		return "", err
 	}
 
-	return *kmsKey.KeyMetadata.KeyId, nil
+	policyString, err := RolePolicyString(atlasAccountArn, assumedRoleArn, adminARNs)
+	if err != nil {
+		return "", err
+	}
+
+	policyInput := &kms.PutKeyPolicyInput{
+		KeyId:      &keyId,
+		PolicyName: aws.String("default"),
+		Policy:     aws.String(policyString),
+	}
+	_, err = s.kms.PutKeyPolicy(policyInput)
+	if err != nil {
+		return "", err
+	}
+
+	return keyId, nil
 }
 
-func (s sessionAWS) DeleteCustomerMasterKey(keyID string) error {
-	kmsInput := &kms.ScheduleKeyDeletionInput{
-		KeyId: aws.String(keyID),
+func getKeyIDAndAdminARNs() (keyID string, adminARNs []string, err error) {
+	keyID = os.Getenv("AWS_KMS_KEY_ID")
+	if keyID == "" {
+		err = errors.New("AWS_KMS_KEY_ID secret is empty")
+		return
 	}
-	_, err := s.kms.ScheduleKeyDeletion(kmsInput)
-	return err
+	adminArnString := os.Getenv("AWS_ACCOUNT_ARN_LIST")
+	if adminArnString == "" {
+		err = errors.New("AWS_ACCOUNT_ARN_LIST secret is empty")
+		return
+	}
+
+	adminARNs = strings.Split(adminArnString, ",")
+	if len(adminARNs) == 0 {
+		err = errors.New("AWS_ACCOUNT_ARN_LIST wasn't parsed properly, please separate accounts via a comma")
+		return
+	}
+
+	return keyID, adminARNs, nil
+}
+
+func RolePolicyString(atlasAccountARN, assumedRoleARN string, adminARNs []string) (string, error) {
+	policy := defaultKMSPolicy(atlasAccountARN, assumedRoleARN, adminARNs)
+	byteStr, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(byteStr), nil
+}
+
+func defaultKMSPolicy(atlasAccountArn, assumedRoleArn string, adminARNs []string) kmsPolicy {
+	return kmsPolicy{
+		Version: "2012-10-17",
+		Statement: []statement{
+			{
+				Sid:    "Enable IAM User Permissions",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: []string{atlasAccountArn},
+				},
+				Action:   []string{"kms:*"},
+				Resource: "*",
+			},
+			{
+				Sid:    "Allow access for Key Administrators",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: adminARNs,
+				},
+				Action: []string{
+					"kms:Create*",
+					"kms:Describe*",
+					"kms:Enable*",
+					"kms:List*",
+					"kms:Put*",
+					"kms:Update*",
+					"kms:Revoke*",
+					"kms:Disable*",
+					"kms:Get*",
+					"kms:Delete*",
+					"kms:TagResource",
+					"kms:UntagResource",
+					"kms:ScheduleKeyDeletion",
+					"kms:CancelKeyDeletion",
+				},
+				Resource: "*",
+			},
+			{
+				Sid:    "Allow use of the key",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: []string{assumedRoleArn},
+				},
+				Action: []string{
+					"kms:Encrypt",
+					"kms:Decrypt",
+					"kms:ReEncrypt*",
+					"kms:GenerateDataKey*",
+					"kms:DescribeKey",
+				},
+				Resource: "*",
+			},
+		},
+	}
+}
+
+type kmsPolicy struct {
+	Version   string      `json:"Version"`
+	Statement []statement `json:"Statement"`
+}
+
+type statement struct {
+	Sid       string    `json:"Sid"`
+	Effect    string    `json:"Effect"`
+	Principal principal `json:"Principal"`
+	Action    []string  `json:"Action"`
+	Resource  string    `json:"Resource"`
+}
+
+type principal struct {
+	AWS []string `json:"AWS,omitempty"`
 }

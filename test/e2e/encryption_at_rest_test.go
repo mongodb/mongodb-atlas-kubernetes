@@ -67,7 +67,7 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 			data = test
 			encryptionAtRestFlow(&data, encAtRest, roles)
 		},
-		Entry("Test[encryption-at-rest-aws]: Can create project and add Encryption at Rest to that project", Label("encryption-at-rest-aws"),
+		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
 			model.NewTestDataProvider(
 				"encryption-at-rest-aws",
 				model.AProject{},
@@ -84,10 +84,10 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 			),
 			v1.EncryptionAtRest{
 				AwsKms: v1.AwsKms{
-					Enabled: toptr.Boolptr(true),
+					Enabled: toptr.MakePtr(true),
 					// CustomerMasterKeyID: "",
 					Region: "US_EAST_1",
-					Valid:  toptr.Boolptr(true),
+					Valid:  toptr.MakePtr(true),
 				},
 			},
 			[]cloudaccess.Role{
@@ -138,13 +138,15 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 
 	By("Create KMS", func() {
-		Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-		awsAction := cloud.NewAwsAction()
-		CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(CustomerMasterKeyID).NotTo(Equal(""))
+		project, err := kube.GetProjectResource(userData)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		encAtRest.AwsKms.CustomerMasterKeyID = CustomerMasterKeyID
+		Expect(len(project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
+		aRole := project.Status.CloudProviderAccessRoles[0]
+
+		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+		fillVaultforAzure(&encAtRest)
+		fillKMSforGCP(&encAtRest)
 
 		userData.Resources.Project.WithEncryptionAtRest(encAtRest)
 		actions.PrepareUsersConfigurations(userData)
@@ -155,11 +157,34 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 		_, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
+}
 
-	By("Schedule key deletion", func() {
-		keyID := encAtRest.AwsKms.CustomerMasterKeyID
-		awsAction := cloud.NewAwsAction()
-		err := awsAction.DeleteKMS(keyID, encAtRest.AwsKms.Region)
-		Expect(err).ShouldNot(HaveOccurred())
-	})
+func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
+	if (encAtRest.AwsKms == v1.AwsKms{}) {
+		return
+	}
+
+	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
+	awsAction := cloud.NewAwsAction()
+	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(CustomerMasterKeyID).NotTo(Equal(""))
+
+	encAtRest.AwsKms.CustomerMasterKeyID = CustomerMasterKeyID
+}
+
+func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
+	if (encAtRest.AzureKeyVault == v1.AzureKeyVault{}) {
+		return
+	}
+
+	// todo: fill in
+}
+
+func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
+	if (encAtRest.GoogleCloudKms == v1.GoogleCloudKms{}) {
+		return
+	}
+
+	// todo: fill in
 }

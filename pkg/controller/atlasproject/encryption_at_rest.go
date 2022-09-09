@@ -96,7 +96,7 @@ func getAwsKMS(project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest
 	}
 
 	if (atlas == nil || atlas.AwsKms == mongodbatlas.AwsKms{}) {
-		result.Enabled = toptr.Boolptr(false)
+		result.Enabled = toptr.MakePtr(false)
 	}
 
 	if result.RoleID == "" {
@@ -115,7 +115,7 @@ func getAzureKeyVault(project *mdbv1.AtlasProject, atlas *mongodbatlas.Encryptio
 	}
 
 	if (atlas == nil || atlas.GoogleCloudKms == mongodbatlas.GoogleCloudKms{}) {
-		result.Enabled = toptr.Boolptr(false)
+		result.Enabled = toptr.MakePtr(false)
 	}
 
 	return
@@ -127,7 +127,7 @@ func getGoogleCloudKms(project *mdbv1.AtlasProject, atlas *mongodbatlas.Encrypti
 	}
 
 	if (atlas == nil || atlas.GoogleCloudKms == mongodbatlas.GoogleCloudKms{}) {
-		result.Enabled = toptr.Boolptr(false)
+		result.Enabled = toptr.MakePtr(false)
 	}
 
 	return

@@ -82,12 +82,12 @@ func (awsAction *AwsAction) statusPrivateEndpointAvailable(region, privateID str
 	return (status == "available")
 }
 
-func (awsAction *AwsAction) CreateKMS(region string) (key string, err error) {
+func (awsAction *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (key string, err error) {
 	session := aws.SessionAWS(region)
-	return session.GetCustomerMasterKeyID()
+	return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
 }
 
-func (awsAction *AwsAction) DeleteKMS(region string, keyID string) error {
-	session := aws.SessionAWS(region)
-	return session.DeleteCustomerMasterKey(keyID)
-}
+// func (awsAction *AwsAction) DeleteKMS(region string, keyID string) error {
+// 	session := aws.SessionAWS(region)
+// 	return session.DeleteCustomerMasterKey(keyID)
+// }

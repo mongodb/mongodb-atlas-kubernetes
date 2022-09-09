@@ -56,6 +56,8 @@ func checkUpEnvironment() {
 func checkUpAWSEnvironment() {
 	Expect(os.Getenv("AWS_ACCESS_KEY_ID")).ShouldNot(BeEmpty(), "Please, setup AWS_ACCESS_KEY_ID environment variable for test with AWS")
 	Expect(os.Getenv("AWS_SECRET_ACCESS_KEY")).ShouldNot(BeEmpty(), "Please, setup AWS_SECRET_ACCESS_KEY environment variable for test with AWS")
+	Expect(os.Getenv("AWS_ACCOUNT_ARN_LIST")).ShouldNot(BeEmpty(), "Please, setup AWS_ACCOUNT_ARN_LIST environment variable for test with AWS")
+	Expect(os.Getenv("AWS_KMS_KEY_ID")).ShouldNot(BeEmpty(), "Please, setup AWS_KMS_KEY_ID environment variable for test with AWS")
 }
 
 func checkUpAzureEnvironment() {
