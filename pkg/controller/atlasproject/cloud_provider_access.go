@@ -33,7 +33,15 @@ func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Con
 func syncProviderAccessStatus(ctx context.Context, customContext *workflow.Context, specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole, groupID string) (workflow.Result, status.ConditionType) {
 	client := customContext.Client
 	logger := customContext.Log
-	specToStatusMap := checkStatuses(specs, statuses)
+	specToStatusMap, haveDuplicate, cantMatch := checkStatuses(specs, statuses)
+	if haveDuplicate {
+		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "some roles contains same ARN value"), status.CloudProviderAccessReadyType
+	}
+	if cantMatch {
+		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "More than one new role"+
+			" with ARN may correspond to an existing empty role. Keep only one new role containing data from the status "+
+			"field and delete all other roles. You can add them again after authorization is complete."), status.CloudProviderAccessReadyType
+	}
 	defer func() {
 		SetNewStatuses(customContext, specToStatusMap)
 	}()
@@ -73,7 +81,7 @@ func tryToAuthorize(ctx context.Context, access mongodbatlas.CloudProviderAccess
 				statusMap[spec] = roleStatus
 				continue
 			}
-			roleStatus.Update(*role)
+			roleStatus.Update(*role, roleStatus.IsEmptyARN())
 			statusMap[spec] = roleStatus
 		}
 	}
@@ -105,7 +113,7 @@ func updateAccessRoles(toUpdate []mongodbatlas.AWSIAMRole, specToStatus map[v1.C
 	for _, role := range toUpdate {
 		for spec, roleStatus := range specToStatus {
 			if role.RoleID == roleStatus.RoleID {
-				roleStatus.Update(role)
+				roleStatus.Update(role, roleStatus.IsEmptyARN())
 				specToStatus[spec] = roleStatus
 			}
 		}
@@ -135,7 +143,7 @@ func createAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProvi
 			specToStatus[spec] = roleStatus
 			continue
 		}
-		roleStatus.Update(*role)
+		roleStatus.Update(*role, roleStatus.IsEmptyARN())
 		specToStatus[spec] = roleStatus
 	}
 	return nil
@@ -157,24 +165,49 @@ func deleteAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProvi
 	return nil
 }
 
-func checkStatuses(specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole) map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole {
+func checkStatuses(specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole) (map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, bool, bool) {
 	result := make(map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole)
+	existStatusWithEmptyARN := false
+	emptyRoleIsAssign := false
+	var emptyArnRoleStatus status.CloudProviderAccessRole
 	for _, spec := range specs {
 		isCreated := false
-		for _, status := range statuses {
-			if spec.ProviderName == status.ProviderName && spec.IamAssumedRoleArn == status.IamAssumedRoleArn {
+		for _, existedStatus := range statuses {
+			if spec.ProviderName == existedStatus.ProviderName && spec.IamAssumedRoleArn == existedStatus.IamAssumedRoleArn {
 				isCreated = true
-				result[spec] = status
+				if _, ok := result[spec]; !ok {
+					result[spec] = existedStatus
+				} else {
+					return nil, true, false
+				}
 				break
+			}
+			if existedStatus.IsEmptyARN() {
+				existStatusWithEmptyARN = true
+				emptyArnRoleStatus = existedStatus
 			}
 		}
 		if !isCreated {
-			newStatus := status.NewCloudProviderAccessRole(spec.ProviderName, spec.IamAssumedRoleArn)
-			result[spec] = newStatus
-			statuses = append(statuses, newStatus)
+			if emptyRoleIsAssign {
+				return nil, false, true
+			}
+			if existStatusWithEmptyARN {
+				emptyRoleIsAssign = true
+				if spec.IamAssumedRoleArn != "" {
+					emptyArnRoleStatus.Status = status.StatusCreated
+					emptyArnRoleStatus.IamAssumedRoleArn = spec.IamAssumedRoleArn
+					result[spec] = emptyArnRoleStatus
+				} else {
+					result[spec] = emptyArnRoleStatus
+				}
+			} else {
+				newStatus := status.NewCloudProviderAccessRole(spec.ProviderName, spec.IamAssumedRoleArn)
+				result[spec] = newStatus
+				statuses = append(statuses, newStatus)
+			}
 		}
 	}
-	return result
+	return result, false, false
 }
 
 type accessRoleDiff struct {
@@ -207,8 +240,8 @@ func sortAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProvide
 		}
 	}
 
-	for spec, status := range expectedRoles {
-		if status.RoleID == "" {
+	for spec, existedStatus := range expectedRoles {
+		if existedStatus.RoleID == "" {
 			diff.toCreate = append(diff.toCreate, spec)
 		}
 	}

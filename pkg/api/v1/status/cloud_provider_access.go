@@ -23,17 +23,28 @@ type FeatureUsage struct {
 }
 
 const (
-	StatusFailed  = "FAILED"
-	StatusCreated = "CREATED"
-	StatusReady   = "READY"
+	StatusFailed   = "FAILED"
+	StatusCreated  = "CREATED"
+	StatusReady    = "READY"
+	StatusEmptyARN = "EMPTY_ARN"
 )
 
 func NewCloudProviderAccessRole(providerName, assumedRoleArn string) CloudProviderAccessRole {
+	if assumedRoleArn == "" {
+		return CloudProviderAccessRole{
+			ProviderName: providerName,
+			Status:       StatusEmptyARN,
+		}
+	}
 	return CloudProviderAccessRole{
 		ProviderName:      providerName,
 		IamAssumedRoleArn: assumedRoleArn,
 		Status:            StatusCreated,
 	}
+}
+
+func (c *CloudProviderAccessRole) IsEmptyARN() bool {
+	return c.Status == StatusEmptyARN
 }
 
 func (c *CloudProviderAccessRole) Failed(errorMessage string) {
@@ -45,7 +56,7 @@ func (c *CloudProviderAccessRole) FailedToAuthorise(errorMessage string) {
 	c.ErrorMessage = errorMessage
 }
 
-func (c *CloudProviderAccessRole) Update(role mongodbatlas.AWSIAMRole) {
+func (c *CloudProviderAccessRole) Update(role mongodbatlas.AWSIAMRole, isEmptyArn bool) {
 	c.RoleID = role.RoleID
 	c.AtlasAssumedRoleExternalID = role.AtlasAssumedRoleExternalID
 	c.AtlasAWSAccountArn = role.AtlasAWSAccountARN
@@ -63,14 +74,18 @@ func (c *CloudProviderAccessRole) Update(role mongodbatlas.AWSIAMRole) {
 		}
 	}
 
-	switch role.IAMAssumedRoleARN {
-	case "":
-		c.Status = StatusCreated
-	case c.IamAssumedRoleArn:
-		c.Status = StatusReady
-		c.ErrorMessage = ""
-	default:
-		c.Status = StatusFailed
-		c.ErrorMessage = "IAMAssumedRoleARN is different from the previous one"
+	if isEmptyArn {
+		c.Status = StatusEmptyARN
+	} else {
+		switch role.IAMAssumedRoleARN {
+		case "":
+			c.Status = StatusCreated
+		case c.IamAssumedRoleArn:
+			c.Status = StatusReady
+			c.ErrorMessage = ""
+		default:
+			c.Status = StatusFailed
+			c.ErrorMessage = "IAMAssumedRoleARN is different from the previous one"
+		}
 	}
 }
