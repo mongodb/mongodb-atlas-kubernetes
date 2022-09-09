@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -872,13 +873,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
-						Enabled:          toptr.Boolptr(true),
+						Enabled:          toptr.MakePtr(true),
 						MaxInstanceSize:  "M20",
 						MinInstanceSize:  "M10",
-						ScaleDownEnabled: toptr.Boolptr(true),
+						ScaleDownEnabled: toptr.MakePtr(true),
 					},
 					DiskGB: &mdbv1.DiskGB{
-						Enabled: toptr.Boolptr(true),
+						Enabled: toptr.MakePtr(true),
 					},
 				}
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
@@ -889,6 +890,100 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 				doAdvancedDeploymentStatusChecks()
 				checkAdvancedAtlasState()
+			})
+		})
+	})
+
+	Describe("Create the advanced deployment with enabled autoscaling", func() {
+		It("Should Succeed", func() {
+			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
+
+			createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs = []*mdbv1.AdvancedReplicationSpec{
+				{
+					NumShards: 1,
+					ZoneName:  "US_EAST_1",
+					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+						{
+							AnalyticsSpecs: &mdbv1.Specs{
+								DiskIOPS:      nil,
+								EbsVolumeType: "",
+								InstanceSize:  "M10",
+								NodeCount:     intptr(1),
+							},
+							ElectableSpecs: &mdbv1.Specs{
+								DiskIOPS:      nil,
+								EbsVolumeType: "",
+								InstanceSize:  "M10",
+								NodeCount:     intptr(3),
+							},
+							ReadOnlySpecs: &mdbv1.Specs{
+								DiskIOPS:      nil,
+								EbsVolumeType: "",
+								InstanceSize:  "M10",
+								NodeCount:     intptr(1),
+							},
+							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+								DiskGB: &mdbv1.DiskGB{Enabled: toptr.MakePtr(true)},
+								Compute: &mdbv1.ComputeSpec{
+									Enabled:          toptr.MakePtr(true),
+									ScaleDownEnabled: toptr.MakePtr(true),
+									MinInstanceSize:  "M10",
+									MaxInstanceSize:  "M40",
+								},
+							},
+							BackingProviderName: "AWS",
+							Priority:            intptr(7),
+							ProviderName:        "AWS",
+							RegionName:          "US_EAST_1",
+						},
+					},
+				},
+			}
+
+			By(fmt.Sprintf("Creating the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Updating the InstanceSize and DiskSizeGB of Advanced Deployment %s should not happened", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				previousDeployment := mdbv1.AtlasDeployment{}
+				err := compat.JSONCopy(&previousDeployment, createdDeployment)
+				Expect(err).NotTo(HaveOccurred())
+
+				newInstanceSize := "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = newInstanceSize
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &mdbv1.Specs{
+					InstanceSize: newInstanceSize,
+				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func(g Gomega) bool {
+					GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
+					current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(current).NotTo(BeNil())
+
+					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize).To(Equal(
+						previousDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize))
+					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize).To(Equal(
+						previousDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize))
+					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize).To(Equal(
+						previousDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize))
+					return true
+				}).WithTimeout(2 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				lastGeneration++
 			})
 		})
 	})

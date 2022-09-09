@@ -59,6 +59,8 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+	handleAutoscaling(deployment.Spec.AdvancedDeploymentSpec)
+
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
@@ -81,7 +83,11 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	deploymentAsAtlas, err := cleanupTheSpec(specDeployment).ToAtlas()
+	// Prevent changing of instanceSize and diskSizeGB if autoscaling is enabled
+
+	cleanupTheSpec(&specDeployment)
+
+	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -94,9 +100,44 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupTheSpec(deployment mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
+func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
 	deployment.MongoDBVersion = ""
-	return &deployment
+}
+
+// This will prevent from setting diskSizeGB if at least one region config has enabled disk size autoscaling
+// It will also prevent from setting ANY of (electable | analytics | readonly) specs
+//
+//	if region config has enabled compute autoscaling
+func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
+	isDiskAutoScaled := false
+	cleanupInstanceSize := func(s *mdbv1.Specs) {
+		if s != nil {
+			s.InstanceSize = ""
+		}
+	}
+	for _, repSpec := range kubeDeployment.ReplicationSpecs {
+		for _, regConfig := range repSpec.RegionConfigs {
+			if regConfig.AutoScaling != nil {
+				if regConfig.AutoScaling.DiskGB != nil &&
+					regConfig.AutoScaling.DiskGB.Enabled != nil &&
+					*regConfig.AutoScaling.DiskGB.Enabled {
+					isDiskAutoScaled = true
+				}
+
+				if regConfig.AutoScaling.Compute != nil &&
+					regConfig.AutoScaling.Compute.Enabled != nil &&
+					*regConfig.AutoScaling.Compute.Enabled {
+					cleanupInstanceSize(regConfig.ElectableSpecs)
+					cleanupInstanceSize(regConfig.AnalyticsSpecs)
+					cleanupInstanceSize(regConfig.ReadOnlySpecs)
+				}
+			}
+		}
+	}
+
+	if isDiskAutoScaled {
+		kubeDeployment.DiskSizeGB = nil
+	}
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
