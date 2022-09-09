@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 
@@ -34,6 +37,10 @@ const (
 	// This may not help much if there was the update though...
 	DeploymentDevMode       = false
 	DeploymentUpdateTimeout = 40 * time.Minute
+	ConnectionSecretName    = "my-atlas-key"
+	PrivateAPIKey           = "privateApiKey"
+	OrgID                   = "orgId"
+	PublicAPIKey            = "publicApiKey"
 )
 
 var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
@@ -60,13 +67,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		connectionSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-atlas-key",
+				Name:      ConnectionSecretName,
 				Namespace: namespace.Name,
 				Labels: map[string]string{
 					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 				},
 			},
-			StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
+			StringData: map[string]string{OrgID: connection.OrgID, PublicAPIKey: connection.PublicKey, PrivateAPIKey: connection.PrivateKey},
 		}
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
@@ -100,8 +107,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			if createdDeployment != nil {
 				By("Removing Atlas Deployment " + createdDeployment.Name)
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
-
-				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
+				deploymentName := createdDeployment.GetDeploymentName()
+				if customresource.ResourceShouldBeLeftInAtlas(createdDeployment) || customresource.ReconciliationShouldBeSkipped(createdDeployment) {
+					By("Removing Atlas Deployment " + createdDeployment.Name + " from Atlas manually")
+					Expect(deleteAtlasDeployment(createdProject.Status.ID, deploymentName)).To(Succeed())
+				}
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, deploymentName), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -226,6 +237,61 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 		lastGeneration++
 	}
+
+	Describe("Deployment CR should exist if it is tried to delete and the token is not valid", func() {
+		It("Should Succeed", func() {
+			expectedDeployment := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
+				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
+				Expect(k8sClient.Create(context.Background(), expectedDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doRegularDeploymentStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Filling token secret with invalid data", func() {
+				secret := &corev1.Secret{}
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(&connectionSecret), secret)).To(Succeed())
+				secret.StringData = map[string]string{
+					OrgID: "fake", PrivateAPIKey: "fake", PublicAPIKey: "fake",
+				}
+				Expect(k8sClient.Update(context.Background(), secret)).To(Succeed())
+			})
+
+			By("Deleting the Deployment", func() {
+				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
+			})
+
+			By("Checking that the Deployment still exists", func() {
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.FalseCondition(status.DeploymentReadyType).
+						WithMessageRegexp(strconv.Itoa(http.StatusUnauthorized)))
+				}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
+			})
+
+			By("Fix the token secret", func() {
+				secret := &corev1.Secret{}
+				Expect(k8sClient.Get(context.Background(), types.NamespacedName{Namespace: namespace.Name, Name: ConnectionSecretName}, secret)).Should(Succeed())
+				secret.StringData = map[string]string{
+					OrgID: connection.OrgID, PublicAPIKey: connection.PublicKey, PrivateAPIKey: connection.PrivateKey,
+				}
+				Expect(k8sClient.Update(context.Background(), secret)).To(Succeed())
+			})
+
+			By("Checking that the Deployment is deleted", func() {
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName())).
+					WithTimeout(600 * time.Second).WithPolling(interval).Should(BeTrue())
+			})
+
+			// it's needed to skip deployment deletion in AfterEach
+			createdDeployment = nil
+		})
+	})
 
 	Describe("Create deployment & change ReplicationSpecs", func() {
 		It("Should Succeed", func() {
@@ -1024,6 +1090,11 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 		return false
 	}
+}
+
+func deleteAtlasDeployment(projectID string, deploymentName string) error {
+	_, err := atlasClient.Clusters.Delete(context.Background(), projectID, deploymentName)
+	return err
 }
 
 func int64ptr(i int64) *int64 {
