@@ -6,13 +6,15 @@ updates:
       interval: weekly
       day: tuesday
     reviewers:
+      - "igor-karpukhin"
       - "fabritsius"
-      - "leo-ri"
+      - "sugar-pack"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: tuesday
     reviewers:
+      - "igor-karpukhin"
       - "fabritsius"
-      - "leo-ri"
+      - "sugar-pack"

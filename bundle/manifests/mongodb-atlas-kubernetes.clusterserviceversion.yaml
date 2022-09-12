@@ -73,11 +73,11 @@ metadata:
           "apiVersion": "atlas.mongodb.com/v1",
           "kind": "AtlasDeployment",
           "metadata": {
-            "name": "my-atlas-cluster"
+            "name": "my-atlas-deployment"
           },
           "spec": {
             "deploymentSpec": {
-              "name": "test-cluster",
+              "name": "test-deployment",
               "providerSettings": {
                 "instanceSizeName": "M10",
                 "providerName": "AWS",
@@ -111,7 +111,8 @@ metadata:
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: mongodb-atlas-kubernetes.v1.0.0
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.2.0
+  name: mongodb-atlas-kubernetes.v1.2.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -132,7 +133,7 @@ spec:
         kind: AtlasDatabaseUser
         name: atlasdatabaseusers.atlas.mongodb.com
         version: v1
-      - description: AtlasDeployment is the Schema for the atlasclusters API
+      - description: AtlasDeployment is the Schema for the atlasdeployments API
         displayName: Atlas Deployment
         kind: AtlasDeployment
         name: atlasdeployments.atlas.mongodb.com
@@ -419,7 +420,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: registry.connect.redhat.com/mongodb/mongodb-atlas-kubernetes-operator:1.0.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:1.2.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -494,5 +495,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 1.0.0
-  replaces: mongodb-atlas-kubernetes.v0.5.0
+  version: 1.2.0
+  replaces: mongodb-atlas-kubernetes.v1.1.0

@@ -17,15 +17,15 @@ func init() {
 	zap.ReplaceGlobals(logger)
 }
 
-func TestClusterMatchesSpec(t *testing.T) {
-	t.Run("Clusters match (enums)", func(t *testing.T) {
-		atlasCluster := mongodbatlas.Cluster{
+func TestDeploymentMatchesSpec(t *testing.T) {
+	t.Run("Deployments match (enums)", func(t *testing.T) {
+		atlasDeployment := mongodbatlas.Cluster{
 			ProviderSettings: &mongodbatlas.ProviderSettings{
 				ProviderName: "AWS",
 			},
 			ClusterType: "GEOSHARDED",
 		}
-		operatorCluster := mdbv1.AtlasDeploymentSpec{
+		operatorDeployment := mdbv1.AtlasDeploymentSpec{
 			DeploymentSpec: &mdbv1.DeploymentSpec{
 				ProviderSettings: &mdbv1.ProviderSettingsSpec{
 					ProviderName: provider.ProviderAWS,
@@ -34,56 +34,56 @@ func TestClusterMatchesSpec(t *testing.T) {
 			},
 		}
 
-		merged, err := MergedCluster(atlasCluster, operatorCluster)
+		merged, err := MergedDeployment(atlasDeployment, operatorDeployment)
 		assert.NoError(t, err)
 
-		equal := ClustersEqual(zap.S(), atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), atlasDeployment, merged)
 		assert.True(t, equal)
 	})
-	t.Run("Clusters don't match (enums)", func(t *testing.T) {
-		atlasClusterEnum := mongodbatlas.Cluster{ClusterType: "GEOSHARDED"}
-		operatorClusterEnum := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.DeploymentSpec{ClusterType: mdbv1.TypeReplicaSet}}
+	t.Run("Deployments don't match (enums)", func(t *testing.T) {
+		atlasDeploymentEnum := mongodbatlas.Cluster{ClusterType: "GEOSHARDED"}
+		operatorDeploymentEnum := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.DeploymentSpec{ClusterType: mdbv1.TypeReplicaSet}}
 
-		merged, err := MergedCluster(atlasClusterEnum, operatorClusterEnum)
+		merged, err := MergedDeployment(atlasDeploymentEnum, operatorDeploymentEnum)
 		assert.NoError(t, err)
 
-		equal := ClustersEqual(zap.S(), atlasClusterEnum, merged)
+		equal := DeploymentsEqual(zap.S(), atlasDeploymentEnum, merged)
 		assert.False(t, equal)
 	})
-	t.Run("Clusters match (ProviderSettings.RegionName ignored)", func(t *testing.T) {
-		common := mdbv1.DefaultAWSCluster("test-ns", "project-name")
+	t.Run("Deployments match (ProviderSettings.RegionName ignored)", func(t *testing.T) {
+		common := mdbv1.DefaultAWSDeployment("test-ns", "project-name")
 		// Note, that in reality it seems that Atlas nullifies ProviderSettings.RegionName only if RegionsConfig are specified
 		// but it's ok not to overcomplicate
 		common.Spec.DeploymentSpec.ReplicationSpecs = append(common.Spec.DeploymentSpec.ReplicationSpecs, mdbv1.ReplicationSpec{
 			NumShards: int64ptr(2),
 		})
 		// Emulating Atlas behavior when it nullifies the ProviderSettings.RegionName
-		atlasCluster, err := common.DeepCopy().WithRegionName("").Spec.Cluster()
+		atlasDeployment, err := common.DeepCopy().WithRegionName("").Spec.Deployment()
 		assert.NoError(t, err)
-		operatorCluster := common.DeepCopy()
+		operatorDeployment := common.DeepCopy()
 
-		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		merged, err := MergedDeployment(*atlasDeployment, operatorDeployment.Spec)
 		assert.NoError(t, err)
 
-		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), *atlasDeployment, merged)
 		assert.True(t, equal)
 	})
-	t.Run("Clusters don't match (ProviderSettings.RegionName was changed)", func(t *testing.T) {
-		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").WithRegionName("US_WEST_1").Spec.Cluster()
+	t.Run("Deployments don't match (ProviderSettings.RegionName was changed)", func(t *testing.T) {
+		atlasDeployment, err := mdbv1.DefaultAWSDeployment("test-ns", "project-name").WithRegionName("US_WEST_1").Spec.Deployment()
 		assert.NoError(t, err)
 		// RegionName has changed and no ReplicationSpecs are specified (meaning ProviderSettings.RegionName is mandatory)
-		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name").WithRegionName("EU_EAST_1")
+		operatorDeployment := mdbv1.DefaultAWSDeployment("test-ns", "project-name").WithRegionName("EU_EAST_1")
 
-		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		merged, err := MergedDeployment(*atlasDeployment, operatorDeployment.Spec)
 		assert.NoError(t, err)
 
-		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), *atlasDeployment, merged)
 		assert.False(t, equal)
 	})
-	t.Run("Clusters match when Atlas adds default ReplicationSpecs", func(t *testing.T) {
-		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
+	t.Run("Deployments match when Atlas adds default ReplicationSpecs", func(t *testing.T) {
+		atlasDeployment, err := mdbv1.DefaultAWSDeployment("test-ns", "project-name").Spec.Deployment()
 		assert.NoError(t, err)
-		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
+		atlasDeployment.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
 			{
 				ID:        "id",
 				NumShards: int64ptr(1),
@@ -93,22 +93,22 @@ func TestClusterMatchesSpec(t *testing.T) {
 				},
 			},
 		}
-		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorDeployment := mdbv1.DefaultAWSDeployment("test-ns", "project-name")
+		operatorDeployment.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(1),
 			ZoneName:  "zone1",
 		}}
 
-		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		merged, err := MergedDeployment(*atlasDeployment, operatorDeployment.Spec)
 		assert.NoError(t, err)
 
-		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), *atlasDeployment, merged)
 		assert.True(t, equal)
 	})
-	t.Run("Clusters don't match when Atlas adds default ReplicationSpecs and Operator overrides something", func(t *testing.T) {
-		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
+	t.Run("Deployments don't match when Atlas adds default ReplicationSpecs and Operator overrides something", func(t *testing.T) {
+		atlasDeployment, err := mdbv1.DefaultAWSDeployment("test-ns", "project-name").Spec.Deployment()
 		assert.NoError(t, err)
-		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
+		atlasDeployment.ReplicationSpecs = []mongodbatlas.ReplicationSpec{
 			{
 				ID:        "id",
 				NumShards: int64ptr(1),
@@ -118,13 +118,13 @@ func TestClusterMatchesSpec(t *testing.T) {
 				},
 			},
 		}
-		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorDeployment := mdbv1.DefaultAWSDeployment("test-ns", "project-name")
+		operatorDeployment.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(2),
 			ZoneName:  "zone5",
 		}}
 
-		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		merged, err := MergedDeployment(*atlasDeployment, operatorDeployment.Spec)
 		assert.NoError(t, err)
 
 		expectedReplicationSpecs := []mongodbatlas.ReplicationSpec{
@@ -139,14 +139,14 @@ func TestClusterMatchesSpec(t *testing.T) {
 		}
 		assert.Equal(t, expectedReplicationSpecs, merged.ReplicationSpecs)
 
-		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), *atlasDeployment, merged)
 		assert.False(t, equal)
 	})
 
-	t.Run("Clusters don't match - Operator removed the region", func(t *testing.T) {
-		atlasCluster, err := mdbv1.DefaultAWSCluster("test-ns", "project-name").Spec.Cluster()
+	t.Run("Deployments don't match - Operator removed the region", func(t *testing.T) {
+		atlasDeployment, err := mdbv1.DefaultAWSDeployment("test-ns", "project-name").Spec.Deployment()
 		assert.NoError(t, err)
-		atlasCluster.ReplicationSpecs = []mongodbatlas.ReplicationSpec{{
+		atlasDeployment.ReplicationSpecs = []mongodbatlas.ReplicationSpec{{
 			ID:        "id",
 			NumShards: int64ptr(1),
 			ZoneName:  "zone1",
@@ -155,8 +155,8 @@ func TestClusterMatchesSpec(t *testing.T) {
 				"US_WEST": {AnalyticsNodes: int64ptr(2), ElectableNodes: int64ptr(5), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)},
 			}},
 		}
-		operatorCluster := mdbv1.DefaultAWSCluster("test-ns", "project-name")
-		operatorCluster.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
+		operatorDeployment := mdbv1.DefaultAWSDeployment("test-ns", "project-name")
+		operatorDeployment.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
 			NumShards: int64ptr(1),
 			ZoneName:  "zone1",
 			RegionsConfig: map[string]mdbv1.RegionsConfig{
@@ -164,7 +164,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 			}},
 		}
 
-		merged, err := MergedCluster(*atlasCluster, operatorCluster.Spec)
+		merged, err := MergedDeployment(*atlasDeployment, operatorDeployment.Spec)
 		assert.NoError(t, err)
 
 		expectedReplicationSpecs := []mongodbatlas.ReplicationSpec{{
@@ -176,7 +176,7 @@ func TestClusterMatchesSpec(t *testing.T) {
 		}
 		assert.Equal(t, expectedReplicationSpecs, merged.ReplicationSpecs)
 
-		equal := ClustersEqual(zap.S(), *atlasCluster, merged)
+		equal := DeploymentsEqual(zap.S(), *atlasDeployment, merged)
 		assert.False(t, equal)
 	})
 }

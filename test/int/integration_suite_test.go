@@ -117,10 +117,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 }, func(data []byte) {
 	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
 		var err error
-		// For the existing cluster we read the kubeconfig
+		// For the existing deployment we read the kubeconfig
 		cfg, err = config.GetConfig()
 		if err != nil {
-			panic("Failed to read the config for existing cluster")
+			panic("Failed to read the config for existing deployment")
 		}
 	} else {
 		d := gob.NewDecoder(bytes.NewReader(data))
@@ -194,7 +194,7 @@ func prepareControllers() {
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
 	// Note on the syncPeriod - decreasing this to a smaller time allows to test its work for the long-running tests
-	// (clusters, database users). The prod value is much higher
+	// (deployments, database users). The prod value is much higher
 	syncPeriod := time.Minute * 30
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:             scheme.Scheme,

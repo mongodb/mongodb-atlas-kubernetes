@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -17,6 +18,22 @@ import (
 )
 
 func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	result := r.createOrDeleteIntegrations(ctx, projectID, project)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.IntegrationReadyType, result)
+		return result
+	}
+
+	if len(project.Spec.Integrations) == 0 {
+		ctx.UnsetCondition(status.IntegrationReadyType)
+		return workflow.OK()
+	}
+
+	ctx.SetConditionTrue(status.IntegrationReadyType)
+	return workflow.OK()
+}
+
+func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
 	integrationsInAtlas, err := fetchIntegrations(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err.Error())
@@ -41,13 +58,11 @@ func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projec
 		return result
 	}
 
-	setPrometheusStatus(project, integrationsInAtlas)
+	syncPrometheusStatus(ctx, project, integrationsToUpdate)
 	if ready := r.checkIntegrationsReady(ctx, project.Namespace, integrationsToUpdate, project.Spec.Integrations); !ready {
 		return workflow.InProgress(workflow.ProjectIntegrationReady, "in progress")
 	}
-	if len(project.Spec.Integrations) > 0 {
-		ctx.SetConditionTrue(status.IntegrationReadyType)
-	}
+
 	return workflow.OK()
 }
 
@@ -84,7 +99,7 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 		if _, err := ctx.Client.Integrations.Delete(context.Background(), projectID, integration.Identifier().(string)); err != nil {
 			return err
 		}
-		ctx.Log.Debugw("Third Party Integration deleted: ", integration.Identifier())
+		ctx.Log.Debugf("Third Party Integration deleted: %s", integration.Identifier())
 	}
 	return nil
 }
@@ -147,15 +162,28 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 	return result
 }
 
-func setPrometheusStatus(project *mdbv1.AtlasProject, atlasIntegrations *mongodbatlas.ThirdPartyIntegrations) {
-	for _, atlasIntegration := range atlasIntegrations.Results {
-		if isPrometheusType(atlasIntegration.Type) {
-			project.Status.Prometheus = status.Prometheus{
-				Scheme:       atlasIntegration.Scheme,
-				DiscoveryURL: buildPrometheusDiscoveryURL(project.ID()),
-			}
+func syncPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, integrationPairs [][]set.Identifiable) {
+	prometheusIntegration, found := searchAtlasIntegration(integrationPairs, isPrometheusType)
+	if !found {
+		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
+		return
+	}
+
+	ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
+		Scheme:       prometheusIntegration.Scheme,
+		DiscoveryURL: buildPrometheusDiscoveryURL(ctx.Client.BaseURL, project.ID()),
+	}))
+}
+
+func searchAtlasIntegration(integrationPairs [][]set.Identifiable, filterFunc func(typeName string) bool) (integration mongodbatlas.ThirdPartyIntegration, found bool) {
+	for _, pair := range integrationPairs {
+		integrationAlias := pair[0].(aliasThirdPartyIntegration)
+		if filterFunc(integrationAlias.Type) {
+			return mongodbatlas.ThirdPartyIntegration(integrationAlias), true
 		}
 	}
+
+	return integration, false
 }
 
 func arePrometheusesEqual(atlas aliasThirdPartyIntegration, spec project.Integration) bool {
@@ -169,7 +197,7 @@ func isPrometheusType(typeName string) bool {
 	return typeName == "PROMETHEUS"
 }
 
-func buildPrometheusDiscoveryURL(projectID string) string {
-	api := "https://cloud.mongodb.com/api/atlas/v1.0"
+func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
+	api := fmt.Sprintf("https://%s/prometheus/v1.0", baseURL.Host)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }

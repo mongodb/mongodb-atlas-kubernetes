@@ -12,17 +12,15 @@ import (
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
-
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 // NOTES
-// Feature unavailable in Free and Shared-Tier Clusters
-// This feature is not available for M0 free clusters, M2, and M5 clusters.
+// Feature unavailable in Free and Shared-Tier Deployments
+// This feature is not available for M0 free deployments, M2, and M5 deployments.
 
 // tag for test resources "atlas-operator-test" (config.Tag)
 
@@ -33,14 +31,33 @@ type privateEndpoint struct {
 	region   string
 }
 
+func SaveDump(data *model.TestDataProvider) {
+	By("Save logs to output directory ", func() {
+		GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
+		utils.SaveToFile(
+			fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
+			[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
+		)
+		utils.SaveToFile(
+			fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
+			kubecli.GetManagerLogs(data.Resources.Namespace),
+		)
+		actions.SaveTestAppLogs(data.Resources)
+		actions.SaveK8sResources(
+			[]string{"deploy", "atlasprojects"},
+			data.Resources.Namespace,
+		)
+	})
+}
+
 var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var data model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-		checkUpAWSEnviroment()
-		checkUpAzureEnviroment()
-		checkNSetUpGCPEnviroment()
+		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -49,28 +66,14 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(data.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(data.Resources)
-				actions.SaveK8sResources(
-					[]string{"deploy", "atlasprojects"},
-					data.Resources.Namespace,
-				)
-			})
+			SaveDump(&data)
 		}
 		By("Clean Cloud", func() {
 			DeleteAllPrivateEndpoints(&data)
 		})
 		By("Delete Resources, Project with PEService", func() {
 			actions.DeleteUserResourcesProject(&data)
+			actions.DeleteGlobalKeyIfExist(data)
 		})
 	})
 
@@ -84,7 +87,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -97,7 +100,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 			},
 		),
@@ -106,7 +109,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-azure-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -118,7 +121,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			),
 			[]privateEndpoint{{
 				provider: "AZURE",
-				region:   "northeurope",
+				region:   config.AzureRegion,
 			}},
 		),
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
@@ -126,7 +129,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-2",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -139,11 +142,11 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 				{
 					provider: "AWS",
-					region:   "us-east-1",
+					region:   config.AWSRegionUS,
 				},
 			},
 		),
@@ -152,7 +155,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-aws-azure",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -165,15 +168,15 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "AWS",
-					region:   "eu-west-2",
+					region:   config.AWSRegionEU,
 				},
 				{
 					provider: "AWS",
-					region:   "us-east-1",
+					region:   config.AWSRegionUS,
 				},
 				{
 					provider: "AZURE",
-					region:   "northeurope",
+					region:   config.AzureRegion,
 				},
 			},
 		),
@@ -182,7 +185,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				"privatelink-gpc-1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_backup.yaml"},
+				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("user1").
@@ -195,7 +198,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			[]privateEndpoint{
 				{
 					provider: "GCP",
-					region:   "europe-west1",
+					region:   config.GCPRegion,
 				},
 			},
 		),
@@ -214,13 +217,13 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 			userData.Resources.Project.WithPrivateLink(provider.ProviderName(pe.provider), pe.region)
 		}
 		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData, "2")
+		actions.DeployProject(userData)
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
 		Eventually(kube.GetProjectPEndpointServiceStatus(userData), "15m", "10s").Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"),
+		Eventually(kube.GetReadyProjectStatus(userData), "2m", "20s").Should(Equal("True"),
 			"Atlasproject status.conditions are not True")
 		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
@@ -257,6 +260,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
 		for _, peitem := range project.Status.PrivateEndpoints {
+			Expect(peitem.Region).ShouldNot(BeEmpty())
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)

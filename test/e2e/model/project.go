@@ -70,8 +70,23 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 	return p
 }
 
+func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
+	p.Spec.NetworkPeers = append(p.Spec.NetworkPeers, peer)
+	return p
+}
+
+func (p *AProject) WithCloudAccessRole(role v1.CloudProviderAccessRole) *AProject {
+	p.Spec.CloudProviderAccessRoles = append(p.Spec.CloudProviderAccessRoles, role)
+	return p
+}
+
 func (p *AProject) WithIntegration(spec ProjectIntegration) *AProject {
 	p.Spec.Integrations = append(p.Spec.Integrations, project.Integration(spec))
+	return p
+}
+
+func (p *AProject) WithX509(certRef *common.ResourceRefNamespaced) *AProject {
+	p.Spec.X509CertRef = certRef
 	return p
 }
 
@@ -91,11 +106,7 @@ func (p *AProject) UpdatePrivateLinkID(test v1.PrivateEndpoint) *AProject {
 
 func (p *AProject) GetPrivateIDByProviderRegion(statusItem status.ProjectPrivateEndpoint) string {
 	if statusItem.Provider == provider.ProviderAWS {
-		for i, peItem := range p.Spec.PrivateEndpoints {
-			if (peItem.Provider == statusItem.Provider) && (peItem.Region == statusItem.Region) {
-				return p.Spec.PrivateEndpoints[i].ID
-			}
-		}
+		return statusItem.InterfaceEndpointID
 	}
 	return statusItem.ID
 }

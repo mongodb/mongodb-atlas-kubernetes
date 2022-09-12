@@ -1,5 +1,5 @@
 # Used for deploy GitHub action
-FROM golang:1.17
+FROM golang:1.18
 
 ENV KUBECTL_VERSION 1.18.12
 

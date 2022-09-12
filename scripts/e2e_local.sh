@@ -18,7 +18,7 @@ image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_REPO" .env
 echo "Using docker image: ${image}"
 bundle_image=$(grep "DOCKER_REGISTRY" .env | cut -d "=" -f 2)/$(grep "DOCKER_BUNDLES_REPO" .env | cut -d "=" -f 2):${branch}-${commit} #Registry is nessary
 export BUNDLE_IMAGE="${bundle_image}"
-export INPUT_IMAGE_URL_DOCKER="${image}"
+export INPUT_IMAGE_URL="${image}"
 export INPUT_ENV=dev
 
 if [[ "${build}" == "true" ]]; then
@@ -38,4 +38,4 @@ export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
 export IMAGE_URL="${image}" #for helm chart
-ginkgo --label-filter="${focus_key}" -v test/e2e/
+ginkgo --label-filter="${focus_key}" --timeout 120m -v test/e2e/

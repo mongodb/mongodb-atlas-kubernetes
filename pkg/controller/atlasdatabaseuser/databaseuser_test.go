@@ -34,13 +34,13 @@ func TestFilterScopeClusters(t *testing.T) {
 		Type: mdbv1.DataLakeScopeType,
 	}, {
 		Name: "cluster1",
-		Type: mdbv1.ClusterScopeType,
+		Type: mdbv1.DeploymentScopeType,
 	}, {
 		Name: "cluster2",
-		Type: mdbv1.ClusterScopeType,
+		Type: mdbv1.DeploymentScopeType,
 	}}
 	clusters := []string{"cluster1", "cluster4", "cluster5"}
-	scopeClusters := filterScopeClusters(mdbv1.AtlasDatabaseUser{Spec: mdbv1.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
+	scopeClusters := filterScopeDeployments(mdbv1.AtlasDatabaseUser{Spec: mdbv1.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
 	assert.Equal(t, []string{"cluster1"}, scopeClusters)
 }
 

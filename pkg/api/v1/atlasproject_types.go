@@ -55,8 +55,18 @@ type AtlasProjectSpec struct {
 	// +optional
 	ProjectIPAccessList []project.IPAccessList `json:"projectIpAccessList,omitempty"`
 
+	// MaintenanceWindow allows to specify a preferred time in the week to run maintenance operations. See more
+	// information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
+	// +optional
+	MaintenanceWindow project.MaintenanceWindow `json:"maintenanceWindow,omitempty"`
+
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
+	// CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
+	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
+
+	// NetworkPeers is a list of Network Peers configured for the current Project.
+	NetworkPeers []NetworkPeer `json:"networkPeers,omitempty"`
 
 	// Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true
 	// +kubebuilder:default:=true
@@ -64,7 +74,7 @@ type AtlasProjectSpec struct {
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 
 	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
-	X509CertRef *common.ResourceRef `json:"x509CertRef,omitempty"`
+	X509CertRef *common.ResourceRefNamespaced `json:"x509CertRef,omitempty"`
 
 	// Integrations is a list of MongoDB Atlas integrations for the project
 	// +optional
@@ -167,6 +177,11 @@ func (p *AtlasProject) WithIPAccessList(ipAccess project.IPAccessList) *AtlasPro
 		p.Spec.ProjectIPAccessList = []project.IPAccessList{}
 	}
 	p.Spec.ProjectIPAccessList = append(p.Spec.ProjectIPAccessList, ipAccess)
+	return p
+}
+
+func (p *AtlasProject) WithMaintenanceWindow(window project.MaintenanceWindow) *AtlasProject {
+	p.Spec.MaintenanceWindow = window
 	return p
 }
 

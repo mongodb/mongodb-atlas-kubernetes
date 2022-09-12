@@ -20,7 +20,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = Describe("Configuration namespaced. Deploy cluster", Label("integration-ns"), func() {
+var _ = Describe("Configuration namespaced. Deploy deployment", Label("integration-ns"), func() {
 	var data model.TestDataProvider
 	var key string
 
@@ -51,6 +51,7 @@ var _ = Describe("Configuration namespaced. Deploy cluster", Label("integration-
 				data.Resources.Namespace,
 			)
 			actions.DeleteUserResourcesProject(&data)
+			actions.DeleteGlobalKeyIfExist(data)
 		}
 	})
 

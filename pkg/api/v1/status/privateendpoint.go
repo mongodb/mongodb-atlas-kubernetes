@@ -1,6 +1,12 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+import (
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+)
 
 type ProjectPrivateEndpoint struct {
 	// Unique identifier for AWS or AZURE Private Link Connection.
@@ -28,5 +34,26 @@ type GCPEndpoint struct {
 }
 
 func (pe ProjectPrivateEndpoint) Identifier() interface{} {
-	return string(pe.Provider) + pe.Region
+	return string(pe.Provider) + TransformRegionToID(pe.Region)
+}
+
+// TransformRegionToID makes the same ID from region and regionName fields for PE Connections to match them
+// it leaves only characters which are letters or numbers starting from 2
+// it also makes a couple swaps and sorts the resulting string
+// this function is a temporary work around caused by the empty "region" field in Atlas reply
+func TransformRegionToID(region string) string {
+	reg := regexp.MustCompile("[^a-z2-9]+")
+	temp := strings.ToLower(region)
+
+	// this is GCP specific
+	temp = strings.ReplaceAll(temp, "northern", "north")
+	temp = strings.ReplaceAll(temp, "southern", "south")
+	temp = strings.ReplaceAll(temp, "western", "west")
+	temp = strings.ReplaceAll(temp, "eastern", "east")
+
+	temp = reg.ReplaceAllString(temp, "")
+
+	tempSlice := strings.Split(temp, "")
+	sort.Strings(tempSlice)
+	return strings.Join(tempSlice, "")
 }

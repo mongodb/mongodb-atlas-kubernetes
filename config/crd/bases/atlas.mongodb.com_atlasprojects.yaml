@@ -41,6 +41,23 @@ spec:
             description: AtlasProjectSpec defines the desired state of Project in
               Atlas
             properties:
+              cloudProviderAccessRoles:
+                description: CloudProviderAccessRoles is a list of Cloud Provider
+                  Access Roles configured for the current Project.
+                items:
+                  properties:
+                    iamAssumedRoleArn:
+                      description: IamAssumedRoleArn is the ARN of the IAM role that
+                        is assumed by the Atlas cluster.
+                      type: string
+                    providerName:
+                      description: ProviderName is the name of the cloud provider.
+                        Currently only AWS is supported.
+                      type: string
+                  required:
+                  - providerName
+                  type: object
+                type: array
               connectionSecretRef:
                 description: ConnectionSecret is the name of the Kubernetes Secret
                   which contains the information about the way to connect to Atlas
@@ -227,10 +244,105 @@ spec:
                       type: object
                   type: object
                 type: array
+              maintenanceWindow:
+                description: MaintenanceWindow allows to specify a preferred time
+                  in the week to run maintenance operations. See more information
+                  at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
+                properties:
+                  autoDefer:
+                    description: Flag indicating whether any scheduled project maintenance
+                      should be deferred automatically for one week.
+                    type: boolean
+                  dayOfWeek:
+                    description: Day of the week when you would like the maintenance
+                      window to start as a 1-based integer. Sunday 1, Monday 2, Tuesday
+                      3, Wednesday 4, Thursday 5, Friday 6, Saturday 7
+                    maximum: 7
+                    minimum: 1
+                    type: integer
+                  defer:
+                    description: Flag indicating whether the next scheduled project
+                      maintenance should be deferred for one week. Cannot be specified
+                      if startASAP is true
+                    type: boolean
+                  hourOfDay:
+                    description: Hour of the day when you would like the maintenance
+                      window to start. This parameter uses the 24-hour clock, where
+                      midnight is 0, noon is 12.
+                    maximum: 23
+                    minimum: 0
+                    type: integer
+                  startASAP:
+                    description: Flag indicating whether project maintenance has been
+                      directed to start immediately. Cannot be specified if defer
+                      is true
+                    type: boolean
+                type: object
               name:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
                 type: string
+              networkPeers:
+                description: NetworkPeers is a list of Network Peers configured for
+                  the current Project.
+                items:
+                  properties:
+                    accepterRegionName:
+                      description: AccepterRegionName is the provider region name
+                        of user's vpc.
+                      type: string
+                    atlasCidrBlock:
+                      description: Atlas CIDR. It needs to be set if ContainerID is
+                        not set.
+                      type: string
+                    awsAccountId:
+                      description: AccountID of the user's vpc.
+                      type: string
+                    azureDirectoryId:
+                      description: AzureDirectoryID is the unique identifier for an
+                        Azure AD directory.
+                      type: string
+                    azureSubscriptionId:
+                      description: AzureSubscriptionID is the unique identifier of
+                        the Azure subscription in which the VNet resides.
+                      type: string
+                    containerId:
+                      description: ID of the network peer container. If not set, operator
+                        will create a new container with ContainerRegion and AtlasCIDRBlock
+                        input.
+                      type: string
+                    containerRegion:
+                      description: ContainerRegion is the provider region name of
+                        Atlas network peer container. If not set, AccepterRegionName
+                        is used.
+                      type: string
+                    gcpProjectId:
+                      description: User GCP Project ID. Its applicable only for GCP.
+                      type: string
+                    networkName:
+                      description: GCP Network Peer Name. Its applicable only for
+                        GCP.
+                      type: string
+                    providerName:
+                      description: ProviderName is the name of the provider. If not
+                        set, it will be set to "AWS".
+                      type: string
+                    resourceGroupName:
+                      description: ResourceGroupName is the name of your Azure resource
+                        group.
+                      type: string
+                    routeTableCidrBlock:
+                      description: User VPC CIDR.
+                      type: string
+                    vnetName:
+                      description: VNetName is name of your Azure VNet. Its applicable
+                        only for Azure.
+                      type: string
+                    vpcId:
+                      description: AWS VPC ID.
+                      type: string
+                  type: object
+                type: array
               privateEndpoints:
                 description: PrivateEndpoints is a list of Private Endpoints configured
                   for the current Project.
@@ -324,6 +436,9 @@ spec:
                   name:
                     description: Name is the name of the Kubernetes Resource
                     type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
                 required:
                 - name
                 type: object
@@ -340,6 +455,43 @@ spec:
                   is configured
                 items:
                   type: string
+                type: array
+              cloudProviderAccessRoles:
+                description: CloudProviderAccessRoles contains a list of configured
+                  cloud provider access roles. AWS support only
+                items:
+                  properties:
+                    atlasAWSAccountArn:
+                      type: string
+                    atlasAssumedRoleExternalId:
+                      type: string
+                    authorizedDate:
+                      type: string
+                    createdDate:
+                      type: string
+                    errorMessage:
+                      type: string
+                    featureUsages:
+                      items:
+                        properties:
+                          featureId:
+                            type: string
+                          featureType:
+                            type: string
+                        type: object
+                      type: array
+                    iamAssumedRoleArn:
+                      type: string
+                    providerName:
+                      type: string
+                    roleId:
+                      type: string
+                    status:
+                      type: string
+                  required:
+                  - atlasAssumedRoleExternalId
+                  - providerName
+                  type: object
                 type: array
               conditions:
                 description: Conditions is the list of statuses showing the current
@@ -401,6 +553,72 @@ spec:
               id:
                 description: The ID of the Atlas Project
                 type: string
+              networkPeers:
+                description: The list of network peers that are configured for current
+                  project
+                items:
+                  properties:
+                    atlasGcpProjectId:
+                      description: ProjectID of Atlas container. Applicable only for
+                        GCP. It's needed to add network peer connection.
+                      type: string
+                    atlasNetworkName:
+                      description: Atlas Network Name. Applicable only for GCP. It's
+                        needed to add network peer connection.
+                      type: string
+                    connectionId:
+                      description: Unique identifier of the network peer connection.
+                        Applicable only for AWS.
+                      type: string
+                    containerId:
+                      description: ContainerID of Atlas network peer container.
+                      type: string
+                    errorMessage:
+                      description: Error state of the network peer. Applicable only
+                        for GCP.
+                      type: string
+                    errorState:
+                      description: Error state of the network peer. Applicable only
+                        for Azure.
+                      type: string
+                    errorStateName:
+                      description: Error state of the network peer. Applicable only
+                        for AWS.
+                      type: string
+                    gcpProjectId:
+                      description: ProjectID of the user's vpc. Applicable only for
+                        GCP.
+                      type: string
+                    id:
+                      description: Unique identifier for NetworkPeer.
+                      type: string
+                    providerName:
+                      description: Cloud provider for which you want to retrieve a
+                        network peer.
+                      type: string
+                    region:
+                      description: Region for which you want to create the network
+                        peer. It isn't needed for GCP
+                      type: string
+                    status:
+                      description: Status of the network peer. Applicable only for
+                        GCP and Azure.
+                      type: string
+                    statusName:
+                      description: Status of the network peer. Applicable only for
+                        AWS.
+                      type: string
+                    vpc:
+                      description: VPC is general purpose field for storing the name
+                        of the VPC. VPC is vpcID for AWS, user networkName for GCP,
+                        and vnetName for Azure.
+                      type: string
+                  required:
+                  - id
+                  - providerName
+                  - region
+                  type: object
+                type: array
               observedGeneration:
                 description: ObservedGeneration indicates the generation of the resource
                   specification that the Atlas Operator is aware of. The Atlas Operator

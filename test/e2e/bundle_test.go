@@ -25,25 +25,25 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	_ = AfterEach(func() {
-		By("Atfer each.", func() {
+		By("After each.", func() {
 			if CurrentSpecReport().Failed() {
 				actions.SaveK8sResources(
-					[]string{"atlasclusters", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
 				)
-				actions.SaveClusterDump(data.Resources)
+				actions.SaveDeploymentDump(data.Resources)
 				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
 		})
 	})
 
 	It("User can install operator with OLM", Label("bundle-test"), func() {
-		By("User creates configuration for a new Project and Cluster", func() {
+		By("User creates configuration for a new Project and Deployment", func() {
 			data = model.NewTestDataProvider(
 				"bundle-wide",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlascluster_basic.yaml"},
+				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
@@ -66,7 +66,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 			actions.DeployUserResourcesAction(&data)
 		})
 
-		By("Delete user resources(project/cluster)", func() {
+		By("Delete user resources(project/deployment)", func() {
 			actions.DeleteUserResources(&data)
 		})
 	})

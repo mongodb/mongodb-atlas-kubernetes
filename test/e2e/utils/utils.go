@@ -1,16 +1,21 @@
 package utils
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
-
-	yaml "gopkg.in/yaml.v3"
+	"time"
 
 	"github.com/pborman/uuid"
 	"github.com/sethvargo/go-password/password"
+	yaml "gopkg.in/yaml.v3"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
@@ -22,12 +27,17 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 	return &config
 }
 
+func RandomName(base string) string {
+	randomSuffix := uuid.New()[0:6]
+	return fmt.Sprintf("%s-%s", base, randomSuffix)
+}
+
 func SaveToFile(path string, data []byte) error {
 	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(path, data, os.ModePerm)
+	err = os.WriteFile(path, data, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -48,7 +58,7 @@ func JSONToYAMLConvert(cnfg interface{}) []byte {
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given
 func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface{} {
 	// Read in the yaml file at the path given
-	yamlFile, err := ioutil.ReadFile(filepath.Clean(pathToYamlFile))
+	yamlFile, err := os.ReadFile(filepath.Clean(pathToYamlFile))
 	if err != nil {
 		log.Printf("Error while parsing YAML file %v, error: %s", filepath.Clean(pathToYamlFile), err)
 	}
@@ -103,9 +113,42 @@ func GenID() string {
 }
 
 func CopyFile(source, target string) {
-	data, _ := ioutil.ReadFile(filepath.Clean(source))
-	err := ioutil.WriteFile(target, data, os.ModePerm)
+	data, _ := os.ReadFile(filepath.Clean(source))
+	err := os.WriteFile(target, data, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func GenerateX509Cert() ([]byte, *rsa.PrivateKey, *rsa.PublicKey, error) {
+	template := &x509.Certificate{
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		SubjectKeyId:          []byte{1, 2, 3},
+		SerialNumber:          big.NewInt(1234),
+		Issuer: pkix.Name{
+			CommonName: "x509-user",
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().AddDate(5, 5, 5),
+		DNSNames:  []string{"x509-user"},
+		// see http://golang.org/pkg/crypto/x509/#KeyUsage
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+	}
+
+	privatekey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	publickey := &privatekey.PublicKey
+
+	var parent = template
+	cert, err := x509.CreateCertificate(rand.Reader, template, parent, publickey, privatekey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return cert, privatekey, publickey, nil
 }

@@ -21,103 +21,103 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-func ensureClusterState(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
-	atlasCluster, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, cluster.Spec.DeploymentSpec.Name)
+func ensureDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
+	atlasDeployment, resp, err := ctx.Client.Clusters.Get(context.Background(), project.Status.ID, deployment.Spec.DeploymentSpec.Name)
 	if err != nil {
 		if resp == nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		if resp.StatusCode != http.StatusNotFound {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
-		atlasCluster, err = cluster.Spec.Cluster()
+		atlasDeployment, err = deployment.Spec.Deployment()
 		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
-		ctx.Log.Infof("Cluster %s doesn't exist in Atlas - creating", cluster.Spec.DeploymentSpec.Name)
-		atlasCluster, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, atlasCluster)
+		ctx.Log.Infof("Deployment %s doesn't exist in Atlas - creating", deployment.Spec.DeploymentSpec.Name)
+		atlasDeployment, _, err = ctx.Client.Clusters.Create(context.Background(), project.Status.ID, atlasDeployment)
 		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	switch atlasCluster.StateName {
+	switch atlasDeployment.StateName {
 	case "IDLE":
 
-		return regularClusterIdle(ctx, project, cluster, atlasCluster)
+		return regularDeploymentIdle(ctx, project, deployment, atlasDeployment)
 	case "CREATING":
-		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return atlasCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", atlasCluster.StateName))
+		return atlasDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", atlasDeployment.StateName))
 	}
 }
 
-func regularClusterIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, cluster *mdbv1.AtlasDeployment, atlasCluster *mongodbatlas.Cluster) (*mongodbatlas.Cluster, workflow.Result) {
-	resultingCluster, err := MergedCluster(*atlasCluster, cluster.Spec)
+func regularDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeployment *mongodbatlas.Cluster) (*mongodbatlas.Cluster, workflow.Result) {
+	resultingDeployment, err := MergedDeployment(*atlasDeployment, deployment.Spec)
 	if err != nil {
-		return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+		return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if done := ClustersEqual(ctx.Log, *atlasCluster, resultingCluster); done {
-		return atlasCluster, workflow.OK()
+	if done := DeploymentsEqual(ctx.Log, *atlasDeployment, resultingDeployment); done {
+		return atlasDeployment, workflow.OK()
 	}
 
-	if cluster.Spec.DeploymentSpec.Paused != nil {
-		if atlasCluster.Paused == nil || *atlasCluster.Paused != *cluster.Spec.DeploymentSpec.Paused {
+	if deployment.Spec.DeploymentSpec.Paused != nil {
+		if atlasDeployment.Paused == nil || *atlasDeployment.Paused != *deployment.Spec.DeploymentSpec.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
-			resultingCluster = mongodbatlas.Cluster{
-				Paused: cluster.Spec.DeploymentSpec.Paused,
+			resultingDeployment = mongodbatlas.Cluster{
+				Paused: deployment.Spec.DeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
-			resultingCluster.Paused = nil
+			resultingDeployment.Paused = nil
 		}
 	}
 
-	resultingCluster = cleanupCluster(resultingCluster)
+	resultingDeployment = cleanupDeployment(resultingDeployment)
 
-	// Handle shared (M0,M2,M5) cluster to non-shared cluster upgrade
-	scheduled, err := handleSharedClusterUpgrade(ctx, atlasCluster, &resultingCluster)
+	// Handle shared (M0,M2,M5) deployment to non-shared deployment upgrade
+	scheduled, err := handleSharedDeploymentUpgrade(ctx, atlasDeployment, &resultingDeployment)
 	if err != nil {
-		return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+		return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 	}
 	if scheduled {
-		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is upgrading")
+		return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is upgrading")
 	}
 
-	atlasCluster, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, cluster.Spec.DeploymentSpec.Name, &resultingCluster)
+	atlasDeployment, _, err = ctx.Client.Clusters.Update(context.Background(), project.Status.ID, deployment.Spec.DeploymentSpec.Name, &resultingDeployment)
 	if err != nil {
-		return atlasCluster, workflow.Terminate(workflow.ClusterNotUpdatedInAtlas, err.Error())
+		return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}
 
-	return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+	return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-// cleanupCluster will unset some fields that cannot be changed via API or are deprecated.
-func cleanupCluster(cluster mongodbatlas.Cluster) mongodbatlas.Cluster {
-	cluster.ID = ""
-	cluster.MongoDBVersion = ""
-	cluster.MongoURI = ""
-	cluster.MongoURIUpdated = ""
-	cluster.MongoURIWithOptions = ""
-	cluster.SrvAddress = ""
-	cluster.StateName = ""
-	cluster.ReplicationFactor = nil
-	cluster.ReplicationSpec = nil
-	cluster.ConnectionStrings = nil
-	cluster = removeOutdatedFields(&cluster, nil)
+// cleanupDeployment will unset some fields that cannot be changed via API or are deprecated.
+func cleanupDeployment(deployment mongodbatlas.Cluster) mongodbatlas.Cluster {
+	deployment.ID = ""
+	deployment.MongoDBVersion = ""
+	deployment.MongoURI = ""
+	deployment.MongoURIUpdated = ""
+	deployment.MongoURIWithOptions = ""
+	deployment.SrvAddress = ""
+	deployment.StateName = ""
+	deployment.ReplicationFactor = nil
+	deployment.ReplicationSpec = nil
+	deployment.ConnectionStrings = nil
+	deployment = removeOutdatedFields(&deployment, nil)
 
-	return cluster
+	return deployment
 }
 
 // removeOutdatedFields unsets fields which are should be empty based on flags
@@ -131,9 +131,17 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 		if *lookAt.AutoScaling.Compute.Enabled {
 			result.ProviderSettings.InstanceSizeName = ""
 		} else {
+			if result.ProviderSettings == nil {
+				result.ProviderSettings = &mongodbatlas.ProviderSettings{}
+			}
+			if result.ProviderSettings.AutoScaling == nil {
+				result.ProviderSettings.AutoScaling = &mongodbatlas.AutoScaling{}
+			}
 			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
 		}
+	}
 
+	if lookAt.AutoScaling != nil {
 		if lookAt.AutoScaling.DiskGBEnabled != nil && *lookAt.AutoScaling.DiskGBEnabled {
 			result.DiskSizeGB = nil
 		}
@@ -142,9 +150,9 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 	return result
 }
 
-// MergedCluster will return the result of merging AtlasDeploymentSpec with Atlas Cluster
-func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasDeploymentSpec) (result mongodbatlas.Cluster, err error) {
-	if err = compat.JSONCopy(&result, atlasCluster); err != nil {
+// MergedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Deployment
+func MergedDeployment(atlasDeployment mongodbatlas.Cluster, spec mdbv1.AtlasDeploymentSpec) (result mongodbatlas.Cluster, err error) {
+	if err = compat.JSONCopy(&result, atlasDeployment); err != nil {
 		return
 	}
 
@@ -155,20 +163,20 @@ func MergedCluster(atlasCluster mongodbatlas.Cluster, spec mdbv1.AtlasDeployment
 	mergeRegionConfigs(result.ReplicationSpecs, spec.DeploymentSpec.ReplicationSpecs)
 
 	// According to the docs for 'providerSettings.regionName' (https://docs.atlas.mongodb.com/reference/api/clusters-create-one/):
-	// "Don't specify this parameter when creating a multi-region cluster using the replicationSpec object or a Global
-	// Cluster with the replicationSpecs array."
+	// "Don't specify this parameter when creating a multi-region deployment using the replicationSpec object or a Global
+	// Deployment with the replicationSpecs array."
 	// The problem is that Atlas API accepts the create/update request but then returns the 'ProviderSettings.RegionName' empty in GET request
 	// So we need to consider this while comparing (to avoid perpetual updates)
-	if len(result.ReplicationSpecs) > 0 && atlasCluster.ProviderSettings.RegionName == "" {
+	if len(result.ReplicationSpecs) > 0 && atlasDeployment.ProviderSettings.RegionName == "" {
 		result.ProviderSettings.RegionName = ""
 	}
 
 	return
 }
 
-// mergeRegionConfigs removes replicationSpecs[i].RegionsConfigs[key] from Atlas Cluster that are absent in Operator.
+// mergeRegionConfigs removes replicationSpecs[i].RegionsConfigs[key] from Atlas Deployment that are absent in Operator.
 // Dev idea: this could have been added into some more generic method like `JSONCopy` or something wrapping it to make
-// sure any Atlas map get redundant keys removed. So far there's only one map in Cluster ('RegionsConfig') so we'll do this
+// sure any Atlas map get redundant keys removed. So far there's only one map in Deployment ('RegionsConfig') so we'll do this
 // explicitly - but may make sense to refactor this later if more maps are added (and all follow the same logic).
 func mergeRegionConfigs(atlasSpecs []mongodbatlas.ReplicationSpec, operatorSpecs []mdbv1.ReplicationSpec) {
 	for i, operatorSpec := range operatorSpecs {
@@ -186,20 +194,20 @@ func mergeRegionConfigs(atlasSpecs []mongodbatlas.ReplicationSpec, operatorSpecs
 	}
 }
 
-// ClustersEqual compares two Atlas Clusters
-func ClustersEqual(log *zap.SugaredLogger, clusterAtlas mongodbatlas.Cluster, clusterOperator mongodbatlas.Cluster) bool {
-	clusterAtlas = removeOutdatedFields(&clusterAtlas, &clusterOperator)
-	clusterOperator = removeOutdatedFields(&clusterOperator, nil)
+// DeploymentsEqual compares two Atlas Deployments
+func DeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mongodbatlas.Cluster, deploymentOperator mongodbatlas.Cluster) bool {
+	deploymentAtlas = removeOutdatedFields(&deploymentAtlas, &deploymentOperator)
+	deploymentOperator = removeOutdatedFields(&deploymentOperator, nil)
 
-	d := cmp.Diff(clusterAtlas, clusterOperator, cmpopts.EquateEmpty())
+	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Clusters are different: %s", d)
+		log.Debugf("Deployments are different: %s", d)
 	}
 
 	return d == ""
 }
 
-func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, clusterResource *mdbv1.AtlasDeployment) workflow.Result {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
 	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
 	if err != nil {
@@ -221,14 +229,14 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			continue
 		}
 
-		scopes := dbUser.GetScopes(mdbv1.ClusterScopeType)
+		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
 		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
 			continue
 		}
 
 		password, err := dbUser.ReadPassword(r.Client)
 		if err != nil {
-			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
 
 		data := connectionsecret.ConnectionData{
@@ -240,28 +248,28 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
-			return workflow.Terminate(workflow.ClusterConnectionSecretsNotCreated, err.Error())
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
 	}
 
 	if len(secrets) > 0 {
-		r.EventRecorder.Eventf(clusterResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+		r.EventRecorder.Eventf(deploymentResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
 	}
 
 	return workflow.OK()
 }
 
-func handleSharedClusterUpgrade(ctx *workflow.Context, current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) (scheduled bool, _ error) {
-	baseErr := "can not perform cluster upgrade. ERR: %v"
-	if !clusterShouldBeUpgraded(current, new) {
-		ctx.Log.Debug("cluster shouldn't be upgraded")
+func handleSharedDeploymentUpgrade(ctx *workflow.Context, current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) (scheduled bool, _ error) {
+	baseErr := "can not perform deployment upgrade. ERR: %v"
+	if !deploymentShouldBeUpgraded(current, new) {
+		ctx.Log.Debug("deployment shouldn't be upgraded")
 		return false, nil
 	}
 
 	// Remove backingProviderName
 	new.ProviderSettings.BackingProviderName = ""
-	ctx.Log.Infof("performing cluster upgrade from %s, to %s",
+	ctx.Log.Infof("performing deployment upgrade from %s, to %s",
 		current.ProviderSettings.InstanceSizeName, new.ProviderSettings.InstanceSizeName)
 
 	// TODO: Replace with the go-atlas-client when this method will be added to go-atlas-client
@@ -280,14 +288,14 @@ func handleSharedClusterUpgrade(ctx *workflow.Context, current *mongodbatlas.Clu
 	return true, nil
 }
 
-func clusterShouldBeUpgraded(current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) bool {
-	if isSharedCluster(current.ProviderSettings.InstanceSizeName) && !isSharedCluster(new.ProviderSettings.InstanceSizeName) {
+func deploymentShouldBeUpgraded(current *mongodbatlas.Cluster, new *mongodbatlas.Cluster) bool {
+	if isSharedDeployment(current.ProviderSettings.InstanceSizeName) && !isSharedDeployment(new.ProviderSettings.InstanceSizeName) {
 		return true
 	}
 	return false
 }
 
-func isSharedCluster(instanceSizeName string) bool {
+func isSharedDeployment(instanceSizeName string) bool {
 	switch strings.ToUpper(instanceSizeName) {
 	case "M0", "M2", "M5":
 		return true

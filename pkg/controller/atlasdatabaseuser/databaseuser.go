@@ -41,7 +41,7 @@ func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, 
 		return result
 	}
 
-	if result := checkClustersHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
+	if result := checkDeploymentsHaveReachedGoalState(ctx, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -110,7 +110,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 		currentPasswordResourceVersion = secret.ResourceVersion
 	}
 
-	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, "Clusters are scheduled to handle database users updates")
+	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
 
 	// Try to find the user
 	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
@@ -141,7 +141,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 		ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
 
 		ctx.Log.Infow("Updated Atlas Database User", "name", dbUser.Spec.Username)
-		// after the successful update we'll retry reconciliation so that clusters had a chance to start working
+		// after the successful update we'll retry reconciliation so that deployments had a chance to start working
 		return retryAfterUpdate
 	}
 
@@ -149,74 +149,74 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 }
 
 func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
-	for _, s := range user.GetScopes(mdbv1.ClusterScopeType) {
+	for _, s := range user.GetScopes(mdbv1.DeploymentScopeType) {
 		var apiError *mongodbatlas.ErrorResponse
 		_, _, regularErr := ctx.Client.Clusters.Get(context.Background(), projectID, s)
 		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(context.Background(), projectID, s)
 		if errors.As(regularErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound && errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
-			return fmt.Errorf(`"scopes" field references cluster named "%s" but such cluster doesn't exist in Atlas'`, s)
+			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
 	}
 	return nil
 }
 
-func checkClustersHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
-	allClusterNames, err := atlasdeployment.GetAllClusterNames(ctx.Client, projectID)
+func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
+	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	var clustersToCheck []string
+	var deploymentsToCheck []string
 	if user.Spec.Scopes != nil {
-		clustersToCheck = filterScopeClusters(user, allClusterNames)
+		deploymentsToCheck = filterScopeDeployments(user, allDeploymentNames)
 	} else {
-		// otherwise we just take all the existing clusters
-		clustersToCheck = allClusterNames
+		// otherwise we just take all the existing deployments
+		deploymentsToCheck = allDeploymentNames
 	}
 
-	readyClusters := 0
-	for _, c := range clustersToCheck {
-		ready, err := clusterIsReady(ctx.Client, projectID, c)
+	readyDeployments := 0
+	for _, c := range deploymentsToCheck {
+		ready, err := deploymentIsReady(ctx.Client, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 		if ready {
-			readyClusters++
+			readyDeployments++
 		}
 	}
-	msg := fmt.Sprintf("%d out of %d clusters have applied database user changes", readyClusters, len(clustersToCheck))
+	msg := fmt.Sprintf("%d out of %d deployments have applied database user changes", readyDeployments, len(deploymentsToCheck))
 	ctx.Log.Debugf(msg)
 
-	if readyClusters < len(clustersToCheck) {
-		return workflow.InProgress(workflow.DatabaseUserClustersAppliedChanges, msg)
+	if readyDeployments < len(deploymentsToCheck) {
+		return workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, msg)
 	}
 
 	return workflow.OK()
 }
 
-func clusterIsReady(client mongodbatlas.Client, projectID, clusterName string) (bool, error) {
-	status, _, err := client.Clusters.Status(context.Background(), projectID, clusterName)
+func deploymentIsReady(client mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
+	status, _, err := client.Clusters.Status(context.Background(), projectID, deploymentName)
 	if err != nil {
 		return false, err
 	}
 	return status.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
-func filterScopeClusters(user mdbv1.AtlasDatabaseUser, allClustersInProject []string) []string {
-	scopeClusters := user.GetScopes(mdbv1.ClusterScopeType)
-	var clustersToCheck []string
-	if len(scopeClusters) > 0 {
-		// filtering the scope clusters by the ones existing in Atlas
-		for _, c := range scopeClusters {
-			for _, a := range allClustersInProject {
-				if a == c {
-					clustersToCheck = append(clustersToCheck, c)
+func filterScopeDeployments(user mdbv1.AtlasDatabaseUser, allDeploymentsInProject []string) []string {
+	scopeDeployments := user.GetScopes(mdbv1.DeploymentScopeType)
+	var deploymentsToCheck []string
+	if len(scopeDeployments) > 0 {
+		// filtering the scope deployments by the ones existing in Atlas
+		for _, scopeDep := range scopeDeployments {
+			for _, projectDep := range allDeploymentsInProject {
+				if projectDep == scopeDep {
+					deploymentsToCheck = append(deploymentsToCheck, scopeDep)
 					break
 				}
 			}
 		}
 	}
-	return clustersToCheck
+	return deploymentsToCheck
 }
 
 func shouldUpdate(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, operatorDBUser mdbv1.AtlasDatabaseUser, currentPasswordResourceVersion string) (bool, error) {
@@ -235,7 +235,7 @@ func shouldUpdate(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, 
 	return passwordsChanged, nil
 }
 
-// TODO move to a separate utils (reuse from clusters)
+// TODO move to a separate utils (reuse from deployments)
 func userMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUser, operatorSpec mdbv1.AtlasDatabaseUserSpec) (bool, error) {
 	userMerged := mongodbatlas.DatabaseUser{}
 	if err := compat.JSONCopy(&userMerged, atlasSpec); err != nil {

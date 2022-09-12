@@ -2,6 +2,7 @@ package kube
 
 import (
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strings"
@@ -16,6 +17,7 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 // GenKubeVersion
@@ -67,17 +69,17 @@ func GetProjectResource(namespace, rName string) []byte {
 	return session.Wait("1m").Out.Contents()
 }
 
-// GetClusterResource
-func GetClusterResource(namespace, rName string) v1.AtlasDeployment {
+// GetDeploymentResource
+func GetDeploymentResource(namespace, rName string) v1.AtlasDeployment {
 	session := cli.Execute("kubectl", "get", rName, "-n", namespace, "-o", "json")
 	output := session.Wait("1m").Out.Contents()
-	var cluster v1.AtlasDeployment
-	ExpectWithOffset(1, json.Unmarshal(output, &cluster)).ShouldNot(HaveOccurred())
-	return cluster
+	var deployment v1.AtlasDeployment
+	ExpectWithOffset(1, json.Unmarshal(output, &deployment)).ShouldNot(HaveOccurred())
+	return deployment
 }
 
-func GetK8sClusterStateName(ns, rName string) string {
-	return GetClusterResource(ns, rName).Status.StateName
+func GetK8sDeploymentStateName(ns, rName string) string {
+	return GetDeploymentResource(ns, rName).Status.StateName
 }
 
 func DeleteNamespace(ns string) *Buffer {
@@ -115,6 +117,11 @@ func Delete(args ...string) *Buffer {
 
 func DeleteResource(rType, name, ns string) {
 	session := cli.Execute("kubectl", "delete", rType, name, "-n", ns)
+	cli.SessionShouldExit(session)
+}
+
+func DeleteClusterResource(rType, name string) {
+	session := cli.Execute("kubectl", "delete", rType, name)
 	cli.SessionShouldExit(session)
 }
 
@@ -167,7 +174,7 @@ func CreateApiKeySecret(keyName, ns string) {
 	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
-func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) {
+func CreateApiKeySecretFrom(keyName, ns, public, private string) {
 	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
 		"--from-literal=orgId="+os.Getenv("MCLI_ORG_ID"),
 		"--from-literal=publicApiKey="+public,
@@ -187,6 +194,36 @@ func CreateApiKeySecretFrom(keyName, ns, orgId, public, private string) {
 func DeleteApiKeySecret(keyName, ns string) {
 	session := cli.Execute("kubectl", "delete", "secret", keyName, "-n", ns)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))
+}
+
+func CreateX509Secret(keyName, ns string) {
+	cert, _, _, err := utils.GenerateX509Cert()
+	Expect(err).To(BeNil())
+
+	certFileName := "x509cert.pem"
+	certFile, err := os.Create(certFileName)
+	Expect(err).To(BeNil())
+
+	err = pem.Encode(certFile, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	})
+	Expect(err).To(BeNil())
+	err = certFile.Close()
+	Expect(err).To(BeNil())
+
+	session := cli.ExecuteWithoutWriter("kubectl", "create", "secret", "generic", keyName,
+		"--from-file="+certFileName,
+		"-n", ns,
+	)
+	result := cli.GetSessionExitMsg(session)
+	EventuallyWithOffset(1, result).Should(SatisfyAny(Say(keyName+" created"), Say("already exists")), "Can't create secret"+keyName)
+
+	session = cli.Execute("kubectl", "label", "secret", keyName, fmt.Sprintf("%s=%s", connectionsecret.TypeLabelKey, connectionsecret.CredLabelVal), "-n", ns, "--overwrite")
+	result = cli.GetSessionExitMsg(session)
+
+	// the output is "not labeled" if a label attempt is made and the label already exists with the same value.
+	Eventually(result).Should(SatisfyAny(Say("secret/"+keyName+" labeled"), Say("secret/"+keyName+" not labeled")))
 }
 
 func GetManagerLogs(ns string) []byte {
@@ -253,7 +290,7 @@ func GetPrivateEndpoint(resource, ns string) []byte { // TODO do we need []byte?
 	return session.Out.Contents()
 }
 
-func GetClusterDump(output string) {
+func GetDeploymentDump(output string) {
 	outputFolder := fmt.Sprintf("--output-directory=%s", output)
 	session := cli.Execute("kubectl", "cluster-info", "dump", "--all-namespaces", outputFolder)
 	EventuallyWithOffset(1, session).Should(gexec.Exit(0))

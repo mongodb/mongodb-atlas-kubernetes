@@ -12,11 +12,11 @@ func TestClusterValidation(t *testing.T) {
 	t.Run("Invalid cluster specs", func(t *testing.T) {
 		t.Run("Multiple specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: &mdbv1.DeploymentSpec{}}
-			assert.Error(t, ClusterSpec(spec))
+			assert.Error(t, DeploymentSpec(spec))
 		})
 		t.Run("No specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: nil}
-			assert.Error(t, ClusterSpec(spec))
+			assert.Error(t, DeploymentSpec(spec))
 		})
 		t.Run("Instance size not empty when serverless", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
@@ -25,7 +25,7 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName:     "SERVERLESS",
 				},
 			}}
-			assert.Error(t, ClusterSpec(spec))
+			assert.Error(t, DeploymentSpec(spec))
 		})
 		t.Run("Instance size unset when not serverless", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
@@ -34,19 +34,19 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName:     "AWS",
 				},
 			}}
-			assert.Error(t, ClusterSpec(spec))
+			assert.Error(t, DeploymentSpec(spec))
 		})
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: nil}
-			assert.NoError(t, ClusterSpec(spec))
-			assert.Nil(t, ClusterSpec(spec))
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
 		})
 		t.Run("Regular cluster specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{}}
-			assert.NoError(t, ClusterSpec(spec))
-			assert.Nil(t, ClusterSpec(spec))
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
 		})
 
 		t.Run("Serverless Cluster", func(t *testing.T) {
@@ -55,8 +55,8 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName: "SERVERLESS",
 				},
 			}}
-			assert.NoError(t, ClusterSpec(spec))
-			assert.Nil(t, ClusterSpec(spec))
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
 		})
 	})
 }

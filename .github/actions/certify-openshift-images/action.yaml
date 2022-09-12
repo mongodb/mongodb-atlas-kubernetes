@@ -1,0 +1,5 @@
+name: 'certify-openshift-images'
+description: 'push image to RedHat Connect for certification'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

@@ -163,6 +163,7 @@ func (s sessionAWS) CreatePrivateEndpoint(vpcID, subnetID, serviceName, testID s
 			Tags: []*ec2.Tag{
 				{Key: aws.String("Name"), Value: aws.String(config.TagName)},
 				{Key: aws.String("Test"), Value: aws.String(testID)},
+				{Key: aws.String(config.TagForTestKey), Value: aws.String(config.TagForTestValue)},
 			},
 		}},
 		VpcEndpointType: aws.String("Interface"),

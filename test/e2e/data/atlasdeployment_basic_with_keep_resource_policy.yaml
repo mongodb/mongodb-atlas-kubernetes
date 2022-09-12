@@ -1,0 +1,16 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDeployment
+metadata:
+  name: atlascluster-basic
+  annotations:
+    "mongodb.com/atlas-resource-policy": "keep"
+spec:
+  projectRef:
+    name: my-project
+  deploymentSpec:
+    name: cluster-basic
+    providerSettings:
+      instanceSizeName: M2
+      providerName: TENANT
+      regionName: US_EAST_1
+      backingProviderName: AWS

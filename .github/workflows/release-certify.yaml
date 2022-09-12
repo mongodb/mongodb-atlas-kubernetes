@@ -1,0 +1,63 @@
+name: Certify operator image.
+
+on:
+  pull_request:
+    types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (Be sure `Release-branch` and `Create release` are successful):"
+        required: true
+
+jobs:
+  create-release:
+    name: Certify operator image
+    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'Create Release')) || github.event.inputs.version != ''
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      REDHAT_SCAN_RELEASE_REGISTRY: scan.connect.redhat.com
+      REDHAT_SCAN_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
+      REDHAT_SCAN_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
+      REDHAT_RELEASE_REGISTRY: registry.connect.redhat.com
+      REDHAT_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_RELEASE_REGISTRY: quay.io
+      QUAY_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
+      QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3.0.0
+        with:
+          fetch-depth: 0 #needs for tags
+
+      - name: Download hub tool
+        run: |
+          wget https://github.com/github/hub/releases/download/v2.14.2/hub-linux-amd64-2.14.2.tgz -O hub.tar.gz -q
+          tar xvf hub.tar.gz
+          chmod +x ./hub-linux-amd64-2.14.2/bin/hub && sudo mv ./hub-linux-amd64-2.14.2/bin/hub /usr/local/bin/hub
+          
+          hub version
+
+      - name: Download preflight tool
+        run: |
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.4.0/preflight-linux-amd64 -O preflight -q
+          chmod +x ./preflight && sudo mv ./preflight /usr/local/bin/preflight
+
+      - name: Clone certified-operators repo
+        uses: actions/checkout@master
+        with:
+          repository: redhat-openshift-ecosystem/certified-operators
+          path: ../certified-operators
+
+      - name: Add mongodb's fork of certified-operators as mongodb
+        run: cd ../certified-operators && git remote add mongodb git@github.com:mongodb-forks/certified-operators.git
+
+      - name: Certify image and create release for Certified Operators repo
+        uses: ./.github/actions/certify-openshift-images
+        with:
+          IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+          VERSION: ${{ steps.tag.output.version }}
+          RH_CERTIFIED_OPENSHIFT_REPO_PATH: ../certified-operators
+          RH_CERTIFICATION_OSPID: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          RH_CERTIFICATION_TOKEN: ${{ secrets.RH_CERTIFICATION_TOKEN }}
+          RH_CERTIFICATION_PYXIS_API_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}

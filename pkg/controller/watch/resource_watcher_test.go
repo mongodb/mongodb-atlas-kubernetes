@@ -62,5 +62,65 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		}
 		assert.Equal(t, expectedWatched, watcher.WatchedResources)
 	})
+	t.Run("Watcher to watch multiple resources of different kinds", func(t *testing.T) {
+		watcher := NewResourceWatcher()
+		project1 := kube.ObjectKey("test", "project1")
+		connectionSecret := kube.ObjectKey("test", "connectionSecret")
+		backupSchedule := kube.ObjectKey("test", "backupSchedule")
+
+		watcher.EnsureMultiplesResourcesAreWatched(project1, zap.S(),
+			WatchedObject{
+				ResourceKind: "Secret",
+				Resource:     connectionSecret,
+			},
+			WatchedObject{
+				ResourceKind: "AtlasBackupSchedule",
+				Resource:     backupSchedule,
+			},
+		)
+
+		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
+			{ResourceKind: "Secret", Resource: connectionSecret}:            {project1: true},
+			{ResourceKind: "AtlasBackupSchedule", Resource: backupSchedule}: {project1: true},
+		}
+
+		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+	})
+	t.Run("Watcher to watch multiple resources of different kinds for multiple projects", func(t *testing.T) {
+		watcher := NewResourceWatcher()
+		project1 := kube.ObjectKey("test", "project1")
+		project2 := kube.ObjectKey("test", "project2")
+		connectionSecret := kube.ObjectKey("test", "connectionSecret")
+		backupSchedule := kube.ObjectKey("test", "backupSchedule")
+
+		watcher.EnsureMultiplesResourcesAreWatched(project1, zap.S(),
+			WatchedObject{
+				ResourceKind: "Secret",
+				Resource:     connectionSecret,
+			},
+			WatchedObject{
+				ResourceKind: "AtlasBackupSchedule",
+				Resource:     backupSchedule,
+			},
+		)
+
+		watcher.EnsureMultiplesResourcesAreWatched(project2, zap.S(),
+			WatchedObject{
+				ResourceKind: "Secret",
+				Resource:     connectionSecret,
+			},
+			WatchedObject{
+				ResourceKind: "AtlasBackupSchedule",
+				Resource:     backupSchedule,
+			},
+		)
+
+		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
+			{ResourceKind: "Secret", Resource: connectionSecret}:            {project1: true, project2: true},
+			{ResourceKind: "AtlasBackupSchedule", Resource: backupSchedule}: {project1: true, project2: true},
+		}
+
+		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+	})
 	// TODO: add test for different kind of resources
 }

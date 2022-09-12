@@ -67,7 +67,7 @@ func TestEnums(t *testing.T) {
 			ClusterType: TypeGeoSharded,
 		},
 	}
-	transformedCluster, err := operatorCluster.Cluster()
+	transformedCluster, err := operatorCluster.Deployment()
 	assert.NoError(t, err)
 	assert.Equal(t, atlasCluster, *transformedCluster)
 }
@@ -146,17 +146,17 @@ func parseJSONName(t reflect.StructTag) string {
 
 func TestIsEqual(t *testing.T) {
 	operatorArgs := ProcessArgs{
-		JavascriptEnabled: toptr.Boolptr(true),
+		JavascriptEnabled: toptr.MakePtr(true),
 	}
 
 	atlasArgs := mongodbatlas.ProcessArgs{
-		JavascriptEnabled: toptr.Boolptr(false),
+		JavascriptEnabled: toptr.MakePtr(false),
 	}
 
 	areTheyEqual := operatorArgs.IsEqual(atlasArgs)
 	assert.False(t, areTheyEqual, "should NOT be equal if pointer values are different")
 
-	atlasArgs.JavascriptEnabled = toptr.Boolptr(true)
+	atlasArgs.JavascriptEnabled = toptr.MakePtr(true)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should be equal if all pointer values are the same")
@@ -174,7 +174,7 @@ func TestIsEqual(t *testing.T) {
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should work for non-pointer values")
 
-	operatorArgs.OplogSizeMB = toptr.Int64ptr(8)
+	operatorArgs.OplogSizeMB = toptr.MakePtr[int64](8)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.False(t, areTheyEqual, "should NOT be equal if Operator has more args")

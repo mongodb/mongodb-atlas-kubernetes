@@ -1,0 +1,13 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDeployment
+metadata:
+  name: atlas-deployment-serverless
+spec:
+  projectRef:
+    name: my-project
+  serverlessSpec:
+    name: serverless-instance
+    providerSettings:
+      providerName: SERVERLESS
+      backingProviderName: AWS
+      regionName: US_EAST_1

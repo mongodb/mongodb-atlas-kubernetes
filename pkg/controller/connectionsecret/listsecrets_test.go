@@ -50,19 +50,19 @@ func TestListConnectionSecrets(t *testing.T) {
 		_, err = Ensure(fakeClient, "otherNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
 		assert.NoError(t, err)
 
-		secrets, err := ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c1")
+		secrets, err := ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c1")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c1-user1", "p1-c1-user2"}, getSecretsNames(secrets))
 
-		secrets, err = ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c2")
+		secrets, err = ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c2")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c2-user1"}, getSecretsNames(secrets))
 
-		secrets, err = ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c3")
+		secrets, err = ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c3")
 		assert.NoError(t, err)
 		assert.Len(t, getSecretsNames(secrets), 0)
 
-		secrets, err = ListByClusterName(fakeClient, "testNs", "non-existent-project-id", "c1")
+		secrets, err = ListByDeploymentName(fakeClient, "testNs", "non-existent-project-id", "c1")
 		assert.NoError(t, err)
 		assert.Len(t, getSecretsNames(secrets), 0)
 
@@ -86,7 +86,7 @@ func TestListConnectionSecrets(t *testing.T) {
 		_, err := Ensure(fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data)
 		assert.NoError(t, err)
 
-		secrets, err := ListByClusterName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
+		secrets, err := ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"nice-project-the-cluster-thecompany.com-user1"}, getSecretsNames(secrets))
 	})

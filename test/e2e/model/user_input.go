@@ -15,7 +15,7 @@ type UserInputs struct {
 	KeyName            string
 	Namespace          string
 	ProjectPath        string
-	Clusters           []AC
+	Deployments        []AtlasDeployment
 	Users              []DBUser
 	Project            *AProject
 }

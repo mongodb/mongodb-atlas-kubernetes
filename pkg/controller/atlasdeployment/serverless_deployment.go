@@ -11,19 +11,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasProject, serverlessSpec *mdbv1.ServerlessSpec) (atlasCluster *mongodbatlas.Cluster, _ workflow.Result) {
-	atlasCluster, resp, err := ctx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, serverlessSpec.Name)
+func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasProject, serverlessSpec *mdbv1.ServerlessSpec) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
+	atlasDeployment, resp, err := ctx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, serverlessSpec.Name)
 	if err != nil {
 		if resp == nil {
-			return atlasCluster, workflow.Terminate(workflow.Internal, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 
 		if resp.StatusCode != http.StatusNotFound {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
 		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
-		atlasCluster, _, err = ctx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
+		atlasDeployment, _, err = ctx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
 			Name: serverlessSpec.Name,
 			ProviderSettings: &mongodbatlas.ServerlessProviderSettings{
 				BackingProviderName: serverlessSpec.ProviderSettings.BackingProviderName,
@@ -32,22 +32,22 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 			},
 		})
 		if err != nil {
-			return atlasCluster, workflow.Terminate(workflow.ClusterNotCreatedInAtlas, err.Error())
+			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	switch atlasCluster.StateName {
+	switch atlasDeployment.StateName {
 	case "IDLE":
-		return atlasCluster, workflow.OK()
+		return atlasDeployment, workflow.OK()
 	case "CREATING":
-		return atlasCluster, workflow.InProgress(workflow.ClusterCreating, "cluster is provisioning")
+		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
 	case "UPDATING", "REPAIRING":
-		return atlasCluster, workflow.InProgress(workflow.ClusterUpdating, "cluster is updating")
+		return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete
 
 	default:
-		return atlasCluster, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown cluster state %q", atlasCluster.StateName))
+		return atlasDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", atlasDeployment.StateName))
 	}
 }

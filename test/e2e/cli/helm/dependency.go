@@ -1,7 +1,7 @@
 package helm
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -13,7 +13,7 @@ import (
 // used for not released dependencies
 func dependencyAsFileForCRD() {
 	chart := filepath.Join(config.AtlasOperatorHelmChartPath, "Chart.yaml")
-	data, _ := ioutil.ReadFile(filepath.Clean(chart))
+	data, _ := os.ReadFile(filepath.Clean(chart))
 	r, err := regexp.Compile("repository: \"https://mongodb.github.io/helm-charts\"") // nolint:gocritic // if a test runs locally, it could be already changed
 	if err == nil {
 		utils.SaveToFile(

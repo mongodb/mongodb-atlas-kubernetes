@@ -36,14 +36,17 @@ const (
 const (
 	ProjectReadyType                ConditionType = "ProjectReady"
 	IPAccessListReadyType           ConditionType = "IPAccessListReady"
+	MaintenanceWindowReadyType      ConditionType = "MaintenanceWindowReady"
 	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
 	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
+	NetworkPeerReadyType            ConditionType = "NetworkPeerReady"
+	CloudProviderAccessReadyType    ConditionType = "CloudProviderAccessReady"
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 )
 
 // AtlasDeployment condition types
 const (
-	ClusterReadyType ConditionType = "ClusterReady"
+	DeploymentReadyType ConditionType = "DeploymentReady"
 )
 
 // AtlasDatabaseUser condition types
@@ -108,6 +111,16 @@ func EnsureConditionExists(condition Condition, source []Condition) []Condition 
 	// Condition not found - appending
 	target = append(target, condition)
 	return target
+}
+
+func RemoveConditionIfExists(conditionType ConditionType, source []Condition) []Condition {
+	updatedConditions := []Condition{}
+	for _, cond := range source {
+		if cond.Type != conditionType {
+			updatedConditions = append(updatedConditions, cond)
+		}
+	}
+	return updatedConditions
 }
 
 func (c Condition) WithReason(reason string) Condition {

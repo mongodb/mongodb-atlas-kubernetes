@@ -47,10 +47,33 @@ spec:
                       enum:
                       - 1
                       - 2
+                      - 3
                       - 4
+                      - 5
                       - 6
+                      - 7
                       - 8
+                      - 9
+                      - 10
+                      - 11
                       - 12
+                      - 13
+                      - 14
+                      - 15
+                      - 16
+                      - 17
+                      - 18
+                      - 19
+                      - 20
+                      - 21
+                      - 22
+                      - 23
+                      - 24
+                      - 25
+                      - 26
+                      - 27
+                      - 28
+                      - 40
                       type: integer
                     frequencyType:
                       description: 'Frequency associated with the backup policy item.
@@ -459,7 +482,7 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: AtlasDeployment is the Schema for the atlasclusters API
+        description: AtlasDeployment is the Schema for the atlasdeployments API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -475,19 +498,22 @@ spec:
             type: object
           spec:
             description: AtlasDeploymentSpec defines the desired state of AtlasDeployment
+              Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec
+              should be defined
             properties:
               advancedDeploymentSpec:
-                description: Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the advanced (v1.5) deployment API
+                  https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
                 properties:
                   backupEnabled:
                     type: boolean
                   biConnector:
                     description: BiConnectorSpec specifies BI Connector for Atlas
-                      configuration on this cluster
+                      configuration on this deployment
                     properties:
                       enabled:
                         description: Flag that indicates whether or not BI Connector
-                          for Atlas is enabled on the cluster.
+                          for Atlas is enabled on the deployment.
                         type: boolean
                       readPreference:
                         description: Source from which the BI Connector for Atlas
@@ -498,66 +524,9 @@ spec:
                     type: object
                   clusterType:
                     type: string
-                  connectionStrings:
-                    description: ConnectionStrings configuration for applications
-                      use to connect to this cluster.
-                    properties:
-                      awsPrivateLink:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      awsPrivateLinkSrv:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      private:
-                        type: string
-                      privateEndpoint:
-                        items:
-                          description: PrivateEndpointSpec connection strings. Each
-                            object describes the connection strings you can use to
-                            connect to this cluster through a private endpoint. Atlas
-                            returns this parameter only if you deployed a private
-                            endpoint to all regions to which you deployed this cluster's
-                            nodes.
-                          properties:
-                            connectionString:
-                              type: string
-                            endpoints:
-                              items:
-                                description: EndpointSpec through which you connect
-                                  to Atlas.
-                                properties:
-                                  endpointId:
-                                    type: string
-                                  providerName:
-                                    type: string
-                                  region:
-                                    type: string
-                                type: object
-                              type: array
-                            srvConnectionString:
-                              type: string
-                            type:
-                              type: string
-                          type: object
-                        type: array
-                      privateSrv:
-                        type: string
-                      standard:
-                        type: string
-                      standardSrv:
-                        type: string
-                    type: object
-                  createDate:
-                    type: string
                   diskSizeGB:
                     type: integer
                   encryptionAtRestProvider:
-                    type: string
-                  groupId:
-                    type: string
-                  id:
                     type: string
                   labels:
                     items:
@@ -579,6 +548,10 @@ spec:
                   mongoDBVersion:
                     type: string
                   name:
+                    description: Name of the advanced deployment as it appears in
+                      Atlas. After Atlas creates the deployment, you can't change
+                      its name. Can only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   paused:
                     type: boolean
@@ -587,8 +560,6 @@ spec:
                   replicationSpecs:
                     items:
                       properties:
-                        id:
-                          type: string
                         numShards:
                           type: integer
                         regionConfigs:
@@ -607,48 +578,46 @@ spec:
                                     type: integer
                                 type: object
                               autoScaling:
-                                description: AutoScalingSpec configures your cluster
-                                  to automatically scale its storage
+                                description: AdvancedAutoScalingSpec configures your
+                                  deployment to automatically scale its storage
                                 properties:
-                                  autoIndexingEnabled:
-                                    description: Flag that indicates whether autopilot
-                                      mode for Performance Advisor is enabled. The
-                                      default is false.
-                                    type: boolean
                                   compute:
                                     description: Collection of settings that configure
-                                      how a cluster might scale its cluster tier and
-                                      whether the cluster can scale down.
+                                      how a deployment might scale its deployment
+                                      tier and whether the deployment can scale down.
                                     properties:
                                       enabled:
-                                        description: Flag that indicates whether cluster
+                                        description: Flag that indicates whether deployment
                                           tier auto-scaling is enabled. The default
                                           is false.
                                         type: boolean
                                       maxInstanceSize:
                                         description: 'Maximum instance size to which
-                                          your cluster can automatically scale (such
-                                          as M40). Atlas requires this parameter if
-                                          "autoScaling.compute.enabled" : true.'
+                                          your deployment can automatically scale
+                                          (such as M40). Atlas requires this parameter
+                                          if "autoScaling.compute.enabled" : true.'
                                         type: string
                                       minInstanceSize:
                                         description: 'Minimum instance size to which
-                                          your cluster can automatically scale (such
-                                          as M10). Atlas requires this parameter if
-                                          "autoScaling.compute.scaleDownEnabled" :
-                                          true.'
+                                          your deployment can automatically scale
+                                          (such as M10). Atlas requires this parameter
+                                          if "autoScaling.compute.scaleDownEnabled"
+                                          : true.'
                                         type: string
                                       scaleDownEnabled:
                                         description: 'Flag that indicates whether
-                                          the cluster tier may scale down. Atlas requires
-                                          this parameter if "autoScaling.compute.enabled"
+                                          the deployment tier may scale down. Atlas
+                                          requires this parameter if "autoScaling.compute.enabled"
                                           : true.'
                                         type: boolean
                                     type: object
-                                  diskGBEnabled:
+                                  diskGB:
                                     description: Flag that indicates whether disk
                                       auto-scaling is enabled. The default is true.
-                                    type: boolean
+                                    properties:
+                                      enabled:
+                                        type: boolean
+                                    type: object
                                 type: object
                               backingProviderName:
                                 type: string
@@ -690,8 +659,6 @@ spec:
                     type: array
                   rootCertType:
                     type: string
-                  stateName:
-                    type: string
                   versionReleaseSystem:
                     type: string
                 type: object
@@ -708,11 +675,11 @@ spec:
                 - name
                 type: object
               deploymentSpec:
-                description: Configuration for the advanced cluster API
+                description: Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
                 properties:
                   autoScaling:
                     description: Collection of settings that configures auto-scaling
-                      information for the cluster. If you specify the autoScaling
+                      information for the deployment. If you specify the autoScaling
                       object, you must also specify the providerSettings.autoScaling
                       object.
                     properties:
@@ -721,27 +688,27 @@ spec:
                           Performance Advisor is enabled. The default is false.
                         type: boolean
                       compute:
-                        description: Collection of settings that configure how a cluster
-                          might scale its cluster tier and whether the cluster can
-                          scale down.
+                        description: Collection of settings that configure how a deployment
+                          might scale its deployment tier and whether the deployment
+                          can scale down.
                         properties:
                           enabled:
-                            description: Flag that indicates whether cluster tier
+                            description: Flag that indicates whether deployment tier
                               auto-scaling is enabled. The default is false.
                             type: boolean
                           maxInstanceSize:
-                            description: 'Maximum instance size to which your cluster
+                            description: 'Maximum instance size to which your deployment
                               can automatically scale (such as M40). Atlas requires
                               this parameter if "autoScaling.compute.enabled" : true.'
                             type: string
                           minInstanceSize:
-                            description: 'Minimum instance size to which your cluster
+                            description: 'Minimum instance size to which your deployment
                               can automatically scale (such as M10). Atlas requires
                               this parameter if "autoScaling.compute.scaleDownEnabled"
                               : true.'
                             type: string
                           scaleDownEnabled:
-                            description: 'Flag that indicates whether the cluster
+                            description: 'Flag that indicates whether the deployment
                               tier may scale down. Atlas requires this parameter if
                               "autoScaling.compute.enabled" : true.'
                             type: boolean
@@ -752,13 +719,13 @@ spec:
                         type: boolean
                     type: object
                   biConnector:
-                    description: Configuration of BI Connector for Atlas on this cluster.
+                    description: Configuration of BI Connector for Atlas on this deployment.
                       The MongoDB Connector for Business Intelligence for Atlas (BI
-                      Connector) is only available for M10 and larger clusters.
+                      Connector) is only available for M10 and larger deployments.
                     properties:
                       enabled:
                         description: Flag that indicates whether or not BI Connector
-                          for Atlas is enabled on the cluster.
+                          for Atlas is enabled on the deployment.
                         type: boolean
                       readPreference:
                         description: Source from which the BI Connector for Atlas
@@ -768,9 +735,9 @@ spec:
                         type: string
                     type: object
                   clusterType:
-                    description: Type of the cluster that you want to create. The
+                    description: Type of the deployment that you want to create. The
                       parameter is required if replicationSpecs are set or if Global
-                      Clusters are deployed.
+                      Deployments are deployed.
                     enum:
                     - REPLICASET
                     - SHARDED
@@ -795,7 +762,7 @@ spec:
                     type: string
                   labels:
                     description: Collection of key-value pairs that tag and categorize
-                      the cluster. Each key and value has a maximum length of 255
+                      the deployment. Each key and value has a maximum length of 255
                       characters.
                     items:
                       description: LabelSpec contains key-value pairs that tag and
@@ -812,30 +779,32 @@ spec:
                       type: object
                     type: array
                   mongoDBMajorVersion:
-                    description: Version of the cluster to deploy.
+                    description: Version of the deployment to deploy.
                     type: string
                   name:
-                    description: Name of the cluster as it appears in Atlas. After
-                      Atlas creates the cluster, you can't change its name.
+                    description: Name of the deployment as it appears in Atlas. After
+                      Atlas creates the deployment, you can't change its name. Can
+                      only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   numShards:
                     description: Positive integer that specifies the number of shards
-                      to deploy for a sharded cluster. The parameter is required if
-                      replicationSpecs are configured
+                      to deploy for a sharded deployment. The parameter is required
+                      if replicationSpecs are configured
                     maximum: 50
                     minimum: 1
                     type: integer
                   paused:
-                    description: Flag that indicates whether the cluster should be
-                      paused.
+                    description: Flag that indicates whether the deployment should
+                      be paused.
                     type: boolean
                   pitEnabled:
-                    description: Flag that indicates the cluster uses continuous cloud
-                      backups.
+                    description: Flag that indicates the deployment uses continuous
+                      cloud backups.
                     type: boolean
                   providerBackupEnabled:
-                    description: Applicable only for M10+ clusters. Flag that indicates
-                      if the cluster uses Cloud Backups for backups.
+                    description: Applicable only for M10+ deployments. Flag that indicates
+                      if the deployment uses Cloud Backups for backups.
                     type: boolean
                   providerSettings:
                     description: Configuration for the provisioned hosts on which
@@ -843,7 +812,7 @@ spec:
                       service provider.
                     properties:
                       autoScaling:
-                        description: Range of instance sizes to which your cluster
+                        description: Range of instance sizes to which your deployment
                           can scale.
                         properties:
                           autoIndexingEnabled:
@@ -852,27 +821,27 @@ spec:
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
-                              a cluster might scale its cluster tier and whether the
-                              cluster can scale down.
+                              a deployment might scale its deployment tier and whether
+                              the deployment can scale down.
                             properties:
                               enabled:
-                                description: Flag that indicates whether cluster tier
-                                  auto-scaling is enabled. The default is false.
+                                description: Flag that indicates whether deployment
+                                  tier auto-scaling is enabled. The default is false.
                                 type: boolean
                               maxInstanceSize:
                                 description: 'Maximum instance size to which your
-                                  cluster can automatically scale (such as M40). Atlas
-                                  requires this parameter if "autoScaling.compute.enabled"
+                                  deployment can automatically scale (such as M40).
+                                  Atlas requires this parameter if "autoScaling.compute.enabled"
                                   : true.'
                                 type: string
                               minInstanceSize:
                                 description: 'Minimum instance size to which your
-                                  cluster can automatically scale (such as M10). Atlas
-                                  requires this parameter if "autoScaling.compute.scaleDownEnabled"
+                                  deployment can automatically scale (such as M10).
+                                  Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled"
                                   : true.'
                                 type: string
                               scaleDownEnabled:
-                                description: 'Flag that indicates whether the cluster
+                                description: 'Flag that indicates whether the deployment
                                   tier may scale down. Atlas requires this parameter
                                   if "autoScaling.compute.enabled" : true.'
                                 type: boolean
@@ -884,7 +853,7 @@ spec:
                         type: object
                       backingProviderName:
                         description: 'Cloud service provider on which the host for
-                          a multi-tenant cluster is provisioned. This setting only
+                          a multi-tenant deployment is provisioned. This setting only
                           works when "providerSetting.providerName" : "TENANT" and
                           "providerSetting.instanceSizeName" : M2 or M5.'
                         enum:
@@ -905,13 +874,13 @@ spec:
                         description: Flag that indicates whether the Amazon EBS encryption
                           feature encrypts the host's root volume for both data at
                           rest within the volume and for data moving between the volume
-                          and the cluster.
+                          and the deployment.
                         type: boolean
                       instanceSizeName:
-                        description: Atlas provides different cluster tiers, each
-                          with a default storage capacity and RAM size. The cluster
+                        description: Atlas provides different deployment tiers, each
+                          with a default storage capacity and RAM size. The deployment
                           you select is used for all the data-bearing hosts in your
-                          cluster tier.
+                          deployment tier.
                         type: string
                       providerName:
                         description: Cloud service provider on which Atlas provisions
@@ -924,8 +893,8 @@ spec:
                         - SERVERLESS
                         type: string
                       regionName:
-                        description: Physical location of your MongoDB cluster. The
-                          region you choose can affect network latency for clients
+                        description: Physical location of your MongoDB deployment.
+                          The region you choose can affect network latency for clients
                           accessing your databases.
                         type: string
                       volumeType:
@@ -939,10 +908,10 @@ spec:
                     - providerName
                     type: object
                   replicationSpecs:
-                    description: Configuration for cluster regions.
+                    description: Configuration for deployment regions.
                     items:
                       description: ReplicationSpec represents a configuration for
-                        cluster regions
+                        deployment regions
                       properties:
                         numShards:
                           description: Number of shards to deploy in each specified
@@ -990,8 +959,8 @@ spec:
                             to the region.
                           type: object
                         zoneName:
-                          description: Name for the zone in a Global Cluster. Don't
-                            provide this value if clusterType is not GEOSHARDED.
+                          description: Name for the zone in a Global Deployment. Don't
+                            provide this value if deploymentType is not GEOSHARDED.
                           type: string
                       type: object
                     type: array
@@ -1025,7 +994,7 @@ spec:
                     type: integer
                 type: object
               projectRef:
-                description: Project is a reference to AtlasProject resource the cluster
+                description: Project is a reference to AtlasProject resource the deployment
                   belongs to
                 properties:
                   name:
@@ -1038,11 +1007,13 @@ spec:
                 - name
                 type: object
               serverlessSpec:
-                description: Configuration for the advanced cluster API. https://docs.atlas.mongodb.com/reference/api/clusters-advanced/
+                description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
                   name:
-                    description: Name of the cluster as it appears in Atlas. After
-                      Atlas creates the cluster, you can't change its name.
+                    description: Name of the serverless deployment as it appears in
+                      Atlas. After Atlas creates the deployment, you can't change
+                      its name. Can only contain ASCII letters, numbers, and hyphens.
+                    pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
                   providerSettings:
                     description: Configuration for the provisioned hosts on which
@@ -1050,7 +1021,7 @@ spec:
                       service provider.
                     properties:
                       autoScaling:
-                        description: Range of instance sizes to which your cluster
+                        description: Range of instance sizes to which your deployment
                           can scale.
                         properties:
                           autoIndexingEnabled:
@@ -1059,27 +1030,27 @@ spec:
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
-                              a cluster might scale its cluster tier and whether the
-                              cluster can scale down.
+                              a deployment might scale its deployment tier and whether
+                              the deployment can scale down.
                             properties:
                               enabled:
-                                description: Flag that indicates whether cluster tier
-                                  auto-scaling is enabled. The default is false.
+                                description: Flag that indicates whether deployment
+                                  tier auto-scaling is enabled. The default is false.
                                 type: boolean
                               maxInstanceSize:
                                 description: 'Maximum instance size to which your
-                                  cluster can automatically scale (such as M40). Atlas
-                                  requires this parameter if "autoScaling.compute.enabled"
+                                  deployment can automatically scale (such as M40).
+                                  Atlas requires this parameter if "autoScaling.compute.enabled"
                                   : true.'
                                 type: string
                               minInstanceSize:
                                 description: 'Minimum instance size to which your
-                                  cluster can automatically scale (such as M10). Atlas
-                                  requires this parameter if "autoScaling.compute.scaleDownEnabled"
+                                  deployment can automatically scale (such as M10).
+                                  Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled"
                                   : true.'
                                 type: string
                               scaleDownEnabled:
-                                description: 'Flag that indicates whether the cluster
+                                description: 'Flag that indicates whether the deployment
                                   tier may scale down. Atlas requires this parameter
                                   if "autoScaling.compute.enabled" : true.'
                                 type: boolean
@@ -1091,7 +1062,7 @@ spec:
                         type: object
                       backingProviderName:
                         description: 'Cloud service provider on which the host for
-                          a multi-tenant cluster is provisioned. This setting only
+                          a multi-tenant deployment is provisioned. This setting only
                           works when "providerSetting.providerName" : "TENANT" and
                           "providerSetting.instanceSizeName" : M2 or M5.'
                         enum:
@@ -1112,13 +1083,13 @@ spec:
                         description: Flag that indicates whether the Amazon EBS encryption
                           feature encrypts the host's root volume for both data at
                           rest within the volume and for data moving between the volume
-                          and the cluster.
+                          and the deployment.
                         type: boolean
                       instanceSizeName:
-                        description: Atlas provides different cluster tiers, each
-                          with a default storage capacity and RAM size. The cluster
+                        description: Atlas provides different deployment tiers, each
+                          with a default storage capacity and RAM size. The deployment
                           you select is used for all the data-bearing hosts in your
-                          cluster tier.
+                          deployment tier.
                         type: string
                       providerName:
                         description: Cloud service provider on which Atlas provisions
@@ -1131,8 +1102,8 @@ spec:
                         - SERVERLESS
                         type: string
                       regionName:
-                        description: Physical location of your MongoDB cluster. The
-                          region you choose can affect network latency for clients
+                        description: Physical location of your MongoDB deployment.
+                          The region you choose can affect network latency for clients
                           accessing your databases.
                         type: string
                       volumeType:
@@ -1524,6 +1495,40 @@ spec:
                       type: object
                   type: object
                 type: array
+              maintenanceWindow:
+                description: MaintenanceWindow allows to specify a preferred time
+                  in the week to run maintenance operations. See more information
+                  at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
+                properties:
+                  autoDefer:
+                    description: Flag indicating whether any scheduled project maintenance
+                      should be deferred automatically for one week.
+                    type: boolean
+                  dayOfWeek:
+                    description: Day of the week when you would like the maintenance
+                      window to start as a 1-based integer. Sunday 1, Monday 2, Tuesday
+                      3, Wednesday 4, Thursday 5, Friday 6, Saturday 7
+                    maximum: 7
+                    minimum: 1
+                    type: integer
+                  defer:
+                    description: Flag indicating whether the next scheduled project
+                      maintenance should be deferred for one week. Cannot be specified
+                      if startASAP is true
+                    type: boolean
+                  hourOfDay:
+                    description: Hour of the day when you would like the maintenance
+                      window to start. This parameter uses the 24-hour clock, where
+                      midnight is 0, noon is 12.
+                    maximum: 23
+                    minimum: 0
+                    type: integer
+                  startASAP:
+                    description: Flag indicating whether project maintenance has been
+                      directed to start immediately. Cannot be specified if defer
+                      is true
+                    type: boolean
+                type: object
               name:
                 description: Name is the name of the Project that is created in Atlas
                   by the Operator if it doesn't exist yet.
@@ -1620,6 +1625,9 @@ spec:
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
                     type: string
                 required:
                 - name
