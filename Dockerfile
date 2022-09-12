@@ -19,6 +19,8 @@ COPY hack/ hack/
 
 ARG VERSION
 ENV PRODUCT_VERSION=${VERSION}
+ENV TARGET_ARCH=amd64
+ENV TARGET_OS=linux
 
 RUN make manager
 

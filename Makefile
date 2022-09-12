@@ -9,11 +9,8 @@ CONTAINER_ENGINE?=docker
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.8.0
-
-ifndef PRODUCT_VERSION
-PRODUCT_VERSION := $(shell git describe --tags --dirty --broken)
-endif
+VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
+PRODUCT_VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -23,6 +20,14 @@ endif
 CHANNELS ?= beta
 ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
+endif
+
+# Used by the olm-deploy if you running on Mac and deploy to K8S/Openshift
+ifndef TARGET_ARCH
+TARGET_ARCH := $(shell go env GOARCH)
+endif
+ifndef TARGET_OS
+TARGET_OS := $(shell go env GOOS)
 endif
 
 # DEFAULT_CHANNEL defines the default channel used in the bundle.
@@ -40,16 +45,21 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 REGISTRY ?= quay.io/mongodb
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
-BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-controller-bundle:$(VERSION)
+BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-bundle:$(VERSION)
 
-# Image URL to use all building/pushing image targets
-IMG ?= mongodb-atlas-controller:latest
+#IMG ?= mongodb-atlas-kubernetes-operator:latest
 #BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator-bundle
-OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator
-CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-catalog
+OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease
+CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-catalog
 OPERATOR_IMAGE ?= ${OPERATOR_REGISTRY}:${VERSION}
 CATALOG_IMAGE ?= ${CATALOG_REGISTRY}:${VERSION}
 TARGET_NAMESPACE ?= mongodb-atlas-operator-system-test
+
+# Image URL to use all building/pushing image targets
+ifndef IMG
+IMG := ${OPERATOR_REGISTRY}:${VERSION}
+endif
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -97,7 +107,7 @@ e2e-openshift-upgrade:
 
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
-	go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
+	 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
@@ -167,6 +177,7 @@ endef
 
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
+	@echo "Building bundle $(VERSION)"
 	operator-sdk generate kustomize manifests -q --apis-dir=pkg/api
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build --load-restrictor LoadRestrictionsNone config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
@@ -187,8 +198,7 @@ bundle-push:
 
 .PHONY: catalog-build
 CATALOG_DIR ?= ./scripts/openshift/atlas-catalog
-catalog-build: ## bundle bundle-push ## Build file-based bundle
-	$(MAKE) image IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
+catalog-build: image
 	CATALOG_DIR=$(CATALOG_DIR) \
 	CHANNEL=$(DEFAULT_CHANNEL) \
 	CATALOG_IMAGE=$(CATALOG_IMAGE) \
@@ -211,11 +221,11 @@ build-subscription:
 build-catalogsource:
 	CATALOG_DIR=$(shell dirname "$(CATALOG_DIR)") \
 	CATALOG_IMAGE=$(CATALOG_IMAGE) \
+	CATALOG_DISPLAY_NAME="MongoDB Atlas operator $(VERSION)" \
 	./scripts/build_catalogsource.sh
 
 .PHONY: deploy-olm
 # Deploy atlas operator to the running openshift cluster with OLM
-deploy-olm: export IMG=$(REGISTRY)/mongodb-atlas-operator:$(VERSION)
 deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsource build-subscription
 	oc -n openshift-marketplace delete catalogsource mongodb-atlas-kubernetes-local --ignore-not-found
 	oc delete namespace $(TARGET_NAMESPACE) --ignore-not-found
