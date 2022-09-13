@@ -112,8 +112,8 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				return testutil.CheckCondition(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc())
+			Eventually(func(g Gomega) bool {
+				return testutil.CheckCondition(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc(g))
 			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = mdbv1.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
@@ -189,7 +189,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
+func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) {
 	startedCreation := false
 	return func(a mdbv1.AtlasCustomResource) {
 		c := a.(*mdbv1.AtlasDeployment)
@@ -198,17 +198,17 @@ func validateDeploymentCreatingFunc() func(a mdbv1.AtlasCustomResource) {
 		}
 		// When the create request has been made to Atlas - we expect the following status
 		if startedCreation {
-			Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
+			g.Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := testutil.MatchConditions(
 				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 			)
-			Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
 			condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
-			Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
+			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
 	}
 }

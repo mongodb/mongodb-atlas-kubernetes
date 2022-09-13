@@ -332,8 +332,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithIP("192.0.2.15"))
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate)
+			Eventually(func(g Gomega) bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate(g))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
@@ -348,8 +348,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate)
+			Eventually(func(g Gomega) bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate(g))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
@@ -365,8 +365,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate)
+			Eventually(func(g Gomega) bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate(g))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 			checkAtlasProjectIsReady()
@@ -413,8 +413,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 			})
 			By("Updating the IP Access List comment and delete date", func() {
@@ -423,8 +423,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				createdProject.Spec.ProjectIPAccessList[0].DeleteAfterDate = ""
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
@@ -442,8 +442,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringCreate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 			})
 			By("Updating the IP Access List IPAddress", func() {
@@ -454,8 +454,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				createdProject.Spec.ProjectIPAccessList[1].IPAddress = "168.32.54.0"
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsIPAccessListDuringUpdate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
@@ -474,8 +474,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringCreate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringCreate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 			})
@@ -484,8 +484,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				createdProject.Spec.MaintenanceWindow.AutoDefer = true
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
@@ -495,8 +495,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				createdProject.Spec.MaintenanceWindow.AutoDefer = false
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 
-				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate)
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 				checkAtlasProjectIsReady()
@@ -586,36 +586,44 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 
 // validateNoErrorsIPAccessListDuringCreate performs check that no problems happen to IP Access list during the creation.
 // This allows the test to fail fast instead by timeout if there are any troubles.
-func validateNoErrorsIPAccessListDuringCreate(a mdbv1.AtlasCustomResource) {
-	c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsIPAccessListDuringCreate(g Gomega) func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasProject)
 
-	if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType); ok {
-		Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+		if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType); ok {
+			g.Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+		}
 	}
 }
 
 // validateNoErrorsIPAccessListDuringUpdate performs check that no problems happen to IP Access list during the update.
-func validateNoErrorsIPAccessListDuringUpdate(a mdbv1.AtlasCustomResource) {
-	c := a.(*mdbv1.AtlasProject)
-	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
-	Expect(ok).To(BeTrue())
-	Expect(condition.Reason).To(BeEmpty())
+func validateNoErrorsIPAccessListDuringUpdate(g Gomega) func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasProject)
+		condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
+		g.Expect(ok).To(BeTrue())
+		g.Expect(condition.Reason).To(BeEmpty())
+	}
 }
 
 // validateNoErrorsMaintenanceWindowDuringCreate performs check that no problems happen to Maintenance Window during the creation.
 // This allows the test to fail fast instead by timeout if there are any troubles.
-func validateNoErrorsMaintenanceWindowDuringCreate(a mdbv1.AtlasCustomResource) {
-	c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsMaintenanceWindowDuringCreate(g Gomega) func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasProject)
 
-	if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType); ok {
-		Expect(condition.Status).To(Equal(status.TrueCondition(status.MaintenanceWindowReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+		if condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType); ok {
+			g.Expect(condition.Status).To(Equal(status.TrueCondition(status.MaintenanceWindowReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
+		}
 	}
 }
 
 // validateNoErrorsMaintenanceWindowDuringUpdate performs check that no problems happen to Maintenance Window during the update.
-func validateNoErrorsMaintenanceWindowDuringUpdate(a mdbv1.AtlasCustomResource) {
-	c := a.(*mdbv1.AtlasProject)
-	condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType)
-	Expect(ok).To(BeTrue())
-	Expect(condition.Reason).To(BeEmpty())
+func validateNoErrorsMaintenanceWindowDuringUpdate(g Gomega) func(a mdbv1.AtlasCustomResource) {
+	return func(a mdbv1.AtlasCustomResource) {
+		c := a.(*mdbv1.AtlasProject)
+		condition, ok := testutil.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType)
+		g.Expect(ok).To(BeTrue())
+		g.Expect(condition.Reason).To(BeEmpty())
+	}
 }
