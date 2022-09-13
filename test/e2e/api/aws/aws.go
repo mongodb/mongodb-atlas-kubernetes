@@ -24,8 +24,7 @@ type sessionAWS struct {
 
 func SessionAWS(region string) sessionAWS {
 	session, err := session.NewSession(&aws.Config{
-		Region:   aws.String(region),
-		Endpoint: nil,
+		Region: aws.String(region),
 	})
 	if err != nil {
 		fmt.Println(err)

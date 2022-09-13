@@ -30,7 +30,6 @@ const (
 	ProjectPrivateEndpointIsNotReadyInAtlas  ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectNetworkPeerIsNotReadyInAtlas      ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 	ProjectEncryptionAtRestReady             ConditionReason = "ProjectEncryptionAtRestReady"
-	ProjectEncryptionAtRestFailed            ConditionReason = "ProjectEncryptionAtRestReady"
 	ProjectCloudAccessRolesIsNotReadyInAtlas ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
 )
 

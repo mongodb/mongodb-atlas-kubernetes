@@ -86,8 +86,3 @@ func (awsAction *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn st
 	session := aws.SessionAWS(region)
 	return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
 }
-
-// func (awsAction *AwsAction) DeleteKMS(region string, keyID string) error {
-// 	session := aws.SessionAWS(region)
-// 	return session.DeleteCustomerMasterKey(keyID)
-// }
