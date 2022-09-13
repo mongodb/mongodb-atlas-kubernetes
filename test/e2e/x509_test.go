@@ -42,8 +42,9 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 					kubecli.GetManagerLogs(data.Resources.Namespace),
 				)
 				actions.SaveTestAppLogs(data.Resources)
+				actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 				actions.SaveK8sResources(
-					[]string{"deploy", "atlasprojects"},
+					[]string{"deploy"},
 					data.Resources.Namespace,
 				)
 			})
@@ -82,11 +83,13 @@ func x509Flow(data *model.TestDataProvider, certRef *common.ResourceRefNamespace
 	By("Deploy Project with standart configuration", func() {
 		actions.PrepareUsersConfigurations(data)
 		deploy.NamespacedOperator(data)
-		actions.DeployProjectAndWait(data, "1")
+		actions.DeployProjectAndWait(data, 1)
 	})
 
 	By("Create X.509 cert secret", func() {
-		kubecli.CreateX509Secret(certRef.Name, certRef.Namespace)
+		Expect(certRef.Name).NotTo(BeEmpty(), "certRef.Name should not be empty")
+		Expect(certRef.Namespace).NotTo(BeEmpty(), "certRef.Namespace should not be empty")
+		Expect(kubecli.CreateCertificateX509(data.Context, data.K8SClient, certRef.Name, certRef.Namespace)).To(Succeed())
 	})
 
 	By("Add X.509 cert to the project", func() {
@@ -118,7 +121,7 @@ func x509Flow(data *model.TestDataProvider, certRef *common.ResourceRefNamespace
 		})
 		By("Check database users Attibutes", func() {
 			Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-			actions.CheckUsersAttributes(data.Resources)
+			actions.CheckUsersAttributes(data)
 		})
 	})
 }

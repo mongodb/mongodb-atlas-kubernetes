@@ -83,7 +83,11 @@ func NamespacedOperator(data *model.TestDataProvider) {
 	By("Deploy namespaced Operator\n", func() {
 		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
 		Eventually(
-			kubecli.GetPodStatus(data.Resources.Namespace),
+			func(g Gomega) string {
+				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, data.Resources.Namespace)
+				g.Expect(err).ShouldNot(HaveOccurred())
+				return status
+			},
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})
@@ -94,7 +98,13 @@ func ClusterWideOperator(data *model.TestDataProvider) {
 	By("Deploy clusterwide Operator \n", func() {
 		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
 		Eventually(
-			kubecli.GetPodStatus(config.DefaultOperatorNS),
+			func() string {
+				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, config.DefaultOperatorNS)
+				if err != nil {
+					return ""
+				}
+				return status
+			},
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})
@@ -107,7 +117,13 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 		utils.SaveToFile(kustomOperatorPath, kustomize.Build(data.Resources.GetOperatorFolder()))
 		kubecli.Apply(kustomOperatorPath)
 		Eventually(
-			kubecli.GetPodStatus(config.DefaultOperatorNS),
+			func() string {
+				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, config.DefaultOperatorNS)
+				if err != nil {
+					return ""
+				}
+				return status
+			},
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
 	})

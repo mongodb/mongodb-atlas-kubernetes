@@ -37,8 +37,9 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				kubecli.GetManagerLogs(data.Resources.Namespace),
 			)
 			actions.SaveTestAppLogs(data.Resources)
+			actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
+				[]string{"deploy", "atlasdeployments", "atlasdatabaseusers"},
 				data.Resources.Namespace,
 			)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})

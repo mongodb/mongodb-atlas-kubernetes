@@ -1,12 +1,17 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"strconv"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -21,28 +26,34 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-func WaitDeployment(input model.UserInputs, generation string) {
+func WaitDeployment(data *model.TestDataProvider, generation int) {
+	input := data.Resources
 	EventuallyWithOffset(1,
-		func() string {
-			return kubecli.GetGeneration(input.Namespace, input.Deployments[0].GetDeploymentNameResource())
+		func(g Gomega) int {
+			gen, err := kubecli.GetDeploymentObservedGeneration(data.Context, data.K8SClient, input.Namespace, input.Deployments[0].ObjectMeta.GetName())
+			g.Expect(err).ToNot(HaveOccurred())
+			return gen
 		},
-		"5m", "10s",
-	).Should(Equal(generation))
+	).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Equal(generation))
 
-	WaitDeploymentWithoutGenerationCheck(input)
+	WaitDeploymentWithoutGenerationCheck(data)
 }
 
-func WaitDeploymentWithoutGenerationCheck(input model.UserInputs) {
+func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
+	input := data.Resources
 	EventuallyWithOffset(1,
-		func() string {
-			return kubecli.GetStatusCondition("Ready", input.Namespace, input.Deployments[0].GetDeploymentNameResource())
+		func(g Gomega) string {
+			deploymentStatus, err := kubecli.GetDeploymentStatusCondition(data.Context, data.K8SClient, status.ReadyType, input.Namespace, input.Deployments[0].ObjectMeta.GetName())
+			g.Expect(err).ToNot(HaveOccurred())
+			return deploymentStatus
 		},
 		"60m", "1m",
 	).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
 
-	ExpectWithOffset(1, kubecli.GetK8sDeploymentStateName(
-		input.Namespace, input.Deployments[0].GetDeploymentNameResource()),
-	).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
+	deploymentState, err := kubecli.GetK8sDeploymentStateName(data.Context, data.K8SClient,
+		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
 
 	deployment := input.Deployments[0]
 	switch {
@@ -64,9 +75,11 @@ func WaitDeploymentWithoutGenerationCheck(input model.UserInputs) {
 	}
 }
 
-func WaitProject(data *model.TestDataProvider, generation string) {
+func WaitProject(data *model.TestDataProvider, generation int) {
 	EventuallyWithOffset(1, kube.GetReadyProjectStatus(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
-	ExpectWithOffset(1, kubecli.GetGeneration(data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
+	gen, err := kubecli.GetProjectObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Project.GetK8sMetaName())
+	Expect(err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, gen).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
 	atlasProject, err := kube.GetProjectResource(data)
 	Expect(err).ShouldNot(HaveOccurred())
 	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Project status should have non-empty ID field")
@@ -79,16 +92,12 @@ func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
 	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Project status should have non-empty ID field")
 }
 
-func WaitTestApplication(ns, label string) {
+func WaitTestApplication(data *model.TestDataProvider, ns, labelKey, labelValue string) {
 	// temp
 	isAppRunning := func() func() bool {
 		return func() bool {
-			status := kubecli.GetStatusPhase(ns, "pods", "-l", label)
-			if status == "Running" {
-				return true
-			}
-			kubecli.DescribeTestApp(label, ns)
-			return false
+			phase, _ := kubecli.GetPodStatusPhaseByLabel(data.Context, data.K8SClient, ns, labelKey, labelValue)
+			return phase == "Running"
 		}
 	}
 	EventuallyWithOffset(1, isAppRunning(), "2m", "10s").Should(BeTrue(), "Test application should be running")
@@ -195,6 +204,19 @@ func SaveK8sResources(resources []string, ns string) {
 	SaveK8sResourcesTo(resources, ns, ns)
 }
 
+func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	yaml, err := kubecli.ProjectListYaml(ctx, k8sClient, ns)
+	if err != nil {
+		return fmt.Errorf("error getting project list: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "projects")
+	err = utils.SaveToFile(path, yaml)
+	if err != nil {
+		return fmt.Errorf("error saving projects to file: %w", err)
+	}
+	return nil
+}
+
 func SaveTestAppLogs(input model.UserInputs) {
 	for _, user := range input.Users {
 		utils.SaveToFile(
@@ -228,15 +250,15 @@ func SaveDeploymentDump(input model.UserInputs) {
 	kubecli.GetDeploymentDump(fmt.Sprintf("output/%s/dump", input.Namespace))
 }
 
-func CheckUsersAttributes(input model.UserInputs) {
+func CheckUsersAttributes(data *model.TestDataProvider) {
+	input := data.Resources
+	aClient := atlas.GetClientOrFail()
 	userDBResourceName := func(deploymentName string, user model.DBUser) string { // user name helmkind or kube-test-kind
 		if input.KeyName[0:4] == "helm" {
-			return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s-%s", deploymentName, user.Spec.Username)
+			return fmt.Sprintf("%s-%s", deploymentName, user.Spec.Username)
 		}
-		return fmt.Sprintf("atlasdatabaseusers.atlas.mongodb.com/%s", user.ObjectMeta.Name)
+		return user.ObjectMeta.GetName()
 	}
-
-	aClient := atlas.GetClientOrFail()
 
 	for _, deployment := range input.Deployments {
 		for _, user := range input.Users {
@@ -254,7 +276,11 @@ func CheckUsersAttributes(input model.UserInputs) {
 			EventuallyWithOffset(1, getUser, "7m", "10s").Should(BeTrue())
 			EventuallyWithOffset(1,
 				func() string {
-					return kubecli.GetStatusCondition("Ready", input.Namespace, userDBResourceName(deployment.ObjectMeta.Name, user))
+					userStatus, err := kubecli.GetDBUserStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, userDBResourceName(deployment.ObjectMeta.Name, user))
+					if err != nil {
+						return err.Error()
+					}
+					return userStatus
 				},
 				"7m", "1m",
 			).Should(Equal("True"), "Kubernetes resource: User resources status `Ready` should be True")
@@ -283,15 +309,15 @@ func CheckUsersCanUseApp(data *model.TestDataProvider) {
 		// data
 		port := strconv.Itoa(i + data.PortGroup)
 		key := port
-		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+		postData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 
 		helm.InstallTestApplication(input, user, port)
-		WaitTestApplication(input.Namespace, "app=test-app-"+user.Spec.Username)
+		WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
 
 		app := appclient.NewTestAppClient(port)
 		ExpectWithOffset(1, app.Get("")).Should(Equal("It is working"))
-		ExpectWithOffset(1, app.Post(data)).ShouldNot(HaveOccurred())
-		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(data))
+		ExpectWithOffset(1, app.Post(postData)).ShouldNot(HaveOccurred())
+		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(postData))
 	}
 }
 
@@ -301,14 +327,14 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 		// data
 		port := strconv.Itoa(i + data.PortGroup)
 		key := port
-		data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+		expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 
 		cli.Execute("kubectl", "delete", "pod", "-l", "app=test-app-"+user.Spec.Username, "-n", input.Namespace).Wait("2m")
-		WaitTestApplication(input.Namespace, "app=test-app-"+user.Spec.Username)
+		WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
 
 		app := appclient.NewTestAppClient(port)
 		ExpectWithOffset(1, app.Get("")).Should(Equal("It is working"))
-		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(data))
+		ExpectWithOffset(1, app.Get("/mongo/"+key)).Should(Equal(expectedData))
 
 		key = port + "up"
 		dataUpdated := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
@@ -319,7 +345,8 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 
 func PrepareUsersConfigurations(data *model.TestDataProvider) {
 	By("Prepare namespaces and project configuration", func() {
-		kubecli.CreateNamespace(data.Resources.Namespace)
+		err := kubecli.CreateNamespace(data.Context, data.K8SClient, data.Resources.Namespace)
+		Expect(err).NotTo(HaveOccurred())
 		By("Create project spec", func() {
 			GinkgoWriter.Write([]byte(data.Resources.ProjectPath + "\n"))
 			utils.SaveToFile(data.Resources.ProjectPath, data.Resources.Project.ConvertByte())
@@ -360,9 +387,11 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			kubecli.CreateApiKeySecretFrom(config.DefaultOperatorGlobalKey, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
+			err := kubecli.CreateSecret(data.Context, data.K8SClient, key.PublicKey, key.PrivateKey, config.DefaultOperatorGlobalKey, data.Resources.Namespace)
+			Expect(err).NotTo(HaveOccurred())
 		} else {
-			kubecli.CreateApiKeySecretFrom(data.Resources.KeyName, data.Resources.Namespace, key.PublicKey, key.PrivateKey)
+			err := kubecli.CreateSecret(data.Context, data.K8SClient, key.PublicKey, key.PrivateKey, data.Resources.KeyName, data.Resources.Namespace)
+			Expect(err).NotTo(HaveOccurred())
 		}
 	})
 }
@@ -377,7 +406,7 @@ func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
 		Expect(globalKey.PrivateKey).ShouldNot(BeEmpty())
 		data.Resources.AtlasKeyAccessType.GlobalKeyAttached = globalKey
 
-		kubecli.DeleteApiKeySecret(data.Resources.KeyName, data.Resources.Namespace)
+		kubecli.DeleteKey(data.Context, data.K8SClient, data.Resources.KeyName, data.Resources.Namespace)
 		createConnectionAtlasKeyFrom(data, globalKey)
 	}
 }
@@ -396,7 +425,7 @@ func UpdateProjectID(data *model.TestDataProvider) {
 	Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
 }
 
-func DeployProjectAndWait(data *model.TestDataProvider, generation string) {
+func DeployProjectAndWait(data *model.TestDataProvider, generation int) {
 	By("Create users resources: keys, project", func() {
 		CreateConnectionAtlasKey(data)
 		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
@@ -416,7 +445,7 @@ func DeployDeployment(data *model.TestDataProvider) {
 		kubecli.Apply(data.Resources.Deployments[0].DeploymentFileName(data.Resources), "-n", data.Resources.Namespace)
 	})
 	By("Wait deployment creation", func() {
-		WaitDeployment(data.Resources, "1")
+		WaitDeployment(data, 1)
 	})
 	By("check deployment Attribute", func() {
 		aClient, err := atlas.AClient()
@@ -432,7 +461,7 @@ func DeployUsers(data *model.TestDataProvider) {
 	})
 	By("check database users Attributes", func() {
 		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		CheckUsersAttributes(data.Resources)
+		CheckUsersAttributes(data)
 	})
 	By("Deploy application for user", func() {
 		CheckUsersCanUseApp(data)
@@ -441,7 +470,7 @@ func DeployUsers(data *model.TestDataProvider) {
 
 // DeployUserResourcesAction deploy all user resources, wait, and check results
 func DeployUserResourcesAction(data *model.TestDataProvider) {
-	DeployProjectAndWait(data, "1")
+	DeployProjectAndWait(data, 1)
 	DeployDeployment(data)
 	DeployUsers(data)
 }
@@ -497,7 +526,7 @@ func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 	for _, data := range datas {
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
 		DeleteDBUsersApps(data)
-		Expect(kubecli.DeleteNamespace(data.Resources.Namespace)).Should(Say("deleted"), "Cant delete namespace after testing")
+		Expect(kubecli.DeleteNamespace(data.Context, data.K8SClient, data.Resources.Namespace)).Should(Succeed(), "Can't delete namespace")
 		DeleteGlobalKeyIfExist(data)
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}

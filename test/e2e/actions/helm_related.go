@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
@@ -25,11 +24,12 @@ func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
-		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Deployments[0].GetDeploymentNameResource()))
+		generation, err := kubecli.GetDeploymentObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Deployments[0].ObjectMeta.GetName())
+		Expect(err).NotTo(HaveOccurred())
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 
 		By("Wait project creation", func() {
-			WaitDeployment(data.Resources, strconv.Itoa(generation+1))
+			WaitDeployment(data, generation+1)
 			ExpectWithOffset(1, data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
 		aClient := atlas.GetClientOrFail()
@@ -63,7 +63,7 @@ func HelmUpgradeUsersRoleAddAdminUser(data *model.TestDataProvider) {
 			AddBuildInAdminRole()
 		data.Resources.Users = append(data.Resources.Users, newUser)
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
-		CheckUsersAttributes(data.Resources)
+		CheckUsersAttributes(data)
 	})
 }
 
@@ -72,22 +72,23 @@ func HelmUpgradeDeleteFirstUser(data *model.TestDataProvider) {
 	By("User delete database user from the Atlas\n", func() {
 		data.Resources.Users = data.Resources.Users[1:]
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
-		CheckUsersAttributes(data.Resources)
+		CheckUsersAttributes(data)
 	})
 }
 
 // HelmUpgradeChartVersions upgrade chart version of crd, operator, and
 func HelmUpgradeChartVersions(data *model.TestDataProvider) {
 	By("User update helm chart (used main-branch)", func() {
-		generation, _ := strconv.Atoi(kubecli.GetGeneration(data.Resources.Namespace, data.Resources.Deployments[0].GetDeploymentNameResource()))
+		generation, err := kubecli.GetDeploymentObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Deployments[0].ObjectMeta.GetName())
+		Expect(err).NotTo(HaveOccurred())
 		helm.UpgradeOperatorChart(data.Resources)
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 
 		By("Wait updating")
-		WaitDeployment(data.Resources, strconv.Itoa(generation+1))
+		WaitDeployment(data, generation+1)
 		aClient := atlas.GetClientOrFail()
 		updatedDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
 		CompareDeploymentsSpec(data.Resources.Deployments[0].Spec, updatedDeployment)
-		CheckUsersAttributes(data.Resources)
+		CheckUsersAttributes(data)
 	})
 }

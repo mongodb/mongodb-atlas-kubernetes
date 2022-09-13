@@ -36,8 +36,9 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 				kubecli.GetManagerLogs(data.Resources.Namespace),
 			)
 			actions.SaveTestAppLogs(data.Resources)
+			actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasdeployments", "atlasprojects"},
+				[]string{"deploy", "atlasdeployments"},
 				data.Resources.Namespace,
 			)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
@@ -61,7 +62,6 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 				[]func(*model.TestDataProvider){
 					actions.DeleteDeploymentCRWithKeepAnnotation,
 					actions.ReDeployOperator,
-					actions.RemoveKeepAnnotation,
 				},
 			),
 		),

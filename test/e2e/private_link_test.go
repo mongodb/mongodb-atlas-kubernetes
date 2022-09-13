@@ -43,8 +43,9 @@ func SaveDump(data *model.TestDataProvider) {
 			kubecli.GetManagerLogs(data.Resources.Namespace),
 		)
 		actions.SaveTestAppLogs(data.Resources)
+		actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 		actions.SaveK8sResources(
-			[]string{"deploy", "atlasprojects"},
+			[]string{"deploy"},
 			data.Resources.Namespace,
 		)
 	})
@@ -209,7 +210,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(userData)
 		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, "1")
+		actions.DeployProjectAndWait(userData, 1)
 	})
 
 	By("Create Private Link and the rest users resources", func() {
@@ -250,7 +251,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 
 	By("Deploy Changed Projects", func() {
 		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProjectAndWait(userData, "3")
+		actions.DeployProjectAndWait(userData, 3)
 	})
 
 	By("Check statuses", func() {

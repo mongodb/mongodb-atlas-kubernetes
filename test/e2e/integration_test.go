@@ -46,8 +46,9 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 				kubecli.GetManagerLogs(data.Resources.Namespace),
 			)
 			actions.SaveTestAppLogs(data.Resources)
+			actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 			actions.SaveK8sResources(
-				[]string{"deploy", "atlasprojects"},
+				[]string{"deploy"},
 				data.Resources.Namespace,
 			)
 			actions.DeleteUserResourcesProject(&data)
@@ -81,10 +82,10 @@ func integrationCycle(data model.TestDataProvider, key string) {
 	t := "DATADOG"
 
 	By("Deploy User Resouces", func() {
-		actions.DeployProjectAndWait(&data, "1")
+		actions.DeployProjectAndWait(&data, 1)
 		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
-		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
-		Expect(status).Should(BeEmpty())
+		projectStatus, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.IntegrationReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		Expect(projectStatus).Should(BeEmpty())
 	})
 
 	By("Add integration", func() {
@@ -96,12 +97,14 @@ func integrationCycle(data model.TestDataProvider, key string) {
 			}
 		})
 		actions.PrepareUsersConfigurations(&data)
-		actions.DeployProjectAndWait(&data, "2")
+		actions.DeployProjectAndWait(&data, 2)
 	})
 	atlasClient, err := atlas.AClient()
 	By("Check statuses", func() {
-		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
-		Expect(status).Should(Equal("True"))
+		var projectStatus string
+		projectStatus, err = kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.IntegrationReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(projectStatus).Should(Equal("True"))
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -113,7 +116,7 @@ func integrationCycle(data model.TestDataProvider, key string) {
 	By("Delete integration", func() {
 		data.Resources.Project.Spec.Integrations = []project.Integration{}
 		actions.PrepareUsersConfigurations(&data)
-		actions.DeployProjectAndWait(&data, "3")
+		actions.DeployProjectAndWait(&data, 3)
 	})
 
 	By("Delete integration check", func() {

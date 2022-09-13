@@ -49,8 +49,9 @@ var _ = Describe("HELM charts", func() {
 					"default",
 					data.Resources.Namespace,
 				)
+				actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 				actions.SaveK8sResources(
-					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
+					[]string{"atlasdeployments", "atlasdatabaseusers"},
 					data.Resources.Namespace,
 				)
 				actions.SaveTestAppLogs(data.Resources)
@@ -248,7 +249,7 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID
-		actions.WaitDeploymentWithoutGenerationCheck(data.Resources)
+		actions.WaitDeploymentWithoutGenerationCheck(data)
 	})
 
 	By("Check attributes", func() {
@@ -270,7 +271,7 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 
 	By("check database users Attributes", func() {
 		Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		actions.CheckUsersAttributes(data.Resources)
+		actions.CheckUsersAttributes(data)
 	})
 
 	if !data.SkipAppConnectivityCheck {

@@ -96,7 +96,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 	By("Deploy Project with requested configuration", func() {
 		actions.PrepareUsersConfigurations(userData)
 		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, "1")
+		actions.DeployProjectAndWait(userData, 1)
 	})
 
 	By("Create AWS role", func() {

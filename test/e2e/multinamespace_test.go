@@ -36,10 +36,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 					config.DefaultOperatorNS,
 				)
 				for _, data := range listData {
-					actions.SaveK8sResources(
-						[]string{"atlasprojects"},
-						data.Resources.Namespace,
-					)
+					actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 				}
 				actions.AfterEachFinalCleanup(listData)
 			}
@@ -149,7 +146,7 @@ func watchedFlow(data *model.TestDataProvider, crdsFile string) {
 }
 
 func notWatchedFlow(data *model.TestDataProvider, crdsFile string) {
-	By("Deploy users resorces", func() {
+	By("Deploy users resources", func() {
 		if !data.Resources.AtlasKeyAccessType.GlobalLevelKey {
 			actions.CreateConnectionAtlasKey(data)
 		}
@@ -159,6 +156,6 @@ func notWatchedFlow(data *model.TestDataProvider, crdsFile string) {
 	By("Check if projects were deployed", func() {
 		Eventually(
 			kube.GetReadyProjectStatus(data),
-		).Should(BeEmpty(), "Kubernetes resource: Project status `Ready` should be False. NOT Watched namespace")
+		).Should(BeEmpty(), "Kubernetes resource: Project status `Ready` should be empty. NOT Watched namespace")
 	})
 }

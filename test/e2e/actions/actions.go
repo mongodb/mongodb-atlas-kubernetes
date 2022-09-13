@@ -21,18 +21,20 @@ import (
 
 func UpdateDeployment(newData *model.TestDataProvider) {
 	var generation int
+	var err error
 	By("Update Deployment\n", func() {
 		utils.SaveToFile(
 			newData.Resources.Deployments[0].DeploymentFileName(newData.Resources),
 			utils.JSONToYAMLConvert(newData.Resources.Deployments[0]),
 		)
-		generation, _ = strconv.Atoi(kubecli.GetGeneration(newData.Resources.Namespace, newData.Resources.Deployments[0].GetDeploymentNameResource()))
+		generation, err = kubecli.GetDeploymentObservedGeneration(newData.Context, newData.K8SClient, newData.Resources.Namespace, newData.Resources.Deployments[0].ObjectMeta.GetName())
+		Expect(err).To(BeNil())
 		kubecli.Apply(newData.Resources.Deployments[0].DeploymentFileName(newData.Resources), "-n", newData.Resources.Namespace)
 		generation++
 	})
 
 	By("Wait Deployment updating\n", func() {
-		WaitDeployment(newData.Resources, strconv.Itoa(generation))
+		WaitDeployment(newData, generation)
 	})
 
 	By("Check attributes\n", func() {
@@ -60,9 +62,9 @@ func UpdateDeploymentFromUpdateConfig(data *model.TestDataProvider) {
 		for i := range data.Resources.Users { // TODO in parallel(?)
 			port := strconv.Itoa(i + data.PortGroup)
 			key := port
-			data := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
+			expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 			app := appclient.NewTestAppClient(port)
-			Expect(app.Get("/mongo/" + key)).Should(Equal(data))
+			Expect(app.Get("/mongo/" + key)).Should(Equal(expectedData))
 		}
 	})
 }
@@ -106,6 +108,6 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		// the rest users should be still there
 		data.Resources.Users = data.Resources.Users[1:]
 		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		CheckUsersAttributes(data.Resources)
+		CheckUsersAttributes(data)
 	})
 }

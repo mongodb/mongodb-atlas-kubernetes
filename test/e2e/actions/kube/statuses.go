@@ -8,30 +8,35 @@ import (
 
 func GetReadyProjectStatus(data *model.TestDataProvider) func() string {
 	return func() string {
-		return kubecli.GetStatusCondition("Ready", data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		return condition
 	}
 }
 
 func GetProjectPEndpointStatus(data *model.TestDataProvider) func() string {
 	return func() string {
-		return kubecli.GetStatusCondition("PrivateEndpointReady", data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.PrivateEndpointReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		return condition
 	}
 }
 
 func GetProjectNetworkPeerStatus(data *model.TestDataProvider) func() string {
 	return func() string {
-		return kubecli.GetStatusCondition(string(status.NetworkPeerReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.NetworkPeerReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		return condition
 	}
 }
 
 func GetProjectPEndpointServiceStatus(data *model.TestDataProvider) func() string {
 	return func() string {
-		return kubecli.GetStatusCondition("PrivateEndpointServiceReady", data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.PrivateEndpointServiceReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		return condition
 	}
 }
 
 func GetProjectCloudAccessRolesStatus(data *model.TestDataProvider) func() string {
 	return func() string {
-		return kubecli.GetStatusCondition(string(status.CloudProviderAccessReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+		condition, _ := kubecli.GetProjectStatusCondition(data.Context, data.K8SClient, status.CloudProviderAccessReadyType, data.Resources.Namespace, data.Resources.Project.ObjectMeta.GetName())
+		return condition
 	}
 }

@@ -27,6 +27,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 	_ = AfterEach(func() {
 		By("After each.", func() {
 			if CurrentSpecReport().Failed() {
+				actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 				actions.SaveK8sResources(
 					[]string{"atlasdeployments", "atlasdatabaseusers", "atlasprojects"},
 					data.Resources.Namespace,
