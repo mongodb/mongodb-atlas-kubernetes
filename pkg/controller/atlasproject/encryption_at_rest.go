@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -33,6 +34,10 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
+
+	atlas, _ := json.Marshal(encryptionAtRestsInAtlas)
+	spec, _ := json.Marshal(project.Spec.EncryptionAtRest)
+	ctx.Log.Debugf("Atlas: %s, Spec: %s", atlas, spec)
 
 	inSync, err := AtlasInSync(encryptionAtRestsInAtlas, project.Spec.EncryptionAtRest)
 	if err != nil {
