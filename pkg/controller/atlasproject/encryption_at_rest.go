@@ -34,7 +34,7 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	inSync, err := atlasInSync(encryptionAtRestsInAtlas, project.Spec.EncryptionAtRest)
+	inSync, err := AtlasInSync(encryptionAtRestsInAtlas, project.Spec.EncryptionAtRest)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -74,7 +74,7 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 	return nil
 }
 
-func atlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtRest) (bool, error) {
+func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtRest) (bool, error) {
 	if IsEncryptionAtlasEmpty(atlas) && isEncryptionSpecEmpty(spec) {
 		return true, nil
 	}
@@ -88,7 +88,15 @@ func atlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtR
 		return false, err
 	}
 
+	clearAsymmetricalFields(specAsAtlas)
+
 	return reflect.DeepEqual(atlas, specAsAtlas), nil
+}
+
+func clearAsymmetricalFields(spec *mongodbatlas.EncryptionAtRest) {
+	spec.AwsKms.RoleID = ""
+	spec.AzureKeyVault.Secret = ""
+	spec.GoogleCloudKms.ServiceAccountKey = ""
 }
 
 func isEncryptionSpecEmpty(spec *mdbv1.EncryptionAtRest) bool {

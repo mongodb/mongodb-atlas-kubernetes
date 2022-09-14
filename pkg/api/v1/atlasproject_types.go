@@ -80,6 +80,7 @@ type AtlasProjectSpec struct {
 	// +optional
 	Integrations []project.Integration `json:"integrations,omitempty"`
 
+	// EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers
 	// +optional
 	EncryptionAtRest *EncryptionAtRest `json:"encryptionAtRest,omitempty"`
 }

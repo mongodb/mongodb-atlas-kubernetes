@@ -71,6 +71,8 @@ spec:
                 - name
                 type: object
               encryptionAtRest:
+                description: EncryptionAtRest allows to set encryption for AWS, Azure
+                  and GCP providers
                 properties:
                   awsKms:
                     description: AwsKms specifies AWS KMS configuration details and
