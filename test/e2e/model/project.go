@@ -75,8 +75,8 @@ func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
 	return p
 }
 
-func (p *AProject) WithEncryptionAtRest(spec v1.EncryptionAtRest) *AProject {
-	p.Spec.EncryptionAtRest = &spec
+func (p *AProject) WithEncryptionAtRest(spec *v1.EncryptionAtRest) *AProject {
+	p.Spec.EncryptionAtRest = spec
 	return p
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -148,14 +149,33 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 		fillVaultforAzure(&encAtRest)
 		fillKMSforGCP(&encAtRest)
 
-		userData.Resources.Project.WithEncryptionAtRest(encAtRest)
+		userData.Resources.Project.WithEncryptionAtRest(&encAtRest)
 		actions.PrepareUsersConfigurations(userData)
 		actions.DeployProject(userData)
 	})
 
 	By("Check Encryption at Rest status", func() {
-		_, err := kube.GetProjectResource(userData)
+		Eventually(kube.GetProjectEncryptionAtRestStatus(userData), "2m", "20s").Should(Equal("True"), "Encryption at Rest condition status is not 'True'")
+		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+	})
+
+	By("Remove Encryption at Rest from the project", func() {
+		removeAllEncryptionsSeparately(&encAtRest)
+
+		userData.Resources.Project.WithEncryptionAtRest(&encAtRest)
+		actions.PrepareUsersConfigurations(userData)
+		actions.DeployProject(userData)
+	})
+
+	By("Check if project returned back to the initial state", func() {
+		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+
+		project, err := kube.GetProjectResource(userData)
 		Expect(err).ShouldNot(HaveOccurred())
+
+		areEmpty, err := checkIfEncryptionsAreDisabled(project.ID())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(areEmpty).To(Equal(true))
 	})
 }
 
@@ -187,4 +207,32 @@ func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
 	}
 
 	// todo: fill in
+}
+
+func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
+	encAtRest.AwsKms = v1.AwsKms{}
+	encAtRest.AzureKeyVault = v1.AzureKeyVault{}
+	encAtRest.GoogleCloudKms = v1.GoogleCloudKms{}
+}
+
+func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) {
+	atlasClient := atlas.GetClientOrFail()
+	encryptionAtRest, err := atlasClient.GetEncryptioAtRest(projectID)
+	if err != nil {
+		return false, err
+	}
+
+	if encryptionAtRest == nil {
+		return true, nil
+	}
+
+	awsEnabled := *encryptionAtRest.AwsKms.Enabled
+	azureEnabled := *encryptionAtRest.AzureKeyVault.Enabled
+	gcpEnabled := *encryptionAtRest.GoogleCloudKms.Enabled
+
+	if awsEnabled || azureEnabled || gcpEnabled {
+		return false, nil
+	}
+
+	return true, nil
 }
