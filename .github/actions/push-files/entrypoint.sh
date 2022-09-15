@@ -11,6 +11,9 @@ commit_single_file() {
   content=$(base64 "$file")
   message="Pushing $file using GitHub API"
 
+  echo "File: $file"
+  echo "$content" | wc -c
+
   echo "$DESTINATION_BRANCH:$file:$sha"
   if [ "$sha" = "$DESTINATION_BRANCH:$file" ]; then
       echo "File does not exist"
