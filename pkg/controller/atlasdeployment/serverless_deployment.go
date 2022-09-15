@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -37,12 +39,12 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 	}
 
 	switch atlasDeployment.StateName {
-	case "IDLE":
+	case status.StateIDLE:
 		return atlasDeployment, workflow.OK()
-	case "CREATING":
+	case status.StateCREATING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
-	case "UPDATING", "REPAIRING":
+	case status.StateUPDATING, status.StateREPAIRING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 
 	// TODO: add "DELETING", "DELETED", handle 404 on delete

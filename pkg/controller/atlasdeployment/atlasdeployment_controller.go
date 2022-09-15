@@ -143,10 +143,15 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	if deployment.GetDeletionTimestamp().IsZero() {
 		if !haveFinalizer(deployment, finalizer) {
-			deployment.SetFinalizers(append(deployment.GetFinalizers(), finalizer))
-			if err := r.Client.Update(context, deployment); err != nil {
+			err = r.Client.Get(context, kube.ObjectKeyFromObject(deployment), deployment)
+			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.DeploymentReadyType, result)
+				return result.ReconcileResult(), nil
+			}
+			deployment.SetFinalizers(append(deployment.GetFinalizers(), finalizer))
+			if err = r.Client.Update(context, deployment); err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				log.Errorw("Failed to add finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -167,7 +172,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			err = r.removeDeletionFinalizer(context, deployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				ctx.SetConditionFromResult(status.DeploymentReadyType, result)
+				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
 		} else {
@@ -564,8 +569,12 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx context.Contex
 }
 
 func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Context, deployment *mdbv1.AtlasDeployment) error {
+	err := r.Client.Get(context, kube.ObjectKeyFromObject(deployment), deployment)
+	if err != nil {
+		return fmt.Errorf("cannot get AtlasDeployment while adding finalizer: %w", err)
+	}
 	deployment.Finalizers = removeString(deployment.Finalizers, finalizer)
-	if err := r.Client.Update(context, deployment); err != nil {
+	if err = r.Client.Update(context, deployment); err != nil {
 		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", deployment.GetDeploymentName(), err)
 	}
 	return nil

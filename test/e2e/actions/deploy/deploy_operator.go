@@ -2,9 +2,23 @@
 package deploy
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -82,9 +96,15 @@ func NamespacedOperator(data *model.TestDataProvider) {
 	prepareNamespaceOperatorResources(data.Resources)
 	By("Deploy namespaced Operator\n", func() {
 		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
+		CheckOperatorRunning(data, data.Resources.Namespace)
+	})
+}
+
+func CheckOperatorRunning(data *model.TestDataProvider, namespace string) {
+	By("Check Operator is running", func() {
 		Eventually(
 			func(g Gomega) string {
-				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, data.Resources.Namespace)
+				status, err := k8s.GetPodStatus(data.Context, data.K8SClient, namespace)
 				g.Expect(err).ShouldNot(HaveOccurred())
 				return status
 			},
@@ -97,16 +117,7 @@ func ClusterWideOperator(data *model.TestDataProvider) {
 	prepareWideOperatorResources(data.Resources)
 	By("Deploy clusterwide Operator \n", func() {
 		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
-		Eventually(
-			func() string {
-				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, config.DefaultOperatorNS)
-				if err != nil {
-					return ""
-				}
-				return status
-			},
-			"5m", "3s",
-		).Should(Equal("Running"), "The operator should successfully run")
+		CheckOperatorRunning(data, config.DefaultOperatorNS)
 	})
 }
 
@@ -116,15 +127,102 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 		kustomOperatorPath := data.Resources.GetOperatorFolder() + "/final.yaml"
 		utils.SaveToFile(kustomOperatorPath, kustomize.Build(data.Resources.GetOperatorFolder()))
 		kubecli.Apply(kustomOperatorPath)
-		Eventually(
-			func() string {
-				status, err := kubecli.GetPodStatus(data.Context, data.K8SClient, config.DefaultOperatorNS)
-				if err != nil {
-					return ""
+		CheckOperatorRunning(data, config.DefaultOperatorNS)
+	})
+}
+
+func DeleteProject(testData *model.TestDataProvider) {
+	By("Delete Project", func() {
+		projectId := testData.Project.Status.ID
+		Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed(), "Get project failed")
+		Expect(testData.K8SClient.Delete(testData.Context, testData.Project)).Should(Succeed(), "Delete project failed")
+		aClient := atlas.GetClientOrFail()
+		Eventually(func(g Gomega) bool {
+			return aClient.IsProjectExists(g, projectId)
+		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Project was not deleted in Atlas")
+	})
+}
+
+func DeleteUsers(testData *model.TestDataProvider) {
+	By("Delete Users", func() {
+		for _, user := range testData.Users {
+			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, user)).Should(Succeed(), "Get user failed")
+			Expect(testData.K8SClient.Delete(testData.Context, user)).Should(Succeed(), "Delete user failed")
+		}
+	})
+}
+
+func DeleteInitialDeployments(testData *model.TestDataProvider) {
+	By("Delete initial deployments", func() {
+		for _, deployment := range testData.InitialDeployments {
+			projectId := testData.Project.Status.ID
+			deploymentName := deployment.Spec.DeploymentSpec.Name
+			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: deployment.Name,
+				Namespace: testData.Resources.Namespace}, deployment)).Should(Succeed(), "Get deployment failed")
+			Expect(testData.K8SClient.Delete(testData.Context, deployment)).Should(Succeed(), "Deployment %s was not deleted", deployment.Name)
+			aClient := atlas.GetClientOrFail()
+			Eventually(func() bool {
+				return aClient.IsDeploymentExist(projectId, deploymentName)
+			}).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeFalse(), "Deployment should be deleted in Atlas")
+		}
+	})
+}
+
+func CreateProject(testData *model.TestDataProvider) {
+	if testData.Project.GetNamespace() == "" {
+		testData.Project.Namespace = testData.Resources.Namespace
+	}
+	By(fmt.Sprintf("Deploy Project %s", testData.Project.GetName()), func() {
+		err := testData.K8SClient.Create(testData.Context, testData.Project)
+		Expect(err).ShouldNot(HaveOccurred(), "Project %s was not created", testData.Project.GetName())
+		Eventually(kube.ProjectReadyCondition(testData)).WithTimeout(5*time.Minute).WithPolling(20*time.Second).
+			Should(Not(Equal("False")), "Project %s should be ready", testData.Project.GetName())
+	})
+	By(fmt.Sprintf("Wait for Project %s", testData.Project.GetName()), func() {
+		Eventually(func() bool {
+			statuses := kube.GetProjectStatus(testData)
+			return statuses.ID != ""
+		}, 5*time.Minute, 5*time.Second).Should(BeTrue(), "Project %s is not ready", kube.GetProjectStatus(testData))
+	})
+}
+
+func CreateInitialDeployments(testData *model.TestDataProvider) {
+	By("Deploy Initial Deployments", func() {
+		for _, deployment := range testData.InitialDeployments {
+			if deployment.Namespace == "" {
+				deployment.Namespace = testData.Resources.Namespace
+				deployment.Spec.Project.Namespace = testData.Resources.Namespace
+			}
+			err := testData.K8SClient.Create(testData.Context, deployment)
+			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Deployment was not created: %v", deployment))
+			Eventually(kube.DeploymentReadyCondition(testData), time.Minute*60, time.Second*5).Should(Equal("True"), "Deployment was not created")
+		}
+	})
+}
+
+func CreateUsers(testData *model.TestDataProvider) {
+	By("Deploy Users", func() {
+		for _, user := range testData.Users {
+			if user.Namespace == "" {
+				user.Namespace = testData.Resources.Namespace
+				user.Spec.Project.Namespace = testData.Resources.Namespace
+			}
+			if user.Spec.PasswordSecret != nil {
+				secret := utils.UserSecretPassword()
+				Expect(k8s.CreateUserSecret(testData.Context, testData.K8SClient, secret,
+					user.Spec.PasswordSecret.Name, testData.Resources.Namespace)).Should(Succeed(),
+					"Create user secret failed")
+			}
+			err := testData.K8SClient.Create(testData.Context, user)
+			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("User was not created: %v", user))
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: user.GetName(), Namespace: user.GetNamespace()}, user))
+				for _, condition := range user.Status.Conditions {
+					if condition.Type == status.ReadyType {
+						g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
+					}
 				}
-				return status
-			},
-			"5m", "3s",
-		).Should(Equal("Running"), "The operator should successfully run")
+			}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Succeed(), "User was not created")
+		}
 	})
 }

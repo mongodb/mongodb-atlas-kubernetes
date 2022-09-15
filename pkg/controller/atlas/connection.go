@@ -38,7 +38,7 @@ func ReadConnection(log *zap.SugaredLogger, kubeClient client.Client, operatorAP
 func readAtlasConnectionFromSecret(kubeClient client.Client, secretRef client.ObjectKey) (Connection, error) {
 	secret := &corev1.Secret{}
 	if err := kubeClient.Get(context.Background(), secretRef, secret); err != nil {
-		return Connection{}, err
+		return Connection{}, fmt.Errorf("can't read Atlas API credentials from the Secret %v: %w", secretRef, err)
 	}
 	secretData := make(map[string]string)
 	for k, v := range secret.Data {

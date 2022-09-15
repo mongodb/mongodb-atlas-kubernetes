@@ -3,14 +3,18 @@ package e2e_test
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	. "github.com/onsi/gomega/gbytes"
-	. "github.com/onsi/gomega/gstruct"
 
-	common "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
-	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -20,7 +24,7 @@ import (
 var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide operator", Label("deployment-wide"), func() {
 	var NortonData, NimnulData model.TestDataProvider
 	commonDeploymentName := "megadeployment"
-	k8sClient, err := kubecli.CreateNewClient()
+	k8sClient, err := k8s.CreateNewClient()
 	Expect(err).To(BeNil())
 	ctx := context.Background()
 
@@ -32,7 +36,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 			)
 			Eventually(
 				func() string {
-					status, err := kubecli.GetPodStatus(ctx, k8sClient, DefaultOperatorNS)
+					status, err := k8s.GetPodStatus(ctx, k8sClient, DefaultOperatorNS)
 					if err != nil {
 						return ""
 					}
@@ -75,7 +79,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
 	It("Deploy deployment wide operator and create resources in each of them", func() {
 		By("Users can create deployments with the same name", func() {
-			NortonData = model.NewTestDataProvider(
+			NortonData = model.DataProviderWithResources(
 				"norton-wide",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -90,7 +94,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 				30008,
 				[]func(*model.TestDataProvider){},
 			)
-			NimnulData = model.NewTestDataProvider(
+			NimnulData = model.DataProviderWithResources(
 				"nimnul-wide",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -128,29 +132,16 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 			actions.WaitDeployment(&NortonData, 2)
 
 			By("Norton deployment has labels", func() {
-				Expect(func() common.LabelSpec {
-					deployment, err := kubecli.GetDeploymentResource(ctx, k8sClient, NortonData.Resources.Namespace, NortonData.Resources.Deployments[0].ObjectMeta.Name)
-					if err != nil {
-						return common.LabelSpec{}
-					}
-					return deployment.Spec.DeploymentSpec.Labels[0]
-				},
-				).To(MatchFields(IgnoreExtras, Fields{
-					"Key":   Equal("something"),
-					"Value": Equal("awesome"),
-				}))
+				deployment := &v1.AtlasDeployment{}
+				Expect(NortonData.K8SClient.Get(NortonData.Context, types.NamespacedName{Name: NortonData.Resources.Deployments[0].ObjectMeta.Name, Namespace: NortonData.Resources.Namespace}, deployment)).To(Succeed())
+				Expect(len(deployment.Spec.DeploymentSpec.Labels)).To(Equal(1))
+				Expect(deployment.Spec.DeploymentSpec.Labels[0]).To(Equal(common.LabelSpec{Key: "something", Value: "awesome"}))
 			})
 
 			By("Nimnul deployment does not have labels", func() {
-				Eventually(
-					func() []common.LabelSpec {
-						deployment, err := kubecli.GetDeploymentResource(ctx, k8sClient, NimnulData.Resources.Namespace, NimnulData.Resources.Deployments[0].ObjectMeta.Name)
-						if err != nil {
-							return []common.LabelSpec{}
-						}
-						return deployment.Spec.DeploymentSpec.Labels
-					},
-				).Should(BeNil())
+				deployment := &v1.AtlasDeployment{}
+				Expect(NimnulData.K8SClient.Get(NimnulData.Context, types.NamespacedName{Name: NimnulData.Resources.Deployments[0].ObjectMeta.Name, Namespace: NimnulData.Resources.Namespace}, deployment)).To(Succeed())
+				Expect(len(deployment.Spec.DeploymentSpec.Labels)).To(Equal(0))
 			})
 		})
 

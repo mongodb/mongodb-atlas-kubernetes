@@ -115,12 +115,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
-		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
-			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			ctx.SetConditionFromResult(status.DeploymentReadyType, result)
-		}
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		setCondition(ctx, status.ProjectReadyType, result)
+		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
+			result = workflow.Terminate(workflow.Internal, errRm.Error())
+			return result.ReconcileResult(), nil
+		}
 		return result.ReconcileResult(), nil
 	}
 	ctx.Connection = connection
@@ -286,6 +286,10 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
+	err := r.Client.Get(ctx, kube.ObjectKeyFromObject(p), p)
+	if err != nil {
+		return fmt.Errorf("failed to get project before adding deletion finalizer: %w", err)
+	}
 	p.Finalizers = append(p.GetFinalizers(), getFinalizerName())
 	if err := r.Client.Update(ctx, p); err != nil {
 		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
@@ -294,8 +298,14 @@ func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *md
 }
 
 func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
-	p.Finalizers = removeString(p.GetFinalizers(), getFinalizerName())
-	if err := r.Client.Update(ctx, p); err != nil {
+	err := r.Client.Get(ctx, kube.ObjectKeyFromObject(p), p)
+	if err != nil {
+		return fmt.Errorf("failed to get project before removing deletion finalizer: %w", err)
+	}
+	finalizers := p.GetFinalizers()
+	finalizers = removeString(finalizers, getFinalizerName())
+	p.SetFinalizers(finalizers)
+	if err = r.Client.Update(ctx, p); err != nil {
 		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
 	}
 	return nil

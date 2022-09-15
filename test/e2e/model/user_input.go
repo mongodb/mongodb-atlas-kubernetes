@@ -49,6 +49,30 @@ func NewUserInputs(keyTestPrefix string, project AProject, users []DBUser, r *At
 	return input
 }
 
+// NewUsersInputs prepare users inputs
+func NewSimpleUserInputs(keyTestPrefix string, r *AtlasKeyType) UserInputs {
+	testID := utils.GenID()
+	projectName := fmt.Sprintf("%s-%s", keyTestPrefix, testID)
+	input := UserInputs{
+		TestID:             testID,
+		AtlasKeyAccessType: *r,
+		ProjectID:          "",
+		KeyName:            keyTestPrefix,
+		Namespace:          "ns-" + projectName,
+		ProjectPath:        filepath.Join(DataGenFolder, projectName, "resources", projectName+".yaml"),
+	}
+
+	input.Project = NewProject("k-" + projectName).ProjectName(projectName)
+	if len(input.Project.Spec.ProjectIPAccessList) == 0 {
+		input.Project = input.Project.WithIpAccess("0.0.0.0/0", "everyone")
+	}
+
+	if !r.GlobalLevelKey {
+		input.Project = input.Project.WithSecretRef(keyTestPrefix)
+	}
+	return input
+}
+
 func (u *UserInputs) GetAppFolder() string {
 	return filepath.Join(DataGenFolder, u.Project.Spec.Name, "app")
 }

@@ -3,17 +3,19 @@ package e2e_test
 import (
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"k8s.io/apimachinery/pkg/types"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -21,7 +23,7 @@ import (
 const awsRoleNameBase = "atlas-operator-test-aws-role"
 
 var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
-	var data model.TestDataProvider
+	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
@@ -31,40 +33,33 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(&data)
+			SaveDump(testData)
 		}
 		By("Clean Roles", func() {
-			DeleteAllRoles(&data)
+			DeleteAllRoles(testData)
 		})
 		By("Delete Resources, Project with Cloud provider access roles", func() {
-			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(data)
+			actions.DeleteTestDataProject(testData)
+			actions.DeleteGlobalKeyIfExist(*testData)
 		})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider, roles []cloudaccess.Role) {
-			data = test
-			cloudAccessRolesFlow(&data, roles)
+		func(test *model.TestDataProvider, roles []cloudaccess.Role) {
+			testData = test
+			actions.ProjectCreationFlow(test)
+			cloudAccessRolesFlow(test, roles)
 		},
 		Entry("Test[cloud-access-role-aws-1]: User has project which was updated with AWS custom role", Label("cloud-access-role-aws-1"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"cloud-access-role-aws-1",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
@@ -85,57 +80,58 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 	)
 })
 
-func DeleteAllRoles(data *model.TestDataProvider) {
-	project, err := kube.GetProjectResource(data)
-	Expect(err).ShouldNot(HaveOccurred())
-	errorList := cloudaccess.DeleteRoles(project.Spec.CloudProviderAccessRoles)
+func DeleteAllRoles(testData *model.TestDataProvider) {
+	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
+	errorList := cloudaccess.DeleteRoles(testData.Project.Spec.CloudProviderAccessRoles)
 	Expect(len(errorList)).Should(Equal(0), errorList)
 }
 
 func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.Role) {
-	By("Deploy Project with requested configuration", func() {
-		actions.PrepareUsersConfigurations(userData)
-		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, 1)
-	})
-
 	By("Create AWS role", func() {
 		err := cloudaccess.CreateRoles(roles)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
 	By("Create project with cloud access role", func() {
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		for _, role := range roles {
-			userData.Resources.Project.WithCloudAccessRole(role.AccessRole)
+			userData.Project.Spec.CloudProviderAccessRoles = append(userData.Project.Spec.CloudProviderAccessRoles, role.AccessRole)
 		}
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData)
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
 
 	By("Establish connection between Atlas and cloud roles", func() {
-		Eventually(func() bool {
-			return EnsureAllRolesCreated(*userData, len(roles))
+		Eventually(func(g Gomega) bool {
+			return EnsureAllRolesCreated(g, *userData, len(roles))
 		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Cloud access roles are not created")
-		project, err := kube.GetProjectResource(userData)
+		project := &v1.AtlasProject{}
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
+		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
 		Expect(err).ShouldNot(HaveOccurred())
-		err = cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
-		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kube.GetProjectCloudAccessRolesStatus(userData), "2m", "20s").Should(Equal("True"), "Cloud Access Roles status should be True")
+		Eventually(func(g Gomega) string {
+			var condition string
+			condition, err = kube.GetProjectStatusCondition(userData, status.CloudProviderAccessReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}, "2m", "20s").Should(Equal("True"), "Cloud Access Roles status should be True")
 	})
 
 	By("Check cloud access roles status state", func() {
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(project.Status.CloudProviderAccessRoles).Should(HaveLen(len(roles)))
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.Project.Status.CloudProviderAccessRoles).Should(HaveLen(len(roles)))
 	})
 }
 
-func EnsureAllRolesCreated(data model.TestDataProvider, rolesLen int) bool {
-	project, err := kube.GetProjectResource(&data)
-	if err != nil {
-		return false
-	}
+func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen int) bool {
+	project := &v1.AtlasProject{}
+	g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, project)).Should(Succeed())
+
 	if len(project.Status.CloudProviderAccessRoles) != rolesLen {
 		return false
 	}

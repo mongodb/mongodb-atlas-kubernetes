@@ -92,7 +92,7 @@ var _ = Describe("HELM charts", func() {
 			deleteDeploymentAndOperator(&data)
 		},
 		Entry("Several actions with helm update", Label("helm-ns-flow"),
-			model.NewTestDataProvider(
+			model.DataProviderWithResources(
 				"helm-ns",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -114,7 +114,7 @@ var _ = Describe("HELM charts", func() {
 			"default",
 		),
 		Entry("Advanced deployment by helm chart", Label("helm-advanced"),
-			model.NewTestDataProvider(
+			model.DataProviderWithResources(
 				"helm-advanced",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -132,7 +132,7 @@ var _ = Describe("HELM charts", func() {
 			"advanced",
 		),
 		Entry("Advanced multiregion deployment by helm chart", Label("helm-advanced-multiregion"),
-			model.NewTestDataProvider(
+			model.DataProviderWithResources(
 				"helm-advanced-multiregion",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -150,7 +150,7 @@ var _ = Describe("HELM charts", func() {
 			"advanced",
 		),
 		Entry("Serverless deployment by helm chart", Label("helm-serverless"),
-			model.NewTestDataProvider(
+			model.DataProviderWithResources(
 				"helm-serverless",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -172,7 +172,7 @@ var _ = Describe("HELM charts", func() {
 	Describe("HELM charts.", Label("helm-wide"), func() {
 		It("User can deploy operator namespaces by using HELM", func() {
 			By("User creates configuration for a new Project and Deployment", func() {
-				data = model.NewTestDataProvider(
+				data = model.DataProviderWithResources(
 					"helm-wide",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -205,7 +205,7 @@ var _ = Describe("HELM charts", func() {
 	Describe("HELM charts.", Label("helm-update"), func() {
 		It("User deploy operator and later deploy new version of the Atlas operator", func() {
 			By("User creates configuration for a new Project, Deployment, DBUser", func() {
-				data = model.NewTestDataProvider(
+				data = model.DataProviderWithResources(
 					"helm-upgrade",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -285,8 +285,8 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 	By("Check project, deployment does not exist", func() {
 		helm.Uninstall(data.Resources.Deployments[0].Spec.GetDeploymentName(), data.Resources.Namespace)
 		Eventually(
-			func() bool {
-				return atlasClient.IsProjectExists(data.Resources.ProjectID)
+			func(g Gomega) bool {
+				return atlasClient.IsProjectExists(g, data.Resources.ProjectID)
 			},
 			"7m", "20s",
 		).Should(BeFalse(), "Project and deployment should be deleted from Atlas")

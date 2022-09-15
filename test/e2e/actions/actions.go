@@ -4,89 +4,66 @@ package actions
 
 import (
 	"fmt"
-	"strconv"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 
-	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-func UpdateDeployment(newData *model.TestDataProvider) {
-	var generation int
-	var err error
-	By("Update Deployment\n", func() {
-		utils.SaveToFile(
-			newData.Resources.Deployments[0].DeploymentFileName(newData.Resources),
-			utils.JSONToYAMLConvert(newData.Resources.Deployments[0]),
-		)
-		generation, err = kubecli.GetDeploymentObservedGeneration(newData.Context, newData.K8SClient, newData.Resources.Namespace, newData.Resources.Deployments[0].ObjectMeta.GetName())
-		Expect(err).To(BeNil())
-		kubecli.Apply(newData.Resources.Deployments[0].DeploymentFileName(newData.Resources), "-n", newData.Resources.Namespace)
-		generation++
-	})
-
-	By("Wait Deployment updating\n", func() {
-		WaitDeployment(newData, generation)
-	})
-
-	By("Check attributes\n", func() {
-		aClient := atlas.GetClientOrFail()
-		uDeployment := aClient.GetDeployment(newData.Resources.ProjectID, newData.Resources.Deployments[0].Spec.GetDeploymentName())
-		CompareDeploymentsSpec(newData.Resources.Deployments[0].Spec, uDeployment)
-	})
-}
-
-func UpdateDeploymentFromUpdateConfig(data *model.TestDataProvider) {
-	By("Load new Deployment config", func() {
-		data.Resources.Deployments = []model.AtlasDeployment{} // TODO for range
-		GinkgoWriter.Write([]byte(data.ConfUpdatePaths[0]))
-		data.Resources.Deployments = append(data.Resources.Deployments, model.LoadUserDeploymentConfig(data.ConfUpdatePaths[0]))
-		data.Resources.Deployments[0].Spec.Project.Name = data.Resources.Project.GetK8sMetaName()
-		utils.SaveToFile(
-			data.Resources.Deployments[0].DeploymentFileName(data.Resources),
-			utils.JSONToYAMLConvert(data.Resources.Deployments[0]),
-		)
-	})
-
-	UpdateDeployment(data)
-
-	By("Check user data still in the Deployment\n", func() {
-		for i := range data.Resources.Users { // TODO in parallel(?)
-			port := strconv.Itoa(i + data.PortGroup)
-			key := port
-			expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
-			app := appclient.NewTestAppClient(port)
-			Expect(app.Get("/mongo/" + key)).Should(Equal(expectedData))
+func UpdateSpecOfSelectedDeployment(spec v1.AtlasDeploymentSpec, indexOfDeployment int) func(data *model.TestDataProvider) {
+	return func(data *model.TestDataProvider) {
+		if len(data.InitialDeployments) < indexOfDeployment+1 {
+			Fail("Index is out of range")
 		}
-	})
+		By(fmt.Sprintf("Update Deployment %s", data.InitialDeployments[indexOfDeployment].GetName()), func() {
+			Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.InitialDeployments[indexOfDeployment].ObjectMeta.GetName(),
+				Namespace: data.Resources.Namespace}, data.InitialDeployments[indexOfDeployment])).To(Succeed())
+			data.InitialDeployments[indexOfDeployment].Spec = spec
+			Expect(data.K8SClient.Update(data.Context, data.InitialDeployments[indexOfDeployment])).To(Succeed())
+			Eventually(kube.DeploymentReadyCondition(data)).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
+				fmt.Sprintf("Deployment is not ready. Status: %v", kube.GetDeploymentStatus(data)))
+		})
+	}
 }
 
-func activateDeployment(data *model.TestDataProvider, paused bool) {
-	data.Resources.Deployments[0].Spec.DeploymentSpec.Paused = &paused
-	UpdateDeployment(data)
+func changeFirstDeploymentPauseSpec(data *model.TestDataProvider, paused bool) {
+	By(fmt.Sprintf("Setting pause to %v", paused), func() {
+		Expect(data.K8SClient.Get(data.Context,
+			types.NamespacedName{Name: data.InitialDeployments[0].GetName(),
+				Namespace: data.Resources.Namespace},
+			data.InitialDeployments[0])).Should(Succeed())
+		updateSpec := data.InitialDeployments[0].Spec
+		updateSpec.DeploymentSpec.Paused = &paused
+		data.InitialDeployments[0].Spec = updateSpec
+		Expect(data.K8SClient.Update(data.Context, data.InitialDeployments[0])).Should(Succeed())
+		Eventually(kube.DeploymentReadyCondition(data)).WithTimeout(30*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
+			fmt.Sprintf("Deployment is not ready. Status: %v", kube.GetDeploymentStatus(data)))
+	})
 	By("Check additional Deployment field `paused`\n", func() {
 		aClient := atlas.GetClientOrFail()
-		uDeployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.GetDeploymentName())
-		Expect(uDeployment.Paused).Should(Equal(data.Resources.Deployments[0].Spec.DeploymentSpec.Paused))
+		Eventually(func(g Gomega) {
+			uDeployment := aClient.GetDeployment(data.Project.ID(), data.InitialDeployments[0].AtlasName())
+			g.Expect(*uDeployment.Paused).Should(Equal(paused))
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 	})
 }
 
 func SuspendDeployment(data *model.TestDataProvider) {
-	paused := true
-	activateDeployment(data, paused)
+	changeFirstDeploymentPauseSpec(data, true)
 }
 
 func ReactivateDeployment(data *model.TestDataProvider) {
-	paused := false
-	activateDeployment(data, paused)
+	changeFirstDeploymentPauseSpec(data, false)
 }
 
 func DeleteFirstUser(data *model.TestDataProvider) {
@@ -97,17 +74,19 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		// - delete one user from the list,
 		// - check Atlas doesn't have the initial user and have the rest
 		By("Delete k8s resources")
-		Eventually(kubecli.Delete(data.Resources.GetResourceFolder()+"/user/user-"+data.Resources.Users[0].ObjectMeta.Name+".yaml", "-n", data.Resources.Namespace)).Should(Say("deleted"))
+		if len(data.Users) == 0 {
+			Fail("No users to delete")
+		}
+		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Users[0].Name, Namespace: data.Users[0].Namespace}, data.Users[0])).Should(Succeed())
+		Expect(data.K8SClient.Delete(data.Context, data.Users[0])).Should(Succeed())
 		Eventually(func(g Gomega) {
 			aClient := atlas.GetClientOrFail()
-			user, err := aClient.GetDBUser("admin", data.Resources.Users[0].Spec.Username, data.Resources.ProjectID)
+			user, err := aClient.GetDBUser(data.Users[0].Spec.DatabaseName, data.Users[0].Spec.Username, data.Project.ID())
 			g.Expect(err).To(BeNil())
 			g.Expect(user).To(BeNil())
-		}).WithTimeout(10 * time.Second).WithPolling(1 * time.Minute).Should(Succeed())
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 
 		// the rest users should be still there
-		data.Resources.Users = data.Resources.Users[1:]
-		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		CheckUsersAttributes(data)
+		data.Users = data.Users[1:]
 	})
 }

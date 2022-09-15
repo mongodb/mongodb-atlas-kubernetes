@@ -45,10 +45,10 @@ func ensureDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, d
 	}
 
 	switch atlasDeployment.StateName {
-	case "IDLE":
+	case status.StateIDLE:
 
 		return regularDeploymentIdle(ctx, project, deployment, atlasDeployment)
-	case "CREATING":
+	case status.StateCREATING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
 	case "UPDATING", "REPAIRING":
