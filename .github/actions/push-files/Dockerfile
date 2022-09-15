@@ -11,6 +11,6 @@ RUN mkdir ghcli && cd ghcli && \
 COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
 # Increate the stack size
-RUN ulimit -s 131072
+RUN ulimit -s 262144
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/home/entrypoint.sh"]
