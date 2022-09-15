@@ -42,6 +42,7 @@ const (
 	NetworkPeerReadyType            ConditionType = "NetworkPeerReady"
 	CloudProviderAccessReadyType    ConditionType = "CloudProviderAccessReady"
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
+	EncryptionAtRestReadyType       ConditionType = "EncryptionAtRestReadyType"
 )
 
 // AtlasDeployment condition types

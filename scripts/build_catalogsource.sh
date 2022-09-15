@@ -12,6 +12,11 @@ if [ -z "${CATALOG_IMAGE+x}" ]; then
 	exit 1
 fi
 
+if [ -z "${CATALOG_DISPLAY_NAME+x}" ]; then
+  CATALOG_DISPLAY_NAME="MongoDB Atlas operator local"
+  echo "CATALOG_DISPLAY_NAME is not set. Setting to default: ${CATALOG_DISPLAY_NAME}"
+fi
+
 echo "Building catalog ${CATALOG_IMAGE}"
 
 cat <<EOF> "${CATALOG_DIR}/catalogsource.yaml"
@@ -22,7 +27,7 @@ metadata:
 spec:
   sourceType: grpc
   image: ${CATALOG_IMAGE}
-  displayName: MongoDB Atlas operator
+  displayName: ${CATALOG_DISPLAY_NAME}
   publisher: MongoDB
   updateStrategy:
     registryPoll:

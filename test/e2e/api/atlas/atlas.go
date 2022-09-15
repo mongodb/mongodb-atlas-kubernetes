@@ -197,3 +197,11 @@ func (a *Atlas) DeleteGlobalKey(key mongodbatlas.APIKey) error {
 	}
 	return nil
 }
+
+func (a *Atlas) GetEncryptioAtRest(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
+	encryptionAtRest, _, err := a.Client.EncryptionsAtRest.Get(context.Background(), projectID)
+	if err != nil {
+		return nil, err
+	}
+	return encryptionAtRest, nil
+}

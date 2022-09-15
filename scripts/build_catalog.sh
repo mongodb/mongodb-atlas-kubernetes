@@ -45,7 +45,7 @@ echo "Adding ${BUNDLE_IMAGE} to the catalog"
 opm render "${BUNDLE_IMAGE}" --output=yaml \
 	>> "${CATALOG_DIR}"/operator.yaml
 
-echo "Adding ${CHANNEL} channel to the catalog"
+echo "Adding ${CHANNEL} channel to the catalog. Version: ${VERSION}"
 cat <<EOF> "${CATALOG_DIR}"/channel.yaml
 ---
 schema: olm.channel
