@@ -143,7 +143,7 @@ delete_networkpeerings_for_project() {
   for connection in $(echo "$connections" | jq -cr '.[]'); do
     id=$(echo "$connection" | jq -r '.id')
     echo "Removing connection $id"
-    mongocli networking peering delete "$id" --force --projectId "$projectID"
+    mongocli atlas networking peering delete "$id" --force --projectId "$projectID"
   done
 }
 
