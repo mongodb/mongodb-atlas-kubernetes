@@ -56,6 +56,8 @@ jobs:
         git checkout -b "release/${VERSION}"
         git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
         git commit -m "Release ${VERSION}"
+        git status
+        git reset --hard
         git push https://${{ secrets.GITHUB_TOKEN }}@github.com/mongodb/mongodb-atlas-kubernetes.git
 
     - name: Create PR
