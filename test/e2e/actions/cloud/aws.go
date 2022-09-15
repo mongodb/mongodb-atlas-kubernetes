@@ -10,9 +10,13 @@ import (
 	aws "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
 )
 
-type awsAction struct{}
+type AwsAction struct{}
 
-func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
+func NewAwsAction() *AwsAction {
+	return new(AwsAction)
+}
+
+func (awsAction *AwsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
 	fmt.Print("create AWS LINK")
 	session := aws.SessionAWS(pe.Region)
 	vpcID, err := session.GetVPCID()
@@ -37,7 +41,7 @@ func (awsAction *awsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 	return cResponse, nil
 }
 
-func (awsAction *awsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkID string) error {
+func (awsAction *AwsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkID string) error {
 	fmt.Print("DELETE AWS LINK")
 	session := aws.SessionAWS(pe.Region)
 	err := session.DeletePrivateLink(privatelinkID)
@@ -54,7 +58,7 @@ func (awsAction *awsAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoi
 	return nil
 }
 
-func (awsAction *awsAction) statusPrivateEndpointPending(region, privateID string) bool {
+func (awsAction *AwsAction) statusPrivateEndpointPending(region, privateID string) bool {
 	fmt.Print("check AWS LINK status: ")
 	session := aws.SessionAWS(region)
 	status, err := session.DescribePrivateEndpointStatus(privateID)
@@ -66,7 +70,7 @@ func (awsAction *awsAction) statusPrivateEndpointPending(region, privateID strin
 	return (status == "pendingAcceptance")
 }
 
-func (awsAction *awsAction) statusPrivateEndpointAvailable(region, privateID string) bool {
+func (awsAction *AwsAction) statusPrivateEndpointAvailable(region, privateID string) bool {
 	fmt.Print("check AWS LINK status: ")
 	session := aws.SessionAWS(region)
 	status, err := session.DescribePrivateEndpointStatus(privateID)
@@ -76,4 +80,9 @@ func (awsAction *awsAction) statusPrivateEndpointAvailable(region, privateID str
 	}
 	fmt.Println(status)
 	return (status == "available")
+}
+
+func (awsAction *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (key string, err error) {
+	session := aws.SessionAWS(region)
+	return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
 }

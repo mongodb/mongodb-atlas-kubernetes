@@ -1,19 +1,17 @@
-# MongoDB Atlas Operator v1.2.0
-
-## Atlas Operator 
-
-* Updated to Go 1.18 #604
+# MongoDB Atlas Operator v1.3.0
 
 ## AtlasProject Resource
 
-* Added support for Private Endpoints backwards sync #603
+* Add network peering feature #620
+* Add cloud provider access role feature #645
+* Add encryption at rest #674
 
 ## AtlasDeployment Resource
 
-* Refactored the Advanced Deployment Handler #615 (#606)
-* Changed autoScaling to a new struct according to Atlas API #592 (#588)
-* Fixed diskSizeGB decreasing for normal deployments #634 (#611)
-* Fixed panic when Atlas API returns an empty object #593 (#589)
+* Fix deployment CR deletion if token invalid #666 (#421)
+* Prevent changing instanceSize and diskGB if autoscaling is enabled #672 (#648, #649)
+* Fix error message for Delete method #664 
+* Add test for atlasdeployments with keep annotation #612
 
 *The images can be found in:*
 

@@ -35,3 +35,9 @@ func GetProjectCloudAccessRolesStatus(data *model.TestDataProvider) func() strin
 		return kubecli.GetStatusCondition(string(status.CloudProviderAccessReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
 	}
 }
+
+func GetProjectEncryptionAtRestStatus(data *model.TestDataProvider) func() string {
+	return func() string {
+		return kubecli.GetStatusCondition(string(status.EncryptionAtRestReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
+	}
+}

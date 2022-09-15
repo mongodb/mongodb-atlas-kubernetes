@@ -70,6 +70,65 @@ spec:
                 required:
                 - name
                 type: object
+              encryptionAtRest:
+                description: EncryptionAtRest allows to set encryption for AWS, Azure
+                  and GCP providers
+                properties:
+                  awsKms:
+                    description: AwsKms specifies AWS KMS configuration details and
+                      whether Encryption at Rest is enabled for an Atlas project.
+                    properties:
+                      accessKeyID:
+                        type: string
+                      customerMasterKeyID:
+                        type: string
+                      enabled:
+                        type: boolean
+                      region:
+                        type: string
+                      roleId:
+                        type: string
+                      secretAccessKey:
+                        type: string
+                      valid:
+                        type: boolean
+                    type: object
+                  azureKeyVault:
+                    description: AzureKeyVault specifies Azure Key Vault configuration
+                      details and whether Encryption at Rest is enabled for an Atlas
+                      project.
+                    properties:
+                      azureEnvironment:
+                        type: string
+                      clientID:
+                        type: string
+                      enabled:
+                        type: boolean
+                      keyIdentifier:
+                        type: string
+                      keyVaultName:
+                        type: string
+                      resourceGroupName:
+                        type: string
+                      secret:
+                        type: string
+                      subscriptionID:
+                        type: string
+                      tenantID:
+                        type: string
+                    type: object
+                  googleCloudKms:
+                    description: GoogleCloudKms specifies GCP KMS configuration details
+                      and whether Encryption at Rest is enabled for an Atlas project.
+                    properties:
+                      enabled:
+                        type: boolean
+                      keyVersionResourceID:
+                        type: string
+                      serviceAccountKey:
+                        type: string
+                    type: object
+                type: object
               integrations:
                 description: Integrations is a list of MongoDB Atlas integrations
                   for the project
