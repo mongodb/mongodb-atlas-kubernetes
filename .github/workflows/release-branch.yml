@@ -51,6 +51,9 @@ jobs:
         git checkout -b "release/${VERSION}"
         git push origin "release/${VERSION}"
 
+    - name: Increase ulimit
+      run: ulimit -s 262144
+
     - name: Commit and push deploy directory
       uses: ./.github/actions/push-files
       env:
