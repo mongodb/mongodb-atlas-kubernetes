@@ -49,38 +49,37 @@ jobs:
     - name: Create branch and push it
       run: |
         git checkout -b "release/${VERSION}"
+        git add ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
+        git commit -m "Release ${VERSION}"
         git push origin "release/${VERSION}"
 
-    - name: Increase ulimit
-      run: ulimit -s 262144
+#    - name: Commit and push deploy directory
+#      uses: ./.github/actions/push-files
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        PATH_TO_COMMIT: "deploy"
+#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
-    - name: Commit and push deploy directory
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PATH_TO_COMMIT: "deploy"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit and push licence report file
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PATH_TO_COMMIT: "third_party_licenses.txt"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit and push bundle directory
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PATH_TO_COMMIT: "bundle"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
-
-    - name: Commit and push bundle dockerfile
-      uses: ./.github/actions/push-files
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PATH_TO_COMMIT: "bundle.Dockerfile"
-        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+#    - name: Commit and push licence report file
+#      uses: ./.github/actions/push-files
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        PATH_TO_COMMIT: "third_party_licenses.txt"
+#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+#
+#    - name: Commit and push bundle directory
+#      uses: ./.github/actions/push-files
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        PATH_TO_COMMIT: "bundle"
+#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
+#
+#    - name: Commit and push bundle dockerfile
+#      uses: ./.github/actions/push-files
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        PATH_TO_COMMIT: "bundle.Dockerfile"
+#        DESTINATION_BRANCH: "release/${{ env.VERSION }}"
 
     - name: Create PR
       uses: ./.github/actions/create-pr
