@@ -135,6 +135,18 @@ delete_serverless() {
     fi
 }
 
+delete_networkpeerings_for_project() {
+  projectID=$1
+
+  connections=$(mongocli atlas networking peering list --projectId "$projectID" -o json | jq -c .)
+
+  for connection in $(echo "$connections" | jq -cr '.[]'); do
+    id=$(echo "$connection" | jq -r '.id')
+    echo "Removing connection $id"
+    mongocli networking peering delete "$id" --force --projectId "$projectID"
+  done
+}
+
 delete_project() {
     peDeleted=$(mongocli atlas privateEndpoints aws list --projectId "$projectID" | awk 'NR!=1{print $1}')$(mongocli atlas privateEndpoints azure list --projectId "$projectID" | awk 'NR!=1{print $1}')
     [[ $peDeleted == "" ]] && mongocli iam projects delete "$id" --force
@@ -149,6 +161,7 @@ delete_old_project() {
             delete_endpoints_for_project "$id" "aws"
             delete_endpoints_for_project "$id" "azure"
             delete_endpoints_for_project "$id" "gcp"
+            delete_networkpeerings_for_project "$id"
             delete_project
         fi
     )
@@ -171,6 +184,7 @@ delete_all() {
             delete_endpoints_for_project "$id" "gcp"
             delete_serverless "$id"
             delete_clusters "$id"
+            delete_networkpeerings_for_project "$id"
             delete_project
         fi
     )
