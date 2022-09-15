@@ -12,15 +12,15 @@ import (
 
 func TestIsEncryptionAtlasEmpty(t *testing.T) {
 	spec := &v1.EncryptionAtRest{}
-	isEmpty := isEncryptionSpecEmpty(spec)
+	isEmpty := IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Empty spec should be empty")
 
 	spec.AwsKms.Enabled = toptr.MakePtr(true)
-	isEmpty = isEncryptionSpecEmpty(spec)
+	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.False(t, isEmpty, "Non-empty spec")
 
 	spec.AwsKms.Enabled = toptr.MakePtr(false)
-	isEmpty = isEncryptionSpecEmpty(spec)
+	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Enabled flag set to false is same as empty")
 }
 
@@ -64,10 +64,10 @@ func TestAtlasInSync(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are disabled")
 
-	spec.AwsKms.RoleID = "example"
+	atlas.AwsKms.RoleID = "example"
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
-	assert.True(t, areInSync, "Both are disabled but spec has new field")
+	assert.True(t, areInSync, "Both are disabled but atlas RoleID field")
 
 	spec.AwsKms.Enabled = toptr.MakePtr(true)
 	areInSync, err = AtlasInSync(&atlas, &spec)
@@ -78,4 +78,34 @@ func TestAtlasInSync(t *testing.T) {
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are re-enabled and only RoleID is different")
+
+	atlas = mongodbatlas.EncryptionAtRest{
+		AwsKms: mongodbatlas.AwsKms{
+			Enabled:             toptr.MakePtr(true),
+			CustomerMasterKeyID: "example",
+			Region:              "US_EAST_1",
+			RoleID:              "example",
+			Valid:               toptr.MakePtr(true),
+		},
+		AzureKeyVault: mongodbatlas.AzureKeyVault{
+			Enabled: toptr.MakePtr(false),
+		},
+		GoogleCloudKms: mongodbatlas.GoogleCloudKms{
+			Enabled: toptr.MakePtr(false),
+		},
+	}
+	spec = v1.EncryptionAtRest{
+		AwsKms: v1.AwsKms{
+			Enabled:             toptr.MakePtr(true),
+			CustomerMasterKeyID: "example",
+			Region:              "US_EAST_1",
+			Valid:               toptr.MakePtr(true),
+		},
+		AzureKeyVault:  v1.AzureKeyVault{},
+		GoogleCloudKms: v1.GoogleCloudKms{},
+	}
+
+	areInSync, err = AtlasInSync(&atlas, &spec)
+	assert.NoError(t, err)
+	assert.True(t, areInSync, "Realistic exampel. should be equal")
 }

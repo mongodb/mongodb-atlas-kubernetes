@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -20,7 +19,7 @@ func ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *md
 		return result
 	}
 
-	if isEncryptionSpecEmpty(project.Spec.EncryptionAtRest) {
+	if IsEncryptionSpecEmpty(project.Spec.EncryptionAtRest) {
 		ctx.UnsetCondition(status.EncryptionAtRestReadyType)
 		return workflow.OK()
 	}
@@ -35,10 +34,6 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	atlas, _ := json.Marshal(encryptionAtRestsInAtlas)
-	spec, _ := json.Marshal(project.Spec.EncryptionAtRest)
-	ctx.Log.Debugf("Atlas: %s, Spec: %s", atlas, spec)
-
 	inSync, err := AtlasInSync(encryptionAtRestsInAtlas, project.Spec.EncryptionAtRest)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -52,7 +47,7 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	return workflow.InProgress(workflow.ProjectEncryptionAtRestReady, "Encryption at Rest is being synced")
+	return workflow.OK()
 }
 
 func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbatlas.EncryptionAtRest, error) {
@@ -67,9 +62,9 @@ func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbat
 func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest) error {
 	requestBody := mongodbatlas.EncryptionAtRest{
 		GroupID:        projectID,
-		AwsKms:         getAwsKMS(project, atlas),
-		AzureKeyVault:  getAzureKeyVault(project, atlas),
-		GoogleCloudKms: getGoogleCloudKms(project, atlas),
+		AwsKms:         getAwsKMS(project),
+		AzureKeyVault:  getAzureKeyVault(project),
+		GoogleCloudKms: getGoogleCloudKms(project),
 	}
 
 	if _, _, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
@@ -80,11 +75,11 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 }
 
 func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtRest) (bool, error) {
-	if IsEncryptionAtlasEmpty(atlas) && isEncryptionSpecEmpty(spec) {
+	if IsEncryptionAtlasEmpty(atlas) && IsEncryptionSpecEmpty(spec) {
 		return true, nil
 	}
 
-	if IsEncryptionAtlasEmpty(atlas) || isEncryptionSpecEmpty(spec) {
+	if IsEncryptionAtlasEmpty(atlas) || IsEncryptionSpecEmpty(spec) {
 		return false, nil
 	}
 
@@ -93,18 +88,34 @@ func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtR
 		return false, err
 	}
 
-	clearAsymmetricalFields(specAsAtlas)
+	balanceAsymmetricalFields(atlas, specAsAtlas)
 
 	return reflect.DeepEqual(atlas, specAsAtlas), nil
 }
 
-func clearAsymmetricalFields(spec *mongodbatlas.EncryptionAtRest) {
-	spec.AwsKms.RoleID = ""
-	spec.AzureKeyVault.Secret = ""
-	spec.GoogleCloudKms.ServiceAccountKey = ""
+func balanceAsymmetricalFields(atlas *mongodbatlas.EncryptionAtRest, spec *mongodbatlas.EncryptionAtRest) {
+	if spec.AwsKms.RoleID == "" && atlas.AwsKms.RoleID != "" {
+		spec.AwsKms.RoleID = atlas.AwsKms.RoleID
+	}
+	if spec.AzureKeyVault.Secret == "" && atlas.AzureKeyVault.Secret != "" {
+		spec.AzureKeyVault.Secret = atlas.AzureKeyVault.Secret
+	}
+	if spec.GoogleCloudKms.ServiceAccountKey == "" && atlas.GoogleCloudKms.ServiceAccountKey != "" {
+		spec.GoogleCloudKms.ServiceAccountKey = ""
+	}
+
+	if isNotNilAndFalse(atlas.AwsKms.Enabled) {
+		spec.AwsKms.Enabled = toptr.MakePtr(false)
+	}
+	if isNotNilAndFalse(atlas.AzureKeyVault.Enabled) {
+		spec.AzureKeyVault.Enabled = toptr.MakePtr(false)
+	}
+	if isNotNilAndFalse(atlas.GoogleCloudKms.Enabled) {
+		spec.GoogleCloudKms.Enabled = toptr.MakePtr(false)
+	}
 }
 
-func isEncryptionSpecEmpty(spec *mdbv1.EncryptionAtRest) bool {
+func IsEncryptionSpecEmpty(spec *mdbv1.EncryptionAtRest) bool {
 	if spec == nil {
 		return true
 	}
@@ -140,12 +151,18 @@ func isNotNilAndTrue(val *bool) bool {
 	return val != nil && *val
 }
 
-func getAwsKMS(project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest) (result mongodbatlas.AwsKms) {
-	if project.Spec.EncryptionAtRest != nil {
-		result = mongodbatlas.AwsKms(project.Spec.EncryptionAtRest.AwsKms)
+func isNotNilAndFalse(val *bool) bool {
+	return val != nil && !*val
+}
+
+func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
+	if project.Spec.EncryptionAtRest == nil {
+		return
 	}
 
-	if (atlas == nil || atlas.AwsKms == mongodbatlas.AwsKms{}) {
+	result = mongodbatlas.AwsKms(project.Spec.EncryptionAtRest.AwsKms)
+
+	if (result == mongodbatlas.AwsKms{}) {
 		result.Enabled = toptr.MakePtr(false)
 	}
 
@@ -159,24 +176,28 @@ func getAwsKMS(project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest
 	return
 }
 
-func getAzureKeyVault(project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest) (result mongodbatlas.AzureKeyVault) {
-	if project.Spec.EncryptionAtRest != nil {
-		result = mongodbatlas.AzureKeyVault(project.Spec.EncryptionAtRest.AzureKeyVault)
+func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKeyVault) {
+	if project.Spec.EncryptionAtRest == nil {
+		return
 	}
 
-	if (atlas == nil || atlas.GoogleCloudKms == mongodbatlas.GoogleCloudKms{}) {
+	result = mongodbatlas.AzureKeyVault(project.Spec.EncryptionAtRest.AzureKeyVault)
+
+	if (result == mongodbatlas.AzureKeyVault{}) {
 		result.Enabled = toptr.MakePtr(false)
 	}
 
 	return
 }
 
-func getGoogleCloudKms(project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest) (result mongodbatlas.GoogleCloudKms) {
+func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleCloudKms) {
 	if project.Spec.EncryptionAtRest != nil {
-		result = mongodbatlas.GoogleCloudKms(project.Spec.EncryptionAtRest.GoogleCloudKms)
+		return
 	}
 
-	if (atlas == nil || atlas.GoogleCloudKms == mongodbatlas.GoogleCloudKms{}) {
+	result = mongodbatlas.GoogleCloudKms(project.Spec.EncryptionAtRest.GoogleCloudKms)
+
+	if (result == mongodbatlas.GoogleCloudKms{}) {
 		result.Enabled = toptr.MakePtr(false)
 	}
 
