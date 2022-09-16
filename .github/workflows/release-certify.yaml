@@ -12,7 +12,7 @@ on:
 jobs:
   create-release:
     name: Certify operator image
-    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'Create Release')) || github.event.inputs.version != ''
+    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'Release')) || github.event.inputs.version != ''
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
