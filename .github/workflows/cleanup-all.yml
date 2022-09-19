@@ -19,7 +19,7 @@ on:
         required: true
 
 env:
-  GOLANG_VERSION: '1.17'
+  GOLANG_VERSION: '1.19'
 
 concurrency:
   group: cleanup
