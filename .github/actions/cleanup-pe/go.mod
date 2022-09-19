@@ -1,4 +1,4 @@
-module github.com/fabritsius/mongodb-atlas-kubernetes/.github/actions/cleanup-pe
+module actions/cleanup-pe
 
 go 1.19
 
