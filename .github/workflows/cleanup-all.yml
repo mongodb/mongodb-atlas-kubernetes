@@ -58,4 +58,4 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           CLEAN_TAGGED_PE: ${{ github.event.inputs.cleanTaggedPE }}
-        run: go run .github/actions/cleanup-pe/.
+        run: (cd .github/actions/cleanup-pe && go run .)
