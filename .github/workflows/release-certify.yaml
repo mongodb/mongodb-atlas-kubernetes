@@ -12,7 +12,7 @@ on:
 jobs:
   create-release:
     name: Certify operator image
-    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'Release')) || github.event.inputs.version != ''
+    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.sha, 'release')) || github.event.inputs.version != ''
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
@@ -30,14 +30,6 @@ jobs:
         with:
           fetch-depth: 0 #needs for tags
 
-      - name: Download hub tool
-        run: |
-          wget https://github.com/github/hub/releases/download/v2.14.2/hub-linux-amd64-2.14.2.tgz -O hub.tar.gz -q
-          tar xvf hub.tar.gz
-          chmod +x ./hub-linux-amd64-2.14.2/bin/hub && sudo mv ./hub-linux-amd64-2.14.2/bin/hub /usr/local/bin/hub
-          
-          hub version
-
       - name: Download preflight tool
         run: |
           wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.4.0/preflight-linux-amd64 -O preflight -q
@@ -49,14 +41,11 @@ jobs:
           repository: redhat-openshift-ecosystem/certified-operators
           path: ../certified-operators
 
-      - name: Add mongodb's fork of certified-operators as mongodb
-        run: cd ../certified-operators && git remote add mongodb git@github.com:mongodb-forks/certified-operators.git
-
-      - name: Certify image and create release for Certified Operators repo
+      - name: Certify image and create release
         uses: ./.github/actions/certify-openshift-images
         with:
           IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
-          VERSION: ${{ steps.tag.output.version }}
+          VERSION: ${{ github.event.inputs.version }}
           RH_CERTIFIED_OPENSHIFT_REPO_PATH: ../certified-operators
           RH_CERTIFICATION_OSPID: ${{ secrets.RH_CERTIFICATION_OSPID }}
           RH_CERTIFICATION_TOKEN: ${{ secrets.RH_CERTIFICATION_TOKEN }}
