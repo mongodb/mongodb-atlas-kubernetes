@@ -57,7 +57,6 @@ spec:
                         Currently only AWS is supported.
                       type: string
                   required:
-                  - iamAssumedRoleArn
                   - providerName
                   type: object
                 type: array
@@ -74,6 +73,8 @@ spec:
                 - name
                 type: object
               encryptionAtRest:
+                description: EncryptionAtRest allows to set encryption for AWS, Azure
+                  and GCP providers
                 properties:
                   awsKms:
                     description: AwsKms specifies AWS KMS configuration details and
@@ -765,5 +766,5 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: null
+  storedVersions: null
