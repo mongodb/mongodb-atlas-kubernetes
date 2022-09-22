@@ -1,7 +1,7 @@
-# Create release branch
+# Create Release Branch
 # TODO after GitHub add permission for action-bot to commit to the protected branches - please merge release-* workflow into one
 
-name: Create release branch
+name: Create Release Branch
 
 on:
   workflow_dispatch:
@@ -17,6 +17,7 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
       TAG: v${{ github.event.inputs.version }}
+      GITHUB_REPO: mongodb/mongodb-atlas-kubernetes
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
     steps:
 
@@ -54,7 +55,7 @@ jobs:
     - name: Create branch and push it
       run: |
         BRANCH="release/${VERSION}-test"
-        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.DOCKER_RELEASE_REPO }}.git
+        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPO }}.git
         git checkout -b $BRANCH
         git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
         git commit -m "Release ${VERSION} (test)"
