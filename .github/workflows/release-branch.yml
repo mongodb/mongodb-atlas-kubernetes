@@ -53,12 +53,13 @@ jobs:
 
     - name: Create branch and push it
       run: |
-        git checkout -b "release/${VERSION}"
+        BRANCH="release/${VERSION}-test"
+        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.DOCKER_RELEASE_REPO }}.git
+        git checkout -b $BRANCH
         git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
-        git commit -m "Release ${VERSION}"
-        git status
+        git commit -m "Release ${VERSION} (test)"
         git reset --hard
-        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/mongodb/mongodb-atlas-kubernetes.git
+        git push --set-upstream origin $BRANCH
 
     - name: Create PR
       uses: ./.github/actions/create-pr
