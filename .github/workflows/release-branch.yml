@@ -62,9 +62,9 @@ jobs:
         git reset --hard
         git push --set-upstream origin $BRANCH
 
-    # - name: Create PR
-    #   uses: ./.github/actions/create-pr
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack
+    - name: Create PR
+      uses: ./.github/actions/create-pr
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack
