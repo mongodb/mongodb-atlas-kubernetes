@@ -49,16 +49,16 @@ jobs:
 
     - name: Configure Git
       run: |
+        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPO }}.git
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
 
     - name: Create branch and push it
       run: |
-        BRANCH="release/${VERSION}-test"
-        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPO }}.git
+        BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
         git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
-        git commit -m "Release ${VERSION} (test)"
+        git commit -m "Release ${VERSION}"
         git reset --hard
         git push --set-upstream origin $BRANCH
 
