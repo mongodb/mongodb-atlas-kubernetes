@@ -79,7 +79,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithIP("0.0.0.0/0"))
+		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 		if DeploymentDevMode {
 			// While developing tests we need to reuse the same project
 			createdProject.Spec.Name = "dev-test atlas-project"

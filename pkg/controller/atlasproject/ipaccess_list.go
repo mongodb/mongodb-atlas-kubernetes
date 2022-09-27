@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -32,6 +33,9 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 	// be not a prefix of CIDR!
 	if i.CIDRBlock != "" && i.IPAddress != "" {
 		return i.AwsSecurityGroup + i.IPAddress
+	}
+	if strings.Contains(i.CIDRBlock, "/32") {
+		return strings.Replace(i.CIDRBlock, "/32", "", 1) + i.AwsSecurityGroup + i.IPAddress // if CIDRBlock is /32, then it's an IP address
 	}
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
@@ -120,6 +124,12 @@ func validateSingleIPAccessList(list project.IPAccessList) error {
 	allSpecified := isNotEmpty(list.AwsSecurityGroup) && isNotEmpty(list.CIDRBlock) && isNotEmpty(list.IPAddress)
 	if !onlyOneSpecified || allSpecified {
 		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
+	}
+	if strings.Contains(list.IPAddress, "/") {
+		return fmt.Errorf("ipAddress %s cannot contain a / character", list.IPAddress)
+	}
+	if !strings.Contains(list.CIDRBlock, "/") && list.CIDRBlock != "" {
+		return fmt.Errorf("cidrBlock %s must contain a / character", list.CIDRBlock)
 	}
 	return nil
 }

@@ -53,9 +53,9 @@ func (p *AProject) WithSecretRef(name string) *AProject {
 	return p
 }
 
-func (p *AProject) WithIpAccess(ipAdress, comment string) *AProject {
+func (p *AProject) WithIpAccess(cidrBlock, comment string) *AProject {
 	access := project.NewIPAccessList().
-		WithIP(ipAdress).
+		WithCIDR(cidrBlock).
 		WithComment(comment)
 	p.Spec.ProjectIPAccessList = append(p.Spec.ProjectIPAccessList, access)
 	return p
