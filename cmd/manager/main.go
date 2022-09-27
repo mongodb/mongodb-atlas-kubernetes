@@ -94,7 +94,7 @@ func main() {
 	var cacheFunc cache.NewCacheFunc
 	if len(config.WatchedNamespaces) > 1 {
 		var namespaces []string
-		for ns, _ := range config.WatchedNamespaces {
+		for ns := range config.WatchedNamespaces {
 			namespaces = append(namespaces, ns)
 		}
 		cacheFunc = cache.MultiNamespacedCacheBuilder(namespaces)
