@@ -1,6 +1,8 @@
 package project
 
 import (
+	"strings"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
@@ -34,6 +36,10 @@ func (i IPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
 // Identifier returns the "id" of the ProjectIPAccessList. Note, that it's an error to specify more than one of these
 // fields - the business layer must validate this beforehand
 func (i IPAccessList) Identifier() interface{} {
+	if strings.Contains(i.CIDRBlock, "/32") {
+		cidrBlock := strings.Replace(i.CIDRBlock, "/32", "", 1) // if CIDRBlock is /32, then it's an IP address
+		return cidrBlock + i.AwsSecurityGroup + i.IPAddress
+	}
 	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
 }
 

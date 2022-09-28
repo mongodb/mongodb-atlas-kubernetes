@@ -52,7 +52,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			// adding whitespace to the name to check normalization for connection secrets names
 			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
 				WithAtlasName(namespace.Name + " some").
-				WithIPAccessList(project.NewIPAccessList().WithIP("0.0.0.0/0"))
+				WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 			if DevMode {
 				// While developing tests we need to reuse the same project
 				createdProject.Spec.Name = "dev-test atlas-project"
