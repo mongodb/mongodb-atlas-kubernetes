@@ -248,6 +248,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 
+	if result = ensureAuditing(ctx, projectID, project); !result.IsOk() {
+		return result
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
+
 	return workflow.OK()
 }
 

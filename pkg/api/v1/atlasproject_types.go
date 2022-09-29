@@ -83,6 +83,10 @@ type AtlasProjectSpec struct {
 	// EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers
 	// +optional
 	EncryptionAtRest *EncryptionAtRest `json:"encryptionAtRest,omitempty"`
+
+	// Auditing represents MongoDB Maintenance Windows
+	// +optional
+	Auditing *project.Auditing `json:"auditing,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
