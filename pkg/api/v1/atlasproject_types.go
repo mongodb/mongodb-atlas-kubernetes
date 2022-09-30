@@ -86,7 +86,7 @@ type AtlasProjectSpec struct {
 
 	// Auditing represents MongoDB Maintenance Windows
 	// +optional
-	Auditing *project.Auditing `json:"auditing,omitempty"`
+	Auditing *Auditing `json:"auditing,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

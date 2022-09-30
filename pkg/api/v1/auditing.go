@@ -1,4 +1,4 @@
-package project
+package v1
 
 import "go.mongodb.org/atlas/mongodbatlas"
 

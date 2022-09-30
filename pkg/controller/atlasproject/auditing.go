@@ -4,15 +4,15 @@ import (
 	"context"
 	"reflect"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"go.mongodb.org/atlas/mongodbatlas"
+
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-func ensureAuditing(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func ensureAuditing(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
 	result := createOrDeleteAuditing(ctx, projectID, project)
 	if !result.IsOk() {
 		ctx.SetConditionFromResult(status.AuditingReadyType, result)
@@ -28,21 +28,23 @@ func ensureAuditing(ctx *workflow.Context, projectID string, project *mdbv1.Atla
 	return workflow.OK()
 }
 
-func createOrDeleteAuditing(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func createOrDeleteAuditing(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
 	atlas, err := fetchAuditing(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectAuditingReady, err.Error())
 	}
 
 	if !auditingInSync(atlas, project.Spec.Auditing) {
-		patchAuditing(ctx, projectID, prepareAuditingSpec(project.Spec.Auditing))
-		return workflow.InProgress(workflow.ProjectAuditingReady, "Auditing is not ready")
+		err := patchAuditing(ctx, projectID, prepareAuditingSpec(project.Spec.Auditing))
+		if err != nil {
+			workflow.Terminate(workflow.ProjectAuditingReady, err.Error())
+		}
 	}
 
 	return workflow.OK()
 }
 
-func prepareAuditingSpec(spec *project.Auditing) *mongodbatlas.Auditing {
+func prepareAuditingSpec(spec *v1.Auditing) *mongodbatlas.Auditing {
 	if isAuditingEmpty(spec) {
 		return &mongodbatlas.Auditing{
 			Enabled: toptr.MakePtr(false),
@@ -52,7 +54,7 @@ func prepareAuditingSpec(spec *project.Auditing) *mongodbatlas.Auditing {
 	return spec.ToAtlas()
 }
 
-func auditingInSync(atlas *mongodbatlas.Auditing, spec *project.Auditing) bool {
+func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 	if isAuditingEmpty(atlas) && isAuditingEmpty(spec) {
 		return true
 	}
@@ -66,7 +68,7 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *project.Auditing) bool {
 	return reflect.DeepEqual(atlas, specAsAtlas)
 }
 
-func isAuditingEmpty[Auditing mongodbatlas.Auditing | project.Auditing](auditing *Auditing) bool {
+func isAuditingEmpty[Auditing mongodbatlas.Auditing | v1.Auditing](auditing *Auditing) bool {
 	return auditing == nil
 }
 
