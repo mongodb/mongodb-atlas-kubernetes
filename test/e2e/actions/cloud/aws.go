@@ -34,7 +34,6 @@ func (awsAction *AwsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 	}
 	cResponse := v1.PrivateEndpoint{
 		ID:       privateEndpointID,
-		IP:       "",
 		Provider: provider.ProviderAWS,
 		Region:   pe.Region,
 	}
