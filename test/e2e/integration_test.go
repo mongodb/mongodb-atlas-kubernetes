@@ -3,6 +3,17 @@ package e2e_test
 import (
 	"fmt"
 	"os"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,9 +22,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 
@@ -21,7 +30,7 @@ import (
 )
 
 var _ = Describe("Configuration namespaced. Deploy deployment", Label("integration-ns"), func() {
-	var data model.TestDataProvider
+	var testData *model.TestDataProvider
 	var key string
 
 	BeforeEach(func() {
@@ -33,99 +42,113 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 	AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-				[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
-			)
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-				kubecli.GetManagerLogs(data.Resources.Namespace),
-			)
-			actions.SaveTestAppLogs(data.Resources)
-			actions.SaveK8sResources(
-				[]string{"deploy", "atlasprojects"},
-				data.Resources.Namespace,
-			)
-			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(data)
+			SaveDump(testData)
 		}
+		actions.DeleteTestDataProject(testData)
+		actions.DeleteGlobalKeyIfExist(*testData)
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider) {
-			data = test
+		func(test *model.TestDataProvider) {
+			testData = test
+			actions.ProjectCreationFlow(test)
 			integrationCycle(test, key)
 		},
 		Entry("Users can use integration section", Label("project-integration"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"operator-integration-cr",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{},
-				[]string{},
-				[]model.DBUser{},
 				30018,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 		),
 	)
 })
 
-func integrationCycle(data model.TestDataProvider, key string) {
-	actions.PrepareUsersConfigurations(&data)
-	deploy.NamespacedOperator(&data)
+func integrationCycle(data *model.TestDataProvider, key string) {
 	t := "DATADOG"
 
 	By("Deploy User Resouces", func() {
-		actions.DeployProjectAndWait(&data, "1")
-		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
-		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
-		Expect(status).Should(BeEmpty())
+		projectStatus := GetProjectIntegrationStatus(data)
+		Expect(projectStatus).Should(BeEmpty())
 	})
 
 	By("Add integration", func() {
-		newIntegration := model.NewPIntegration(t).WithAPIKeyRef("test-int", data.Resources.Namespace).WithRegion("EU")
-		data.Resources.Project = data.Resources.Project.WithIntegration(*newIntegration)
+		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
+			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
+		newIntegration := project.Integration{
+			Type: t,
+			APIKeyRef: common.ResourceRefNamespaced{
+				Name:      "test-int",
+				Namespace: data.Resources.Namespace,
+			},
+			Region: "EU",
+		}
+		data.Project.Spec.Integrations = append(data.Project.Spec.Integrations, newIntegration)
 		By("Create Secret for integration", func() {
-			for _, i := range data.Resources.Project.Spec.Integrations {
-				kubecli.CreateUserSecret(key, i.APIKeyRef.Name, i.APIKeyRef.Namespace)
+			for _, i := range data.Project.Spec.Integrations {
+				Expect(k8s.CreateUserSecret(data.Context, data.K8SClient, key, i.APIKeyRef.Name, i.APIKeyRef.Namespace)).Should(Succeed())
 			}
 		})
-		actions.PrepareUsersConfigurations(&data)
-		actions.DeployProjectAndWait(&data, "2")
+		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
+		Eventually(func() string {
+			return GetProjectIntegrationStatus(data)
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(data, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
 	})
-	atlasClient, err := atlas.AClient()
+	atlasClient := atlas.GetClientOrFail()
 	By("Check statuses", func() {
-		status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
-		Expect(status).Should(Equal("True"))
+		var projectStatus string
+		projectStatus, err := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, status.IntegrationReadyType, data.Resources.Namespace, data.Project.GetName())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(projectStatus).Should(Equal("True"))
 
 		Expect(err).ShouldNot(HaveOccurred())
 
-		dog, err := atlasClient.GetIntegrationbyType(data.Resources.ProjectID, t)
+		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), t)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(dog.APIKey).Should(Equal(key))
 	})
 
 	By("Delete integration", func() {
-		data.Resources.Project.Spec.Integrations = []project.Integration{}
-		actions.PrepareUsersConfigurations(&data)
-		actions.DeployProjectAndWait(&data, "3")
+		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
+			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
+		data.Project.Spec.Integrations = []project.Integration{}
+		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
+		Eventually(func() string {
+			return GetProjectIntegrationStatus(data)
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(BeEmpty())
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(data, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
 	})
 
 	By("Delete integration check", func() {
-		_, err := atlasClient.GetIntegrationbyType(data.Resources.ProjectID, t)
+		integration, err := atlasClient.GetIntegrationbyType(data.Project.ID(), t)
+		By(fmt.Sprintf("Integration %v", integration))
 		Expect(err).Should(HaveOccurred())
 
 		// TODO uncomment with
 		// status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
 		// Expect(status).Should(BeEmpty())
 	})
+}
 
-	By("Delete User Resources", func() {
-		actions.DeleteUserResourcesProject(&data)
-	})
+func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
+	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
+	for _, condition := range testData.Project.Status.Conditions {
+		if condition.Type == status.IntegrationReadyType {
+			return string(condition.Status)
+		}
+	}
+	return ""
 }

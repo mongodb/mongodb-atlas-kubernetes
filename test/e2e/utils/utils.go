@@ -32,6 +32,10 @@ func RandomName(base string) string {
 	return fmt.Sprintf("%s-%s", base, randomSuffix)
 }
 
+func UserSecretPassword() string {
+	return uuid.New()
+}
+
 func SaveToFile(path string, data []byte) error {
 	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {

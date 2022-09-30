@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils/debug"
@@ -108,14 +107,14 @@ func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
 	return false
 }
 
-func (a *Atlas) IsProjectExists(projectID string) bool {
+func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
 	project, _, err := a.Client.Projects.GetOneProject(context.Background(), projectID)
 	if err != nil {
 		var apiError *mongodbatlas.ErrorResponse
 		if errors.As(err, &apiError) && (apiError.ErrorCode == "GROUP_NOT_FOUND" || apiError.ErrorCode == "RESOURCE_NOT_FOUND") {
 			return false
 		}
-		Fail(err.Error())
+		g.Expect(err).NotTo(HaveOccurred())
 	}
 	return project != nil
 }

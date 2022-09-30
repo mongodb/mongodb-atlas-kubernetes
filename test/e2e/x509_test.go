@@ -1,25 +1,29 @@
 package e2e_test
 
 import (
-	"fmt"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"k8s.io/apimachinery/pkg/types"
 
-	common "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("x509auth"), func() {
-	var data model.TestDataProvider
+	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
@@ -28,97 +32,76 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(data.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(data.Resources)
-				actions.SaveK8sResources(
-					[]string{"deploy", "atlasprojects"},
-					data.Resources.Namespace,
-				)
-			})
-
+			SaveDump(testData)
 		}
 		By("Delete Resources", func() {
-			actions.DeleteUserResourcesProject(&data)
+			actions.DeleteTestDataProject(testData)
 		})
 	})
-
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider, certRef common.ResourceRefNamespaced) {
-			data = test
-			x509Flow(&data, &certRef)
+		func(test *model.TestDataProvider, certRef common.ResourceRefNamespaced) {
+			testData = test
+			actions.ProjectCreationFlow(test)
+			x509Flow(test, &certRef)
 		},
 		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("x509auth-basic"),
-			model.NewTestDataProvider(
-				"x509auth",
-				model.AProject{},
+			model.DataProvider(
+				"x509cert",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_standard.yaml"},
-				[]string{},
-				[]model.DBUser{},
 				30000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			common.ResourceRefNamespaced{
-				Name:      "x509cert",
-				Namespace: data.Resources.Namespace,
+				Name: "x509cert",
 			},
 		),
 	)
 })
 
-func x509Flow(data *model.TestDataProvider, certRef *common.ResourceRefNamespaced) {
-	By("Deploy Project with standart configuration", func() {
-		actions.PrepareUsersConfigurations(data)
-		deploy.NamespacedOperator(data)
-		actions.DeployProjectAndWait(data, "1")
-	})
-
+func x509Flow(testData *model.TestDataProvider, certRef *common.ResourceRefNamespaced) {
 	By("Create X.509 cert secret", func() {
-		kubecli.CreateX509Secret(certRef.Name, certRef.Namespace)
+		Expect(certRef.Name).NotTo(BeEmpty(), "certRef.Name should not be empty")
+		if certRef.Namespace == "" {
+			certRef.Namespace = testData.Resources.Namespace
+		}
+		Expect(k8s.CreateCertificateX509(testData.Context, testData.K8SClient, certRef.Name, certRef.Namespace)).To(Succeed())
 	})
 
 	By("Add X.509 cert to the project", func() {
-		data.Resources.Project.WithX509(certRef)
-		actions.DeployProject(data)
+		Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
+			Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
+		testData.Project.Spec.X509CertRef = certRef
+		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(kube.GetReadyProjectStatus(data)).Should(Equal("True"),
-			"Atlasproject status.conditions are not True")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(testData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
+			"Project status should be ready")
 
-		actions.UpdateProjectID(data)
-		Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
+		Expect(testData.Project.ID()).ShouldNot(BeEmpty())
 	})
 
 	By("Create User with X.509 cert", func() {
 		userName := "CN=my-x509-authenticated-user,OU=organizationalunit,O=organization"
-		x509User := model.NewDBUser("my-x509-user").
-			WithProjectRef(data.Resources.Project.GetK8sMetaName()).
-			AddBuildInReadWriteRole().
-			WithX509(userName)
-		data.Resources.Users = append(data.Resources.Users, *x509User)
-		actions.PrepareUsersConfigurations(data)
+		x509User := data.BasicUser("x509user", "user1",
+			data.WithReadWriteRole(),
+			data.WithX509(userName),
+		)
+		testData.Users = append(testData.Users, x509User)
+		deploy.CreateUsers(testData)
 	})
 
 	By("Deploy User", func() {
-		By("Create users", func() {
-			kubecli.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
-		})
-		By("Check database users Attibutes", func() {
-			Eventually(actions.CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-			actions.CheckUsersAttributes(data.Resources)
+		By("Check database users Attributes", func() {
+			Eventually(actions.CheckUserExistInAtlas(testData), "2m", "10s").Should(BeTrue())
+			actions.CheckUsersAttributes(testData)
 		})
 	})
 }

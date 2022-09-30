@@ -687,3 +687,13 @@ func DefaultAwsAdvancedDeployment(namespace, projectName string) *AtlasDeploymen
 func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeployment {
 	return newServerlessInstance(namespace, "test-serverless-instance-k8s", "test-serverless-instance", "AWS", "US_EAST_1").WithProjectName(projectName)
 }
+
+func (c *AtlasDeployment) AtlasName() string {
+	if c.Spec.DeploymentSpec.Name != "" {
+		return c.Spec.DeploymentSpec.Name
+	}
+	if c.Spec.AdvancedDeploymentSpec.Name != "" {
+		return c.Spec.AdvancedDeploymentSpec.Name
+	}
+	return c.Spec.ServerlessSpec.Name
+}

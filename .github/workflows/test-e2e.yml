@@ -61,13 +61,12 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-              "cluster-ns",
-              "cluster-wide",
+              "deployment-ns",
+              "deployment-wide",
               "bundle-test",
               "helm-ns",
               "helm-wide",
               "helm-update",
-              "serverless-instance",
               "multinamespaced",
               "privatelink",
               "integration-ns",

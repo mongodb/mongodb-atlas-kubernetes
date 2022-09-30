@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+
 	. "github.com/onsi/gomega/gbytes"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
@@ -49,7 +51,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
 	It("Deploy deployment multinamespaced operator and create resources in each of them", func() {
 		By("Set up test data configuration", func() {
-			watched1 := model.NewTestDataProvider(
+			watched1 := model.DataProviderWithResources(
 				"multinamestace-watched1",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -59,7 +61,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 				30013,
 				[]func(*model.TestDataProvider){},
 			)
-			watchedGlobal := model.NewTestDataProvider(
+			watchedGlobal := model.DataProviderWithResources(
 				"multinamestace-watched-global",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -69,7 +71,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 				30013,
 				[]func(*model.TestDataProvider){},
 			)
-			notWatched := model.NewTestDataProvider(
+			notWatched := model.DataProviderWithResources(
 				"multinamestace-notwatched",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -79,7 +81,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 				30013,
 				[]func(*model.TestDataProvider){},
 			)
-			notWatchedGlobal := model.NewTestDataProvider(
+			notWatchedGlobal := model.DataProviderWithResources(
 				"multinamestace-notwatched",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
@@ -92,15 +94,16 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			listData = []model.TestDataProvider{watched1, watchedGlobal, notWatched, notWatchedGlobal}
 			watchedNamespace = []string{watched1.Resources.Namespace, watchedGlobal.Resources.Namespace}
 		})
+		firstData := listData[0]
 		By("User Install CRD, deployment multinamespace Operator", func() {
 			for i := range listData {
 				actions.PrepareUsersConfigurations(&listData[i])
 			}
-			deploy.MultiNamespaceOperator(&listData[0], watchedNamespace)
-			kubecli.CreateApiKeySecret(config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
+			deploy.MultiNamespaceOperator(&firstData, watchedNamespace)
+			k8s.CreateDefaultSecret(firstData.Context, firstData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
 		})
 		By("Check if operator working as expected: watched/not watched namespaces", func() {
-			crdsFile := listData[0].Resources.GetOperatorFolder() + "/crds.yaml"
+			crdsFile := firstData.Resources.GetOperatorFolder() + "/crds.yaml"
 			for i := range listData {
 				testFlow(&listData[i], crdsFile, watchedNamespace)
 			}
@@ -134,7 +137,9 @@ func watchedFlow(data *model.TestDataProvider, crdsFile string) {
 	})
 	By("Check if projects were deployed", func() {
 		Eventually(
-			kube.GetReadyProjectStatus(data),
+			func() string {
+				return kube.ProjectReadyCondition(data)
+			},
 		).Should(Equal("True"), "kubernetes resource: Project status `Ready` should be True. Watched namespace")
 	})
 	By("Get IDs for deletion", func() {
@@ -158,7 +163,7 @@ func notWatchedFlow(data *model.TestDataProvider, crdsFile string) {
 	})
 	By("Check if projects were deployed", func() {
 		Eventually(
-			kube.GetReadyProjectStatus(data),
+			kube.ProjectReadyCondition(data),
 		).Should(BeEmpty(), "Kubernetes resource: Project status `Ready` should be False. NOT Watched namespace")
 	})
 }

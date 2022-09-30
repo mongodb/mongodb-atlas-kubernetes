@@ -4,17 +4,22 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -23,7 +28,7 @@ import (
 )
 
 var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
-	var data model.TestDataProvider
+	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
@@ -33,56 +38,49 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
 			By("Save logs to output directory ", func() {
 				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
 				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", data.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(data.Resources.Namespace)),
+					fmt.Sprintf("output/%s/operatorDecribe.txt", testData.Resources.Namespace),
+					[]byte(kubecli.DescribeOperatorPod(testData.Resources.Namespace)),
 				)
 				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(data.Resources.Namespace),
+					fmt.Sprintf("output/%s/operator-logs.txt", testData.Resources.Namespace),
+					kubecli.GetManagerLogs(testData.Resources.Namespace),
 				)
-				actions.SaveTestAppLogs(data.Resources)
+				actions.SaveTestAppLogs(testData.Resources)
 				actions.SaveK8sResources(
 					[]string{"deploy", "atlasprojects"},
-					data.Resources.Namespace,
+					testData.Resources.Namespace,
 				)
 			})
 		}
 		By("Clean Cloud", func() {
-			DeleteAllRoles(&data)
+			DeleteAllRoles(testData)
 		})
 
-		By("Delete Resources, Project with PEService", func() {
-			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(data)
+		By("Delete Resources, Project with Encryption at rest", func() {
+			actions.DeleteTestDataProject(testData)
+			actions.DeleteGlobalKeyIfExist(*testData)
 		})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
-			data = test
-			encryptionAtRestFlow(&data, encAtRest, roles)
+		func(test *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
+			testData = test
+			actions.ProjectCreationFlow(test)
+			encryptionAtRestFlow(test, encAtRest, roles)
 		},
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"encryption-at-rest-aws",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_standard.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			v1.EncryptionAtRest{
 				AwsKms: v1.AwsKms{
 					Enabled: toptr.MakePtr(true),
@@ -104,78 +102,65 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 })
 
 func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
-	By("Deploy Project with requested configuration", func() {
-		actions.PrepareUsersConfigurations(userData)
-		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, "1")
-	})
-
 	By("Add cloud access role (AWS only)", func() {
-		if len(roles) == 0 {
-			return
-		}
-
-		err := cloudaccess.CreateRoles(roles)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		for _, role := range roles {
-			userData.Resources.Project.WithCloudAccessRole(role.AccessRole)
-		}
-
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData)
-
-		Eventually(func() bool {
-			return EnsureAllRolesCreated(*userData, len(roles))
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Cloud access roles are not created")
-
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		err = cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		Eventually(kube.GetProjectCloudAccessRolesStatus(userData), "2m", "20s").Should(Equal("True"), "Cloud Access Roles status should be True")
+		cloudAccessRolesFlow(userData, roles)
 	})
 
 	By("Create KMS", func() {
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-		Expect(len(project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
-		aRole := project.Status.CloudProviderAccessRoles[0]
+		Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
+		aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
 		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(&encAtRest)
 		fillKMSforGCP(&encAtRest)
 
-		userData.Resources.Project.WithEncryptionAtRest(&encAtRest)
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData)
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		userData.Project.Spec.EncryptionAtRest = &encAtRest
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
 
 	By("Check Encryption at Rest status", func() {
-		Eventually(kube.GetProjectEncryptionAtRestStatus(userData), "2m", "20s").Should(Equal("True"), "Encryption at Rest condition status is not 'True'")
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.EncryptionAtRestReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}, "2m", "20s").Should(Equal("True"), "Encryption at Rest condition status is not 'True'")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 	})
 
 	By("Remove Encryption at Rest from the project", func() {
 		removeAllEncryptionsSeparately(&encAtRest)
 
-		userData.Resources.Project.WithEncryptionAtRest(&encAtRest)
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData)
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+		userData.Project.Spec.EncryptionAtRest = &encAtRest
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
 
 	By("Check if project returned back to the initial state", func() {
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-		areEmpty, err := checkIfEncryptionsAreDisabled(project.ID())
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(areEmpty).To(Equal(true))
+		Eventually(func(g Gomega) bool {
+			areEmpty, err := checkIfEncryptionsAreDisabled(userData.Project.ID())
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return areEmpty
+		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).
+			Should(BeTrue(), "Encryption at Rest is not disabled")
 	})
 }
 

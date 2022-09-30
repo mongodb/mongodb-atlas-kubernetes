@@ -2,18 +2,23 @@ package e2e_test
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"k8s.io/apimachinery/pkg/types"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	cloud "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -27,7 +32,7 @@ import (
 // AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
 
 type privateEndpoint struct {
-	provider string
+	provider provider.ProviderName
 	region   string
 }
 
@@ -43,15 +48,16 @@ func SaveDump(data *model.TestDataProvider) {
 			kubecli.GetManagerLogs(data.Resources.Namespace),
 		)
 		actions.SaveTestAppLogs(data.Resources)
+		actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 		actions.SaveK8sResources(
-			[]string{"deploy", "atlasprojects"},
+			[]string{"deploy"},
 			data.Resources.Namespace,
 		)
 	})
 }
 
 var _ = Describe("UserLogin", Label("privatelink"), func() {
-	var data model.TestDataProvider
+	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
@@ -63,40 +69,33 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(&data)
+			SaveDump(testData)
 		}
 		By("Clean Cloud", func() {
-			DeleteAllPrivateEndpoints(&data)
+			DeleteAllPrivateEndpoints(testData)
 		})
 		By("Delete Resources, Project with PEService", func() {
-			actions.DeleteUserResourcesProject(&data)
-			actions.DeleteGlobalKeyIfExist(data)
+			actions.DeleteTestDataProject(testData)
+			actions.DeleteGlobalKeyIfExist(*testData)
 		})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test model.TestDataProvider, pe []privateEndpoint) {
-			data = test
-			privateFlow(&data, pe)
+		func(test *model.TestDataProvider, pe []privateEndpoint) {
+			testData = test
+			actions.ProjectCreationFlow(test)
+			privateFlow(test, pe)
 		},
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"privatelink-aws-1",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -105,40 +104,24 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			},
 		),
 		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"privatelink-azure-1",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{{
 				provider: "AZURE",
 				region:   config.AzureRegion,
 			}},
 		),
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
-			model.NewTestDataProvider(
+			model.DataProvider(
 				"privatelink-aws-2",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -150,21 +133,13 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-azure-2"),
-			model.NewTestDataProvider(
+		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("privatelink-aws-azure-2"),
+			model.DataProvider(
 				"privatelink-aws-azure",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -180,24 +155,16 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-gpc-1]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-gpc-1"),
-			model.NewTestDataProvider(
+		Entry("Test[privatelink-gpc-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gpc-1"),
+			model.DataProvider(
 				"privatelink-gpc-1",
-				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
-				[]string{"data/atlasdeployment_backup.yaml"},
-				[]string{},
-				[]model.DBUser{
-					*model.NewDBUser("user1").
-						WithSecretRef("dbuser-secret-u1").
-						AddBuildInAdminRole(),
-				},
 				40000,
 				[]func(*model.TestDataProvider){},
-			),
+			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{
 				{
-					provider: "GCP",
+					provider: provider.ProviderGCP,
 					region:   config.GCPRegion,
 				},
 			},
@@ -206,36 +173,40 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 })
 
 func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint) {
-	By("Deploy Project with requested configuration", func() {
-		actions.PrepareUsersConfigurations(userData)
-		deploy.NamespacedOperator(userData)
-		actions.DeployProjectAndWait(userData, "1")
-	})
-
 	By("Create Private Link and the rest users resources", func() {
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, pe := range requstedPE {
-			userData.Resources.Project.WithPrivateLink(provider.ProviderName(pe.provider), pe.region)
+			userData.Project.Spec.PrivateEndpoints = append(userData.Project.Spec.PrivateEndpoints,
+				v1.PrivateEndpoint{
+					Provider: pe.provider,
+					Region:   pe.region,
+				})
 		}
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProject(userData)
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).To(Succeed())
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(kube.GetProjectPEndpointServiceStatus(userData), "15m", "10s").Should(Equal("True"),
-			"Atlasproject status.conditions are not True")
-		Eventually(kube.GetReadyProjectStatus(userData), "2m", "20s").Should(Equal("True"),
-			"Atlasproject status.conditions are not True")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.PrivateEndpointServiceReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
 		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
-		actions.UpdateProjectID(userData)
-		Expect(userData.Resources.ProjectID).ShouldNot(BeEmpty())
+		Expect(userData.Project.ID()).ShouldNot(BeEmpty())
 	})
 
 	By("Create Endpoint in requested Cloud Provider", func() {
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 
-		for _, peitem := range project.Status.PrivateEndpoints {
+		for _, peitem := range userData.Project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
 
@@ -244,26 +215,41 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 
 			output, err := cloudTest.CreatePrivateEndpoint(privateEndpointID)
 			Expect(err).ShouldNot(HaveOccurred())
-			userData.Resources.Project = userData.Resources.Project.UpdatePrivateLinkID(output)
-		}
-	})
 
-	By("Deploy Changed Projects", func() {
-		actions.PrepareUsersConfigurations(userData)
-		actions.DeployProjectAndWait(userData, "3")
+			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
+				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
+					userData.Project.Spec.PrivateEndpoints[i] = output
+				}
+			}
+		}
+
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).To(Succeed())
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
 	})
 
 	By("Check statuses", func() {
-		Eventually(kube.GetProjectPEndpointStatus(userData)).Should(Equal("True"), "Condition status 'PrivateEndpointReady' is not'True'")
-		Eventually(kube.GetReadyProjectStatus(userData)).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.PrivateEndpointReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		Eventually(func(g Gomega) string {
+			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			return condition
+		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
 
-		project, err := kube.GetProjectResource(userData)
-		Expect(err).ShouldNot(HaveOccurred())
-		for _, peitem := range project.Status.PrivateEndpoints {
-			Expect(peitem.Region).ShouldNot(BeEmpty())
-			cloudTest, err := cloud.CreatePEActions(peitem)
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
+		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
+			Expect(peStatus.Region).ShouldNot(BeEmpty())
+			cloudTest, err := cloud.CreatePEActions(peStatus)
 			Expect(err).ShouldNot(HaveOccurred())
-			privateEndpointID := userData.Resources.Project.GetPrivateIDByProviderRegion(peitem)
+			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
 				func() bool {
@@ -274,15 +260,22 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	})
 }
 
+func GetPrivateEndpointID(endpoint status.ProjectPrivateEndpoint) string {
+	if endpoint.Provider == provider.ProviderAWS {
+		return endpoint.InterfaceEndpointID
+	}
+	return endpoint.ID
+}
+
 // DeleteAllPrivateEndpoints Specific for the current suite  - delete all requested Private Endpoints by test data
 func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 	errorList := make([]string, 0)
-	project, err := kube.GetProjectResource(data)
-	Expect(err).ShouldNot(HaveOccurred())
-	for _, peitem := range project.Status.PrivateEndpoints {
-		cloudTest, err := cloud.CreatePEActions(peitem)
+	Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
+		Namespace: data.Resources.Namespace}, data.Project)).To(Succeed())
+	for _, peStatus := range data.Project.Status.PrivateEndpoints {
+		cloudTest, err := cloud.CreatePEActions(peStatus)
 		if err == nil {
-			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peitem)
+			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peStatus)
 			if privateEndpointID != "" {
 				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
 				if err != nil {
@@ -298,6 +291,9 @@ func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
 }
 
 func AllPEndpointUpdated(data *model.TestDataProvider) bool {
-	result, _ := kube.GetProjectResource(data)
-	return len(result.Status.PrivateEndpoints) == len(result.Spec.PrivateEndpoints)
+	err := data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Resources.Namespace}, data.Project)
+	if err != nil {
+		return false
+	}
+	return len(data.Project.Spec.PrivateEndpoints) == len(data.Project.Status.PrivateEndpoints)
 }

@@ -25,6 +25,15 @@ type AtlasDeploymentStatus struct {
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
 }
 
+const (
+	StateIDLE      = "IDLE"
+	StateCREATING  = "CREATING"
+	StateUPDATING  = "UPDATING"
+	StateDELETING  = "DELETING"
+	StateDELETED   = "DELETED"
+	StateREPAIRING = "REPAIRING"
+)
+
 // ConnectionStrings contains configuration for applications use to connect to this cluster
 type ConnectionStrings struct {
 	// Public mongodb:// connection string for this cluster.
