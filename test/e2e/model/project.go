@@ -95,6 +95,11 @@ func (p *AProject) WithX509(certRef *common.ResourceRefNamespaced) *AProject {
 	return p
 }
 
+func (p *AProject) WithAuditing(auditing *v1.Auditing) *AProject {
+	p.Spec.Auditing = auditing
+	return p
+}
+
 func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	p.Spec.PrivateEndpoints[i].ID = id
 	return p

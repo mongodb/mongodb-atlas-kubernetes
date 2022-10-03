@@ -76,6 +76,7 @@ jobs:
               "cloud-access-role",
               "encryption-at-rest",
               "deployment-annotations-ns",
+              "auditing",
           ]
 
     steps:
