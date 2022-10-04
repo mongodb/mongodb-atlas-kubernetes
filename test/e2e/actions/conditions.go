@@ -2,8 +2,10 @@ package actions
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/gomega"
@@ -34,5 +36,7 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTyp
 		return true
 	}
 
-	Eventually(allConditionsAreTrueFunc).Should(BeTrue(), fmt.Sprintf("Status conditions %v are not 'True'", conditonTypes))
+	Eventually(allConditionsAreTrueFunc).
+		WithTimeout(10*time.Minute).WithPolling(20*time.Second).
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not 'True'", conditonTypes))
 }
