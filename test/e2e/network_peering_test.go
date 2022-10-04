@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
@@ -224,19 +222,10 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(networkpeer.EstablishPeerConnections(userData.Project.Status.NetworkPeers)).Should(Succeed())
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.NetworkPeerReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(3*time.Minute).WithPolling(20*time.Second).Should(Equal("True"), "Cloud Access Roles status should be True")
+		actions.WaitForConditionsToBecomeTrue(userData, status.NetworkPeerReadyType, status.ReadyType)
 	})
 
 	By("Check network peers connection status state", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(userData.Project.Status.NetworkPeers).Should(HaveLen(len(peers)))
 	})

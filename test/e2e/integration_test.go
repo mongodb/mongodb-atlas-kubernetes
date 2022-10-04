@@ -94,14 +94,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 			}
 		})
 		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
-		Eventually(func() string {
-			return GetProjectIntegrationStatus(data)
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(data, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
 	})
 	atlasClient := atlas.GetClientOrFail()
 	By("Check statuses", func() {

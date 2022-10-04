@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -121,19 +119,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.EncryptionAtRest = &encAtRest
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-	})
-
-	By("Check Encryption at Rest status", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.EncryptionAtRestReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}, "2m", "20s").Should(Equal("True"), "Encryption at Rest condition status is not 'True'")
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
 	})
 
 	By("Remove Encryption at Rest from the project", func() {
@@ -146,11 +132,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 
 	By("Check if project returned back to the initial state", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
+		actions.WaitForConditionsToBecomeTrue(userData, status.ReadyType)
 
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())

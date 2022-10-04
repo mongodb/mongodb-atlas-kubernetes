@@ -1,10 +1,7 @@
 package e2e_test
 
 import (
-	"time"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 
@@ -78,13 +75,7 @@ func x509Flow(testData *model.TestDataProvider, certRef *common.ResourceRefNames
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(testData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
-			"Project status should be ready")
-
+		actions.WaitForConditionsToBecomeTrue(testData, status.ReadyType)
 		Expect(testData.Project.ID()).ShouldNot(BeEmpty())
 	})
 

@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -109,20 +107,10 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
 		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(func(g Gomega) string {
-			var condition string
-			condition, err = kube.GetProjectStatusCondition(userData, status.CloudProviderAccessReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}, "2m", "20s").Should(Equal("True"), "Cloud Access Roles status should be True")
+		actions.WaitForConditionsToBecomeTrue(userData, status.CloudProviderAccessReadyType, status.ReadyType)
 	})
 
 	By("Check cloud access roles status state", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).Should(Equal("True"), "Condition status 'Ready' is not 'True'")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(userData.Project.Status.CloudProviderAccessRoles).Should(HaveLen(len(roles)))
 	})
