@@ -42,14 +42,23 @@ func GetProjectStatus(data *model.TestDataProvider) status.AtlasProjectStatus {
 }
 
 func GetProjectStatusCondition(data *model.TestDataProvider, statusType status.ConditionType) (string, error) {
-	err := data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)
+	conditions, err := GetAllProjectConditions(data)
 	if err != nil {
 		return "", err
 	}
-	for _, condition := range data.Project.Status.Conditions {
+	for _, condition := range conditions {
 		if condition.Type == statusType {
 			return string(condition.Status), err
 		}
 	}
 	return "", fmt.Errorf("condition %s not found", statusType)
+}
+
+func GetAllProjectConditions(data *model.TestDataProvider) (result []status.Condition, err error) {
+	err = data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)
+	if err != nil {
+		return result, err
+	}
+
+	return data.Project.Status.Conditions, nil
 }
