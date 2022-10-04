@@ -32,7 +32,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 			SaveDump(testData)
 		}
 		By("Delete Resources", func() {
-			actions.DeleteUserResourcesProject(testData)
+			actions.DeleteTestDataProject(testData)
 			actions.DeleteGlobalKeyIfExist(*testData)
 		})
 	})
@@ -78,7 +78,7 @@ func auditingFlow(userData *model.TestDataProvider, auditing *v1.Auditing) {
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
 
-	By("Check project status with auditing with removed auditing", func() {
+	By("Check project status with auditing removed", func() {
 		Eventually(func(g Gomega) string {
 			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
 			g.Expect(err).ShouldNot(HaveOccurred())
