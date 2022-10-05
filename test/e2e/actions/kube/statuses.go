@@ -51,7 +51,7 @@ func GetProjectStatusCondition(data *model.TestDataProvider, statusType status.C
 			return string(condition.Status), err
 		}
 	}
-	return "", fmt.Errorf("condition %s not found", statusType)
+	return "", fmt.Errorf("condition %s not found, conditions: %v", statusType, conditions)
 }
 
 func GetAllProjectConditions(data *model.TestDataProvider) (result []status.Condition, err error) {

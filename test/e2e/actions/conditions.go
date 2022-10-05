@@ -10,12 +10,20 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/onsi/gomega/types"
+
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
 func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) {
-	allConditionsAreTrueFunc := func(g Gomega) bool {
+	Eventually(allConditionsAreTrueFunc(userData, conditonTypes...)).
+		WithTimeout(10*time.Minute).WithPolling(20*time.Second).
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not 'True'", conditonTypes))
+}
+
+func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) func(g types.Gomega) bool {
+	return func(g Gomega) bool {
 		conditions, err := kube.GetAllProjectConditions(userData)
 		g.Expect(err).ShouldNot(HaveOccurred())
 
@@ -35,8 +43,4 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTyp
 
 		return true
 	}
-
-	Eventually(allConditionsAreTrueFunc).
-		WithTimeout(10*time.Minute).WithPolling(20*time.Second).
-		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not 'True'", conditonTypes))
 }

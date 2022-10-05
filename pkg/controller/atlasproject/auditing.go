@@ -37,7 +37,7 @@ func createOrDeleteAuditing(ctx *workflow.Context, projectID string, project *v1
 	if !auditingInSync(atlas, project.Spec.Auditing) {
 		err := patchAuditing(ctx, projectID, prepareAuditingSpec(project.Spec.Auditing))
 		if err != nil {
-			workflow.Terminate(workflow.ProjectAuditingReady, err.Error())
+			return workflow.Terminate(workflow.ProjectAuditingReady, err.Error())
 		}
 	}
 
