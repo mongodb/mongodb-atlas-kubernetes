@@ -49,7 +49,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 	})
 
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
-	It("Deploy deployment multinamespaced operator and create resources in each of them", func() {
+	FIt("Deploy deployment multi-namespaced operator and create resources in each of them", func() {
 		By("Set up test data configuration", func() {
 			watched1 := model.DataProviderWithResources(
 				"multinamestace-watched1",
@@ -99,6 +99,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 			for i := range listData {
 				actions.PrepareUsersConfigurations(&listData[i])
 			}
+			watchedNamespace = append(watchedNamespace, "mongodb-atlas-system")
 			deploy.MultiNamespaceOperator(&firstData, watchedNamespace)
 			k8s.CreateDefaultSecret(firstData.Context, firstData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
 		})
