@@ -49,7 +49,7 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 	})
 
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
-	FIt("Deploy deployment multi-namespaced operator and create resources in each of them", func() {
+	It("Deploy deployment multi-namespaced operator and create resources in each of them", func() {
 		By("Set up test data configuration", func() {
 			watched1 := model.DataProviderWithResources(
 				"multinamestace-watched1",
