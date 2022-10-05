@@ -62,13 +62,19 @@ func auditingFlow(userData *model.TestDataProvider, auditing *v1.Auditing) {
 	By("Add auditing to the project", func() {
 		userData.Resources.Project.WithAuditing(auditing)
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+	})
+
+	By("Wait for the project to become Ready", func() {
 		actions.WaitForConditionsToBecomeTrue(userData, status.AuditingReadyType, status.ReadyType)
 	})
 
 	By("Remove Auditing from the project", func() {
 		userData.Resources.Project.WithAuditing(nil)
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.AuditingReadyType, status.ReadyType)
+	})
+
+	By("Wait for the project to become Ready", func() {
+		actions.WaitForConditionsToBecomeTrue(userData, status.ReadyType)
 	})
 }
 

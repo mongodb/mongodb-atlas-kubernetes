@@ -20,15 +20,15 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTyp
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		for _, conditionType := range conditonTypes {
-			found := false
+			foundTrue := false
 			for _, condition := range conditions {
 				if condition.Type == conditionType && condition.Status == v1.ConditionTrue {
-					found = true
+					foundTrue = true
 					break
 				}
 			}
 
-			if !found {
+			if !foundTrue {
 				return false
 			}
 		}
