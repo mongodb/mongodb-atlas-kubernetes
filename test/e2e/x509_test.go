@@ -72,11 +72,7 @@ func x509Flow(testData *model.TestDataProvider, certRef *common.ResourceRefNames
 			Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
 		testData.Project.Spec.X509CertRef = certRef
 		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
-	})
-
-	By("Check if project statuses are updating, get project ID", func() {
 		actions.WaitForConditionsToBecomeTrue(testData, status.ReadyType)
-		Expect(testData.Project.ID()).ShouldNot(BeEmpty())
 	})
 
 	By("Create User with X.509 cert", func() {

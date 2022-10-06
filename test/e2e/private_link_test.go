@@ -212,7 +212,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		}
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).To(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.PrivateEndpointServiceReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, status.PrivateEndpointReadyType, status.ReadyType)
 	})
 
 	By("Check statuses", func() {

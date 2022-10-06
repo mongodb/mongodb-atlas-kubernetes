@@ -18,8 +18,8 @@ import (
 
 func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) {
 	Eventually(allConditionsAreTrueFunc(userData, conditonTypes...)).
-		WithTimeout(10*time.Minute).WithPolling(20*time.Second).
-		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not 'True'", conditonTypes))
+		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'", conditonTypes))
 }
 
 func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) func(g types.Gomega) bool {
