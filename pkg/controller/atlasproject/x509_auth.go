@@ -77,7 +77,7 @@ func readX509CertFromSecret(kubeClient client.Client, secretRef client.ObjectKey
 	certData, found := secret.Data[defaultName]
 	if !found {
 		if len(secret.Data) != 1 {
-			errorMsg := fmt.Sprintf("the secret should have data entry with key \"%s\" or have a single data entry", defaultName)
+			errorMsg := fmt.Sprintf("the secret should have data entry with key \"%s\" or have a single data entry, data: %v", defaultName, secret.Data)
 			return "", errors.New(errorMsg)
 		}
 
