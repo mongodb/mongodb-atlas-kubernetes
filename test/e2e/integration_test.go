@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 
@@ -66,7 +67,9 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 })
 
 func integrationCycle(data *model.TestDataProvider, key string) {
-	t := "DATADOG"
+	integrationType := "DATADOG"
+
+	By(fmt.Sprintf("%s key before %s", integrationType, key))
 
 	By("Deploy User Resouces", func() {
 		projectStatus := GetProjectIntegrationStatus(data)
@@ -77,9 +80,9 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
 			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
 		newIntegration := project.Integration{
-			Type: t,
+			Type: integrationType,
 			APIKeyRef: common.ResourceRefNamespaced{
-				Name:      "test-int",
+				Name:      "datadog-secret",
 				Namespace: data.Resources.Namespace,
 			},
 			Region: "EU",
@@ -93,6 +96,9 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
 	})
+
+	By(fmt.Sprintf("%s key after %s", integrationType, key))
+
 	atlasClient := atlas.GetClientOrFail()
 	By("Check statuses", func() {
 		var projectStatus string
@@ -102,9 +108,9 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 
 		Expect(err).ShouldNot(HaveOccurred())
 
-		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), t)
+		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dog.APIKey).Should(Equal(key))
+		Expect(strings.HasSuffix(key, removeStarsFromString(dog.APIKey))).Should(BeTrue())
 	})
 
 	By("Delete integration", func() {
@@ -116,9 +122,10 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 	})
 
 	By("Delete integration check", func() {
-		integration, err := atlasClient.GetIntegrationbyType(data.Project.ID(), t)
+		integration, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
 		By(fmt.Sprintf("Integration %v", integration))
-		Expect(err).Should(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(integration.Enabled).To(BeFalse())
 
 		// TODO uncomment with
 		// status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
@@ -134,4 +141,8 @@ func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
 		}
 	}
 	return ""
+}
+
+func removeStarsFromString(str string) string {
+	return strings.ReplaceAll(str, "*", "")
 }

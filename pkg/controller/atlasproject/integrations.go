@@ -136,8 +136,9 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
 			specAsAtlas, _ := spec.ToAtlas(r.Client, namespace)
-			specAsAlias := aliasThirdPartyIntegration(*specAsAtlas)
-			areEqual = AreIntegrationsEqual(&atlas, &specAsAlias)
+			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
+			areEqual = AreIntegrationsEqual(&atlas, &specAlias)
+			ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "specAlias", specAlias, "areEqual", areEqual)
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
@@ -171,6 +172,10 @@ func keepLastFourChars(strPtr *string) {
 
 	charCount := 4
 	str := *strPtr
+	if len(str) <= charCount {
+		return
+	}
+
 	*strPtr = str[len(str)-charCount:]
 }
 
