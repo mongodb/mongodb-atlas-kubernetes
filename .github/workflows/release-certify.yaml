@@ -26,7 +26,7 @@ jobs:
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0 #needs for tags
 
@@ -36,7 +36,7 @@ jobs:
           chmod +x ./preflight && sudo mv ./preflight /usr/local/bin/preflight
 
       - name: Clone certified-operators repo
-        uses: actions/checkout@master
+        uses: actions/checkout@v3.1.0
         with:
           repository: redhat-openshift-ecosystem/certified-operators
           path: ../certified-operators
