@@ -31,6 +31,7 @@ const (
 	ProjectNetworkPeerIsNotReadyInAtlas      ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 	ProjectEncryptionAtRestReady             ConditionReason = "ProjectEncryptionAtRestReady"
 	ProjectCloudAccessRolesIsNotReadyInAtlas ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
+	ProjectAuditingReady                     ConditionReason = "ProjectAuditingReady"
 )
 
 // Atlas Cluster reasons

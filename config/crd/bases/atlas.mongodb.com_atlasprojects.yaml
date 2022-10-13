@@ -41,6 +41,22 @@ spec:
             description: AtlasProjectSpec defines the desired state of Project in
               Atlas
             properties:
+              auditing:
+                description: Auditing represents MongoDB Maintenance Windows
+                properties:
+                  auditAuthorizationSuccess:
+                    description: 'Indicates whether the auditing system captures successful
+                      authentication attempts for audit filters using the "atype"
+                      : "authCheck" auditing event. For more information, see auditAuthorizationSuccess'
+                    type: boolean
+                  auditFilter:
+                    description: JSON-formatted audit filter used by the project
+                    type: string
+                  enabled:
+                    description: Denotes whether or not the project associated with
+                      the {GROUP-ID} has database auditing enabled.
+                    type: boolean
+                type: object
               cloudProviderAccessRoles:
                 description: CloudProviderAccessRoles is a list of Cloud Provider
                   Access Roles configured for the current Project.

@@ -61,21 +61,22 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
+              "auditing",
+              "bundle-test",
+              "cloud-access-role",
+              "deployment-annotations-ns",
               "deployment-ns",
               "deployment-wide",
-              "bundle-test",
-              "helm-ns",
-              "helm-wide",
-              "helm-update",
-              "multinamespaced",
-              "privatelink",
-              "integration-ns",
-              "x509auth",
-              "long-run",
-              "networkpeering",
-              "cloud-access-role",
               "encryption-at-rest",
-              "deployment-annotations-ns",
+              "helm-ns",
+              "helm-update",
+              "helm-wide",
+              "integration-ns",
+              "long-run",
+              "multinamespaced",
+              "networkpeering",
+              "privatelink",
+              "x509auth",
           ]
 
     steps:

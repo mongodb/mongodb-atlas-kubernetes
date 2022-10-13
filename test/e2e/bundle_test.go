@@ -3,11 +3,8 @@ package e2e_test
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
@@ -72,12 +69,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		By("Apply configuration", func() {
 			actions.ProjectCreationFlow(testData)
 			By(fmt.Sprintf("project namespace %v", testData.Project.Namespace))
-			Eventually(func(g Gomega) string {
-				condition, err := kube.GetProjectStatusCondition(testData, status.ReadyType)
-				g.Expect(err).ShouldNot(HaveOccurred())
-				return condition
-			}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).
-				Should(Equal("True"), "Condition status 'Ready' is not 'True'", kube.GetProjectStatus(testData).Conditions)
+			actions.WaitForConditionsToBecomeTrue(testData, status.ReadyType)
 			deploy.CreateInitialDeployments(testData)
 			deploy.CreateUsers(testData)
 		})

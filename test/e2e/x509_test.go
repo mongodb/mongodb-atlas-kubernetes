@@ -1,10 +1,7 @@
 package e2e_test
 
 import (
-	"time"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 
@@ -49,7 +46,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		},
 		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("x509auth-basic"),
 			model.DataProvider(
-				"x509cert",
+				"x509auth",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){},
@@ -75,17 +72,7 @@ func x509Flow(testData *model.TestDataProvider, certRef *common.ResourceRefNames
 			Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
 		testData.Project.Spec.X509CertRef = certRef
 		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
-	})
-
-	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(testData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
-			"Project status should be ready")
-
-		Expect(testData.Project.ID()).ShouldNot(BeEmpty())
+		actions.WaitForConditionsToBecomeTrue(testData, status.ReadyType)
 	})
 
 	By("Create User with X.509 cert", func() {

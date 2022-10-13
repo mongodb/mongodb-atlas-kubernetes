@@ -136,7 +136,8 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
 			specAsAtlas, _ := spec.ToAtlas(r.Client, namespace)
-			areEqual = reflect.DeepEqual(atlas, aliasThirdPartyIntegration(*specAsAtlas))
+			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
+			areEqual = AreIntegrationsEqual(&atlas, &specAlias)
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
@@ -146,6 +147,43 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 	}
 
 	return true
+}
+
+func AreIntegrationsEqual(atlas, specAsAtlas *aliasThirdPartyIntegration) bool {
+	return reflect.DeepEqual(cleanCopyToCompare(atlas), cleanCopyToCompare(specAsAtlas))
+}
+
+func cleanCopyToCompare(input *aliasThirdPartyIntegration) *aliasThirdPartyIntegration {
+	if input == nil {
+		return input
+	}
+
+	result := *input
+	keepLastFourChars(&result.APIKey)
+	keepLastFourChars(&result.APIToken)
+	keepLastFourChars(&result.LicenseKey)
+	keepLastFourChars(&result.Password)
+	keepLastFourChars(&result.ReadToken)
+	keepLastFourChars(&result.RoutingKey)
+	keepLastFourChars(&result.Secret)
+	keepLastFourChars(&result.ServiceKey)
+	keepLastFourChars(&result.WriteToken)
+
+	return &result
+}
+
+func keepLastFourChars(strPtr *string) {
+	if strPtr == nil {
+		return
+	}
+
+	charCount := 4
+	str := *strPtr
+	if len(str) <= charCount {
+		return
+	}
+
+	*strPtr = str[len(str)-charCount:]
 }
 
 type aliasThirdPartyIntegration mongodbatlas.ThirdPartyIntegration

@@ -2,9 +2,6 @@ package e2e_test
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -187,16 +184,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.PrivateEndpointServiceReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		actions.WaitForConditionsToBecomeTrue(userData, status.PrivateEndpointServiceReadyType, status.ReadyType)
 		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
 		Expect(userData.Project.ID()).ShouldNot(BeEmpty())
@@ -224,25 +212,10 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		}
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).To(Succeed())
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
+		actions.WaitForConditionsToBecomeTrue(userData, status.PrivateEndpointReadyType, status.ReadyType)
 	})
 
 	By("Check statuses", func() {
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.PrivateEndpointReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
-		Eventually(func(g Gomega) string {
-			condition, err := kube.GetProjectStatusCondition(userData, status.ReadyType)
-			g.Expect(err).ShouldNot(HaveOccurred())
-			return condition
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Equal("True"))
-
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
