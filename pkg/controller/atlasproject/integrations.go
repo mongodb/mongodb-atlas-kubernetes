@@ -138,7 +138,6 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 			specAsAtlas, _ := spec.ToAtlas(r.Client, namespace)
 			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
 			areEqual = AreIntegrationsEqual(&atlas, &specAlias)
-			ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "specAlias", specAlias, "areEqual", areEqual)
 		}
 		ctx.Log.Debugw("checkIntegrationsReady", "atlas", atlas, "spec", spec, "areEqual", areEqual)
 
@@ -161,6 +160,14 @@ func cleanCopyToCompare(input *aliasThirdPartyIntegration) *aliasThirdPartyInteg
 
 	result := *input
 	keepLastFourChars(&result.APIKey)
+	keepLastFourChars(&result.APIToken)
+	keepLastFourChars(&result.LicenseKey)
+	keepLastFourChars(&result.Password)
+	keepLastFourChars(&result.ReadToken)
+	keepLastFourChars(&result.RoutingKey)
+	keepLastFourChars(&result.Secret)
+	keepLastFourChars(&result.ServiceKey)
+	keepLastFourChars(&result.WriteToken)
 
 	return &result
 }

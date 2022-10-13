@@ -1,6 +1,8 @@
 package project
 
 import (
+	"strings"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
@@ -113,4 +115,8 @@ func storeError(err error, errors *[]error) {
 	if err != nil {
 		*errors = append(*errors, err)
 	}
+}
+
+func RemoveStarsFromString(str string) string {
+	return strings.ReplaceAll(str, "*", "")
 }

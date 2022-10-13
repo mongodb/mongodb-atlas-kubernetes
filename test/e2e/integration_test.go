@@ -69,8 +69,6 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 func integrationCycle(data *model.TestDataProvider, key string) {
 	integrationType := "DATADOG"
 
-	By(fmt.Sprintf("%s key before %s", integrationType, key))
-
 	By("Deploy User Resouces", func() {
 		projectStatus := GetProjectIntegrationStatus(data)
 		Expect(projectStatus).Should(BeEmpty())
@@ -97,8 +95,6 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
 	})
 
-	By(fmt.Sprintf("%s key after %s", integrationType, key))
-
 	atlasClient := atlas.GetClientOrFail()
 	By("Check statuses", func() {
 		var projectStatus string
@@ -110,7 +106,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 
 		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(strings.HasSuffix(key, removeStarsFromString(dog.APIKey))).Should(BeTrue())
+		Expect(strings.HasSuffix(key, project.RemoveStarsFromString(dog.APIKey))).Should(BeTrue())
 	})
 
 	By("Delete integration", func() {
@@ -141,8 +137,4 @@ func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
 		}
 	}
 	return ""
-}
-
-func removeStarsFromString(str string) string {
-	return strings.ReplaceAll(str, "*", "")
 }

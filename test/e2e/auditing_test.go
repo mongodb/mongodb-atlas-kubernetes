@@ -73,5 +73,5 @@ func auditingFlow(userData *model.TestDataProvider, auditing *v1.Auditing) {
 }
 
 func exampleFilter() string {
-	return "{\"atype\" : \"authenticate\", \"param\" : {\"user\" : \"auditReadOnly\", \"db\" : \"admin\", \"mechanism\" : \"SCRAM-SHA-1\"} }"
+	return `{"atype" : "authenticate", "param" : {"user" : "auditReadOnly", "db" : "admin", "mechanism" : "SCRAM-SHA-1"} }`
 }
