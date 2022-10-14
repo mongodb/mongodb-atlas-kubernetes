@@ -453,3 +453,72 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeInstanceSize(t *testing.T) {
+	t.Run("InstanceSizeName should not change when inside of autoscaling configuration boundaries", func(t *testing.T) {
+		autoscaling := &v1.AdvancedAutoScalingSpec{
+			Compute: &v1.ComputeSpec{
+				Enabled:          boolptr(true),
+				ScaleDownEnabled: boolptr(true),
+				MinInstanceSize:  "M10",
+				MaxInstanceSize:  "M30",
+			},
+		}
+
+		assert.Equal(t, "M10", normalizeInstanceSize("M10", autoscaling))
+	})
+	t.Run("InstanceSizeName should change to minimum size when outside of the bottom autoscaling configuration boundaries", func(t *testing.T) {
+		autoscaling := &v1.AdvancedAutoScalingSpec{
+			Compute: &v1.ComputeSpec{
+				Enabled:          boolptr(true),
+				ScaleDownEnabled: boolptr(true),
+				MinInstanceSize:  "M20",
+				MaxInstanceSize:  "M30",
+			},
+		}
+
+		assert.Equal(t, "M20", normalizeInstanceSize("M10", autoscaling))
+	})
+	t.Run("InstanceSizeName should change to maximum size when outside of the top autoscaling configuration boundaries", func(t *testing.T) {
+		autoscaling := &v1.AdvancedAutoScalingSpec{
+			Compute: &v1.ComputeSpec{
+				Enabled:          boolptr(true),
+				ScaleDownEnabled: boolptr(true),
+				MinInstanceSize:  "M20",
+				MaxInstanceSize:  "M30",
+			},
+		}
+
+		assert.Equal(t, "M30", normalizeInstanceSize("M40", autoscaling))
+	})
+}
+
+func TestExtractNumberFromInstanceTypeName(t *testing.T) {
+	data := map[string]struct {
+		Name   string
+		Number int
+	}{
+		"Should extract number from M instance": {
+			Name:   "M5",
+			Number: 5,
+		},
+		"Should extract number from R instance": {
+			Name:   "R50",
+			Number: 50,
+		},
+		"Should extract number from NVME instance": {
+			Name:   "R500_NVME",
+			Number: 500,
+		},
+	}
+
+	for name, test := range data {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, test.Number, extractNumberFromInstanceTypeName(test.Name))
+		})
+	}
+}
+
+func boolptr(b bool) *bool {
+	return &b
+}
