@@ -87,9 +87,29 @@ func main() {
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
 
-	logger.Sugar().Infof("MongoDB Atlas Operator version %s", version)
+	logger.Info("MongoDB Atlas Operator version ", zap.String("version", version))
 
 	syncPeriod := time.Hour * 3
+
+	var cacheFunc cache.NewCacheFunc
+	if len(config.WatchedNamespaces) > 1 {
+		var namespaces []string
+		for ns := range config.WatchedNamespaces {
+			namespaces = append(namespaces, ns)
+		}
+		cacheFunc = cache.MultiNamespacedCacheBuilder(namespaces)
+	} else {
+		cacheFunc = cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&corev1.Secret{}: {
+					Label: labels.SelectorFromSet(labels.Set{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					}),
+				},
+			},
+		})
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     config.MetricsAddr,
@@ -99,15 +119,7 @@ func main() {
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
 		SyncPeriod:             &syncPeriod,
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&corev1.Secret{}: {
-					Label: labels.SelectorFromSet(labels.Set{
-						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
-					}),
-				},
-			},
-		}),
+		NewCache:               cacheFunc,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

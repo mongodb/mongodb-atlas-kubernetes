@@ -43,7 +43,7 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 		return workflow.OK()
 	}
 
-	if err := syncEncryptionAtRestsInAtlas(ctx, projectID, project, encryptionAtRestsInAtlas); err != nil {
+	if err := syncEncryptionAtRestsInAtlas(ctx, projectID, project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
@@ -59,7 +59,7 @@ func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbat
 	return encryptionAtRestsInAtlas, nil
 }
 
-func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, atlas *mongodbatlas.EncryptionAtRest) error {
+func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) error {
 	requestBody := mongodbatlas.EncryptionAtRest{
 		GroupID:        projectID,
 		AwsKms:         getAwsKMS(project),

@@ -587,7 +587,7 @@ func DeleteTestDataProject(data *model.TestDataProvider) {
 				aClient := atlas.GetClientOrFail()
 				return aClient.IsProjectExists(g, projectID)
 			},
-			"7m", "20s",
+			"15m", "20s",
 		).Should(BeFalse(), "Project should be deleted from Atlas")
 	})
 }
