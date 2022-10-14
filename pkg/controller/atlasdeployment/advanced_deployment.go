@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -110,9 +112,9 @@ func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
 //	if region config has enabled compute autoscaling
 func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
 	isDiskAutoScaled := false
-	cleanupInstanceSize := func(s *mdbv1.Specs) {
+	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) {
 		if s != nil {
-			s.InstanceSize = ""
+			s.InstanceSize = normalizeInstanceSize(s.InstanceSize, as)
 		}
 	}
 	for _, repSpec := range kubeDeployment.ReplicationSpecs {
@@ -127,9 +129,9 @@ func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
 				if regConfig.AutoScaling.Compute != nil &&
 					regConfig.AutoScaling.Compute.Enabled != nil &&
 					*regConfig.AutoScaling.Compute.Enabled {
-					cleanupInstanceSize(regConfig.ElectableSpecs)
-					cleanupInstanceSize(regConfig.AnalyticsSpecs)
-					cleanupInstanceSize(regConfig.ReadOnlySpecs)
+					syncInstanceSize(regConfig.ElectableSpecs, regConfig.AutoScaling)
+					syncInstanceSize(regConfig.AnalyticsSpecs, regConfig.AutoScaling)
+					syncInstanceSize(regConfig.ReadOnlySpecs, regConfig.AutoScaling)
 				}
 			}
 		}
@@ -221,4 +223,30 @@ func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]stri
 		}
 	}
 	return deploymentNames, nil
+}
+
+func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) string {
+	currentSize := extractNumberFromInstanceTypeName(currentInstanceSize)
+	minSize := extractNumberFromInstanceTypeName(autoscaling.Compute.MinInstanceSize)
+	maxSize := extractNumberFromInstanceTypeName(autoscaling.Compute.MaxInstanceSize)
+
+	if currentSize < minSize {
+		return autoscaling.Compute.MinInstanceSize
+	}
+
+	if currentSize > maxSize {
+		return autoscaling.Compute.MaxInstanceSize
+	}
+
+	return currentInstanceSize
+}
+
+func extractNumberFromInstanceTypeName(instanceTypeName string) int {
+	name := strings.TrimPrefix(instanceTypeName, "M")
+	name = strings.TrimPrefix(name, "R")
+	name = strings.TrimSuffix(name, "_NVME")
+
+	number, _ := strconv.Atoi(name)
+
+	return number
 }
