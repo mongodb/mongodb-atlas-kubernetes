@@ -116,7 +116,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 								ElectableSpecs: &v1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
-									InstanceSize:  "",
+									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
@@ -180,7 +180,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 								ElectableSpecs: &v1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
-									InstanceSize:  "",
+									InstanceSize:  "M40",
 									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
@@ -350,7 +350,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 								ElectableSpecs: &v1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
-									InstanceSize:  "",
+									InstanceSize:  "M20",
 									NodeCount:     toptr.MakePtr(1),
 								},
 								AutoScaling: &v1.AdvancedAutoScalingSpec{
@@ -425,6 +425,112 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			shouldFail: false,
+		},
+		{
+			testName: "Two regions and autoscaling ENABLED for compute and InstanceSize outside of boundaries",
+			input: &v1.AdvancedDeploymentSpec{
+				DiskSizeGB: toptr.MakePtr(15),
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "us-east-1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								RegionName: "WESTERN_EUROPE",
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M50",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(true),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "M10",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+							{
+								RegionName: "EASTERN_EUROPE",
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M10",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(false),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "M20",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &v1.AdvancedDeploymentSpec{
+				DiskSizeGB: nil,
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "us-east-1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								RegionName: "WESTERN_EUROPE",
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M40",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(true),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "M10",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+							{
+								RegionName: "EASTERN_EUROPE",
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M20",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(false),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "M20",
 										MaxInstanceSize:  "M40",
 									},
 								},
