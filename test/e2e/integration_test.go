@@ -138,13 +138,3 @@ func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
 	}
 	return ""
 }
-
-func GetProjectIntegrationStatusG(g Gomega, testData *model.TestDataProvider) string {
-	g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
-	for _, condition := range testData.Project.Status.Conditions {
-		if condition.Type == status.IntegrationReadyType {
-			return string(condition.Status)
-		}
-	}
-	return ""
-}
