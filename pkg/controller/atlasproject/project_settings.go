@@ -12,16 +12,16 @@ import (
 
 func ensureProjectSettings(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (result workflow.Result) {
 	if result = syncProjectSettings(ctx, projectID, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.ProjectSettings, result)
+		ctx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
 		return result
 	}
 
 	if areProjectSettingsEmpty(project.Spec.Settings) {
-		ctx.UnsetCondition(status.ProjectSettings)
+		ctx.UnsetCondition(status.ProjectSettingsReadyType)
 		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.ProjectSettings)
+	ctx.SetConditionTrue(status.ProjectSettingsReadyType)
 	return workflow.OK()
 }
 

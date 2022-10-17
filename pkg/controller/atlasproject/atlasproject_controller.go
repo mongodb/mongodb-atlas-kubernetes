@@ -256,7 +256,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	if result = ensureProjectSettings(ctx, projectID, project); !result.IsOk() {
 		return result
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectSettings), "")
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
 
 	return workflow.OK()
 }
