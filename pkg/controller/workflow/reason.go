@@ -32,6 +32,7 @@ const (
 	ProjectEncryptionAtRestReady             ConditionReason = "ProjectEncryptionAtRestReady"
 	ProjectCloudAccessRolesIsNotReadyInAtlas ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
 	ProjectAuditingReady                     ConditionReason = "ProjectAuditingReady"
+	ProjectSettingsReady                     ConditionReason = "ProjectSettingsReady"
 )
 
 // Atlas Cluster reasons

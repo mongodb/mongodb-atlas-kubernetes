@@ -44,6 +44,7 @@ const (
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
 	EncryptionAtRestReadyType       ConditionType = "EncryptionAtRestReady"
 	AuditingReadyType               ConditionType = "AuditingReady"
+	ProjectSettings                 ConditionType = "ProjectSettingsReady"
 )
 
 // AtlasDeployment condition types
