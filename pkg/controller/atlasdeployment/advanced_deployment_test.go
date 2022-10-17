@@ -564,8 +564,8 @@ func TestNormalizeInstanceSize(t *testing.T) {
 	t.Run("InstanceSizeName should not change when inside of autoscaling configuration boundaries", func(t *testing.T) {
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
-				Enabled:          boolptr(true),
-				ScaleDownEnabled: boolptr(true),
+				Enabled:          toptr.MakePtr(true),
+				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M10",
 				MaxInstanceSize:  "M30",
 			},
@@ -576,8 +576,8 @@ func TestNormalizeInstanceSize(t *testing.T) {
 	t.Run("InstanceSizeName should change to minimum size when outside of the bottom autoscaling configuration boundaries", func(t *testing.T) {
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
-				Enabled:          boolptr(true),
-				ScaleDownEnabled: boolptr(true),
+				Enabled:          toptr.MakePtr(true),
+				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M20",
 				MaxInstanceSize:  "M30",
 			},
@@ -588,8 +588,8 @@ func TestNormalizeInstanceSize(t *testing.T) {
 	t.Run("InstanceSizeName should change to maximum size when outside of the top autoscaling configuration boundaries", func(t *testing.T) {
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
-				Enabled:          boolptr(true),
-				ScaleDownEnabled: boolptr(true),
+				Enabled:          toptr.MakePtr(true),
+				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M20",
 				MaxInstanceSize:  "M30",
 			},
@@ -623,8 +623,4 @@ func TestExtractNumberFromInstanceTypeName(t *testing.T) {
 			assert.Equal(t, test.Number, extractNumberFromInstanceTypeName(test.Name))
 		})
 	}
-}
-
-func boolptr(b bool) *bool {
-	return &b
 }
