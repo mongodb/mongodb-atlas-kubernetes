@@ -1,8 +1,9 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"go.mongodb.org/atlas/mongodbatlas"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
 type ProjectSettings struct {

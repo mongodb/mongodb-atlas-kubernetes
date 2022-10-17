@@ -2,15 +2,16 @@ package atlasproject
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"reflect"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProjectSettings(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (result workflow.Result) {
+func ensureProjectSettings(ctx *workflow.Context, projectID string, project *v1.AtlasProject) (result workflow.Result) {
 	if result = syncProjectSettings(ctx, projectID, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
 		return result
@@ -25,7 +26,7 @@ func ensureProjectSettings(ctx *workflow.Context, projectID string, project *mdb
 	return workflow.OK()
 }
 
-func syncProjectSettings(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func syncProjectSettings(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
 	spec := project.Spec.Settings
 
 	atlas, err := fetchSettings(ctx, projectID)
@@ -42,21 +43,21 @@ func syncProjectSettings(ctx *workflow.Context, projectID string, project *mdbv1
 	return workflow.OK()
 }
 
-func areProjectSettingsEmpty(settings *mdbv1.ProjectSettings) bool {
+func areProjectSettingsEmpty(settings *v1.ProjectSettings) bool {
 	return settings == nil
 }
 
 func areSettingsInSync(atlas, spec *v1.ProjectSettings) bool {
+	if areProjectSettingsEmpty(spec) {
+		return true
+	}
+
 	return reflect.DeepEqual(atlas, spec)
 }
 
 func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSettings) error {
-	specAsAtlas, err := spec.ToAtlas()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = ctx.Client.Projects.UpdateProjectSettings(context.Background(), projectID, specAsAtlas)
+	path := fmt.Sprintf("api/atlas/v1.0/groups/%s/settings", projectID)
+	_, err := ctx.Client.NewRequest(context.Background(), http.MethodPatch, path, spec)
 	return err
 }
 
@@ -65,6 +66,7 @@ func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings
 	if err != nil {
 		return nil, err
 	}
+	ctx.Log.Debugw("Got Project Settings", "data", data)
 
 	settings := v1.ProjectSettings(*data)
 	return &settings, nil
