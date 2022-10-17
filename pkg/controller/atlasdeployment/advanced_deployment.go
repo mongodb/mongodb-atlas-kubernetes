@@ -241,6 +241,7 @@ func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.Advanc
 	return currentInstanceSize
 }
 
+// extractNumberFromInstanceTypeName get the existing number from a given instance type name, fail when the name is incorrect
 func extractNumberFromInstanceTypeName(instanceTypeName string) int {
 	name := strings.TrimPrefix(instanceTypeName, "M")
 	name = strings.TrimPrefix(name, "R")
