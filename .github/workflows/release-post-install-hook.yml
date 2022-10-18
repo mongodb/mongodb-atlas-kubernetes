@@ -17,8 +17,9 @@ jobs:
       QUAY_RELEASE_REGISTRY: quay.io
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
+          submodules: true
           fetch-depth: 0
 
       - name: Install axios
@@ -46,12 +47,23 @@ jobs:
           echo "Release ${version} already exists"
           exit 1
 
-      - name: Push Post Install Hook To Registry
-        uses: docker/build-push-action@v1
+      - name: Login to Quay registry
+        uses: docker/login-action@v2
         with:
+          registry: ${{ env.QUAY_RELEASE_REGISTRY }}
           username: ${{ env.QUAY_ROBOT_NAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
-          repository: ${{ env.QUAY_RELEASE_REPO }}
-          registry: ${{ env.QUAY_RELEASE_REGISTRY }}
-          tags: ${{ github.event.inputs.version }}
+      - name: Prepare docker image tag
+        id: prepare-quay-image-tag
+        run: |
+          REPOSITORY=${{ env.QUAY_RELEASE_REPO }}
+          TAG=${{ github.event.inputs.version }}
+          TAGS="${REPOSITORY}:${TAG}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: Push Post Install Hook To Registry
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: .
+          tags: ${{ steps.prepare-quay-image-tag.outputs.tags }}
           file: Dockerfile.post-install

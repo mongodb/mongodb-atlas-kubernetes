@@ -19,30 +19,42 @@ jobs:
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
+          submodules: true
           fetch-depth: 0 # required for tags
 
       - if: ${{ inputs.forked == true }}
         name: Check out code
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
+          submodules: true
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0 # required for tags
-
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
 
-      - name: Push Atlas Operator to Registry
-        uses: docker/build-push-action@v1
+      - name: Login to docker.io
+        uses: docker/login-action@v2
         with:
+          registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: ${{ env.DOCKER_REPO }}
-          registry: ${{ env.DOCKER_REGISTRY }}
-          tags: ${{ steps.prepare.outputs.tag }}
+      - name: Prepare docker image tag
+        id: prepare-docker-image-tag
+        run: |
+          REPOSITORY=${{ env.DOCKER_REPO }}
+          TAG=${{ steps.prepare.outputs.tag }}
+          TAGS="${REPOSITORY}:${TAG}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: Push Atlas Operator to Registry
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.prepare-docker-image-tag.outputs.tags }}
 
   e2e:
     name: E2E tests
@@ -61,35 +73,35 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-              "auditing",
-              "bundle-test",
-              "cloud-access-role",
-              "deployment-annotations-ns",
-              "deployment-ns",
-              "deployment-wide",
-              "encryption-at-rest",
-              "helm-ns",
-              "helm-update",
-              "helm-wide",
-              "integration-ns",
-              "long-run",
-              "multinamespaced",
-              "networkpeering",
-              "privatelink",
-              "x509auth",
+            "auditing",
+            "bundle-test",
+            "cloud-access-role",
+            "deployment-annotations-ns",
+            "deployment-ns",
+            "deployment-wide",
+            "encryption-at-rest",
+            "helm-ns",
+            "helm-update",
+            "helm-wide",
+            "integration-ns",
+            "long-run",
+            "multinamespaced",
+            "networkpeering",
+            "privatelink",
+            "x509auth",
           ]
 
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
           # Make sure we also get the helm-charts submodule!
           submodules: recursive
 
       - if: ${{ inputs.forked == true }}
         name: Check out code
-        uses: actions/checkout@v3.0.0
+        uses: actions/checkout@v3.1.0
         with:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -111,28 +123,39 @@ jobs:
         run: |
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
-      - name: Push bundle-image for the test
-        if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
-        uses: docker/build-push-action@v1
+      - name: Login to docker.io
+        uses: docker/login-action@v2
         with:
+          registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: ${{ env.DOCKER_BUNDLES_REPO }}
-          registry: ${{ env.DOCKER_REGISTRY }}
-          tags: ${{ steps.prepare.outputs.tag }}
-          dockerfile: bundle.Dockerfile
+      - name: Prepare docker tag
+        id: prepare-docker-bundle-tag
+        run: |
+          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
+          TAG=${{ steps.prepare.outputs.tag }}
+          TAGS="${REPOSITORY}:${TAG}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: Push bundle-image for the test
+        if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.prepare-docker-bundle-tag.outputs.tags }}
+          file: bundle.Dockerfile
 
       - name: Set properties
         id: properties
         run: |
           version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
           platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
-          echo "::set-output name=k8s_version::$version"
-          echo "::set-output name=k8s_platform::$platform"
+          echo "k8s_version=$version" >> $GITHUB_OUTPUT
+          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
 
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-        uses: helm/kind-action@v1.2.0
+        uses: helm/kind-action@v1.4.0
         with:
           version: v0.11.1
           config: test/e2e/config/kind.yaml
