@@ -955,7 +955,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				lastGeneration++
 			})
 
-			By(fmt.Sprintf("Update autoscaling configuration should update InstanceSize and DiskSizeGB of Advanced deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+			By(fmt.Sprintf("Update autoscaling configuration with wrong values it should fail %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				previousDeployment := mdbv1.AtlasDeployment{}
 				err := compat.JSONCopy(&previousDeployment, createdDeployment)
 				Expect(err).NotTo(HaveOccurred())
@@ -964,22 +964,48 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					RegionConfigs[0].
 					AutoScaling.
 					Compute.
-					MinInstanceSize = "M20"
+					MinInstanceSize = "S"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
-				Eventually(func(g Gomega) bool {
-					GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
-					current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(current).NotTo(BeNil())
-
-					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize).To(Equal("M20"))
-					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize).To(Equal("M20"))
-					g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize).To(Equal("M20"))
-					return true
-				}).WithTimeout(2 * time.Minute).WithPolling(interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(
+						k8sClient,
+						createdDeployment,
+						status.
+							FalseCondition(status.DeploymentReadyType).
+							WithReason(string(workflow.Internal)).
+							WithMessageRegexp("instance size is invalid"),
+					)
+				}).WithTimeout(DeploymentUpdateTimeout).
+					WithPolling(interval).
+					Should(BeTrue())
 
 				lastGeneration++
+
+				By(fmt.Sprintf("Update autoscaling configuration should update InstanceSize and DiskSizeGB of Advanced deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+					previousDeployment := mdbv1.AtlasDeployment{}
+					err := compat.JSONCopy(&previousDeployment, createdDeployment)
+					Expect(err).NotTo(HaveOccurred())
+
+					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+						RegionConfigs[0].
+						AutoScaling.
+						Compute.
+						MinInstanceSize = "M20"
+					Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+					Eventually(func(g Gomega) bool {
+						GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
+						current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(current).NotTo(BeNil())
+
+						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize).To(Equal("M20"))
+						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize).To(Equal("M20"))
+						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize).To(Equal("M20"))
+						return true
+					}).WithTimeout(2 * time.Minute).WithPolling(interval).Should(BeTrue())
+				})
 			})
 		})
 	})

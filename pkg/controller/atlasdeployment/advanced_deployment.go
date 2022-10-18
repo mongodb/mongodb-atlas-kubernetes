@@ -3,14 +3,11 @@ package atlasdeployment
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"net/http"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -61,7 +58,10 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	handleAutoscaling(deployment.Spec.AdvancedDeploymentSpec)
+	err := handleAutoscaling(deployment.Spec.AdvancedDeploymentSpec)
+	if err != nil {
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
+	}
 
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
@@ -110,12 +110,19 @@ func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
 // It will also prevent from setting ANY of (electable | analytics | readonly) specs
 //
 //	if region config has enabled compute autoscaling
-func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
+func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) error {
 	isDiskAutoScaled := false
-	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) {
+	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) error {
 		if s != nil {
-			s.InstanceSize = normalizeInstanceSize(s.InstanceSize, as)
+			size, err := normalizeInstanceSize(s.InstanceSize, as)
+			if err != nil {
+				return err
+			}
+
+			s.InstanceSize = size
 		}
+
+		return nil
 	}
 	for _, repSpec := range kubeDeployment.ReplicationSpecs {
 		for _, regConfig := range repSpec.RegionConfigs {
@@ -129,9 +136,20 @@ func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
 				if regConfig.AutoScaling.Compute != nil &&
 					regConfig.AutoScaling.Compute.Enabled != nil &&
 					*regConfig.AutoScaling.Compute.Enabled {
-					syncInstanceSize(regConfig.ElectableSpecs, regConfig.AutoScaling)
-					syncInstanceSize(regConfig.AnalyticsSpecs, regConfig.AutoScaling)
-					syncInstanceSize(regConfig.ReadOnlySpecs, regConfig.AutoScaling)
+					err := syncInstanceSize(regConfig.ElectableSpecs, regConfig.AutoScaling)
+					if err != nil {
+						return err
+					}
+
+					err = syncInstanceSize(regConfig.AnalyticsSpecs, regConfig.AutoScaling)
+					if err != nil {
+						return err
+					}
+
+					err = syncInstanceSize(regConfig.ReadOnlySpecs, regConfig.AutoScaling)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -140,6 +158,8 @@ func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) {
 	if isDiskAutoScaled {
 		kubeDeployment.DiskSizeGB = nil
 	}
+
+	return nil
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
@@ -225,29 +245,29 @@ func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]stri
 	return deploymentNames, nil
 }
 
-func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) string {
-	currentSize := extractNumberFromInstanceTypeName(currentInstanceSize)
-	minSize := extractNumberFromInstanceTypeName(autoscaling.Compute.MinInstanceSize)
-	maxSize := extractNumberFromInstanceTypeName(autoscaling.Compute.MaxInstanceSize)
-
-	if currentSize < minSize {
-		return autoscaling.Compute.MinInstanceSize
+func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) (string, error) {
+	currentSize, err := NewFromInstanceSizeName(currentInstanceSize)
+	if err != nil {
+		return "", err
 	}
 
-	if currentSize > maxSize {
-		return autoscaling.Compute.MaxInstanceSize
+	minSize, err := NewFromInstanceSizeName(autoscaling.Compute.MinInstanceSize)
+	if err != nil {
+		return "", err
 	}
 
-	return currentInstanceSize
-}
+	maxSize, err := NewFromInstanceSizeName(autoscaling.Compute.MaxInstanceSize)
+	if err != nil {
+		return "", err
+	}
 
-// extractNumberFromInstanceTypeName get the existing number from a given instance type name, fail when the name is incorrect
-func extractNumberFromInstanceTypeName(instanceTypeName string) int {
-	name := strings.TrimPrefix(instanceTypeName, "M")
-	name = strings.TrimPrefix(name, "R")
-	name = strings.TrimSuffix(name, "_NVME")
+	if CompareInstanceSizes(currentSize, minSize) == -1 {
+		return autoscaling.Compute.MinInstanceSize, nil
+	}
 
-	number, _ := strconv.Atoi(name)
+	if CompareInstanceSizes(currentSize, maxSize) == 1 {
+		return autoscaling.Compute.MaxInstanceSize, nil
+	}
 
-	return number
+	return currentInstanceSize, nil
 }

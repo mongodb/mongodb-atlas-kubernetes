@@ -2,6 +2,7 @@ package atlasdeployment
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -72,6 +73,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		expected   *v1.AdvancedDeploymentSpec
 		shouldFail bool
 		testName   string
+		err        error
 	}{
 		{
 			testName: "One region and autoscaling ENABLED for compute AND disk",
@@ -541,10 +543,77 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 			},
 			shouldFail: false,
 		},
+		{
+			testName: "One region and autoscaling with wrong configuration",
+			input: &v1.AdvancedDeploymentSpec{
+				DiskSizeGB: toptr.MakePtr(15),
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "us-east-1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M30",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(true),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "S10",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: &v1.AdvancedDeploymentSpec{
+				DiskSizeGB: nil,
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "us-east-1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									DiskIOPS:      nil,
+									EbsVolumeType: "",
+									InstanceSize:  "M30",
+									NodeCount:     toptr.MakePtr(1),
+								},
+								AutoScaling: &v1.AdvancedAutoScalingSpec{
+									DiskGB: &v1.DiskGB{
+										Enabled: toptr.MakePtr(true),
+									},
+									Compute: &v1.ComputeSpec{
+										Enabled:          toptr.MakePtr(true),
+										ScaleDownEnabled: nil,
+										MinInstanceSize:  "S10",
+										MaxInstanceSize:  "M40",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			shouldFail: true,
+			err:        errors.New("instance size is invalid. instance family should be M or R"),
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.testName, func(t *testing.T) {
-			handleAutoscaling(tt.input)
+			err := handleAutoscaling(tt.input)
+
+			assert.Equal(t, tt.err, err)
 			if !reflect.DeepEqual(tt.input, tt.expected) && !tt.shouldFail {
 				expJSON, err := json.MarshalIndent(tt.expected, "", " ")
 				if err != nil {
@@ -571,7 +640,10 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "M10", normalizeInstanceSize("M10", autoscaling))
+		size, err := normalizeInstanceSize("M10", autoscaling)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "M10", size)
 	})
 	t.Run("InstanceSizeName should change to minimum size when outside of the bottom autoscaling configuration boundaries", func(t *testing.T) {
 		autoscaling := &v1.AdvancedAutoScalingSpec{
@@ -583,7 +655,10 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "M20", normalizeInstanceSize("M10", autoscaling))
+		size, err := normalizeInstanceSize("M10", autoscaling)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "M20", size)
 	})
 	t.Run("InstanceSizeName should change to maximum size when outside of the top autoscaling configuration boundaries", func(t *testing.T) {
 		autoscaling := &v1.AdvancedAutoScalingSpec{
@@ -595,32 +670,9 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "M30", normalizeInstanceSize("M40", autoscaling))
+		size, err := normalizeInstanceSize("M40", autoscaling)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "M30", size)
 	})
-}
-
-func TestExtractNumberFromInstanceTypeName(t *testing.T) {
-	data := map[string]struct {
-		Name   string
-		Number int
-	}{
-		"Should extract number from M instance": {
-			Name:   "M5",
-			Number: 5,
-		},
-		"Should extract number from R instance": {
-			Name:   "R50",
-			Number: 50,
-		},
-		"Should extract number from NVME instance": {
-			Name:   "R500_NVME",
-			Number: 500,
-		},
-	}
-
-	for name, test := range data {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, test.Number, extractNumberFromInstanceTypeName(test.Name))
-		})
-	}
 }
