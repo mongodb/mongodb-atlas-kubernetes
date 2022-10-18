@@ -3,11 +3,12 @@ package atlasdeployment
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
-	"net/http"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"

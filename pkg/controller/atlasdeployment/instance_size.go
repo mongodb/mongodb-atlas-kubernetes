@@ -54,7 +54,7 @@ func NewFromInstanceSizeName(instanceSizeName string) (InstanceSize, error) {
 
 	number, err := strconv.Atoi(pieces[0][1:])
 	if err != nil {
-		return InstanceSize{}, fmt.Errorf("instance size is invalid. %e", err)
+		return InstanceSize{}, fmt.Errorf("instance size is invalid. %w", err)
 	}
 
 	return InstanceSize{
