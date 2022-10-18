@@ -24,7 +24,7 @@ func TestNewFromInstanceSizeName(t *testing.T) {
 	t.Run("should return error when instance is malformed", func(t *testing.T) {
 		is, err := NewFromInstanceSizeName("MZ")
 
-		assert.EqualError(t, err, "instance size is invalid. &{%!e(string=Atoi) %!e(string=Z) %!e(*errors.errorString=&{invalid syntax})}")
+		assert.EqualError(t, err, "instance size is invalid. strconv.Atoi: parsing \"Z\": invalid syntax")
 		assert.Empty(t, is)
 	})
 
