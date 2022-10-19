@@ -3,12 +3,13 @@ package atlasdeployment
 import (
 	"encoding/json"
 	"errors"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"go.uber.org/zap"
 	"reflect"
 	"testing"
 
+	"go.uber.org/zap"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"github.com/stretchr/testify/assert"
