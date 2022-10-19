@@ -61,14 +61,14 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 })
 
 func projectSettingsFlow(userData *model.TestDataProvider, settings *v1.ProjectSettings) {
-	By("Add project-settings to the project", func() {
+	By("Add Project Settings to the project", func() {
 		userData.Project.Spec.Settings = settings
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectSettingsReadyType, status.ReadyType)
 	})
 
-	By("Remove Auditing from the project", func() {
-		userData.Project.Spec.Auditing = nil
+	By("Remove Project Settings from the project", func() {
+		userData.Project.Spec.Settings = nil
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(userData, status.ReadyType)
 	})

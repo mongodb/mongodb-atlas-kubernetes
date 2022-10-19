@@ -52,7 +52,7 @@ func areSettingsInSync(atlas, spec *v1.ProjectSettings) bool {
 		return true
 	}
 
-	return reflect.DeepEqual(atlas, spec)
+	return isOneContainedInOther(spec, atlas)
 }
 
 func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSettings) error {
@@ -70,4 +70,24 @@ func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings
 
 	settings := v1.ProjectSettings(*data)
 	return &settings, nil
+}
+
+func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
+	oneVal := reflect.ValueOf(one).Elem()
+	otherVal := reflect.ValueOf(other).Elem()
+
+	for i := 0; i < oneVal.NumField(); i++ {
+		if oneVal.Field(i).IsNil() {
+			continue
+		}
+
+		oneBool := oneVal.Field(i).Elem().Bool()
+		otherBool := otherVal.Field(i).Elem().Bool()
+
+		if oneBool != otherBool {
+			return false
+		}
+	}
+
+	return true
 }
