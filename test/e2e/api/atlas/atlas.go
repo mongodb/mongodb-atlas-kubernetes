@@ -68,21 +68,21 @@ func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (
 		return nil, err
 	}
 	createAccessRequest := formAccessRequest(access)
-	_, _, err = a.Client.WhitelistAPIKeys.Create(context.Background(), a.OrgID, newKey.ID, createAccessRequest)
+	_, _, err = a.Client.AccessListAPIKeys.Create(context.Background(), a.OrgID, newKey.ID, createAccessRequest)
 	if err != nil {
 		return nil, err
 	}
 	return newKey, nil
 }
 
-func formAccessRequest(access []string) []*mongodbatlas.WhitelistAPIKeysReq {
-	createRequest := make([]*mongodbatlas.WhitelistAPIKeysReq, 0)
-	var req *mongodbatlas.WhitelistAPIKeysReq
+func formAccessRequest(access []string) []*mongodbatlas.AccessListAPIKeysReq {
+	createRequest := make([]*mongodbatlas.AccessListAPIKeysReq, 0)
+	var req *mongodbatlas.AccessListAPIKeysReq
 	for _, item := range access {
 		if strings.Contains(item, "/") {
-			req = &mongodbatlas.WhitelistAPIKeysReq{CidrBlock: item}
+			req = &mongodbatlas.AccessListAPIKeysReq{CidrBlock: item}
 		} else {
-			req = &mongodbatlas.WhitelistAPIKeysReq{IPAddress: item}
+			req = &mongodbatlas.AccessListAPIKeysReq{IPAddress: item}
 		}
 		createRequest = append(createRequest, req)
 	}
