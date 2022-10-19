@@ -59,7 +59,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	err := handleAutoscaling(deployment.Spec.AdvancedDeploymentSpec)
+	err := handleAutoscaling(ctx, deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -111,11 +111,11 @@ func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
 // It will also prevent from setting ANY of (electable | analytics | readonly) specs
 //
 //	if region config has enabled compute autoscaling
-func handleAutoscaling(kubeDeployment *mdbv1.AdvancedDeploymentSpec) error {
+func handleAutoscaling(ctx *workflow.Context, kubeDeployment *mdbv1.AdvancedDeploymentSpec) error {
 	isDiskAutoScaled := false
 	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) error {
 		if s != nil {
-			size, err := normalizeInstanceSize(s.InstanceSize, as)
+			size, err := normalizeInstanceSize(ctx, s.InstanceSize, as)
 			if err != nil {
 				return err
 			}
@@ -246,7 +246,7 @@ func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]stri
 	return deploymentNames, nil
 }
 
-func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) (string, error) {
+func normalizeInstanceSize(ctx *workflow.Context, currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) (string, error) {
 	currentSize, err := NewFromInstanceSizeName(currentInstanceSize)
 	if err != nil {
 		return "", err
@@ -263,10 +263,12 @@ func normalizeInstanceSize(currentInstanceSize string, autoscaling *mdbv1.Advanc
 	}
 
 	if CompareInstanceSizes(currentSize, minSize) == -1 {
+		ctx.Log.Warnf("The instance size is below the minimum autoscaling configuration. Setting it to %s. Consider update your CRD", autoscaling.Compute.MinInstanceSize)
 		return autoscaling.Compute.MinInstanceSize, nil
 	}
 
 	if CompareInstanceSizes(currentSize, maxSize) == 1 {
+		ctx.Log.Warnf("The instance size is above the maximum autoscaling configuration. Setting it to %s. Consider update your CRD", autoscaling.Compute.MaxInstanceSize)
 		return autoscaling.Compute.MaxInstanceSize, nil
 	}
 

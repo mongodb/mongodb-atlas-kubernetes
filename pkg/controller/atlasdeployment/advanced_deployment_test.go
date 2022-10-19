@@ -3,6 +3,9 @@ package atlasdeployment
 import (
 	"encoding/json"
 	"errors"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"go.uber.org/zap"
 	"reflect"
 	"testing"
 
@@ -611,7 +614,8 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.testName, func(t *testing.T) {
-			err := handleAutoscaling(tt.input)
+			ctx := workflow.NewContext(zap.S(), []status.Condition{})
+			err := handleAutoscaling(ctx, tt.input)
 
 			assert.Equal(t, tt.err, err)
 			if !reflect.DeepEqual(tt.input, tt.expected) && !tt.shouldFail {
@@ -631,6 +635,7 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 
 func TestNormalizeInstanceSize(t *testing.T) {
 	t.Run("InstanceSizeName should not change when inside of autoscaling configuration boundaries", func(t *testing.T) {
+		ctx := workflow.NewContext(zap.S(), []status.Condition{})
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
@@ -640,12 +645,13 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		size, err := normalizeInstanceSize("M10", autoscaling)
+		size, err := normalizeInstanceSize(ctx, "M10", autoscaling)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "M10", size)
 	})
 	t.Run("InstanceSizeName should change to minimum size when outside of the bottom autoscaling configuration boundaries", func(t *testing.T) {
+		ctx := workflow.NewContext(zap.S(), []status.Condition{})
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
@@ -655,12 +661,13 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		size, err := normalizeInstanceSize("M10", autoscaling)
+		size, err := normalizeInstanceSize(ctx, "M10", autoscaling)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "M20", size)
 	})
 	t.Run("InstanceSizeName should change to maximum size when outside of the top autoscaling configuration boundaries", func(t *testing.T) {
+		ctx := workflow.NewContext(zap.S(), []status.Condition{})
 		autoscaling := &v1.AdvancedAutoScalingSpec{
 			Compute: &v1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
@@ -670,7 +677,7 @@ func TestNormalizeInstanceSize(t *testing.T) {
 			},
 		}
 
-		size, err := normalizeInstanceSize("M40", autoscaling)
+		size, err := normalizeInstanceSize(ctx, "M40", autoscaling)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "M30", size)
