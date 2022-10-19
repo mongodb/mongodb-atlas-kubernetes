@@ -2,8 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"reflect"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -43,21 +41,17 @@ func syncProjectSettings(ctx *workflow.Context, projectID string, project *v1.At
 	return workflow.OK()
 }
 
-func areProjectSettingsEmpty(settings *v1.ProjectSettings) bool {
-	return settings == nil
-}
-
 func areSettingsInSync(atlas, spec *v1.ProjectSettings) bool {
-	if areProjectSettingsEmpty(spec) {
-		return true
-	}
-
 	return isOneContainedInOther(spec, atlas)
 }
 
 func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSettings) error {
-	path := fmt.Sprintf("api/atlas/v1.0/groups/%s/settings", projectID)
-	_, err := ctx.Client.NewRequest(context.Background(), http.MethodPatch, path, spec)
+	specAsAtlas, err := spec.ToAtlas()
+	if err != nil {
+		return err
+	}
+
+	_, _, err = ctx.Client.Projects.UpdateProjectSettings(context.Background(), projectID, specAsAtlas)
 	return err
 }
 
@@ -72,7 +66,19 @@ func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings
 	return &settings, nil
 }
 
+func areProjectSettingsEmpty(settings *v1.ProjectSettings) bool {
+	return settings == nil
+}
+
 func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
+	if one == nil {
+		return true
+	}
+
+	if other == nil {
+		return false
+	}
+
 	oneVal := reflect.ValueOf(one).Elem()
 	otherVal := reflect.ValueOf(other).Elem()
 
