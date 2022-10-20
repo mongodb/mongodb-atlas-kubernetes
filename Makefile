@@ -123,7 +123,7 @@ deploy: generate manifests run-kind ## Deploy controller in the configured Kuber
 
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
-manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
+manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,allowDangerousTypes=true"
 manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@./scripts/split_roles_yaml.sh
