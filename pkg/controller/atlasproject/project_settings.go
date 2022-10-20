@@ -15,7 +15,7 @@ func ensureProjectSettings(ctx *workflow.Context, projectID string, project *v1.
 		return result
 	}
 
-	if areProjectSettingsEmpty(project.Spec.Settings) {
+	if project.Spec.Settings == nil {
 		ctx.UnsetCondition(status.ProjectSettingsReadyType)
 		return workflow.OK()
 	}
@@ -64,10 +64,6 @@ func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings
 
 	settings := v1.ProjectSettings(*data)
 	return &settings, nil
-}
-
-func areProjectSettingsEmpty(settings *v1.ProjectSettings) bool {
-	return settings == nil
 }
 
 func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
