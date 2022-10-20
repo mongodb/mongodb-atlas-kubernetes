@@ -40,8 +40,8 @@ spec:
             description: AtlasProjectSpec defines the desired state of Project in
               Atlas
             properties:
-              alertConfigurationEnabled:
-                description: AlertConfigurationsEnabled is a flag that enables/disables
+              alertConfigurationSyncEnabled:
+                description: AlertConfigurationSyncEnabled is a flag that enables/disables
                   Alert Configurations sync for the current Project. If true - project
                   alert configurations will be synced according to AlertConfigurations.
                   If not - alert configurations will not be modified by the operator.

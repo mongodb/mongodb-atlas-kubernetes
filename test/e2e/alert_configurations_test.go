@@ -150,7 +150,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 	By("Create project with alert configurations", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-		userData.Project.Spec.AlertConfigurationsEnabled = true
+		userData.Project.Spec.AlertConfigurationSyncEnabled = true
 		userData.Project.Spec.AlertConfigurations = append(userData.Project.Spec.AlertConfigurations, alertConfigs...)
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})

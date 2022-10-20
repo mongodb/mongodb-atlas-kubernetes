@@ -68,12 +68,12 @@ type AtlasProjectSpec struct {
 	// AlertConfiguration is a list of Alert Configurations configured for the current Project.
 	AlertConfigurations []AlertConfiguration `json:"alertConfigurations,omitempty"`
 
-	// AlertConfigurationsEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
+	// AlertConfigurationSyncEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
 	// If true - project alert configurations will be synced according to AlertConfigurations.
 	// If not - alert configurations will not be modified by the operator. They can be managed through API, cli, UI.
 	//kubebuilder:default:=false
 	// +optional
-	AlertConfigurationsEnabled bool `json:"alertConfigurationEnabled,omitempty"`
+	AlertConfigurationSyncEnabled bool `json:"alertConfigurationSyncEnabled,omitempty"`
 
 	// NetworkPeers is a list of Network Peers configured for the current Project.
 	NetworkPeers []NetworkPeer `json:"networkPeers,omitempty"`

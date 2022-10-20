@@ -14,7 +14,7 @@ import (
 )
 
 func EnsureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
-	if project.Spec.AlertConfigurationsEnabled {
+	if project.Spec.AlertConfigurationSyncEnabled {
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
 		ctx := context.Background()
@@ -30,7 +30,7 @@ func EnsureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 		service.SetConditionTrue(condition)
 		return result
 	}
-	service.Log.Debugf("Alert configuration is disabled for project %s", project.Name)
+	service.Log.Debugf("Alert configuration sync is disabled for project %s", project.Name)
 	return workflow.OK()
 }
 
