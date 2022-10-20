@@ -13,7 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func EnsureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
+func ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
 	if project.Spec.AlertConfigurationSyncEnabled {
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
@@ -22,7 +22,7 @@ func EnsureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 			service.UnsetCondition(status.AlertConfigurationReadyType)
 			return workflow.OK()
 		}
-		result, condition := SyncAlertConfigurations(ctx, service, groupID, specToSync)
+		result, condition := syncAlertConfigurations(ctx, service, groupID, specToSync)
 		if !result.IsOk() {
 			service.SetConditionFromResult(condition, result)
 			return result
@@ -34,7 +34,7 @@ func EnsureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 	return workflow.OK()
 }
 
-func SyncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) (workflow.Result, status.ConditionType) {
+func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) (workflow.Result, status.ConditionType) {
 	logger := service.Log
 	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(context, groupID, nil)
 	if err != nil {
@@ -42,10 +42,10 @@ func SyncAlertConfigurations(context context.Context, service *workflow.Context,
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err)), status.AlertConfigurationReadyType
 	}
 
-	diff := SortAlertConfigs(logger, alertSpec, existedAlertConfigs)
+	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
 	logger.Debugf("to create %v, to create statuses %v, to delete %v", len(diff.Create), len(diff.CreateStatus), len(diff.Delete))
 
-	newStatuses := Create(context, service, groupID, diff.Create)
+	newStatuses := createAlertConfigs(context, service, groupID, diff.Create)
 
 	for _, existedAlertConfig := range diff.CreateStatus {
 		newStatuses = append(newStatuses, status.ParseAlertConfiguration(existedAlertConfig))
@@ -53,15 +53,15 @@ func SyncAlertConfigurations(context context.Context, service *workflow.Context,
 
 	service.EnsureStatusOption(status.AtlasProjectSetAlertConfigOption(&newStatuses))
 
-	err = Delete(context, service, groupID, diff.Delete)
+	err = deleteAlertConfigs(context, service, groupID, diff.Delete)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to delete alert configurations: %v", err)), status.AlertConfigurationReadyType
 	}
 
-	return CheckAlertConfigurationStatuses(newStatuses)
+	return checkAlertConfigurationStatuses(newStatuses)
 }
 
-func CheckAlertConfigurationStatuses(statuses []status.AlertConfiguration) (workflow.Result, status.ConditionType) {
+func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) (workflow.Result, status.ConditionType) {
 	for _, alertConfigurationStatus := range statuses {
 		if alertConfigurationStatus.ErrorMessage != "" {
 			return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to create alert configuration: %s", alertConfigurationStatus.ErrorMessage)), status.AlertConfigurationReadyType
@@ -70,7 +70,7 @@ func CheckAlertConfigurationStatuses(statuses []status.AlertConfiguration) (work
 	return workflow.OK(), status.AlertConfigurationReadyType
 }
 
-func Delete(context context.Context, ctx *workflow.Context, groupID string, alertConfigIDs []string) error {
+func deleteAlertConfigs(context context.Context, ctx *workflow.Context, groupID string, alertConfigIDs []string) error {
 	logger := ctx.Log
 	for _, alertConfigID := range alertConfigIDs {
 		_, err := ctx.Client.AlertConfigurations.Delete(context, groupID, alertConfigID)
@@ -83,7 +83,7 @@ func Delete(context context.Context, ctx *workflow.Context, groupID string, aler
 	return nil
 }
 
-func Create(context context.Context, ctx *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) []status.AlertConfiguration {
+func createAlertConfigs(context context.Context, ctx *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) []status.AlertConfiguration {
 	logger := ctx.Log
 	var result []status.AlertConfiguration
 	for _, alert := range alertSpec {
@@ -115,12 +115,12 @@ func Create(context context.Context, ctx *workflow.Context, groupID string, aler
 	return result
 }
 
-func SortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []mdbv1.AlertConfiguration, atlasAlertConfigs []mongodbatlas.AlertConfiguration) AlertConfigurationDiff {
-	var result AlertConfigurationDiff
+func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []mdbv1.AlertConfiguration, atlasAlertConfigs []mongodbatlas.AlertConfiguration) alertConfigurationDiff {
+	var result alertConfigurationDiff
 	for _, alertConfigSpec := range alertConfigSpecs {
 		found := false
 		for _, atlasAlertConfig := range atlasAlertConfigs {
-			if IsAlertConfigSpecEqualToAtlas(logger, alertConfigSpec, atlasAlertConfig) {
+			if isAlertConfigSpecEqualToAtlas(logger, alertConfigSpec, atlasAlertConfig) {
 				found = true
 				logger.Debugf("Alert configuration %s already exists.", atlasAlertConfig.ID)
 				result.CreateStatus = append(result.CreateStatus, atlasAlertConfig)
@@ -147,13 +147,13 @@ func SortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []mdbv1.AlertC
 	return result
 }
 
-type AlertConfigurationDiff struct {
+type alertConfigurationDiff struct {
 	Create       []mdbv1.AlertConfiguration
 	Delete       []string
 	CreateStatus []mongodbatlas.AlertConfiguration
 }
 
-func IsAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec mdbv1.AlertConfiguration, atlasAlertConfig mongodbatlas.AlertConfiguration) bool {
+func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec mdbv1.AlertConfiguration, atlasAlertConfig mongodbatlas.AlertConfiguration) bool {
 	if alertConfigSpec.EventTypeName != atlasAlertConfig.EventTypeName {
 		return false
 	}
