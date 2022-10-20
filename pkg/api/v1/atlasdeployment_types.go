@@ -289,7 +289,24 @@ type ComputeSpec struct {
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
 }
 
-type ProcessArgs mongodbatlas.ProcessArgs
+type ProcessArgs struct {
+	DefaultReadConcern               string `json:"defaultReadConcern,omitempty"`
+	DefaultWriteConcern              string `json:"defaultWriteConcern,omitempty"`
+	MinimumEnabledTLSProtocol        string `json:"minimumEnabledTlsProtocol,omitempty"`
+	FailIndexKeyTooLong              *bool  `json:"failIndexKeyTooLong,omitempty"`
+	JavascriptEnabled                *bool  `json:"javascriptEnabled,omitempty"`
+	NoTableScan                      *bool  `json:"noTableScan,omitempty"`
+	OplogSizeMB                      *int64 `json:"oplogSizeMB,omitempty"`
+	SampleSizeBIConnector            *int64 `json:"sampleSizeBIConnector,omitempty"`
+	SampleRefreshIntervalBIConnector *int64 `json:"sampleRefreshIntervalBIConnector,omitempty"`
+	OplogMinRetentionHours           string `json:"oplogMinRetentionHours,omitempty"`
+}
+
+func (specArgs ProcessArgs) ToAtlas() (*mongodbatlas.ProcessArgs, error) {
+	result := &mongodbatlas.ProcessArgs{}
+	err := compat.JSONCopy(result, specArgs)
+	return result, err
+}
 
 func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
 	specV := reflect.ValueOf(specArgs)
