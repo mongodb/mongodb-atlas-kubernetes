@@ -17,29 +17,31 @@ func ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 	if project.Spec.AlertConfigurationSyncEnabled {
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
+		alertConfigurationCondition := status.AlertConfigurationReadyType
 		ctx := context.Background()
 		if len(specToSync) == 0 {
-			service.UnsetCondition(status.AlertConfigurationReadyType)
+			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
 		}
-		result, condition := syncAlertConfigurations(ctx, service, groupID, specToSync)
+		result := syncAlertConfigurations(ctx, service, groupID, specToSync)
 		if !result.IsOk() {
-			service.SetConditionFromResult(condition, result)
+			service.SetConditionFromResult(alertConfigurationCondition, result)
 			return result
 		}
-		service.SetConditionTrue(condition)
+		service.SetConditionTrue(alertConfigurationCondition)
 		return result
 	}
+	service.UnsetCondition(status.AlertConfigurationReadyType)
 	service.Log.Debugf("Alert configuration sync is disabled for project %s", project.Name)
 	return workflow.OK()
 }
 
-func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) (workflow.Result, status.ConditionType) {
+func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
 	logger := service.Log
 	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(context, groupID, nil)
 	if err != nil {
 		logger.Errorf("failed to list alert configurations: %v", err)
-		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err)), status.AlertConfigurationReadyType
+		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err))
 	}
 
 	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
@@ -55,19 +57,20 @@ func syncAlertConfigurations(context context.Context, service *workflow.Context,
 
 	err = deleteAlertConfigs(context, service, groupID, diff.Delete)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to delete alert configurations: %v", err)), status.AlertConfigurationReadyType
+		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to delete alert configurations: %v", err))
 	}
 
 	return checkAlertConfigurationStatuses(newStatuses)
 }
 
-func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) (workflow.Result, status.ConditionType) {
+func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workflow.Result {
 	for _, alertConfigurationStatus := range statuses {
 		if alertConfigurationStatus.ErrorMessage != "" {
-			return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to create alert configuration: %s", alertConfigurationStatus.ErrorMessage)), status.AlertConfigurationReadyType
+			return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas,
+				fmt.Sprintf("failed to create alert configuration: %s", alertConfigurationStatus.ErrorMessage))
 		}
 	}
-	return workflow.OK(), status.AlertConfigurationReadyType
+	return workflow.OK()
 }
 
 func deleteAlertConfigs(context context.Context, ctx *workflow.Context, groupID string, alertConfigIDs []string) error {
