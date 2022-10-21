@@ -29,7 +29,7 @@ jobs:
     name: Cleanup atlas empty projects, and terminate cluster
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.0.0
+      - uses: actions/checkout@v3.1.0
 
       - name: CleanUp Atlas organization
         uses: ./.github/actions/cleanup

@@ -12,4 +12,4 @@ if [ -z "${branch_name}" ]; then
 fi
 branch_name=$(echo "${branch_name}" | awk '{print substr($0, 1, 15)}' | sed 's/\//-/g; s/\./-/g')
 tag="${branch_name}-${commit_id}"
-echo "::set-output name=tag::$tag"
+echo "tag=$tag" >> "$GITHUB_OUTPUT"
