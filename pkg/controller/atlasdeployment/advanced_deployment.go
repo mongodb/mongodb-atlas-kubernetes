@@ -59,7 +59,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	err := handleAutoscaling(ctx, deployment.Spec.AdvancedDeploymentSpec)
+	err := handleAutoscaling(ctx, deployment.Spec.AdvancedDeploymentSpec, atlasDeploymentAsAtlas)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -111,7 +111,7 @@ func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
 // It will also prevent from setting ANY of (electable | analytics | readonly) specs
 //
 //	if region config has enabled compute autoscaling
-func handleAutoscaling(ctx *workflow.Context, kubeDeployment *mdbv1.AdvancedDeploymentSpec) error {
+func handleAutoscaling(ctx *workflow.Context, desiredDeployment *mdbv1.AdvancedDeploymentSpec, currentDeployment *mongodbatlas.AdvancedCluster) error {
 	isDiskAutoScaled := false
 	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) error {
 		if s != nil {
@@ -120,12 +120,16 @@ func handleAutoscaling(ctx *workflow.Context, kubeDeployment *mdbv1.AdvancedDepl
 				return err
 			}
 
+			if size == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize {
+				size = ""
+			}
+
 			s.InstanceSize = size
 		}
 
 		return nil
 	}
-	for _, repSpec := range kubeDeployment.ReplicationSpecs {
+	for _, repSpec := range desiredDeployment.ReplicationSpecs {
 		for _, regConfig := range repSpec.RegionConfigs {
 			if regConfig.AutoScaling != nil {
 				if regConfig.AutoScaling.DiskGB != nil &&
@@ -157,7 +161,7 @@ func handleAutoscaling(ctx *workflow.Context, kubeDeployment *mdbv1.AdvancedDepl
 	}
 
 	if isDiskAutoScaled {
-		kubeDeployment.DiskSizeGB = nil
+		desiredDeployment.DiskSizeGB = nil
 	}
 
 	return nil
