@@ -689,6 +689,20 @@ spec:
                       type: string
                   type: object
                 type: array
+              settings:
+                description: Settings allow to set Project Settings for the project
+                properties:
+                  isCollectDatabaseSpecificsStatisticsEnabled:
+                    type: boolean
+                  isDataExplorerEnabled:
+                    type: boolean
+                  isPerformanceAdvisorEnabled:
+                    type: boolean
+                  isRealtimePerformancePanelEnabled:
+                    type: boolean
+                  isSchemaAdvisorEnabled:
+                    type: boolean
+                type: object
               withDefaultAlertsSettings:
                 default: true
                 description: Flag that indicates whether to create the new project

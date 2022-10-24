@@ -19,7 +19,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.0
-	go.mongodb.org/atlas v0.16.0
+	go.mongodb.org/atlas v0.18.0
 	go.mongodb.org/mongo-driver v1.10.2
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.96.0
