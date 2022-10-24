@@ -22,6 +22,13 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTyp
 		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'", conditonTypes))
 }
 
+// CheckConditionNotSet wait for Ready condition to become true and checks that input conditions are unset
+func CheckConditionNotSet(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) {
+	Eventually(conditionsAreUnset(userData, conditonTypes...)).
+		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset", conditonTypes))
+}
+
 func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) func(g types.Gomega) bool {
 	return func(g Gomega) bool {
 		conditions, err := kube.GetAllProjectConditions(userData)
@@ -42,5 +49,31 @@ func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditonTypes ..
 		}
 
 		return true
+	}
+}
+
+func conditionsAreUnset(userData *model.TestDataProvider, unsetConditonTypes ...status.ConditionType) func(g types.Gomega) bool {
+	return func(g Gomega) bool {
+		conditions, err := kube.GetAllProjectConditions(userData)
+		g.Expect(err).ShouldNot(HaveOccurred())
+
+		isReady := false
+		for _, condition := range conditions {
+			if !isReady {
+				if condition.Type == status.ReadyType && condition.Status == v1.ConditionTrue {
+					isReady = true
+				}
+
+				return false
+			}
+
+			for _, unsetConditionType := range unsetConditonTypes {
+				if condition.Type == unsetConditionType {
+					return false
+				}
+			}
+		}
+
+		return isReady
 	}
 }
