@@ -106,7 +106,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 
 		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(strings.HasSuffix(key, project.RemoveStarsFromString(dog.APIKey))).Should(BeTrue())
+		Expect(strings.HasSuffix(key, removeStarsFromString(dog.APIKey))).Should(BeTrue())
 	})
 
 	By("Delete integration", func() {
@@ -137,4 +137,8 @@ func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
 		}
 	}
 	return ""
+}
+
+func removeStarsFromString(str string) string {
+	return strings.ReplaceAll(str, "*", "")
 }

@@ -1,8 +1,6 @@
 package project
 
 import (
-	"strings"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
@@ -84,7 +82,7 @@ func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodb
 			return
 		}
 
-		*target, err = passwordField.ReadPassword(c, defaultNS)
+		*target, err = passwordField.ReadPassword(c, getNamespace(passwordField.Namespace, defaultNS))
 		storeError(err, errors)
 	}
 
@@ -117,6 +115,13 @@ func storeError(err error, errors *[]error) {
 	}
 }
 
-func RemoveStarsFromString(str string) string {
-	return strings.ReplaceAll(str, "*", "")
+// getNamespace returns first non-empty namespace from the list
+func getNamespace(namespaces ...string) string {
+	for _, namespace := range namespaces {
+		if namespace != "" {
+			return namespace
+		}
+	}
+
+	return ""
 }
