@@ -439,7 +439,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context,
 	context := context.Background()
 	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context, project.Status.ID, deploymentName)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, "cannot get process args")
+		return workflow.Terminate(workflow.DeploymentAdvancedOptionsReady, "cannot get process args")
 	}
 
 	if deployment.Spec.ProcessArgs == nil {
@@ -447,14 +447,18 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context,
 	}
 
 	if !deployment.Spec.ProcessArgs.IsEqual(atlasArgs) {
-		options := mongodbatlas.ProcessArgs(*deployment.Spec.ProcessArgs)
-		args, resp, err := ctx.Client.Clusters.UpdateProcessArgs(context, project.Status.ID, deploymentName, &options)
-		ctx.Log.Debugw("ProcessArgs Update", "args", args, "resp", resp.Body, "err", err)
+		options, err := deployment.Spec.ProcessArgs.ToAtlas()
 		if err != nil {
-			return workflow.Terminate(workflow.Internal, "cannot update process args")
+			return workflow.Terminate(workflow.DeploymentAdvancedOptionsReady, "cannot convert process args to atlas")
 		}
 
-		workflow.InProgress(workflow.DeploymentAdvancedOptionsAreNotReady, "deployment Advanced Configuration Options are being updated")
+		args, resp, err := ctx.Client.Clusters.UpdateProcessArgs(context, project.Status.ID, deploymentName, options)
+		ctx.Log.Debugw("ProcessArgs Update", "args", args, "resp", resp.Body, "err", err)
+		if err != nil {
+			return workflow.Terminate(workflow.DeploymentAdvancedOptionsReady, "cannot update process args")
+		}
+
+		workflow.InProgress(workflow.DeploymentAdvancedOptionsReady, "deployment Advanced Configuration Options are being updated")
 	}
 
 	return workflow.OK()

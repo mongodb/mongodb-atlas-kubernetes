@@ -88,6 +88,7 @@ jobs:
             "multinamespaced",
             "networkpeering",
             "privatelink",
+            "project-settings",
             "x509auth",
           ]
 

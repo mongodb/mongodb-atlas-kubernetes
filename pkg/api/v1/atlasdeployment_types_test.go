@@ -44,6 +44,7 @@ func init() {
 	excludedClusterFieldsTheirs["links"] = true
 	excludedClusterFieldsTheirs["createDate"] = true
 	excludedClusterFieldsTheirs["versionReleaseSystem"] = true
+	excludedClusterFieldsTheirs["serverlessBackupOptions"] = true
 }
 
 func TestCompatibility(t *testing.T) {
