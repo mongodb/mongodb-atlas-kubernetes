@@ -73,6 +73,7 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
+            "alert-config",
             "auditing",
             "bundle-test",
             "cloud-access-role",

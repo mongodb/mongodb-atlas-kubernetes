@@ -233,6 +233,13 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 
+	if result = ensureAlertConfigurations(ctx, project, projectID); !result.IsOk() {
+		logIfWarning(ctx, result)
+		return result
+	}
+
+	r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
+
 	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
 		return result
 	}
