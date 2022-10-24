@@ -132,7 +132,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 
 	By("Check if project returned back to the initial state", func() {
-		actions.WaitForConditionsToBecomeTrue(userData, status.ReadyType)
+		actions.CheckConditionsNotSet(userData, status.EncryptionAtRestReadyType)
 
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())

@@ -22,8 +22,8 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditonTyp
 		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'", conditonTypes))
 }
 
-// CheckConditionNotSet wait for Ready condition to become true and checks that input conditions are unset
-func CheckConditionNotSet(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) {
+// CheckConditionsNotSet wait for Ready condition to become true and checks that input conditions are unset
+func CheckConditionsNotSet(userData *model.TestDataProvider, conditonTypes ...status.ConditionType) {
 	Eventually(conditionsAreUnset(userData, conditonTypes...)).
 		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
 		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset", conditonTypes))

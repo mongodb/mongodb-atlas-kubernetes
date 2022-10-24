@@ -114,7 +114,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
 		data.Project.Spec.Integrations = []project.Integration{}
 		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(data, status.ReadyType)
+		actions.CheckConditionsNotSet(data, status.IntegrationReadyType)
 	})
 
 	By("Delete integration check", func() {

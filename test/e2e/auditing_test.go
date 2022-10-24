@@ -68,7 +68,7 @@ func auditingFlow(userData *model.TestDataProvider, auditing *v1.Auditing) {
 	By("Remove Auditing from the project", func() {
 		userData.Project.Spec.Auditing = nil
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ReadyType)
+		actions.CheckConditionsNotSet(userData, status.AuditingReadyType)
 	})
 }
 
