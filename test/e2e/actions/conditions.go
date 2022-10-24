@@ -59,14 +59,17 @@ func conditionsAreUnset(userData *model.TestDataProvider, unsetConditonTypes ...
 
 		isReady := false
 		for _, condition := range conditions {
-			if !isReady {
-				if condition.Type == status.ReadyType && condition.Status == v1.ConditionTrue {
-					isReady = true
-				}
-
-				return false
+			if condition.Type == status.ReadyType && condition.Status == v1.ConditionTrue {
+				isReady = true
+				break
 			}
+		}
 
+		if !isReady {
+			return false
+		}
+
+		for _, condition := range conditions {
 			for _, unsetConditionType := range unsetConditonTypes {
 				if condition.Type == unsetConditionType {
 					return false
@@ -74,6 +77,6 @@ func conditionsAreUnset(userData *model.TestDataProvider, unsetConditonTypes ...
 			}
 		}
 
-		return isReady
+		return true
 	}
 }
