@@ -4,6 +4,9 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/hashicorp/go-multierror"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -26,6 +29,18 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 		}
 		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
 			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
+		}
+	}
+
+	if deploymentSpec.AdvancedDeploymentSpec != nil {
+		instanceSizeErr := instanceSizeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		if instanceSizeErr != nil {
+			err = multierror.Append(err, instanceSizeErr)
+		}
+
+		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		if autoscalingErr != nil {
+			err = multierror.Append(err, autoscalingErr)
 		}
 	}
 
@@ -58,4 +73,51 @@ func allAreNil(values ...interface{}) bool {
 // moreThanOneIsNil returns true if there are more than one non nil elements.
 func moreThanOneIsNonNil(values ...interface{}) bool {
 	return getNonNilCount(values...) > 1
+}
+
+func instanceSizeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
+	var instanceSize string
+	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment ")
+
+	for _, replicationSpec := range replicationSpecs {
+		for _, regionSpec := range replicationSpec.RegionConfigs {
+			if instanceSize == "" {
+				instanceSize = regionSpec.ElectableSpecs.InstanceSize
+			}
+
+			if regionSpec.ElectableSpecs.InstanceSize != instanceSize {
+				return err
+			}
+
+			if regionSpec.ReadOnlySpecs.InstanceSize != instanceSize {
+				return err
+			}
+
+			if regionSpec.AnalyticsSpecs.InstanceSize != instanceSize {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func autoscalingForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
+	var autoscaling *mdbv1.AdvancedAutoScalingSpec
+	first := true
+
+	for _, replicationSpec := range replicationSpecs {
+		for _, regionSpec := range replicationSpec.RegionConfigs {
+			if first {
+				autoscaling = regionSpec.AutoScaling
+				first = false
+			}
+
+			if cmp.Diff(autoscaling, regionSpec.AutoScaling, cmpopts.EquateEmpty()) != "" {
+				return errors.New("autoscaling must be the same for all regions and across all replication specs for advanced deployment ")
+			}
+		}
+	}
+
+	return nil
 }
