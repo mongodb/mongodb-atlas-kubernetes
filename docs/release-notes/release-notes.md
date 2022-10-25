@@ -1,17 +1,12 @@
-# MongoDB Atlas Operator v1.3.0
+# MongoDB Atlas Operator v1.4.0
 
 ## AtlasProject Resource
 
-* Add network peering feature #620
-* Add cloud provider access role feature #645
-* Add encryption at rest #674
-
-## AtlasDeployment Resource
-
-* Fix deployment CR deletion if token invalid #666 (#421)
-* Prevent changing instanceSize and diskGB if autoscaling is enabled #672 (#648, #649)
-* Fix error message for Delete method #664 
-* Add test for atlasdeployments with keep annotation #612
+* Add auditing (#708)
+* Add Project Settings (#716)
+* Add alert configuration feature (#717)
+* Fix issue with /32 CIDR #694 (#704)
+* Check user namespace for integrations #725 (#726)
 
 *The images can be found in:*
 
