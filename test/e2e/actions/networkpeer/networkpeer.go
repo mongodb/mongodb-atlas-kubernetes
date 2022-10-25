@@ -3,13 +3,11 @@ package networkpeer
 import (
 	"os"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 const (

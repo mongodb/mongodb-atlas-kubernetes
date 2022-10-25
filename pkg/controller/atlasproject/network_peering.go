@@ -13,6 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 )
 
 const (
@@ -64,6 +65,59 @@ func failedPeerStatus(errMessage string, peer mdbv1.NetworkPeer) status.AtlasNet
 	}
 }
 
+func getAllContainer(ctx context.Context, containerService mongodbatlas.ContainersService, groupID string) ([]mongodbatlas.Container, error) {
+	listAWS, _, err := containerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{
+		ProviderName: string(provider.ProviderAWS),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS containers: %w", err)
+	}
+	listGCP, _, err := containerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{
+		ProviderName: string(provider.ProviderGCP),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get GCP containers: %w", err)
+	}
+	listAzure, _, err := containerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{
+		ProviderName: string(provider.ProviderAzure),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Azure containers: %w", err)
+	}
+	return append(append(listAWS, listGCP...), listAzure...), nil
+}
+
+func deleteUnusedPeerContainers(ctx context.Context, containerService mongodbatlas.ContainersService, existedPeers []mongodbatlas.Peer, peerSpecs []mdbv1.NetworkPeer, groupID string) error {
+	var containerInUse []string
+	for _, peer := range existedPeers {
+		if peer.StatusName != StatusDeleting && peer.Status != StatusDeleting {
+			containerInUse = append(containerInUse, peer.ContainerID)
+		}
+	}
+	for _, peerSpec := range peerSpecs {
+		if peerSpec.ContainerID != "" {
+			containerInUse = append(containerInUse, peerSpec.ContainerID)
+		}
+	}
+	containers, err := getAllContainer(ctx, containerService, groupID)
+	if err != nil {
+		return err
+	}
+	var containersToDelete []string
+	for _, container := range containers {
+		if !util.Contains(containerInUse, container.ID) {
+			containersToDelete = append(containersToDelete, container.ID)
+		}
+	}
+	for _, containerID := range containersToDelete {
+		_, err = containerService.Delete(ctx, groupID, containerID)
+		if err != nil {
+			return fmt.Errorf("failed to delete unused container %s: %w", containerID, err)
+		}
+	}
+	return nil
+}
+
 func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []mdbv1.NetworkPeer) (workflow.Result, status.ConditionType) {
 	defer ctx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := ctx.Log
@@ -73,6 +127,12 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 	if err != nil {
 		logger.Errorf("failed to get all network peers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to get all network peers"),
+			status.NetworkPeerReadyType
+	}
+
+	err = deleteUnusedPeerContainers(context, mongoClient.Containers, list, peerSpecs, groupID)
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete unused peer containers"),
 			status.NetworkPeerReadyType
 	}
 
@@ -375,9 +435,13 @@ func comparePeersPair(existedPeer mongodbatlas.Peer, expectedPeer mdbv1.NetworkP
 
 	switch expectedPeer.ProviderName {
 	case provider.ProviderAWS:
+		if existedPeer.StatusName != StatusReady && existedPeer.AccepterRegionName == "" {
+			existedPeer.AccepterRegionName = expectedPeer.AccepterRegionName
+		}
 		if existedPeer.VpcID == expectedPeer.VpcID &&
 			expectedPeer.AWSAccountID == existedPeer.AWSAccountID &&
-			expectedPeer.RouteTableCIDRBlock == existedPeer.RouteTableCIDRBlock {
+			expectedPeer.RouteTableCIDRBlock == existedPeer.RouteTableCIDRBlock &&
+			expectedPeer.AccepterRegionName == existedPeer.AccepterRegionName {
 			return true
 		}
 		return false
@@ -388,7 +452,6 @@ func comparePeersPair(existedPeer mongodbatlas.Peer, expectedPeer mdbv1.NetworkP
 		}
 		return false
 	case provider.ProviderAzure:
-
 		if existedPeer.AzureSubscriptionID == expectedPeer.AzureSubscriptionID &&
 			existedPeer.AzureDirectoryID == expectedPeer.AzureDirectoryID &&
 			existedPeer.ResourceGroupName == expectedPeer.ResourceGroupName &&
