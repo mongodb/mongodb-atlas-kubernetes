@@ -120,7 +120,7 @@ func handleAutoscaling(ctx *workflow.Context, desiredDeployment *mdbv1.AdvancedD
 				return err
 			}
 
-			if size == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize {
+			if isInstanceSizeTheSame(currentDeployment, size) {
 				size = ""
 			}
 
@@ -277,4 +277,8 @@ func normalizeInstanceSize(ctx *workflow.Context, currentInstanceSize string, au
 	}
 
 	return currentInstanceSize, nil
+}
+
+func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desiredInstanceSize string) bool {
+	return desiredInstanceSize == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
 }
