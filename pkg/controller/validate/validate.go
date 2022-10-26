@@ -79,21 +79,29 @@ func instanceSizeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplica
 	var instanceSize string
 	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment ")
 
+	isInstanceSizeEqual := func(nodeInstanceType string) bool {
+		if instanceSize == "" {
+			instanceSize = nodeInstanceType
+		}
+
+		return nodeInstanceType == instanceSize
+	}
+
 	for _, replicationSpec := range replicationSpecs {
 		for _, regionSpec := range replicationSpec.RegionConfigs {
 			if instanceSize == "" {
 				instanceSize = regionSpec.ElectableSpecs.InstanceSize
 			}
 
-			if regionSpec.ElectableSpecs.InstanceSize != instanceSize {
+			if regionSpec.ElectableSpecs != nil && !isInstanceSizeEqual(regionSpec.ElectableSpecs.InstanceSize) {
 				return err
 			}
 
-			if regionSpec.ReadOnlySpecs.InstanceSize != instanceSize {
+			if regionSpec.ReadOnlySpecs != nil && !isInstanceSizeEqual(regionSpec.ReadOnlySpecs.InstanceSize) {
 				return err
 			}
 
-			if regionSpec.AnalyticsSpecs.InstanceSize != instanceSize {
+			if regionSpec.AnalyticsSpecs != nil && !isInstanceSizeEqual(regionSpec.AnalyticsSpecs.InstanceSize) {
 				return err
 			}
 		}
