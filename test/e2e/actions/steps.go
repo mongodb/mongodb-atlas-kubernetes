@@ -134,7 +134,7 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 }
 
 func WaitProject(data *model.TestDataProvider, generation int) {
-	EventuallyWithOffset(1, kube.ProjectReadyCondition(data), "15m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
+	EventuallyWithOffset(1, kube.ProjectReadyCondition(data), "25m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
 	gen, err := k8s.GetProjectObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Project.GetK8sMetaName())
 	Expect(err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, gen).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
