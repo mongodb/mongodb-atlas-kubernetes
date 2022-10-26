@@ -522,6 +522,8 @@ spec:
                     type: string
                   noTableScan:
                     type: boolean
+                  oplogMinRetentionHours:
+                    type: string
                   oplogSizeMB:
                     format: int64
                     type: integer
