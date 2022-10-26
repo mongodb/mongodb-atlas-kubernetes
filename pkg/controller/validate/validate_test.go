@@ -3,6 +3,8 @@ package validate
 import (
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+
 	"github.com/stretchr/testify/assert"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -36,6 +38,144 @@ func TestClusterValidation(t *testing.T) {
 			}}
 			assert.Error(t, DeploymentSpec(spec))
 		})
+		t.Run("different instance sizes for advanced deployment", func(t *testing.T) {
+			t.Run("different instance size in the same region", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M20"},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.Error(t, DeploymentSpec(spec))
+			})
+			t.Run("different instance size in different regions", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M20"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.Error(t, DeploymentSpec(spec))
+			})
+			t.Run("different instance size in different replications", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+								},
+							},
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M20"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.Error(t, DeploymentSpec(spec))
+			})
+		})
+		t.Run("different autoscaling for advanced deployment", func(t *testing.T) {
+			t.Run("different instance size in different regions", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+											Compute: &mdbv1.ComputeSpec{
+												Enabled:          toptr.MakePtr(true),
+												ScaleDownEnabled: toptr.MakePtr(true),
+												MinInstanceSize:  "M10",
+												MaxInstanceSize:  "M30",
+											},
+										},
+									},
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.Error(t, DeploymentSpec(spec))
+			})
+			t.Run("different autoscaling in different replications", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+											Compute: &mdbv1.ComputeSpec{
+												Enabled:          toptr.MakePtr(true),
+												ScaleDownEnabled: toptr.MakePtr(true),
+												MinInstanceSize:  "M10",
+												MaxInstanceSize:  "M30",
+											},
+										},
+									},
+								},
+							},
+							{
+								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+									{
+										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M20"},
+										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.Error(t, DeploymentSpec(spec))
+			})
+		})
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
@@ -55,6 +195,50 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName: "SERVERLESS",
 				},
 			}}
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
+		})
+		t.Run("Advanced cluster with replication config", func(t *testing.T) {
+			spec := mdbv1.AtlasDeploymentSpec{
+				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+						{
+							RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								{
+									ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+										Compute: &mdbv1.ComputeSpec{
+											Enabled:          toptr.MakePtr(true),
+											ScaleDownEnabled: toptr.MakePtr(true),
+											MinInstanceSize:  "M10",
+											MaxInstanceSize:  "M30",
+										},
+									},
+								},
+							},
+						},
+						{
+							RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								{
+									ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
+									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+										Compute: &mdbv1.ComputeSpec{
+											Enabled:          toptr.MakePtr(true),
+											ScaleDownEnabled: toptr.MakePtr(true),
+											MinInstanceSize:  "M10",
+											MaxInstanceSize:  "M30",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
 			assert.NoError(t, DeploymentSpec(spec))
 			assert.Nil(t, DeploymentSpec(spec))
 		})
