@@ -86,9 +86,10 @@ jobs:
       - name: Prepare docker Quay image tag
         id: prepare-quay-image-tag
         run: |
+          REGISTRY=${{ env.QUAY_RELEASE_REGISTRY }}
           REPOSITORY=${{ env.QUAY_OPERATOR_REPO }}
           TAG=${{ steps.tag.outputs.version }}
-          TAGS="${REPOSITORY}:${TAG}"
+          TAGS="${REGISTRY}/${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
       - name: Push Atlas Operator to Quay Registry
         uses: docker/build-push-action@v3
