@@ -101,6 +101,10 @@ type AtlasProjectSpec struct {
 	// Settings allow to set Project Settings for the project
 	// +optional
 	Settings *ProjectSettings `json:"settings,omitempty"`
+
+	// The customRoles lets you create, and change custom roles in your cluster. Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+	// +optional
+	CustomRoles []CustomRole `json:"customRoles,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

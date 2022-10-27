@@ -277,6 +277,79 @@ spec:
                 required:
                 - name
                 type: object
+              customRoles:
+                description: The customRoles lets you create, and change custom roles
+                  in your cluster. Use custom roles to specify custom sets of actions
+                  that the Atlas built-in roles can't describe.
+                items:
+                  properties:
+                    actions:
+                      description: List of the individual privilege actions that the
+                        role grants.
+                      items:
+                        properties:
+                          action:
+                            description: Human-readable label that identifies the
+                              privilege action.
+                            type: string
+                          resources:
+                            description: List of resources on which you grant the
+                              action.
+                            items:
+                              properties:
+                                cluster:
+                                  description: Flag that indicates whether to grant
+                                    the action on the cluster resource. If true, MongoDB
+                                    Cloud ignores Database and Collection parameters.
+                                  type: boolean
+                                collection:
+                                  description: Human-readable label that identifies
+                                    the collection on which you grant the action to
+                                    one MongoDB user.
+                                  type: string
+                                db:
+                                  description: Human-readable label that identifies
+                                    the database on which you grant the action to
+                                    one MongoDB user.
+                                  type: string
+                              required:
+                              - cluster
+                              - collection
+                              - db
+                              type: object
+                            type: array
+                        required:
+                        - action
+                        - resources
+                        type: object
+                      type: array
+                    inheritedRoles:
+                      description: List of the built-in roles that this custom role
+                        inherits.
+                      items:
+                        properties:
+                          db:
+                            description: Human-readable label that identifies the
+                              database on which someone grants the action to one MongoDB
+                              user.
+                            type: string
+                          role:
+                            description: Human-readable label that identifies the
+                              role inherited.
+                            type: string
+                        required:
+                        - db
+                        - role
+                        type: object
+                      type: array
+                    roleName:
+                      description: Human-readable label that identifies the role.
+                        This name must be unique for this custom role in this project.
+                      type: string
+                  required:
+                  - roleName
+                  type: object
+                type: array
               encryptionAtRest:
                 description: EncryptionAtRest allows to set encryption for AWS, Azure
                   and GCP providers
