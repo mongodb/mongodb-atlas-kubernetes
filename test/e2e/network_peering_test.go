@@ -219,7 +219,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 	By("Establish network peers connection", func() {
 		Eventually(func(g Gomega) bool {
 			return EnsurePeersReadyToConnect(g, userData, len(peers))
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
+		}).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(networkpeer.EstablishPeerConnections(userData.Project.Status.NetworkPeers)).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(userData, status.NetworkPeerReadyType, status.ReadyType)
