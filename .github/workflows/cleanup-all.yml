@@ -31,21 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3.1.0
 
-      - name: CleanUp Atlas organization
-        uses: ./.github/actions/cleanup
-        env:
-          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
-          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-        with:
-          CLEAN_ALL: ${{ github.event.inputs.clean }}
-          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: '1.19'
+
+      - name: Run atlas project cleaner
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          CLEAN_ALL: ${{ github.event.inputs.clean }}
+          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
+        run: (cd .github/actions/cleanup && go run .)
 
       - name: Run cleanup PE
         env:
