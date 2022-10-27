@@ -265,6 +265,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
 
+	if result = ensureCustomRoles(ctx, projectID, project); !result.IsOk() {
+		return result
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
+
 	return workflow.OK()
 }
 

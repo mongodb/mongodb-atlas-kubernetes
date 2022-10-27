@@ -34,6 +34,7 @@ const (
 	ProjectAuditingReady                       ConditionReason = "ProjectAuditingReady"
 	ProjectSettingsReady                       ConditionReason = "ProjectSettingsReady"
 	ProjectAlertConfigurationIsNotReadyInAtlas ConditionReason = "ProjectAlertConfigurationIsNotReadyInAtlas"
+	ProjectCustomRolesReady                    ConditionReason = "ProjectCustomRolesReady"
 )
 
 // Atlas Cluster reasons
