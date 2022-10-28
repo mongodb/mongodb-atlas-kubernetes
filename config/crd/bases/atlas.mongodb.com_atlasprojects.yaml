@@ -288,7 +288,7 @@ spec:
                         role grants.
                       items:
                         properties:
-                          action:
+                          name:
                             description: Human-readable label that identifies the
                               privilege action.
                             type: string
@@ -307,7 +307,7 @@ spec:
                                     the collection on which you grant the action to
                                     one MongoDB user.
                                   type: string
-                                db:
+                                database:
                                   description: Human-readable label that identifies
                                     the database on which you grant the action to
                                     one MongoDB user.
@@ -315,11 +315,11 @@ spec:
                               required:
                               - cluster
                               - collection
-                              - db
+                              - database
                               type: object
                             type: array
                         required:
-                        - action
+                        - name
                         - resources
                         type: object
                       type: array
@@ -328,26 +328,26 @@ spec:
                         inherits.
                       items:
                         properties:
-                          db:
+                          database:
                             description: Human-readable label that identifies the
                               database on which someone grants the action to one MongoDB
                               user.
                             type: string
-                          role:
+                          name:
                             description: Human-readable label that identifies the
                               role inherited.
                             type: string
                         required:
-                        - db
-                        - role
+                        - database
+                        - name
                         type: object
                       type: array
-                    roleName:
+                    name:
                       description: Human-readable label that identifies the role.
                         This name must be unique for this custom role in this project.
                       type: string
                   required:
-                  - roleName
+                  - name
                   type: object
                 type: array
               encryptionAtRest:
