@@ -114,23 +114,23 @@ This is necessary for the Operator to appear on "operators" tab in Openshift clu
 pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
  - Add mongodb's fork of the `certified-operators` as a `mongodb`: 
  - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
- - Use the MongoDB's project ID: 606c70426b0681eb0f1fd1c3 as `RH_CERTIFICATION_OSPID`
- - Use the image from the release process step "Push Atlas Operator to RedHat Connect" as `IMG`
+ - Use the MongoDB's project ID: 63568bb95612f26f8db42d7a as `RH_CERTIFICATION_OSPID`
+ - Use the image from the release process step "Push Atlas Operator to Quay.io" as `IMG`
  - Use the version of the release as `VERSION`
- - Get the MongoDB's token to access `scan.connect.redhat.com` registry: https://connect.redhat.com/projects/606c70426b0681eb0f1fd1c3/setup-preflight (see `registry key`) and use it as `RH_CERTIFICATION_TOKEN`
- - Get the PYXIS token from the secrets and use it as `RH_CERTIFICATION_PYXIS_API_TOKEN`
+ - Get the Quay.io registry token (e.g. the one that is used by Docker)
+ - Get the PYXIS token from the secrets (https://connect.redhat.com/account/api-keys, you can create one for yourself) and use it as `RH_CERTIFICATION_PYXIS_API_TOKEN`
 
 Invoke the following script:
 ```
 IMAGE=<image pushed to scan.connect.redhat.com> \
 VERSION=<image-version> \
-RH_CERTIFICATION_OSPID=606c70426b0681eb0f1fd1c3 \
-RH_CERTIFICATION_TOKEN=<token to access scan.connect.redhat.com> \
+RH_CERTIFICATION_OSPID=63568bb95612f26f8db42d7a \
+REGISTRY_TOKEN=<quay.io registry token) \
 RH_CERTIFICATION_PYXIS_API_TOKEN=<pyxis token> \
 ./scripts/release-redhat-certified.sh
 ```
 
-If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) here https://connect.redhat.com/projects/606c70426b0681eb0f1fd1c3/images
+If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) here https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images
 
 Then go the GitHub and create a PR
 from `mongodb` fork this repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).

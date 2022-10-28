@@ -12,7 +12,7 @@ if [ -z "${VERSION+x}" ]; then
   exit 1
 fi
 
-# Path to https://github.com/mongodb-forks/community-operators
+# Path to https://github.com/mongodb-forks/certified-operators
 if [ -z "${RH_CERTIFIED_OPENSHIFT_REPO_PATH+x}" ]; then
   echo "RH_CERTIFIED_OPENSHIFT_REPO_PATH is not set"
   exit 1
@@ -23,8 +23,8 @@ if [ -z "${RH_CERTIFICATION_OSPID+x}" ]; then
   exit 1
 fi
 
-if [ -z "${RH_CERTIFICATION_TOKEN+x}" ]; then
-  echo "RH_CERTIFICATION_TOKEN is not set"
+if [ -z "${REGISTRY_TOKEN+x}" ]; then
+  echo "REGISTRY_TOKEN is not set"
   exit 1
 fi
 
@@ -41,7 +41,7 @@ fi
 preflight --version
 ${CONTAINER_ENGINE} --version
 
-${CONTAINER_ENGINE} login -u unused -p "${RH_CERTIFICATION_TOKEN}" scan.connect.redhat.com --authfile ./authfile.json
+${CONTAINER_ENGINE} login -u unused -p "${REGISTRY_TOKEN}" quay.io --authfile ./authfile.json
 
 REPO="${RH_CERTIFIED_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 
