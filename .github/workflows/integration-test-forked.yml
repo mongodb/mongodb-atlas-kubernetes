@@ -1,4 +1,4 @@
-name: Test Forked
+name:  Integration tests forked
 
 on:
   pull_request_target:
@@ -7,7 +7,7 @@ on:
       - 'docs/**'
 
 concurrency:
-  group: test-forked-${{ github.head_ref || github.ref_name }}
+  group: int-test-forked-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -19,23 +19,10 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run"
 
-  unit-tests-forked:
+  int-tests-forked:
     needs: allowed-forked
-    uses: ./.github/workflows/test-unit.yml
+    uses: ./.github/workflows/test-int.yml
     secrets: inherit
     with:
       forked: true
 
-  e2e-tests-forked:
-    needs: allowed-forked
-    uses: ./.github/workflows/test-e2e.yml
-    secrets: inherit
-    with:
-      forked: true
-
-  openshift-upgrade-test:
-    needs: allowed-forked
-    uses: ./.github/workflows/openshift-upgrade-test.yaml
-    secrets: inherit
-    with:
-      forked: true
