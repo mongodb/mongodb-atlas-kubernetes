@@ -268,7 +268,7 @@ func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService a
 		case provider.ProviderAWS, provider.ProviderAzure:
 			return specPeService.ID != atlasPeService.InterfaceEndpointID()
 		case provider.ProviderGCP:
-			return specPeService.EndpointGroupName != atlasPeService.InterfaceEndpointID() && len(atlasPeService.ServiceAttachmentNames) != len(specPeService.Endpoints)
+			return specPeService.EndpointGroupName != atlasPeService.InterfaceEndpointID() || len(atlasPeService.ServiceAttachmentNames) != len(specPeService.Endpoints)
 		}
 	}
 
