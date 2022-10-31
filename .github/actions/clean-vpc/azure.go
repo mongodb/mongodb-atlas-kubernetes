@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
-func deleteAzureVPCBySubstr(subID, resourceGroupName, substr string) (bool, error) {
+func deleteAzureVPCBySubstr(ctx context.Context, subID, resourceGroupName, substr string) (bool, error) {
 	ok := true
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
@@ -19,14 +19,14 @@ func deleteAzureVPCBySubstr(subID, resourceGroupName, substr string) (bool, erro
 	vnetClient := network.NewVirtualNetworksClient(subID)
 	vnetClient.Authorizer = authorizer
 
-	vnets, err := vnetClient.List(context.Background(), resourceGroupName)
+	vnets, err := vnetClient.List(ctx, resourceGroupName)
 	if err != nil {
 		return false, fmt.Errorf("error fetching vnets: %v", err)
 	}
 	for _, vnet := range vnets.Values() {
-		if vnet.Name != nil && strings.Contains(*vnet.Name, substr) {
+		if vnet.Name != nil && strings.HasPrefix(*vnet.Name, substr) {
 			log.Printf("deleting vnet %s", *vnet.Name)
-			_, err = vnetClient.Delete(context.Background(), resourceGroupName, *vnet.Name)
+			_, err = vnetClient.Delete(ctx, resourceGroupName, *vnet.Name)
 			if err != nil {
 				log.Printf("error deleting vnet: %v", err)
 				ok = false

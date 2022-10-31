@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -21,11 +22,8 @@ func deleteAllPE(ctx context.Context, client mongodbatlas.PrivateEndpointsServic
 
 func deletePrivateEndpointsFromAtlas(ctx context.Context, client mongodbatlas.PrivateEndpointsService, projectID string, listsToRemove []mongodbatlas.PrivateEndpointConnection) error {
 	for _, peService := range listsToRemove {
-		if peService.Status == "DELETING" {
-			continue
-		}
-
 		if interfaceEndpointID(peService) != "" {
+			log.Printf("Deleting private endpoint %s", interfaceEndpointID(peService))
 			if _, err := client.DeleteOnePrivateEndpoint(ctx, projectID, peService.ProviderName, peService.ID, interfaceEndpointID(peService)); err != nil {
 				return fmt.Errorf("error deleting private endpoint interface: %s", err)
 			}
@@ -33,6 +31,7 @@ func deletePrivateEndpointsFromAtlas(ctx context.Context, client mongodbatlas.Pr
 			continue
 		}
 
+		log.Printf("Deleting private endpoint %s", peService.EndpointServiceName)
 		if _, err := client.Delete(ctx, projectID, peService.ProviderName, peService.ID); err != nil {
 			return fmt.Errorf("error deleting private endpoint service: %s", err)
 		}

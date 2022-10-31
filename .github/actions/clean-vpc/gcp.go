@@ -25,7 +25,7 @@ func deleteGCPVPCBySubstr(gcpProjectID, nameSubstr string) (bool, error) {
 		return false, fmt.Errorf("failed to list networks: %s", err)
 	}
 	for _, network := range networks.Items {
-		if strings.Contains(network.Name, nameSubstr) {
+		if strings.HasPrefix(network.Name, nameSubstr) {
 			log.Printf("deleting network %s", network.Name)
 			_, err = networkService.Delete(gcpProjectID, network.Name).Do()
 			if err != nil {

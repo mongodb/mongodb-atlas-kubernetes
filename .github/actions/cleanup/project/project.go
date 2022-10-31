@@ -20,7 +20,7 @@ func PrepareListToDelete(projects *mongodbatlas.Projects, deleteAll bool, lifeti
 			if err != nil {
 				return nil, fmt.Errorf("error parsing project creation time: %w", err)
 			}
-			if time.Since(createdTime) < time.Duration(lifetimeInHours)*time.Hour {
+			if time.Since(createdTime) > time.Duration(lifetimeInHours)*time.Hour {
 				projectList = append(projectList, project)
 			}
 		}
@@ -32,6 +32,7 @@ func DeleteProjects(ctx context.Context, client mongodbatlas.Client, projectList
 	ok := true
 	for _, project := range projectList {
 		log.Printf("Deleting project with name %s and id %s", project.Name, project.ID)
+
 		err := deleteAllPE(ctx, client.PrivateEndpoints, project.ID)
 		if err != nil {
 			log.Printf("error deleting private endpoints: %s", err)
@@ -48,6 +49,7 @@ func DeleteProjects(ctx context.Context, client mongodbatlas.Client, projectList
 		if err != nil {
 			log.Printf("error deleting serverless: %s", err)
 		}
+		err = deployment.DeleteAllAdvancedClusters(ctx, client.AdvancedClusters, project.ID)
 		_, err = client.Projects.Delete(context.Background(), project.ID)
 		if err != nil {
 			ok = false
