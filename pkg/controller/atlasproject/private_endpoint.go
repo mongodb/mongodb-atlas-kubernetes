@@ -3,7 +3,6 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"regexp"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -179,25 +178,11 @@ func (a atlasPE) InterfaceEndpointID() string {
 		return a.PrivateEndpoints[0]
 	}
 
-	if len(a.ServiceAttachmentNames) != 0 {
-		return parseInterfaceIDForGCP(a.ServiceAttachmentNames)
+	if len(a.EndpointGroupNames) != 0 {
+		return a.EndpointGroupNames[0]
 	}
 
 	return ""
-}
-
-func parseInterfaceIDForGCP(serviceAttachmentNames []string) string {
-	if len(serviceAttachmentNames) < 1 {
-		return ""
-	}
-
-	expr := regexp.MustCompile(`(\w+)-\d$`)
-	matches := expr.FindStringSubmatch(serviceAttachmentNames[0])
-	if len(matches) < 2 {
-		return ""
-	}
-
-	return matches[1]
 }
 
 func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
