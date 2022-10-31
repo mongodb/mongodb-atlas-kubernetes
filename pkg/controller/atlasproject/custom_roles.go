@@ -3,6 +3,8 @@ package atlasproject
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -11,24 +13,41 @@ import (
 )
 
 func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.AtlasProject) (result workflow.Result) {
+	isFailure := func(err error) bool {
+		if err != nil {
+			result = workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+			ctx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+
+			return true
+		}
+
+		return false
+	}
+
 	currentCustomRoles, err := fetchCustomRoles(ctx, projectID)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+	if isFailure(err) {
+		return
 	}
 
 	err = deleteCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+	if isFailure(err) {
+		return
 	}
 
 	err = updateCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+	if isFailure(err) {
+		return
 	}
 
 	err = createCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
+	if isFailure(err) {
+		return
+	}
+
+	ctx.SetConditionTrue(status.ProjectCustomRolesReadyType)
+
+	if len(project.Spec.CustomRoles) == 0 {
+		ctx.UnsetCondition(status.ProjectCustomRolesReadyType)
 	}
 
 	return workflow.OK()
@@ -39,11 +58,12 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 	if err != nil {
 		return nil, err
 	}
-	ctx.Log.Debugw("Got Project Settings", "data", data)
 
 	if data == nil {
 		return []v1.CustomRole{}, nil
 	}
+
+	ctx.Log.Debugw("Got Custom Roles", "NumItems", len(*data))
 
 	customRoles := make([]v1.CustomRole, 0, len(*data))
 
@@ -91,10 +111,12 @@ func deleteCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
 
 	for _, currentCustomRole := range currentCustomRoles {
-		if customRole, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
-			toDelete = append(toDelete, customRole)
+		if _, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
+			toDelete = append(toDelete, currentCustomRole)
 		}
 	}
+
+	ctx.Log.Debugw("Custom Roles to be deleted", "NumItems", len(toDelete))
 
 	for _, customRole := range toDelete {
 		_, err := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
@@ -103,7 +125,7 @@ func deleteCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 			return err
 		}
 
-		ctx.Log.Debugw("Removed custom role from current AtlasProject", "custom role", customRole.Name)
+		ctx.Log.Debugw("Removed Custom Role from current AtlasProject", "custom role", customRole.Name)
 	}
 
 	return nil
@@ -121,18 +143,23 @@ func updateCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 		}
 
 		if d := cmp.Diff(desiredCustomRole, customRole, cmpopts.EquateEmpty()); d != "" {
-			toUpdate = append(toUpdate, customRole)
+			toUpdate = append(toUpdate, desiredCustomRole)
 		}
 	}
 
+	ctx.Log.Debugw("Custom Roles to be updated", "NumItems", len(toUpdate))
+
 	for _, customRole := range toUpdate {
-		_, _, err := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, customRole.ToAtlas())
+		data := customRole.ToAtlas()
+		// Patch fails when sending the role name in the body, needs clarification with cloud team
+		data.RoleName = ""
+		_, _, err := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
 
 		if err != nil {
 			return err
 		}
 
-		ctx.Log.Debugw("Updated custom role in current AtlasProject", "custom role", customRole.Name)
+		ctx.Log.Debugw("Updated Custom Role in current AtlasProject", "custom role", customRole.Name)
 	}
 
 	return nil
@@ -143,10 +170,12 @@ func createCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
 
 	for _, desiredCustomRole := range desiredCustomRoles {
-		if customRole, ok := currentCustomRolesByName[desiredCustomRole.Name]; !ok {
-			toCreate = append(toCreate, customRole)
+		if _, ok := currentCustomRolesByName[desiredCustomRole.Name]; !ok {
+			toCreate = append(toCreate, desiredCustomRole)
 		}
 	}
+
+	ctx.Log.Debugw("Custom Roles to be added", "NumItems", len(toCreate))
 
 	for _, customRole := range toCreate {
 		_, _, err := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
@@ -155,7 +184,7 @@ func createCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 			return err
 		}
 
-		ctx.Log.Debugw("Created custom role in current AtlasProject", "custom role", customRole.Name)
+		ctx.Log.Debugw("Created Custom Role in current AtlasProject", "custom role", customRole.Name)
 	}
 
 	return nil
