@@ -29,11 +29,11 @@ type Action struct {
 
 type Resource struct {
 	// Flag that indicates whether to grant the action on the cluster resource. If true, MongoDB Cloud ignores Database and Collection parameters.
-	Cluster *bool `json:"cluster"`
+	Cluster *bool `json:"cluster,omitempty"`
 	// Human-readable label that identifies the database on which you grant the action to one MongoDB user.
-	Database *string `json:"database"`
+	Database *string `json:"database,omitempty"`
 	// Human-readable label that identifies the collection on which you grant the action to one MongoDB user.
-	Collection *string `json:"collection"`
+	Collection *string `json:"collection,omitempty"`
 }
 
 func (cr CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {

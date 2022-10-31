@@ -312,10 +312,6 @@ spec:
                                     the database on which you grant the action to
                                     one MongoDB user.
                                   type: string
-                              required:
-                              - cluster
-                              - collection
-                              - database
                               type: object
                             type: array
                         required:
