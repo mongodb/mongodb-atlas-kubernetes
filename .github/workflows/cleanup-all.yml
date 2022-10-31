@@ -20,6 +20,10 @@ on:
         description: "Clean only tagged PE(true) or all PE(false)?"
         default: "false"
         required: true
+      deleteVPC:
+        description: "Delete VPC(true) or not(false)?"
+        default: "false"
+        required: true
 
 concurrency:
   group: cleanup
@@ -44,7 +48,19 @@ jobs:
           MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
         run: (cd .github/actions/cleanup && go run .)
 
+      - name: Run cleanup VPC
+        if: always()
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          DELETE_VPC: ${{ github.event.inputs.deleteVPC|| 'true'}}
+        run: (cd .github/actions/clean-vpc && go run .)
+
       - name: Run cleanup PE
+        if: always()
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}

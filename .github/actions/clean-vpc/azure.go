@@ -1,0 +1,38 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
+)
+
+func deleteAzureVPCBySubstr(subID, resourceGroupName, substr string) (bool, error) {
+	ok := true
+	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	if err != nil {
+		return false, fmt.Errorf("error creating authorizer: %v", err)
+	}
+	vnetClient := network.NewVirtualNetworksClient(subID)
+	vnetClient.Authorizer = authorizer
+
+	vnets, err := vnetClient.List(context.Background(), resourceGroupName)
+	if err != nil {
+		return false, fmt.Errorf("error fetching vnets: %v", err)
+	}
+	for _, vnet := range vnets.Values() {
+		if vnet.Name != nil && strings.Contains(*vnet.Name, substr) {
+			log.Printf("deleting vnet %s", *vnet.Name)
+			_, err = vnetClient.Delete(context.Background(), resourceGroupName, *vnet.Name)
+			if err != nil {
+				log.Printf("error deleting vnet: %v", err)
+				ok = false
+			}
+		}
+	}
+
+	return ok, nil
+}
