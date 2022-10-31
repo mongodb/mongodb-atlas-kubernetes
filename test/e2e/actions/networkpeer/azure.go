@@ -9,6 +9,7 @@ import (
 )
 
 const AzureResourceGroupName = "atlas-operator-test"
+const AzureVPCName = "test-vnet"
 
 /*
 For network peering to work with Azure, it's necessary to fulfill the requirements described in the documentation. https://www.mongodb.com/docs/atlas/reference/api/vpc-create-peering-connection/#request-path-parameters

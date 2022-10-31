@@ -8,6 +8,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
+const GCPVPCName = "network-peering-gcp-1-vpc"
+
 func CreateVPCForGCP(gcpProjectID string, vnetName string) error {
 	computeService, err := compute.NewService(context.Background())
 	if err != nil {

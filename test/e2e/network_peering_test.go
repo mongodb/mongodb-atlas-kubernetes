@@ -102,7 +102,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			).WithProject(data.DefaultProject()),
 			[]v1.NetworkPeer{
 				{
-					ProviderName:        "AWS",
+					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionUS,
 					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
@@ -113,14 +113,14 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		Entry("Test[networkpeering-aws-2]: User has project which was updated with AWS PrivateEndpoint",
 			Label("network-peering-aws-2"),
 			model.DataProvider(
-				"networkpeering-aws-1",
+				"networkpeering-aws-2",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
 			[]v1.NetworkPeer{
 				{
-					ProviderName:        "AWS",
+					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionEU,
 					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
@@ -131,21 +131,21 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		Entry("Test[networkpeering-aws-3]: User has project which was updated with AWS PrivateEndpoint",
 			Label("network-peering-aws-3"),
 			model.DataProvider(
-				"networkpeering-aws-1",
+				"networkpeering-aws-3",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
 			[]v1.NetworkPeer{
 				{
-					ProviderName:        "AWS",
+					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionEU,
 					ContainerRegion:     config.AWSRegionUS,
 					RouteTableCIDRBlock: "192.168.0.0/16",
 					AtlasCIDRBlock:      "10.8.0.0/22",
 				},
 				{
-					ProviderName:        "AWS",
+					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionUS,
 					RouteTableCIDRBlock: "10.0.0.0/24",
 					AtlasCIDRBlock:      "10.8.0.0/22",
@@ -155,18 +155,18 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		Entry("Test[networkpeering-gcp-1]: User has project which was updated with GCP PrivateEndpoint",
 			Label("network-peering-gcp-1"),
 			model.DataProvider(
-				"networkpeering-aws-1",
+				"networkpeering-gcp-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
 			[]v1.NetworkPeer{
 				{
-					ProviderName:        "GCP",
+					ProviderName:        provider.ProviderGCP,
 					AccepterRegionName:  config.GCPRegion,
 					RouteTableCIDRBlock: "192.168.0.0/16",
 					AtlasCIDRBlock:      "10.8.0.0/18",
-					NetworkName:         newRandomVPCName("network-peering-gcp-1-vpc"),
+					NetworkName:         newRandomVPCName(networkpeer.GCPVPCName),
 					GCPProjectID:        cloud.GoogleProjectID,
 				},
 			},
@@ -174,17 +174,17 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		Entry("Test[networkpeering-azure-1]: User has project which was updated with Azure PrivateEndpoint",
 			Label("network-peering-azure-1"),
 			model.DataProvider(
-				"networkpeering-aws-1",
+				"networkpeering-azure-1",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
 			[]v1.NetworkPeer{
 				{
-					ProviderName:        "AZURE",
+					ProviderName:        provider.ProviderAzure,
 					AccepterRegionName:  "US_EAST_2",
 					AtlasCIDRBlock:      "192.168.248.0/21",
-					VNetName:            newRandomVPCName("test-vnet"),
+					VNetName:            newRandomVPCName(networkpeer.AzureVPCName),
 					AzureSubscriptionID: os.Getenv(networkpeer.SubscriptionID),
 					ResourceGroupName:   networkpeer.AzureResourceGroupName,
 					AzureDirectoryID:    os.Getenv(networkpeer.DirectoryID),
