@@ -16,7 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = FDescribe("UserLogin", Label("custom-roles"), func() {
+var _ = Describe("UserLogin", Label("custom-roles"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
