@@ -36,10 +36,10 @@ type Resource struct {
 	Collection *string `json:"collection,omitempty"`
 }
 
-func (cr CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
-	actions := make([]mongodbatlas.Action, 0, len(cr.Actions))
+func (in *CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
+	actions := make([]mongodbatlas.Action, 0, len(in.Actions))
 
-	for _, action := range cr.Actions {
+	for _, action := range in.Actions {
 		resources := make([]mongodbatlas.Resource, 0, len(action.Resources))
 
 		for _, resource := range action.Resources {
@@ -56,9 +56,9 @@ func (cr CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
 		})
 	}
 
-	inheritedRoles := make([]mongodbatlas.InheritedRole, 0, len(cr.InheritedRoles))
+	inheritedRoles := make([]mongodbatlas.InheritedRole, 0, len(in.InheritedRoles))
 
-	for _, inheritedRole := range cr.InheritedRoles {
+	for _, inheritedRole := range in.InheritedRoles {
 		inheritedRoles = append(inheritedRoles, mongodbatlas.InheritedRole{
 			Db:   inheritedRole.Database,
 			Role: inheritedRole.Name,
@@ -68,6 +68,6 @@ func (cr CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
 	return &mongodbatlas.CustomDBRole{
 		Actions:        actions,
 		InheritedRoles: inheritedRoles,
-		RoleName:       cr.Name,
+		RoleName:       in.Name,
 	}
 }

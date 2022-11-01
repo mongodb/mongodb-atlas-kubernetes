@@ -2,6 +2,9 @@ package atlasproject
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
@@ -56,7 +59,7 @@ func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.Atla
 func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole, error) {
 	data, _, err := ctx.Client.CustomDBRoles.List(context.Background(), projectID, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve custom roles from atlas: %w", err)
 	}
 
 	if data == nil {
@@ -118,17 +121,18 @@ func deleteCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 
 	ctx.Log.Debugw("Custom Roles to be deleted", "NumItems", len(toDelete))
 
+	var err error
 	for _, customRole := range toDelete {
-		_, err := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
+		_, delErr := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
 
-		if err != nil {
-			return err
+		if delErr != nil {
+			err = multierror.Append(err, fmt.Errorf("failed to delete custom role \"%s\": %w", customRole.Name, delErr))
 		}
 
 		ctx.Log.Debugw("Removed Custom Role from current AtlasProject", "custom role", customRole.Name)
 	}
 
-	return nil
+	return err
 }
 
 func updateCustomRoles(ctx *workflow.Context, projectID string, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) error {
@@ -149,20 +153,21 @@ func updateCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 
 	ctx.Log.Debugw("Custom Roles to be updated", "NumItems", len(toUpdate))
 
+	var err error
 	for _, customRole := range toUpdate {
 		data := customRole.ToAtlas()
 		// Patch fails when sending the role name in the body, needs clarification with cloud team
 		data.RoleName = ""
-		_, _, err := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
+		_, _, upErr := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
 
-		if err != nil {
-			return err
+		if upErr != nil {
+			err = multierror.Append(err, fmt.Errorf("failed to update custom role \"%s\": %w", customRole.Name, upErr))
 		}
 
 		ctx.Log.Debugw("Updated Custom Role in current AtlasProject", "custom role", customRole.Name)
 	}
 
-	return nil
+	return err
 }
 
 func createCustomRoles(ctx *workflow.Context, projectID string, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) error {
@@ -177,17 +182,18 @@ func createCustomRoles(ctx *workflow.Context, projectID string, currentCustomRol
 
 	ctx.Log.Debugw("Custom Roles to be added", "NumItems", len(toCreate))
 
+	var err error
 	for _, customRole := range toCreate {
-		_, _, err := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
+		_, _, creErr := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
 
-		if err != nil {
-			return err
+		if creErr != nil {
+			err = multierror.Append(err, fmt.Errorf("failed to create custom role \"%s\": %w", customRole.Name, creErr))
 		}
 
 		ctx.Log.Debugw("Created Custom Role in current AtlasProject", "custom role", customRole.Name)
 	}
 
-	return nil
+	return err
 }
 
 func mapCustomRolesByName(customRoles []v1.CustomRole) map[string]v1.CustomRole {
