@@ -1,4 +1,4 @@
-name: Test
+name: Integration tests non-forked
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: test-${{ github.head_ref || github.ref_name }}
+  group: int-test-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -29,23 +29,9 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run"
 
-  unit-tests:
+  int-tests:
     needs: allowed
-    uses: ./.github/workflows/test-unit.yml
-    secrets: inherit
-    with:
-      forked: false
-
-  e2e-tests:
-    needs: allowed
-    uses: ./.github/workflows/test-e2e.yml
-    secrets: inherit
-    with:
-      forked: false
-
-  openshift-upgrade-test:
-    needs: allowed
-    uses: ./.github/workflows/openshift-upgrade-test.yaml
+    uses: ./.github/workflows/test-int.yml
     secrets: inherit
     with:
       forked: false
