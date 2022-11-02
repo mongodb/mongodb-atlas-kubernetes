@@ -18,15 +18,15 @@ on:
         required: true
       cleanPE:
         description: "Run PE cleaner(true) or not(false)?"
-        default: "false"
+        default: "true"
         required: true
       cleanTaggedPE:
         description: "Clean only tagged PE(true) or all PE(false)?"
         default: "false"
         required: true
-      deleteVPC:
-        description: "Delete VPC(true) or not(false)?"
-        default: "false"
+      cleanVPC:
+        description: "Clean VPC(true) or not(false)?"
+        default: "true"
         required: true
 
 concurrency:
@@ -53,7 +53,7 @@ jobs:
         run: (cd .github/actions/cleanup && go run .)
 
       - name: Run cleanup VPC
-        if: always() && github.event.inputs.deleteVPC == 'true'
+        if: always() && github.event.inputs.cleanVPC == 'true'
         env:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
