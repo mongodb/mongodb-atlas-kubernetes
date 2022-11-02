@@ -1146,6 +1146,25 @@ spec:
                   - type
                   type: object
                 type: array
+              customRoles:
+                description: CustomRoles contains a list of custom roles statuses
+                items:
+                  properties:
+                    error:
+                      description: The message when the custom role is in the FAILED
+                        status
+                      type: string
+                    name:
+                      description: Role name which is unique
+                      type: string
+                    status:
+                      description: The status of the given custom role (OK or FAILED)
+                      type: string
+                  required:
+                  - name
+                  - status
+                  type: object
+                type: array
               expiredIpAccessList:
                 description: The list of IP Access List entries that are expired due
                   to 'deleteAfterDate' being less than the current date. Note, that
