@@ -15,36 +15,24 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.AtlasProject) (result workflow.Result) {
-	isFailure := func(err error) bool {
-		if err != nil {
-			result = workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
-			ctx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
-
-			return true
-		}
-
-		return false
-	}
-
+func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
 	currentCustomRoles, err := fetchCustomRoles(ctx, projectID)
-	if isFailure(err) {
-		return
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
 
-	err = deleteCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if isFailure(err) {
-		return
-	}
+	ops := calculateChanges(currentCustomRoles, project.Spec.CustomRoles)
 
-	err = updateCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if isFailure(err) {
-		return
-	}
+	deleteStatus := deleteCustomRoles(ctx, projectID, ops.Delete)
+	updateStatus := updateCustomRoles(ctx, projectID, ops.Update)
+	createStatus := createCustomRoles(ctx, projectID, ops.Create)
 
-	err = createCustomRoles(ctx, projectID, currentCustomRoles, project.Spec.CustomRoles)
-	if isFailure(err) {
-		return
+	result := syncCustomRolesStatus(ctx, project.Spec.CustomRoles, createStatus, updateStatus, deleteStatus)
+
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+
+		return result
 	}
 
 	ctx.SetConditionTrue(status.ProjectCustomRolesReadyType)
@@ -53,7 +41,7 @@ func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.Atla
 		ctx.UnsetCondition(status.ProjectCustomRolesReadyType)
 	}
 
-	return workflow.OK()
+	return result
 }
 
 func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole, error) {
@@ -109,91 +97,81 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 	return customRoles, nil
 }
 
-func deleteCustomRoles(ctx *workflow.Context, projectID string, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) error {
-	toDelete := make([]v1.CustomRole, 0, len(currentCustomRoles))
-	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
-
-	for _, currentCustomRole := range currentCustomRoles {
-		if _, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
-			toDelete = append(toDelete, currentCustomRole)
-		}
-	}
-
+func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[string]v1.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be deleted", "NumItems", len(toDelete))
 
-	var err error
+	statuses := map[string]status.CustomRole{}
 	for _, customRole := range toDelete {
-		_, delErr := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
+		_, err := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
 
-		if delErr != nil {
-			err = multierror.Append(err, fmt.Errorf("failed to delete custom role \"%s\": %w", customRole.Name, delErr))
+		opStatus, errorMsg := evaluateOperation(err)
+		statuses[customRole.Name] = status.CustomRole{
+			Name:   customRole.Name,
+			Status: opStatus,
+			Error:  errorMsg,
 		}
 
-		ctx.Log.Debugw("Removed Custom Role from current AtlasProject", "custom role", customRole.Name)
+		if errorMsg != "" {
+			ctx.Log.Warnf("Failed to delete custom role \"%s\": %s", customRole.Name, errorMsg)
+		} else {
+			ctx.Log.Debugw("Removed Custom Role in current AtlasProject", "custom role:", customRole.Name)
+		}
 	}
 
-	return err
+	return statuses
 }
 
-func updateCustomRoles(ctx *workflow.Context, projectID string, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) error {
-	toUpdate := make([]v1.CustomRole, 0, len(desiredCustomRoles))
-	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
-
-	for _, desiredCustomRole := range desiredCustomRoles {
-		customRole, ok := currentCustomRolesByName[desiredCustomRole.Name]
-
-		if !ok {
-			continue
-		}
-
-		if d := cmp.Diff(desiredCustomRole, customRole, cmpopts.EquateEmpty()); d != "" {
-			toUpdate = append(toUpdate, desiredCustomRole)
-		}
-	}
-
+func updateCustomRoles(ctx *workflow.Context, projectID string, toUpdate map[string]v1.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be updated", "NumItems", len(toUpdate))
 
-	var err error
+	statuses := map[string]status.CustomRole{}
 	for _, customRole := range toUpdate {
 		data := customRole.ToAtlas()
 		// Patch fails when sending the role name in the body, needs clarification with cloud team
 		data.RoleName = ""
-		_, _, upErr := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
+		_, _, err := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
 
-		if upErr != nil {
-			err = multierror.Append(err, fmt.Errorf("failed to update custom role \"%s\": %w", customRole.Name, upErr))
+		opStatus, errorMsg := evaluateOperation(err)
+
+		statuses[customRole.Name] = status.CustomRole{
+			Name:   customRole.Name,
+			Status: opStatus,
+			Error:  errorMsg,
 		}
 
-		ctx.Log.Debugw("Updated Custom Role in current AtlasProject", "custom role", customRole.Name)
+		if errorMsg != "" {
+			ctx.Log.Warnf("Failed to update custom role \"%s\": %s", customRole.Name, errorMsg)
+		} else {
+			ctx.Log.Debugw("Updated Custom Role in current AtlasProject", "custom role:", customRole.Name)
+		}
 	}
 
-	return err
+	return statuses
 }
 
-func createCustomRoles(ctx *workflow.Context, projectID string, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) error {
-	toCreate := make([]v1.CustomRole, 0, len(desiredCustomRoles))
-	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
-
-	for _, desiredCustomRole := range desiredCustomRoles {
-		if _, ok := currentCustomRolesByName[desiredCustomRole.Name]; !ok {
-			toCreate = append(toCreate, desiredCustomRole)
-		}
-	}
-
+func createCustomRoles(ctx *workflow.Context, projectID string, toCreate map[string]v1.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be added", "NumItems", len(toCreate))
 
-	var err error
+	statuses := map[string]status.CustomRole{}
 	for _, customRole := range toCreate {
-		_, _, creErr := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
+		_, _, err := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
 
-		if creErr != nil {
-			err = multierror.Append(err, fmt.Errorf("failed to create custom role \"%s\": %w", customRole.Name, creErr))
+		opStatus, errorMsg := evaluateOperation(err)
+
+		statuses[customRole.Name] = status.CustomRole{
+			Name:   customRole.Name,
+			Status: opStatus,
+			Error:  errorMsg,
 		}
 
-		ctx.Log.Debugw("Created Custom Role in current AtlasProject", "custom role", customRole.Name)
+		if errorMsg != "" {
+			ctx.Log.Warnf("Failed to create custom role \"%s\": %s", customRole.Name, errorMsg)
+		} else {
+			ctx.Log.Debugw("Created Custom Role in current AtlasProject", "custom role:", customRole.Name)
+		}
 	}
 
-	return err
+	return statuses
 }
 
 func mapCustomRolesByName(customRoles []v1.CustomRole) map[string]v1.CustomRole {
@@ -204,4 +182,101 @@ func mapCustomRolesByName(customRoles []v1.CustomRole) map[string]v1.CustomRole 
 	}
 
 	return customRolesByName
+}
+
+type CustomRolesOperations struct {
+	Create map[string]v1.CustomRole
+	Update map[string]v1.CustomRole
+	Delete map[string]v1.CustomRole
+}
+
+func calculateChanges(currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) CustomRolesOperations {
+	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
+	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
+	ops := CustomRolesOperations{
+		Create: map[string]v1.CustomRole{},
+		Update: map[string]v1.CustomRole{},
+		Delete: map[string]v1.CustomRole{},
+	}
+
+	for _, currentCustomRole := range currentCustomRoles {
+		if _, ok := desiredCustomRolesByName[currentCustomRole.Name]; !ok {
+			ops.Delete[currentCustomRole.Name] = currentCustomRole
+		}
+	}
+
+	for _, desiredCustomRole := range desiredCustomRoles {
+		customRole, ok := currentCustomRolesByName[desiredCustomRole.Name]
+
+		if !ok {
+			ops.Create[desiredCustomRole.Name] = desiredCustomRole
+
+			continue
+		}
+
+		if d := cmp.Diff(desiredCustomRole, customRole, cmpopts.EquateEmpty()); d != "" {
+			ops.Update[desiredCustomRole.Name] = desiredCustomRole
+		}
+	}
+
+	return ops
+}
+
+func evaluateOperation(err error) (status.CustomRoleStatus, string) {
+	if err != nil {
+		return status.CustomRoleStatusFailed, err.Error()
+	}
+
+	return status.CustomRoleStatusOK, ""
+}
+
+func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.CustomRole, created, updated, deleted map[string]status.CustomRole) workflow.Result {
+	statuses := make([]status.CustomRole, 0, len(desiredCustomRoles))
+	var err error
+
+	for _, customRole := range desiredCustomRoles {
+		stat, ok := deleted[customRole.Name]
+
+		if ok {
+			if stat.Status == status.CustomRoleStatusFailed {
+				statuses = append(statuses, stat)
+				err = multierror.Append(err, fmt.Errorf(stat.Error))
+			}
+
+			continue
+		}
+
+		if stat, ok = updated[customRole.Name]; ok {
+			statuses = append(statuses, stat)
+
+			if stat.Status == status.CustomRoleStatusFailed {
+				err = multierror.Append(err, fmt.Errorf(stat.Error))
+			}
+
+			continue
+		}
+
+		if stat, ok = created[customRole.Name]; ok {
+			statuses = append(statuses, stat)
+
+			if stat.Status == status.CustomRoleStatusFailed {
+				err = multierror.Append(err, fmt.Errorf(stat.Error))
+			}
+
+			continue
+		}
+
+		statuses = append(statuses, status.CustomRole{
+			Name:   customRole.Name,
+			Status: status.CustomRoleStatusOK,
+		})
+	}
+
+	ctx.EnsureStatusOption(status.AtlasProjectSetCustomRolesOption(&statuses))
+
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectCustomRolesReady, fmt.Sprintf("failed to apply changes to custom roles: %s", err.Error()))
+	}
+
+	return workflow.OK()
 }
