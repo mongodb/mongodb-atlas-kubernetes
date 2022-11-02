@@ -244,3 +244,56 @@ func TestClusterValidation(t *testing.T) {
 		})
 	})
 }
+
+func TestProjectValidation(t *testing.T) {
+	t.Run("custom roles spec", func(t *testing.T) {
+		t.Run("empty custom roles spec", func(t *testing.T) {
+			spec := &mdbv1.AtlasProject{
+				Spec: mdbv1.AtlasProjectSpec{},
+			}
+			assert.NoError(t, Project(spec))
+		})
+		t.Run("valid custom roles spec", func(t *testing.T) {
+			spec := &mdbv1.AtlasProject{
+				Spec: mdbv1.AtlasProjectSpec{
+					CustomRoles: []mdbv1.CustomRole{
+						{
+							Name: "cr-1",
+						},
+						{
+							Name: "cr-2",
+						},
+						{
+							Name: "cr-3",
+						},
+					},
+				},
+			}
+			assert.NoError(t, Project(spec))
+		})
+		t.Run("invalid custom roles spec", func(t *testing.T) {
+			spec := &mdbv1.AtlasProject{
+				Spec: mdbv1.AtlasProjectSpec{
+					CustomRoles: []mdbv1.CustomRole{
+						{
+							Name: "cr-1",
+						},
+						{
+							Name: "cr-1",
+						},
+						{
+							Name: "cr-1",
+						},
+						{
+							Name: "cr-2",
+						},
+						{
+							Name: "cr-2",
+						},
+					},
+				},
+			}
+			assert.Error(t, Project(spec))
+		})
+	})
+}
