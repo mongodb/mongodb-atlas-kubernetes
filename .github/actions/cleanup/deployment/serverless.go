@@ -3,6 +3,7 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -13,6 +14,7 @@ func DeleteAllServerless(ctx context.Context, client mongodbatlas.ServerlessInst
 		return fmt.Errorf("error getting serverless: %s", err)
 	}
 	for _, s := range serverless {
+		log.Printf("Deleting serverless %s", s.Name)
 		if _, err = client.Delete(ctx, projectID, s.Name); err != nil {
 			return fmt.Errorf("error deleting serverless: %s", err)
 		}

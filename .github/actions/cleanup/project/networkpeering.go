@@ -22,6 +22,7 @@ func DeleteAllNetworkPeers(ctx context.Context, peerService mongodbatlas.PeersSe
 
 	for _, peer := range peerList {
 		_, err = peerService.Delete(ctx, projectID, peer.ID)
+		log.Printf("Deleting network peer %s", peer.ID)
 		if err != nil {
 			return fmt.Errorf("error deleting network peer: %w", err)
 		}
