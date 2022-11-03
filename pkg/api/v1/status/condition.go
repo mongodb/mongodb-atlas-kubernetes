@@ -46,6 +46,7 @@ const (
 	EncryptionAtRestReadyType       ConditionType = "EncryptionAtRestReady"
 	AuditingReadyType               ConditionType = "AuditingReady"
 	ProjectSettingsReadyType        ConditionType = "ProjectSettingsReady"
+	ProjectCustomRolesReadyType     ConditionType = "ProjectCustomRolesReady"
 )
 
 // AtlasDeployment condition types

@@ -91,6 +91,7 @@ jobs:
             "privatelink",
             "project-settings",
             "x509auth",
+            "custom-roles",
           ]
 
     steps:

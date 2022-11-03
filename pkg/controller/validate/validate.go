@@ -2,6 +2,7 @@ package validate
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/google/go-cmp/cmp"
@@ -47,7 +48,11 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 	return err
 }
 
-func Project(_ *mdbv1.AtlasProject) error {
+func Project(project *mdbv1.AtlasProject) error {
+	if err := projectCustomRoles(project.Spec.CustomRoles); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -128,4 +133,23 @@ func autoscalingForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicat
 	}
 
 	return nil
+}
+
+func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
+	if len(customRoles) == 0 {
+		return nil
+	}
+
+	var err error
+	customRolesMap := map[string]struct{}{}
+
+	for _, customRole := range customRoles {
+		if _, ok := customRolesMap[customRole.Name]; ok {
+			err = multierror.Append(err, fmt.Errorf("the custom rone \"%s\" is duplicate. custom role name must be unique", customRole.Name))
+		}
+
+		customRolesMap[customRole.Name] = struct{}{}
+	}
+
+	return err
 }

@@ -58,6 +58,12 @@ func AtlasProjectCloudAccessRolesOption(cloudAccessRoles []CloudProviderAccessRo
 	}
 }
 
+func AtlasProjectSetCustomRolesOption(customRoles *[]CustomRole) AtlasProjectStatusOption {
+	return func(s *AtlasProjectStatus) {
+		s.CustomRoles = *customRoles
+	}
+}
+
 func AtlasProjectPrometheusOption(prometheus *Prometheus) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.Prometheus = prometheus
@@ -92,6 +98,9 @@ type AtlasProjectStatus struct {
 
 	// CloudProviderAccessRoles contains a list of configured cloud provider access roles. AWS support only
 	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
+
+	// CustomRoles contains a list of custom roles statuses
+	CustomRoles []CustomRole `json:"customRoles,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL
