@@ -16,7 +16,7 @@ on:
 jobs:
   create-release:
     name: Create Release
-    if: (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.sha, 'release')) || github.event.inputs.version != ''
+    if: ( ${{github.event.pull_request.merged == true }} && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != ''
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
@@ -32,7 +32,7 @@ jobs:
       - name: Print Env and Get version
         id: tag
         env:
-          BRANCH: ${{ github.event.pull_request.head.sha }}
+          BRANCH: ${{ github.head_ref }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
           version=$VERSION
@@ -98,34 +98,6 @@ jobs:
           push: true
           tags: ${{ steps.prepare-quay-image-tag.outputs.tags }}
           build-args: VERSION=${{ steps.tag.outputs.tag }}
-
-#      - name: Now Prepare RedHadConnect image
-#        uses: ./.github/actions/gen-install-scripts
-#        with:
-#          IMAGE_URL: ${{ env.REDHAT_RELEASE_REGISTRY }}/${{ env.REDHAT_OPERATOR_REPO }}:${{ env.VERSION }}
-#          VERSION: ${{ env.VERSION }}
-#          ENV: prod
-#      - name: Login to RedHat registry
-#        uses: docker/login-action@v2
-#        with:
-#          registry: ${{ env.REDHAT_SCAN_RELEASE_REGISTRY }}
-#          username: unused
-#          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
-#      - name: Prepare docker RedHat image tag
-#        id: prepare-redhat-image-tag
-#        run: |
-#          REPOSITORY=${{ env.REDHAT_SCAN_OPERATOR_REPO }}
-#          TAG=${{ steps.tag.outputs.version }}
-#          TAGS="${REPOSITORY}:${TAG}"
-#          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-#      - name: Push Atlas Operator to RedHat Connect
-#        uses: docker/build-push-action@v3
-#        with:
-#          context: .
-#          push: true
-#          tags: ${{ steps.prepare-redhat-image-tag.outputs.tags }}
-#          labels: version=${{ steps.tag.outputs.version }}
-#          build_args: VERSION=${{ steps.tag.outputs.tag }}
 
       - name: Create Release
         id: create_release
