@@ -67,4 +67,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack
+        REVIEWERS: priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs
