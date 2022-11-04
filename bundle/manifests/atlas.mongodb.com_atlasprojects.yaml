@@ -280,6 +280,75 @@ spec:
                 required:
                 - name
                 type: object
+              customRoles:
+                description: The customRoles lets you create, and change custom roles
+                  in your cluster. Use custom roles to specify custom sets of actions
+                  that the Atlas built-in roles can't describe.
+                items:
+                  properties:
+                    actions:
+                      description: List of the individual privilege actions that the
+                        role grants.
+                      items:
+                        properties:
+                          name:
+                            description: Human-readable label that identifies the
+                              privilege action.
+                            type: string
+                          resources:
+                            description: List of resources on which you grant the
+                              action.
+                            items:
+                              properties:
+                                cluster:
+                                  description: Flag that indicates whether to grant
+                                    the action on the cluster resource. If true, MongoDB
+                                    Cloud ignores Database and Collection parameters.
+                                  type: boolean
+                                collection:
+                                  description: Human-readable label that identifies
+                                    the collection on which you grant the action to
+                                    one MongoDB user.
+                                  type: string
+                                database:
+                                  description: Human-readable label that identifies
+                                    the database on which you grant the action to
+                                    one MongoDB user.
+                                  type: string
+                              type: object
+                            type: array
+                        required:
+                        - name
+                        - resources
+                        type: object
+                      type: array
+                    inheritedRoles:
+                      description: List of the built-in roles that this custom role
+                        inherits.
+                      items:
+                        properties:
+                          database:
+                            description: Human-readable label that identifies the
+                              database on which someone grants the action to one MongoDB
+                              user.
+                            type: string
+                          name:
+                            description: Human-readable label that identifies the
+                              role inherited.
+                            type: string
+                        required:
+                        - database
+                        - name
+                        type: object
+                      type: array
+                    name:
+                      description: Human-readable label that identifies the role.
+                        This name must be unique for this custom role in this project.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               encryptionAtRest:
                 description: EncryptionAtRest allows to set encryption for AWS, Azure
                   and GCP providers
@@ -1078,6 +1147,25 @@ spec:
                   required:
                   - status
                   - type
+                  type: object
+                type: array
+              customRoles:
+                description: CustomRoles contains a list of custom roles statuses
+                items:
+                  properties:
+                    error:
+                      description: The message when the custom role is in the FAILED
+                        status
+                      type: string
+                    name:
+                      description: Role name which is unique
+                      type: string
+                    status:
+                      description: The status of the given custom role (OK or FAILED)
+                      type: string
+                  required:
+                  - name
+                  - status
                   type: object
                 type: array
               expiredIpAccessList:
