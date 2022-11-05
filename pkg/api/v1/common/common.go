@@ -46,10 +46,7 @@ func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.Objec
 		return nil
 	}
 
-	ns := rn.Namespace
-	if rn.Namespace != "" {
-		ns = parentNamespace
-	}
+	ns := SelectNamespace(rn.Namespace, parentNamespace)
 	key := kube.ObjectKey(ns, rn.Name)
 	return &key
 }
@@ -71,4 +68,16 @@ func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNa
 		}
 	}
 	return "", nil
+}
+
+// SelectNamespace returns first non-empty namespace from the list
+// "", "", "first", "second" => "first"
+func SelectNamespace(namespaces ...string) string {
+	for _, namespace := range namespaces {
+		if namespace != "" {
+			return namespace
+		}
+	}
+
+	return ""
 }
