@@ -42,7 +42,7 @@ spec:
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas —
     the only multi-cloud document database service that gives you the versatility you need to build sophisticated and resilient applications that can adapt to changing customer demands and market trends.
 
-    > Current Status: *Beta*. The Operator gives users the ability to provision
+    > Current Status: *Stable*. The Operator gives users the ability to provision
     > Atlas projects, clusters and database users using Kubernetes Specifications and bind connection information
     > into applications deployed to Kubernetes.
 
@@ -77,12 +77,12 @@ spec:
       projectIpAccessList:
         - ipAddress: "192.0.2.15"
           comment: "IP address for Application Server A"
-        - ipAddress: "203.0.113.0/24"
+        - cidrBlock: "203.0.113.0/24"
           comment: "CIDR block for Application Server B - D"
     ```
     **3.** Create an `AtlasDeployment` Custom Resource.
     The example below is a minimal configuration to create an M10 Atlas cluster in the AWS US East region. For a full list of properties, check
-    `atlasclusters.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasclusters.yaml)):
+    `atlasdeployments.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml)):
     ```
     apiVersion: atlas.mongodb.com/v1
     kind: AtlasDeployment
