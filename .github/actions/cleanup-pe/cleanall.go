@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/network/mgmt/network"
@@ -91,12 +92,11 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	}
 	var endpointNames []string
 	for _, endpoint := range peList.Values() {
-		if endpoint.Subnet.Name != nil {
-			if *endpoint.Subnet.Name == subnet {
+		if endpoint.Subnet.ID != nil {
+			if strings.HasSuffix(*endpoint.Subnet.ID, subnet) {
 				endpointNames = append(endpointNames, *endpoint.Name)
 			}
 		}
-
 	}
 
 	for _, peName := range endpointNames {
