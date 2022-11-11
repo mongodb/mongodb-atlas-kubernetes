@@ -44,14 +44,6 @@ jobs:
         with:
           go-version: '1.19'
 
-      - name: Run atlas project cleaner
-        env:
-          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          CLEAN_ALL: ${{ github.event.inputs.clean }}
-          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
-        run: (cd .github/actions/cleanup && go run .)
-
       - name: Run cleanup VPC
         if: always() && github.event.inputs.cleanVPC == 'true'
         env:
@@ -76,3 +68,11 @@ jobs:
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
           CLEAN_TAGGED_PE: ${{ github.event.inputs.cleanTaggedPE || 'false'}}
         run: (cd .github/actions/cleanup-pe && go run .)
+
+      - name: Run atlas project cleaner
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          CLEAN_ALL: ${{ github.event.inputs.clean }}
+          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
+        run: (cd .github/actions/cleanup && go run .)
