@@ -24,6 +24,8 @@ func AtlasAddProject(ID, name string) AtlasTeamStatusOption {
 }
 
 type TeamStatus struct {
+	Common `json:",inline"`
+
 	// ID of the team
 	ID string `json:"id,omitempty"`
 	// List of projects which the team is assigned

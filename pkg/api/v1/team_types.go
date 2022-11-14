@@ -33,8 +33,8 @@ type AtlasTeam struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TeamSpec
-	Status status.TeamStatus
+	Spec   TeamSpec          `json:"spec"`
+	Status status.TeamStatus `json:"status"`
 }
 
 // +kubebuilder:validation:Format=email
@@ -64,6 +64,21 @@ func init() {
 
 func (in *AtlasTeam) Identifier() interface{} {
 	return in.Status.ID
+}
+
+func (in *AtlasTeam) GetStatus() status.Status {
+	return in.Status
+}
+
+func (in *AtlasTeam) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	in.Status.Conditions = conditions
+	in.Status.ObservedGeneration = in.ObjectMeta.Generation
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasTeamStatusOption)
+		v(&in.Status)
+	}
 }
 
 func (in *AtlasTeam) ToAtlas() (*mongodbatlas.Team, error) {
