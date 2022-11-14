@@ -105,6 +105,10 @@ type AtlasProjectSpec struct {
 	// The customRoles lets you create, and change custom roles in your cluster. Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
 	// +optional
 	CustomRoles []CustomRole `json:"customRoles,omitempty"`
+
+	// Teams enable you to grant project access roles to multiple users.
+	// +optional
+	Teams []Team `json:"teams,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
