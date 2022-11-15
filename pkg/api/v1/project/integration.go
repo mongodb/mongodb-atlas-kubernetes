@@ -82,7 +82,7 @@ func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodb
 			return
 		}
 
-		*target, err = passwordField.ReadPassword(c, getNamespace(passwordField.Namespace, defaultNS))
+		*target, err = passwordField.ReadPassword(c, defaultNS)
 		storeError(err, errors)
 	}
 
@@ -113,15 +113,4 @@ func storeError(err error, errors *[]error) {
 	if err != nil {
 		*errors = append(*errors, err)
 	}
-}
-
-// getNamespace returns first non-empty namespace from the list
-func getNamespace(namespaces ...string) string {
-	for _, namespace := range namespaces {
-		if namespace != "" {
-			return namespace
-		}
-	}
-
-	return ""
 }
