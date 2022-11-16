@@ -47,6 +47,7 @@ const (
 	AuditingReadyType               ConditionType = "AuditingReady"
 	ProjectSettingsReadyType        ConditionType = "ProjectSettingsReady"
 	ProjectCustomRolesReadyType     ConditionType = "ProjectCustomRolesReady"
+	ProjectTeamsReadyType           ConditionType = "ProjectTeamsReady"
 )
 
 // AtlasDeployment condition types
@@ -58,6 +59,11 @@ const (
 // AtlasDatabaseUser condition types
 const (
 	DatabaseUserReadyType ConditionType = "DatabaseUserReady"
+)
+
+// AtlasTeam condition types
+const (
+	TeamReadyType ConditionType = "TeamReady"
 )
 
 // Condition describes the state of an Atlas Custom Resource at a certain point.

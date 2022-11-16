@@ -11,7 +11,7 @@ func AtlasTeamID(ID string) AtlasTeamStatusOption {
 	}
 }
 
-func AtlasAddProject(ID, name string) AtlasTeamStatusOption {
+func AtlasTeamAddProject(ID, name string) AtlasTeamStatusOption {
 	return func(s *TeamStatus) {
 		s.Projects = append(
 			s.Projects,

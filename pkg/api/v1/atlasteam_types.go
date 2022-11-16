@@ -34,7 +34,7 @@ type AtlasTeam struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   TeamSpec          `json:"spec"`
-	Status status.TeamStatus `json:"status"`
+	Status status.TeamStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:validation:Format=email
@@ -59,7 +59,7 @@ type AtlasTeamList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&AtlasTeam{})
+	SchemeBuilder.Register(&AtlasTeam{}, &AtlasTeamList{})
 }
 
 func (in *AtlasTeam) Identifier() interface{} {
