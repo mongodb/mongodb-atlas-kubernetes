@@ -13,22 +13,18 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
-	"go.mongodb.org/mongo-driver/mongo"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
@@ -427,7 +423,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				s1 := validateSecret(k8sClient, *createdProject, *createdDeploymentAWS, *createdDBUser)
 				s2 := validateSecret(k8sClient, *createdProject, *createdDeploymentAzure, *createdDBUser)
 
-				testutil.EventExists(k8sClient, createdDBUser, "Normal", atlasdatabaseuser.ConnectionSecretsEnsuredEvent,
+				testutil.EventExists(k8sClient, createdDBUser, "Normal", connectionsecret.ConnectionSecretsEnsuredEvent,
 					fmt.Sprintf("Connection Secrets were created/updated: (%s|%s|, ){3}", s1.Name, s2.Name))
 			})
 			By("Changing the db user name - two stale secret are expected to be removed, two added instead", func() {
