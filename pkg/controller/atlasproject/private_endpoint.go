@@ -245,12 +245,10 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 			interfaceConn, response, err := ctx.Client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(specPeService.Provider), atlasPeService.ID, interfaceConn)
 			ctx.Log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
 			if err != nil {
-				if response.StatusCode == 400 || response.StatusCode == 409 {
-					ctx.Log.Debugw("failed to create PE Interface", "error", err)
-					continue
+				ctx.Log.Debugw("failed to create PE Interface", "error", err)
+				if response.StatusCode != 400 && response.StatusCode != 409 {
+					return syncedEndpoints, err
 				}
-
-				return syncedEndpoints, err
 			}
 		}
 
