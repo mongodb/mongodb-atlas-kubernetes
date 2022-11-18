@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -246,7 +247,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 			ctx.Log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
 			if err != nil {
 				ctx.Log.Debugw("failed to create PE Interface", "error", err)
-				if response.StatusCode != 400 && response.StatusCode != 409 {
+				if response.StatusCode == http.StatusBadRequest || response.StatusCode == http.StatusConflict {
 					return syncedEndpoints, err
 				}
 			}
