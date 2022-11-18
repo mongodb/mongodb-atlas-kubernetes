@@ -2,6 +2,7 @@ package watch
 
 import (
 	"fmt"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"reflect"
 
 	"go.uber.org/zap"
@@ -45,6 +46,10 @@ func NewBackupPolicyHandler(tracked map[WatchedObject]map[client.ObjectKey]bool)
 	return &ResourcesHandler{ResourceKind: "AtlasBackupPolicy", TrackedResources: tracked}
 }
 
+func NewAtlasTeamHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasTeam", TrackedResources: tracked}
+}
+
 // Create handles the Create event for the resource.
 // Note that we implement Create in addition to Update to be able to handle cases when config map or secret is deleted
 // and then created again.
@@ -70,6 +75,8 @@ func shouldHandleUpdate(e event.UpdateEvent) bool {
 		return !reflect.DeepEqual(v.Data, e.ObjectNew.(*corev1.ConfigMap).Data)
 	case *corev1.Secret:
 		return !reflect.DeepEqual(v.Data, e.ObjectNew.(*corev1.Secret).Data)
+	case *v1.AtlasTeam:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasTeam).Spec)
 	}
 	return true
 }

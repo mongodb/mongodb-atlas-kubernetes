@@ -13,6 +13,12 @@ func AtlasTeamID(ID string) AtlasTeamStatusOption {
 
 func AtlasTeamAddProject(ID, name string) AtlasTeamStatusOption {
 	return func(s *TeamStatus) {
+		for _, project := range s.Projects {
+			if project.ID == ID {
+				return
+			}
+		}
+
 		s.Projects = append(
 			s.Projects,
 			TeamProject{
@@ -20,6 +26,28 @@ func AtlasTeamAddProject(ID, name string) AtlasTeamStatusOption {
 				Name: name,
 			},
 		)
+	}
+}
+
+func AtlasTeamRemoveProject(ID, name string) AtlasTeamStatusOption {
+	return func(s *TeamStatus) {
+		newList := make([]TeamProject, 0, len(s.Projects))
+
+		for _, project := range s.Projects {
+			if project.ID == ID {
+				continue
+			}
+
+			newList = append(
+				newList,
+				TeamProject{
+					ID:   ID,
+					Name: name,
+				},
+			)
+		}
+
+		s.Projects = newList
 	}
 }
 

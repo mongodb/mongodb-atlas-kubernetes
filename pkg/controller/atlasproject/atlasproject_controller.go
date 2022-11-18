@@ -71,6 +71,11 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasteams,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasteams/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasteams,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasteams/status,verbs=get;update;patch
+
 func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context
 	log := r.Log.With("atlasproject", req.NamespacedName)
@@ -270,6 +275,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
 
+	if result = r.ensureAssignedTeams(ctx, projectID, project); !result.IsOk() {
+		return result
+	}
+	r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
+
 	return workflow.OK()
 }
 
@@ -304,6 +314,12 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err != nil {
 		return err
 	}
+
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasTeam{}}, watch.NewAtlasTeamHandler(r.WatchedResources))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
