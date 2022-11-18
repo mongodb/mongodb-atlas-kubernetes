@@ -16,7 +16,7 @@ on:
 jobs:
   create-release:
     name: Create Release
-    if: ( ${{github.event.pull_request.merged == true }} && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != ''
+    if: ${{ (github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != '' }}
     runs-on: ubuntu-latest
     env:
       DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
