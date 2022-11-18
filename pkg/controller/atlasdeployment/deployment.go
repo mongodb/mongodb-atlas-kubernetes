@@ -245,6 +245,9 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			SrvConnURL: connectionStrings.StandardSrv,
 			Password:   password,
 		}
+		connectionsecret.FillPrivateConnStrings(connectionStrings, &data)
+
+		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
 		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {

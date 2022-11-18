@@ -1,4 +1,4 @@
-package atlasdatabaseuser
+package connectionsecret
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
@@ -91,16 +90,16 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
-		data := connectionsecret.ConnectionData{
+		data := ConnectionData{
 			DBUserName: dbUser.Spec.Username,
 			Password:   password,
 			ConnURL:    ds.connectionStrings.Standard,
 			SrvConnURL: ds.connectionStrings.StandardSrv,
 		}
-		fillPrivateConnStrings(ds.connectionStrings, &data)
+		FillPrivateConnStrings(ds.connectionStrings, &data)
 
 		var secretName string
-		if secretName, err = connectionsecret.Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
+		if secretName, err = Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
@@ -128,7 +127,7 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 	// Performing the cleanup of old secrets only if the username has changed
 	if user.Status.UserName != user.Spec.Username {
 		// Note, that we pass the username from the status, not from the spec
-		return removeStaleSecretsByUserName(k8sClient, projectID, user.Status.UserName, user, ctx.Log)
+		return RemoveStaleSecretsByUserName(k8sClient, projectID, user.Status.UserName, user, ctx.Log)
 	}
 	return nil
 }
@@ -139,12 +138,12 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 	if len(scopes) == 0 {
 		return nil
 	}
-	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, user.Spec.Username)
+	secrets, err := ListByUserName(k8sClient, user.Namespace, projectID, user.Spec.Username)
 	if err != nil {
 		return err
 	}
 	for i, s := range secrets {
-		deployment, ok := s.Labels[connectionsecret.ClusterLabelKey]
+		deployment, ok := s.Labels[ClusterLabelKey]
 		if !ok {
 			continue
 		}
@@ -158,9 +157,9 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 	return nil
 }
 
-// removeStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
-func removeStaleSecretsByUserName(k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
-	secrets, err := connectionsecret.ListByUserName(k8sClient, user.Namespace, projectID, userName)
+// RemoveStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
+func RemoveStaleSecretsByUserName(k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
+	secrets, err := ListByUserName(k8sClient, user.Namespace, projectID, userName)
 	if err != nil {
 		return err
 	}
@@ -181,7 +180,7 @@ func removeStaleSecretsByUserName(k8sClient client.Client, projectID, userName s
 	return lastError
 }
 
-func fillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *connectionsecret.ConnectionData) {
+func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *ConnectionData) {
 	if connStrings.Private != "" {
 		data.PvtConnURL = connStrings.Private
 		data.PvtSrvConnURL = connStrings.PrivateSrv
