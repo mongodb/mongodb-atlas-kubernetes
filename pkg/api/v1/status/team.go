@@ -5,49 +5,21 @@ package status
 // AtlasTeamStatusOption is the option that is applied to Atlas Project Status
 type AtlasTeamStatusOption func(s *TeamStatus)
 
-func AtlasTeamID(ID string) AtlasTeamStatusOption {
+func AtlasTeamSetID(ID string) AtlasTeamStatusOption {
 	return func(s *TeamStatus) {
 		s.ID = ID
 	}
 }
 
-func AtlasTeamAddProject(ID, name string) AtlasTeamStatusOption {
+func AtlasTeamUnsetID() AtlasTeamStatusOption {
 	return func(s *TeamStatus) {
-		for _, project := range s.Projects {
-			if project.ID == ID {
-				return
-			}
-		}
-
-		s.Projects = append(
-			s.Projects,
-			TeamProject{
-				ID:   ID,
-				Name: name,
-			},
-		)
+		s.ID = ""
 	}
 }
 
-func AtlasTeamRemoveProject(ID, name string) AtlasTeamStatusOption {
+func AtlasTeamSetProjects(projects []TeamProject) AtlasTeamStatusOption {
 	return func(s *TeamStatus) {
-		newList := make([]TeamProject, 0, len(s.Projects))
-
-		for _, project := range s.Projects {
-			if project.ID == ID {
-				continue
-			}
-
-			newList = append(
-				newList,
-				TeamProject{
-					ID:   ID,
-					Name: name,
-				},
-			)
-		}
-
-		s.Projects = newList
+		s.Projects = projects
 	}
 }
 
