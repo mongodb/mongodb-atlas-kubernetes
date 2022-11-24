@@ -179,6 +179,8 @@ type ServerlessSpec struct {
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
+
+	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.

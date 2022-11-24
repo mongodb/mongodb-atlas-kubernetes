@@ -40,7 +40,8 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
-		return atlasDeployment, workflow.OK()
+		result := ensureServerlessPrivateEndpoints(ctx, project.ID(), serverlessSpec, atlasDeployment.Name)
+		return atlasDeployment, result
 	case status.StateCREATING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 

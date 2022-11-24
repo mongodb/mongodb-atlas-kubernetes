@@ -90,6 +90,7 @@ jobs:
             "networkpeering",
             "privatelink",
             "project-settings",
+            "serverless-pe",
             "x509auth",
           ]
 
