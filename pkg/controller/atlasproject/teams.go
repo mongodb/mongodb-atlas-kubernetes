@@ -2,15 +2,22 @@ package atlasproject
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 type TeamDataContainer struct {
@@ -29,7 +36,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
 	}()
 
-	teamsToAssign := map[string]TeamDataContainer{}
+	teamsToAssign := map[string]*v1.Team{}
 	for _, assignedTeam := range project.Spec.Teams {
 		assignedTeam := assignedTeam
 
@@ -50,7 +57,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
 		)
 		if err != nil {
-			ctx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(project.Namespace), err.Error())
+			ctx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(""), err.Error())
 			continue
 		}
 
@@ -59,33 +66,44 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 			watch.WatchedObject{ResourceKind: team.Kind, Resource: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
 		)
 
-		teamsToAssign[team.Status.ID] = TeamDataContainer{
-			ProjectTeam: &assignedTeam,
-			Team:        team,
-			Context:     nil,
-		}
+		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
 
-	err := r.syncAssignedTeams(ctx, projectID, teamsToAssign)
+	err := r.syncAssignedTeams(ctx, projectID, project, teamsToAssign)
 	if err != nil {
 		ctx.SetConditionFalse(status.ProjectTeamsReadyType)
 		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
 	}
 
 	ctx.SetConditionTrue(status.ProjectTeamsReadyType)
+
+	if len(project.Spec.Teams) == 0 {
+		ctx.UnsetCondition(status.ProjectTeamsReadyType)
+	}
+
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, teamsToAssign map[string]TeamDataContainer) error {
+func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *v1.AtlasProject, teamsToAssign map[string]*v1.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
 	atlasAssignedTeams, _, err := ctx.Client.Projects.GetProjectTeamsAssigned(context.Background(), projectID)
 	if err != nil {
 		return err
 	}
 
+	projectTeamStatus := status.ProjectTeamStatus{
+		Teams:  make([]status.ProjectTeamRef, 0, len(teamsToAssign)),
+		Status: true,
+	}
+	currentProjectsStatus := map[string]status.ProjectTeamRef{}
+	for _, projectTeam := range project.Status.Teams.Teams {
+		currentProjectsStatus[projectTeam.ID] = projectTeam
+	}
+
+	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
+
 	for _, atlasAssignedTeam := range atlasAssignedTeams.Results {
-		_, ok := teamsToAssign[atlasAssignedTeam.TeamID]
-		if ok {
+		if _, ok := teamsToAssign[atlasAssignedTeam.TeamID]; ok {
 			delete(teamsToAssign, atlasAssignedTeam.TeamID)
 
 			continue
@@ -94,29 +112,113 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
 		_, err = ctx.Client.Teams.RemoveTeamFromProject(context.Background(), projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
-			ctx.Log.Warnf("failed to remove team %s from project", atlasAssignedTeam.TeamID)
+			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
 
-		//teamData.Context.EnsureStatusOption(status.AtlasTeamRemoveProject(projectID, ""))
-		//statushandler.Update(teamData.Context, r.Client, r.EventRecorder, teamData.Team)
+		teamRef := getTeamRefFromProjectStatus(project, atlasAssignedTeam.TeamID)
+		if teamRef == nil {
+			ctx.Log.Warnf("unable to find team %s status in the project: %s", atlasAssignedTeam.TeamID, err.Error())
+		} else {
+			if err = r.updateTeamState(ctx, project, teamRef, true); err != nil {
+				ctx.Log.Warnf("failed to update team %s status with removed project: %s", atlasAssignedTeam.TeamID, err.Error())
+			}
+		}
+
+		delete(currentProjectsStatus, atlasAssignedTeam.TeamID)
 	}
 
-	if len(teamsToAssign) == 0 {
-		return nil
+	if len(teamsToAssign) > 0 {
+		ctx.Log.Debug("assigning teams to project")
+		projectTeams := make([]*mongodbatlas.ProjectTeam, 0, len(teamsToAssign))
+		for teamID, assignedTeam := range teamsToAssign {
+			projectTeams = append(projectTeams, assignedTeam.ToAtlas(teamID))
+			currentProjectsStatus[teamID] = status.ProjectTeamRef{
+				ID:      teamID,
+				TeamRef: assignedTeam.TeamRef,
+			}
+
+			if err = r.updateTeamState(ctx, project, &assignedTeam.TeamRef, false); err != nil {
+				ctx.Log.Warnf("failed to update team %s status with added project: %s", teamID, err.Error())
+			}
+		}
+
+		_, _, err = ctx.Client.Projects.AddTeamsToProject(context.Background(), projectID, projectTeams)
+		if err != nil {
+			projectTeamStatus.Status = false
+			projectTeamStatus.Error = err.Error()
+
+			return err
+		}
 	}
 
-	ctx.Log.Debug("assigning teams to project")
-	projectTeams := make([]*mongodbatlas.ProjectTeam, 0, len(teamsToAssign))
-	for teamID, assignedTeam := range teamsToAssign {
-		projectTeams = append(projectTeams, assignedTeam.ProjectTeam.ToAtlas(teamID))
-
-		//assignedTeam.Context.EnsureStatusOption(status.AtlasTeamAddProject(projectID, ""))
-		//statushandler.Update(assignedTeam.Context, r.Client, r.EventRecorder, assignedTeam.Team)
+	for _, projectsStatus := range currentProjectsStatus {
+		projectTeamStatus.Teams = append(projectTeamStatus.Teams, projectsStatus)
 	}
 
-	_, _, err = ctx.Client.Projects.AddTeamsToProject(context.Background(), projectID, projectTeams)
+	ctx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(&projectTeamStatus))
+
+	return nil
+}
+
+func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *v1.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
+	team := &v1.AtlasTeam{}
+	objKey := kube.ObjectKey(teamRef.Namespace, teamRef.Name)
+	fmt.Println(objKey)
+	err := r.Client.Get(context.Background(), objKey, team)
 	if err != nil {
 		return err
+	}
+
+	assignedProjects := make([]status.TeamProject, 0, len(team.Status.Projects)+1)
+
+	if !isRemoval {
+		assignedProjects = append(
+			assignedProjects,
+			status.TeamProject{
+				ID:   project.Status.ID,
+				Name: project.Spec.Name,
+			},
+		)
+	}
+
+	for _, projectStat := range team.Status.Projects {
+		if projectStat.ID == project.Status.ID && isRemoval {
+			continue
+		}
+
+		assignedProjects = append(assignedProjects, projectStat)
+	}
+
+	log := r.Log.With("atlasteam", teamRef)
+	teamCtx, err := createTeamContextFromParent(team, r.Client, ctx.Connection, r.AtlasDomain, log)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	if len(assignedProjects) == 0 {
+		log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
+		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(context.Background(), teamCtx.Connection.OrgID, team.Status.ID)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		teamCtx.EnsureStatusOption(status.AtlasTeamUnsetID())
+	}
+
+	fmt.Println(assignedProjects)
+	teamCtx.EnsureStatusOption(status.AtlasTeamSetProjects(assignedProjects))
+	statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
+
+	return nil
+}
+
+func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *common.ResourceRefNamespaced {
+	for _, stat := range project.Status.Teams.Teams {
+		if stat.ID == teamID {
+			return &stat.TeamRef
+		}
 	}
 
 	return nil

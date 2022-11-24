@@ -6,24 +6,20 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"k8s.io/client-go/tools/record"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"golang.org/x/sync/errgroup"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 func teamReconcile(
@@ -42,14 +38,11 @@ func teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		workflowCtx := customresource.MarkReconciliationStarted(kubeClient, team, log)
-		workflowCtx.Connection = atlasConnection
-		atlasClient, err := atlas.Client(atlasDomain, atlasConnection, log)
+		workflowCtx, err := createTeamContextFromParent(team, kubeClient, atlasConnection, atlasDomain, log)
 		if err != nil {
 			workflowCtx.SetConditionFalse(status.ReadyType)
 			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
 		}
-		workflowCtx.Client = atlasClient
 
 		defer statushandler.Update(workflowCtx, kubeClient, eventRecorder, team)
 
@@ -65,7 +58,7 @@ func teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		workflowCtx.EnsureStatusOption(status.AtlasTeamID(teamID))
+		workflowCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
 
 		result = ensureTeamUsesAreInSync(ctx, workflowCtx, teamID, team)
 		if !result.IsOk() {
@@ -75,7 +68,7 @@ func teamReconcile(
 
 		if !team.GetDeletionTimestamp().IsZero() {
 			log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-			_, err := atlasClient.Projects.Delete(ctx, team.Status.ID)
+			_, err := workflowCtx.Client.Projects.Delete(ctx, team.Status.ID)
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 				log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -86,6 +79,24 @@ func teamReconcile(
 		workflowCtx.SetConditionTrue(status.ReadyType)
 		return workflow.OK().ReconcileResult(), nil
 	}
+}
+
+func createTeamContextFromParent(
+	team *v1.AtlasTeam,
+	kubeClient client.Client,
+	atlasConnection atlas.Connection,
+	atlasDomain string,
+	logger *zap.SugaredLogger,
+) (*workflow.Context, error) {
+	teamCtx := customresource.MarkReconciliationStarted(kubeClient, team, logger)
+	teamCtx.Connection = atlasConnection
+	atlasClient, err := atlas.Client(atlasDomain, atlasConnection, logger)
+	if err != nil {
+		return nil, err
+	}
+	teamCtx.Client = atlasClient
+
+	return teamCtx, nil
 }
 
 func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v1.AtlasTeam) (string, workflow.Result) {
