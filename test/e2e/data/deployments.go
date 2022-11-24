@@ -27,6 +27,27 @@ func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 	return deployment
 }
 
+func CreateServerlessDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			ServerlessSpec: &v1.ServerlessSpec{
+				Name: name,
+				ProviderSettings: &v1.ProviderSettingsSpec{
+					ProviderName:        "SERVERLESS", // TODO: add to constants
+					BackingProviderName: string(provider.ProviderAWS),
+					RegionName:          "US_EAST_1",
+				},
+			},
+		},
+	}
+}
+
 func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 	return &v1.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
