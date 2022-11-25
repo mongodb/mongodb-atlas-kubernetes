@@ -102,13 +102,33 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
+	toDelete := make([]*mongodbatlas.Result, 0, len(atlasAssignedTeams.Results))
 	for _, atlasAssignedTeam := range atlasAssignedTeams.Results {
-		if _, ok := teamsToAssign[atlasAssignedTeam.TeamID]; ok {
+		desiredTeam, ok := teamsToAssign[atlasAssignedTeam.TeamID]
+		if !ok {
+			toDelete = append(toDelete, atlasAssignedTeam)
+
+			continue
+		}
+
+		if !hasTeamRolesChanged(atlasAssignedTeam.RoleNames, desiredTeam.Roles) {
+			currentProjectsStatus[atlasAssignedTeam.TeamID] = status.ProjectTeamRef{
+				ID:      atlasAssignedTeam.TeamID,
+				TeamRef: desiredTeam.TeamRef,
+			}
 			delete(teamsToAssign, atlasAssignedTeam.TeamID)
 
 			continue
 		}
 
+		ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.TeamID)
+		_, err = ctx.Client.Teams.RemoveTeamFromProject(context.Background(), projectID, atlasAssignedTeam.TeamID)
+		if err != nil {
+			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
+		}
+	}
+
+	for _, atlasAssignedTeam := range toDelete {
 		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
 		_, err = ctx.Client.Teams.RemoveTeamFromProject(context.Background(), projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
@@ -222,4 +242,17 @@ func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *commo
 	}
 
 	return nil
+}
+
+func hasTeamRolesChanged(current []string, desired []v1.TeamRole) bool {
+	desiredMap := map[string]struct{}{}
+	for _, desiredRole := range desired {
+		desiredMap[string(desiredRole)] = struct{}{}
+	}
+
+	for _, currentRole := range current {
+		delete(desiredMap, currentRole)
+	}
+
+	return len(desiredMap) != 0
 }
