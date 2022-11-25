@@ -27,7 +27,7 @@ func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 	return deployment
 }
 
-func CreateServerlessDeployment(name string) *v1.AtlasDeployment {
+func CreateServerlessDeployment(name string, providerName string, regionName string) *v1.AtlasDeployment {
 	return &v1.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -40,8 +40,8 @@ func CreateServerlessDeployment(name string) *v1.AtlasDeployment {
 				Name: name,
 				ProviderSettings: &v1.ProviderSettingsSpec{
 					ProviderName:        "SERVERLESS", // TODO: add to constants
-					BackingProviderName: string(provider.ProviderAWS),
-					RegionName:          "US_EAST_1",
+					BackingProviderName: providerName,
+					RegionName:          regionName,
 				},
 			},
 		},

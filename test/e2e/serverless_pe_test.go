@@ -38,7 +38,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			SaveDump(testData)
 		}
 		By("Clean Cloud", func() {
-			// TODO: clean cloud
+			DeleteSPE(testData)
 		})
 		By("Delete Resources, Project with PEService", func() {
 			actions.DeleteTestDataDeployments(testData)
@@ -59,7 +59,20 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest1", "AWS", "US_EAST_1")),
+			[]v1.ServerlessPrivateEndpoint{
+				{
+					Name: "pe1",
+				},
+			},
+		),
+		Entry("Test[spe-azure-1]: User has project which was updated with AWS PrivateEndpoint", Label("spe-azure-1"),
+			model.DataProvider(
+				"spe-azure-1",
+				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest2", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
 					Name: "pe1",
@@ -115,7 +128,6 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 			Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
 		userData.InitialDeployments[0].Spec.ServerlessSpec.PrivateEndpoints = spe
 		Expect(userData.K8SClient.Update(userData.Context, userData.InitialDeployments[0])).To(Succeed())
-		// Add wait for status
 		Eventually(func(g Gomega) bool {
 			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.InitialDeployments[0].Name,
 				Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
@@ -129,5 +141,12 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 			}
 			return true
 		}).WithTimeout(5*time.Minute).Should(BeTrue(), "Private Endpoints should be ready")
+	})
+}
+
+func DeleteSPE(userDate *model.TestDataProvider) {
+	By("Delete Private Endpoints in Cloud", func() {
+		Expect(serverlessprivateendpoint.DeleteSPE(userDate.InitialDeployments[0].Status.ServerlessPrivateEndpoints,
+			provider.ProviderName(userDate.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.BackingProviderName))).To(Succeed())
 	})
 }
