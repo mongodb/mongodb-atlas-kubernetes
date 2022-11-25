@@ -708,11 +708,14 @@ func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeploy
 }
 
 func (c *AtlasDeployment) AtlasName() string {
-	if c.Spec.DeploymentSpec.Name != "" {
+	if c.Spec.DeploymentSpec != nil {
 		return c.Spec.DeploymentSpec.Name
 	}
-	if c.Spec.AdvancedDeploymentSpec.Name != "" {
+	if c.Spec.AdvancedDeploymentSpec != nil {
 		return c.Spec.AdvancedDeploymentSpec.Name
 	}
-	return c.Spec.ServerlessSpec.Name
+	if c.Spec.ServerlessSpec != nil {
+		return c.Spec.ServerlessSpec.Name
+	}
+	return ""
 }
