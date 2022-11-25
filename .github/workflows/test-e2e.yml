@@ -93,6 +93,7 @@ jobs:
             "serverless-pe",
             "x509auth",
             "custom-roles",
+            "teams",
           ]
 
     steps:
