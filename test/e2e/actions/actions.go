@@ -90,3 +90,27 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 		data.Users = data.Users[1:]
 	})
 }
+
+func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []v1.Team, n int) {
+	By("Setup Teams", func() {
+		aClient := atlas.GetClientOrFail()
+		users, err := aClient.GetOrgUsers(data.Project.ID())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(users).ToNot(BeEmpty())
+
+		for _, team := range teams {
+			By(fmt.Sprintf("Add Team \"%s\" resource to k8s", team.TeamRef.Name), func() {
+				usernames := make([]v1.TeamUser, 0, n)
+				for i := 0; i < n; i++ {
+					usernames = append(usernames, v1.TeamUser(users[i].Username))
+				}
+
+				resource := model.NewTeam(team.TeamRef.Name, data.Resources.Namespace)
+				resource.Spec.Usernames = usernames
+
+				Expect(data.K8SClient.Create(data.Context, resource)).Should(Succeed())
+				data.Teams = append(data.Teams, resource)
+			})
+		}
+	})
+}
