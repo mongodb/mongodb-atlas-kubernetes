@@ -102,16 +102,6 @@ metadata:
                 "comment": "IP address for Application Server A",
                 "ipAddress": "192.0.2.15"
               }
-            ],
-            "teams": [
-              {
-                "roles": [
-                  "GROUP_OWNER"
-                ],
-                "teamRef": {
-                  "name": "atlasteam-sample"
-                }
-              }
             ]
           }
         },
@@ -124,7 +114,7 @@ metadata:
           "spec": {
             "name": "my-team",
             "usernames": [
-              "helder.santana@mongodb.com"
+              "username@mongodb.com"
             ]
           }
         }
