@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -183,7 +182,6 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *v1.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
 	team := &v1.AtlasTeam{}
 	objKey := kube.ObjectKey(teamRef.Namespace, teamRef.Name)
-	fmt.Println(objKey)
 	err := r.Client.Get(context.Background(), objKey, team)
 	if err != nil {
 		return err
@@ -212,7 +210,6 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	log := r.Log.With("atlasteam", teamRef)
 	teamCtx, err := createTeamContextFromParent(team, r.Client, ctx.Connection, r.AtlasDomain, log)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -220,14 +217,12 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 		log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
 		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(context.Background(), teamCtx.Connection.OrgID, team.Status.ID)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 
 		teamCtx.EnsureStatusOption(status.AtlasTeamUnsetID())
 	}
 
-	fmt.Println(assignedProjects)
 	teamCtx.EnsureStatusOption(status.AtlasTeamSetProjects(assignedProjects))
 	statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
 
