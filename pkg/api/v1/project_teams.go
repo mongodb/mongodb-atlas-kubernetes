@@ -11,12 +11,12 @@ import (
 type TeamRole string
 
 const (
-	TeamRoleOwner               string = "GROUP_OWNER"
-	TeamRoleClusterManager      string = "GROUP_CLUSTER_MANAGER"
-	TeamRoleDataAccessAdmin     string = "GROUP_DATA_ACCESS_ADMIN"
-	TeamRoleDataAccessReadWrite string = "GROUP_DATA_ACCESS_READ_WRITE"
-	TeamRoleDataAccessReadOnly  string = "GROUP_DATA_ACCESS_READ_ONLY"
-	TeamRoleReadOnly            string = "GROUP_READ_ONLY"
+	TeamRoleOwner               TeamRole = "GROUP_OWNER"
+	TeamRoleClusterManager      TeamRole = "GROUP_CLUSTER_MANAGER"
+	TeamRoleDataAccessAdmin     TeamRole = "GROUP_DATA_ACCESS_ADMIN"
+	TeamRoleDataAccessReadWrite TeamRole = "GROUP_DATA_ACCESS_READ_WRITE"
+	TeamRoleDataAccessReadOnly  TeamRole = "GROUP_DATA_ACCESS_READ_ONLY"
+	TeamRoleReadOnly            TeamRole = "GROUP_READ_ONLY"
 )
 
 type Team struct {
