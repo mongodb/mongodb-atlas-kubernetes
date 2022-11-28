@@ -37,7 +37,7 @@ func PreparePeerVPC(peers []v1.NetworkPeer) error {
 				return err
 			}
 		case provider.ProviderAzure:
-			err = CreateVPCForAzure(os.Getenv(SubscriptionID), config.AzureRegion, peer.ResourceGroupName, peer.VNetName)
+			err = CreateVPCForAzure(os.Getenv(SubscriptionID), config.AzureRegionEU, peer.ResourceGroupName, peer.VNetName)
 			if err != nil {
 				return err
 			}

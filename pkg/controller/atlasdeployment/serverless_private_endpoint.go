@@ -20,17 +20,18 @@ import (
 const (
 	SPEStatusDeleting = "DELETING"
 
+	SPEStatusReserved             = "RESERVED"              // 1
+	SPEStatusReservationRequested = "RESERVATION_REQUESTED" // 1
+
 	SPEStatusAvailable  = "AVAILABLE"  // 2
 	SPEStatusInitiating = "INITIATING" // 2
+	SPEStatusFailed     = "FAILED"     // 2
 
-	SPEStatusReserved             = "RESERVED"              // 1
-	SPEStatusFailed               = "FAILED"                // 2
-	SPEStatusReservationRequested = "RESERVATION_REQUESTED" // 1
 )
 
 func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string, deploymentSpec *mdbv1.ServerlessSpec, deploymentName string) workflow.Result {
 	if deploymentSpec == nil {
-		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty") // TODO: add more details
+		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
 	if result := IsClusterSupportServerlessPE(deploymentSpec); !result.IsOk() {
 		return result
@@ -106,7 +107,7 @@ func deleteSPE(ctx context.Context, client mongodbatlas.ServerlessPrivateEndpoin
 	for _, id := range peToDelete {
 		_, err := client.Delete(ctx, groupID, deploymentName, id)
 		if err != nil {
-			result = append(result, fmt.Errorf("failed to delete serverless private endpoint: %v", err))
+			result = append(result, fmt.Errorf("failed to delete serverless private endpoint: %w", err))
 		}
 	}
 	return result
@@ -115,7 +116,7 @@ func deleteSPE(ctx context.Context, client mongodbatlas.ServerlessPrivateEndpoin
 func getStatusFromReadySPE(pe []mongodbatlas.ServerlessPrivateEndpointConnection) []status.ServerlessPrivateEndpoint {
 	var result []status.ServerlessPrivateEndpoint
 	for _, endpoint := range pe {
-		result = append(result, status.SPEFromAtlas(&endpoint))
+		result = append(result, status.SPEFromAtlas(endpoint))
 	}
 	return result
 }
@@ -136,7 +137,7 @@ func connectSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbat
 			result = append(result, status.FailedToConnectSPE(endpoint, fmt.Sprintf("failed to connect serverless private endpoint: %s", err)))
 		} else {
 			logger.Debugf("Serverless private endpoint %s is connected", id)
-			result = append(result, status.SPEFromAtlas(resultPE))
+			result = append(result, status.SPEFromAtlas(*resultPE))
 		}
 	}
 	return result
@@ -145,13 +146,12 @@ func connectSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbat
 func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatlas.ServerlessPrivateEndpointsService, groupID, deploymentName string, pe []mdbv1.ServerlessPrivateEndpoint) []status.ServerlessPrivateEndpoint {
 	var result []status.ServerlessPrivateEndpoint
 	for _, endpoint := range pe {
-
 		created, _, err := client.Create(ctx, groupID, deploymentName, prepareForCreation(endpoint))
 		if err != nil {
 			logger.Errorf("Failed to create serverless private endpoint: %v, err: %v", prepareForCreation(endpoint), err)
 			result = append(result, status.FailedToCreateSPE(endpoint.Name, fmt.Sprintf("failed to create serverless private endpoint: %s", err)))
 		} else {
-			result = append(result, status.SPEFromAtlas(created))
+			result = append(result, status.SPEFromAtlas(*created))
 		}
 	}
 	return result
@@ -191,7 +191,7 @@ func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.Server
 
 	for _, pe := range existedPE {
 		switch pe.Status {
-		case SPEStatusInitiating, SPEStatusReservationRequested: // TODO: check statuses and stages
+		case SPEStatusInitiating, SPEStatusReservationRequested:
 			existingPEToCreate = append(existingPEToCreate, pe)
 		case SPEStatusReserved:
 			existingReservedPE = append(existingReservedPE, pe)
@@ -200,7 +200,7 @@ func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.Server
 		case SPEStatusDeleting:
 
 		default:
-			// TODO: add error or log
+			logger.Errorf("Unknown status %s for serverless private endpoint %s", pe.Status, pe.ID)
 		}
 	}
 
@@ -250,7 +250,6 @@ func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.Server
 	}
 
 	return mergedDiff
-
 }
 
 func preparePEForConnection(atlasPE mongodbatlas.ServerlessPrivateEndpointConnection, pe mdbv1.ServerlessPrivateEndpoint) mongodbatlas.ServerlessPrivateEndpointConnection {
@@ -283,7 +282,7 @@ func sortReadySPE(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection
 			result.appendToCreate(desiredPE)
 		}
 	}
-	// TODO: simplify this logic
+
 	for _, existingPE := range existingPEs {
 		toDelete := true
 		for _, desiredPE := range result.PEToConnect {
@@ -313,7 +312,6 @@ func isReadySPEEqual(existingPE mongodbatlas.ServerlessPrivateEndpointConnection
 func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []mdbv1.ServerlessPrivateEndpoint, uniqueComments []string) *SPEDiff {
 	var result SPEDiff
 	for _, desiredPE := range desiredPEs {
-
 		if !stringutil.Contains(uniqueComments, desiredPE.Name) {
 			uniqueComments = append(uniqueComments, desiredPE.Name)
 		} else {
@@ -353,7 +351,7 @@ func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnec
 func getAllExistingServerlessPE(ctx context.Context, service mongodbatlas.ServerlessPrivateEndpointsService, groupID, clusterName string) ([]mongodbatlas.ServerlessPrivateEndpointConnection, error) {
 	list, _, err := service.List(ctx, groupID, clusterName, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list serverless private endpoints: %v", err)
+		return nil, fmt.Errorf("failed to list serverless private endpoints: %w", err)
 	}
 	return list, nil
 }

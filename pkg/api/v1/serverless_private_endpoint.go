@@ -7,8 +7,11 @@ import (
 )
 
 type ServerlessPrivateEndpoint struct {
-	Name                     string `json:"name,omitempty"`
-	CloudProviderEndpointID  string `json:"cloudProviderEndpointID,omitempty"`
+	// Name is the name of the Serverless PrivateLink Service. Should be unique.
+	Name string `json:"name,omitempty"`
+	// CloudProviderEndpointID is the identifier of the cloud provider endpoint.
+	CloudProviderEndpointID string `json:"cloudProviderEndpointID,omitempty"`
+	// PrivateEndpointIPAddress is the IPv4 address of the private endpoint in your Azure VNet that someone added to this private endpoint service.
 	PrivateEndpointIPAddress string `json:"privateEndpointIpAddress,omitempty"`
 }
 

@@ -3,6 +3,7 @@ package serverlessprivateendpoint
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/networkpeer"
@@ -15,7 +16,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
-func ConnectSPE(spe []v1.ServerlessPrivateEndpoint, peStatuses []status.ServerlessPrivateEndpoint, providerName provider.ProviderName) error {
+func ConnectSPE(spe []v1.ServerlessPrivateEndpoint, peStatuses []status.ServerlessPrivateEndpoint,
+	providerName provider.ProviderName) error {
 	switch providerName {
 	case provider.ProviderAWS:
 		session := aws.SessionAWS(config.AWSRegionUS)
@@ -49,7 +51,7 @@ func ConnectSPE(spe []v1.ServerlessPrivateEndpoint, peStatuses []status.Serverle
 			return err
 		}
 		for _, peStatus := range peStatuses {
-			peID, peIP, err := sessionAzure.CreatePrivateEndpoint(config.AzureRegion, cloud.ResourceGroup, peStatus.EndpointServiceName, peStatus.PrivateLinkServiceResourceID)
+			peID, peIP, err := sessionAzure.CreatePrivateEndpoint(config.AzureRegionEU, cloud.ResourceGroup, peStatus.EndpointServiceName, peStatus.PrivateLinkServiceResourceID)
 			if err != nil {
 				return err
 			}
@@ -82,7 +84,7 @@ func DeleteSPE(speStatuses []status.ServerlessPrivateEndpoint, providerName prov
 			return err
 		}
 		for _, peStatus := range speStatuses {
-			err = sessionAzure.DeletePrivateEndpoint(cloud.ResourceGroup, peStatus.CloudProviderEndpointID)
+			err = sessionAzure.DeletePrivateEndpoint(cloud.ResourceGroup, path.Base(peStatus.CloudProviderEndpointID))
 			if err != nil {
 				return err
 			}
