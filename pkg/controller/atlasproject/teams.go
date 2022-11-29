@@ -77,6 +77,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 	ctx.SetConditionTrue(status.ProjectTeamsReadyType)
 
 	if len(project.Spec.Teams) == 0 {
+		ctx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(nil))
 		ctx.UnsetCondition(status.ProjectTeamsReadyType)
 	}
 
@@ -95,8 +96,10 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		Status: true,
 	}
 	currentProjectsStatus := map[string]status.ProjectTeamRef{}
-	for _, projectTeam := range project.Status.Teams.Teams {
-		currentProjectsStatus[projectTeam.ID] = projectTeam
+	if project.Status.Teams != nil {
+		for _, projectTeam := range project.Status.Teams.Teams {
+			currentProjectsStatus[projectTeam.ID] = projectTeam
+		}
 	}
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
@@ -230,6 +233,10 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 }
 
 func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *common.ResourceRefNamespaced {
+	if project.Status.Teams == nil {
+		return nil
+	}
+
 	for _, stat := range project.Status.Teams.Teams {
 		if stat.ID == teamID {
 			return &stat.TeamRef

@@ -167,7 +167,11 @@ func (in *AtlasProjectStatus) DeepCopyInto(out *AtlasProjectStatus) {
 		*out = make([]CustomRole, len(*in))
 		copy(*out, *in)
 	}
-	in.Teams.DeepCopyInto(&out.Teams)
+	if in.Teams != nil {
+		in, out := &in.Teams, &out.Teams
+		*out = new(ProjectTeamStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Prometheus != nil {
 		in, out := &in.Prometheus, &out.Prometheus
 		*out = new(Prometheus)
