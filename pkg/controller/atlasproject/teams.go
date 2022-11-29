@@ -50,7 +50,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 		}
 
 		team := &v1.AtlasTeam{}
-		teamReconciler := teamReconcile(team, r.Client, r.EventRecorder, ctx.Connection, r.AtlasDomain, r.Log)
+		teamReconciler := r.teamReconcile(team, ctx.Connection)
 		_, err := teamReconciler(
 			context.Background(),
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},

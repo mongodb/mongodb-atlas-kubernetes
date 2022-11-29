@@ -96,7 +96,7 @@ func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []v1.Team, n
 		aClient := atlas.GetClientOrFail()
 		users, err := aClient.GetOrgUsers(data.Project.ID())
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(users).ToNot(BeEmpty())
+		Expect(len(users) < n).ShouldNot(BeTrue())
 
 		for _, team := range teams {
 			By(fmt.Sprintf("Add Team \"%s\" resource to k8s", team.TeamRef.Name), func() {

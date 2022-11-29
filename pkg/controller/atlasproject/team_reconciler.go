@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -22,53 +21,51 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func teamReconcile(
+func (r *AtlasProjectReconciler) teamReconcile(
 	team *v1.AtlasTeam,
-	kubeClient client.Client,
-	eventRecorder record.EventRecorder,
-	atlasConnection atlas.Connection,
-	atlasDomain string,
-	logger *zap.SugaredLogger,
+	connection atlas.Connection,
 ) reconcile.Func {
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-		log := logger.With("atlasteam", req.NamespacedName)
+		log := r.Log.With("atlasteam", req.NamespacedName)
 
-		result := customresource.PrepareResource(kubeClient, req, team, log)
+		// TODO(helderjs): Add finalizers to avoid delete assigned teams
+		// TODO(helderjs): Add skip reconciliation annotation
+		result := customresource.PrepareResource(r.Client, req, team, log)
 		if !result.IsOk() {
 			return result.ReconcileResult(), nil
 		}
 
-		workflowCtx, err := createTeamContextFromParent(team, kubeClient, atlasConnection, atlasDomain, log)
+		teamCtx, err := createTeamContextFromParent(team, r.Client, connection, r.AtlasDomain, log)
 		if err != nil {
-			workflowCtx.SetConditionFalse(status.ReadyType)
+			teamCtx.SetConditionFalse(status.ReadyType)
 			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
 		}
 
-		defer statushandler.Update(workflowCtx, kubeClient, eventRecorder, team)
+		defer statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
 
 		log.Infow("-> Starting AtlasTeam reconciliation", "spec", team.Spec)
 
-		teamID, result := ensureTeamState(ctx, workflowCtx, team)
+		teamID, result := ensureTeamState(ctx, teamCtx, team)
 		if !result.IsOk() {
-			workflowCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(status.ReadyType, result)
 			if result.IsWarning() {
-				workflowCtx.Log.Warnf("failed to ensure team state %v: %s", team.Spec, result.GetMessage())
+				teamCtx.Log.Warnf("failed to ensure team state %v: %s", team.Spec, result.GetMessage())
 			}
 
 			return result.ReconcileResult(), nil
 		}
 
-		workflowCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
+		teamCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
 
-		result = ensureTeamUsesAreInSync(ctx, workflowCtx, teamID, team)
+		result = ensureTeamUsersAreInSync(ctx, teamCtx, teamID, team)
 		if !result.IsOk() {
-			workflowCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(status.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 
 		if !team.GetDeletionTimestamp().IsZero() {
 			log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-			_, err := workflowCtx.Client.Projects.Delete(ctx, team.Status.ID)
+			_, err := teamCtx.Client.Projects.Delete(ctx, team.Status.ID)
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 				log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -76,7 +73,7 @@ func teamReconcile(
 			}
 		}
 
-		workflowCtx.SetConditionTrue(status.ReadyType)
+		teamCtx.SetConditionTrue(status.ReadyType)
 		return workflow.OK().ReconcileResult(), nil
 	}
 }
@@ -142,7 +139,7 @@ func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v
 	return atlasTeam.ID, workflow.OK()
 }
 
-func ensureTeamUsesAreInSync(ctx context.Context, workflowCtx *workflow.Context, teamID string, team *v1.AtlasTeam) workflow.Result {
+func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context, teamID string, team *v1.AtlasTeam) workflow.Result {
 	atlasUsers, _, err := workflowCtx.Client.Teams.GetTeamUsersAssigned(ctx, workflowCtx.Connection.OrgID, teamID)
 	if err != nil {
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
