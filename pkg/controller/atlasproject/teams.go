@@ -91,15 +91,10 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		return err
 	}
 
-	projectTeamStatus := status.ProjectTeamStatus{
-		Teams:  make([]status.ProjectTeamRef, 0, len(teamsToAssign)),
-		Status: true,
-	}
-	currentProjectsStatus := map[string]status.ProjectTeamRef{}
-	if project.Status.Teams != nil {
-		for _, projectTeam := range project.Status.Teams.Teams {
-			currentProjectsStatus[projectTeam.ID] = projectTeam
-		}
+	projectTeamStatus := make([]status.ProjectTeamStatus, 0, len(teamsToAssign))
+	currentProjectsStatus := map[string]status.ProjectTeamStatus{}
+	for _, projectTeam := range project.Status.Teams {
+		currentProjectsStatus[projectTeam.ID] = projectTeam
 	}
 
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
@@ -114,7 +109,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		}
 
 		if !hasTeamRolesChanged(atlasAssignedTeam.RoleNames, desiredTeam.Roles) {
-			currentProjectsStatus[atlasAssignedTeam.TeamID] = status.ProjectTeamRef{
+			currentProjectsStatus[atlasAssignedTeam.TeamID] = status.ProjectTeamStatus{
 				ID:      atlasAssignedTeam.TeamID,
 				TeamRef: desiredTeam.TeamRef,
 			}
@@ -154,7 +149,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		projectTeams := make([]*mongodbatlas.ProjectTeam, 0, len(teamsToAssign))
 		for teamID, assignedTeam := range teamsToAssign {
 			projectTeams = append(projectTeams, assignedTeam.ToAtlas(teamID))
-			currentProjectsStatus[teamID] = status.ProjectTeamRef{
+			currentProjectsStatus[teamID] = status.ProjectTeamStatus{
 				ID:      teamID,
 				TeamRef: assignedTeam.TeamRef,
 			}
@@ -166,15 +161,12 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 		_, _, err = ctx.Client.Projects.AddTeamsToProject(context.Background(), projectID, projectTeams)
 		if err != nil {
-			projectTeamStatus.Status = false
-			projectTeamStatus.Error = err.Error()
-
 			return err
 		}
 	}
 
 	for _, projectsStatus := range currentProjectsStatus {
-		projectTeamStatus.Teams = append(projectTeamStatus.Teams, projectsStatus)
+		projectTeamStatus = append(projectTeamStatus, projectsStatus)
 	}
 
 	ctx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(&projectTeamStatus))
@@ -233,11 +225,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 }
 
 func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *common.ResourceRefNamespaced {
-	if project.Status.Teams == nil {
-		return nil
-	}
-
-	for _, stat := range project.Status.Teams.Teams {
+	for _, stat := range project.Status.Teams {
 		if stat.ID == teamID {
 			return &stat.TeamRef
 		}

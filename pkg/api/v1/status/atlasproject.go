@@ -64,9 +64,9 @@ func AtlasProjectSetCustomRolesOption(customRoles *[]CustomRole) AtlasProjectSta
 	}
 }
 
-func AtlasProjectSetTeamsOption(teams *ProjectTeamStatus) AtlasProjectStatusOption {
+func AtlasProjectSetTeamsOption(teams *[]ProjectTeamStatus) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
-		s.Teams = teams
+		s.Teams = *teams
 	}
 }
 
@@ -109,7 +109,7 @@ type AtlasProjectStatus struct {
 	CustomRoles []CustomRole `json:"customRoles,omitempty"`
 
 	// Teams contains a list of teams assignment statuses
-	Teams *ProjectTeamStatus `json:"teams,omitempty"`
+	Teams []ProjectTeamStatus `json:"teams,omitempty"`
 
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL
