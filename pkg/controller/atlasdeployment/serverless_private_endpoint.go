@@ -312,12 +312,12 @@ func isReadySPEEqual(existingPE mongodbatlas.ServerlessPrivateEndpointConnection
 func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []mdbv1.ServerlessPrivateEndpoint, uniqueComments []string) *SPEDiff {
 	var result SPEDiff
 	for _, desiredPE := range desiredPEs {
-		if !stringutil.Contains(uniqueComments, desiredPE.Name) {
-			uniqueComments = append(uniqueComments, desiredPE.Name)
-		} else {
+		if stringutil.Contains(uniqueComments, desiredPE.Name) {
 			result.DuplicateToCreate = append(result.DuplicateToCreate, desiredPE)
 			continue
 		}
+		
+		uniqueComments = append(uniqueComments, desiredPE.Name)
 
 		toCreate := true
 		for _, existingPE := range existingPEs {
