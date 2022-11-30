@@ -20,13 +20,12 @@ import (
 const (
 	SPEStatusDeleting = "DELETING"
 
-	SPEStatusReserved             = "RESERVED"              // 1
-	SPEStatusReservationRequested = "RESERVATION_REQUESTED" // 1
+	SPEStatusReserved             = "RESERVED"              //stage 1
+	SPEStatusReservationRequested = "RESERVATION_REQUESTED" //stage 1
 
-	SPEStatusAvailable  = "AVAILABLE"  // 2
-	SPEStatusInitiating = "INITIATING" // 2
-	SPEStatusFailed     = "FAILED"     // 2
-
+	SPEStatusAvailable  = "AVAILABLE"  //stage 2
+	SPEStatusInitiating = "INITIATING" //stage 2
+	SPEStatusFailed     = "FAILED"     //stage 2
 )
 
 func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string, deploymentSpec *mdbv1.ServerlessSpec, deploymentName string) workflow.Result {
@@ -39,7 +38,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 
 	if deploymentSpec.PrivateEndpoints == nil {
 		service.UnsetCondition(status.ServerlessPrivateEndpointReadyType)
-		service.EnsureStatusOption(status.AtlasDeploymentServerlessPrivateEndpointOption(nil))
+		service.EnsureStatusOption(status.AtlasDeploymentSPEOption(nil))
 		return workflow.OK()
 	}
 
@@ -76,7 +75,7 @@ func syncServerlessPrivateEndpoints(ctx context.Context, service *workflow.Conte
 	speStatuses = append(speStatuses, connectSPE(ctx, logger, client, groupID, deploymentName, providerName, diff.PEToConnect)...)
 	speStatuses = append(speStatuses, getStatusFromReadySPE(diff.PEToUpdateStatus)...)
 	speStatuses = append(speStatuses, handleDuplicatePE(diff)...)
-	service.EnsureStatusOption(status.AtlasDeploymentServerlessPrivateEndpointOption(speStatuses))
+	service.EnsureStatusOption(status.AtlasDeploymentSPEOption(speStatuses))
 	logger.Debugf("Serverless Private Endpoints statuses: %v", speStatuses)
 	errors := deleteSPE(ctx, client, groupID, deploymentName, diff.PEToDelete)
 	if len(errors) > 0 {
@@ -146,9 +145,9 @@ func connectSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbat
 func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatlas.ServerlessPrivateEndpointsService, groupID, deploymentName string, pe []mdbv1.ServerlessPrivateEndpoint) []status.ServerlessPrivateEndpoint {
 	var result []status.ServerlessPrivateEndpoint
 	for _, endpoint := range pe {
-		created, _, err := client.Create(ctx, groupID, deploymentName, prepareForCreation(endpoint))
+		created, _, err := client.Create(ctx, groupID, deploymentName, newServerlessEndpoint(endpoint))
 		if err != nil {
-			logger.Errorf("Failed to create serverless private endpoint: %v, err: %v", prepareForCreation(endpoint), err)
+			logger.Errorf("Failed to create serverless private endpoint: %v, err: %v", newServerlessEndpoint(endpoint), err)
 			result = append(result, status.FailedToCreateSPE(endpoint.Name, fmt.Sprintf("failed to create serverless private endpoint: %s", err)))
 		} else {
 			result = append(result, status.SPEFromAtlas(*created))
@@ -157,7 +156,7 @@ func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatl
 	return result
 }
 
-func prepareForCreation(pe mdbv1.ServerlessPrivateEndpoint) *mongodbatlas.ServerlessPrivateEndpointConnection {
+func newServerlessEndpoint(pe mdbv1.ServerlessPrivateEndpoint) *mongodbatlas.ServerlessPrivateEndpointConnection {
 	return &mongodbatlas.ServerlessPrivateEndpointConnection{
 		Comment: pe.Name,
 	}
@@ -316,7 +315,7 @@ func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnec
 			result.DuplicateToCreate = append(result.DuplicateToCreate, desiredPE)
 			continue
 		}
-		
+
 		uniqueComments = append(uniqueComments, desiredPE.Name)
 
 		toCreate := true

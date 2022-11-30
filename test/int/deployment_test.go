@@ -365,7 +365,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	FDescribe("Create deployment & change it to GEOSHARDED", Label("int", "geosharded", "slow"), func() {
+	Describe("Create deployment & change it to GEOSHARDED", Label("int", "geosharded", "slow"), func() {
 		It("Should Succeed", func() {
 			expectedDeployment := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 

@@ -110,7 +110,7 @@ func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOptio
 	}
 }
 
-func AtlasDeploymentServerlessPrivateEndpointOption(pe []ServerlessPrivateEndpoint) AtlasDeploymentStatusOption {
+func AtlasDeploymentSPEOption(pe []ServerlessPrivateEndpoint) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.ServerlessPrivateEndpoints = pe
 	}

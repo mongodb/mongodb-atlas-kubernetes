@@ -17,6 +17,8 @@ const (
 	InstanceSizeM10 = "M10"
 	InstanceSizeM20 = "M20"
 	InstanceSizeM0  = "M0"
+
+	ServerlessProviderName = "SERVERLESS"
 )
 
 func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
@@ -39,7 +41,7 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 			ServerlessSpec: &v1.ServerlessSpec{
 				Name: name,
 				ProviderSettings: &v1.ProviderSettingsSpec{
-					ProviderName:        "SERVERLESS", // TODO: add to constants
+					ProviderName:        ServerlessProviderName,
 					BackingProviderName: providerName,
 					RegionName:          regionName,
 				},
