@@ -14,7 +14,7 @@ import (
 func dependencyAsFileForCRD() {
 	chart := filepath.Join(config.AtlasOperatorHelmChartPath, "Chart.yaml")
 	data, _ := os.ReadFile(filepath.Clean(chart))
-	r, err := regexp.Compile("repository: \"https://mongodb.github.io/helm-charts\"") // nolint:gocritic // if a test runs locally, it could be already changed
+	r, err := regexp.Compile("repository: \"https://mongodb.github.io/helm-charts\"") //nolint:gocritic // if a test runs locally, it could be already changed
 	if err == nil {
 		utils.SaveToFile(
 			chart,

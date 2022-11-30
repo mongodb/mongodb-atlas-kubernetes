@@ -34,10 +34,10 @@ const (
 
 	// Regions for tests
 
-	GCPRegion   = "europe-west1"
-	AWSRegionUS = "us-east-1"
-	AWSRegionEU = "eu-west-2"
-	AzureRegion = "northeurope"
+	GCPRegion     = "europe-west1"
+	AWSRegionUS   = "us-east-1"
+	AWSRegionEU   = "eu-west-2"
+	AzureRegionEU = "northeurope"
 
 	// GCP
 	FileNameSAGCP = "gcp_service_account.json"

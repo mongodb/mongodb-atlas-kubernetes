@@ -20,6 +20,8 @@ type AtlasDeploymentStatus struct {
 	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
 	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
+	ServerlessPrivateEndpoints []ServerlessPrivateEndpoint `json:"serverlessPrivateEndpoints,omitempty"`
+
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
@@ -105,6 +107,12 @@ type AtlasDeploymentStatusOption func(s *AtlasDeploymentStatus)
 func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.StateName = stateName
+	}
+}
+
+func AtlasDeploymentSPEOption(pe []ServerlessPrivateEndpoint) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		s.ServerlessPrivateEndpoints = pe
 	}
 }
 

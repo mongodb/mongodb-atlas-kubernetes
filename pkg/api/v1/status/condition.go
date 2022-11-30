@@ -51,7 +51,8 @@ const (
 
 // AtlasDeployment condition types
 const (
-	DeploymentReadyType ConditionType = "DeploymentReady"
+	DeploymentReadyType                ConditionType = "DeploymentReady"
+	ServerlessPrivateEndpointReadyType ConditionType = "ServerlessPrivateEndpointReady"
 )
 
 // AtlasDatabaseUser condition types

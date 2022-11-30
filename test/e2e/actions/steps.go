@@ -294,6 +294,19 @@ func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string)
 	return nil
 }
 
+func SaveDeploymentToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	yaml, err := k8s.DeploymentListYml(ctx, k8sClient, ns)
+	if err != nil {
+		return fmt.Errorf("error getting deployment list: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "deployments")
+	err = utils.SaveToFile(path, yaml)
+	if err != nil {
+		return fmt.Errorf("error saving deployments to file: %w", err)
+	}
+	return nil
+}
+
 func SaveTestAppLogs(input model.UserInputs) {
 	for _, user := range input.Users {
 		utils.SaveToFile(

@@ -17,6 +17,8 @@ const (
 	InstanceSizeM10 = "M10"
 	InstanceSizeM20 = "M20"
 	InstanceSizeM0  = "M0"
+
+	ServerlessProviderName = "SERVERLESS"
 )
 
 func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
@@ -25,6 +27,27 @@ func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 		customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 	})
 	return deployment
+}
+
+func CreateServerlessDeployment(name string, providerName string, regionName string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			ServerlessSpec: &v1.ServerlessSpec{
+				Name: name,
+				ProviderSettings: &v1.ProviderSettingsSpec{
+					ProviderName:        ServerlessProviderName,
+					BackingProviderName: providerName,
+					RegionName:          regionName,
+				},
+			},
+		},
+	}
 }
 
 func CreateBasicDeployment(name string) *v1.AtlasDeployment {

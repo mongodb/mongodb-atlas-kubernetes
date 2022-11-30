@@ -240,10 +240,12 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 		}
 
 		data := connectionsecret.ConnectionData{
-			DBUserName: dbUser.Spec.Username,
-			ConnURL:    connectionStrings.Standard,
-			SrvConnURL: connectionStrings.StandardSrv,
-			Password:   password,
+			DBUserName:    dbUser.Spec.Username,
+			ConnURL:       connectionStrings.Standard,
+			SrvConnURL:    connectionStrings.StandardSrv,
+			Password:      password,
+			PvtConnURL:    connectionStrings.Private,
+			PvtSrvConnURL: connectionStrings.PrivateSrv,
 		}
 		connectionsecret.FillPrivateConnStrings(connectionStrings, &data)
 

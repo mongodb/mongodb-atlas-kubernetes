@@ -297,3 +297,12 @@ func ProjectListYaml(ctx context.Context, k8sClient client.Client, ns string) ([
 	}
 	return yaml.Marshal(projectList)
 }
+
+func DeploymentListYml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	deploymentList := &v1.AtlasDeploymentList{}
+	err := k8sClient.List(ctx, deploymentList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(deploymentList)
+}

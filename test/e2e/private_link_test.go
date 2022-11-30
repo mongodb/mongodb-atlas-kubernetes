@@ -46,6 +46,7 @@ func SaveDump(data *model.TestDataProvider) {
 		)
 		actions.SaveTestAppLogs(data.Resources)
 		actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
+		actions.SaveDeploymentToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 		actions.SaveK8sResources(
 			[]string{"deploy"},
 			data.Resources.Namespace,
@@ -109,7 +110,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			).WithProject(data.DefaultProject()),
 			[]privateEndpoint{{
 				provider: "AZURE",
-				region:   config.AzureRegion,
+				region:   config.AzureRegionEU,
 			}},
 		),
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
@@ -148,7 +149,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 				{
 					provider: "AZURE",
-					region:   config.AzureRegion,
+					region:   config.AzureRegionEU,
 				},
 			},
 		),

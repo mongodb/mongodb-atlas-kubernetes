@@ -206,7 +206,7 @@ func (s sessionAWS) DeletePrivateLink(endpointID string) error {
 }
 
 func getError(err error) error {
-	if aerr, ok := err.(awserr.Error); ok { // nolint
+	if aerr, ok := err.(awserr.Error); ok { //nolint
 		return aerr
 	}
 	return err
