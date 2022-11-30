@@ -36,8 +36,8 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 	}()
 
 	teamsToAssign := map[string]*v1.Team{}
-	for _, assignedTeam := range project.Spec.Teams {
-		assignedTeam := assignedTeam
+	for _, entry := range project.Spec.Teams {
+		assignedTeam := entry
 
 		if assignedTeam.TeamRef.Name == "" {
 			ctx.Log.Warnf("missing team name. skiping assignement for entry %v", assignedTeam)
