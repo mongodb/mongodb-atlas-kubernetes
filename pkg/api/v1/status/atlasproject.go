@@ -66,6 +66,12 @@ func AtlasProjectSetCustomRolesOption(customRoles *[]CustomRole) AtlasProjectSta
 
 func AtlasProjectSetTeamsOption(teams *[]ProjectTeamStatus) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
+		if teams == nil {
+			s.Teams = nil
+
+			return
+		}
+
 		s.Teams = *teams
 	}
 }
