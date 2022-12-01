@@ -179,4 +179,28 @@ func TestIsEqual(t *testing.T) {
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.False(t, areTheyEqual, "should NOT be equal if Operator has more args")
+
+	atlasArgs.OplogSizeMB = toptr.MakePtr[int64](8)
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should become equal")
+
+	operatorArgs.OplogMinRetentionHours = "2.0"
+	atlasArgs.OplogMinRetentionHours = toptr.MakePtr[float64](2)
+
+	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal when OplogMinRetentionHours field is the same")
+}
+
+func TestToAtlas(t *testing.T) {
+	operatorArgs := ProcessArgs{
+		JavascriptEnabled:      toptr.MakePtr(true),
+		OplogMinRetentionHours: "2.0",
+	}
+
+	atlasArgs, err := operatorArgs.ToAtlas()
+	assert.NoError(t, err, "no errors should occur")
+
+	areTheyEqual := operatorArgs.IsEqual(atlasArgs)
+	assert.True(t, areTheyEqual, "should be equal after conversion")
 }

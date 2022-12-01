@@ -17,7 +17,10 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -306,8 +309,26 @@ type ProcessArgs struct {
 
 func (specArgs ProcessArgs) ToAtlas() (*mongodbatlas.ProcessArgs, error) {
 	result := &mongodbatlas.ProcessArgs{}
+	if err := convertOplogMinRetentionHours(&specArgs, result); err != nil {
+		return nil, err
+	}
+
 	err := compat.JSONCopy(result, specArgs)
 	return result, err
+}
+
+func convertOplogMinRetentionHours(specArgs *ProcessArgs, atlasArgs *mongodbatlas.ProcessArgs) error {
+	if specArgs != nil && specArgs.OplogMinRetentionHours != "" {
+		OplogMinRetentionHours, err := strconv.ParseFloat(specArgs.OplogMinRetentionHours, 64)
+		if err != nil {
+			return err
+		}
+
+		atlasArgs.OplogMinRetentionHours = &OplogMinRetentionHours
+		specArgs.OplogMinRetentionHours = ""
+	}
+
+	return nil
 }
 
 func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
@@ -330,19 +351,28 @@ func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
 			if specValue.IsNil() {
 				continue
 			}
+			specValue = specValue.Elem()
+		}
+
+		if newValue.Kind() == reflect.Ptr {
 			if newValue.IsNil() {
 				return false
 			}
-			specValue = specValue.Elem()
 			newValue = newValue.Elem()
 		}
 
-		if specValue.Interface() != newValue.Interface() {
+		if stringValue(specValue.Interface()) != stringValue(newValue.Interface()) {
 			return false
 		}
 	}
 
 	return true
+}
+
+var TrailingZerosRegex = regexp.MustCompile(`\.[0]*$`)
+
+func stringValue(v interface{}) string {
+	return TrailingZerosRegex.ReplaceAllString(fmt.Sprint(v), "")
 }
 
 // Check compatibility with library type.
