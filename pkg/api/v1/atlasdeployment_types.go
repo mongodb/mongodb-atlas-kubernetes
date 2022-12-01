@@ -367,10 +367,10 @@ func (specArgs ProcessArgs) IsEqual(newArgs interface{}) bool {
 	return true
 }
 
+var TrailingZerosRegex = regexp.MustCompile(`\.[0]*$`)
+
 func stringValue(v interface{}) string {
-	return regexp.
-		MustCompile(`\.[0]*$`).
-		ReplaceAllString(fmt.Sprint(v), "")
+	return TrailingZerosRegex.ReplaceAllString(fmt.Sprint(v), "")
 }
 
 // Check compatibility with library type.
