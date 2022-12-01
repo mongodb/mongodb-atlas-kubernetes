@@ -86,7 +86,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	cleanupTheSpec(&specDeployment, deployment.Spec.AdvancedDeploymentSpec)
+	cleanupTheSpec(&specDeployment)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -101,23 +101,39 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupTheSpec(specMerged, specInitial *mdbv1.AdvancedDeploymentSpec) {
+func cleanupTheSpec(specMerged *mdbv1.AdvancedDeploymentSpec) {
 	specMerged.MongoDBVersion = ""
 
+	globalInstanceSize := ""
 	for i, replicationSpec := range specMerged.ReplicationSpecs {
 		for k := range replicationSpec.RegionConfigs {
-			initialConfig := specInitial.ReplicationSpecs[i].RegionConfigs[k]
-			mergedConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
+			regionConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
 
-			if initialConfig.AnalyticsSpecs == nil {
-				mergedConfig.AnalyticsSpecs = nil
+			specs := []*mdbv1.Specs{
+				regionConfig.AnalyticsSpecs,
+				regionConfig.ElectableSpecs,
+				regionConfig.ReadOnlySpecs,
 			}
-			if initialConfig.ElectableSpecs == nil {
-				mergedConfig.ElectableSpecs = nil
+
+			forEachSpec := func(f func(spec *mdbv1.Specs)) {
+				for _, spec := range specs {
+					if spec != nil {
+						f(spec)
+					}
+				}
 			}
-			if initialConfig.ReadOnlySpecs == nil {
-				mergedConfig.ReadOnlySpecs = nil
-			}
+
+			forEachSpec(func(spec *mdbv1.Specs) {
+				if globalInstanceSize == "" && spec.NodeCount != nil && *spec.NodeCount != 0 {
+					globalInstanceSize = spec.InstanceSize
+				}
+			})
+
+			forEachSpec(func(spec *mdbv1.Specs) {
+				if spec.NodeCount == nil || *spec.NodeCount == 0 {
+					spec.InstanceSize = globalInstanceSize
+				}
+			})
 		}
 	}
 }
