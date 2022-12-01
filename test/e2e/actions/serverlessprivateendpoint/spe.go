@@ -51,8 +51,14 @@ func ConnectSPE(spe []v1.ServerlessPrivateEndpoint, peStatuses []status.Serverle
 			return err
 		}
 		for _, peStatus := range peStatuses {
-			peID, peIP, err := sessionAzure.CreatePrivateEndpoint(config.AzureRegionEU, cloud.ResourceGroup, peStatus.EndpointServiceName, peStatus.PrivateLinkServiceResourceID)
+			var peID, peIP string
+			peID, peIP, err = sessionAzure.CreatePrivateEndpoint(config.AzureRegionEU, cloud.ResourceGroup, peStatus.EndpointServiceName, peStatus.PrivateLinkServiceResourceID)
 			if err != nil {
+				// try to delete endpoint
+				errDelete := sessionAzure.DeletePrivateEndpoint(cloud.ResourceGroup, peStatus.EndpointServiceName)
+				if errDelete != nil {
+					return errDelete
+				}
 				return err
 			}
 			for i, specPE := range spe {
