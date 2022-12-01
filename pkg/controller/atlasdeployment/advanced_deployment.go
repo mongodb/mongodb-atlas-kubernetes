@@ -86,9 +86,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	// Prevent changing of instanceSize and diskSizeGB if autoscaling is enabled
-
-	cleanupTheSpec(&specDeployment)
+	cleanupTheSpec(&specDeployment, deployment.Spec.AdvancedDeploymentSpec)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -103,8 +101,25 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupTheSpec(deployment *mdbv1.AdvancedDeploymentSpec) {
-	deployment.MongoDBVersion = ""
+func cleanupTheSpec(specMerged, specInitial *mdbv1.AdvancedDeploymentSpec) {
+	specMerged.MongoDBVersion = ""
+
+	for i, replicationSpec := range specMerged.ReplicationSpecs {
+		for k := range replicationSpec.RegionConfigs {
+			initialConfig := specInitial.ReplicationSpecs[i].RegionConfigs[k]
+			mergedConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
+
+			if initialConfig.AnalyticsSpecs == nil {
+				mergedConfig.AnalyticsSpecs = nil
+			}
+			if initialConfig.ElectableSpecs == nil {
+				mergedConfig.ElectableSpecs = nil
+			}
+			if initialConfig.ReadOnlySpecs == nil {
+				mergedConfig.ReadOnlySpecs = nil
+			}
+		}
+	}
 }
 
 // This will prevent from setting diskSizeGB if at least one region config has enabled disk size autoscaling
