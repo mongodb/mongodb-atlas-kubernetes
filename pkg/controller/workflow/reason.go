@@ -35,6 +35,7 @@ const (
 	ProjectSettingsReady                       ConditionReason = "ProjectSettingsReady"
 	ProjectAlertConfigurationIsNotReadyInAtlas ConditionReason = "ProjectAlertConfigurationIsNotReadyInAtlas"
 	ProjectCustomRolesReady                    ConditionReason = "ProjectCustomRolesReady"
+	ProjectTeamUnavailable                     ConditionReason = "ProjectTeamUnavailable"
 )
 
 // Atlas Cluster reasons
@@ -57,4 +58,12 @@ const (
 	DatabaseUserDeploymentAppliedChanges    ConditionReason = "DeploymentAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
 	DatabaseUserExpired                     ConditionReason = "DatabaseUserExpired"
+)
+
+const (
+	TeamNotCreatedInAtlas ConditionReason = "TeamNotCreatedInAtlas"
+	TeamNotUpdatedInAtlas ConditionReason = "TeamNotUpdatedInAtlas"
+	TeamInvalidSpec       ConditionReason = "TeamInvalidSpec"
+	TeamUsersNotReady     ConditionReason = "TeamUsersNotReady"
+	TeamDoesNotExist      ConditionReason = "TeamDoesNotExist"
 )

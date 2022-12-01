@@ -204,3 +204,12 @@ func (a *Atlas) GetEncryptioAtRest(projectID string) (*mongodbatlas.EncryptionAt
 	}
 	return encryptionAtRest, nil
 }
+
+func (a *Atlas) GetOrgUsers(projectID string) ([]mongodbatlas.AtlasUser, error) {
+	users, _, err := a.Client.AtlasUsers.List(context.Background(), projectID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

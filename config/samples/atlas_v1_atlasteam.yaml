@@ -1,0 +1,8 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasTeam
+metadata:
+  name: atlasteam-sample
+spec:
+  name: "my-team"
+  usernames:
+    - "username@mongodb.com"

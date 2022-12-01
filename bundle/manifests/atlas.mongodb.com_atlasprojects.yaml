@@ -775,6 +775,43 @@ spec:
                   isSchemaAdvisorEnabled:
                     type: boolean
                 type: object
+              teams:
+                description: Teams enable you to grant project access roles to multiple
+                  users.
+                items:
+                  properties:
+                    roles:
+                      description: Roles the users of the team has over the project
+                      items:
+                        enum:
+                        - GROUP_OWNER
+                        - GROUP_CLUSTER_MANAGER
+                        - GROUP_DATA_ACCESS_ADMIN
+                        - GROUP_DATA_ACCESS_READ_WRITE
+                        - GROUP_DATA_ACCESS_READ_ONLY
+                        - GROUP_READ_ONLY
+                        type: string
+                      minItems: 1
+                      type: array
+                    teamRef:
+                      description: Reference to the team which will assigned to the
+                        project
+                      properties:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
+                      required:
+                      - name
+                      type: object
+                  required:
+                  - roles
+                  - teamRef
+                  type: object
+                type: array
               withDefaultAlertsSettings:
                 default: true
                 description: Flag that indicates whether to create the new project
@@ -1337,6 +1374,40 @@ spec:
                     type: string
                   scheme:
                     type: string
+                type: object
+              teams:
+                description: Teams contains a list of teams assignment statuses
+                properties:
+                  error:
+                    type: string
+                  status:
+                    type: boolean
+                  teams:
+                    items:
+                      properties:
+                        id:
+                          type: string
+                        teamRef:
+                          description: ResourceRefNamespaced is a reference to a Kubernetes
+                            Resource that allows to configure the namespace
+                          properties:
+                            name:
+                              description: Name is the name of the Kubernetes Resource
+                              type: string
+                            namespace:
+                              description: Namespace is the namespace of the Kubernetes
+                                Resource
+                              type: string
+                          required:
+                          - name
+                          type: object
+                      required:
+                      - teamRef
+                      type: object
+                    type: array
+                required:
+                - status
+                - teams
                 type: object
             required:
             - conditions

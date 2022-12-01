@@ -7,4 +7,5 @@ resources:
   - atlas_v1_atlasdatabaseuser.yaml
   - atlas_v1_atlasbackuppolicy.yaml
   - atlas_v1_atlasbackupschedule.yaml
+  - atlas_v1_atlasteam.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

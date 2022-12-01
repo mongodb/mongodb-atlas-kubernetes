@@ -104,6 +104,19 @@ metadata:
               }
             ]
           }
+        },
+        {
+          "apiVersion": "atlas.mongodb.com/v1",
+          "kind": "AtlasTeam",
+          "metadata": {
+            "name": "atlasteam-sample"
+          },
+          "spec": {
+            "name": "my-team",
+            "usernames": [
+              "username@mongodb.com"
+            ]
+          }
         }
       ]
     capabilities: Full Lifecycle
@@ -142,6 +155,11 @@ spec:
         displayName: Atlas Project
         kind: AtlasProject
         name: atlasprojects.atlas.mongodb.com
+        version: v1
+      - description: AtlasTeam is the Schema for the Atlas Teams API
+        displayName: Atlas Team
+        kind: AtlasTeam
+        name: atlasteams.atlas.mongodb.com
         version: v1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas —
@@ -379,6 +397,26 @@ spec:
                 - get
                 - patch
                 - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+              - atlasteam
+              verbs:
+              - create
+              - delete
+              - get
+              - list
+              - patch
+              - update
+              - watch
+            - apiGroups:
+              - atlas.mongodb.com
+              resources:
+              - atlasteam/status
+              verbs:
+              - get
+              - patch
+              - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator
