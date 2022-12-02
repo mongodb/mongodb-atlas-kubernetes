@@ -850,14 +850,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				newInstanceSize := "M20"
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &mdbv1.Specs{
-					InstanceSize: newInstanceSize,
-				}
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = newInstanceSize
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &mdbv1.Specs{
-					InstanceSize: newInstanceSize,
-				}
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {
@@ -871,10 +864,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
+				regionConfig.ElectableSpecs.InstanceSize = "M10"
+				regionConfig.AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
 						Enabled:          toptr.MakePtr(true),
-						MaxInstanceSize:  "M20",
+						MaxInstanceSize:  "M30",
 						MinInstanceSize:  "M10",
 						ScaleDownEnabled: toptr.MakePtr(true),
 					},
@@ -882,6 +877,22 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						Enabled: toptr.MakePtr(true),
 					},
 				}
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				doAdvancedDeploymentStatusChecks()
+				checkAdvancedAtlasState()
+
+				lastGeneration++
+			})
+
+			By(fmt.Sprintf("Update Instance Size Margins with AutoScaling for Deployemnt %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
+				regionConfig.AutoScaling.Compute.MinInstanceSize = "M20"
+				regionConfig.ElectableSpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {
