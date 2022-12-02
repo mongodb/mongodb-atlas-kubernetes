@@ -1,13 +1,20 @@
-# MongoDB Atlas Operator v1.4.0
+# MongoDB Atlas Operator v1.5.0
+
+## Operator Changes
+
+* Fix connection secret creation (#774)
+* Fix mininum version of Openshift (#761)
 
 ## AtlasProject Resource
 
-* Add auditing (#708)
-* Add Project Settings (#716)
-* Add alert configuration feature (#717)
-* Fix issue with /32 CIDR #694 (#704)
-* Check user namespace for integrations #725 (#726)
+* Add Atlas Teams (#767)
+* Make sure PEs are always added to status (#773)
+* Fix the InstanceSize must match issue #777 (#782)
+
+## AtlasDeployment Resource
+
+* Add serverless PE support (#779)
+* Convert OplogMinRetentionHours field properly (#778)
 
 *The images can be found in:*
-
 https://quay.io/mongodb/mongodb-atlas-kubernetes-operator
