@@ -1377,38 +1377,28 @@ spec:
                 type: object
               teams:
                 description: Teams contains a list of teams assignment statuses
-                properties:
-                  error:
-                    type: string
-                  status:
-                    type: boolean
-                  teams:
-                    items:
+                items:
+                  properties:
+                    id:
+                      type: string
+                    teamRef:
+                      description: ResourceRefNamespaced is a reference to a Kubernetes
+                        Resource that allows to configure the namespace
                       properties:
-                        id:
+                        name:
+                          description: Name is the name of the Kubernetes Resource
                           type: string
-                        teamRef:
-                          description: ResourceRefNamespaced is a reference to a Kubernetes
-                            Resource that allows to configure the namespace
-                          properties:
-                            name:
-                              description: Name is the name of the Kubernetes Resource
-                              type: string
-                            namespace:
-                              description: Namespace is the namespace of the Kubernetes
-                                Resource
-                              type: string
-                          required:
-                          - name
-                          type: object
+                        namespace:
+                          description: Namespace is the namespace of the Kubernetes
+                            Resource
+                          type: string
                       required:
-                      - teamRef
+                      - name
                       type: object
-                    type: array
-                required:
-                - status
-                - teams
-                type: object
+                  required:
+                  - teamRef
+                  type: object
+                type: array
             required:
             - conditions
             type: object
