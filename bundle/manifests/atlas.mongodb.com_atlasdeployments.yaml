@@ -556,6 +556,24 @@ spec:
                       its name. Can only contain ASCII letters, numbers, and hyphens.
                     pattern: ^[a-zA-Z0-9][a-zA-Z0-9-]*$
                     type: string
+                  privateEndpoints:
+                    items:
+                      properties:
+                        cloudProviderEndpointID:
+                          description: CloudProviderEndpointID is the identifier of
+                            the cloud provider endpoint.
+                          type: string
+                        name:
+                          description: Name is the name of the Serverless PrivateLink
+                            Service. Should be unique.
+                          type: string
+                        privateEndpointIpAddress:
+                          description: PrivateEndpointIPAddress is the IPv4 address
+                            of the private endpoint in your Azure VNet that someone
+                            added to this private endpoint service.
+                          type: string
+                      type: object
+                    type: array
                   providerSettings:
                     description: Configuration for the provisioned hosts on which
                       MongoDB runs. The available options are specific to the cloud
@@ -790,6 +808,50 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              serverlessPrivateEndpoints:
+                items:
+                  properties:
+                    _id:
+                      description: ID is the identifier of the Serverless PrivateLink
+                        Service.
+                      type: string
+                    cloudProviderEndpointId:
+                      description: CloudProviderEndpointID is the identifier of the
+                        cloud provider endpoint.
+                      type: string
+                    endpointServiceName:
+                      description: EndpointServiceName is the name of the PrivateLink
+                        endpoint service in AWS. Returns null while the endpoint service
+                        is being created.
+                      type: string
+                    errorMessage:
+                      description: ErrorMessage is the error message if the Serverless
+                        PrivateLink Service failed to create or connect.
+                      type: string
+                    name:
+                      description: Name is the name of the Serverless PrivateLink
+                        Service. Should be unique.
+                      type: string
+                    privateEndpointIpAddress:
+                      description: PrivateEndpointIPAddress is the IPv4 address of
+                        the private endpoint in your Azure VNet that someone added
+                        to this private endpoint service.
+                      type: string
+                    privateLinkServiceResourceId:
+                      description: PrivateLinkServiceResourceID is the root-relative
+                        path that identifies the Azure Private Link Service that MongoDB
+                        Cloud manages. MongoDB Cloud returns null while it creates
+                        the endpoint service.
+                      type: string
+                    providerName:
+                      description: ProviderName is human-readable label that identifies
+                        the cloud provider. Values include AWS or AZURE.
+                      type: string
+                    status:
+                      description: Status of the AWS Serverless PrivateLink connection.
+                      type: string
+                  type: object
+                type: array
               stateName:
                 description: 'StateName is the current state of the cluster. The possible
                   states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'
