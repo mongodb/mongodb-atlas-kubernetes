@@ -1,5 +1,8 @@
 name: Openshift Release
 on:
+  push:
+    branches:
+      - CLOUDP-143633-automate-opnshift-release
   workflow_dispatch:
     inputs:
       version:
