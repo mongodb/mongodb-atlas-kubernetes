@@ -7,7 +7,9 @@ RUN curl -Lo tmp/ghcli.tar.gz https://github.com/cli/cli/releases/download/v2.20
     tar --strip-components=1 -xf tmp/ghcli.tar.gz -C /usr/local && \
     rm tmp/ghcli.tar.gz
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /home/entrypoint.sh
+RUN chmod +x /home/entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+RUN ls -lsa /home/entrypoint.sh && pwd
+
+ENTRYPOINT ["/home/entrypoint.sh"]

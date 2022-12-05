@@ -1,9 +1,6 @@
 name: 'Redhat Release'
 description: 'Create release PRs  Redhat operator-hub and openshift ecosystem (community and certified)'
 inputs:
-  GITHUB_TOKEN:
-    description: "Github Action token"
-    required: true
   VERSION:
     description: "Operator version"
     required: true
