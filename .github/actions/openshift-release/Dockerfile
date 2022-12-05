@@ -8,5 +8,6 @@ RUN curl -Lo tmp/ghcli.tar.gz https://github.com/cli/cli/releases/download/v2.20
     rm tmp/ghcli.tar.gz
 
 COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
