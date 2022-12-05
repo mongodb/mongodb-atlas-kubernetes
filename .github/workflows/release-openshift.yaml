@@ -1,4 +1,4 @@
-name: Openshift Release
+name: Release Openshift
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ on:
         description: "Release version:"
         required: true
 jobs:
-  create-release-pr:
+  release-openshift:
     name: "Create Pull request for openshift release"
     runs-on: ubuntu-latest
     env:
