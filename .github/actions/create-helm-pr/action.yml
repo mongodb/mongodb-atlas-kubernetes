@@ -1,0 +1,12 @@
+name: 'Push files'
+description: 'push file to the remote branch'
+inputs:
+  GITHUB_TOKEN:
+    description: "Action token"
+    required: true
+  VERSION:
+    description: "operator version"
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

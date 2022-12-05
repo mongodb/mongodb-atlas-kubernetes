@@ -1,0 +1,24 @@
+name: Post merge helm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version: "
+        required: true
+    push:
+      branches:
+        - 'post-release-helm'
+
+jobs:
+  create-release-branch:
+    name: Create Release branch
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+    steps:
+      - name: Commit and push crds
+        uses: ./.github/actions/create-helm-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: "${{ env.VERSION }}"
