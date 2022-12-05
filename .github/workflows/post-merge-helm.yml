@@ -1,24 +1,79 @@
 name: Post merge helm
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version: "
-        required: true
-    push:
-      branches:
-        - 'post-release-helm'
+  push:
+    branches:
+      - post-release-helm
 
 jobs:
   create-release-branch:
     name: Create Release branch
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ github.event.inputs.version }}
     steps:
-      - name: Commit and push crds
-        uses: ./.github/actions/create-helm-pr
+      - name: clone repositories
+        run: |
+          mkdir operator
+          cd operator
+          gh repo clone https://github.com/mongodb/mongodb-atlas-kubernetes.git
+          cd ..
+          mkdir helm
+          cd helm
+          gh repo clone https://github.com/Sugar-pack/helm-charts.git
+          cd ..
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: "${{ env.VERSION }}"
+          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+      - name: copy files
+        run: |
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasbackuppolicies.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasbackupschedules.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasdatabaseusers.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasdeployments.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasprojects.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+          cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasteams.yaml helm/helm-charts/charts/atlas-operator-crds/templates
+      - name: edit versions
+        run: |
+          VERSION="test2"
+          cd helm/helm-charts/charts/atlas-operator-crds
+          sed -i -r 's/version:....../version: '"$VERSION"'/g' Chart.yaml
+          sed -i -r 's/appVersion:....../appVersion: '"$VERSION"'/g' Chart.yaml
+          cd ..
+          cd atlas-operator
+          sed -i -r 's/version:.\x22.....\x22/version: \x22'"$VERSION"'\x22/g' Chart.yaml
+          sed -i -r 's/version:......$/version: '"$VERSION"'/g' Chart.yaml
+          sed -i -r 's/appVersion:....../appVersion: '"$VERSION"'/g' Chart.yaml
+          cd ..
+      - name: checkout
+        run: |
+          cd operator/mongodb-atlas-kubernetes
+          git fetch
+          git branch -v -a
+          git checkout post-release-helm
+          cd ../..
+      - name: git config
+        id: git-config
+        run: |
+          VERSION="test3"
+          branch="atlas-operator-release-$VERSION"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          cd helm/helm-charts
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+      - name: Commit and push chart
+        run: |
+          cp operator/mongodb-atlas-kubernetes/.github/actions/push-files/entrypoint.sh helm/helm-charts
+          cd helm/helm-charts
+          chmod +x entrypoint.sh
+          git checkout -b "test-sign1"
+          git push origin "test-sign1"
+          ./entrypoint.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+          PATH_TO_COMMIT: "charts/atlas-operator-crds/Chart.yaml"
+          DESTINATION_BRANCH: "release/test3"
+      - name: create pull request
+        run: | 
+          cd helm/helm-charts
+          gh pr create --title "update atlas operator version to $VERSION" --body "update atlas operator version to $VERSION" --base branch-for-pr --head ${{ steps.git-config.outputs.branch }} --repo Sugar-pack/helm-charts
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+

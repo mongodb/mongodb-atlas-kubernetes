@@ -4,7 +4,7 @@ FROM alpine/git:latest
 RUN apk update && \
      apk add --no-cache libc6-compat bash
 RUN mkdir ghcli && cd ghcli && \
-     wget https://github.com/cli/cli/releases/download/v1.5.0/gh_1.5.0_linux_386.tar.gz -O ghcli.tar.gz --no-check-certificate  && \
+     wget https://github.com/cli/cli/releases/download/v2.20.2/gh_2.20.2_linux_386.tar.gz -O ghcli.tar.gz --no-check-certificate  && \
      tar --strip-components=1 -xf ghcli.tar.gz -C /usr/local
 
  # Copies your code file from your action repository to the filesystem path `/` of the container
