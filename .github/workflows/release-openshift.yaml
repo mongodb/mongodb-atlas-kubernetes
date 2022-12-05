@@ -1,0 +1,33 @@
+name: Openshift Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version:"
+        required: true
+jobs:
+  create-release-pr:
+    name: "Create Pull request for openshift release"
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        repositories:
+          - repository: git@github.com:mongodb-forks/community-operators.git
+            certified: false
+          #- repository: git@github.com:mongodb-forks/certified-operators.git
+          #  certified: false
+          #- repository: git@github.com:mongodb-forks/certified-operators.git
+          #  certified: true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+      - name: Create pull requests
+        uses: ./.github/actions/openshift-release
+        env:
+          REPOSITORY: "${{ matrix.repositories.repository }}"
+          CERTIFIED: "${{ matrix.repositories.certified }}"
