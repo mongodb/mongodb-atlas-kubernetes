@@ -12,40 +12,44 @@ if [ -z "${REPOSITORY+x}" ]; then
   exit 1
 fi
 
-echo $VERSION
-echo $REPOSITORY
-echo $CERTIFIED
-
-git config --global --add safe.directory /github/workspace
+OPERATOR_PATH=$(pwd)
 
 mkdir -p "../${REPOSITORY}"
 
+git config --global --add safe.directory /github/workspace
 gh repo fork --clone "${REPOSITORY}" "../${REPOSITORY}"
 
-REPO_PATH="../${REPOSITORY}/operators/mongodb-atlas-kubernetes"
+REPO_PATH=$(realpath "../${REPOSITORY}/operators/mongodb-atlas-kubernetes")
+cd "${REPO_PATH}"
+git fetch upstream main
+git reset --hard upstream/main
 
-ls -lsa "${REPO_PATH}"
-
-if [ -d "${REPO_PATH}/${VERSION}" ]; then
+if [ -d "${VERSION}" ]; then
   echo "version already exist in repository"
   exit 1
 fi
 
-mkdir "${REPO_PATH}/${VERSION}"
+mkdir "${VERSION}"
+cd "${OPERATOR_PATH}"
 cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "${REPO_PATH}/${VERSION}"
 
-cd "../${REPOSITORY}"
-git fetch upstream main
-git reset --hard upstream/main
-
 # replace the move instructions in the docker file
+cd "${REPO_PATH}"
 sed -i.bak 's/COPY bundle\/manifests/COPY manifests/' "${VERSION}/bundle.Dockerfile"
 sed -i.bak 's/COPY bundle\/metadata/COPY metadata/' "${VERSION}/bundle.Dockerfile"
 sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${VERSION}/bundle.Dockerfile"
 rm "${VERSION}/bundle.Dockerfile.bak"
 
-# commit
+# configure git user
+git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git config --global user.name "github-actions[bot]"
+
+# commit, push and open PR
 git checkout -b "mongodb-atlas-operator-community-${VERSION}"
-git add "operators/mongodb-atlas-kubernetes/${VERSION}"
+git add "${VERSION}"
+git status
 git commit -m "MongoDB Atlas Operator ${VERSION}" --signoff
 # git push origin "mongodb-atlas-operator-community-${VERSION}"
+# gh pr create \
+#    --title "operator mongodb-atlas-kubernetes (${VERSION})" \
+#    --assignee "${ASSIGNEES}"

@@ -20,8 +20,8 @@ jobs:
         include:
           - repository: "k8s-operatorhub/community-operators"
             certified: false
-          - repository: "redhat-openshift-ecosystem/community-operators-prod"
-            certified: false
+          #- repository: "redhat-openshift-ecosystem/community-operators-prod"
+          #  certified: false
           #- repository: git@github.com:mongodb-forks/certified-operators.git
           #  certified: true
     steps:
@@ -35,3 +35,4 @@ jobs:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: "${{ matrix.repository }}"
           CERTIFIED: "${{ matrix.certified }}"
+          ASSIGNEES: "priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs"
