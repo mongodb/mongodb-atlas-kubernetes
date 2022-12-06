@@ -13,7 +13,7 @@ jobs:
     name: "Create Pull request for openshift release"
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: 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 #${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
     strategy:
       matrix:
         repository: ["k8s-operatorhub/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
