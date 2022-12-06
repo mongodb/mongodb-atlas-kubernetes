@@ -13,16 +13,15 @@ jobs:
     name: "Create Pull request for openshift release"
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION: ${{ github.event.inputs.version }}
+      GH_TOKEN: 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 #${{ github.token }}
     strategy:
-      fail-fast: false
       matrix:
-        repositories:
-          - repository: git@github.com:mongodb-forks/community-operators.git
+        repository: ["k8s-operatorhub/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
+        include:
+          - repository: "k8s-operatorhub/community-operators"
             certified: false
-          #- repository: git@github.com:mongodb-forks/certified-operators.git
-          #  certified: false
+          - repository: "redhat-openshift-ecosystem/community-operators-prod"
+            certified: false
           #- repository: git@github.com:mongodb-forks/certified-operators.git
           #  certified: true
     steps:
@@ -32,6 +31,7 @@ jobs:
           fetch-depth: 0
       - name: Create pull requests
         uses: ./.github/actions/openshift-release
-        env:
-          REPOSITORY: "${{ matrix.repositories.repository }}"
-          CERTIFIED: "${{ matrix.repositories.certified }}"
+        with:
+          VERSION: ${{ github.event.inputs.version }}
+          REPOSITORY: "${{ matrix.repository }}"
+          CERTIFIED: "${{ matrix.certified }}"

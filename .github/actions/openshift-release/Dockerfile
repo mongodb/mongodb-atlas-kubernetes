@@ -1,7 +1,7 @@
 FROM alpine:latest
 
 RUN apk update && \
-    apk add --no-cache libc6-compat curl tar git sed
+    apk add --no-cache libc6-compat curl tar git sed bash
 
 RUN curl -Lo tmp/ghcli.tar.gz https://github.com/cli/cli/releases/download/v2.20.2/gh_2.20.2_linux_386.tar.gz && \
     tar --strip-components=1 -xf tmp/ghcli.tar.gz -C /usr/local && \
@@ -9,7 +9,5 @@ RUN curl -Lo tmp/ghcli.tar.gz https://github.com/cli/cli/releases/download/v2.20
 
 COPY entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
-
-RUN ls -lsa /home/entrypoint.sh && pwd
 
 ENTRYPOINT ["/home/entrypoint.sh"]

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eou pipefail
 
@@ -12,15 +12,29 @@ if [ -z "${REPOSITORY+x}" ]; then
   exit 1
 fi
 
+echo $VERSION
+echo $REPOSITORY
+echo $CERTIFIED
+
 git config --global --add safe.directory /github/workspace
 
-gh repo fork --clone "${REPOSITORY}" repository
+mkdir -p "../${REPOSITORY}"
 
-REPO_PATH="repository/operators/mongodb-atlas-kubernetes"
+gh repo fork --clone "${REPOSITORY}" "../${REPOSITORY}"
+
+REPO_PATH="../${REPOSITORY}/operators/mongodb-atlas-kubernetes"
+
+ls -lsa "${REPO_PATH}"
+
+if [ -d "${REPO_PATH}/${VERSION}" ]; then
+  echo "version already exist in repository"
+  exit 1
+fi
+
 mkdir "${REPO_PATH}/${VERSION}"
 cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "${REPO_PATH}/${VERSION}"
 
-cd "${REPO_PATH}"
+cd "../${REPOSITORY}"
 git fetch upstream main
 git reset --hard upstream/main
 
