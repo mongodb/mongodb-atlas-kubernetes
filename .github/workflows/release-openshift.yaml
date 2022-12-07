@@ -13,26 +13,98 @@ jobs:
     name: "Create Pull request for openshift release"
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+      REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
       matrix:
-        repository: ["k8s-operatorhub/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
+        repository: ["mongodb-forks/community-operators", "mongodb-forks/certified-operators"]
+        #repository: ["mongodb-forks/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
         include:
-          - repository: "k8s-operatorhub/community-operators"
-            certified: false
+          # - repository: "mongodb-forks/community-operators"
+          #  certified: false
           #- repository: "redhat-openshift-ecosystem/community-operators-prod"
           #  certified: false
-          #- repository: git@github.com:mongodb-forks/certified-operators.git
-          #  certified: true
+          - repository: "mongodb-forks/certified-operators"
+            certified: true
     steps:
-      - name: Check out code
+      - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v3.1.0
         with:
+          ref: main
+          path: "mongodb-atlas-kubernetes"
           fetch-depth: 0
-      - name: Create pull requests
-        uses: ./.github/actions/openshift-release
+      - name: Clone/Checkout releases repositories
+        uses: actions/checkout@v3.1.0
         with:
+          repository: ${{ matrix.repository }}
+          ref: main
+          path: ${{ matrix.repository }}
+          token: ${{ github.token }}
+      - name: Prepare version
+        env:
           VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: "${{ matrix.repository }}"
-          CERTIFIED: "${{ matrix.certified }}"
-          ASSIGNEES: "priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs"
+          REPOSITORY: ${{ matrix.repository }}
+        run: |
+          cd $REPOSITORY       
+          mkdir -p "${REPO_PATH}/${VERSION}"
+
+          cd ../../mongodb-atlas-kubernetes
+          cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "../${REPOSITORY}/${REPO_PATH}/${VERSION}"
+      - name: Configure non-certified release
+        if: ${{ ! matrix.certified }}
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          REPOSITORY: ${{ matrix.repository }}
+        run: |
+          echo "Configure non-certified release"
+          cd "$REPOSITORY/$REPO_PATH"
+          sed -i.bak 's/COPY bundle\/manifests/COPY manifests/' "${VERSION}/bundle.Dockerfile"
+          sed -i.bak 's/COPY bundle\/metadata/COPY metadata/' "${VERSION}/bundle.Dockerfile"
+          sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${VERSION}/bundle.Dockerfile"
+          rm "${VERSION}/bundle.Dockerfile.bak"
+      - name: Configure certified release
+        if: ${{ matrix.certified }}
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          REPOSITORY: ${{ matrix.repository }}
+          IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+          RH_CERTIFICATION_PYXIS_API_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          RH_CERTIFICATION_OSPID: ${{ secrets.RH_CERTIFICATION_OSPID }}
+        run: |
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.4.0/preflight-linux-amd64 -O preflight -q
+          chmod +x ./preflight && sudo mv ./preflight /usr/local/bin/preflight
+          
+          preflight --version
+          podman --version
+
+          podman login -u unused -p "${REGISTRY_TOKEN}" quay.io --authfile ./authfile.json
+          IMG_SHA=$("podman" inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
+
+          # Do the preflight check first
+          preflight check container "${IMG_SHA}" --docker-config=./authfile.json
+
+          # Send results to RedHat if preflight finished without errors
+          preflight check container "${IMG_SHA}" \
+            --submit \
+            --pyxis-api-token="${RH_CERTIFICATION_PYXIS_API_TOKEN}" \
+            --certification-project-id="${RH_CERTIFICATION_OSPID}" \
+            --docker-config=./authfile.json
+
+          # Replace image version with SHA256
+          value="${IMG_SHA}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(value)' \
+            "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
+          # Add skip range
+          value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' \
+            "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      - name: test
+        run: |
+          pwd
+          ls -lsa
+#      - name: Create pull requests
+#        uses: ./.github/actions/openshift-release
+#        with:
+#          VERSION: ${{ github.event.inputs.version }}
+#          REPOSITORY: "${{ matrix.repository }}"
+#          CERTIFIED: "${{ matrix.certified }}"
+#          ASSIGNEES: "priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs"
