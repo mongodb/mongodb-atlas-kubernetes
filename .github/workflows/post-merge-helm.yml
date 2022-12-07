@@ -7,6 +7,8 @@ on:
 
 jobs:
   create-release-branch:
+    permissions:
+      contents: write
     name: Create Release branch
     runs-on: ubuntu-latest
     steps:
@@ -14,14 +16,14 @@ jobs:
         run: |
           mkdir operator
           cd operator
-          gh repo clone https://github.com/mongodb/mongodb-atlas-kubernetes.git
+          git clone https://github.com/mongodb/mongodb-atlas-kubernetes.git
           cd ..
           mkdir helm
           cd helm
-          gh repo clone https://github.com/Sugar-pack/helm-charts.git
+          git clone https://github.com/mongodb/helm-charts.git
           cd ..
         env:
-          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: copy files
         run: |
           cp -a operator/mongodb-atlas-kubernetes/bundle/manifests/atlas.mongodb.com_atlasbackuppolicies.yaml helm/helm-charts/charts/atlas-operator-crds/templates
@@ -55,23 +57,41 @@ jobs:
           VERSION="test3"
           branch="atlas-operator-release-$VERSION"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
-          cd helm/helm-charts
         env:
-          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
-      - name: Commit and push chart
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: test
         run: |
           cp operator/mongodb-atlas-kubernetes/.github/actions/push-files/entrypoint.sh helm/helm-charts
           cd helm/helm-charts
           chmod +x entrypoint.sh
-          git checkout -b "test-sign1"
-          git push origin "test-sign1"
-          ./entrypoint.sh
+          git checkout -b ${{ steps.git-config.outputs.branch }}
+          gh auth setup-git
+          git push origin ${{ steps.git-config.outputs.branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+      - name: Commit and push crds chart
+        run: |
+          cd helm/helm-charts
+          git add .
+          git fetch origin atlas-operator-release-test3
+          git init
+          message="test msg"
+          ./entrypoint.sh
+#          FILE_TO_COMMIT="charts/atlas-operator-crds/Chart.yaml"
+#          DESTINATION_BRANCH="atlas-operator-release-test3"
+#          MESSAGE="auto commit $FILE_TO_COMMIT"
+#          SHA=$(git rev-parse "$DESTINATION_BRANCH:$FILE_TO_COMMIT") || true
+#          gh api --method PUT /repos/:owner/:repo/contents/$FILE_TO_COMMIT \
+#            --field message="$MESSAGE" \
+#            --field content=@<( base64 -i $FILE_TO_COMMIT ) \
+#            --field branch="$DESTINATION_BRANCH" \
+#            --field sha="$SHA"
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORK_HELM_SECRET }}
+          DESTINATION_BRANCH: ${{ steps.git-config.outputs.branch }}
           PATH_TO_COMMIT: "charts/atlas-operator-crds/Chart.yaml"
-          DESTINATION_BRANCH: "release/test3"
       - name: create pull request
-        run: | 
+        run: |
           cd helm/helm-charts
           gh pr create --title "update atlas operator version to $VERSION" --body "update atlas operator version to $VERSION" --base branch-for-pr --head ${{ steps.git-config.outputs.branch }} --repo Sugar-pack/helm-charts
         env:

@@ -13,17 +13,19 @@
    echo "$DESTINATION_BRANCH:$file:$sha"
    if [ "$sha" = "$DESTINATION_BRANCH:$file" ]; then
        echo "File does not exist"
-       gh api --method PUT "/repos/:owner/:repo/contents/$file" \
+       echo gh api --method PUT "/repos/:owner/:repo/contents/$file" \
            --field message="$message" \
            --field content=@<( base64 -i "$file" ) \
            --field branch="$DESTINATION_BRANCH"
+       echo "$file pushed to $DESTINATION_BRANCH"
    else
        echo "File exists"
-       gh api --method PUT "/repos/:owner/:repo/contents/$file" \
+       echo gh api --method PUT "/repos/:owner/:repo/contents/$file" \
            --field message="$message" \
            --field content=@<( base64 -i "$file" ) \
            --field branch="$DESTINATION_BRANCH" \
            --field sha="$sha"
+       echo "$file pushed to $DESTINATION_BRANCH"
    fi
  }
 
