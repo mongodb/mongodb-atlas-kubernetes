@@ -57,7 +57,7 @@ func Install(args ...string) {
 	session := cli.Execute("helm", args...)
 	msg := cli.GetSessionExitMsg(session)
 	ExpectWithOffset(1, msg).Should(SatisfyAny(Say("STATUS: deployed"), Say("already exists"), BeEmpty()),
-		"HELM. Can't install release",
+		"HELM. Can't install release. Message: "+string(msg.Contents()),
 	)
 }
 
@@ -120,7 +120,7 @@ func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
 	Install(
 		"atlas-operator-"+input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
-		"--set-string", fmt.Sprintf("watchNamespaces=%s", input.Namespace),
+		"--set", fmt.Sprintf("watchNamespaces={%s}", input.Namespace),
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--namespace="+input.Namespace,
 		"--create-namespace",
