@@ -8,6 +8,7 @@ on:
       version:
         description: "Release version:"
         required: true
+        default: "1.5.1"
 jobs:
   release-openshift:
     name: "Create Pull request for openshift release"
@@ -17,15 +18,12 @@ jobs:
       REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
       matrix:
-        repository: ["mongodb-forks/community-operators", "mongodb-forks/certified-operators"]
+        #repository: ["mongodb-forks/community-operators", "mongodb-forks/certified-operators"]
+        repository: ["helderjs/community-operators"]
         #repository: ["mongodb-forks/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
-        include:
-          # - repository: "mongodb-forks/community-operators"
-          #  certified: false
-          #- repository: "redhat-openshift-ecosystem/community-operators-prod"
-          #  certified: false
-          - repository: "mongodb-forks/certified-operators"
-            certified: true
+        #include:
+        #  - repository: "mongodb-forks/certified-operators"
+        #    certified: true
     steps:
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v3.1.0
@@ -75,10 +73,10 @@ jobs:
           chmod +x ./preflight && sudo mv ./preflight /usr/local/bin/preflight
           
           preflight --version
-          podman --version
+          docker --version
 
-          podman login -u unused -p "${REGISTRY_TOKEN}" quay.io --authfile ./authfile.json
-          IMG_SHA=$("podman" inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
+          docker login -u unused -p "${REGISTRY_TOKEN}" quay.io --authfile ./authfile.json
+          IMG_SHA=$("docker" inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
 
           # Do the preflight check first
           preflight check container "${IMG_SHA}" --docker-config=./authfile.json
@@ -97,14 +95,26 @@ jobs:
           # Add skip range
           value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' \
             "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-      - name: test
+      - name: Commit and Push Changes
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          REPOSITORY: ${{ matrix.repository }}
         run: |
-          pwd
-          ls -lsa
-#      - name: Create pull requests
-#        uses: ./.github/actions/openshift-release
-#        with:
-#          VERSION: ${{ github.event.inputs.version }}
-#          REPOSITORY: "${{ matrix.repository }}"
-#          CERTIFIED: "${{ matrix.certified }}"
-#          ASSIGNEES: "priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs"
+          cd "$REPOSITORY/$REPO_PATH"
+          
+          # configure git user
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+          # commit, push
+          git checkout -b "mongodb-atlas-operator-community-${VERSION}"
+          git add "${VERSION}"
+          git status
+          git commit -m "MongoDB Atlas Operator ${VERSION}" --signoff
+          git push origin "mongodb-atlas-operator-community-${VERSION}"
+          
+          # open PR
+          gh auth setup-git
+          gh pr create \
+              --title "operator mongodb-atlas-kubernetes (${VERSION})" \
+              --assignee "helderjs"
