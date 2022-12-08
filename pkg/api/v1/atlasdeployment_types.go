@@ -519,13 +519,13 @@ type AtlasDeployment struct {
 }
 
 func (c *AtlasDeployment) GetDeploymentName() string {
-	if c.IsAdvancedDeployment() {
-		return c.Spec.AdvancedDeploymentSpec.Name
+	if c.IsLegacyDeployment() {
+		return c.Spec.DeploymentSpec.Name
 	}
 	if c.IsServerless() {
 		return c.Spec.ServerlessSpec.Name
 	}
-	return c.Spec.DeploymentSpec.Name
+	return c.Spec.AdvancedDeploymentSpec.Name
 }
 
 // IsServerless returns true if the AtlasDeployment is configured to be a serverless instance
@@ -533,9 +533,9 @@ func (c *AtlasDeployment) IsServerless() bool {
 	return c.Spec.ServerlessSpec != nil
 }
 
-// IsAdvancedDeployment returns true if the AtlasDeployment is configured to be an advanced deployment.
-func (c *AtlasDeployment) IsAdvancedDeployment() bool {
-	return c.Spec.AdvancedDeploymentSpec != nil
+// IsLegacyDeployment returns true if the AtlasDeployment is configured to be an advanced deployment.
+func (c *AtlasDeployment) IsLegacyDeployment() bool {
+	return c.Spec.DeploymentSpec != nil
 }
 
 // +kubebuilder:object:root=true

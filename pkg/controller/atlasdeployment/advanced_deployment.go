@@ -4,15 +4,21 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
 const FreeTier = "M0"
@@ -345,4 +351,60 @@ func normalizeInstanceSize(ctx *workflow.Context, currentInstanceSize string, au
 
 func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desiredInstanceSize string) bool {
 	return desiredInstanceSize == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
+}
+
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
+	databaseUsers := mdbv1.AtlasDatabaseUserList{}
+	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	secrets := make([]string, 0)
+	for _, dbUser := range databaseUsers.Items {
+		found := false
+		for _, c := range dbUser.Status.Conditions {
+			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			ctx.Log.Debugw("AtlasDatabaseUser not ready - not creating connection secret", "user.name", dbUser.Name)
+			continue
+		}
+
+		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
+			continue
+		}
+
+		password, err := dbUser.ReadPassword(r.Client)
+		if err != nil {
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+		}
+
+		data := connectionsecret.ConnectionData{
+			DBUserName: dbUser.Spec.Username,
+			Password:   password,
+			ConnURL:    connectionStrings.Standard,
+			SrvConnURL: connectionStrings.StandardSrv,
+		}
+		connectionsecret.FillPrivateConnStrings(connectionStrings, &data)
+
+		ctx.Log.Debugw("Creating a connection Secret", "data", data)
+
+		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
+		if err != nil {
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+		}
+		secrets = append(secrets, secretName)
+	}
+
+	if len(secrets) > 0 {
+		r.EventRecorder.Eventf(deploymentResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	}
+
+	return workflow.OK()
 }

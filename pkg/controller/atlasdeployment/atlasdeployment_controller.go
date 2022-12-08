@@ -93,7 +93,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			err := r.removeDeletionFinalizer(context, deployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("Failed to remove finalizer", "error", err)
+				log.Errorw("failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -152,7 +152,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			if err = r.Client.Update(context, deployment); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("Failed to add finalizer", "error", err)
+				log.Errorw("failed to add finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
 		}
@@ -164,7 +164,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 				log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
 				if err = r.deleteDeploymentFromAtlas(context, deployment, project, log); err != nil {
-					log.Errorf("Failed to remove deployment from Atlas: %s", err)
+					log.Errorf("failed to remove deployment from Atlas: %s", err)
 					result = workflow.Terminate(workflow.Internal, err.Error())
 					ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 					return result.ReconcileResult(), nil
@@ -173,10 +173,18 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			err = r.removeDeletionFinalizer(context, deployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("Failed to remove finalizer", "error", err)
+				log.Errorw("failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
 		} else {
+			return result.ReconcileResult(), nil
+		}
+	}
+
+	if deployment.IsLegacyDeployment() {
+		if err := ConvertLegacyDeployment(deployment); err != nil {
+			result = workflow.Terminate(workflow.Internal, err.Error())
+			log.Errorw("failed to convert legacy deployment", "error", err)
 			return result.ReconcileResult(), nil
 		}
 	}
@@ -238,13 +246,10 @@ func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, deploymentTyp
 }
 
 func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.AtlasDeployment) deploymentHandlerFunc {
-	if deployment.IsAdvancedDeployment() {
-		return r.handleAdvancedDeployment
-	}
 	if deployment.IsServerless() {
 		return r.handleServerlessInstance
 	}
-	return r.handleRegularDeployment
+	return r.handleAdvancedDeployment
 }
 
 // handleAdvancedDeployment ensures the state of the deployment using the Advanced Deployment API
@@ -305,55 +310,6 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
 	c, result := ensureServerlessInstanceState(ctx, project, deployment.Spec.ServerlessSpec)
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, deployment, result, c)
-}
-
-// handleRegularDeployment ensures the state of the deployment using the Regular Deployment API
-func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
-	atlasDeployment, result := ensureDeploymentState(ctx, project, deployment)
-	if atlasDeployment != nil && atlasDeployment.StateName != "" {
-		ctx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(atlasDeployment.StateName))
-	}
-
-	if !result.IsOk() {
-		return result, nil
-	}
-
-	replicaSetStatus := make([]status.ReplicaSet, 0, len(deployment.Spec.DeploymentSpec.ReplicationSpecs))
-	for _, replicaSet := range atlasDeployment.ReplicationSpecs {
-		replicaSetStatus = append(
-			replicaSetStatus,
-			status.ReplicaSet{
-				ID:       replicaSet.ID,
-				ZoneName: replicaSet.ZoneName,
-			},
-		)
-	}
-
-	ctx.EnsureStatusOption(status.AtlasDeploymentReplicaSet(replicaSetStatus))
-
-	backupEnabled := false
-	providerBackupEnabled := false
-	if atlasDeployment.ProviderBackupEnabled != nil {
-		providerBackupEnabled = *atlasDeployment.ProviderBackupEnabled
-	}
-	if atlasDeployment.BackupEnabled != nil {
-		backupEnabled = *atlasDeployment.BackupEnabled
-	}
-
-	if err := r.ensureBackupScheduleAndPolicy(
-		context.Background(),
-		ctx,
-		project.ID(),
-		deployment,
-		providerBackupEnabled || backupEnabled,
-		req.NamespacedName,
-	); err != nil {
-		result := workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
-		return result, nil
-	}
-
-	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, deployment, result, atlasDeployment)
 }
 
 // ensureConnectionSecretsAndSetStatusOptions creates the relevant connection secrets and sets
