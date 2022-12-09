@@ -18,45 +18,19 @@ import (
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	deployments, _, err := ctx.Client.Clusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
-	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
-	}
-
 	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
 
 	var deploymentSecrets []deploymentSecret
-	for _, c := range deployments {
+	for _, c := range advancedDeployments.Results {
 		deploymentSecrets = append(deploymentSecrets, deploymentSecret{
 			name:              c.Name,
 			connectionStrings: c.ConnectionStrings,
 		})
 	}
 
-	for _, c := range advancedDeployments.Results {
-		// based on configuration settings, some advanced deployments also show up in the regular deployments API.
-		// For these deployments, we don't want to duplicate the secret so we skip them.
-		found := false
-		for _, regularDeployment := range deployments {
-			if regularDeployment.Name == c.Name {
-				found = true
-				break
-			}
-		}
-
-		// we only include secrets which have not been handled by the regular deployment API.
-		if !found {
-			deploymentSecrets = append(deploymentSecrets, deploymentSecret{
-				name:              c.Name,
-				connectionStrings: c.ConnectionStrings,
-			})
-		}
-	}
-
-	// same for serverless deployments
 	serverlessDeployments, _, err := ctx.Client.ServerlessInstances.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
@@ -64,19 +38,10 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 	for _, c := range serverlessDeployments.Results {
 		found := false
 
-		for _, regularDeployment := range deployments {
-			if regularDeployment.Name == c.Name {
+		for _, advancedDeployment := range advancedDeployments.Results {
+			if advancedDeployment.Name == c.Name {
 				found = true
 				break
-			}
-		}
-
-		if !found {
-			for _, advancedDeployment := range advancedDeployments.Results {
-				if advancedDeployment.Name == c.Name {
-					found = true
-					break
-				}
 			}
 		}
 
