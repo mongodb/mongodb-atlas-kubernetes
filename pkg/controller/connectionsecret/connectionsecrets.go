@@ -56,6 +56,38 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		}
 	}
 
+	// same for serverless deployments
+	serverlessDeployments, _, err := ctx.Client.ServerlessInstances.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	if err != nil {
+		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
+	}
+	for _, c := range serverlessDeployments.Results {
+		found := false
+
+		for _, regularDeployment := range deployments {
+			if regularDeployment.Name == c.Name {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			for _, advancedDeployment := range advancedDeployments.Results {
+				if advancedDeployment.Name == c.Name {
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found {
+			deploymentSecrets = append(deploymentSecrets, deploymentSecret{
+				name:              c.Name,
+				connectionStrings: c.ConnectionStrings,
+			})
+		}
+	}
+
 	// ensure secrets for both deployments and advanced deployment.
 	if result := createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx, k8sClient, recorder, project, dbUser, deploymentSecrets); !result.IsOk() {
 		return result
