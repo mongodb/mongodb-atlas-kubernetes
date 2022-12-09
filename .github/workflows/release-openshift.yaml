@@ -1,14 +1,10 @@
 name: Release Openshift
 on:
-  push:
-    branches:
-      - CLOUDP-143633-automate-opnshift-release
   workflow_dispatch:
     inputs:
       version:
         description: "Release version:"
         required: true
-        default: "1.5.1"
 jobs:
   release-openshift:
     name: "Create Pull request for openshift release"
@@ -18,12 +14,10 @@ jobs:
       REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
       matrix:
-        #repository: ["mongodb-forks/community-operators", "mongodb-forks/certified-operators"]
-        repository: ["helderjs/community-operators"]
-        #repository: ["mongodb-forks/community-operators"] # , "redhat-openshift-ecosystem/community-operators-prod"]
-        #include:
-        #  - repository: "mongodb-forks/certified-operators"
-        #    certified: true
+        repository: ["mongodb-forks/community-operators", "mongodb-forks/community-operators-prod", "mongodb-forks/certified-operators"]
+        include:
+          - repository: "mongodb-forks/certified-operators"
+            certified: true
     steps:
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v3.1.0
@@ -66,6 +60,7 @@ jobs:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
           IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
           RH_CERTIFICATION_PYXIS_API_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           RH_CERTIFICATION_OSPID: ${{ secrets.RH_CERTIFICATION_OSPID }}
         run: |
@@ -95,10 +90,11 @@ jobs:
           # Add skip range
           value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' \
             "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-      - name: Commit and Push Changes
+      - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
+          ASSIGNEES: priyolahiri,fabritsius,igor-karpukhin,sugar-pack,helderjs
         run: |
           cd "$REPOSITORY/$REPO_PATH"
           
@@ -117,4 +113,4 @@ jobs:
           gh auth setup-git
           gh pr create \
               --title "operator mongodb-atlas-kubernetes (${VERSION})" \
-              --assignee "helderjs"
+              --assignee "${ASSIGNEES}"
