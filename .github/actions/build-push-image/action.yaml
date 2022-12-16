@@ -59,6 +59,19 @@ runs:
       with:
         username: ${{ inputs.docker_username }}
         password: ${{ inputs.docker_password }}
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: "${{ github.workspace }}/go.mod"
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+    - name: Download go build dependencies
+      shell: bash
+      run: |
+        go mod download
     - name: Build and Push Operator to Docker Registry
       uses: docker/build-push-action@v3
       with:
