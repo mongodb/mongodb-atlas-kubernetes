@@ -33,13 +33,19 @@ jobs:
     needs: allowed
     uses: ./.github/workflows/test-unit.yml
     secrets: inherit
+    with:
+      forked: false
 
   e2e-tests:
     needs: allowed
     uses: ./.github/workflows/test-e2e.yml
     secrets: inherit
+    with:
+      forked: false
 
   openshift-upgrade-test:
     needs: allowed
     uses: ./.github/workflows/openshift-upgrade-test.yaml
     secrets: inherit
+    with:
+      forked: false
