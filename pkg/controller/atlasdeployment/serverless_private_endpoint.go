@@ -32,7 +32,8 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 	if deploymentSpec == nil {
 		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
-	if result := IsClusterSupportServerlessPE(deploymentSpec); !result.IsOk() {
+	providerName, result := IsClusterSupportServerlessPE(deploymentSpec)
+	if !result.IsOk() {
 		return result
 	}
 
@@ -42,7 +43,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 		return workflow.OK()
 	}
 
-	result := syncServerlessPrivateEndpoints(context.Background(), service, groupID, deploymentName, provider.ProviderName(deploymentSpec.ProviderSettings.BackingProviderName), deploymentSpec.PrivateEndpoints)
+	result = syncServerlessPrivateEndpoints(context.Background(), service, groupID, deploymentName, providerName, deploymentSpec.PrivateEndpoints)
 	if !result.IsOk() {
 		service.SetConditionFromResult(status.ServerlessPrivateEndpointReadyType, result)
 		return result
@@ -51,13 +52,24 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 	return result
 }
 
-func IsClusterSupportServerlessPE(deploymentSpec *mdbv1.ServerlessSpec) workflow.Result {
-	if deploymentSpec.ProviderSettings.BackingProviderName != string(provider.ProviderAWS) &&
-		deploymentSpec.ProviderSettings.BackingProviderName != string(provider.ProviderAzure) {
-		return workflow.Terminate(workflow.Internal, "serverless private endpoints are only supported for AWS and Azure")
+func IsClusterSupportServerlessPE(deploymentSpec *mdbv1.ServerlessSpec) (provider.ProviderName, workflow.Result) {
+	if deploymentSpec.ProviderSettings.BackingProviderName == string(provider.ProviderAWS) {
+		return provider.ProviderAWS, workflow.OK()
 	}
 
-	return workflow.OK()
+	if deploymentSpec.ProviderSettings.BackingProviderName == string(provider.ProviderAzure) {
+		return provider.ProviderAzure, workflow.OK()
+	}
+
+	if deploymentSpec.ProviderSettings.ProviderName == provider.ProviderAWS {
+		return provider.ProviderAWS, workflow.OK()
+	}
+
+	if deploymentSpec.ProviderSettings.ProviderName == provider.ProviderAzure {
+		return provider.ProviderAzure, workflow.OK()
+	}
+
+	return "", workflow.Terminate(workflow.Internal, "serverless private endpoints are only supported for AWS and Azure")
 }
 
 func syncServerlessPrivateEndpoints(ctx context.Context, service *workflow.Context, groupID, deploymentName string, providerName provider.ProviderName, desiredPE []mdbv1.ServerlessPrivateEndpoint) workflow.Result {
