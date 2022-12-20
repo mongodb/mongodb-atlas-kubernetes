@@ -66,7 +66,9 @@ runs:
     - name: Setup cache
       uses: actions/cache@v3
       with:
-        path: ~/go/pkg/mod
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
         key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
     - name: Download go build dependencies
       shell: bash
@@ -81,6 +83,8 @@ runs:
         build-args: VERSION=${{ inputs.version }}
         platforms: ${{ inputs.platforms }}
         tags: ${{ inputs.repository }}:${{ inputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         push: true
     - name: Login to quay.io registry
       if: ${{ inputs.push_to_quay == true }}
@@ -97,4 +101,6 @@ runs:
         build-args: VERSION=${{ inputs.version }}
         platforms: ${{ inputs.platforms }}
         tags: quay.io/${{ inputs.repository }}:${{ inputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         push: true

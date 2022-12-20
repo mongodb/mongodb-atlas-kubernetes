@@ -128,6 +128,8 @@ jobs:
           push: true
           tags: ${{ steps.prepare-docker-bundle-tag.outputs.tags }}
           file: bundle.Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Set properties
         id: properties
         run: |
