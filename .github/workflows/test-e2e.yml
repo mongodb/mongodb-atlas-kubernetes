@@ -120,6 +120,8 @@ jobs:
           TAG=${{ steps.prepare.outputs.tag }}
           TAGS="${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v2
       - name: Push bundle-image for the test
         if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
         uses: docker/build-push-action@v3
