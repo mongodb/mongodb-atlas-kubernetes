@@ -19,7 +19,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.1
-	go.mongodb.org/atlas v0.18.0
+	go.mongodb.org/atlas v0.20.0
 	go.mongodb.org/mongo-driver v1.11.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/sync v0.1.0
@@ -79,7 +79,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/openlyinc/pointy v1.1.2 // indirect
+	github.com/openlyinc/pointy v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
