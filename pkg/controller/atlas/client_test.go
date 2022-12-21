@@ -11,10 +11,9 @@ import (
 )
 
 func TestClientUserAgent(t *testing.T) {
-	require := require.New(t)
+	r := require.New(t)
 
 	c, err := atlas.Client("https://cloud.mongodb.com", atlas.Connection{}, nil)
-	require.NoError(err)
-	require.Contains(c.UserAgent, version.Version)
-	//require.Regexp(`^MongoDBAtlasKubernetesOperator/v1\.2\.3-testing \(\w+;\w+\)$`, c.UserAgent)
+	r.NoError(err)
+	r.Contains(c.UserAgent, version.Version)
 }

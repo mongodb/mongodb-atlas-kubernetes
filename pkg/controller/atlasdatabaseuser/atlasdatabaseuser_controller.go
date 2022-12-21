@@ -93,7 +93,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, databaseUser, r.Log)
 	if !resourceVersionIsValid.IsOk() {
-		r.Log.Debugf("validation result: %v", resourceVersionIsValid)
+		r.Log.Debugf("databaseuser validation result: %v", resourceVersionIsValid)
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 

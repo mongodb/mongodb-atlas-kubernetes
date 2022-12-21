@@ -67,7 +67,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource mdbv1.AtlasCustomRe
 		return result
 	}
 
-	log.Debugf("resource %s version is valid", resource.GetName())
+	log.Debugf("resource '%s' version is valid", resource.GetName())
 	ctx.SetConditionTrue(status.ResourceVersionStatus)
 	return workflow.OK()
 }
