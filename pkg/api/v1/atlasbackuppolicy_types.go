@@ -9,8 +9,9 @@ a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
 
 // AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
@@ -55,7 +56,6 @@ func (in *AtlasBackupPolicy) GetStatus() status.Status {
 
 func (in *AtlasBackupPolicy) UpdateStatus(_ []status.Condition, _ ...status.Option) {
 	// TODO: Use status field
-	return
 }
 
 type AtlasBackupPolicyStatus struct {
