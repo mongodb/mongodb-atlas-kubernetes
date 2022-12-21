@@ -139,6 +139,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -160,6 +161,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -181,6 +183,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -1173,6 +1176,7 @@ func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
@@ -1198,6 +1202,7 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentUpdating)).WithMessageRegexp("deployment is updating"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}

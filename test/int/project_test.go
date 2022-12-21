@@ -125,6 +125,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				status.FalseCondition(status.ProjectReadyType),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.ID()).To(BeEmpty())
@@ -398,6 +399,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				status.TrueCondition(status.ValidationSucceeded),
 				ipAccessFailedCondition,
 				status.FalseCondition(status.ReadyType),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			checkExpiredAccessLists([]project.IPAccessList{})
@@ -541,6 +543,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ResourceVersionStatus),
 				)
 				Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 				Expect(createdProject.ID()).To(BeEmpty())
