@@ -10,7 +10,6 @@ CONTAINER_ENGINE?=docker
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
-PRODUCT_VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -107,7 +106,8 @@ e2e-openshift-upgrade:
 
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
-	 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X main.version=$(PRODUCT_VERSION)" cmd/manager/main.go
+	@echo "Building operator with version $(VERSION)"
+	 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
@@ -184,8 +184,8 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	operator-sdk bundle validate ./bundle
 
 .PHONY: image
-image: manager ## Build the operator image
-	$(CONTAINER_ENGINE) build -t $(OPERATOR_IMAGE) .
+image: ## Build the operator image
+	$(CONTAINER_ENGINE) build --build-arg VERSION=$(VERSION) -t $(OPERATOR_IMAGE) .
 	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: bundle-build

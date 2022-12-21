@@ -6,8 +6,10 @@ type ConditionReason string
 
 // General reasons
 const (
-	AtlasCredentialsNotProvided ConditionReason = "AtlasCredentialsNotProvided"
-	Internal                    ConditionReason = "InternalError"
+	AtlasCredentialsNotProvided   ConditionReason = "AtlasCredentialsNotProvided"
+	Internal                      ConditionReason = "InternalError"
+	AtlasResourceVersionMismatch  ConditionReason = "AtlasResourceVersionMismatch"
+	AtlasResourceVersionIsInvalid ConditionReason = "AtlasResourceVersionIsInvalid"
 )
 
 // Atlas Project reasons

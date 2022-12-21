@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+
 	"go.uber.org/zap/zapcore"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -43,7 +45,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
@@ -56,9 +57,6 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-
-	// Set by the linker during link time.
-	version = "unknown"
 )
 
 func init() {
@@ -66,8 +64,6 @@ func init() {
 
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
-
-	atlas.ProductVersion = version
 }
 
 func main() {
@@ -83,11 +79,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("starting with configuration", zap.Any("config", config), zap.Any("version", atlas.ProductVersion))
+	logger.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
 	ctrl.SetLogger(zapr.NewLogger(logger))
-
-	logger.Info("MongoDB Atlas Operator version ", zap.String("version", version))
 
 	syncPeriod := time.Hour * 3
 
@@ -223,7 +217,7 @@ func parseConfiguration() Config {
 	flag.Parse()
 
 	if *appVersion {
-		fmt.Println(version)
+		fmt.Println(version.Version)
 		os.Exit(0)
 	}
 

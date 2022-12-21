@@ -9,6 +9,7 @@ a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 package v1
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
@@ -72,6 +73,16 @@ type AtlasBackupSchedule struct {
 	Spec AtlasBackupScheduleSpec `json:"spec,omitempty"`
 
 	Status AtlasBackupScheduleStatus `json:"status,omitempty"`
+}
+
+func (in *AtlasBackupSchedule) GetStatus() status.Status {
+	// TODO: Added status
+	return nil
+}
+
+func (in *AtlasBackupSchedule) UpdateStatus(_ []status.Condition, _ ...status.Option) {
+	// TODO: Use status
+	return
 }
 
 type AtlasBackupScheduleStatus struct {

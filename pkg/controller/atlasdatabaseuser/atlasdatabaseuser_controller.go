@@ -91,6 +91,12 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, databaseUser)
 
+	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, databaseUser, r.Log)
+	if !resourceVersionIsValid.IsOk() {
+		r.Log.Debugf("validation result: %v", resourceVersionIsValid)
+		return resourceVersionIsValid.ReconcileResult(), nil
+	}
+
 	if err := validate.DatabaseUser(databaseUser); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.ValidationSucceeded, result)

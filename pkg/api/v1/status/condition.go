@@ -61,6 +61,11 @@ const (
 	DatabaseUserReadyType ConditionType = "DatabaseUserReady"
 )
 
+// Generic condition type
+const (
+	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
+)
+
 // Condition describes the state of an Atlas Custom Resource at a certain point.
 type Condition struct {
 	// Type of Atlas Custom Resource condition.
