@@ -45,7 +45,9 @@ jobs:
     - name: Create the licence report file
       run: |
         export PATH="$GOPATH/bin:$PATH"
-        go install github.com/google/go-licenses@v1.0.0 && go-licenses csv cmd/manager/main.go --stderrthreshold 3 > third_party_licenses.txt
+        go install github.com/google/go-licenses@latest 
+        cd config/manager
+        go-licenses csv .  --stderrthreshold 3 > ../../third_party_licenses.txt
 
     - name: Configure Git
       run: |
