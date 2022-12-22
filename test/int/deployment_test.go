@@ -134,7 +134,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.MongoDBVersion))
 			Expect(createdDeployment.Status.MongoURIUpdated).To(Equal(atlasDeployment.MongoURIUpdated))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(3))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
 			Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
