@@ -22,6 +22,10 @@ type AtlasDeploymentStatus struct {
 
 	ServerlessPrivateEndpoints []ServerlessPrivateEndpoint `json:"serverlessPrivateEndpoints,omitempty"`
 
+	CustomZoneMapping *CustomZoneMapping `json:"customZoneMapping,omitempty"`
+
+	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
+
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
@@ -113,6 +117,18 @@ func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOptio
 func AtlasDeploymentSPEOption(pe []ServerlessPrivateEndpoint) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.ServerlessPrivateEndpoints = pe
+	}
+}
+
+func AtlasDeploymentCustomZoneMappingOption(czm *CustomZoneMapping) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		s.CustomZoneMapping = czm
+	}
+}
+
+func AtlasDeploymentManagedNamespacesOption(namespaces []ManagedNamespace) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		s.ManagedNamespaces = namespaces
 	}
 }
 

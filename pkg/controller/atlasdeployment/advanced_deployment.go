@@ -41,6 +41,16 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 		}
 	}
 
+	result := EnsureCustomZoneMapping(ctx, project.ID(), deployment.Spec.AdvancedDeploymentSpec.CustomZoneMapping, advancedDeployment.Name)
+	if !result.IsOk() {
+		return advancedDeployment, result
+	}
+
+	result = EnsureManagedNamespaces(ctx, project.ID(), deployment.Spec.AdvancedDeploymentSpec.ClusterType, deployment.Spec.AdvancedDeploymentSpec.ManagedNamespaces, advancedDeployment.Name)
+	if !result.IsOk() {
+		return advancedDeployment, result
+	}
+
 	switch advancedDeployment.StateName {
 	case "IDLE":
 		return advancedDeploymentIdle(ctx, project, deployment, advancedDeployment)

@@ -22,6 +22,10 @@ var (
 func init() {
 	excludedClusterFieldsOurs["projectRef"] = true
 
+	// Global deployment fields
+	excludedClusterFieldsOurs["customZoneMapping"] = true
+	excludedClusterFieldsOurs["managedNamespaces"] = true
+
 	excludedClusterFieldsTheirs["backupEnabled"] = true
 	excludedClusterFieldsTheirs["id"] = true
 	excludedClusterFieldsTheirs["groupId"] = true

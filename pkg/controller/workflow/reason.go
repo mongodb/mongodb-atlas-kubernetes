@@ -47,6 +47,8 @@ const (
 	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
 	DeploymentAdvancedOptionsReady        ConditionReason = "DeploymentAdvancedOptionsReady"
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"
+	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
+	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
 )
 
 // Atlas Database User reasons

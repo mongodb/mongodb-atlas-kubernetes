@@ -81,6 +81,7 @@ jobs:
             "deployment-ns",
             "deployment-wide",
             "encryption-at-rest",
+            "global-deployment",
             "helm-ns",
             "helm-update",
             "helm-wide",

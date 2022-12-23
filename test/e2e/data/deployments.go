@@ -16,6 +16,7 @@ const (
 	InstanceSizeM2  = "M2"
 	InstanceSizeM10 = "M10"
 	InstanceSizeM20 = "M20"
+	InstanceSizeM30 = "M30"
 	InstanceSizeM0  = "M0"
 
 	ServerlessProviderName = "SERVERLESS"
@@ -27,6 +28,90 @@ func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 		customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 	})
 	return deployment
+}
+
+func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				ClusterType: "GEOSHARDED",
+				Name:        name,
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "Zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "US_EAST_1",
+								Priority:     toptr.MakePtr(7),
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(3),
+								},
+							},
+						},
+					},
+					{
+						NumShards: 1,
+						ZoneName:  "Zone 2",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ProviderName: "AZURE",
+								RegionName:   "EUROPE_NORTH",
+								Priority:     toptr.MakePtr(7),
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(3),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func CreateRegularGeoshardedDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			DeploymentSpec: &v1.DeploymentSpec{
+				Name: name,
+				ProviderSettings: &v1.ProviderSettingsSpec{
+					InstanceSizeName: InstanceSizeM30,
+					ProviderName:     "AWS",
+				},
+				ClusterType: "GEOSHARDED",
+				ReplicationSpecs: []v1.ReplicationSpec{
+					{
+						NumShards: toptr.MakePtr(int64(1)),
+						ZoneName:  "Zone 1",
+						RegionsConfig: map[string]v1.RegionsConfig{
+							"US_EAST_1": {
+								AnalyticsNodes: toptr.MakePtr(int64(0)),
+								ElectableNodes: toptr.MakePtr(int64(3)),
+								Priority:       toptr.MakePtr(int64(7)),
+								ReadOnlyNodes:  toptr.MakePtr(int64(0)),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func CreateServerlessDeployment(name string, providerName string, regionName string) *v1.AtlasDeployment {
