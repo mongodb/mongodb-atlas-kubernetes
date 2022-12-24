@@ -50,12 +50,10 @@ type AtlasBackupPolicy struct {
 }
 
 func (in *AtlasBackupPolicy) GetStatus() status.Status {
-	// TODO: Use status field
 	return nil
 }
 
 func (in *AtlasBackupPolicy) UpdateStatus(_ []status.Condition, _ ...status.Option) {
-	// TODO: Use status field
 }
 
 type AtlasBackupPolicyStatus struct {

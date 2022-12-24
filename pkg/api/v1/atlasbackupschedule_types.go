@@ -77,12 +77,10 @@ type AtlasBackupSchedule struct {
 }
 
 func (in *AtlasBackupSchedule) GetStatus() status.Status {
-	// TODO: Added status
 	return nil
 }
 
 func (in *AtlasBackupSchedule) UpdateStatus(_ []status.Condition, _ ...status.Option) {
-	// TODO: Use status
 }
 
 type AtlasBackupScheduleStatus struct {

@@ -284,7 +284,6 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, bSchedule, r.Log)
 	if !resourceVersionIsValid.IsOk() {
-		// TODO: Refactor to return workflow result
 		errText := fmt.Sprintf("backup schedule validation result: %v", resourceVersionIsValid)
 		r.Log.Debug(errText)
 		return errors.New(errText)
@@ -302,7 +301,6 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 
 	resourceVersionIsValid = customresource.ValidateResourceVersion(ctx, bPolicy, r.Log)
 	if !resourceVersionIsValid.IsOk() {
-		// TODO: Refactor to return workflow result
 		errText := fmt.Sprintf("backup policy validation result: %v", resourceVersionIsValid)
 		r.Log.Debug(errText)
 		return errors.New(errText)
@@ -524,7 +522,6 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Delete implements a handler for the Delete event.
 func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
-	// TODO: Add deletion for AtlasBackupSchedule and AtlasBackupPolicy
 	deployment, ok := e.Object.(*mdbv1.AtlasDeployment)
 	if !ok {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)
