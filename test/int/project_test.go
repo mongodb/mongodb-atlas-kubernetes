@@ -231,9 +231,6 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(errors.As(err, &apiError)).To(BeTrue(), "Error occurred: "+err.Error())
 			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
 		})
-		It("Should not fail with a correct version of the project", func() {
-
-		})
 	})
 
 	Describe("Deleting the project (not cleaning Atlas)", func() {
