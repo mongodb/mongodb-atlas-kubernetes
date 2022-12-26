@@ -47,7 +47,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 			actions.ProjectCreationFlow(test)
 			globalClusterFlow(test, mapping, ns)
 		},
-		FEntry("Test[gc-regular-deployment]: Deployment with global config", Label("gc-regular-deployment"),
+		Entry("Test[gc-regular-deployment]: Deployment with global config", Label("gc-regular-deployment"),
 			model.DataProvider(
 				"gc-regular-deployment",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
@@ -68,7 +68,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 				},
 			},
 		),
-		FEntry("Test[gc-advanced-deployment]: Advanced", Label("gc-advanced-deployment"),
+		Entry("Test[gc-advanced-deployment]: Advanced", Label("gc-advanced-deployment"),
 			model.DataProvider(
 				"gc-advanced-deployment",
 				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),

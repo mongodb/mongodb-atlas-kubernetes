@@ -31,13 +31,22 @@ func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZo
 
 func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, groupID string, deploymentName string, customZoneMappings []mdbv1.CustomZoneMapping) workflow.Result {
 	logger := service.Log
+	err := verifyZoneMapping(customZoneMappings)
+	if err != nil {
+		return workflow.Terminate(workflow.CustomZoneMappingReady, err.Error())
+	}
 	_, existingZoneMapping, err := globaldeployment.GetGlobalDeploymentState(ctx, service.Client, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping state: %v", err))
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
 	var customZoneMapping status.CustomZoneMapping
-	if shouldAdd, shouldDelete := compareZoneMappingStates(existingZoneMapping, customZoneMappings); shouldDelete || shouldAdd {
+	zoneMappingMap, err := getZoneMappingMap(ctx, service.Client, groupID, deploymentName)
+	if err != nil {
+		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
+	}
+
+	if shouldAdd, shouldDelete := compareZoneMappingStates(existingZoneMapping, customZoneMappings, zoneMappingMap); shouldDelete || shouldAdd {
 		skipAdd := false
 		if shouldDelete {
 			err = deleteZoneMapping(ctx, service.Client, groupID, deploymentName)
@@ -70,6 +79,18 @@ func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, group
 	return checkCustomZoneMapping(customZoneMapping)
 }
 
+func verifyZoneMapping(desired []mdbv1.CustomZoneMapping) error {
+	locations := make(map[string]bool)
+	for _, m := range desired {
+		if _, ok := locations[m.Location]; ok {
+			return fmt.Errorf("duplicate location %v", m.Location)
+		} else {
+			locations[m.Location] = true
+		}
+	}
+	return nil
+}
+
 func deleteZoneMapping(ctx context.Context, client mongodbatlas.Client, groupID string, deploymentName string) error {
 	return globaldeployment.DeleteAllCustomZoneMapping(ctx, client, groupID, deploymentName)
 }
@@ -88,31 +109,55 @@ func createZoneMapping(ctx context.Context, client mongodbatlas.Client, groupID 
 
 func checkCustomZoneMapping(customZoneMapping status.CustomZoneMapping) workflow.Result {
 	if customZoneMapping.ZoneMappingState != status.StatusReady {
-		return workflow.Terminate(workflow.CustomZoneMappingReady, "Global cluster zone mapping is not ready")
+		return workflow.Terminate(workflow.CustomZoneMappingReady, "Zone mapping is not ready")
 	}
 	return workflow.OK()
 }
 
-func compareZoneMappingStates(existing map[string]string, desired []mdbv1.CustomZoneMapping) (bool, bool) {
+func getZoneMappingMap(ctx context.Context, client mongodbatlas.Client, groupID, clusterName string) (map[string]string, error) {
+	cluster, _, err := client.AdvancedClusters.Get(ctx, groupID, clusterName)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]string, len(cluster.ReplicationSpecs))
+	for _, rc := range cluster.ReplicationSpecs {
+		result[rc.ID] = rc.ZoneName
+	}
+	return result, nil
+}
+
+func compareZoneMappingStates(existing map[string]string, desired []mdbv1.CustomZoneMapping, zoneMappingMap map[string]string) (bool, bool) {
 	shouldAdd, shouldDelete := false, false
 
-	if len(desired) > len(existing) {
-		shouldAdd = true
+	if len(desired) < len(existing) {
+		shouldDelete = true
 	} else {
-		for _, d := range desired {
-			if _, ok := existing[d.Location]; !ok {
-				shouldAdd = true
+		for loc, id := range existing {
+			found := false
+			for _, d := range desired {
+				if d.Location == loc && d.Zone == zoneMappingMap[id] {
+					found = true
+					break
+				}
+			}
+			if !found {
+				shouldDelete = true
 				break
 			}
 		}
 	}
 
-	if len(desired) < len(existing) {
-		shouldDelete = true
+	if len(desired) > len(existing) || (len(desired) > 0 && shouldDelete) {
+		shouldAdd = true
 	} else {
-		for k := range existing {
-			if _, ok := existing[k]; !ok {
-				shouldDelete = true
+		for _, d := range desired {
+			zoneID, ok := existing[d.Location]
+			if !ok {
+				shouldAdd = true
+				break
+			}
+			if zoneName, ok2 := zoneMappingMap[zoneID]; ok2 && zoneName != d.Zone {
+				shouldAdd = true
 				break
 			}
 		}
