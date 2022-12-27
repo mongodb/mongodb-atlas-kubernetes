@@ -16,6 +16,8 @@ jobs:
       # uncomment the below for local testing
       # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_REGISTRY: docker.io
+      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
@@ -32,9 +34,27 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0 # required for tags
+
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
+
+      - name: Generate configuration for the tests
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
+          ENV: dev
+
+      - name: Change path for the test
+        run: |
+          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+
+      - name: Cache all files
+        uses: actions/cache@v3
+        with:
+          path: ./*
+          key: ${{ github.sha }}
 
       - name: Login to docker.io
         uses: docker/login-action@v2
@@ -42,13 +62,31 @@ jobs:
           registry: ${{ env.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Prepare docker image tag
         id: prepare-docker-image-tag
         run: |
           REPOSITORY=${{ env.DOCKER_REPO }}
+          TAG=${{ steps.prepare.outputs.tag}}
+          TAGS="${REPOSITORY}:${TAG}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+      - name: Prepare docker bundle tag
+        id: prepare-docker-bundle-tag
+        run: |
+          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
           TAG=${{ steps.prepare.outputs.tag }}
           TAGS="${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+      - name: Push bundle-image for the test
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.prepare-docker-bundle-tag.outputs.tags }}
+          file: bundle.Dockerfile
+
       - name: Push Atlas Operator to Registry
         uses: docker/build-push-action@v3
         with:
@@ -97,58 +135,15 @@ jobs:
           ]
 
     steps:
-      - if: ${{ inputs.forked == false }}
-        name: Check out code
-        uses: actions/checkout@v3.1.0
+      - name: Get cache
+        uses: actions/cache@v3
         with:
-          # Make sure we also get the helm-charts submodule!
-          submodules: recursive
-
-      - if: ${{ inputs.forked == true }}
-        name: Check out code
-        uses: actions/checkout@v3.1.0
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          # Make sure we also get the helm-charts submodule!
-          submodules: recursive
+          path: ./*
+          key: ${{ github.sha }}
 
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-
-      - name: Generate configuration for the tests
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
-          ENV: dev
-
-      - name: Change path for the test
-        run: |
-          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-
-      - name: Login to docker.io
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Prepare docker tag
-        id: prepare-docker-bundle-tag
-        run: |
-          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
-          TAG=${{ steps.prepare.outputs.tag }}
-          TAGS="${REPOSITORY}:${TAG}"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-      - name: Push bundle-image for the test
-        if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.prepare-docker-bundle-tag.outputs.tags }}
-          file: bundle.Dockerfile
 
       - name: Set properties
         id: properties
