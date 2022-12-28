@@ -13,15 +13,22 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     env:
-      # uncomment the below for local testing
-      # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
-      - name: Check out code
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
         uses: actions/checkout@v3.1.0
         with:
           submodules: true
-          fetch-depth: 0 # required for tags
+          fetch-depth: 0
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          fetch-depth: 0
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
@@ -34,16 +41,72 @@ jobs:
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           push_to_quay: false
-  e2e:
-    name: E2E tests
-    needs: prepare-e2e
+          forked: ${{ inputs.forked }}
+  prepare-e2e-bundle:
+    name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
     env:
-      # uncomment the below for local testing
-      # DOCKER_REPO: ${{ env.DOCKER_REGISTRY }}/mongodb-atlas-kubernetes-operator
       DOCKER_REGISTRY: docker.io
-      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
+    steps:
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          fetch-depth: 0
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          fetch-depth: 0
+      - name: Prepare tag
+        id: prepare
+        uses: ./.github/actions/set-tag
+      - name: Generate configuration for the tests
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
+          ENV: dev
+      - name: Change path for the test
+        run: |
+          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      - name: Cache all files
+        uses: actions/cache@v3
+        with:
+          path: ./*
+          key: ${{ github.sha }}
+      - name: Prepare docker tag
+        id: prepare-docker-bundle-tag
+        run: |
+          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
+          TAG=${{ steps.prepare.outputs.tag }}
+          TAGS="${REPOSITORY}:${TAG}"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: Build and Push image
+        uses: ./.github/actions/build-push-image
+        with:
+          file: bundle.Dockerfile
+          repository: ${{ env.DOCKER_BUNDLES_REPO }}
+          version: ${{ steps.prepare.outputs.tag }}
+          platforms: linux/amd64
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          push_to_quay: false
+          forked: ${{ inputs.forked }}
+  e2e:
+    name: E2E tests
+    needs: [prepare-e2e, prepare-e2e-bundle]
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_REGISTRY: docker.io
+      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
     strategy:
       fail-fast: false
       matrix:
@@ -74,42 +137,14 @@ jobs:
             "teams",
           ]
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3.1.0
+      - name: Cache all files
+        uses: actions/cache@v3
         with:
-          submodules: recursive
+          path: ./*
+          key: ${{ github.sha }}
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-      - name: Generate configuration for the tests
-        uses: ./.github/actions/gen-install-scripts
-        with:
-          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
-          VERSION: ${{ steps.prepare.outputs.tag }}
-          ENV: dev
-      - name: Change path for the test
-        run: |
-          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-      - name: Login to docker.io
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Prepare docker tag
-        id: prepare-docker-bundle-tag
-        run: |
-          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
-          TAG=${{ steps.prepare.outputs.tag }}
-          TAGS="${REPOSITORY}:${TAG}"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-      - name: Push bundle-image for the test
-        if: ${{ matrix.test == 'openshift' || matrix.test == 'bundle-test' && !env.ACT }}
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.prepare-docker-bundle-tag.outputs.tags }}
-          file: bundle.Dockerfile
       - name: Set properties
         id: properties
         run: |
@@ -129,7 +164,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.18"
+          go-version-file: "${{ github.workspace }}/go.mod"
       - name: Install operator-sdk-v1.22.0
         run: |
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q
