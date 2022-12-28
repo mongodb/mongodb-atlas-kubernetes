@@ -109,6 +109,12 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", deployment.Spec, "status", deployment.Status)
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, deployment)
 
+	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, deployment, r.Log)
+	if !resourceVersionIsValid.IsOk() {
+		r.Log.Debugf("deployment validation result: %v", resourceVersionIsValid)
+		return resourceVersionIsValid.ReconcileResult(), nil
+	}
+
 	if err := validate.DeploymentSpec(deployment.Spec); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.ValidationSucceeded, result)
@@ -267,23 +273,39 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 
 	resourcesToWatch := []watch.WatchedObject{}
 
-	context := context.Background()
+	requestContext := context.Background()
 	// Process backup schedule
 	bSchedule := &mdbv1.AtlasBackupSchedule{}
 	bKey := types.NamespacedName{Namespace: deployment.Spec.BackupScheduleRef.Namespace, Name: deployment.Spec.BackupScheduleRef.Name}
-	err := r.Client.Get(context, bKey, bSchedule)
+	err := r.Client.Get(requestContext, bKey, bSchedule)
 	if err != nil {
 		return fmt.Errorf("%v backupschedule resource is not found. e: %w", deployment.Spec.BackupScheduleRef, err)
 	}
+
+	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, bSchedule, r.Log)
+	if !resourceVersionIsValid.IsOk() {
+		errText := fmt.Sprintf("backup schedule validation result: %v", resourceVersionIsValid)
+		r.Log.Debug(errText)
+		return errors.New(errText)
+	}
+
 	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: bKey})
 
 	// Process backup policy for the schedule
 	bPolicy := &mdbv1.AtlasBackupPolicy{}
 	pKey := types.NamespacedName{Namespace: bSchedule.Spec.PolicyRef.Namespace, Name: bSchedule.Spec.PolicyRef.Name}
-	err = r.Client.Get(context, pKey, bPolicy)
+	err = r.Client.Get(requestContext, pKey, bPolicy)
 	if err != nil {
 		return fmt.Errorf("unable to get backuppolicy resource %s/%s. e: %w", bSchedule.Spec.PolicyRef.Namespace, bSchedule.Spec.PolicyRef.Name, err)
 	}
+
+	resourceVersionIsValid = customresource.ValidateResourceVersion(ctx, bPolicy, r.Log)
+	if !resourceVersionIsValid.IsOk() {
+		errText := fmt.Sprintf("backup policy validation result: %v", resourceVersionIsValid)
+		r.Log.Debug(errText)
+		return errors.New(errText)
+	}
+
 	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bPolicy.Kind, Resource: pKey})
 
 	// Create new backup schedule
@@ -315,7 +337,7 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	}
 	apiScheduleRes.Policies = []mongodbatlas.Policy{apiPolicy}
 
-	currentSchedule, response, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(context, projectID, cName)
+	currentSchedule, response, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(requestContext, projectID, cName)
 	if err != nil {
 		errMessage := "unable to delete current backup policy for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, cName, err)
@@ -333,7 +355,7 @@ func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow
 	apiScheduleRes.Policies[0].ID = currentSchedule.Policies[0].ID
 
 	r.Log.Debugf("applying backupschedule policy: %v", *apiScheduleRes)
-	if _, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Update(context, projectID, cName, apiScheduleRes); err != nil {
+	if _, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Update(requestContext, projectID, cName, apiScheduleRes); err != nil {
 		return fmt.Errorf("unable to create backupschedule %v. e: %w", bKey, err)
 	}
 	r.Log.Infof("successfully updated backupschedule for deployment %v", cName)
@@ -500,7 +522,6 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Delete implements a handler for the Delete event.
 func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
-	// TODO: Add deletion for AtlasBackupSchedule and AtlasBackupPolicy
 	deployment, ok := e.Object.(*mdbv1.AtlasDeployment)
 	if !ok {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)

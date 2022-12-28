@@ -181,6 +181,16 @@ func NewProject(namespace, name, nameInAtlas string) *AtlasProject {
 	}
 }
 
+func (p *AtlasProject) WithLabels(labels map[string]string) *AtlasProject {
+	p.Labels = labels
+	return p
+}
+
+func (p *AtlasProject) WithAnnotations(labels map[string]string) *AtlasProject {
+	p.Labels = labels
+	return p
+}
+
 func (p *AtlasProject) WithName(name string) *AtlasProject {
 	p.Name = name
 	return p

@@ -11,6 +11,8 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 )
 
@@ -72,6 +74,13 @@ type AtlasBackupSchedule struct {
 	Spec AtlasBackupScheduleSpec `json:"spec,omitempty"`
 
 	Status AtlasBackupScheduleStatus `json:"status,omitempty"`
+}
+
+func (in *AtlasBackupSchedule) GetStatus() status.Status {
+	return nil
+}
+
+func (in *AtlasBackupSchedule) UpdateStatus(_ []status.Condition, _ ...status.Option) {
 }
 
 type AtlasBackupScheduleStatus struct {

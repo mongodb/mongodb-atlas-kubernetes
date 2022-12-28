@@ -43,6 +43,12 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		defer statushandler.Update(teamCtx, r.Client, r.EventRecorder, team)
 
+		resourceVersionIsValid := customresource.ValidateResourceVersion(teamCtx, team, r.Log)
+		if !resourceVersionIsValid.IsOk() {
+			r.Log.Debugf("team validation result: %v", resourceVersionIsValid)
+			return resourceVersionIsValid.ReconcileResult(), nil
+		}
+
 		log.Infow("-> Starting AtlasTeam reconciliation", "spec", team.Spec)
 
 		teamID, result := ensureTeamState(ctx, teamCtx, team)

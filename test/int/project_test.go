@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -111,6 +113,95 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 			testutil.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
 		})
+		It("Should Succeed with previous version of the operator", func() {
+			version.Version = "1.0.0"
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+				customresource.ResourceVersion: "0.0.1",
+			})
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+
+			testutil.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
+		})
+		It("Should Succeed with current version of the operator", func() {
+			version.Version = "1.0.0"
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+				customresource.ResourceVersion: version.Version,
+			})
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+
+			testutil.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
+		})
+		It("Should Fail with newer version of the operator", func() {
+			version.Version = "1.0.0"
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+				customresource.ResourceVersion: "2.3.0",
+			})
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			expectedCondition := status.FalseCondition(status.ResourceVersionStatus).WithReason(string(workflow.AtlasResourceVersionMismatch))
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdProject, expectedCondition)
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+			Eventually(func(g Gomega) bool {
+				expectedConditionsMatchers := testutil.MatchConditions(
+					status.FalseCondition(status.ReadyType),
+					status.FalseCondition(status.ResourceVersionStatus),
+				)
+				return g.Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+		})
+		It("Should Succeed with newer version of the operator and the override label", func() {
+			version.Version = "1.0.0"
+			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+				customresource.ResourceVersion: "2.3.0",
+			}).WithAnnotations(map[string]string{
+				customresource.ResourceVersionOverride: customresource.ResourceVersionAllow,
+			})
+			createdProject.ObjectMeta = expectedProject.ObjectMeta
+			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+			expectedConditionsMatchers := testutil.MatchConditions(
+				status.TrueCondition(status.ProjectReadyType),
+				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
+			)
+			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
+
+			testutil.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
+		})
 		It("Should fail if Secret is wrong", func() {
 			expectedProject := mdbv1.DefaultProject(namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
@@ -125,6 +216,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				status.FalseCondition(status.ProjectReadyType),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.ID()).To(BeEmpty())
@@ -398,6 +490,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				status.TrueCondition(status.ValidationSucceeded),
 				ipAccessFailedCondition,
 				status.FalseCondition(status.ReadyType),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			checkExpiredAccessLists([]project.IPAccessList{})
@@ -541,6 +634,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ResourceVersionStatus),
 				)
 				Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 				Expect(createdProject.ID()).To(BeEmpty())

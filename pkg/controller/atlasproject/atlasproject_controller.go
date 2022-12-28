@@ -111,6 +111,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
 
+	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, project, r.Log)
+	if !resourceVersionIsValid.IsOk() {
+		r.Log.Debugf("project validation result: %v", resourceVersionIsValid)
+		return resourceVersionIsValid.ReconcileResult(), nil
+	}
+
 	if err := validate.Project(project); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		setCondition(ctx, status.ValidationSucceeded, result)

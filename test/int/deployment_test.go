@@ -134,11 +134,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.MongoDBVersion))
 			Expect(createdDeployment.Status.MongoURIUpdated).To(Equal(atlasDeployment.MongoURIUpdated))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(3))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
 			Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -155,11 +156,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
 			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.MongoDBVersion))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(3))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
 			Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -176,11 +178,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
 			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-			Expect(createdDeployment.Status.Conditions).To(HaveLen(3))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
 			Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
 			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
@@ -1173,6 +1176,7 @@ func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
@@ -1198,6 +1202,7 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentUpdating)).WithMessageRegexp("deployment is updating"),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}
