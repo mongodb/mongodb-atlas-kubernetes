@@ -91,6 +91,7 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
+          file: bundle.Dockerfile
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64

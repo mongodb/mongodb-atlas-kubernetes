@@ -10,6 +10,10 @@ inputs:
   repository:
     description: The name of repository to build image
     required: true
+  file:
+    description: Name of the dockerfile relative to context
+    required: false
+    default: Dockerfile
   docker_username:
     description: The username to access the docker registry
     required: true
@@ -78,6 +82,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         context: .
+        file: ${{ inputs.file }}
         build-args: VERSION=${{ inputs.version }}
         platforms: ${{ inputs.platforms }}
         tags: ${{ inputs.repository }}:${{ inputs.version }}
@@ -96,6 +101,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         context: .
+        file: ${{ inputs.file }}
         build-args: VERSION=${{ inputs.version }}
         platforms: ${{ inputs.platforms }}
         tags: quay.io/${{ inputs.repository }}:${{ inputs.version }}
