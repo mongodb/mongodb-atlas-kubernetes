@@ -209,7 +209,7 @@ jobs:
           helm version
           go version
 
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.4 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1 && \
           go install github.com/onsi/gomega/...
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
