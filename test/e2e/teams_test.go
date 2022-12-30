@@ -125,7 +125,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 			return ensureTeamsStatus(g, *userData, teams, teamWasRemoved)
 		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
 
-		actions.CheckConditionsNotSet(userData, status.ProjectTeamsReadyType)
+		actions.CheckProjectConditionsNotSet(userData, status.ProjectTeamsReadyType)
 	})
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 )
 
 const (
@@ -69,7 +70,7 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 	logger := ctx.Log
 	mongoClient := ctx.Client
 	logger.Debugf("syncing network peers for project %v", groupID)
-	list, err := getAllExistedNetworkPeer(context, logger, mongoClient.Peers, groupID)
+	list, err := GetAllExistedNetworkPeer(context, mongoClient.Peers, groupID)
 	if err != nil {
 		logger.Errorf("failed to get all network peers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to get all network peers"),
@@ -100,7 +101,11 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			"failed to update network peer statuses"), status.NetworkPeerReadyType
 	}
-
+	err = deleteUnusedContainers(context, mongoClient.Containers, groupID, getPeerIDs(peerStatuses))
+	if err != nil {
+		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
+			"failed to delete unused containers"), status.NetworkPeerReadyType
+	}
 	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger)
 }
 
@@ -122,6 +127,30 @@ func UpdateStatuses(context context.Context, containerService mongodbatlas.Conta
 		}
 	}
 	return peerStatuses, nil
+}
+
+func getPeerIDs(statuses []status.AtlasNetworkPeer) []string {
+	ids := make([]string, 0, len(statuses))
+	for _, networkPeer := range statuses {
+		ids = append(ids, networkPeer.ContainerID)
+	}
+	return ids
+}
+
+func deleteUnusedContainers(context context.Context, containerService mongodbatlas.ContainersService, groupID string, doNotDelete []string) error {
+	containers, _, err := containerService.List(context, groupID, nil)
+	if err != nil {
+		return err
+	}
+	for _, container := range containers {
+		if !util.Contains(doNotDelete, container.ID) {
+			_, err = containerService.Delete(context, groupID, container.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func getContainer(context context.Context, containerService mongodbatlas.ContainersService,
@@ -260,34 +289,28 @@ func createNetworkPeers(context context.Context, mongoClient mongodbatlas.Client
 	return newPeerStatuses
 }
 
-func getAllExistedNetworkPeer(ctx context.Context, logger *zap.SugaredLogger, peerService mongodbatlas.PeersService, groupID string) ([]mongodbatlas.Peer, error) {
+func GetAllExistedNetworkPeer(ctx context.Context, peerService mongodbatlas.PeersService, groupID string) ([]mongodbatlas.Peer, error) {
 	var peersList []mongodbatlas.Peer
 	listAWS, _, err := peerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{})
 	if err != nil {
-		logger.Errorf("failed to list network peers: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to list network peers for AWS: %w", err)
 	}
-	logger.Debugf("got %d aws peers", len(listAWS))
 	peersList = append(peersList, listAWS...)
 
 	listGCP, _, err := peerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{
 		ProviderName: string(provider.ProviderGCP),
 	})
 	if err != nil {
-		logger.Errorf("failed to list network peers: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to list network peers for GCP: %w", err)
 	}
-	logger.Debugf("got %d gcp peers", len(listGCP))
 	peersList = append(peersList, listGCP...)
 
 	listAzure, _, err := peerService.List(ctx, groupID, &mongodbatlas.ContainersListOptions{
 		ProviderName: string(provider.ProviderAzure),
 	})
 	if err != nil {
-		logger.Errorf("failed to list network peers: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to list network peers for Azure: %w", err)
 	}
-	logger.Debugf("got %d azure peers", len(listAzure))
 	peersList = append(peersList, listAzure...)
 	return peersList, nil
 }
@@ -548,7 +571,7 @@ func DeleteAllNetworkPeers(ctx context.Context, groupID string, service mongodba
 }
 
 func deleteAllNetworkPeers(ctx context.Context, groupID string, service mongodbatlas.PeersService, logger *zap.SugaredLogger) error {
-	peers, err := getAllExistedNetworkPeer(ctx, logger, service, groupID)
+	peers, err := GetAllExistedNetworkPeer(ctx, service, groupID)
 	if err != nil {
 		logger.Errorf("failed to list network peers for project %s: %v", groupID, err)
 		return err
