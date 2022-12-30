@@ -233,16 +233,19 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 	})
 
 	By("Delete network peers", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.NetworkPeers = nil
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		actions.CheckProjectConditionsNotSet(userData, status.NetworkPeerReadyType)
-		atlasPeers, err := atlasproject.GetAllExistedNetworkPeer(userData.Context, atlasClient.Client.Peers, userData.Project.ID())
-		Expect(err).ToNot(HaveOccurred())
-		Expect(atlasPeers).To(BeEmpty(), "All network peers should be deleted")
-		containers, _, err := atlasClient.Client.Containers.ListAll(userData.Context, userData.Project.Status.ID, nil)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(containers).To(BeEmpty(), "All containers should be deleted")
+		Eventually(func(g Gomega) {
+			atlasPeers, err := atlasproject.GetAllExistedNetworkPeer(userData.Context, atlasClient.Client.Peers, userData.Project.ID())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(atlasPeers).To(BeEmpty(), "All network peers should be deleted")
+			containers, _, err := atlasClient.Client.Containers.ListAll(userData.Context, userData.Project.Status.ID, nil)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(containers).To(BeEmpty(), "All containers should be deleted")
+		})
 	})
 }
 

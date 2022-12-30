@@ -23,7 +23,8 @@ func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditionTy
 func CheckProjectConditionsNotSet(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) {
 	Eventually(conditionsAreUnset(userData, conditionTypes...)).
 		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
-		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset", conditionTypes))
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset. project status: %v",
+			conditionTypes, userData.Project.Status.Conditions))
 }
 
 func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) func(g types.Gomega) bool {

@@ -40,7 +40,7 @@ func ensureNetworkPeers(ctx *workflow.Context, groupID string, project *mdbv1.At
 		return result
 	}
 	ctx.SetConditionTrue(status.NetworkPeerReadyType)
-	if len(networkPeerStatus) == 0 && len(networkPeerSpec) == 0 {
+	if len(networkPeerSpec) == 0 {
 		ctx.UnsetCondition(status.NetworkPeerReadyType)
 	}
 
@@ -98,13 +98,15 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 	peerStatuses = createNetworkPeers(context, mongoClient, groupID, diff.PeersToCreate, logger)
 	peerStatuses, err = UpdateStatuses(context, mongoClient.Containers, peerStatuses, diff.PeersToUpdate, groupID, logger)
 	if err != nil {
+		logger.Errorf("failed to update network peer statuses: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			"failed to update network peer statuses"), status.NetworkPeerReadyType
 	}
 	err = deleteUnusedContainers(context, mongoClient.Containers, groupID, getPeerIDs(peerStatuses))
 	if err != nil {
+		logger.Errorf("failed to delete unused containers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
-			"failed to delete unused containers"), status.NetworkPeerReadyType
+			fmt.Sprintf("failed to delete unused containers: %s", err)), status.NetworkPeerReadyType
 	}
 	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger)
 }
@@ -144,9 +146,9 @@ func deleteUnusedContainers(context context.Context, containerService mongodbatl
 	}
 	for _, container := range containers {
 		if !util.Contains(doNotDelete, container.ID) {
-			_, err = containerService.Delete(context, groupID, container.ID)
-			if err != nil {
-				return err
+			response, errDelete := containerService.Delete(context, groupID, container.ID)
+			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
+				return errDelete
 			}
 		}
 	}
