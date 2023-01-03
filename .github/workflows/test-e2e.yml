@@ -76,10 +76,11 @@ jobs:
       - name: Change path for the test
         run: |
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-      - name: Cache all files
+      - name: Cache repo files
         uses: actions/cache@v3
         with:
-          path: ./*
+          path: |
+            ./*
           key: ${{ github.sha }}
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
@@ -137,7 +138,7 @@ jobs:
             "teams",
           ]
     steps:
-      - name: Cache all files
+      - name: Get repo files from cache
         uses: actions/cache@v3
         with:
           path: ./*

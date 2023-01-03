@@ -25,3 +25,12 @@ func PtrValuesEqual[T comparable](a, b *T) bool {
 	}
 	return *a == *b
 }
+
+func Contains[T comparable](a []T, b T) bool {
+	for _, item := range a {
+		if item == b {
+			return true
+		}
+	}
+	return false
+}

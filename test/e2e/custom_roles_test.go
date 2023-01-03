@@ -125,20 +125,23 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []v1.C
 	})
 
 	By("Remove one Custom Roles from the project", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-
-		cr := userData.Project.Spec.CustomRoles
-		userData.Project.Spec.CustomRoles = cr[:1]
-
-		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+				Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+			cr := userData.Project.Spec.CustomRoles
+			userData.Project.Spec.CustomRoles = cr[:1]
+			g.Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		}).Should(Succeed())
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectCustomRolesReadyType, status.ReadyType)
 	})
 
 	By("Remove all Custom Roles from the project", func() {
-		userData.Project.Spec.CustomRoles = nil
-
-		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.CheckConditionsNotSet(userData, status.ProjectCustomRolesReadyType)
+		Eventually(func(g Gomega) {
+			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+				Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
+			userData.Project.Spec.CustomRoles = nil
+			g.Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		}).Should(Succeed())
+		actions.CheckProjectConditionsNotSet(userData, status.ProjectCustomRolesReadyType)
 	})
 }
