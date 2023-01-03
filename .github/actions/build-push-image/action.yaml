@@ -1,6 +1,10 @@
 name: Build Container Image
 description: Builds the operator container image for the given architecture
 inputs:
+  get-existing-cache:
+    description: 'Get cache from the previous build'
+    required: false
+    default: 'false'
   platforms:
     description: The list of platforms for which the image will be built
     required: true
@@ -68,6 +72,7 @@ runs:
       with:
         go-version-file: "${{ github.workspace }}/go.mod"
     - name: Setup cache
+      if: ${{ inputs.get-existing-cache == 'false' }}
       uses: actions/cache@v3
       with:
         path: |
