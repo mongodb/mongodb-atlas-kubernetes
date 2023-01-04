@@ -82,6 +82,19 @@ jobs:
           path: |
             ./*
           key: ${{ github.sha }}
+      - name: Check go dependencies
+        id: cache-go
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum') }}
+      - name: Get go dependencies if cache is missed
+        if: steps.cache-go.outputs.cache-hit != 'true'
+        run: |
+          cd cmd/manager
+          go get -d
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
         run: |
@@ -92,6 +105,7 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
+          get-existing-cache: true
           file: bundle.Dockerfile
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
@@ -143,6 +157,13 @@ jobs:
         with:
           path: ./*
           key: ${{ github.sha }}
+      - name: Get all go dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum') }}
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
