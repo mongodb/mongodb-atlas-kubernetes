@@ -14,8 +14,8 @@ import (
 )
 
 func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []mdbv1.ManagedNamespace, deploymentName string) workflow.Result {
-	if clusterType != "GEOSHARDED" && managedNamespace != nil {
-		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespaces is not supported for this cluster type")
+	if clusterType != string(mdbv1.TypeGeoSharded) && managedNamespace != nil {
+		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
 	}
 
 	result := syncManagedNamespaces(context.Background(), service, groupID, deploymentName, managedNamespace)
@@ -44,7 +44,7 @@ func syncManagedNamespaces(ctx context.Context, service *workflow.Context, group
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
 	err = deleteManagedNamespaces(ctx, service.Client, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
-		logger.Errorf("Failed to delete managed namespaces: %v", err)
+		logger.Errorf("failed to delete managed namespaces: %v", err)
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
 	}
 	nsStatuses := createManagedNamespaces(ctx, service.Client, groupID, deploymentName, diff.ToCreate)

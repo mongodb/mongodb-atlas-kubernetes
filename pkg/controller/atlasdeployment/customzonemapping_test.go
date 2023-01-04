@@ -12,6 +12,7 @@ type CMZTestData struct {
 	czmMap              map[string]string
 	expectedToCreate    bool
 	expectedToBeDeleted bool
+	name                string
 }
 
 const (
@@ -24,125 +25,118 @@ const (
 func runCMZTest(t *testing.T, testData *CMZTestData) {
 	shouldCreate, shouldDelete := compareZoneMappingStates(testData.existing, testData.desired, testData.czmMap)
 	if shouldCreate != testData.expectedToCreate {
-		t.Errorf("expected to shouldCreate %v, got %v", testData.expectedToCreate, shouldCreate)
+		t.Errorf("Test: %s. expected to shouldCreate %v, got %v", testData.name, testData.expectedToCreate, shouldCreate)
 	}
 	if shouldDelete != testData.expectedToBeDeleted {
-		t.Errorf("expected to shouldDelete %v, got %v", testData.expectedToBeDeleted, shouldDelete)
+		t.Errorf("Test: %s. expected to shouldDelete %v, got %v", testData.name, testData.expectedToBeDeleted, shouldDelete)
 	}
 }
 
-func TestCompareZoneMappingStates_ShouldDoNothing(t *testing.T) {
-	data := &CMZTestData{
-		desired: []v1.CustomZoneMapping{
-			{
-				Zone:     zone1,
-				Location: location1,
+func TestCompareZoneMappingStates(t *testing.T) {
+	tests := []*CMZTestData{
+		{
+			name: "All synced. No changes needed",
+			desired: []v1.CustomZoneMapping{
+				{
+					Zone:     zone1,
+					Location: location1,
+				},
+				{
+					Zone:     zone2,
+					Location: location2,
+				},
 			},
-			{
-				Zone:     zone2,
-				Location: location2,
+			existing: map[string]string{
+				location1: "1",
+				location2: "2",
 			},
+			czmMap: map[string]string{
+				"1": zone1,
+				"2": zone2,
+			},
+			expectedToCreate:    false,
+			expectedToBeDeleted: false,
 		},
-		existing: map[string]string{
-			location1: "1",
-			location2: "2",
+		{
+			name: "Wrong zone. Should be recreated",
+			desired: []v1.CustomZoneMapping{
+				{
+					Zone:     zone1,
+					Location: location1,
+				},
+				{
+					Zone:     zone2,
+					Location: location2,
+				},
+			},
+			existing: map[string]string{
+				location1: "1",
+				location2: "1",
+			},
+			czmMap: map[string]string{
+				"1": zone1,
+				"2": zone2,
+			},
+			expectedToCreate:    true,
+			expectedToBeDeleted: true,
 		},
-		czmMap: map[string]string{
-			"1": zone1,
-			"2": zone2,
+		{
+			name: "Exist more than needed. Should be recreated",
+			desired: []v1.CustomZoneMapping{
+				{
+					Zone:     zone1,
+					Location: location1,
+				},
+			},
+			existing: map[string]string{
+				location1: "1",
+				location2: "2",
+			},
+			czmMap: map[string]string{
+				"1": zone1,
+				"2": zone2,
+			},
+			expectedToCreate:    true,
+			expectedToBeDeleted: true,
 		},
-		expectedToCreate:    false,
-		expectedToBeDeleted: false,
+		{
+			name:    "Empty desired. Should be deleted",
+			desired: []v1.CustomZoneMapping{},
+			existing: map[string]string{
+				location1: "1",
+				location2: "2",
+			},
+			czmMap: map[string]string{
+				"1": zone1,
+				"2": zone2,
+			},
+			expectedToCreate:    false,
+			expectedToBeDeleted: true,
+		},
+		{
+			name: "Exist less than needed. Should be created",
+			desired: []v1.CustomZoneMapping{
+				{
+					Zone:     zone1,
+					Location: location1,
+				},
+				{
+					Zone:     zone2,
+					Location: location2,
+				},
+			},
+			existing: map[string]string{
+				location2: "2",
+			},
+			czmMap: map[string]string{
+				"1": zone1,
+				"2": zone2,
+			},
+			expectedToCreate:    true,
+			expectedToBeDeleted: false,
+		},
 	}
-	runCMZTest(t, data)
-}
-
-func TestCompareZoneMappingStates_WrongZone(t *testing.T) {
-	data := &CMZTestData{
-		desired: []v1.CustomZoneMapping{
-			{
-				Zone:     zone1,
-				Location: location1,
-			},
-			{
-				Zone:     zone2,
-				Location: location2,
-			},
-		},
-		existing: map[string]string{
-			location1: "1",
-			location2: "1",
-		},
-		czmMap: map[string]string{
-			"1": zone1,
-			"2": zone2,
-		},
-		expectedToCreate:    true,
-		expectedToBeDeleted: true,
+	for _, test := range tests {
+		runCMZTest(t, test)
 	}
-	runCMZTest(t, data)
-}
-
-func TestCompareZoneMappingStates_Recreate(t *testing.T) {
-	data := &CMZTestData{
-		desired: []v1.CustomZoneMapping{
-			{
-				Zone:     zone1,
-				Location: location1,
-			},
-		},
-		existing: map[string]string{
-			location1: "1",
-			location2: "2",
-		},
-		czmMap: map[string]string{
-			"1": zone1,
-			"2": zone2,
-		},
-		expectedToCreate:    true,
-		expectedToBeDeleted: true,
-	}
-	runCMZTest(t, data)
-}
-
-func TestCompareZoneMappingStates_DeleteOnly(t *testing.T) {
-	data := &CMZTestData{
-		desired: []v1.CustomZoneMapping{},
-		existing: map[string]string{
-			location1: "1",
-			location2: "2",
-		},
-		czmMap: map[string]string{
-			"1": zone1,
-			"2": zone2,
-		},
-		expectedToCreate:    false,
-		expectedToBeDeleted: true,
-	}
-	runCMZTest(t, data)
-}
-
-func TestCompareZoneMappingStates_AddOnly(t *testing.T) {
-	data := &CMZTestData{
-		desired: []v1.CustomZoneMapping{
-			{
-				Zone:     zone1,
-				Location: location1,
-			},
-			{
-				Zone:     zone2,
-				Location: location2,
-			},
-		},
-		existing: map[string]string{
-			location2: "2",
-		},
-		czmMap: map[string]string{
-			"1": zone1,
-			"2": zone2,
-		},
-		expectedToCreate:    true,
-		expectedToBeDeleted: false,
-	}
-	runCMZTest(t, data)
 }

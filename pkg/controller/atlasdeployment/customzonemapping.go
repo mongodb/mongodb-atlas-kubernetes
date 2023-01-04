@@ -40,7 +40,7 @@ func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, group
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping state: %v", err))
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
-	var customZoneMapping status.CustomZoneMapping
+	var customZoneMappingStatus status.CustomZoneMapping
 	zoneMappingMap, err := getZoneMappingMap(ctx, service.Client, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
@@ -52,31 +52,31 @@ func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, group
 			err = deleteZoneMapping(ctx, service.Client, groupID, deploymentName)
 			if err != nil {
 				skipAdd = true
-				logger.Errorf("Failed to sync zone mapping: %v", err)
-				customZoneMapping.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", err)
-				customZoneMapping.ZoneMappingState = status.StatusFailed
+				logger.Errorf("failed to sync zone mapping: %v", err)
+				customZoneMappingStatus.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", err)
+				customZoneMappingStatus.ZoneMappingState = status.StatusFailed
 			}
 		}
 
 		if shouldAdd && !skipAdd {
 			zoneMapping, errRecreate := createZoneMapping(ctx, service.Client, groupID, deploymentName, customZoneMappings)
 			if errRecreate != nil {
-				logger.Errorf("Failed to sync zone mapping: %v", errRecreate)
-				customZoneMapping.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", errRecreate)
-				customZoneMapping.ZoneMappingState = status.StatusFailed
+				logger.Errorf("failed to sync zone mapping: %v", errRecreate)
+				customZoneMappingStatus.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", errRecreate)
+				customZoneMappingStatus.ZoneMappingState = status.StatusFailed
 			} else {
 				logger.Debugf("Zone mapping added: %v", zoneMapping)
-				customZoneMapping.ZoneMappingState = status.StatusReady
-				customZoneMapping.CustomZoneMapping = zoneMapping
+				customZoneMappingStatus.ZoneMappingState = status.StatusReady
+				customZoneMappingStatus.CustomZoneMapping = zoneMapping
 			}
 		}
 	} else {
-		customZoneMapping.ZoneMappingState = status.StatusReady
-		customZoneMapping.CustomZoneMapping = existingZoneMapping
+		customZoneMappingStatus.ZoneMappingState = status.StatusReady
+		customZoneMappingStatus.CustomZoneMapping = existingZoneMapping
 	}
 
-	service.EnsureStatusOption(status.AtlasDeploymentCustomZoneMappingOption(&customZoneMapping))
-	return checkCustomZoneMapping(customZoneMapping)
+	service.EnsureStatusOption(status.AtlasDeploymentCustomZoneMappingOption(&customZoneMappingStatus))
+	return checkCustomZoneMapping(customZoneMappingStatus)
 }
 
 func verifyZoneMapping(desired []mdbv1.CustomZoneMapping) error {
