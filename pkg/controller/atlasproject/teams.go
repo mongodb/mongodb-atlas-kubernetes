@@ -134,7 +134,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 		teamRef := getTeamRefFromProjectStatus(project, atlasAssignedTeam.TeamID)
 		if teamRef == nil {
-			ctx.Log.Warnf("unable to find team %s status in the project: %s", atlasAssignedTeam.TeamID, err.Error())
+			ctx.Log.Warnf("unable to find team %s status in the project", atlasAssignedTeam.TeamID)
 		} else {
 			if err = r.updateTeamState(ctx, project, teamRef, true); err != nil {
 				ctx.Log.Warnf("failed to update team %s status with removed project: %s", atlasAssignedTeam.TeamID, err.Error())

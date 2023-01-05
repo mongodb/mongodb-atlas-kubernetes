@@ -332,6 +332,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 					status.TrueCondition(status.DatabaseUserReadyType),
 					status.TrueCondition(status.ReadyType),
 					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ResourceVersionStatus),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -532,6 +533,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 					status.FalseCondition(status.DatabaseUserReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ResourceVersionStatus),
 				)
 				Expect(createdDBUser.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -819,12 +821,13 @@ func validateDatabaseUserUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource
 			status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserDeploymentAppliedChanges)),
 			status.FalseCondition(status.ReadyType),
 			status.TrueCondition(status.ValidationSucceeded),
+			status.TrueCondition(status.ResourceVersionStatus),
 		)
 		g.Expect(d.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 	}
 }
 
-// nolint
+//nolint
 func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 	return func(a mdbv1.AtlasCustomResource) {
 		d := a.(*mdbv1.AtlasDatabaseUser)
@@ -841,6 +844,7 @@ func validateDatabaseUserWaitingForCluster() func(a mdbv1.AtlasCustomResource) {
 				WithReason(string(workflow.DatabaseUserConnectionSecretsNotCreated)).
 				WithMessageRegexp("Waiting for deployments to get created/updated"),
 			status.FalseCondition(status.ReadyType),
+			status.TrueCondition(status.ResourceVersionStatus),
 		)
 		Expect(d.Status.Conditions).To(Or(ConsistOf(waitingForDeployment), ConsistOf(userChangesApplied)))
 	}

@@ -1,0 +1,115 @@
+name: Build Container Image
+description: Builds the operator container image for the given architecture
+inputs:
+  get-existing-cache:
+    description: 'Get cache from the previous build'
+    required: false
+    default: 'false'
+  platforms:
+    description: The list of platforms for which the image will be built
+    required: true
+  version:
+    description: The version of the operator will be built
+    required: true
+  repository:
+    description: The name of repository to build image
+    required: true
+  file:
+    description: Name of the dockerfile relative to context
+    required: false
+    default: Dockerfile
+  docker_username:
+    description: The username to access the docker registry
+    required: true
+  docker_password:
+    description: The password to access the docker registry
+    required: true
+  push_to_quay:
+    description: Also push image to quay.io
+    required: false
+    default: "false"
+  quay_username:
+    description: The username to access the docker registry
+    required: false
+  quay_password:
+    description: The password to access the docker registry
+    required: false
+  forked:
+    description: Flag to checkout source code from forked repository
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - name: Check out code
+      uses: actions/checkout@v3.1.0
+      if: ${{ inputs.forked == false }}
+      with:
+        submodules: true
+        fetch-depth: 0
+    - name: Check out code for forked PR
+      uses: actions/checkout@v3.1.0
+      if: ${{ inputs.forked == true }}
+      with:
+        ref: ${{github.event.pull_request.head.sha}}
+        repository: ${{github.event.pull_request.head.repo.full_name}}
+        submodules: true
+    - name: "Set up QEMU"
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: ${{ inputs.platforms }}
+    - name: "Set up Docker Buildx"
+      uses: docker/setup-buildx-action@v2
+      with:
+        platforms: ${{ inputs.platforms }}
+    - name: Login to docker registry
+      uses: docker/login-action@v2
+      with:
+        username: ${{ inputs.docker_username }}
+        password: ${{ inputs.docker_password }}
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: "${{ github.workspace }}/go.mod"
+    - name: Setup cache
+      if: ${{ inputs.get-existing-cache == 'false' }}
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+    - name: Download go build dependencies
+      shell: bash
+      run: |
+        go mod download
+    - name: Build and Push Operator to Docker Registry
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ${{ inputs.file }}
+        build-args: VERSION=${{ inputs.version }}
+        platforms: ${{ inputs.platforms }}
+        tags: ${{ inputs.repository }}:${{ inputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        push: true
+    - name: Login to quay.io registry
+      if: ${{ inputs.push_to_quay == true }}
+      uses: docker/login-action@v2
+      with:
+        registry: quay.io
+        username: ${{ inputs.quay_username }}
+        password: ${{ inputs.quay_password }}
+    - name: Build and Push Operator to Docker Registry
+      if: ${{ inputs.push_to_quay == true }}
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ${{ inputs.file }}
+        build-args: VERSION=${{ inputs.version }}
+        platforms: ${{ inputs.platforms }}
+        tags: quay.io/${{ inputs.repository }}:${{ inputs.version }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        push: true

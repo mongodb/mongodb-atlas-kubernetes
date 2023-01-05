@@ -10,6 +10,8 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 )
 
 // AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
@@ -45,6 +47,13 @@ type AtlasBackupPolicy struct {
 
 	Spec   AtlasBackupPolicySpec   `json:"spec,omitempty"`
 	Status AtlasBackupPolicyStatus `json:"status,omitempty"`
+}
+
+func (in *AtlasBackupPolicy) GetStatus() status.Status {
+	return nil
+}
+
+func (in *AtlasBackupPolicy) UpdateStatus(_ []status.Condition, _ ...status.Option) {
 }
 
 type AtlasBackupPolicyStatus struct {

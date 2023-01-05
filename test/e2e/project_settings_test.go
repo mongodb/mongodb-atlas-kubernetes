@@ -70,6 +70,6 @@ func projectSettingsFlow(userData *model.TestDataProvider, settings *v1.ProjectS
 	By("Remove Project Settings from the project", func() {
 		userData.Project.Spec.Settings = nil
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.CheckConditionsNotSet(userData, status.ProjectSettingsReadyType)
+		actions.CheckProjectConditionsNotSet(userData, status.ProjectSettingsReadyType)
 	})
 }

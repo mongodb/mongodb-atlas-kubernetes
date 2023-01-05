@@ -54,7 +54,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.18"
+          go-version-file: "${{ github.workspace }}/go.mod"
 
       - name: Download tools for openshift test
         run: |

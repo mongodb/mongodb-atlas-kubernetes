@@ -19,15 +19,7 @@ jobs:
     if: ${{ (github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != '' }}
     runs-on: ubuntu-latest
     env:
-      DOCKER_RELEASE_REPO: mongodb/mongodb-atlas-kubernetes-operator
-      REDHAT_SCAN_RELEASE_REGISTRY: scan.connect.redhat.com
-      REDHAT_SCAN_OPERATOR_REPO: ospid-4b67df2e-b2d2-42ef-994e-e35dcff33ad4/mongodb-atlas-kubernetes-operator
-      REDHAT_SCAN_BUNDLE_REPO: ospid-c531b655-554d-4c70-b592-c64723a5b840/mongodb-atlas-kubernetes-operator-bundle
-      REDHAT_RELEASE_REGISTRY: registry.connect.redhat.com
-      REDHAT_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
-      QUAY_RELEASE_REGISTRY: quay.io
-      QUAY_OPERATOR_REPO: mongodb/mongodb-atlas-kubernetes-operator
-      QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
+      IMAGE_REPOSITORY: mongodb/mongodb-atlas-kubernetes-operator
     steps:
       - name: Print Env and Get version
         id: tag
@@ -44,7 +36,6 @@ jobs:
           tag="v${version}"
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "tag=$tag" >> $GITHUB_OUTPUT
-
       - name: Trigger helm post release workflow
         run: |
           curl \
@@ -54,61 +45,34 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/mongodb/helm-charts/actions/workflows/post-atlas-operator-release.yaml/dispatches \
             -d '{"ref":"main","inputs":{"version":"'"${{ steps.tag.outputs.version }}"'"}}'
-
-      - name: Check out code into the Go module directory
+      - name: Check out code
         uses: actions/checkout@v3.1.0
         with:
           submodules: true
-          fetch-depth: 0 #needs for tags
-
+          fetch-depth: 0
+      - name: Build and Push image
+        uses: ./.github/actions/build-push-image
+        with:
+          repository: ${{ env.IMAGE_REPOSITORY }}
+          version: ${{ steps.tag.outputs.tag }}
+          platforms: linux/amd64,linux/arm64
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          push_to_quay: true
+          quay_username: mongodb+mongodb_atlas_kubernetes
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Certify Openshift images
+        uses: ./.github/actions/certify-openshift-images
+        with:
+          repository: ${{ env.IMAGE_REPOSITORY }}
+          version: ${{ steps.tag.outputs.tag }}
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
       - name: Create configuration package
         run: |
           set -x
           tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
-
-      - name: Login to docker registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Prepare docker image tag
-        id: prepare-docker-image-tag
-        run: |
-          REPOSITORY=${{ env.DOCKER_RELEASE_REPO }}
-          TAG=${{ steps.tag.outputs.version }}
-          TAGS="${REPOSITORY}:${TAG}"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-      - name: Push Atlas Operator to Registry
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.prepare-docker-image-tag.outputs.tags }}
-          build-args: VERSION=${{ steps.tag.outputs.tag }}
-
-      - name: Login to Quay registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.QUAY_RELEASE_REGISTRY  }}
-          username: ${{ env.QUAY_ROBOT_NAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Prepare docker Quay image tag
-        id: prepare-quay-image-tag
-        run: |
-          REGISTRY=${{ env.QUAY_RELEASE_REGISTRY }}
-          REPOSITORY=${{ env.QUAY_OPERATOR_REPO }}
-          TAG=${{ steps.tag.outputs.version }}
-          TAGS="${REGISTRY}/${REPOSITORY}:${TAG}"
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-      - name: Push Atlas Operator to Quay Registry
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.prepare-quay-image-tag.outputs.tags }}
-          build-args: VERSION=${{ steps.tag.outputs.tag }}
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -120,7 +84,6 @@ jobs:
           body_path: docs/release-notes/release-notes.md
           draft: true
           prerelease: false
-
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
