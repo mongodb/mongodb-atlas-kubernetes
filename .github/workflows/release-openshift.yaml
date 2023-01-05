@@ -72,8 +72,9 @@ jobs:
           RH_CERTIFICATION_PYXIS_API_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           RH_CERTIFICATION_OSPID: ${{ secrets.RH_CERTIFICATION_OSPID }}
         run: |
-          # Reference image to quay.io
-          containerImage="${IMAGE}:${VERSION}"
+          # Reference to image
+          TAG_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
+          containerImage="quay.io/${IMAGE}:${TAG_DIGEST}"
           yq e -i '.metadata.annotations.containerImage = env(containerImage)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
           yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(containerImage)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
