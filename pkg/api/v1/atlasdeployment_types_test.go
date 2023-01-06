@@ -37,6 +37,12 @@ func init() {
 	excludedClusterFieldsTheirs["replicationSpec"] = true
 	excludedClusterFieldsTheirs["replicationFactor"] = true
 
+	// Termination protection
+	excludedClusterFieldsTheirs["terminationProtectionEnabled"] = true
+
+	// Root cert type
+	excludedClusterFieldsTheirs["rootCertType"] = true
+
 	// These fields are shown in the status
 	excludedClusterFieldsTheirs["mongoDBVersion"] = true
 	excludedClusterFieldsTheirs["mongoURI"] = true

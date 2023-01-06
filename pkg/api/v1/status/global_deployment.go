@@ -1,7 +1,7 @@
 package status
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment/globaldeployment"
+	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 type CustomZoneMapping struct {
@@ -22,9 +22,9 @@ type ManagedNamespace struct {
 	ErrMessage             string `json:"errMessage,omitempty"`
 }
 
-func NewFailedToCreateManagedNamespaceStatus(namespace globaldeployment.AtlasManagedNamespace, err error) ManagedNamespace {
+func NewFailedToCreateManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace, err error) ManagedNamespace {
 	return ManagedNamespace{
-		Db:                     namespace.DB,
+		Db:                     namespace.Db,
 		Collection:             namespace.Collection,
 		CustomShardKey:         namespace.CustomShardKey,
 		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,
@@ -36,9 +36,9 @@ func NewFailedToCreateManagedNamespaceStatus(namespace globaldeployment.AtlasMan
 	}
 }
 
-func NewCreatedManagedNamespaceStatus(namespace globaldeployment.AtlasManagedNamespace) ManagedNamespace {
+func NewCreatedManagedNamespaceStatus(namespace mongodbatlas.ManagedNamespace) ManagedNamespace {
 	return ManagedNamespace{
-		Db:                     namespace.DB,
+		Db:                     namespace.Db,
 		Collection:             namespace.Collection,
 		CustomShardKey:         namespace.CustomShardKey,
 		IsCustomShardKeyHashed: namespace.IsCustomShardKeyHashed,

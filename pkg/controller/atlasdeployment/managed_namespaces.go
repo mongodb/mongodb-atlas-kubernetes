@@ -8,7 +8,6 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment/globaldeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 )
@@ -35,19 +34,19 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 
 func syncManagedNamespaces(ctx context.Context, service *workflow.Context, groupID string, deploymentName string, managedNamespaces []mdbv1.ManagedNamespace) workflow.Result {
 	logger := service.Log
-	existingManagedNamespaces, _, err := globaldeployment.GetGlobalDeploymentState(ctx, service.Client, groupID, deploymentName)
+	existingManagedNamespaces, _, err := GetGlobalDeploymentState(ctx, service.Client.GlobalClusters, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to get managed namespaces: %v", err))
 	}
 	diff := sortManagedNamespaces(existingManagedNamespaces, managedNamespaces)
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
-	err = deleteManagedNamespaces(ctx, service.Client, groupID, deploymentName, diff.ToDelete)
+	err = deleteManagedNamespaces(ctx, service.Client.GlobalClusters, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
 		logger.Errorf("failed to delete managed namespaces: %v", err)
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
 	}
-	nsStatuses := createManagedNamespaces(ctx, service.Client, groupID, deploymentName, diff.ToCreate)
+	nsStatuses := createManagedNamespaces(ctx, service.Client.GlobalClusters, groupID, deploymentName, diff.ToCreate)
 	for _, ns := range diff.ToUpdateStatus {
 		nsStatuses = append(nsStatuses, status.NewCreatedManagedNamespaceStatus(ns))
 	}
@@ -66,7 +65,7 @@ func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) wo
 	return workflow.OK()
 }
 
-func sortManagedNamespaces(existing []globaldeployment.AtlasManagedNamespace, desired []mdbv1.ManagedNamespace) NamespaceDiff {
+func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []mdbv1.ManagedNamespace) NamespaceDiff {
 	var result NamespaceDiff
 	for _, d := range desired {
 		found := false
@@ -98,8 +97,8 @@ func sortManagedNamespaces(existing []globaldeployment.AtlasManagedNamespace, de
 	return result
 }
 
-func isManagedNamespaceStateMatch(existing globaldeployment.AtlasManagedNamespace, desired mdbv1.ManagedNamespace) bool {
-	if existing.DB == desired.Db &&
+func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desired mdbv1.ManagedNamespace) bool {
+	if existing.Db == desired.Db &&
 		existing.Collection == desired.Collection &&
 		existing.CustomShardKey == desired.CustomShardKey &&
 		util.PtrValuesEqual(existing.IsShardKeyUnique, desired.IsShardKeyUnique) &&
@@ -110,9 +109,9 @@ func isManagedNamespaceStateMatch(existing globaldeployment.AtlasManagedNamespac
 	return false
 }
 
-func deleteManagedNamespaces(ctx context.Context, client mongodbatlas.Client, id string, name string, namespaces []globaldeployment.AtlasManagedNamespace) error {
+func deleteManagedNamespaces(ctx context.Context, client mongodbatlas.GlobalClustersService, id string, name string, namespaces []mongodbatlas.ManagedNamespace) error {
 	for i := range namespaces {
-		_, err := globaldeployment.DeleteManagedNamespaceInAtlas(ctx, client, id, name, &namespaces[i])
+		_, _, err := client.DeleteManagedNamespace(ctx, id, name, &namespaces[i])
 		if err != nil {
 			return err
 		}
@@ -120,11 +119,11 @@ func deleteManagedNamespaces(ctx context.Context, client mongodbatlas.Client, id
 	return nil
 }
 
-func createManagedNamespaces(ctx context.Context, client mongodbatlas.Client, id string, name string, namespaces []globaldeployment.AtlasManagedNamespace) []status.ManagedNamespace {
+func createManagedNamespaces(ctx context.Context, client mongodbatlas.GlobalClustersService, id string, name string, namespaces []mongodbatlas.ManagedNamespace) []status.ManagedNamespace {
 	var newStatuses []status.ManagedNamespace
 	for i := range namespaces {
 		ns := namespaces[i]
-		_, err := globaldeployment.CreateManagedNamespaceInAtlas(ctx, client, id, name, &ns)
+		_, _, err := client.AddManagedNamespace(ctx, id, name, &ns)
 		if err != nil {
 			newStatuses = append(newStatuses, status.NewFailedToCreateManagedNamespaceStatus(ns, err))
 		} else {
@@ -135,7 +134,7 @@ func createManagedNamespaces(ctx context.Context, client mongodbatlas.Client, id
 }
 
 type NamespaceDiff struct {
-	ToCreate       []globaldeployment.AtlasManagedNamespace
-	ToDelete       []globaldeployment.AtlasManagedNamespace
-	ToUpdateStatus []globaldeployment.AtlasManagedNamespace
+	ToCreate       []mongodbatlas.ManagedNamespace
+	ToDelete       []mongodbatlas.ManagedNamespace
+	ToUpdateStatus []mongodbatlas.ManagedNamespace
 }

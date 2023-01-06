@@ -2,8 +2,6 @@ package v1
 
 import (
 	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment/globaldeployment"
 )
 
 type CustomZoneMapping struct {
@@ -22,9 +20,9 @@ type ManagedNamespace struct {
 	IsShardKeyUnique       *bool  `json:"isShardKeyUnique,omitempty"`       // Flag that specifies whether the underlying index enforces a unique constraint.
 }
 
-func (in *ManagedNamespace) ToAtlas() globaldeployment.AtlasManagedNamespace {
-	return globaldeployment.AtlasManagedNamespace{
-		DB:                     in.Db,
+func (in *ManagedNamespace) ToAtlas() mongodbatlas.ManagedNamespace {
+	return mongodbatlas.ManagedNamespace{
+		Db:                     in.Db,
 		Collection:             in.Collection,
 		CustomShardKey:         in.CustomShardKey,
 		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
