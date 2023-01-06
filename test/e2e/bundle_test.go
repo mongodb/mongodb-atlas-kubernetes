@@ -4,20 +4,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
-
 	"github.com/onsi/gomega/gexec"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
@@ -67,7 +66,13 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		})
 
 		By("Apply configuration", func() {
-			actions.ProjectCreationFlow(testData)
+			By(fmt.Sprintf("Create namespace %s", testData.Resources.Namespace))
+			Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, testData.Resources.Namespace)
+			if !testData.Resources.AtlasKeyAccessType.GlobalLevelKey {
+				actions.CreateConnectionAtlasKey(testData)
+			}
+			deploy.CreateProject(testData)
 			By(fmt.Sprintf("project namespace %v", testData.Project.Namespace))
 			actions.WaitForConditionsToBecomeTrue(testData, status.ReadyType)
 			deploy.CreateInitialDeployments(testData)

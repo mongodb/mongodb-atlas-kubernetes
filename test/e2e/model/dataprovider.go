@@ -27,6 +27,7 @@ type TestDataProvider struct {
 	Prefix                   string
 	Users                    []*v1.AtlasDatabaseUser
 	Teams                    []*v1.AtlasTeam
+	ManagerContext           context.Context
 }
 
 func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasKeyType, initDeploymentConfigs []string, updateDeploymentConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
