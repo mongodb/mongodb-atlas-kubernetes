@@ -44,6 +44,16 @@ func ensureDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, d
 		}
 	}
 
+	result := EnsureCustomZoneMapping(ctx, project.ID(), deployment.Spec.DeploymentSpec.CustomZoneMapping, atlasDeployment.Name)
+	if !result.IsOk() {
+		return atlasDeployment, result
+	}
+
+	result = EnsureManagedNamespaces(ctx, project.ID(), string(deployment.Spec.DeploymentSpec.ClusterType), deployment.Spec.DeploymentSpec.ManagedNamespaces, atlasDeployment.Name)
+	if !result.IsOk() {
+		return atlasDeployment, result
+	}
+
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
 

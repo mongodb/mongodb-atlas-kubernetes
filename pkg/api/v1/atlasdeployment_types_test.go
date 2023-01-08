@@ -22,6 +22,10 @@ var (
 func init() {
 	excludedClusterFieldsOurs["projectRef"] = true
 
+	// Global deployment fields
+	excludedClusterFieldsOurs["customZoneMapping"] = true
+	excludedClusterFieldsOurs["managedNamespaces"] = true
+
 	excludedClusterFieldsTheirs["backupEnabled"] = true
 	excludedClusterFieldsTheirs["id"] = true
 	excludedClusterFieldsTheirs["groupId"] = true
@@ -32,6 +36,12 @@ func init() {
 	// Deprecated
 	excludedClusterFieldsTheirs["replicationSpec"] = true
 	excludedClusterFieldsTheirs["replicationFactor"] = true
+
+	// Termination protection
+	excludedClusterFieldsTheirs["terminationProtectionEnabled"] = true
+
+	// Root cert type
+	excludedClusterFieldsTheirs["rootCertType"] = true
 
 	// These fields are shown in the status
 	excludedClusterFieldsTheirs["mongoDBVersion"] = true

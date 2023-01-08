@@ -143,6 +143,10 @@ type DeploymentSpec struct {
 	// Configuration for deployment regions.
 	// +optional
 	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
+	// +optional
+	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
+	// +optional
+	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 }
 
 type AdvancedDeploymentSpec struct {
@@ -164,6 +168,10 @@ type AdvancedDeploymentSpec struct {
 	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
 	RootCertType         string                     `json:"rootCertType,omitempty"`
 	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
+	// +optional
+	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
+	// +optional
+	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
