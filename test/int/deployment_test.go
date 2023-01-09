@@ -98,7 +98,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas manually to let project get removed
-				_, err := atlasClient.Clusters.Delete(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
+				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
 				createdDeployment = nil
@@ -801,7 +801,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
 
-				containsLabel := func(ac *mongodbatlas.Cluster) bool {
+				containsLabel := func(ac *mongodbatlas.AdvancedCluster) bool {
 					for _, label := range ac.Labels {
 						if label.Key == "some-key" && label.Value == "some-value" {
 							return true

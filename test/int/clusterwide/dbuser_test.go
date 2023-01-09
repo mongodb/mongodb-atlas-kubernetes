@@ -166,7 +166,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUse
 
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, deploymentName)
+		_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true

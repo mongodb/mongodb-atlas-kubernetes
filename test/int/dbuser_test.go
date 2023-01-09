@@ -661,7 +661,7 @@ func tryConnect(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.A
 func mongoClient(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name)
+	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	if c.ConnectionStrings == nil {
@@ -731,7 +731,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, deploym
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name)
+	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name)
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{

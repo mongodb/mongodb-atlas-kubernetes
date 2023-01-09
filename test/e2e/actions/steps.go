@@ -76,7 +76,7 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 	case deployment.Spec.AdvancedDeploymentSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetAdvancedDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
+		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
@@ -87,7 +87,9 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
 		aClient := atlas.GetClientOrFail()
-		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
+		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
+		Expect(err).To(BeNil())
+		Expect(deployment.StateName).Should(Equal("IDLE"))
 	}
 }
 
@@ -113,7 +115,7 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 	case deployment.Spec.AdvancedDeploymentSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetAdvancedDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
+		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
@@ -124,7 +126,9 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
 		aClient := atlas.GetClientOrFail()
-		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
+		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
+		Expect(err).To(BeNil())
+		Expect(deployment.StateName).Should(Equal("IDLE"))
 	}
 }
 

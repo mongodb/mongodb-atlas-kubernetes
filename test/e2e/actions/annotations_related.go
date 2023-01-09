@@ -36,8 +36,9 @@ func DeleteDeploymentCRWithKeepAnnotation(testData *model.TestDataProvider) {
 		Expect(err).NotTo(HaveOccurred())
 		By("Checking Cluster still existed", func() {
 			aClient := atlas.GetClientOrFail()
-			state := aClient.GetDeployment(testData.Project.Status.ID, testData.InitialDeployments[0].AtlasName()).StateName
-			Expect(state).ShouldNot(Equal("DELETING"), "Deployment is being deleted despite the keep annotation")
+			deployment, err := aClient.GetDeployment(testData.Project.Status.ID, testData.InitialDeployments[0].AtlasName())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deployment.StateName).ShouldNot(Equal("DELETING"), "Deployment is being deleted despite the keep annotation")
 		})
 	})
 }

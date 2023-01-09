@@ -287,36 +287,16 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.Adva
 // GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
 func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]string, error) {
 	var deploymentNames []string
-	deployment, _, err := client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
 
 	advancedDeployments, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, c := range deployment {
-		deploymentNames = append(deploymentNames, c.Name)
-	}
-
 	for _, d := range advancedDeployments.Results {
-		// based on configuration settings, some advanced deployment also show up in the regular deployments API.
-		// For these deployments, we don't want to duplicate the secret so we skip them.
-		found := false
-		for _, regularDeployment := range deployment {
-			if regularDeployment.Name == d.Name {
-				found = true
-				break
-			}
-		}
-
-		// we only include deployment names which have not been handled by the regular deployment API.
-		if !found {
-			deploymentNames = append(deploymentNames, d.Name)
-		}
+		deploymentNames = append(deploymentNames, d.Name)
 	}
+
 	return deploymentNames, nil
 }
 

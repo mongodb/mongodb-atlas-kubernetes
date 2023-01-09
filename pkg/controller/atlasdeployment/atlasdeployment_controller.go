@@ -450,7 +450,7 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx context.Contex
 		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
-	deleteDeploymentFunc := atlasClient.Clusters.Delete
+	deleteDeploymentFunc := atlasClient.AdvancedClusters.Delete
 	if deployment.Spec.AdvancedDeploymentSpec != nil {
 		deleteDeploymentFunc = atlasClient.AdvancedClusters.Delete
 	}

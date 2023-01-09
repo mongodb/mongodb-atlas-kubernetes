@@ -119,22 +119,15 @@ func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
 	return project != nil
 }
 
-func (a *Atlas) GetDeployments(projectID string) []mongodbatlas.Cluster {
-	deployments, _, err := a.Client.Clusters.List(context.Background(), projectID, nil)
+func (a *Atlas) GetDeployments(projectID string) []*mongodbatlas.AdvancedCluster {
+	reply, _, err := a.Client.AdvancedClusters.List(context.Background(), projectID, nil)
 	Expect(err).NotTo(HaveOccurred())
+	deployments := reply.Results
 	ginkgoPrettyPrintf(deployments, "listing legacy deployments in project %s", projectID)
 	return deployments
 }
 
-func (a *Atlas) GetDeployment(projectID string, name string) mongodbatlas.Cluster {
-	deployment, _, err := a.Client.Clusters.Get(context.Background(), projectID, name)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(deployment).NotTo(BeNil())
-	ginkgoPrettyPrintf(deployment, "getting legacy deployment %s in project %s", projectID, name)
-	return *deployment
-}
-
-func (a *Atlas) GetAdvancedDeployment(projectId, deploymentName string) (*mongodbatlas.AdvancedCluster, error) {
+func (a *Atlas) GetDeployment(projectId, deploymentName string) (*mongodbatlas.AdvancedCluster, error) {
 	advancedDeployment, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, deploymentName)
 	if err != nil {
 		return nil, err
