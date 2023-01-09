@@ -169,7 +169,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
-			err := atlasdeployment.ConvertLegacyDeployment(createdDeployment)
+			err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
 			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec

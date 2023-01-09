@@ -8,15 +8,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
-func ConvertLegacyDeployment(deployment *mdbv1.AtlasDeployment) error {
-	legacy := deployment.Spec.DeploymentSpec
+func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
+	legacy := deploymentSpec.DeploymentSpec
 
 	replicationSpecs, err := convertLegacyReplicationSpecs(legacy)
 	if err != nil {
 		return err
 	}
 
-	deployment.Spec.AdvancedDeploymentSpec = &mdbv1.AdvancedDeploymentSpec{
+	deploymentSpec.AdvancedDeploymentSpec = &mdbv1.AdvancedDeploymentSpec{
 		BackupEnabled:            legacy.ProviderBackupEnabled,
 		BiConnector:              legacy.BIConnector,
 		ClusterType:              getDefaultClusterType(legacy.ClusterType),
@@ -40,25 +40,61 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 		return nil, errors.New("ProviderSettings should not be empty")
 	}
 
-	regionConfig := &mdbv1.AdvancedRegionConfig{
-		AutoScaling: convertLegacyAutoScaling(legacy.AutoScaling),
-		ElectableSpecs: &mdbv1.Specs{
-			DiskIOPS:      legacy.ProviderSettings.DiskIOPS,
-			EbsVolumeType: legacy.ProviderSettings.VolumeType,
-			InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
-			NodeCount:     toptr.MakePtr(3),
-		},
-		BackingProviderName: legacy.ProviderSettings.BackingProviderName,
-		Priority:            toptr.MakePtr(7),
-		ProviderName:        string(legacy.ProviderSettings.ProviderName),
-		RegionName:          legacy.ProviderSettings.RegionName,
+	legacyReplicatonSpecs := legacy.ReplicationSpecs
+	if len(legacyReplicatonSpecs) == 0 {
+		legacyReplicatonSpecs = append(legacyReplicatonSpecs, mdbv1.ReplicationSpec{
+			NumShards: toptr.MakePtr[int64](1),
+			ZoneName:  "Zone 1",
+			RegionsConfig: map[string]mdbv1.RegionsConfig{
+				legacy.ProviderSettings.RegionName: {
+					AnalyticsNodes: toptr.MakePtr(int64(0)),
+					ElectableNodes: toptr.MakePtr(int64(3)),
+					ReadOnlyNodes:  toptr.MakePtr(int64(0)),
+					Priority:       toptr.MakePtr(int64(7)),
+				},
+			},
+		})
 	}
 
-	resplicationSpec := &mdbv1.AdvancedReplicationSpec{
-		RegionConfigs: []*mdbv1.AdvancedRegionConfig{regionConfig},
-	}
+	for _, legacyResplicationSpec := range legacyReplicatonSpecs {
+		resplicationSpec := &mdbv1.AdvancedReplicationSpec{
+			NumShards:     int(*legacyResplicationSpec.NumShards),
+			ZoneName:      legacyResplicationSpec.ZoneName,
+			RegionConfigs: []*mdbv1.AdvancedRegionConfig{},
+		}
 
-	result = append(result, resplicationSpec)
+		for legacyRegion, legacyRegionConfig := range legacyResplicationSpec.RegionsConfig {
+			regionConfig := mdbv1.AdvancedRegionConfig{
+				AnalyticsSpecs: &mdbv1.Specs{
+					DiskIOPS:      legacy.ProviderSettings.DiskIOPS,
+					EbsVolumeType: legacy.ProviderSettings.VolumeType,
+					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
+					NodeCount:     toptr.MakePtr(int(*legacyRegionConfig.AnalyticsNodes)),
+				},
+				ElectableSpecs: &mdbv1.Specs{
+					DiskIOPS:      legacy.ProviderSettings.DiskIOPS,
+					EbsVolumeType: legacy.ProviderSettings.VolumeType,
+					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
+					NodeCount:     toptr.MakePtr(int(*legacyRegionConfig.ElectableNodes)),
+				},
+				ReadOnlySpecs: &mdbv1.Specs{
+					DiskIOPS:      legacy.ProviderSettings.DiskIOPS,
+					EbsVolumeType: legacy.ProviderSettings.VolumeType,
+					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
+					NodeCount:     toptr.MakePtr(int(*legacyRegionConfig.ReadOnlyNodes)),
+				},
+				AutoScaling:         convertLegacyAutoScaling(legacy.AutoScaling),
+				BackingProviderName: legacy.ProviderSettings.BackingProviderName,
+				Priority:            toptr.MakePtr(int(*legacyRegionConfig.Priority)),
+				ProviderName:        string(legacy.ProviderSettings.ProviderName),
+				RegionName:          legacyRegion,
+			}
+
+			resplicationSpec.RegionConfigs = append(resplicationSpec.RegionConfigs, &regionConfig)
+		}
+
+		result = append(result, resplicationSpec)
+	}
 
 	return result, nil
 }

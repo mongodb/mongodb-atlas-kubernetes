@@ -182,7 +182,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 
 	if deployment.IsLegacyDeployment() {
-		if err := ConvertLegacyDeployment(deployment); err != nil {
+		if err := ConvertLegacyDeployment(&deployment.Spec); err != nil {
 			result = workflow.Terminate(workflow.Internal, err.Error())
 			log.Errorw("failed to convert legacy deployment", "error", err)
 			return result.ReconcileResult(), nil
