@@ -180,6 +180,7 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
 	}
 
+	g, taskContext = errgroup.WithContext(ctx)
 	toAdd := make([]string, 0, len(team.Spec.Usernames))
 	lock := sync.Mutex{}
 	for _, username := range team.Spec.Usernames {
