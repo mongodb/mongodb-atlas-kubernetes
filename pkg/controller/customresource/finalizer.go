@@ -4,6 +4,8 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
+const FinalizerLabel = "mongodbatlas/finalizer"
+
 func HaveFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) bool {
 	for _, f := range resource.GetFinalizers() {
 		if f == finalizer {

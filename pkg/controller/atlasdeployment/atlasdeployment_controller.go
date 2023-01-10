@@ -49,10 +49,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
-const (
-	finalizer = "mongodbatlas/finalizer"
-)
-
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
 type AtlasDeploymentReconciler struct {
 	watch.ResourceWatcher
@@ -148,13 +144,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	r.verifyNonTenantCase(deployment)
 
 	if deployment.GetDeletionTimestamp().IsZero() {
-		if !customresource.HaveFinalizer(deployment, finalizer) {
+		if !customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
 			err = r.Client.Get(context, kube.ObjectKeyFromObject(deployment), deployment)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				return result.ReconcileResult(), nil
 			}
-			customresource.SetFinalizer(deployment, finalizer)
+			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			if err = r.Client.Update(context, deployment); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to add finalizer", "error", err)
@@ -164,7 +160,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 
 	if !deployment.GetDeletionTimestamp().IsZero() {
-		if customresource.HaveFinalizer(deployment, finalizer) {
+		if customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
 			if customresource.ResourceShouldBeLeftInAtlas(deployment) {
 				log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
@@ -590,7 +586,7 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 		return fmt.Errorf("cannot get AtlasDeployment while adding finalizer: %w", err)
 	}
 
-	customresource.UnsetFinalizer(deployment, finalizer)
+	customresource.UnsetFinalizer(deployment, customresource.FinalizerLabel)
 	if err = r.Client.Update(context, deployment); err != nil {
 		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", deployment.GetDeploymentName(), err)
 	}

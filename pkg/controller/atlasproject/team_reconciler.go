@@ -22,8 +22,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-const finalizer = "mongodbatlas/finalizer"
-
 func (r *AtlasProjectReconciler) teamReconcile(
 	team *v1.AtlasTeam,
 	connection atlas.Connection,
@@ -31,7 +29,6 @@ func (r *AtlasProjectReconciler) teamReconcile(
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
 
-		// TODO(helderjs): Add finalizers to avoid delete assigned teams
 		result := customresource.PrepareResource(r.Client, req, team, log)
 		if !result.IsOk() {
 			return result.ReconcileResult(), nil
@@ -78,11 +75,11 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		if team.GetDeletionTimestamp().IsZero() {
 			if len(team.Status.Projects) > 0 {
-				log.Debugw("Adding deletion finalizer", "name", finalizer)
-				customresource.SetFinalizer(team, finalizer)
+				log.Debugw("Adding deletion finalizer", "name", customresource.FinalizerLabel)
+				customresource.SetFinalizer(team, customresource.FinalizerLabel)
 			} else {
-				log.Debugw("Removing deletion finalizer", "name", finalizer)
-				customresource.UnsetFinalizer(team, finalizer)
+				log.Debugw("Removing deletion finalizer", "name", customresource.FinalizerLabel)
+				customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
 			}
 
 			if err = r.Client.Update(ctx, team); err != nil {
@@ -93,7 +90,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		}
 
 		if !team.GetDeletionTimestamp().IsZero() {
-			if customresource.HaveFinalizer(team, finalizer) {
+			if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
 				log.Warnf("team %s is assigned to a project. Remove it from all projects before delete", team.Name)
 			} else if customresource.ResourceShouldBeLeftInAtlas(team) {
 				log.Infof("Not removing the Atlas Team from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)

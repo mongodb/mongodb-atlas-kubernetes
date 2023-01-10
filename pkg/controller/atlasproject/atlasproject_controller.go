@@ -181,8 +181,8 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, 
 	log := ctx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
-		if !customresource.HaveFinalizer(project, getFinalizerName()) {
-			log.Debugw("Add deletion finalizer", "name", getFinalizerName())
+		if !customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
+			log.Debugw("Add deletion finalizer", "name", customresource.FinalizerLabel)
 			if err := r.addDeletionFinalizer(context, project); err != nil {
 				return workflow.Terminate(workflow.Internal, err.Error())
 			}
@@ -190,7 +190,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, 
 	}
 
 	if !project.GetDeletionTimestamp().IsZero() {
-		if customresource.HaveFinalizer(project, getFinalizerName()) {
+		if customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
 			if customresource.ResourceShouldBeLeftInAtlas(project) {
 				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
@@ -334,7 +334,7 @@ func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *md
 	if err != nil {
 		return fmt.Errorf("failed to get project before adding deletion finalizer: %w", err)
 	}
-	customresource.SetFinalizer(p, getFinalizerName())
+	customresource.SetFinalizer(p, customresource.FinalizerLabel)
 	if err := r.Client.Update(ctx, p); err != nil {
 		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
 	}
@@ -346,15 +346,11 @@ func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p 
 	if err != nil {
 		return fmt.Errorf("failed to get project before removing deletion finalizer: %w", err)
 	}
-	customresource.UnsetFinalizer(p, getFinalizerName())
+	customresource.UnsetFinalizer(p, customresource.FinalizerLabel)
 	if err = r.Client.Update(ctx, p); err != nil {
 		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
 	}
 	return nil
-}
-
-func getFinalizerName() string {
-	return "mongodbatlas/finalizer"
 }
 
 // setCondition sets the condition from the result and logs the warnings
