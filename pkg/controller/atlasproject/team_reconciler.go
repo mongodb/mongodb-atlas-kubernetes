@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -28,11 +29,14 @@ func (r *AtlasProjectReconciler) teamReconcile(
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
 
-		// TODO(helderjs): Add finalizers to avoid delete assigned teams
-		// TODO(helderjs): Add skip reconciliation annotation
 		result := customresource.PrepareResource(r.Client, req, team, log)
 		if !result.IsOk() {
 			return result.ReconcileResult(), nil
+		}
+
+		if shouldSkip := customresource.ReconciliationShouldBeSkipped(team); shouldSkip {
+			log.Infow(fmt.Sprintf("-> Skipping AtlasTeam reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", team.Spec)
+			return workflow.OK().ReconcileResult(), nil
 		}
 
 		teamCtx, err := createTeamContextFromParent(team, r.Client, connection, r.AtlasDomain, log)
@@ -69,13 +73,35 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
+		if team.GetDeletionTimestamp().IsZero() {
+			if len(team.Status.Projects) > 0 {
+				log.Debugw("Adding deletion finalizer", "name", customresource.FinalizerLabel)
+				customresource.SetFinalizer(team, customresource.FinalizerLabel)
+			} else {
+				log.Debugw("Removing deletion finalizer", "name", customresource.FinalizerLabel)
+				customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
+			}
+
+			if err = r.Client.Update(ctx, team); err != nil {
+				result = workflow.Terminate(workflow.Internal, err.Error())
+				log.Errorw("Failed to update finalizer", "error", err)
+				return result.ReconcileResult(), nil
+			}
+		}
+
 		if !team.GetDeletionTimestamp().IsZero() {
-			log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-			_, err := teamCtx.Client.Projects.Delete(ctx, team.Status.ID)
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
-				log.Infow("team does not exist", "projectID", team.Status.ID)
-				return workflow.Terminate(workflow.TeamDoesNotExist, err.Error()).ReconcileResult(), nil
+			if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
+				log.Warnf("team %s is assigned to a project. Remove it from all projects before delete", team.Name)
+			} else if customresource.ResourceShouldBeLeftInAtlas(team) {
+				log.Infof("Not removing the Atlas Team from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+			} else {
+				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
+				_, err := teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx, teamCtx.Connection.OrgID, team.Status.ID)
+				var apiError *mongodbatlas.ErrorResponse
+				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+					log.Infow("team does not exist", "projectID", team.Status.ID)
+					return workflow.Terminate(workflow.TeamDoesNotExist, err.Error()).ReconcileResult(), nil
+				}
 			}
 		}
 
