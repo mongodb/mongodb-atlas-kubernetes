@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr comment ${{ github.event.pull_request.number }} --edit-last -R mongodb/mongodb-atlas-kubernetes -b "https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}"
-      - name: comment on PR
+      - name: comment PR
         if: github.event_name == 'pull_request' && steps.find-bot-comment.outputs.comment-id == ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

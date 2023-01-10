@@ -27,7 +27,6 @@ import (
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 const (
@@ -61,30 +60,14 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", testData.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(testData.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", testData.Resources.Namespace),
-					kubecli.GetManagerLogs(testData.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(testData.Resources)
-				actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)
-				actions.SaveK8sResources(
-					[]string{"deploy"},
-					testData.Resources.Namespace,
-				)
-			})
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Cloud", func() {
 			DeleteAllNetworkPeering(testData)
 		})
 		By("Delete Resources, Project with NetworkPeering", func() {
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 

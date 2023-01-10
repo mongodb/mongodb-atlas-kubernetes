@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -39,22 +38,7 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", testData.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(testData.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", testData.Resources.Namespace),
-					kubecli.GetManagerLogs(testData.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(testData.Resources)
-				actions.SaveK8sResources(
-					[]string{"deploy", "atlasprojects"},
-					testData.Resources.Namespace,
-				)
-			})
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Cloud", func() {
 			DeleteAllRoles(testData)
@@ -62,7 +46,7 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 
 		By("Delete Resources, Project with Encryption at rest", func() {
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 

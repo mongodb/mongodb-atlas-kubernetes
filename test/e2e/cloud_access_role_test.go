@@ -34,14 +34,14 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Roles", func() {
 			DeleteAllRoles(testData)
 		})
 		By("Delete Resources, Project with Cloud provider access roles", func() {
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 

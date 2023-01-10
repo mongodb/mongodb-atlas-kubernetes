@@ -30,29 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-// prepareNamespaceOperatorResources create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func prepareNamespaceOperatorResources(input model.UserInputs) {
-	fullPath := input.GetOperatorFolder()
-	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile(config.DefaultNamespacedCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultNamespacedOperatorConfig, filepath.Join(fullPath, "namespaced-config.yaml"))
-	data := []byte(
-		"namespace: " + input.Namespace + "\n" +
-			"resources:" + "\n" +
-			"- crds.yaml" + "\n" +
-			"- namespaced-config.yaml",
-	)
-	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
-}
-
-// CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func prepareWideOperatorResources(input model.UserInputs) {
-	fullPath := input.GetOperatorFolder()
-	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile(config.DefaultClusterWideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultClusterWideOperatorConfig, filepath.Join(fullPath, "clusterwide-config.yaml"))
-}
-
 // CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
 func prepareMultiNamespaceOperatorResources(input model.UserInputs, watchedNamespaces []string) {
 	fullPath := input.GetOperatorFolder()
@@ -92,14 +69,6 @@ func prepareMultiNamespaceOperatorResources(input model.UserInputs, watchedNames
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
-func NamespacedOperator(data *model.TestDataProvider) {
-	prepareNamespaceOperatorResources(data.Resources)
-	By("Deploy namespaced Operator\n", func() {
-		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
-		CheckOperatorRunning(data, data.Resources.Namespace)
-	})
-}
-
 func CheckOperatorRunning(data *model.TestDataProvider, namespace string) {
 	By("Check Operator is running", func() {
 		Eventually(
@@ -110,14 +79,6 @@ func CheckOperatorRunning(data *model.TestDataProvider, namespace string) {
 			},
 			"5m", "3s",
 		).Should(Equal("Running"), "The operator should successfully run")
-	})
-}
-
-func ClusterWideOperator(data *model.TestDataProvider) {
-	prepareWideOperatorResources(data.Resources)
-	By("Deploy clusterwide Operator \n", func() {
-		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
-		CheckOperatorRunning(data, config.DefaultOperatorNS)
 	})
 }
 

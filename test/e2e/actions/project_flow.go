@@ -3,6 +3,7 @@ package actions
 import (
 	"context"
 	"fmt"
+	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
@@ -31,12 +32,13 @@ func ProjectCreationFlow(userData *model.TestDataProvider) {
 
 func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Manager {
 	By(fmt.Sprintf("Create namespace %s", userData.Resources.Namespace))
-	Expect(kubecli.CreateNamespace(userData.Context, userData.K8SClient, userData.Resources.Namespace)).Should(Succeed())
-	kubecli.CreateDefaultSecret(userData.Context, userData.K8SClient, config.DefaultOperatorGlobalKey, userData.Resources.Namespace)
+	Expect(k8s.CreateNamespace(userData.Context, userData.K8SClient, userData.Resources.Namespace)).Should(Succeed())
+	k8s.CreateDefaultSecret(userData.Context, userData.K8SClient, config.DefaultOperatorGlobalKey, userData.Resources.Namespace)
 	if !userData.Resources.AtlasKeyAccessType.GlobalLevelKey {
 		CreateConnectionAtlasKey(userData)
 	}
-	mgr, err := kubecli.RunOperator(&kubecli.Config{
+	logPath := path.Join("output", userData.Resources.Namespace)
+	mgr, err := k8s.RunOperator(&k8s.Config{
 		Namespace: userData.Resources.Namespace,
 		WatchedNamespaces: map[string]bool{
 			userData.Resources.Namespace: true,
@@ -45,7 +47,7 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 			Namespace: userData.Resources.Namespace,
 			Name:      config.DefaultOperatorGlobalKey,
 		},
-		LogFileName: fmt.Sprintf("namespace-%s.log", userData.Resources.Namespace),
+		LogDir: logPath,
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return mgr

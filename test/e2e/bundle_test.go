@@ -42,6 +42,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 			}
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 

@@ -32,11 +32,10 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Delete Resources", func() {
-			actions.DeleteTestDataProject(testData)
-		})
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
 		func(test *model.TestDataProvider, certRef common.ResourceRefNamespaced) {

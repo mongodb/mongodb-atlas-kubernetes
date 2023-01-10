@@ -298,6 +298,24 @@ func ProjectListYaml(ctx context.Context, k8sClient client.Client, ns string) ([
 	return yaml.Marshal(projectList)
 }
 
+func UserListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	userList := &v1.AtlasDatabaseUserList{}
+	err := k8sClient.List(ctx, userList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(userList)
+}
+
+func TeamListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	teamList := &v1.AtlasTeamList{}
+	err := k8sClient.List(ctx, teamList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(teamList)
+}
+
 func DeploymentListYml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
 	deploymentList := &v1.AtlasDeploymentList{}
 	err := k8sClient.List(ctx, deploymentList, client.InNamespace(ns))

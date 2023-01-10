@@ -2,6 +2,9 @@ package k8s
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -39,10 +42,13 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 
 	ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 	config := mergeConfiguration(initCfg)
-	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder, config.LogFileName)
+	err := os.MkdirAll(config.LogDir, os.ModePerm)
 	if err != nil {
-		logger.Error("failed to initialize custom zap logger", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
+	}
+	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder, path.Join(config.LogDir, "operator.log"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize custom zap logger: %w", err)
 	}
 
 	logger.Info("starting with configuration", zap.Any("config", config))
@@ -157,7 +163,7 @@ type Config struct {
 	GlobalAPISecret      client.ObjectKey
 	LogLevel             string
 	LogEncoder           string
-	LogFileName          string
+	LogDir               string
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program

@@ -33,11 +33,13 @@ var _ = Describe("Teams", Label("teams"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveTeamsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Delete Resources", func() {
+			actions.DeleteTestDataTeams(testData)
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 

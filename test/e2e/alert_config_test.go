@@ -29,18 +29,11 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
-		//if CurrentSpecReport().Failed() {
-		//	TODO: add logic
-		//}
-		By("Stop manager if possible", func() {
-			if testData.ManagerContext != nil {
-				testData.ManagerContext.Done()
-			}
-		})
-		By("Delete Resources, Project with custom alert configurations", func() {
-			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
-		})
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
