@@ -73,17 +73,22 @@ type AtlasBackupSchedule struct {
 
 	Spec AtlasBackupScheduleSpec `json:"spec,omitempty"`
 
-	Status AtlasBackupScheduleStatus `json:"status,omitempty"`
+	Status status.BackupScheduleStatus `json:"status,omitempty"`
 }
 
 func (in *AtlasBackupSchedule) GetStatus() status.Status {
-	return nil
+	return in.Status
 }
 
-func (in *AtlasBackupSchedule) UpdateStatus(_ []status.Condition, _ ...status.Option) {
-}
+func (in *AtlasBackupSchedule) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	in.Status.Conditions = conditions
+	in.Status.ObservedGeneration = in.ObjectMeta.Generation
 
-type AtlasBackupScheduleStatus struct {
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasBackupScheduleStatusOption)
+		v(&in.Status)
+	}
 }
 
 //+kubebuilder:object:root=true

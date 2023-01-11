@@ -45,18 +45,23 @@ type AtlasBackupPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtlasBackupPolicySpec   `json:"spec,omitempty"`
-	Status AtlasBackupPolicyStatus `json:"status,omitempty"`
+	Spec   AtlasBackupPolicySpec     `json:"spec,omitempty"`
+	Status status.BackupPolicyStatus `json:"status,omitempty"`
 }
 
 func (in *AtlasBackupPolicy) GetStatus() status.Status {
-	return nil
+	return in.Status
 }
 
-func (in *AtlasBackupPolicy) UpdateStatus(_ []status.Condition, _ ...status.Option) {
-}
+func (in *AtlasBackupPolicy) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	in.Status.Conditions = conditions
+	in.Status.ObservedGeneration = in.ObjectMeta.Generation
 
-type AtlasBackupPolicyStatus struct {
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasBackupPolicyStatusOption)
+		v(&in.Status)
+	}
 }
 
 //+kubebuilder:object:root=true
