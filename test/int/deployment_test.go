@@ -1085,7 +1085,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						},
 					},
 				},
-				Status: mdbv1.AtlasBackupPolicyStatus{},
+				Status: status.BackupPolicyStatus{},
 			}
 
 			backupScheduleDefault := &mdbv1.AtlasBackupSchedule{
