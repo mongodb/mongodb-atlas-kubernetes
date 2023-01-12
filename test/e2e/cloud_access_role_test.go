@@ -54,7 +54,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 		Entry("Test[cloud-access-role-aws-1]: User has project which was updated with AWS custom role", Label("cloud-access-role-aws-1"),
 			model.DataProvider(
 				"cloud-access-role-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

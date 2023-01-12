@@ -66,7 +66,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 			model.DataProvider(
 				"privatelink-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -80,7 +80,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
 			model.DataProvider(
 				"privatelink-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -92,7 +92,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
 			model.DataProvider(
 				"privatelink-aws-2",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -110,7 +110,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("privatelink-aws-azure-2"),
 			model.DataProvider(
 				"privatelink-aws-azure",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -132,7 +132,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		Entry("Test[privatelink-gpc-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gpc-1"),
 			model.DataProvider(
 				"privatelink-gpc-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

@@ -46,7 +46,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("x509auth-basic"),
 			model.DataProvider(
 				"x509auth",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

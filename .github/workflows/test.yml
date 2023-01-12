@@ -38,10 +38,11 @@ jobs:
           body-includes: 'https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit'
       - name: edit comment if exists
         if:  github.event_name == 'pull_request' && steps.find-bot-comment.outputs.comment-id != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} --edit-last -R mongodb/mongodb-atlas-kubernetes -b "https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}"
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          edit-mode: replace
+          comment-id: ${{ steps.find-bot-comment.outputs.comment-id }}
+          body: https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}
       - name: comment PR
         if: github.event_name == 'pull_request' && steps.find-bot-comment.outputs.comment-id == ''
         env:

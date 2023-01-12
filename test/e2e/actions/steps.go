@@ -478,8 +478,10 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			By("Create secret in the data namespace")
 			k8s.CreateDefaultSecret(data.Context, data.K8SClient, config.DefaultOperatorGlobalKey, data.Resources.Namespace)
 		} else {
+			By("Create secret in the data prefix name")
 			k8s.CreateDefaultSecret(data.Context, data.K8SClient, data.Prefix, data.Resources.Namespace)
 		}
 	})
@@ -605,13 +607,15 @@ func DeleteTestDataProject(data *model.TestDataProvider) {
 		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)).Should(Succeed())
 		projectID := data.Project.Status.ID
 		Expect(data.K8SClient.Delete(data.Context, data.Project)).Should(Succeed())
-		Eventually(
-			func(g Gomega) bool {
-				aClient := atlas.GetClientOrFail()
-				return aClient.IsProjectExists(g, projectID)
-			},
-			"15m", "20s",
-		).Should(BeFalse(), "Project should be deleted from Atlas")
+		if projectID != "" {
+			Eventually(
+				func(g Gomega) bool {
+					aClient := atlas.GetClientOrFail()
+					return aClient.IsProjectExists(g, projectID)
+				},
+				"15m", "20s",
+			).Should(BeFalse(), "Project should be deleted from Atlas")
+		}
 	})
 }
 

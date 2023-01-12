@@ -222,7 +222,15 @@ func CreateSecret(ctx context.Context, k8sClient client.Client, publicKey, priva
 		},
 		StringData: map[string]string{"orgId": os.Getenv("MCLI_ORG_ID"), "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
-	return k8sClient.Create(ctx, &connectionSecret)
+	err := k8sClient.Create(ctx, &connectionSecret)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("error creating secret: %w", err)
+	}
+	err = k8sClient.Update(ctx, &connectionSecret)
+	if err != nil {
+		return fmt.Errorf("error updating existing secret: %w", err)
+	}
+	return nil
 }
 
 func DeleteKey(ctx context.Context, k8sClient client.Client, keyName, ns string) error {

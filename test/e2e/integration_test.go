@@ -57,7 +57,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 		Entry("Users can use integration section", Label("project-integration"),
 			model.DataProvider(
 				"operator-integration-cr",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30018,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

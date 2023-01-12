@@ -45,7 +45,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 		Entry("Test[alert-configs-1]: Project with 2 identical alert configs", Label("alert-configs-1"),
 			model.DataProvider(
 				"alert-configs-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -97,7 +97,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 		Entry("Test[alert-configs-2]: Project with 2 different alert configs", Label("alert-configs-2"),
 			model.DataProvider(
 				"alert-configs-2",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

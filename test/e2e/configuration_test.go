@@ -44,7 +44,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
 			model.DataProvider(
 				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -56,7 +56,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db", "long-run"),
 			model.DataProvider(
 				"operator-ns-prodlike",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30001,
 				[]func(*model.TestDataProvider){
 					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec(), 0),
@@ -73,7 +73,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
 			model.DataProvider(
 				"operator-ns-multiregion-aws",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30003,
 				[]func(*model.TestDataProvider){
 					actions.SuspendDeployment,
@@ -88,7 +88,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
 			model.DataProvider(
 				"operator-multiregion-azure",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30012,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -100,7 +100,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
 			model.DataProvider(
 				"operator-multiregion-gcp",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30013,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -125,7 +125,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Trial - Global connection", Label("ns-global-key"),
 			model.DataProvider(
 				"operator-ns-trial-global",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30011,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -139,7 +139,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Free - Users can use M0, default key", Label("ns-m0"),
 			model.DataProvider(
 				"operator-ns-free",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30016,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -151,7 +151,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
 			model.DataProvider(
 				"operator-ns-free",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30017,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,

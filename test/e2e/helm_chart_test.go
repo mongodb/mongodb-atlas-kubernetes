@@ -95,7 +95,7 @@ var _ = Describe("HELM charts", func() {
 			model.DataProviderWithResources(
 				"helm-ns",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -117,7 +117,7 @@ var _ = Describe("HELM charts", func() {
 			model.DataProviderWithResources(
 				"helm-advanced",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_advanced_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -135,7 +135,7 @@ var _ = Describe("HELM charts", func() {
 			model.DataProviderWithResources(
 				"helm-advanced-multiregion",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_advanced_multi_region_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -153,7 +153,7 @@ var _ = Describe("HELM charts", func() {
 			model.DataProviderWithResources(
 				"helm-serverless",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_serverless.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -175,7 +175,7 @@ var _ = Describe("HELM charts", func() {
 				data = model.DataProviderWithResources(
 					"helm-wide",
 					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 					[]string{"data/atlasdeployment_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{
@@ -208,7 +208,7 @@ var _ = Describe("HELM charts", func() {
 				data = model.DataProviderWithResources(
 					"helm-upgrade",
 					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 					[]string{"data/atlasdeployment_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{

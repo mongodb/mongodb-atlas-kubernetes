@@ -81,7 +81,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-1"),
 			model.DataProvider(
 				"networkpeering-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -99,7 +99,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-2"),
 			model.DataProvider(
 				"networkpeering-aws-2",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -117,7 +117,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-3"),
 			model.DataProvider(
 				"networkpeering-aws-3",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -141,7 +141,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-gcp-1"),
 			model.DataProvider(
 				"networkpeering-gcp-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -160,7 +160,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-azure-1"),
 			model.DataProvider(
 				"networkpeering-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

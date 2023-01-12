@@ -44,7 +44,7 @@ func (a *AtlasKeyType) GetRole() []AtlasRoles {
 	return a.Roles
 }
 
-func (a *AtlasKeyType) UseDefaulFullAccess() *AtlasKeyType {
+func (a *AtlasKeyType) UseDefaultFullAccess() *AtlasKeyType {
 	a.DefaultFullAccessKey = true
 	return a
 }

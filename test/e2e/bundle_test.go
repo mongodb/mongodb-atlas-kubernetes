@@ -50,7 +50,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		By("User creates configuration for a new Project and Deployment", func() {
 			testData = model.DataProvider(
 				"bundle-wide",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30005,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).

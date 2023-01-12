@@ -45,7 +45,7 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 		Entry("Test[project-settings]: User has project to which Project Settings was added", Label("project-settings"),
 			model.DataProvider(
 				"project-settings",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

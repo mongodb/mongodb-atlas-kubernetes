@@ -51,7 +51,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 		Entry("Test[gc-regular-deployment]: Deployment with global config", Label("gc-regular-deployment"),
 			model.DataProvider(
 				"gc-regular-deployment",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateRegularGeoshardedDeployment("gc-regular-deployment")),
@@ -72,7 +72,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 		Entry("Test[gc-advanced-deployment]: Advanced", Label("gc-advanced-deployment"),
 			model.DataProvider(
 				"gc-advanced-deployment",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedGeoshardedDeployment("gc-advanced-deployment")),

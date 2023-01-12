@@ -59,7 +59,7 @@ var _ = Describe("UserLogin", Label("encryption-at-rest"), func() {
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
 			model.DataProvider(
 				"encryption-at-rest-aws",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

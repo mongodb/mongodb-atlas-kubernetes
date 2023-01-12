@@ -39,7 +39,7 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 		Entry("Simple configuration with keep resource policy annotation on deployment", Label("ns-crd"),
 			model.DataProvider(
 				"operator-ns-crd",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){
 					actions.DeleteDeploymentCRWithKeepAnnotation,

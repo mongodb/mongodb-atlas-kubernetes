@@ -53,7 +53,7 @@ var _ = Describe("Teams", Label("teams"), func() {
 		Entry("Test[teams-1]: User has project to which a team was added",
 			model.DataProvider(
 				"teams-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

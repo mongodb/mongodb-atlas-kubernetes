@@ -47,7 +47,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 		Entry("Test[custom-roles-1]: User has project to which custom roles where added",
 			model.DataProvider(
 				"custom-roles-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

@@ -45,7 +45,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 		Entry("Test[auditing]: User has project to which Auditing was added", Label("auditing"),
 			model.DataProvider(
 				"auditing",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
