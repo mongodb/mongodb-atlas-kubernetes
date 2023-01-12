@@ -191,7 +191,7 @@ func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKey
 }
 
 func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleCloudKms) {
-	if project.Spec.EncryptionAtRest != nil {
+	if project.Spec.EncryptionAtRest == nil {
 		return
 	}
 
