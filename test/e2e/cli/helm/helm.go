@@ -56,6 +56,7 @@ func Install(args ...string) {
 	args = append([]string{"install"}, args...)
 	session := cli.Execute("helm", args...)
 	msg := cli.GetSessionExitMsg(session)
+	By("HELM. Install release:" + string(msg.Contents()))
 	ExpectWithOffset(1, msg).Should(SatisfyAny(Say("STATUS: deployed"), Say("already exists"), BeEmpty()),
 		"HELM. Can't install release. Message: "+string(msg.Contents()),
 	)
@@ -68,24 +69,15 @@ func Upgrade(args ...string) {
 	EventuallyWithOffset(1, session.Wait()).Should(Say("STATUS: deployed"), "HELM. Can't upgrade release")
 }
 
-func InstallTestApplication(input model.UserInputs, user model.DBUser, port string) {
+func InstallTestApplication(input model.UserInputs, user model.DBUser) {
+	By("HELM. Install test application")
 	Install(
 		"test-app-"+user.Spec.Username,
 		config.TestAppHelmChartPath,
 		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Deployments[0].Spec.GetDeploymentName(), user.Spec.Username),
-		"--set-string", fmt.Sprintf("nodePort=%s", port),
+		"--set-string", fmt.Sprintf("port=%s", "3000"),
+		"--set-string", fmt.Sprintf("targetPort=%s", "3001"),
 		"-n", input.Namespace,
-	)
-}
-
-func RestartTestApplication(input model.UserInputs, user model.DBUser, port string) {
-	Upgrade(
-		"test-app-"+user.Spec.Username,
-		config.TestAppHelmChartPath,
-		"--set-string", fmt.Sprintf("connectionSecret=%s-%s-%s", input.Project.GetProjectName(), input.Deployments[0].Spec.GetDeploymentName(), user.Spec.Username),
-		"--set-string", fmt.Sprintf("nodePort=%s", port),
-		"-n", input.Namespace,
-		"--recreate-pods",
 	)
 }
 

@@ -22,7 +22,7 @@ spec:
             name: {{ .Values.connectionSecret }}
         env:
           - name: "PORT"
-            value: {{ quote .Values.nodePort }}
+            value: {{ quote .Values.port }}
 ---
 apiVersion: v1
 kind: Service
@@ -31,11 +31,10 @@ metadata:
   labels:
     app: {{ .Release.Name }}
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: {{ .Release.Name }}
   ports:
     - protocol: TCP
-      port: {{ .Values.nodePort }}
-      targetPort: {{ .Values.nodePort }}
-      nodePort: {{ .Values.nodePort }}
+      port: {{ .Values.port }}
+      targetPort: {{ .Values.targetPort }}

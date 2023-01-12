@@ -3,7 +3,6 @@ package actions
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
@@ -31,6 +30,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
+
+const appPort = "3000"
 
 func WaitDeployment(data *model.TestDataProvider, generation int) {
 	input := data.Resources
@@ -395,13 +396,13 @@ func CheckUsersAttributes(data *model.TestDataProvider) {
 
 func CheckUsersCanUseApp(data *model.TestDataProvider) {
 	input := data.Resources
-	for i, user := range data.Resources.Users { // TODO in parallel(?)/ingress
+	for _, user := range data.Resources.Users { // TODO in parallel(?)/ingress
 		// data
-		port := strconv.Itoa(i + data.PortGroup)
+		port := appPort
 		key := port
 		postData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 
-		helm.InstallTestApplication(input, user, port)
+		helm.InstallTestApplication(input, user)
 		WaitTestApplication(data, input.Namespace, "app", "test-app-"+user.Spec.Username)
 
 		app := appclient.NewTestAppClient(port)
@@ -413,9 +414,9 @@ func CheckUsersCanUseApp(data *model.TestDataProvider) {
 
 func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 	input := data.Resources
-	for i, user := range data.Resources.Users {
+	for _, user := range data.Resources.Users {
 		// data
-		port := strconv.Itoa(i + data.PortGroup)
+		port := appPort
 		key := port
 		expectedData := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 

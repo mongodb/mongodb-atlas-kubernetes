@@ -31,13 +31,17 @@ var (
 )
 
 func main() {
+	log.Println("Starting server")
 	r := newRouter()
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = portDefault
 	}
-	fmt.Print("Using port: " + port)
-	http.ListenAndServe(fmt.Sprintf(":%s", port), r)
+	log.Println("Using port: " + port)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func newRouter() *mux.Router {

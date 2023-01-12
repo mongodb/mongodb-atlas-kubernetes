@@ -2,4 +2,5 @@
 name: test-app-user1
 connectionSecret: new-brand
 image: mongodbinternal/test-app:latest
-nodePort: "30000"
+targetPort: "3000"
+port: "80"
