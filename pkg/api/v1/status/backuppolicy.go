@@ -1,5 +1,7 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/collection"
+
 // +k8s:deepcopy-gen=false
 
 // AtlasBackupPolicyStatusOption is the option that is applied to AtlasBackupPolicy Status
@@ -7,7 +9,7 @@ type AtlasBackupPolicyStatusOption func(s *BackupPolicyStatus)
 
 func AtlasBackupPolicySetScheduleID(ID string) AtlasBackupPolicyStatusOption {
 	return func(s *BackupPolicyStatus) {
-		IDs := copyListWithSkip(s.BackupScheduleIDs, ID)
+		IDs := collection.CopyWithSkip(s.BackupScheduleIDs, ID)
 		IDs = append(IDs, ID)
 
 		s.BackupScheduleIDs = IDs
@@ -16,7 +18,7 @@ func AtlasBackupPolicySetScheduleID(ID string) AtlasBackupPolicyStatusOption {
 
 func AtlasBackupPolicyUnsetScheduleID(ID string) AtlasBackupPolicyStatusOption {
 	return func(s *BackupPolicyStatus) {
-		s.BackupScheduleIDs = copyListWithSkip(s.BackupScheduleIDs, ID)
+		s.BackupScheduleIDs = collection.CopyWithSkip(s.BackupScheduleIDs, ID)
 	}
 }
 

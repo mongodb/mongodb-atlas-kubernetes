@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
