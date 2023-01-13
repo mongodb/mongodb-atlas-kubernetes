@@ -30,7 +30,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	enabled bool,
 	requestNamespacedName client.ObjectKey,
 ) error {
-	if backupScheduleRef.Name == "" && backupScheduleRef.Namespace == "" {
+	if backupScheduleRef.Name == "" || backupScheduleRef.Namespace == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
 		err := r.garbageCollectBackupResource(ctx, clusterName)
@@ -86,6 +86,11 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 
 	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(clusterName))
 
+	if err = r.Client.Status().Update(ctx, bSchedule); err != nil {
+		r.Log.Errorw("Failed to update BackupSchedule status", "error", err)
+		return nil, err
+	}
+
 	if bSchedule.GetDeletionTimestamp().IsZero() {
 		if len(bSchedule.Status.DeploymentIDs) > 0 {
 			r.Log.Debugw("Adding deletion finalizer", "name", customresource.FinalizerLabel)
@@ -101,7 +106,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	}
 
 	if err = r.Client.Update(ctx, bSchedule); err != nil {
-		r.Log.Errorw("Failed to update backup schedule object", "error", err)
+		r.Log.Errorw("Failed to update BackupSchedule object", "error", err)
 		return nil, err
 	}
 
@@ -130,6 +135,11 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 	}
 
 	bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicySetScheduleID(bPolicyRef.String()))
+
+	if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
+		r.Log.Errorw("Failed to update BackupPolicy status", "error", err)
+		return nil, err
+	}
 
 	if bPolicy.GetDeletionTimestamp().IsZero() {
 		if len(bPolicy.Status.BackupScheduleIDs) > 0 {
