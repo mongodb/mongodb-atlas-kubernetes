@@ -19,56 +19,88 @@ import (
 )
 
 func TestMergedAdvancedDeployment(t *testing.T) {
-	defaultAtlas := v1.DefaultAwsAdvancedDeployment("default", "my-project")
-	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
-	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
-	defaultAtlas.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &v1.Specs{
-		InstanceSize: "M5",
-	}
+	defaultAtlas := makeDefaultAtlasSpec()
+	atlasRegionConfig := defaultAtlas.ReplicationSpecs[0].RegionConfigs[0]
+	fillInSpecs(atlasRegionConfig, "M10", "AWS")
 
 	t.Run("Test merging clusters removes backing provider name if empty", func(t *testing.T) {
-		advancedCluster := mongodbatlas.AdvancedCluster{
-			ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-				{
-					NumShards: 1,
-					ID:        "123",
-					ZoneName:  "Zone1",
-					RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-						{
-							RegionName:          "US_EAST_1",
-							BackingProviderName: "",
-						},
-					},
-				},
-			},
-		}
+		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
 
-		merged, _, err := MergedAdvancedDeployment(advancedCluster, *defaultAtlas.Spec.AdvancedDeploymentSpec)
+		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
 		assert.Empty(t, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
 
 	t.Run("Test merging clusters does not remove backing provider name if it is present in the atlas type", func(t *testing.T) {
-		advancedCluster := mongodbatlas.AdvancedCluster{
-			ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-				{
-					NumShards: 1,
-					ID:        "123",
-					ZoneName:  "Zone1",
-					RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-						{
-							RegionName:          "US_EAST_1",
-							BackingProviderName: "AWS",
+		atlasRegionConfig.ElectableSpecs.InstanceSize = "M5"
+		atlasRegionConfig.ProviderName = "TENANT"
+		atlasRegionConfig.BackingProviderName = "AWS"
+
+		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M5"
+		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
+		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
+
+		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		assert.NoError(t, err)
+		assert.Equal(t, atlasRegionConfig.BackingProviderName, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
+	})
+}
+
+func TestAdvancedDeploymentsEqual(t *testing.T) {
+	defaultAtlas := makeDefaultAtlasSpec()
+	regionConfig := defaultAtlas.ReplicationSpecs[0].RegionConfigs[0]
+	fillInSpecs(regionConfig, "M10", "AWS")
+
+	t.Run("Test ", func(t *testing.T) {
+		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+
+		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		assert.NoError(t, err)
+
+		logger, _ := zap.NewProduction()
+		areEqual := AdvancedDeploymentsEqual(logger.Sugar(), merged, atlas)
+		assert.True(t, areEqual, "Deploymnts should be equal")
+	})
+}
+
+func makeDefaultAtlasSpec() *mongodbatlas.AdvancedCluster {
+	return &mongodbatlas.AdvancedCluster{
+		ClusterType: "REPLICASET",
+		Name:        "test-deployment-advanced",
+		ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+			{
+				NumShards: 1,
+				ID:        "123",
+				ZoneName:  "Zone1",
+				RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mongodbatlas.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
 						},
+						Priority:     toptr.MakePtr(7),
+						ProviderName: "AWS",
+						RegionName:   "US_EAST_1",
 					},
 				},
 			},
-		}
+		},
+	}
+}
 
-		merged, _, err := MergedAdvancedDeployment(advancedCluster, *defaultAtlas.Spec.AdvancedDeploymentSpec)
-		assert.NoError(t, err)
-		assert.Equal(t, "AWS", merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
-	})
+func fillInSpecs(regionConfig *mongodbatlas.AdvancedRegionConfig, instanceSize string, provider string) {
+	regionConfig.ProviderName = provider
+
+	regionConfig.ElectableSpecs.InstanceSize = instanceSize
+	regionConfig.AnalyticsSpecs = &mongodbatlas.Specs{
+		InstanceSize: instanceSize,
+		NodeCount:    toptr.MakePtr(0),
+	}
+	regionConfig.ReadOnlySpecs = &mongodbatlas.Specs{
+		InstanceSize: instanceSize,
+		NodeCount:    toptr.MakePtr(0),
+	}
 }
 
 func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {

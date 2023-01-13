@@ -310,7 +310,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
-					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 1*time.Minute, 5*time.Second).Should(BeTrue())
+					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 2*time.Minute, 5*time.Second).Should(BeTrue())
 
 					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
 					time.Sleep(1 * time.Minute)

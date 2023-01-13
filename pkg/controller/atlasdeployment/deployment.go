@@ -30,11 +30,17 @@ func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		ReplicationSpecs:         replicationSpecs,
 	}
 
+	deploymentSpec.DeploymentSpec = nil
+
 	return nil
 }
 
 func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.AdvancedReplicationSpec, error) {
 	result := []*mdbv1.AdvancedReplicationSpec{}
+
+	if legacy == nil {
+		return result, nil
+	}
 
 	if legacy.ProviderSettings == nil {
 		return nil, errors.New("ProviderSettings should not be empty")

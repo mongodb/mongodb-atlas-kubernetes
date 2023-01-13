@@ -98,9 +98,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas manually to let project get removed
-				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
+				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
 				createdDeployment = nil
 			})
 		}
@@ -125,6 +125,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	doDeploymentStatusChecks := func() {
 		By("Checking observed Deployment state", func() {
+			err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
 			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -206,7 +209,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	checkAdvancedDeploymentOptions := func(specOptions *mdbv1.ProcessArgs) {
 		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
-			atlasOptions, _, err := atlasClient.Clusters.GetProcessArgs(context.Background(), createdProject.Status.ID, createdDeployment.Spec.DeploymentSpec.Name)
+			atlasOptions, _, err := atlasClient.Clusters.GetProcessArgs(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(specOptions.IsEqual(atlasOptions)).To(BeTrue())
@@ -748,11 +751,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Removing Atlas Deployment "+createdDeployment.Name, func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
-				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
 			})
 
 			By("Checking that Secrets got removed", func() {
-				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdDeployment.Spec.DeploymentSpec.Name, createdDBUser.Spec.Username))}
+				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdDeployment.GetDeploymentName(), createdDBUser.Spec.Username))}
 				createdDeployment = nil // prevent cleanup from failing due to deployment already deleted
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
@@ -775,7 +778,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Deleting the deployment - stays in Atlas", func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
 				time.Sleep(5 * time.Minute)
-				Expect(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.Spec.DeploymentSpec.Name)()).Should(BeFalse())
+				Expect(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName())()).Should(BeFalse())
 				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
 			})
 		})
@@ -1102,7 +1105,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				// Do not use Gomega function here like func(g Gomega) as it seems to hang when tests run in parallel
 				Eventually(
 					func() error {
-						deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
+						deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
 						if err != nil {
 							return err
 						}
@@ -1114,7 +1117,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Not(HaveOccurred()))
 
 				Eventually(func() error {
-					actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
+					actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
 					if err != nil {
 						return err
 					}

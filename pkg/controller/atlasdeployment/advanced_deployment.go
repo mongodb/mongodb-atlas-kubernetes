@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 const FreeTier = "M0"
@@ -267,6 +268,8 @@ func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool
 
 func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {
 	result := mdbv1.AdvancedDeploymentSpec{}
+
+	convertDiskSizeField(&result, &advancedDeployment)
 	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
 		return result, err
 	}
@@ -274,8 +277,16 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 	return result, nil
 }
 
+func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
+	if atlas.DiskSizeGB != nil {
+		value := int(*atlas.DiskSizeGB)
+		result.DiskSizeGB = toptr.MakePtr(value)
+		atlas.DiskSizeGB = nil
+	}
+}
+
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) bool {
 	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)

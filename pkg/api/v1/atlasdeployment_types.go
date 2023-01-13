@@ -641,7 +641,7 @@ func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, provid
 }
 
 func (c *AtlasDeployment) WithName(name string) *AtlasDeployment {
-	c.Spec.DeploymentSpec.Name = name
+	c.Name = name
 	return c
 }
 

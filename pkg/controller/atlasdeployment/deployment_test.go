@@ -1,7 +1,6 @@
 package atlasdeployment
 
 import (
-	"encoding/json"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,11 +19,6 @@ func TestConvertLegacyDeployment(t *testing.T) {
 	t.Run("Legacy Deployment can be converted", func(t *testing.T) {
 		err := ConvertLegacyDeployment(&deployment.Spec)
 		assert.NoError(t, err)
-
-		result, err := json.MarshalIndent(deployment, "", "  ")
-		assert.NoError(t, err)
-
-		t.Log(string(result))
 	})
 
 	deploymentMultiregion := CreateDeploymentWithMultiregion("deplyment-multiregion-name", provider.ProviderAWS)
@@ -32,11 +26,6 @@ func TestConvertLegacyDeployment(t *testing.T) {
 	t.Run("Legacy Multiregion Deployment can be converted", func(t *testing.T) {
 		err := ConvertLegacyDeployment(&deploymentMultiregion.Spec)
 		assert.NoError(t, err)
-
-		result, err := json.MarshalIndent(deploymentMultiregion, "", "  ")
-		assert.NoError(t, err)
-
-		t.Log(string(result))
 	})
 }
 
