@@ -366,19 +366,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 	Describe("Two projects watching the Connection Secret", func() {
 		var secondProject *mdbv1.AtlasProject
-		AfterEach(func() {
-			if secondProject != nil && secondProject.Status.ID != "" {
-				By("Removing (second) Atlas Project " + secondProject.Status.ID)
-				Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
-				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
-			}
-		})
 		It("Should Succeed", func() {
 			By("Creating two projects first", func() {
 				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second Project")
+				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(func() bool {
@@ -414,6 +407,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Eventually(func() bool {
 					return testutil.CheckCondition(k8sClient, secondProject, status.TrueCondition(status.ReadyType))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+			})
+			By("Removing (second) Atlas Project "+secondProject.Status.ID, func() {
+				if secondProject != nil && secondProject.Status.ID != "" {
+					Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
+					Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
+				}
 			})
 		})
 	})
