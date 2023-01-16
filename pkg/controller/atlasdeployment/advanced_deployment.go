@@ -83,10 +83,14 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
+	ctx.Log.Debugw("Deployments BEFORE Merging", "from Atlas", atlasDeploymentAsAtlas, "from the Spec", deployment.Spec.AdvancedDeploymentSpec)
+
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
+
+	ctx.Log.Debugw("Deployments AFTER Merging", "atlasDeployment", atlasDeployment, "specDeployment", specDeployment)
 
 	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()

@@ -11,6 +11,10 @@ import (
 func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 	legacy := deploymentSpec.DeploymentSpec
 
+	if legacy == nil {
+		return nil
+	}
+
 	replicationSpecs, err := convertLegacyReplicationSpecs(legacy)
 	if err != nil {
 		return err
@@ -29,8 +33,6 @@ func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		PitEnabled:               legacy.PitEnabled,
 		ReplicationSpecs:         replicationSpecs,
 	}
-
-	deploymentSpec.DeploymentSpec = nil
 
 	return nil
 }

@@ -175,11 +175,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
+			specDeployment := createdDeployment.Spec.AdvancedDeploymentSpec
 			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, specDeployment)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *specDeployment)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)).To(BeTrue())
@@ -191,7 +191,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	}
 
 	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
-		By("Verifying Deployment state in Atlas", func() {
+		By("Verifying Advanced Deployment state in Atlas", func() {
 			specDeployment := *createdDeployment.Spec.AdvancedDeploymentSpec
 			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
 			Expect(err).ToNot(HaveOccurred())
