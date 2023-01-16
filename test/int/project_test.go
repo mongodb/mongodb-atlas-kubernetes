@@ -371,7 +371,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
+				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithAtlasName("second-project")
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(func() bool {
