@@ -1,13 +1,7 @@
 package e2e_test
 
 import (
-	"fmt"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,9 +10,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 var _ = Describe("Configuration namespaced. Deploy deployment", Label("deployment-ns"), func() {
@@ -33,25 +26,14 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operatorDecribe.txt", testData.Resources.Namespace),
-				[]byte(kubecli.DescribeOperatorPod(testData.Resources.Namespace)),
-			)
-			utils.SaveToFile(
-				fmt.Sprintf("output/%s/operator-logs.txt", testData.Resources.Namespace),
-				kubecli.GetManagerLogs(testData.Resources.Namespace),
-			)
-			actions.SaveTestAppLogs(testData.Resources)
-			actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)
-			actions.SaveK8sResources(
-				[]string{"deploy", "atlasdeployments", "atlasdatabaseusers"},
-				testData.Resources.Namespace,
-			)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
-			actions.DeleteTestDataDeployments(testData)
-			actions.DeleteTestDataProject(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveUsersToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
+
+		actions.DeleteTestDataDeployments(testData)
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
@@ -62,7 +44,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Trial - Simplest configuration with no backup and one Admin User", Label("ns-trial"),
 			model.DataProvider(
 				"operator-ns-trial",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -74,7 +56,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Almost Production - Backup and 2 DB users: one Admin and one read-only", Label("ns-backup2db", "long-run"),
 			model.DataProvider(
 				"operator-ns-prodlike",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30001,
 				[]func(*model.TestDataProvider){
 					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec(), 0),
@@ -91,7 +73,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion AWS, Backup and 2 DBUsers", Label("ns-multiregion-aws-2"),
 			model.DataProvider(
 				"operator-ns-multiregion-aws",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30003,
 				[]func(*model.TestDataProvider){
 					actions.SuspendDeployment,
@@ -106,7 +88,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion Azure, Backup and 1 DBUser", Label("ns-multiregion-azure-1"),
 			model.DataProvider(
 				"operator-multiregion-azure",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30012,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -118,7 +100,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Multiregion GCP, Backup and 1 DBUser", Label("ns-multiregion-gcp-1"),
 			model.DataProvider(
 				"operator-multiregion-gcp",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30013,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -143,7 +125,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Trial - Global connection", Label("ns-global-key"),
 			model.DataProvider(
 				"operator-ns-trial-global",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30011,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -157,7 +139,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Free - Users can use M0, default key", Label("ns-m0"),
 			model.DataProvider(
 				"operator-ns-free",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30016,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -169,7 +151,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
 			model.DataProvider(
 				"operator-ns-free",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess().CreateAsGlobalLevelKey(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
 				30017,
 				[]func(*model.TestDataProvider){
 					actions.DeleteFirstUser,
@@ -182,15 +164,14 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 })
 
 func mainCycle(testData *model.TestDataProvider) {
-	actions.PrepareUsersConfigurations(testData)
-	deploy.NamespacedOperator(testData) // TODO: how to deploy operator by code?
-	Expect(k8s.CreateNamespace(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+	mgr := actions.PrepareOperatorConfigurations(testData)
+	ctx := context.Background()
+	go func(ctx context.Context) {
+		err := mgr.Start(ctx)
+		Expect(err).NotTo(HaveOccurred())
+	}(ctx)
 
 	By("Deploy User Resouces", func() {
-		k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, testData.Resources.Namespace)
-		if !testData.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			actions.CreateConnectionAtlasKey(testData)
-		}
 		deploy.CreateProject(testData)
 		deploy.CreateInitialDeployments(testData)
 		deploy.CreateUsers(testData)
@@ -200,10 +181,5 @@ func mainCycle(testData *model.TestDataProvider) {
 		for _, check := range testData.Actions {
 			check(testData)
 		}
-	})
-	By("Delete User Resources", func() {
-		deploy.DeleteInitialDeployments(testData)
-		deploy.DeleteProject(testData)
-		deploy.DeleteUsers(testData)
 	})
 }

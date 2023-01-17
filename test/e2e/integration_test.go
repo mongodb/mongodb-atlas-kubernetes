@@ -42,10 +42,10 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		actions.DeleteTestDataProject(testData)
-		actions.DeleteGlobalKeyIfExist(*testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
@@ -57,7 +57,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 		Entry("Users can use integration section", Label("project-integration"),
 			model.DataProvider(
 				"operator-integration-cr",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30018,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

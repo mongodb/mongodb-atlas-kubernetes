@@ -10,13 +10,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 )
 
-// DescribeOperatorPod performs "kubectl describe" to get Operator pod information
-func DescribeOperatorPod(ns string) string {
-	session := cli.Execute("kubectl", "describe", "pods", "-l", "app.kubernetes.io/instance=mongodb-atlas-kubernetes-operator", "-n", ns)
-	cli.SessionShouldExit(session)
-	return string(session.Out.Contents())
-}
-
 func GetVersionOutput() *Buffer {
 	session := cli.Execute("kubectl", "version")
 	return session.Wait().Out

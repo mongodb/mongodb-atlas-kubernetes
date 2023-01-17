@@ -82,7 +82,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 			NortonData = model.DataProviderWithResources(
 				"norton-wide",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_backup.yaml"},
 				[]string{},
 				[]model.DBUser{
@@ -97,7 +97,7 @@ var _ = Describe("Users (Norton and Nimnul) can work with one Deployment wide op
 			NimnulData = model.DataProviderWithResources(
 				"nimnul-wide",
 				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				[]string{"data/atlasdeployment_basic.yaml"},
 				[]string{},
 				[]model.DBUser{

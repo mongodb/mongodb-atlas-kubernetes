@@ -37,15 +37,16 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Cloud", func() {
 			DeleteSPE(testData)
 		})
-		By("Delete Resources, Project with PEService", func() {
+		By("Delete Resources", func() {
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 
@@ -58,7 +59,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE", Label("spe-aws-1"),
 			model.DataProvider(
 				"spe-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest1", "AWS", "US_EAST_1")),
@@ -71,7 +72,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		Entry("Test[spe-azure-1]: Serverless deployment with one Azure PE", Label("spe-azure-1"),
 			model.DataProvider(
 				"spe-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
@@ -84,7 +85,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		Entry("Test[spe-azure-2]: Serverless deployment with one valid and one non-valid Azure PEs", Label("spe-azure-2"),
 			model.DataProvider(
 				"spe-azure-2",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),

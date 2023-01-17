@@ -30,11 +30,11 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Delete Resources", func() {
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 
@@ -47,7 +47,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 		Entry("Test[custom-roles-1]: User has project to which custom roles where added",
 			model.DataProvider(
 				"custom-roles-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

@@ -177,7 +177,7 @@ jobs:
           echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
-        uses: helm/kind-action@v1.4.0
+        uses: helm/kind-action@v1.5.0
         with:
           version: v0.11.1
           config: test/e2e/config/kind.yaml
@@ -193,6 +193,10 @@ jobs:
           wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
+      - name: Install CRDs if needed
+        if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'bundle-test' ) }}
+        run: |
+          kubectl apply -f deploy/crds
       - name: Run e2e test
         env:
           MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
@@ -221,17 +225,26 @@ jobs:
         run: |
           helm version
           go version
-
+          
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1 && \
           go install github.com/onsi/gomega/...
+          
+          cd test/e2e
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
           [[ $TEST_NAME == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$TEST_NAME"' && !long-run && !broken' && \
-          echo 'Running: ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/' && \
-          ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 -v test/e2e/
+          echo 'Running: ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 --cover --v' && \
+          ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 --cover --v --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/pkg/...
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
           name: logs
           path: test/e2e/output/**
+      - name: Upload test results to codecov.io
+        if: ${{ success() }}
+        uses: codecov/codecov-action@v3
+        with:
+          files: test/e2e/coverprofile.out
+          name: ${{ matrix.test }}
+          verbose: true

@@ -27,7 +27,6 @@ import (
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
 const (
@@ -61,30 +60,14 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			By("Save logs to output directory ", func() {
-				GinkgoWriter.Write([]byte("Test has been failed. Trying to save logs...\n"))
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operatorDecribe.txt", testData.Resources.Namespace),
-					[]byte(kubecli.DescribeOperatorPod(testData.Resources.Namespace)),
-				)
-				utils.SaveToFile(
-					fmt.Sprintf("output/%s/operator-logs.txt", testData.Resources.Namespace),
-					kubecli.GetManagerLogs(testData.Resources.Namespace),
-				)
-				actions.SaveTestAppLogs(testData.Resources)
-				actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)
-				actions.SaveK8sResources(
-					[]string{"deploy"},
-					testData.Resources.Namespace,
-				)
-			})
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Cloud", func() {
 			DeleteAllNetworkPeering(testData)
 		})
 		By("Delete Resources, Project with NetworkPeering", func() {
 			actions.DeleteTestDataProject(testData)
-			actions.DeleteGlobalKeyIfExist(*testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		})
 	})
 
@@ -98,7 +81,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-1"),
 			model.DataProvider(
 				"networkpeering-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -116,7 +99,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-2"),
 			model.DataProvider(
 				"networkpeering-aws-2",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -134,7 +117,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-aws-3"),
 			model.DataProvider(
 				"networkpeering-aws-3",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -158,7 +141,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-gcp-1"),
 			model.DataProvider(
 				"networkpeering-gcp-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
@@ -177,7 +160,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 			Label("network-peering-azure-1"),
 			model.DataProvider(
 				"networkpeering-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

@@ -222,7 +222,15 @@ func CreateSecret(ctx context.Context, k8sClient client.Client, publicKey, priva
 		},
 		StringData: map[string]string{"orgId": os.Getenv("MCLI_ORG_ID"), "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
-	return k8sClient.Create(ctx, &connectionSecret)
+	err := k8sClient.Create(ctx, &connectionSecret)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("error creating secret: %w", err)
+	}
+	err = k8sClient.Update(ctx, &connectionSecret)
+	if err != nil {
+		return fmt.Errorf("error updating existing secret: %w", err)
+	}
+	return nil
 }
 
 func DeleteKey(ctx context.Context, k8sClient client.Client, keyName, ns string) error {
@@ -296,6 +304,24 @@ func ProjectListYaml(ctx context.Context, k8sClient client.Client, ns string) ([
 		return nil, err
 	}
 	return yaml.Marshal(projectList)
+}
+
+func UserListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	userList := &v1.AtlasDatabaseUserList{}
+	err := k8sClient.List(ctx, userList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(userList)
+}
+
+func TeamListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
+	teamList := &v1.AtlasTeamList{}
+	err := k8sClient.List(ctx, teamList, client.InNamespace(ns))
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Marshal(teamList)
 }
 
 func DeploymentListYml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {

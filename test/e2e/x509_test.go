@@ -32,11 +32,10 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		if CurrentSpecReport().Failed() {
-			SaveDump(testData)
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Delete Resources", func() {
-			actions.DeleteTestDataProject(testData)
-		})
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
 		func(test *model.TestDataProvider, certRef common.ResourceRefNamespaced) {
@@ -47,7 +46,7 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("x509auth-basic"),
 			model.DataProvider(
 				"x509auth",
-				model.NewEmptyAtlasKeyType().UseDefaulFullAccess(),
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),

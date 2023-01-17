@@ -2,169 +2,46 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kustomize"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-// prepareNamespaceOperatorResources create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func prepareNamespaceOperatorResources(input model.UserInputs) {
-	fullPath := input.GetOperatorFolder()
-	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile(config.DefaultNamespacedCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultNamespacedOperatorConfig, filepath.Join(fullPath, "namespaced-config.yaml"))
-	data := []byte(
-		"namespace: " + input.Namespace + "\n" +
-			"resources:" + "\n" +
-			"- crds.yaml" + "\n" +
-			"- namespaced-config.yaml",
-	)
-	utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), data)
-}
-
-// CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func prepareWideOperatorResources(input model.UserInputs) {
-	fullPath := input.GetOperatorFolder()
-	os.Mkdir(fullPath, os.ModePerm)
-	utils.CopyFile(config.DefaultClusterWideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultClusterWideOperatorConfig, filepath.Join(fullPath, "clusterwide-config.yaml"))
-}
-
-// CopyKustomizeNamespaceOperator create copy of `/deploy/namespaced` folder with kustomization file for overriding namespace
-func prepareMultiNamespaceOperatorResources(input model.UserInputs, watchedNamespaces []string) {
-	fullPath := input.GetOperatorFolder()
-	err := os.Mkdir(fullPath, os.ModePerm)
-	Expect(err).ShouldNot(HaveOccurred())
-	utils.CopyFile(config.DefaultClusterWideCRDConfig, filepath.Join(fullPath, "crds.yaml"))
-	utils.CopyFile(config.DefaultClusterWideOperatorConfig, filepath.Join(fullPath, "multinamespace-config.yaml"))
-	namespaces := strings.Join(watchedNamespaces, ",")
-	patchWatch := []byte(
-		"apiVersion: apps/v1\n" +
-			"kind: Deployment\n" +
-			"metadata:\n" +
-			"  name: mongodb-atlas-operator\n" +
-			"spec:\n" +
-			"  template:\n" +
-			"    spec:\n" +
-			"      containers:\n" +
-			"      - name: manager\n" +
-			"        env:\n" +
-			"        - name: WATCH_NAMESPACE\n" +
-			"          value: \"" + namespaces + "\"",
-	)
-	err = utils.SaveToFile(filepath.Join(fullPath, "patch.yaml"), patchWatch)
-	Expect(err).ShouldNot(HaveOccurred())
-	kustomization := []byte(
-		"resources:\n" +
-			"- multinamespace-config.yaml\n" +
-			"patches:\n" +
-			"- path: patch.yaml\n" +
-			"  target:\n" +
-			"    group: apps\n" +
-			"    version: v1\n" +
-			"    kind: Deployment\n" +
-			"    name: mongodb-atlas-operator",
-	)
-	err = utils.SaveToFile(filepath.Join(fullPath, "kustomization.yaml"), kustomization)
-	Expect(err).ShouldNot(HaveOccurred())
-}
-
-func NamespacedOperator(data *model.TestDataProvider) {
-	prepareNamespaceOperatorResources(data.Resources)
-	By("Deploy namespaced Operator\n", func() {
-		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
-		CheckOperatorRunning(data, data.Resources.Namespace)
-	})
-}
-
-func CheckOperatorRunning(data *model.TestDataProvider, namespace string) {
-	By("Check Operator is running", func() {
-		Eventually(
-			func(g Gomega) string {
-				status, err := k8s.GetPodStatus(data.Context, data.K8SClient, namespace)
-				g.Expect(err).ShouldNot(HaveOccurred())
-				return status
-			},
-			"5m", "3s",
-		).Should(Equal("Running"), "The operator should successfully run")
-	})
-}
-
-func ClusterWideOperator(data *model.TestDataProvider) {
-	prepareWideOperatorResources(data.Resources)
-	By("Deploy clusterwide Operator \n", func() {
-		kubecli.Apply("-k", data.Resources.GetOperatorFolder())
-		CheckOperatorRunning(data, config.DefaultOperatorNS)
-	})
-}
-
 func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []string) {
-	prepareMultiNamespaceOperatorResources(data.Resources, watchNamespace)
 	By("Deploy multinamespaced Operator \n", func() {
-		kustomOperatorPath := data.Resources.GetOperatorFolder() + "/final.yaml"
-		utils.SaveToFile(kustomOperatorPath, kustomize.Build(data.Resources.GetOperatorFolder()))
-		kubecli.Apply(kustomOperatorPath)
-		CheckOperatorRunning(data, config.DefaultOperatorNS)
-	})
-}
-
-func DeleteProject(testData *model.TestDataProvider) {
-	By("Delete Project", func() {
-		projectId := testData.Project.Status.ID
-		Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed(), "Get project failed")
-		Expect(testData.K8SClient.Delete(testData.Context, testData.Project)).Should(Succeed(), "Delete project failed")
-		aClient := atlas.GetClientOrFail()
-		Eventually(func(g Gomega) bool {
-			return aClient.IsProjectExists(g, projectId)
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Project was not deleted in Atlas")
-	})
-}
-
-func DeleteUsers(testData *model.TestDataProvider) {
-	By("Delete Users", func() {
-		for _, user := range testData.Users {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, user)).Should(Succeed(), "Get user failed")
-			Expect(testData.K8SClient.Delete(testData.Context, user)).Should(Succeed(), "Delete user failed")
+		watchNamespaceMap := make(map[string]bool, len(watchNamespace))
+		for _, ns := range watchNamespace {
+			watchNamespaceMap[ns] = true
 		}
-	})
-}
-
-func DeleteInitialDeployments(testData *model.TestDataProvider) {
-	By("Delete initial deployments", func() {
-		for _, deployment := range testData.InitialDeployments {
-			projectId := testData.Project.Status.ID
-			deploymentName := deployment.Spec.DeploymentSpec.Name
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: deployment.Name,
-				Namespace: testData.Resources.Namespace}, deployment)).Should(Succeed(), "Get deployment failed")
-			Expect(testData.K8SClient.Delete(testData.Context, deployment)).Should(Succeed(), "Deployment %s was not deleted", deployment.Name)
-			aClient := atlas.GetClientOrFail()
-			Eventually(func() bool {
-				return aClient.IsDeploymentExist(projectId, deploymentName)
-			}).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeFalse(), "Deployment should be deleted in Atlas")
-		}
+		mgr, err := k8s.RunOperator(&k8s.Config{
+			Namespace: config.DefaultOperatorNS,
+			GlobalAPISecret: client.ObjectKey{
+				Namespace: config.DefaultOperatorNS,
+				Name:      config.DefaultOperatorGlobalKey,
+			},
+			WatchedNamespaces: watchNamespaceMap,
+			LogDir:            "logs",
+		})
+		Expect(err).Should(Succeed())
+		ctx := context.Background()
+		go func(ctx context.Context) {
+			err = mgr.Start(ctx)
+			Expect(err).Should(Succeed(), "Operator should be started")
+		}(ctx)
+		data.ManagerContext = ctx
 	})
 }
 
@@ -175,8 +52,11 @@ func CreateProject(testData *model.TestDataProvider) {
 	By(fmt.Sprintf("Deploy Project %s", testData.Project.GetName()), func() {
 		err := testData.K8SClient.Create(testData.Context, testData.Project)
 		Expect(err).ShouldNot(HaveOccurred(), "Project %s was not created", testData.Project.GetName())
-		Eventually(kube.ProjectReadyCondition(testData)).WithTimeout(5*time.Minute).WithPolling(20*time.Second).
-			Should(Not(Equal("False")), "Project %s should be ready", testData.Project.GetName())
+		Eventually(func(g Gomega) {
+			condition, _ := k8s.GetProjectStatusCondition(testData.Context, testData.K8SClient, status.ReadyType,
+				testData.Resources.Namespace, testData.Project.GetName())
+			g.Expect(condition).Should(Equal("True"))
+		}).Should(Succeed(), "Project %s was not created", testData.Project.GetName())
 	})
 	By(fmt.Sprintf("Wait for Project %s", testData.Project.GetName()), func() {
 		Eventually(func() bool {

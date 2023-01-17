@@ -294,7 +294,20 @@ func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string)
 	return nil
 }
 
-func SaveDeploymentToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+func SaveTeamsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	yaml, err := k8s.TeamListYaml(ctx, k8sClient, ns)
+	if err != nil {
+		return fmt.Errorf("error getting team list: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "teams")
+	err = utils.SaveToFile(path, yaml)
+	if err != nil {
+		return fmt.Errorf("error saving teams to file: %w", err)
+	}
+	return nil
+}
+
+func SaveDeploymentsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
 	yaml, err := k8s.DeploymentListYml(ctx, k8sClient, ns)
 	if err != nil {
 		return fmt.Errorf("error getting deployment list: %w", err)
@@ -303,6 +316,19 @@ func SaveDeploymentToFile(ctx context.Context, k8sClient client.Client, ns strin
 	err = utils.SaveToFile(path, yaml)
 	if err != nil {
 		return fmt.Errorf("error saving deployments to file: %w", err)
+	}
+	return nil
+}
+
+func SaveUsersToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	yaml, err := k8s.UserListYaml(ctx, k8sClient, ns)
+	if err != nil {
+		return fmt.Errorf("error getting user list: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "users")
+	err = utils.SaveToFile(path, yaml)
+	if err != nil {
+		return fmt.Errorf("error saving users to file: %w", err)
 	}
 	return nil
 }
@@ -318,22 +344,6 @@ func SaveTestAppLogs(input model.UserInputs) {
 			kubecli.GetLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
 		)
 	}
-}
-
-// SaveOperatorLogs save logs from user input namespace
-func SaveOperatorLogs(input model.UserInputs) {
-	utils.SaveToFile(
-		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
-		kubecli.GetManagerLogs(input.Namespace),
-	)
-}
-
-// SaveDefaultOperatorLogs save logs from default namespace
-func SaveDefaultOperatorLogs(input model.UserInputs) {
-	utils.SaveToFile(
-		fmt.Sprintf("output/%s/operator-logs.txt", input.Namespace),
-		kubecli.GetManagerLogs("default"),
-	)
 }
 
 func SaveDeploymentDump(input model.UserInputs) {
@@ -468,8 +478,10 @@ func PrepareUsersConfigurations(data *model.TestDataProvider) {
 func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	By("Change resources depends on AtlasKey and create key", func() {
 		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
+			By("Create secret in the data namespace")
 			k8s.CreateDefaultSecret(data.Context, data.K8SClient, config.DefaultOperatorGlobalKey, data.Resources.Namespace)
 		} else {
+			By("Create secret in the data prefix name")
 			k8s.CreateDefaultSecret(data.Context, data.K8SClient, data.Prefix, data.Resources.Namespace)
 		}
 	})
@@ -595,13 +607,25 @@ func DeleteTestDataProject(data *model.TestDataProvider) {
 		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)).Should(Succeed())
 		projectID := data.Project.Status.ID
 		Expect(data.K8SClient.Delete(data.Context, data.Project)).Should(Succeed())
-		Eventually(
-			func(g Gomega) bool {
-				aClient := atlas.GetClientOrFail()
-				return aClient.IsProjectExists(g, projectID)
-			},
-			"15m", "20s",
-		).Should(BeFalse(), "Project should be deleted from Atlas")
+		if projectID != "" {
+			Eventually(
+				func(g Gomega) bool {
+					aClient := atlas.GetClientOrFail()
+					return aClient.IsProjectExists(g, projectID)
+				},
+				"15m", "20s",
+			).Should(BeFalse(), "Project should be deleted from Atlas")
+		}
+	})
+}
+
+func DeleteTestDataTeams(data *model.TestDataProvider) {
+	By("Delete teams", func() {
+		teams := &v1.AtlasTeamList{}
+		Expect(data.K8SClient.List(data.Context, teams, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
+		for i := range teams.Items {
+			Expect(data.K8SClient.Delete(data.Context, &teams.Items[i])).Should(Succeed())
+		}
 	})
 }
 
@@ -624,23 +648,26 @@ func DeleteTestDataDeployments(data *model.TestDataProvider) {
 	})
 }
 
-func DeleteGlobalKeyIfExist(data model.TestDataProvider) {
+func DeleteAtlasGlobalKeyIfExist(data model.TestDataProvider) {
 	if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
 		By("Delete Global API key for test", func() {
 			client, err := atlas.AClient()
 			Expect(err).ShouldNot(HaveOccurred())
-			err = client.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
-			Expect(err).ShouldNot(HaveOccurred())
+			if data.Resources.AtlasKeyAccessType.GlobalKeyAttached != nil {
+				err = client.DeleteGlobalKey(*data.Resources.AtlasKeyAccessType.GlobalKeyAttached)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
 		})
 	}
 }
 
 func AfterEachFinalCleanup(datas []model.TestDataProvider) {
-	for _, data := range datas {
+	for i := range datas {
+		data := datas[i]
 		GinkgoWriter.Write([]byte("AfterEach. Final cleanup...\n"))
 		DeleteDBUsersApps(data)
+		DeleteAtlasGlobalKeyIfExist(data)
 		Expect(k8s.DeleteNamespace(data.Context, data.K8SClient, data.Resources.Namespace)).Should(Succeed(), "Can't delete namespace")
-		DeleteGlobalKeyIfExist(data)
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }
