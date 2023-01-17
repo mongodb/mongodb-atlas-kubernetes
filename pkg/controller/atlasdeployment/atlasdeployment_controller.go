@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -248,107 +247,6 @@ func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.At
 	return r.handleRegularDeployment
 }
 
-func (r *AtlasDeploymentReconciler) handleDeploymentBackupSchedule(ctx *workflow.Context, deployment *mdbv1.AtlasDeployment, projectID, cName string, backupEnabled bool, req ctrl.Request) error {
-	if deployment.Spec.BackupScheduleRef.Name == "" && deployment.Spec.BackupScheduleRef.Namespace == "" {
-		r.Log.Debug("no backup schedule configured for the deployment")
-		return nil
-	}
-
-	if !backupEnabled {
-		return fmt.Errorf("can not proceed with backup schedule. Backups are not enabled for deployment %v", deployment.GetDeploymentName())
-	}
-
-	resourcesToWatch := []watch.WatchedObject{}
-
-	requestContext := context.Background()
-	// Process backup schedule
-	bSchedule := &mdbv1.AtlasBackupSchedule{}
-	bKey := types.NamespacedName{Namespace: deployment.Spec.BackupScheduleRef.Namespace, Name: deployment.Spec.BackupScheduleRef.Name}
-	err := r.Client.Get(requestContext, bKey, bSchedule)
-	if err != nil {
-		return fmt.Errorf("%v backupschedule resource is not found. e: %w", deployment.Spec.BackupScheduleRef, err)
-	}
-
-	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, bSchedule, r.Log)
-	if !resourceVersionIsValid.IsOk() {
-		errText := fmt.Sprintf("backup schedule validation result: %v", resourceVersionIsValid)
-		r.Log.Debug(errText)
-		return errors.New(errText)
-	}
-
-	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: bKey})
-
-	// Process backup policy for the schedule
-	bPolicy := &mdbv1.AtlasBackupPolicy{}
-	pKey := types.NamespacedName{Namespace: bSchedule.Spec.PolicyRef.Namespace, Name: bSchedule.Spec.PolicyRef.Name}
-	err = r.Client.Get(requestContext, pKey, bPolicy)
-	if err != nil {
-		return fmt.Errorf("unable to get backuppolicy resource %s/%s. e: %w", bSchedule.Spec.PolicyRef.Namespace, bSchedule.Spec.PolicyRef.Name, err)
-	}
-
-	resourceVersionIsValid = customresource.ValidateResourceVersion(ctx, bPolicy, r.Log)
-	if !resourceVersionIsValid.IsOk() {
-		errText := fmt.Sprintf("backup policy validation result: %v", resourceVersionIsValid)
-		r.Log.Debug(errText)
-		return errors.New(errText)
-	}
-
-	resourcesToWatch = append(resourcesToWatch, watch.WatchedObject{ResourceKind: bPolicy.Kind, Resource: pKey})
-
-	// Create new backup schedule
-	r.Log.Infof("updating backupschedule for the atlas deployment: %v", cName)
-	apiScheduleRes := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-		ClusterName:           cName,
-		ReferenceHourOfDay:    &bSchedule.Spec.ReferenceHourOfDay,
-		ReferenceMinuteOfHour: &bSchedule.Spec.ReferenceMinuteOfHour,
-		RestoreWindowDays:     &bSchedule.Spec.RestoreWindowDays,
-		UpdateSnapshots:       &bSchedule.Spec.UpdateSnapshots,
-		Policies:              nil,
-	}
-
-	// No matter what happens we should add watchers to both schedule and policy
-	defer func() {
-		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, r.Log, resourcesToWatch...)
-		r.Log.Debugf("watched backup schedule resources: %v\r\n", r.WatchedResources)
-	}()
-
-	apiPolicy := mongodbatlas.Policy{}
-
-	for _, bpItem := range bPolicy.Spec.Items {
-		apiPolicy.PolicyItems = append(apiPolicy.PolicyItems, mongodbatlas.PolicyItem{
-			FrequencyInterval: bpItem.FrequencyInterval,
-			FrequencyType:     strings.ToLower(bpItem.FrequencyType),
-			RetentionValue:    bpItem.RetentionValue,
-			RetentionUnit:     strings.ToLower(bpItem.RetentionUnit),
-		})
-	}
-	apiScheduleRes.Policies = []mongodbatlas.Policy{apiPolicy}
-
-	currentSchedule, response, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Delete(requestContext, projectID, cName)
-	if err != nil {
-		errMessage := "unable to delete current backup policy for project"
-		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, cName, err)
-		return fmt.Errorf("%s: %s:%s, %w", errMessage, projectID, cName, err)
-	}
-
-	if currentSchedule == nil && response != nil {
-		return fmt.Errorf("can't delete сurrent backupschedule. response status: %s", response.Status)
-	}
-
-	r.Log.Debugf("successfully deleted backup policy. Default schedule received: %v", currentSchedule)
-
-	apiScheduleRes.ClusterID = currentSchedule.ClusterID
-	// There is only one policy, always
-	apiScheduleRes.Policies[0].ID = currentSchedule.Policies[0].ID
-
-	r.Log.Debugf("applying backupschedule policy: %v", *apiScheduleRes)
-	if _, _, err := ctx.Client.CloudProviderSnapshotBackupPolicies.Update(requestContext, projectID, cName, apiScheduleRes); err != nil {
-		return fmt.Errorf("unable to create backupschedule %v. e: %w", bKey, err)
-	}
-	r.Log.Infof("successfully updated backupschedule for deployment %v", cName)
-	return nil
-}
-
 // handleAdvancedDeployment ensures the state of the deployment using the Advanced Deployment API
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureAdvancedDeploymentState(ctx, project, deployment)
@@ -365,7 +263,14 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		backupEnabled = *c.BackupEnabled
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), c.Name, backupEnabled, req); err != nil {
+	if err := r.ensureBackupScheduleAndPolicy(
+		context.Background(),
+		ctx, project.ID(),
+		c.Name,
+		*deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace),
+		backupEnabled,
+		req.NamespacedName,
+	); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
@@ -410,11 +315,20 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		backupEnabled = *atlasDeployment.BackupEnabled
 	}
 
-	if err := r.handleDeploymentBackupSchedule(ctx, deployment, project.ID(), atlasDeployment.Name, providerBackupEnabled || backupEnabled, req); err != nil {
+	if err := r.ensureBackupScheduleAndPolicy(
+		context.Background(),
+		ctx,
+		project.ID(),
+		atlasDeployment.Name,
+		*deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace),
+		providerBackupEnabled || backupEnabled,
+		req.NamespacedName,
+	); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
 	}
+
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, deployment, result, atlasDeployment)
 }
 
