@@ -147,6 +147,8 @@ type DeploymentSpec struct {
 	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
+	// +optional
+	AtlasSearch []AtlasSearch `json:"atlasSearch,omitempty"`
 }
 
 type AdvancedDeploymentSpec struct {
@@ -172,6 +174,8 @@ type AdvancedDeploymentSpec struct {
 	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
+	// +optional
+	AtlasSearch []SearchIndex `json:"atlasSearch,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.

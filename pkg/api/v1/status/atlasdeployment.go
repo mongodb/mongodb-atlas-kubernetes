@@ -26,6 +26,8 @@ type AtlasDeploymentStatus struct {
 
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 
+	AtlasSearch []AtlasSearch `json:"atlasSearch,omitempty"`
+
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`

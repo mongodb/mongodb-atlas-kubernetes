@@ -41,6 +41,53 @@ spec:
                 description: Configuration for the advanced (v1.5) deployment API
                   https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
                 properties:
+                  atlasSearch:
+                    items:
+                      properties:
+                        analyzer:
+                          description: The analyzer to use for indexing the collection
+                            data
+                          enum:
+                          - lucene.standard
+                          - lucene.simple
+                          - lucene.whitespace
+                          - lucene.keyword
+                          type: string
+                        mappings:
+                          description: Object containing index specifications for
+                            the collection fields
+                          properties:
+                            dynamic:
+                              description: Flag indicating whether the index uses
+                                dynamic or static mappings
+                              type: boolean
+                            fields:
+                              additionalProperties:
+                                items:
+                                  type: object
+                                type: array
+                              description: Map containing one or more field specifications.
+                              type: object
+                          required:
+                          - dynamic
+                          type: object
+                        name:
+                          description: The name of the index
+                          type: string
+                        searchAnalyzer:
+                          description: The analyzer to use for query the collection
+                            data
+                          enum:
+                          - lucene.standard
+                          - lucene.simple
+                          - lucene.whitespace
+                          - lucene.keyword
+                          type: string
+                      required:
+                      - mappings
+                      - name
+                      type: object
+                    type: array
                   backupEnabled:
                     type: boolean
                   biConnector:
@@ -249,6 +296,79 @@ spec:
               deploymentSpec:
                 description: Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
                 properties:
+                  atlasSearch:
+                    items:
+                      properties:
+                        collections:
+                          description: List of collection with index of the database
+                          items:
+                            properties:
+                              collectionName:
+                                description: The name of the collection the indexes
+                                  are on
+                                type: string
+                              indexes:
+                                description: List of indexes for the collection
+                                items:
+                                  properties:
+                                    analyzer:
+                                      description: The analyzer to use for indexing
+                                        the collection data
+                                      enum:
+                                      - lucene.standard
+                                      - lucene.simple
+                                      - lucene.whitespace
+                                      - lucene.keyword
+                                      type: string
+                                    mappings:
+                                      description: Object containing index specifications
+                                        for the collection fields
+                                      properties:
+                                        dynamic:
+                                          description: Flag indicating whether the
+                                            index uses dynamic or static mappings
+                                          type: boolean
+                                        fields:
+                                          additionalProperties:
+                                            items:
+                                              type: object
+                                            type: array
+                                          description: Map containing one or more
+                                            field specifications.
+                                          type: object
+                                      required:
+                                      - dynamic
+                                      type: object
+                                    name:
+                                      description: The name of the index
+                                      type: string
+                                    searchAnalyzer:
+                                      description: The analyzer to use for query the
+                                        collection data
+                                      enum:
+                                      - lucene.standard
+                                      - lucene.simple
+                                      - lucene.whitespace
+                                      - lucene.keyword
+                                      type: string
+                                  required:
+                                  - mappings
+                                  - name
+                                  type: object
+                                type: array
+                            required:
+                            - collectionName
+                            - indexes
+                            type: object
+                          type: array
+                        database:
+                          description: The name of the database the collection
+                          type: string
+                      required:
+                      - collections
+                      - database
+                      type: object
+                    type: array
                   autoScaling:
                     description: Collection of settings that configures auto-scaling
                       information for the deployment. If you specify the autoScaling
@@ -754,6 +874,29 @@ spec:
           status:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
+              atlasSearch:
+                items:
+                  properties:
+                    collectionName:
+                      type: string
+                    database:
+                      type: string
+                    error:
+                      type: string
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    status:
+                      type: string
+                  required:
+                  - collectionName
+                  - database
+                  - id
+                  - name
+                  - status
+                  type: object
+                type: array
               conditions:
                 description: Conditions is the list of statuses showing the current
                   state of the Atlas Custom Resource
