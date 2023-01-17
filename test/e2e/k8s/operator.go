@@ -181,7 +181,7 @@ func mergeConfiguration(initCfg *Config) *Config {
 		config.ProbeAddr = ":0"
 	}
 	if config.LogLevel == "" {
-		config.LogLevel = "info"
+		config.LogLevel = "debug"
 	}
 	if config.LogEncoder == "" {
 		config.LogEncoder = "json"
