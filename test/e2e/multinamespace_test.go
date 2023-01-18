@@ -5,14 +5,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
@@ -22,10 +20,6 @@ import (
 var _ = Describe("Users can use clusterwide configuration with limitation to watch only particular namespaces", Label("multinamespaced"), func() {
 	var listData []*model.TestDataProvider
 	var watchedNamespace []string
-
-	_ = BeforeEach(func() {
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-	})
 
 	_ = AfterEach(func() {
 		By("AfterEach. clean-up", func() {

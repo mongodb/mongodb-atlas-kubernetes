@@ -4,25 +4,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
@@ -31,7 +23,6 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 	var key string
 
 	BeforeEach(func() {
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		key = os.Getenv("DATADOG_KEY")
 		Expect(key).ShouldNot(BeEmpty())
 	})

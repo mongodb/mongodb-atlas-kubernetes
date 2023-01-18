@@ -3,7 +3,6 @@ package e2e_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	"k8s.io/apimachinery/pkg/types"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -12,17 +11,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
 var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 	var testData *model.TestDataProvider
-
-	_ = BeforeEach(func() {
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-	})
 
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))

@@ -6,15 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
+	corev1 "k8s.io/api/core/v1"
 
-	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -25,7 +23,6 @@ var _ = Describe("HELM charts", func() {
 	_ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP IMAGE_URL")
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 
 	_ = AfterEach(func() {
@@ -36,27 +33,28 @@ var _ = Describe("HELM charts", func() {
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
+				bytes, err := k8s.GetPodLogsByDeployment("mongodb-atlas-operator", config.DefaultOperatorNS, corev1.PodLogOptions{})
+				if err != nil {
+					GinkgoWriter.Write([]byte(err.Error()))
+				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs-default.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(config.DefaultOperatorNS),
+					bytes,
 				)
+				bytes, err = k8s.GetPodLogsByDeployment("mongodb-atlas-operator", data.Resources.Namespace, corev1.PodLogOptions{})
+				if err != nil {
+					GinkgoWriter.Write([]byte(err.Error()))
+				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),
-					kubecli.GetManagerLogs(data.Resources.Namespace),
-				)
-				actions.SaveK8sResourcesTo(
-					[]string{"deploy"},
-					"default",
-					data.Resources.Namespace,
+					bytes,
 				)
 				actions.SaveProjectsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
-				actions.SaveK8sResources(
-					[]string{"atlasdeployments", "atlasdatabaseusers"},
-					data.Resources.Namespace,
-				)
+				actions.SaveDeploymentsToFile(data.Context, data.K8SClient, data.Resources.Namespace)
+				actions.SaveUsersToFile(data.Context, data.K8SClient, data.Resources.Namespace)
 				actions.SaveTestAppLogs(data.Resources)
-				actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 			}
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{data})
 		})
 	})
 

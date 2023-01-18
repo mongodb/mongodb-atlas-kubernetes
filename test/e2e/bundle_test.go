@@ -6,14 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	actions "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
@@ -27,18 +25,12 @@ var _ = Describe("User can deploy operator from bundles", func() {
 	_ = BeforeEach(func() {
 		imageURL = os.Getenv("BUNDLE_IMAGE")
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 	})
 	_ = AfterEach(func() {
 		By("After each.", func() {
 			if CurrentSpecReport().Failed() {
-				actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)
 				Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-				actions.SaveK8sResources(
-					[]string{"atlasdeployments", "atlasdatabaseusers"},
-					testData.Resources.Namespace,
-				)
-				actions.SaveDeploymentDump(testData.Resources)
+				Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 			}
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
