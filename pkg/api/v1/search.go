@@ -9,9 +9,16 @@ import (
 )
 
 type AtlasSearch struct {
-	// The name of the database the collection
+	// List of databases with indexes
+	Databases []AtlasSearchDatabase `json:"databases"`
+	// List of custom-analyzers
+	CustomAnalyzers []CustomAnalyzer `json:"customAnalyzers,omitempty"`
+}
+
+type AtlasSearchDatabase struct {
+	// The name of the database the indexes are in
 	Database string `json:"database"`
-	// List of collection with index of the database
+	// List of collection with indexes
 	// +kubebuilder:validation:MinItems:1
 	Collections []AtlasSearchCollection `json:"collections"`
 }
@@ -46,6 +53,26 @@ type IndexMapping struct {
 	Dynamic bool `json:"dynamic"`
 	// Map containing one or more field specifications.
 	Fields map[string][]unstructured.Unstructured `json:"fields,omitempty"`
+}
+
+type CustomAnalyzer struct {
+	// Name of the custom-analyzer
+	Name string `json:"name"`
+	// Analyzer on which the custom-analyzer is based
+	// +kubebuilder:validation:Enum=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword
+	BaseAnalyzer string `json:"baseAnalyzer"`
+	// Specify whether the index is case-sensitive
+	// +optional
+	IgnoreCase *bool `json:"ignoreCase,omitempty"`
+	// Longest text unit to analyze. Atlas Search excludes anything longer from the index
+	// +optional
+	MaxTokenLength *int `json:"maxTokenLength,omitempty"`
+	// Words to exclude from stemming by the language analyzer
+	// +optional
+	StemExclusionSet []string `json:"stemExclusionSet,omitempty"`
+	// Strings to ignore when creating the index
+	// +optional
+	Stopwords []string `json:"stopwords,omitempty"`
 }
 
 func (i *SearchIndex) ToAtlas(database string, collection string) *mongodbatlas.SearchIndex {
@@ -91,4 +118,15 @@ func (i *SearchIndex) IsEqual(index *mongodbatlas.SearchIndex) bool {
 	}
 
 	return true
+}
+
+func (a *CustomAnalyzer) ToAtlas() *mongodbatlas.SearchAnalyzer {
+	return &mongodbatlas.SearchAnalyzer{
+		Name:             a.Name,
+		BaseAnalyzer:     a.BaseAnalyzer,
+		IgnoreCase:       a.IgnoreCase,
+		MaxTokenLength:   a.MaxTokenLength,
+		StemExclusionSet: a.StemExclusionSet,
+		Stopwords:        a.Stopwords,
+	}
 }

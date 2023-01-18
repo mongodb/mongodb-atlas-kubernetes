@@ -42,52 +42,124 @@ spec:
                   https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
                 properties:
                   atlasSearch:
-                    items:
-                      properties:
-                        analyzer:
-                          description: The analyzer to use for indexing the collection
-                            data
-                          enum:
-                          - lucene.standard
-                          - lucene.simple
-                          - lucene.whitespace
-                          - lucene.keyword
-                          type: string
-                        mappings:
-                          description: Object containing index specifications for
-                            the collection fields
+                    properties:
+                      customAnalyzers:
+                        description: List of custom-analyzers
+                        items:
                           properties:
-                            dynamic:
-                              description: Flag indicating whether the index uses
-                                dynamic or static mappings
+                            baseAnalyzer:
+                              description: Analyzer on which the custom-analyzer is
+                                based
+                              enum:
+                              - lucene.standard
+                              - lucene.simple
+                              - lucene.whitespace
+                              - lucene.keyword
+                              type: string
+                            ignoreCase:
+                              description: Specify whether the index is case-sensitive
                               type: boolean
-                            fields:
-                              additionalProperties:
-                                items:
-                                  type: object
-                                type: array
-                              description: Map containing one or more field specifications.
-                              type: object
+                            maxTokenLength:
+                              description: Longest text unit to analyze. Atlas Search
+                                excludes anything longer from the index
+                              type: integer
+                            name:
+                              description: Name of the custom-analyzer
+                              type: string
+                            stemExclusionSet:
+                              description: Words to exclude from stemming by the language
+                                analyzer
+                              items:
+                                type: string
+                              type: array
+                            stopwords:
+                              description: Strings to ignore when creating the index
+                              items:
+                                type: string
+                              type: array
                           required:
-                          - dynamic
+                          - baseAnalyzer
+                          - name
                           type: object
-                        name:
-                          description: The name of the index
-                          type: string
-                        searchAnalyzer:
-                          description: The analyzer to use for query the collection
-                            data
-                          enum:
-                          - lucene.standard
-                          - lucene.simple
-                          - lucene.whitespace
-                          - lucene.keyword
-                          type: string
-                      required:
-                      - mappings
-                      - name
-                      type: object
-                    type: array
+                        type: array
+                      databases:
+                        description: List of databases with indexes
+                        items:
+                          properties:
+                            collections:
+                              description: List of collection with indexes
+                              items:
+                                properties:
+                                  collectionName:
+                                    description: The name of the collection the indexes
+                                      are on
+                                    type: string
+                                  indexes:
+                                    description: List of indexes for the collection
+                                    items:
+                                      properties:
+                                        analyzer:
+                                          description: The analyzer to use for indexing
+                                            the collection data
+                                          enum:
+                                          - lucene.standard
+                                          - lucene.simple
+                                          - lucene.whitespace
+                                          - lucene.keyword
+                                          type: string
+                                        mappings:
+                                          description: Object containing index specifications
+                                            for the collection fields
+                                          properties:
+                                            dynamic:
+                                              description: Flag indicating whether
+                                                the index uses dynamic or static mappings
+                                              type: boolean
+                                            fields:
+                                              additionalProperties:
+                                                items:
+                                                  type: object
+                                                type: array
+                                              description: Map containing one or more
+                                                field specifications.
+                                              type: object
+                                          required:
+                                          - dynamic
+                                          type: object
+                                        name:
+                                          description: The name of the index
+                                          type: string
+                                        searchAnalyzer:
+                                          description: The analyzer to use for query
+                                            the collection data
+                                          enum:
+                                          - lucene.standard
+                                          - lucene.simple
+                                          - lucene.whitespace
+                                          - lucene.keyword
+                                          type: string
+                                      required:
+                                      - mappings
+                                      - name
+                                      type: object
+                                    type: array
+                                required:
+                                - collectionName
+                                - indexes
+                                type: object
+                              type: array
+                            database:
+                              description: The name of the database the indexes are
+                                in
+                              type: string
+                          required:
+                          - collections
+                          - database
+                          type: object
+                        type: array
+                    required:
+                    - databases
+                    type: object
                   backupEnabled:
                     type: boolean
                   biConnector:
@@ -297,78 +369,124 @@ spec:
                 description: Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
                 properties:
                   atlasSearch:
-                    items:
-                      properties:
-                        collections:
-                          description: List of collection with index of the database
-                          items:
-                            properties:
-                              collectionName:
-                                description: The name of the collection the indexes
-                                  are on
+                    properties:
+                      customAnalyzers:
+                        description: List of custom-analyzers
+                        items:
+                          properties:
+                            baseAnalyzer:
+                              description: Analyzer on which the custom-analyzer is
+                                based
+                              enum:
+                              - lucene.standard
+                              - lucene.simple
+                              - lucene.whitespace
+                              - lucene.keyword
+                              type: string
+                            ignoreCase:
+                              description: Specify whether the index is case-sensitive
+                              type: boolean
+                            maxTokenLength:
+                              description: Longest text unit to analyze. Atlas Search
+                                excludes anything longer from the index
+                              type: integer
+                            name:
+                              description: Name of the custom-analyzer
+                              type: string
+                            stemExclusionSet:
+                              description: Words to exclude from stemming by the language
+                                analyzer
+                              items:
                                 type: string
-                              indexes:
-                                description: List of indexes for the collection
-                                items:
-                                  properties:
-                                    analyzer:
-                                      description: The analyzer to use for indexing
-                                        the collection data
-                                      enum:
-                                      - lucene.standard
-                                      - lucene.simple
-                                      - lucene.whitespace
-                                      - lucene.keyword
-                                      type: string
-                                    mappings:
-                                      description: Object containing index specifications
-                                        for the collection fields
+                              type: array
+                            stopwords:
+                              description: Strings to ignore when creating the index
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - baseAnalyzer
+                          - name
+                          type: object
+                        type: array
+                      databases:
+                        description: List of databases with indexes
+                        items:
+                          properties:
+                            collections:
+                              description: List of collection with indexes
+                              items:
+                                properties:
+                                  collectionName:
+                                    description: The name of the collection the indexes
+                                      are on
+                                    type: string
+                                  indexes:
+                                    description: List of indexes for the collection
+                                    items:
                                       properties:
-                                        dynamic:
-                                          description: Flag indicating whether the
-                                            index uses dynamic or static mappings
-                                          type: boolean
-                                        fields:
-                                          additionalProperties:
-                                            items:
+                                        analyzer:
+                                          description: The analyzer to use for indexing
+                                            the collection data
+                                          enum:
+                                          - lucene.standard
+                                          - lucene.simple
+                                          - lucene.whitespace
+                                          - lucene.keyword
+                                          type: string
+                                        mappings:
+                                          description: Object containing index specifications
+                                            for the collection fields
+                                          properties:
+                                            dynamic:
+                                              description: Flag indicating whether
+                                                the index uses dynamic or static mappings
+                                              type: boolean
+                                            fields:
+                                              additionalProperties:
+                                                items:
+                                                  type: object
+                                                type: array
+                                              description: Map containing one or more
+                                                field specifications.
                                               type: object
-                                            type: array
-                                          description: Map containing one or more
-                                            field specifications.
+                                          required:
+                                          - dynamic
                                           type: object
+                                        name:
+                                          description: The name of the index
+                                          type: string
+                                        searchAnalyzer:
+                                          description: The analyzer to use for query
+                                            the collection data
+                                          enum:
+                                          - lucene.standard
+                                          - lucene.simple
+                                          - lucene.whitespace
+                                          - lucene.keyword
+                                          type: string
                                       required:
-                                      - dynamic
+                                      - mappings
+                                      - name
                                       type: object
-                                    name:
-                                      description: The name of the index
-                                      type: string
-                                    searchAnalyzer:
-                                      description: The analyzer to use for query the
-                                        collection data
-                                      enum:
-                                      - lucene.standard
-                                      - lucene.simple
-                                      - lucene.whitespace
-                                      - lucene.keyword
-                                      type: string
-                                  required:
-                                  - mappings
-                                  - name
-                                  type: object
-                                type: array
-                            required:
-                            - collectionName
-                            - indexes
-                            type: object
-                          type: array
-                        database:
-                          description: The name of the database the collection
-                          type: string
-                      required:
-                      - collections
-                      - database
-                      type: object
-                    type: array
+                                    type: array
+                                required:
+                                - collectionName
+                                - indexes
+                                type: object
+                              type: array
+                            database:
+                              description: The name of the database the indexes are
+                                in
+                              type: string
+                          required:
+                          - collections
+                          - database
+                          type: object
+                        type: array
+                    required:
+                    - databases
+                    type: object
                   autoScaling:
                     description: Collection of settings that configures auto-scaling
                       information for the deployment. If you specify the autoScaling
@@ -875,28 +993,35 @@ spec:
             description: AtlasDeploymentStatus defines the observed state of AtlasDeployment.
             properties:
               atlasSearch:
-                items:
-                  properties:
-                    collectionName:
+                properties:
+                  customAnalyzers:
+                    items:
                       type: string
-                    database:
-                      type: string
-                    error:
-                      type: string
-                    id:
-                      type: string
-                    name:
-                      type: string
-                    status:
-                      type: string
-                  required:
-                  - collectionName
-                  - database
-                  - id
-                  - name
-                  - status
-                  type: object
-                type: array
+                    type: array
+                  indexes:
+                    items:
+                      properties:
+                        collectionName:
+                          type: string
+                        database:
+                          type: string
+                        error:
+                          type: string
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        status:
+                          type: string
+                      required:
+                      - collectionName
+                      - database
+                      - id
+                      - name
+                      - status
+                      type: object
+                    type: array
+                type: object
               conditions:
                 description: Conditions is the list of statuses showing the current
                   state of the Atlas Custom Resource

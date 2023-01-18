@@ -148,7 +148,7 @@ type DeploymentSpec struct {
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 	// +optional
-	AtlasSearch []AtlasSearch `json:"atlasSearch,omitempty"`
+	AtlasSearch *AtlasSearch `json:"atlasSearch,omitempty"`
 }
 
 type AdvancedDeploymentSpec struct {
@@ -175,7 +175,7 @@ type AdvancedDeploymentSpec struct {
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 	// +optional
-	AtlasSearch []SearchIndex `json:"atlasSearch,omitempty"`
+	AtlasSearch *AtlasSearch `json:"atlasSearch,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.

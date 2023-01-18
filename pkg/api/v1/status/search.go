@@ -11,6 +11,11 @@ const (
 )
 
 type AtlasSearch struct {
+	CustomAnalyzers []string      `json:"customAnalyzers,omitempty"`
+	Indexes         []*AtlasIndex `json:"indexes,omitempty"`
+}
+
+type AtlasIndex struct {
 	ID             string      `json:"id"`
 	Name           string      `json:"name"`
 	Database       string      `json:"database"`
@@ -19,9 +24,29 @@ type AtlasSearch struct {
 	Error          string      `json:"error,omitempty"`
 }
 
-func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasSearch {
+func (i *AtlasIndex) HasStatusChanged(status string) bool {
+	if i.Status == IndexStatusReady && status == "STEADY" {
+		return false
+	}
+
+	if i.Status == IndexStatusFailed && status == "FAILED" {
+		return false
+	}
+
+	if i.Status == IndexStatusInProgress && status == "IN_PROGRESS" {
+		return false
+	}
+
+	if i.Status == IndexStatusInProgress && status == "MIGRATING" {
+		return false
+	}
+
+	return true
+}
+
+func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasIndex {
 	if index == nil {
-		return &AtlasSearch{
+		return &AtlasIndex{
 			Status: IndexStatusFailed,
 			Error:  err.Error(),
 		}
@@ -41,7 +66,7 @@ func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasSearch
 		status = IndexStatusReady
 	}
 
-	return &AtlasSearch{
+	return &AtlasIndex{
 		ID:             index.IndexID,
 		Name:           index.Name,
 		Database:       index.Database,
