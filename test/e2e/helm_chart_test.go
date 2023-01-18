@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -32,6 +33,10 @@ var _ = Describe("HELM charts", func() {
 			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			if CurrentSpecReport().Failed() {
+				session := cli.Execute("helm", "status", data.Resources.KeyName)
+				GinkgoWriter.Write([]byte(session.Out.Contents()))
+				session = cli.Execute("helm", "get", "all", data.Resources.KeyName)
+				GinkgoWriter.Write([]byte(session.Out.Contents()))
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
 				bytes, err := k8s.GetPodLogsByDeployment("mongodb-atlas-operator", config.DefaultOperatorNS, corev1.PodLogOptions{})
 				if err != nil {
