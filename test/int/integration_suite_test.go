@@ -79,6 +79,7 @@ var (
 	cfg               *rest.Config
 	managerCancelFunc context.CancelFunc
 	atlasDomain       string
+	operatorClass     string = "atlas"
 )
 
 func init() {
@@ -217,6 +218,7 @@ func prepareControllers() {
 		Client:           k8sManager.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
 		AtlasDomain:      atlasDomain,
+		OperatorClass:    operatorClass,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates: globalPredicates,
@@ -228,6 +230,7 @@ func prepareControllers() {
 		Client:           k8sManager.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		AtlasDomain:      atlasDomain,
+		OperatorClass:    operatorClass,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates: globalPredicates,
@@ -239,6 +242,7 @@ func prepareControllers() {
 		Client:           k8sManager.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		AtlasDomain:      atlasDomain,
+		OperatorClass:    operatorClass,
 		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),

@@ -835,6 +835,41 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
+	Describe("Setting the operator class to a different class should skip reconciliations.", func() {
+		It("Should Succeed", func() {
+
+			By(`Creating the deployment with a different operator class`, func() {
+				createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name).Lightweight()
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+
+				Eventually(func(g Gomega) bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc(g))
+				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+
+				createdDeployment.ObjectMeta.Annotations = map[string]string{customresource.OperatorClassAnnotation: "different"}
+				createdDeployment.Spec.DeploymentSpec.Labels = append(createdDeployment.Spec.DeploymentSpec.Labels, common.LabelSpec{
+					Key:   "some-key",
+					Value: "some-value",
+				})
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+				defer cancel()
+
+				containsLabel := func(ac *mongodbatlas.Cluster) bool {
+					for _, label := range ac.Labels {
+						if label.Key == "some-key" && label.Value == "some-value" {
+							return true
+						}
+					}
+					return false
+				}
+
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
+				Eventually(testutil.WaitForAtlasDeploymentStateToNotBeReached(ctx, atlasClient, createdProject.Name, createdDeployment.GetDeploymentName(), containsLabel))
+			})
+		})
+	})
+
 	Describe("Create the advanced deployment & change the InstanceSize", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)

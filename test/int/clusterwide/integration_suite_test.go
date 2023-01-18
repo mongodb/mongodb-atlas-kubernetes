@@ -53,14 +53,15 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cfg         *rest.Config
-	k8sClient   client.Client
-	testEnv     *envtest.Environment
-	k8sManager  ctrl.Manager
-	atlasClient *mongodbatlas.Client
-	connection  atlas.Connection
-	namespace   corev1.Namespace
-	atlasDomain string
+	cfg           *rest.Config
+	k8sClient     client.Client
+	testEnv       *envtest.Environment
+	k8sManager    ctrl.Manager
+	atlasClient   *mongodbatlas.Client
+	connection    atlas.Connection
+	namespace     corev1.Namespace
+	atlasDomain   string
+	operatorClass string = "atlas"
 )
 
 const (
@@ -122,6 +123,7 @@ var _ = BeforeSuite(func() {
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
 			AtlasDomain:      atlasDomain,
+			OperatorClass:    operatorClass,
 			ResourceWatcher:  watch.NewResourceWatcher(),
 			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
@@ -132,6 +134,7 @@ var _ = BeforeSuite(func() {
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 			AtlasDomain:      atlasDomain,
+			OperatorClass:    operatorClass,
 			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 		}).SetupWithManager(k8sManager)
@@ -141,6 +144,7 @@ var _ = BeforeSuite(func() {
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 			AtlasDomain:      atlasDomain,
+			OperatorClass:    operatorClass,
 			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 			ResourceWatcher:  watch.NewResourceWatcher(),

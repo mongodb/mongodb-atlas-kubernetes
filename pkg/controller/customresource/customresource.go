@@ -24,11 +24,12 @@ const (
 	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
 	ResourceVersion                = "app.kubernetes.io/version"
 	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
-	RevisionAnnotation             = "mongodb.com/atlas-operator-class"
+	OperatorClassAnnotation        = "mongodb.com/atlas-operator-class"
 
 	ResourcePolicyKeep       = "keep"
 	ReconciliationPolicySkip = "skip"
 	ResourceVersionAllow     = "allow"
+	DefaultOperatorClass     = "atlas"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
@@ -130,10 +131,12 @@ func ResourceVersionIsValid(resource mdbv1.AtlasCustomResource) (bool, error) {
 
 // ReconciliationShouldBeSkipped returns 'true' if reconciliation should be skipped for this resource.
 func ReconciliationShouldBeSkipped(resource mdbv1.AtlasCustomResource, operatorClass string) bool {
-	if v, ok := resource.GetAnnotations()[RevisionAnnotation]; ok {
-		if v != operatorClass {
-			return true
-		}
+	v, ok := resource.GetAnnotations()[OperatorClassAnnotation]
+	if !ok {
+		v = DefaultOperatorClass
+	}
+	if v != operatorClass {
+		return true
 	}
 	if v, ok := resource.GetAnnotations()[ReconciliationPolicyAnnotation]; ok {
 		return v == ReconciliationPolicySkip
