@@ -56,6 +56,7 @@ type AtlasDeploymentReconciler struct {
 	Log              *zap.SugaredLogger
 	Scheme           *runtime.Scheme
 	AtlasDomain      string
+	Revision         string
 	GlobalAPISecret  client.ObjectKey
 	GlobalPredicates []predicate.Predicate
 	EventRecorder    record.EventRecorder
@@ -88,7 +89,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	if shouldSkip := customresource.ReconciliationShouldBeSkipped(deployment); shouldSkip {
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(deployment, r.Revision); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", deployment.Spec)
 		if !deployment.GetDeletionTimestamp().IsZero() {
 			err := r.removeDeletionFinalizer(context, deployment)

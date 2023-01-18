@@ -34,7 +34,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		if shouldSkip := customresource.ReconciliationShouldBeSkipped(team); shouldSkip {
+		if shouldSkip := customresource.ReconciliationShouldBeSkipped(team, ""); shouldSkip {
 			log.Infow(fmt.Sprintf("-> Skipping AtlasTeam reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", team.Spec)
 			return workflow.OK().ReconcileResult(), nil
 		}

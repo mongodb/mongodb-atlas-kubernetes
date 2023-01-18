@@ -24,6 +24,7 @@ const (
 	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
 	ResourceVersion                = "app.kubernetes.io/version"
 	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
+	RevisionAnnotation             = "mongodb.com/atlas-revision"
 
 	ResourcePolicyKeep       = "keep"
 	ReconciliationPolicySkip = "skip"
@@ -128,7 +129,12 @@ func ResourceVersionIsValid(resource mdbv1.AtlasCustomResource) (bool, error) {
 }
 
 // ReconciliationShouldBeSkipped returns 'true' if reconciliation should be skipped for this resource.
-func ReconciliationShouldBeSkipped(resource mdbv1.AtlasCustomResource) bool {
+func ReconciliationShouldBeSkipped(resource mdbv1.AtlasCustomResource, revision string) bool {
+	if v, ok := resource.GetAnnotations()[RevisionAnnotation]; ok {
+		if v != revision {
+			return true
+		}
+	}
 	if v, ok := resource.GetAnnotations()[ReconciliationPolicyAnnotation]; ok {
 		return v == ReconciliationPolicySkip
 	}

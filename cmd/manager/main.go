@@ -133,6 +133,7 @@ func main() {
 		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:           mgr.GetScheme(),
 		AtlasDomain:      config.AtlasDomain,
+		Revision:         config.Revision,
 		GlobalAPISecret:  config.GlobalAPISecret,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalPredicates: globalPredicates,
@@ -147,6 +148,7 @@ func main() {
 		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
 		Scheme:           mgr.GetScheme(),
 		AtlasDomain:      config.AtlasDomain,
+		Revision:         config.Revision,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  config.GlobalAPISecret,
 		GlobalPredicates: globalPredicates,
@@ -161,6 +163,7 @@ func main() {
 		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		Scheme:           mgr.GetScheme(),
 		AtlasDomain:      config.AtlasDomain,
+		Revision:         config.Revision,
 		ResourceWatcher:  watch.NewResourceWatcher(),
 		GlobalAPISecret:  config.GlobalAPISecret,
 		GlobalPredicates: globalPredicates,
@@ -189,6 +192,7 @@ func main() {
 
 type Config struct {
 	AtlasDomain          string
+	Revision             string
 	EnableLeaderElection bool
 	MetricsAddr          string
 	Namespace            string
@@ -204,6 +208,7 @@ func parseConfiguration() Config {
 	var globalAPISecretName string
 	config := Config{}
 	flag.StringVar(&config.AtlasDomain, "atlas-domain", "https://cloud.mongodb.com/", "the Atlas URL domain name (with slash in the end).")
+	flag.StringVar(&config.Revision, "revision", "", "The revision, this can be used to only reconcile on resources with mongodb.com/atlas-revision=<revision>")
 	flag.StringVar(&config.MetricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&config.ProbeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.StringVar(&globalAPISecretName, "global-api-secret-name", "", "The name of the Secret that contains Atlas API keys. "+

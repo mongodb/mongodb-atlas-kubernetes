@@ -4,6 +4,7 @@
 
 * Fix connection secret creation (#774)
 * Fix mininum version of Openshift (#761)
+* add revision to only reconcile resources with mongodb.com/atlas-revision=<revision> annotation (#842)
 
 ## AtlasProject Resource
 

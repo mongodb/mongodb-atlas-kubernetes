@@ -54,6 +54,7 @@ type AtlasProjectReconciler struct {
 	Log              *zap.SugaredLogger
 	Scheme           *runtime.Scheme
 	AtlasDomain      string
+	Revision         string
 	GlobalAPISecret  client.ObjectKey
 	GlobalPredicates []predicate.Predicate
 	EventRecorder    record.EventRecorder
@@ -86,7 +87,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project); shouldSkip {
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project, r.Revision); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
 		if !project.GetDeletionTimestamp().IsZero() {
 			err := r.removeDeletionFinalizer(context, project)

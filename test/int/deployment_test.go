@@ -109,7 +109,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				By("Removing Atlas Deployment " + createdDeployment.Name)
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
 				deploymentName := createdDeployment.GetDeploymentName()
-				if customresource.ResourceShouldBeLeftInAtlas(createdDeployment) || customresource.ReconciliationShouldBeSkipped(createdDeployment) {
+				if customresource.ResourceShouldBeLeftInAtlas(createdDeployment) || customresource.ReconciliationShouldBeSkipped(createdDeployment, "") {
 					By("Removing Atlas Deployment " + createdDeployment.Name + " from Atlas manually")
 					Expect(deleteAtlasDeployment(createdProject.Status.ID, deploymentName)).To(Succeed())
 				}

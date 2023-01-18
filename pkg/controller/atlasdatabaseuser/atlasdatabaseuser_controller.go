@@ -53,6 +53,7 @@ type AtlasDatabaseUserReconciler struct {
 	Log              *zap.SugaredLogger
 	Scheme           *runtime.Scheme
 	AtlasDomain      string
+	Revision         string
 	GlobalAPISecret  client.ObjectKey
 	EventRecorder    record.EventRecorder
 	GlobalPredicates []predicate.Predicate
@@ -78,7 +79,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(context context.Context, req ctr
 		return result.ReconcileResult(), nil
 	}
 
-	if shouldSkip := customresource.ReconciliationShouldBeSkipped(databaseUser); shouldSkip {
+	if shouldSkip := customresource.ReconciliationShouldBeSkipped(databaseUser, r.Revision); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDatabaseUser reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", databaseUser.Spec)
 		return workflow.OK().ReconcileResult(), nil
 	}
