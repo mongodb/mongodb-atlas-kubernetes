@@ -5,10 +5,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -19,6 +22,28 @@ import (
 func GetVersionOutput() {
 	session := cli.Execute("helm", "version")
 	ExpectWithOffset(1, session).Should(Say("version.BuildInfo"), "Please, install HELM")
+}
+
+func matchHelmSearch(match string) string {
+	session := cli.Execute("helm", "search", "repo", "mongodb")
+	EventuallyWithOffset(1, session, "5m", "10s").Should(gexec.Exit(0))
+	content := session.Out.Contents()
+
+	Expect(regexp.MustCompile(match).Match(content)).Should(BeTrue())
+	version := regexp.MustCompile(match).FindStringSubmatch(string(content))
+	Expect(version).Should(HaveLen(2))
+	GinkgoWriter.Write([]byte(fmt.Sprintf("Found version %s for match %s", version[1], match)))
+	return version[1]
+}
+
+func GetChartVersion(name string) string {
+	match := fmt.Sprintf("%s[\\s ]+([\\d.]+)", name)
+	return matchHelmSearch(match)
+}
+
+func GetAppVersion(name string) string {
+	match := fmt.Sprintf("%s[\\s ]+[\\d.]+[\\s ]+([\\d.]+)", name)
+	return matchHelmSearch(match)
 }
 
 func Uninstall(name string, ns string) {

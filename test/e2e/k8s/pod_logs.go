@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -12,17 +13,17 @@ import (
 )
 
 func GetPodLogsByDeployment(deploymentName, deploymentNS string, options corev1.PodLogOptions) ([]byte, error) {
-	pods, err := GetAllDeploymentPodsByGoClient(deploymentName, deploymentNS)
+	pods, err := GetAllDeploymentPods(deploymentName, deploymentNS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pods: %w", err)
 	}
 	if len(pods) == 0 {
 		return nil, fmt.Errorf("no pods found")
 	}
-	return GetLogsByGoClient(options, deploymentNS, pods[0].Name)
+	return GetPodLogs(options, deploymentNS, pods[0].Name)
 }
 
-func GetLogsByGoClient(options corev1.PodLogOptions, ns string, podName string) ([]byte, error) {
+func GetPodLogs(options corev1.PodLogOptions, ns string, podName string) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
@@ -48,7 +49,7 @@ func GetLogsByGoClient(options corev1.PodLogOptions, ns string, podName string) 
 	return buf.Bytes(), nil
 }
 
-func GetAllDeploymentPodsByGoClient(deploymentName, deploymentNS string) ([]corev1.Pod, error) {
+func GetAllDeploymentPods(deploymentName, deploymentNS string) ([]corev1.Pod, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config: %w", err)
@@ -71,4 +72,21 @@ func GetAllDeploymentPodsByGoClient(deploymentName, deploymentNS string) ([]core
 	}
 
 	return pods.Items, nil
+}
+
+func GetDeployment(deploymentName, deploymentNS string) (*appsv1.Deployment, error) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config: %w", err)
+	}
+	clientSet, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client set: %w", err)
+	}
+
+	deployment, err := clientSet.AppsV1().Deployments(deploymentNS).Get(context.Background(), deploymentName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
+	}
+	return deployment, err
 }
