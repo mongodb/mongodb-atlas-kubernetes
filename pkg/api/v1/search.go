@@ -37,12 +37,10 @@ type SearchIndex struct {
 	// Object containing index specifications for the collection fields
 	Mappings IndexMapping `json:"mappings"`
 	// The analyzer to use for indexing the collection data
-	// +kubebuilder:validation:Enum=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword
 	// +kubebuilder:default:lucene.standard
 	// +optional
 	Analyzer string `json:"analyzer,omitempty"`
 	// The analyzer to use for query the collection data
-	// +kubebuilder:validation:Enum=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword
 	// +kubebuilder:default:lucene.standard
 	// +optional
 	SearchAnalyzer string `json:"searchAnalyzer,omitempty"`
@@ -59,7 +57,6 @@ type CustomAnalyzer struct {
 	// Name of the custom-analyzer
 	Name string `json:"name"`
 	// Analyzer on which the custom-analyzer is based
-	// +kubebuilder:validation:Enum=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword
 	BaseAnalyzer string `json:"baseAnalyzer"`
 	// Specify whether the index is case-sensitive
 	// +optional

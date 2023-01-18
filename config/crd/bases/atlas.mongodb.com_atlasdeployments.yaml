@@ -50,11 +50,6 @@ spec:
                             baseAnalyzer:
                               description: Analyzer on which the custom-analyzer is
                                 based
-                              enum:
-                              - lucene.standard
-                              - lucene.simple
-                              - lucene.whitespace
-                              - lucene.keyword
                               type: string
                             ignoreCase:
                               description: Specify whether the index is case-sensitive
@@ -101,11 +96,6 @@ spec:
                                         analyzer:
                                           description: The analyzer to use for indexing
                                             the collection data
-                                          enum:
-                                          - lucene.standard
-                                          - lucene.simple
-                                          - lucene.whitespace
-                                          - lucene.keyword
                                           type: string
                                         mappings:
                                           description: Object containing index specifications
@@ -132,11 +122,6 @@ spec:
                                         searchAnalyzer:
                                           description: The analyzer to use for query
                                             the collection data
-                                          enum:
-                                          - lucene.standard
-                                          - lucene.simple
-                                          - lucene.whitespace
-                                          - lucene.keyword
                                           type: string
                                       required:
                                       - mappings
@@ -377,11 +362,6 @@ spec:
                             baseAnalyzer:
                               description: Analyzer on which the custom-analyzer is
                                 based
-                              enum:
-                              - lucene.standard
-                              - lucene.simple
-                              - lucene.whitespace
-                              - lucene.keyword
                               type: string
                             ignoreCase:
                               description: Specify whether the index is case-sensitive
@@ -428,11 +408,6 @@ spec:
                                         analyzer:
                                           description: The analyzer to use for indexing
                                             the collection data
-                                          enum:
-                                          - lucene.standard
-                                          - lucene.simple
-                                          - lucene.whitespace
-                                          - lucene.keyword
                                           type: string
                                         mappings:
                                           description: Object containing index specifications
@@ -459,11 +434,6 @@ spec:
                                         searchAnalyzer:
                                           description: The analyzer to use for query
                                             the collection data
-                                          enum:
-                                          - lucene.standard
-                                          - lucene.simple
-                                          - lucene.whitespace
-                                          - lucene.keyword
                                           type: string
                                       required:
                                       - mappings
