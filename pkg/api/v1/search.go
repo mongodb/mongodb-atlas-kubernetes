@@ -1,9 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
@@ -140,9 +137,6 @@ func (i *SearchIndex) ToAtlas(database string, collection string) *mongodbatlas.
 			index.Synonyms = append(index.Synonyms, s)
 		}
 	}
-
-	a, _ := json.MarshalIndent(index, "", "    ")
-	fmt.Println(string(a))
 
 	return index
 }
