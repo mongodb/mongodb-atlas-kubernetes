@@ -42,7 +42,9 @@ func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasIndex 
 		status = IndexStatusInProgress
 	case "FAILED":
 		status = IndexStatusFailed
-		errMessage = err.Error()
+		if err != nil {
+			errMessage = err.Error()
+		}
 	case "STEADY":
 		status = IndexStatusReady
 	}

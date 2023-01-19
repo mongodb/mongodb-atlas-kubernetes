@@ -43,9 +43,14 @@ type SearchIndex struct {
 	// +kubebuilder:default:lucene.standard
 	// +optional
 	SearchAnalyzer string `json:"searchAnalyzer,omitempty"`
+	//Synonyms mapping definition to use in this index
+	// +optional
+	Synonyms []AtlasSearchSynonym `json:"synonyms,omitempty"`
 }
 
 // +k8s:deepcopy-gen=false
+//
+//nolint:stylecheck
 type FieldMapping map[string]interface{}
 
 func (in *FieldMapping) DeepCopyInto(out *FieldMapping) {
@@ -96,6 +101,20 @@ type CustomAnalyzer struct {
 	Stopwords []string `json:"stopwords,omitempty"`
 }
 
+type AtlasSearchSynonym struct {
+	// Name of the synonym mapping
+	Name string `json:"name"`
+	// Name of the analyzer to use with this synonym mapping
+	Analyzer string `json:"analyzer"`
+	// Source collection for synonyms
+	Source SynonymSource `json:"source"`
+}
+
+type SynonymSource struct {
+	// Name of the MongoDB collection that is in the same database as the Atlas Search index
+	Collection string `json:"collection"`
+}
+
 func (i *SearchIndex) ToAtlas(database string, collection string) *mongodbatlas.SearchIndex {
 	index := &mongodbatlas.SearchIndex{
 		Name:           i.Name,
@@ -108,6 +127,18 @@ func (i *SearchIndex) ToAtlas(database string, collection string) *mongodbatlas.
 			Fields:  (*map[string]interface{})(i.Mappings.Fields),
 		},
 		Synonyms: nil,
+	}
+
+	if len(i.Synonyms) > 0 {
+		index.Synonyms = make([]map[string]interface{}, 0, len(i.Synonyms))
+		for _, synonym := range i.Synonyms {
+			s := map[string]interface{}{
+				"name":     synonym.Name,
+				"analyzer": synonym.Analyzer,
+				"source":   synonym.Source,
+			}
+			index.Synonyms = append(index.Synonyms, s)
+		}
 	}
 
 	a, _ := json.MarshalIndent(index, "", "    ")

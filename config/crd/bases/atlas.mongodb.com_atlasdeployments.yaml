@@ -119,6 +119,37 @@ spec:
                                           description: The analyzer to use for query
                                             the collection data
                                           type: string
+                                        synonyms:
+                                          description: Synonyms mapping definition
+                                            to use in this index
+                                          items:
+                                            properties:
+                                              analyzer:
+                                                description: Name of the analyzer
+                                                  to use with this synonym mapping
+                                                type: string
+                                              name:
+                                                description: Name of the synonym mapping
+                                                type: string
+                                              source:
+                                                description: Source collection for
+                                                  synonyms
+                                                properties:
+                                                  collection:
+                                                    description: Name of the MongoDB
+                                                      collection that is in the same
+                                                      database as the Atlas Search
+                                                      index
+                                                    type: string
+                                                required:
+                                                - collection
+                                                type: object
+                                            required:
+                                            - analyzer
+                                            - name
+                                            - source
+                                            type: object
+                                          type: array
                                       required:
                                       - mappings
                                       - name
@@ -427,6 +458,37 @@ spec:
                                           description: The analyzer to use for query
                                             the collection data
                                           type: string
+                                        synonyms:
+                                          description: Synonyms mapping definition
+                                            to use in this index
+                                          items:
+                                            properties:
+                                              analyzer:
+                                                description: Name of the analyzer
+                                                  to use with this synonym mapping
+                                                type: string
+                                              name:
+                                                description: Name of the synonym mapping
+                                                type: string
+                                              source:
+                                                description: Source collection for
+                                                  synonyms
+                                                properties:
+                                                  collection:
+                                                    description: Name of the MongoDB
+                                                      collection that is in the same
+                                                      database as the Atlas Search
+                                                      index
+                                                    type: string
+                                                required:
+                                                - collection
+                                                type: object
+                                            required:
+                                            - analyzer
+                                            - name
+                                            - source
+                                            type: object
+                                          type: array
                                       required:
                                       - mappings
                                       - name
