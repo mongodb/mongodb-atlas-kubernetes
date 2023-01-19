@@ -16,7 +16,6 @@ package v1
 import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -1392,20 +1391,8 @@ func (in *IndexMapping) DeepCopyInto(out *IndexMapping) {
 	*out = *in
 	if in.Fields != nil {
 		in, out := &in.Fields, &out.Fields
-		*out = make(map[string][]unstructured.Unstructured, len(*in))
-		for key, val := range *in {
-			var outVal []unstructured.Unstructured
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = make([]unstructured.Unstructured, len(*in))
-				for i := range *in {
-					(*in)[i].DeepCopyInto(&(*out)[i])
-				}
-			}
-			(*out)[key] = outVal
-		}
+		x := (*in).DeepCopy()
+		*out = &x
 	}
 }
 

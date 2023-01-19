@@ -1,9 +1,8 @@
 package v1
 
 import (
-	"reflect"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"encoding/json"
+	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -46,11 +45,36 @@ type SearchIndex struct {
 	SearchAnalyzer string `json:"searchAnalyzer,omitempty"`
 }
 
+// +k8s:deepcopy-gen=false
+type FieldMapping map[string]interface{}
+
+func (in *FieldMapping) DeepCopyInto(out *FieldMapping) {
+	if in != nil {
+		*out = make(FieldMapping)
+
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
+}
+
+func (in FieldMapping) DeepCopy() FieldMapping {
+	if in != nil {
+		out := new(FieldMapping)
+		in.DeepCopyInto(out)
+		return *out
+	}
+
+	return nil
+}
+
 type IndexMapping struct {
 	// Flag indicating whether the index uses dynamic or static mappings
 	Dynamic bool `json:"dynamic"`
 	// Map containing one or more field specifications.
-	Fields map[string][]unstructured.Unstructured `json:"fields,omitempty"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Fields *FieldMapping `json:"fields,omitempty"`
 }
 
 type CustomAnalyzer struct {
@@ -81,40 +105,15 @@ func (i *SearchIndex) ToAtlas(database string, collection string) *mongodbatlas.
 		SearchAnalyzer: i.SearchAnalyzer,
 		Mappings: &mongodbatlas.IndexMapping{
 			Dynamic: i.Mappings.Dynamic,
-			Fields:  &map[string]interface{}{},
+			Fields:  (*map[string]interface{})(i.Mappings.Fields),
 		},
 		Synonyms: nil,
 	}
 
-	for key, field := range i.Mappings.Fields {
-		i.Mappings.Fields[key] = field
-	}
+	a, _ := json.MarshalIndent(index, "", "    ")
+	fmt.Println(string(a))
 
 	return index
-}
-
-func (i *SearchIndex) IsEqual(index *mongodbatlas.SearchIndex) bool {
-	if i.Name != index.Name {
-		return false
-	}
-
-	if i.Analyzer != index.Analyzer {
-		return false
-	}
-
-	if i.SearchAnalyzer != index.SearchAnalyzer {
-		return false
-	}
-
-	if i.Mappings.Dynamic != index.Mappings.Dynamic {
-		return false
-	}
-
-	if !reflect.DeepEqual(i.Mappings.Fields, index.Mappings.Fields) {
-		return false
-	}
-
-	return true
 }
 
 func (a *CustomAnalyzer) ToAtlas() *mongodbatlas.SearchAnalyzer {

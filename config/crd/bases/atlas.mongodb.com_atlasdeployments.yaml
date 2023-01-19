@@ -106,13 +106,9 @@ spec:
                                                 the index uses dynamic or static mappings
                                               type: boolean
                                             fields:
-                                              additionalProperties:
-                                                items:
-                                                  type: object
-                                                type: array
                                               description: Map containing one or more
                                                 field specifications.
-                                              type: object
+                                              x-kubernetes-preserve-unknown-fields: true
                                           required:
                                           - dynamic
                                           type: object
@@ -418,13 +414,9 @@ spec:
                                                 the index uses dynamic or static mappings
                                               type: boolean
                                             fields:
-                                              additionalProperties:
-                                                items:
-                                                  type: object
-                                                type: array
                                               description: Map containing one or more
                                                 field specifications.
-                                              type: object
+                                              x-kubernetes-preserve-unknown-fields: true
                                           required:
                                           - dynamic
                                           type: object

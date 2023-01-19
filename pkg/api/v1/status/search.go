@@ -1,6 +1,8 @@
 package status
 
-import "go.mongodb.org/atlas/mongodbatlas"
+import (
+	"go.mongodb.org/atlas/mongodbatlas"
+)
 
 type indexStatus string
 
@@ -24,26 +26,6 @@ type AtlasIndex struct {
 	Error          string      `json:"error,omitempty"`
 }
 
-func (i *AtlasIndex) HasStatusChanged(status string) bool {
-	if i.Status == IndexStatusReady && status == "STEADY" {
-		return false
-	}
-
-	if i.Status == IndexStatusFailed && status == "FAILED" {
-		return false
-	}
-
-	if i.Status == IndexStatusInProgress && status == "IN_PROGRESS" {
-		return false
-	}
-
-	if i.Status == IndexStatusInProgress && status == "MIGRATING" {
-		return false
-	}
-
-	return true
-}
-
 func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasIndex {
 	if index == nil {
 		return &AtlasIndex{
@@ -56,8 +38,7 @@ func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasIndex 
 	var errMessage string
 
 	switch index.Status {
-	case "IN_PROGRESS":
-	case "MIGRATING":
+	case "IN_PROGRESS", "MIGRATING":
 		status = IndexStatusInProgress
 	case "FAILED":
 		status = IndexStatusFailed
