@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -33,14 +34,17 @@ var _ = Describe("HELM charts", func() {
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			if CurrentSpecReport().Failed() {
 				GinkgoWriter.Write([]byte("Resources wasn't clean"))
-				defaultDeployment, err := k8s.GetDeployment("mongodb-atlas-operator", config.DefaultOperatorNS)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("\n Operator deployment: %v, err: %v", defaultDeployment, err)))
-
 				namespaceDeployment, err := k8s.GetDeployment("mongodb-atlas-operator", data.Resources.Namespace)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("\n Operator deployment: %v, err: %v", namespaceDeployment, err)))
+				Expect(err).Should(BeNil())
+				namespaceDeploymentJSON, err := json.MarshalIndent(namespaceDeployment, "", "  ")
+				Expect(err).Should(BeNil())
+				utils.SaveToFile("namespace-deployment.json", namespaceDeploymentJSON)
 
 				pod, err := k8s.GetAllDeploymentPods("mongodb-atlas-operator", data.Resources.Namespace)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("\n Operator pod: %v, err: %v", pod, err)))
+				Expect(err).Should(BeNil())
+				podJSON, err := json.MarshalIndent(pod, "", "  ")
+				Expect(err).Should(BeNil())
+				utils.SaveToFile("namespace-pod.json", podJSON)
 
 				bytes, err := k8s.GetPodLogsByDeployment("mongodb-atlas-operator", config.DefaultOperatorNS, corev1.PodLogOptions{})
 				if err != nil {
