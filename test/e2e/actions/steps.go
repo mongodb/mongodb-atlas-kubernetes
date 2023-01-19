@@ -229,6 +229,7 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created mong
 		converted := v1.AtlasDeploymentSpec(requested)
 		err := atlasdeployment.ConvertLegacyDeployment(&converted)
 		Expect(err).ShouldNot(HaveOccurred())
+		converted.DeploymentSpec = nil
 		advancedSpec = converted.AdvancedDeploymentSpec
 	}
 

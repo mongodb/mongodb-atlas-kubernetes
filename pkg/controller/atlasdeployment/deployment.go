@@ -32,6 +32,8 @@ func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		Paused:                   legacy.Paused,
 		PitEnabled:               legacy.PitEnabled,
 		ReplicationSpecs:         replicationSpecs,
+		CustomZoneMapping:        legacy.CustomZoneMapping,
+		ManagedNamespaces:        legacy.ManagedNamespaces,
 	}
 
 	return nil
@@ -50,9 +52,8 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 
 	legacyReplicatonSpecs := legacy.ReplicationSpecs
 	if len(legacyReplicatonSpecs) == 0 {
-		legacyReplicatonSpecs = append(legacyReplicatonSpecs, mdbv1.ReplicationSpec{
+		replicationSpec := mdbv1.ReplicationSpec{
 			NumShards: toptr.MakePtr[int64](1),
-			ZoneName:  "Zone 1",
 			RegionsConfig: map[string]mdbv1.RegionsConfig{
 				legacy.ProviderSettings.RegionName: {
 					AnalyticsNodes: toptr.MakePtr(int64(0)),
@@ -61,7 +62,13 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 					Priority:       toptr.MakePtr(int64(7)),
 				},
 			},
-		})
+		}
+
+		if legacy.ClusterType == mdbv1.TypeGeoSharded {
+			replicationSpec.ZoneName = "Zone 1"
+		}
+
+		legacyReplicatonSpecs = append(legacyReplicatonSpecs, replicationSpec)
 	}
 
 	for _, legacyResplicationSpec := range legacyReplicatonSpecs {
@@ -91,7 +98,7 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
 					NodeCount:     toptr.MakePtr(int(*legacyRegionConfig.ReadOnlyNodes)),
 				},
-				AutoScaling:         convertLegacyAutoScaling(legacy.AutoScaling),
+				AutoScaling:         convertLegacyAutoScaling(legacy.ProviderSettings.AutoScaling),
 				BackingProviderName: legacy.ProviderSettings.BackingProviderName,
 				Priority:            toptr.MakePtr(int(*legacyRegionConfig.Priority)),
 				ProviderName:        string(legacy.ProviderSettings.ProviderName),
@@ -116,7 +123,12 @@ func convertLegacyAutoScaling(legacy *mdbv1.AutoScalingSpec) *mdbv1.AdvancedAuto
 		DiskGB: &mdbv1.DiskGB{
 			Enabled: legacy.DiskGBEnabled,
 		},
-		Compute: legacy.Compute,
+		Compute: &mdbv1.ComputeSpec{
+			Enabled:          legacy.Compute.Enabled,
+			ScaleDownEnabled: legacy.Compute.ScaleDownEnabled,
+			MinInstanceSize:  legacy.Compute.MinInstanceSize,
+			MaxInstanceSize:  legacy.Compute.MaxInstanceSize,
+		},
 	}
 }
 

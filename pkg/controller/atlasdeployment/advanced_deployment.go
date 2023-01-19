@@ -291,12 +291,42 @@ func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbat
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
 func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) bool {
+	deploymentAtlas = cleanupFieldsToCompare(deploymentAtlas, deploymentOperator)
+
 	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
 
 	return d == ""
+}
+
+func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.AdvancedDeploymentSpec {
+	if atlas.ReplicationSpecs == nil {
+		return atlas
+	}
+
+	for specIdx, replicationSpec := range atlas.ReplicationSpecs {
+		if replicationSpec.RegionConfigs == nil {
+			continue
+		}
+
+		for configIdx, regionConfig := range replicationSpec.RegionConfigs {
+			if regionConfig.AnalyticsSpecs == nil || regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0 {
+				regionConfig.AnalyticsSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].AnalyticsSpecs
+			}
+
+			if regionConfig.ElectableSpecs == nil || regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0 {
+				regionConfig.ElectableSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ElectableSpecs
+			}
+
+			if regionConfig.ReadOnlySpecs == nil || regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0 {
+				regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
+			}
+		}
+	}
+
+	return atlas
 }
 
 // GetAllDeploymentNames returns all deployment names including regular and advanced deployment.

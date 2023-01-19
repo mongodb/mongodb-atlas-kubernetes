@@ -669,7 +669,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if r != nil && (r.StatusCode == http.StatusNotFound || r.StatusCode == http.StatusUnauthorized) {
 				return true
 			}
 		}

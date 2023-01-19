@@ -176,7 +176,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			specDeployment := createdDeployment.Spec.AdvancedDeploymentSpec
-			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, specDeployment.Name)
 			Expect(err).ToNot(HaveOccurred())
 
 			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *specDeployment)
@@ -217,7 +217,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	}
 
 	performUpdate := func(timeout time.Duration) {
+		legacyDeployment := createdDeployment.Spec.DeploymentSpec
+		createdDeployment.Spec.DeploymentSpec = nil
+
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+
+		createdDeployment.Spec.DeploymentSpec = legacyDeployment
 
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
@@ -304,14 +309,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				doDeploymentStatusChecks()
 
 				singleNumShard := func(deployment *mongodbatlas.AdvancedCluster) {
-					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(1)))
+					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
 
 			By("Updating ReplicationSpecs", func() {
+				numShards := 2
 				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs = append(createdDeployment.Spec.DeploymentSpec.ReplicationSpecs, mdbv1.ReplicationSpec{
-					NumShards: int64ptr(2),
+					NumShards: toptr.MakePtr(int64(numShards)),
 				})
 				createdDeployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
 
@@ -319,7 +325,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				doDeploymentStatusChecks()
 
 				twoNumShard := func(deployment *mongodbatlas.AdvancedCluster) {
-					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(int64ptr(2)))
+					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(numShards))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
 				checkAtlasState(replicationSpecsCheck, twoNumShard)
