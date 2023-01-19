@@ -276,6 +276,10 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		return result, nil
 	}
 
+	if searchResult := ensureAtlasSearch(context.Background(), ctx, project.ID(), deployment); !searchResult.IsOk() {
+		return searchResult, nil
+	}
+
 	if csResult := r.ensureConnectionSecrets(ctx, project, c.Name, c.ConnectionStrings, deployment); !csResult.IsOk() {
 		return csResult, nil
 	}
@@ -327,6 +331,10 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result, nil
+	}
+
+	if searchResult := ensureAtlasSearch(context.Background(), ctx, project.ID(), deployment); !searchResult.IsOk() {
+		return searchResult, nil
 	}
 
 	return r.ensureConnectionSecretsAndSetStatusOptions(ctx, project, deployment, result, atlasDeployment)
