@@ -31,6 +31,11 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
 			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
 		}
+
+		searchErr := atlasSearch(deploymentSpec.DeploymentSpec.AtlasSearch)
+		if err != nil {
+			err = multierror.Append(searchErr)
+		}
 	}
 
 	if deploymentSpec.AdvancedDeploymentSpec != nil {
@@ -42,6 +47,11 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
 		if autoscalingErr != nil {
 			err = multierror.Append(err, autoscalingErr)
+		}
+
+		searchErr := atlasSearch(deploymentSpec.DeploymentSpec.AtlasSearch)
+		if err != nil {
+			err = multierror.Append(searchErr)
 		}
 	}
 
@@ -152,4 +162,38 @@ func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 	}
 
 	return err
+}
+
+func atlasSearch(search *mdbv1.AtlasSearch) error {
+	if search == nil {
+		return nil
+	}
+
+	for _, database := range search.Databases {
+		if database.Database == "" {
+			return fmt.Errorf("database name is empty")
+		}
+
+		for _, collection := range database.Collections {
+			if collection.CollectionName == "" {
+				return fmt.Errorf("collection name is empty")
+			}
+
+			for _, index := range collection.Indexes {
+				if index.Name == "" {
+					return fmt.Errorf("index name is empty")
+				}
+
+				if index.Mappings.Dynamic && index.Mappings.Fields != nil && len(*index.Mappings.Fields) > 0 {
+					return fmt.Errorf("static mapping is not available when dynamic mapping is active")
+				}
+
+				if !index.Mappings.Dynamic && len(*index.Mappings.Fields) == 0 {
+					return fmt.Errorf("static mapping must be provided when dynamic mapping is deactivated")
+				}
+			}
+		}
+	}
+
+	return nil
 }
