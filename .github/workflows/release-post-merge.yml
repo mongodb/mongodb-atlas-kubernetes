@@ -61,14 +61,14 @@ jobs:
           push_to_quay: true
           quay_username: mongodb+mongodb_atlas_kubernetes
           quay_password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Certify Openshift images
-        uses: ./.github/actions/certify-openshift-images
-        with:
-          repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.tag }}
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
-          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
-          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
+      #- name: Certify Openshift images
+        #uses: ./.github/actions/certify-openshift-images
+        #with:
+          #repository: ${{ env.IMAGE_REPOSITORY }}
+          #version: ${{ steps.tag.outputs.tag }}
+          #quay_password: ${{ secrets.QUAY_PASSWORD }}
+          #rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          #rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
       - name: Create configuration package
         run: |
           set -x
