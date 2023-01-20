@@ -151,6 +151,8 @@ jobs:
             "x509auth",
             "custom-roles",
             "teams",
+            "teams",
+            "atlas-search",
           ]
     steps:
       - name: Get repo files from cache
