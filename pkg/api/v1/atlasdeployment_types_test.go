@@ -26,6 +26,8 @@ func init() {
 	excludedClusterFieldsOurs["customZoneMapping"] = true
 	excludedClusterFieldsOurs["managedNamespaces"] = true
 
+	excludedClusterFieldsOurs["atlasSearch"] = true
+
 	excludedClusterFieldsTheirs["backupEnabled"] = true
 	excludedClusterFieldsTheirs["id"] = true
 	excludedClusterFieldsTheirs["groupId"] = true
