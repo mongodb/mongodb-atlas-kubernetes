@@ -49,7 +49,7 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 			err = multierror.Append(err, autoscalingErr)
 		}
 
-		searchErr := atlasSearch(deploymentSpec.DeploymentSpec.AtlasSearch)
+		searchErr := atlasSearch(deploymentSpec.AdvancedDeploymentSpec.AtlasSearch)
 		if err != nil {
 			err = multierror.Append(searchErr)
 		}
