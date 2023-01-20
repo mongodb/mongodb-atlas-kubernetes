@@ -63,6 +63,18 @@ spec:
                     type: object
                   clusterType:
                     type: string
+                  customZoneMapping:
+                    items:
+                      properties:
+                        location:
+                          type: string
+                        zone:
+                          type: string
+                      required:
+                      - location
+                      - zone
+                      type: object
+                    type: array
                   diskSizeGB:
                     type: integer
                   encryptionAtRestProvider:
@@ -80,6 +92,30 @@ spec:
                       required:
                       - key
                       - value
+                      type: object
+                    type: array
+                  managedNamespaces:
+                    items:
+                      description: ManagedNamespace represents the information about
+                        managed namespace configuration.
+                      properties:
+                        collection:
+                          type: string
+                        customShardKey:
+                          type: string
+                        db:
+                          type: string
+                        isCustomShardKeyHashed:
+                          type: boolean
+                        isShardKeyUnique:
+                          type: boolean
+                        numInitialChunks:
+                          type: integer
+                        presplitHashedZones:
+                          type: boolean
+                      required:
+                      - collection
+                      - db
                       type: object
                     type: array
                   mongoDBMajorVersion:
@@ -282,6 +318,18 @@ spec:
                     - SHARDED
                     - GEOSHARDED
                     type: string
+                  customZoneMapping:
+                    items:
+                      properties:
+                        location:
+                          type: string
+                        zone:
+                          type: string
+                      required:
+                      - location
+                      - zone
+                      type: object
+                    type: array
                   diskSizeGB:
                     description: Capacity, in gigabytes, of the host's root volume.
                       Increase this number to add capacity, up to a maximum possible
@@ -315,6 +363,30 @@ spec:
                       required:
                       - key
                       - value
+                      type: object
+                    type: array
+                  managedNamespaces:
+                    items:
+                      description: ManagedNamespace represents the information about
+                        managed namespace configuration.
+                      properties:
+                        collection:
+                          type: string
+                        customShardKey:
+                          type: string
+                        db:
+                          type: string
+                        isCustomShardKeyHashed:
+                          type: boolean
+                        isShardKeyUnique:
+                          type: boolean
+                        numInitialChunks:
+                          type: integer
+                        presplitHashedZones:
+                          type: boolean
+                      required:
+                      - collection
+                      - db
                       type: object
                     type: array
                   mongoDBMajorVersion:
@@ -792,6 +864,43 @@ spec:
                       cluster.
                     type: string
                 type: object
+              customZoneMapping:
+                properties:
+                  customZoneMapping:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  zoneMappingErrMessage:
+                    type: string
+                  zoneMappingState:
+                    type: string
+                type: object
+              managedNamespaces:
+                items:
+                  properties:
+                    collection:
+                      type: string
+                    customShardKey:
+                      type: string
+                    db:
+                      type: string
+                    errMessage:
+                      type: string
+                    isCustomShardKeyHashed:
+                      type: boolean
+                    isShardKeyUnique:
+                      type: boolean
+                    numInitialChunks:
+                      type: integer
+                    presplitHashedZones:
+                      type: boolean
+                    status:
+                      type: string
+                  required:
+                  - collection
+                  - db
+                  type: object
+                type: array
               mongoDBVersion:
                 description: MongoDBVersion is the version of MongoDB the cluster
                   runs, in <major version>.<minor version> format.

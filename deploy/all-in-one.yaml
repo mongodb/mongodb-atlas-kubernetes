@@ -121,6 +121,51 @@ spec:
             - items
             type: object
           status:
+            properties:
+              backupScheduleIDs:
+                description: DeploymentID of the deployment using the backup policy
+                items:
+                  type: string
+                type: array
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
+            required:
+            - conditions
             type: object
         type: object
     served: true
@@ -241,6 +286,50 @@ spec:
             - policy
             type: object
           status:
+            properties:
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              deploymentID:
+                items:
+                  type: string
+                type: array
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
+            required:
+            - conditions
             type: object
         type: object
     served: true
@@ -531,6 +620,18 @@ spec:
                     type: object
                   clusterType:
                     type: string
+                  customZoneMapping:
+                    items:
+                      properties:
+                        location:
+                          type: string
+                        zone:
+                          type: string
+                      required:
+                      - location
+                      - zone
+                      type: object
+                    type: array
                   diskSizeGB:
                     type: integer
                   encryptionAtRestProvider:
@@ -548,6 +649,30 @@ spec:
                       required:
                       - key
                       - value
+                      type: object
+                    type: array
+                  managedNamespaces:
+                    items:
+                      description: ManagedNamespace represents the information about
+                        managed namespace configuration.
+                      properties:
+                        collection:
+                          type: string
+                        customShardKey:
+                          type: string
+                        db:
+                          type: string
+                        isCustomShardKeyHashed:
+                          type: boolean
+                        isShardKeyUnique:
+                          type: boolean
+                        numInitialChunks:
+                          type: integer
+                        presplitHashedZones:
+                          type: boolean
+                      required:
+                      - collection
+                      - db
                       type: object
                     type: array
                   mongoDBMajorVersion:
@@ -750,6 +875,18 @@ spec:
                     - SHARDED
                     - GEOSHARDED
                     type: string
+                  customZoneMapping:
+                    items:
+                      properties:
+                        location:
+                          type: string
+                        zone:
+                          type: string
+                      required:
+                      - location
+                      - zone
+                      type: object
+                    type: array
                   diskSizeGB:
                     description: Capacity, in gigabytes, of the host's root volume.
                       Increase this number to add capacity, up to a maximum possible
@@ -783,6 +920,30 @@ spec:
                       required:
                       - key
                       - value
+                      type: object
+                    type: array
+                  managedNamespaces:
+                    items:
+                      description: ManagedNamespace represents the information about
+                        managed namespace configuration.
+                      properties:
+                        collection:
+                          type: string
+                        customShardKey:
+                          type: string
+                        db:
+                          type: string
+                        isCustomShardKeyHashed:
+                          type: boolean
+                        isShardKeyUnique:
+                          type: boolean
+                        numInitialChunks:
+                          type: integer
+                        presplitHashedZones:
+                          type: boolean
+                      required:
+                      - collection
+                      - db
                       type: object
                     type: array
                   mongoDBMajorVersion:
@@ -1260,6 +1421,43 @@ spec:
                       cluster.
                     type: string
                 type: object
+              customZoneMapping:
+                properties:
+                  customZoneMapping:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  zoneMappingErrMessage:
+                    type: string
+                  zoneMappingState:
+                    type: string
+                type: object
+              managedNamespaces:
+                items:
+                  properties:
+                    collection:
+                      type: string
+                    customShardKey:
+                      type: string
+                    db:
+                      type: string
+                    errMessage:
+                      type: string
+                    isCustomShardKeyHashed:
+                      type: boolean
+                    isShardKeyUnique:
+                      type: boolean
+                    numInitialChunks:
+                      type: integer
+                    presplitHashedZones:
+                      type: boolean
+                    status:
+                      type: string
+                  required:
+                  - collection
+                  - db
+                  type: object
+                type: array
               mongoDBVersion:
                 description: MongoDBVersion is the version of MongoDB the cluster
                   runs, in <major version>.<minor version> format.
@@ -3137,7 +3335,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:1.5.1
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.6.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
