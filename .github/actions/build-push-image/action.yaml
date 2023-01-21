@@ -95,14 +95,14 @@ runs:
         cache-to: type=gha,mode=max
         push: true
     - name: Login to quay.io registry
-      if: ${{ inputs.push_to_quay == true }}
+      if: ${{ inputs.push_to_quay == 'true' }}
       uses: docker/login-action@v2
       with:
         registry: quay.io
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
     - name: Build and Push Operator to Docker Registry
-      if: ${{ inputs.push_to_quay == true }}
+      if: ${{ inputs.push_to_quay == 'true' }}
       uses: docker/build-push-action@v3
       with:
         context: .
