@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var _ = FDescribe("DeploymentAtlasSearch", Label("atlas-search"), func() {
+var _ = Describe("DeploymentAtlasSearch", Label("atlas-search"), func() {
 	var testData *model.TestDataProvider
 
 	atlasSearchConfig := &v1.AtlasSearch{
