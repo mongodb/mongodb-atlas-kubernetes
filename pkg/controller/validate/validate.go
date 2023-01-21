@@ -188,7 +188,7 @@ func atlasSearch(search *mdbv1.AtlasSearch) error {
 					return fmt.Errorf("static mapping is not available when dynamic mapping is active")
 				}
 
-				if !index.Mappings.Dynamic && len(*index.Mappings.Fields) == 0 {
+				if !index.Mappings.Dynamic && (index.Mappings.Fields == nil || len(*index.Mappings.Fields) == 0) {
 					return fmt.Errorf("static mapping must be provided when dynamic mapping is deactivated")
 				}
 			}

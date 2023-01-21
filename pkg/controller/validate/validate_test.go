@@ -176,6 +176,179 @@ func TestClusterValidation(t *testing.T) {
 				assert.Error(t, DeploymentSpec(spec))
 			})
 		})
+		t.Run("regular deployment with wrong atlas search spec", func(t *testing.T) {
+			t.Run("atlas search missing database name", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						AtlasSearch: &mdbv1.AtlasSearch{
+							Databases: []mdbv1.AtlasSearchDatabase{
+								{
+									Collections: []mdbv1.AtlasSearchCollection{
+										{
+											CollectionName: "my_collection",
+											Indexes: []mdbv1.SearchIndex{
+												{
+													Name: "my_index",
+													Mappings: mdbv1.IndexMapping{
+														Dynamic: true,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.NoError(t, DeploymentSpec(spec))
+				assert.Nil(t, DeploymentSpec(spec))
+			})
+			t.Run("atlas search missing collection name", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						AtlasSearch: &mdbv1.AtlasSearch{
+							Databases: []mdbv1.AtlasSearchDatabase{
+								{
+									Database: "my_database",
+									Collections: []mdbv1.AtlasSearchCollection{
+										{
+											Indexes: []mdbv1.SearchIndex{
+												{
+													Name: "my_index",
+													Mappings: mdbv1.IndexMapping{
+														Dynamic: true,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.NoError(t, DeploymentSpec(spec))
+				assert.Nil(t, DeploymentSpec(spec))
+			})
+			t.Run("atlas search missing index name", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						AtlasSearch: &mdbv1.AtlasSearch{
+							Databases: []mdbv1.AtlasSearchDatabase{
+								{
+									Database: "my_database",
+									Collections: []mdbv1.AtlasSearchCollection{
+										{
+											CollectionName: "my_collection",
+											Indexes: []mdbv1.SearchIndex{
+												{
+													Mappings: mdbv1.IndexMapping{
+														Dynamic: false,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.NoError(t, DeploymentSpec(spec))
+				assert.Nil(t, DeploymentSpec(spec))
+			})
+			t.Run("atlas search with wrong mapping", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						AtlasSearch: &mdbv1.AtlasSearch{
+							Databases: []mdbv1.AtlasSearchDatabase{
+								{
+									Database: "my_database",
+									Collections: []mdbv1.AtlasSearchCollection{
+										{
+											CollectionName: "my_collection",
+											Indexes: []mdbv1.SearchIndex{
+												{
+													Name: "my_index",
+													Mappings: mdbv1.IndexMapping{
+														Dynamic: false,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.NoError(t, DeploymentSpec(spec))
+				assert.Nil(t, DeploymentSpec(spec))
+			})
+			t.Run("atlas search with wrong mapping fields", func(t *testing.T) {
+				spec := mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						AtlasSearch: &mdbv1.AtlasSearch{
+							Databases: []mdbv1.AtlasSearchDatabase{
+								{
+									Database: "my_database",
+									Collections: []mdbv1.AtlasSearchCollection{
+										{
+											CollectionName: "my_collection",
+											Indexes: []mdbv1.SearchIndex{
+												{
+													Name: "my_index",
+													Mappings: mdbv1.IndexMapping{
+														Dynamic: true,
+														Fields: &mdbv1.FieldMapping{
+															"field1": map[string]interface{}{},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				assert.NoError(t, DeploymentSpec(spec))
+				assert.Nil(t, DeploymentSpec(spec))
+			})
+		})
+		t.Run("advanced deployment with wrong atlas search spec", func(t *testing.T) {
+			spec := mdbv1.AtlasDeploymentSpec{
+				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					AtlasSearch: &mdbv1.AtlasSearch{
+						Databases: []mdbv1.AtlasSearchDatabase{
+							{
+								Database: "my_database",
+								Collections: []mdbv1.AtlasSearchCollection{
+									{
+										CollectionName: "my_collection",
+										Indexes: []mdbv1.SearchIndex{
+											{
+												Name: "my_index",
+												Mappings: mdbv1.IndexMapping{
+													Dynamic: true,
+													Fields: &mdbv1.FieldMapping{
+														"field1": map[string]interface{}{},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
+		})
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
@@ -231,6 +404,63 @@ func TestClusterValidation(t *testing.T) {
 											ScaleDownEnabled: toptr.MakePtr(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M30",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
+		})
+
+		t.Run("regular deployment with atlas search spec", func(t *testing.T) {
+			spec := mdbv1.AtlasDeploymentSpec{
+				DeploymentSpec: &mdbv1.DeploymentSpec{
+					AtlasSearch: &mdbv1.AtlasSearch{
+						Databases: []mdbv1.AtlasSearchDatabase{
+							{
+								Database: "my_database",
+								Collections: []mdbv1.AtlasSearchCollection{
+									{
+										CollectionName: "my_collection",
+										Indexes: []mdbv1.SearchIndex{
+											{
+												Name: "my_index",
+												Mappings: mdbv1.IndexMapping{
+													Dynamic: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			assert.NoError(t, DeploymentSpec(spec))
+			assert.Nil(t, DeploymentSpec(spec))
+		})
+		t.Run("advanced deployment with atlas search spec", func(t *testing.T) {
+			spec := mdbv1.AtlasDeploymentSpec{
+				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					AtlasSearch: &mdbv1.AtlasSearch{
+						Databases: []mdbv1.AtlasSearchDatabase{
+							{
+								Database: "my_database",
+								Collections: []mdbv1.AtlasSearchCollection{
+									{
+										CollectionName: "my_collection",
+										Indexes: []mdbv1.SearchIndex{
+											{
+												Name: "my_index",
+												Mappings: mdbv1.IndexMapping{
+													Dynamic: true,
+												},
+											},
 										},
 									},
 								},
