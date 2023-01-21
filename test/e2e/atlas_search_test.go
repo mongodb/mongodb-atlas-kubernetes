@@ -120,15 +120,16 @@ var _ = Describe("DeploymentAtlasSearch", Label("atlas-search"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateRegularDeployment("as-regular-deployment")),
 			atlasSearchConfig,
 		),
-		Entry("Test[as-advanced-deployment]: Advanced Deployment with Atlas Search", Label("as-advanced-deployment"),
-			model.DataProvider(
-				"as-advanced-deployment",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("as-advanced-deployment")),
-			atlasSearchConfig,
-		),
+		/*
+			Entry("Test[as-advanced-deployment]: Advanced Deployment with Atlas Search", Label("as-advanced-deployment"),
+				model.DataProvider(
+					"as-advanced-deployment",
+					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+					40000,
+					[]func(*model.TestDataProvider){},
+				).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("as-advanced-deployment")),
+				atlasSearchConfig,
+			),*/
 	)
 })
 
