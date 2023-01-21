@@ -34,6 +34,7 @@ func CreateRegularDeployment(name string) *v1.AtlasDeployment {
 			DeploymentSpec: &v1.DeploymentSpec{
 				Name: name,
 				ProviderSettings: &v1.ProviderSettingsSpec{
+					ProviderName:        "AWS",
 					InstanceSizeName:    InstanceSizeM30,
 					RegionName:          "US_EAST_1",
 					BackingProviderName: "AWS",
