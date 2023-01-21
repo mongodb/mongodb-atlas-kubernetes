@@ -22,6 +22,61 @@ const (
 	ServerlessProviderName = "SERVERLESS"
 )
 
+func CreateRegularDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			DeploymentSpec: &v1.DeploymentSpec{
+				Name: name,
+				ProviderSettings: &v1.ProviderSettingsSpec{
+					InstanceSizeName:    InstanceSizeM30,
+					RegionName:          "US_EAST_1",
+					BackingProviderName: "AWS",
+				},
+			},
+		},
+	}
+}
+
+func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				ClusterType: "REPLICASET",
+				Name:        name,
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "Zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "US_EAST_1",
+								Priority:     toptr.MakePtr(7),
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM30,
+									NodeCount:    toptr.MakePtr(3),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 	deployment := CreateBasicDeployment(name)
 	deployment.SetAnnotations(map[string]string{
@@ -136,47 +191,18 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 }
 
 func CreateBasicDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name: "cluster-basics",
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName:    InstanceSizeM2,
-					ProviderName:        "TENANT",
-					RegionName:          "US_EAST_1",
-					BackingProviderName: "AWS",
-				},
-			},
-		},
-	}
+	deployment := CreateRegularDeployment(name)
+	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = InstanceSizeM2
+	deployment.Spec.DeploymentSpec.ProviderSettings.ProviderName = "TENANT"
+
+	return deployment
 }
 
 func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
-	deployment := &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name:                  "deployment-backup",
-				ProviderBackupEnabled: toptr.MakePtr(true),
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName: InstanceSizeM10,
-					ProviderName:     "AWS",
-					RegionName:       "US_EAST_1",
-				},
-			},
-		},
-	}
+	deployment := CreateRegularDeployment(name)
+	deployment.Spec.DeploymentSpec.ProviderBackupEnabled = toptr.MakePtr(true)
+	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = InstanceSizeM10
+
 	return deployment
 }
 
@@ -265,23 +291,9 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 }
 
 func CreateBasicFreeDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name: "cluster-basics-free",
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName:    InstanceSizeM0,
-					ProviderName:        "TENANT",
-					RegionName:          "US_EAST_1",
-					BackingProviderName: "AWS",
-				},
-			},
-		},
-	}
+	deployment := CreateRegularDeployment(name)
+	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = InstanceSizeM0
+	deployment.Spec.DeploymentSpec.ProviderSettings.ProviderName = "TENANT"
+
+	return deployment
 }
