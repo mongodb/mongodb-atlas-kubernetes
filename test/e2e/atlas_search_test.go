@@ -178,8 +178,8 @@ func AtlasSearchFlow(userData *model.TestDataProvider, atlasSearch *v1.AtlasSear
 
 			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch).ToNot(BeNil())
 			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes).To(HaveLen(2))
-			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[0].Status).To(Equal("ready"))
-			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[1].Status).To(Equal("ready"))
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[0].Status).To(Equal(status.IndexStatus("ready")))
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[1].Status).To(Equal(status.IndexStatus("ready")))
 
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
 				if condition.Type == status.AtlasSearchReadyType {

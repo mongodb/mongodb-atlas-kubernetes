@@ -4,12 +4,12 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-type indexStatus string
+type IndexStatus string
 
 const (
-	IndexStatusReady      indexStatus = "ready"
-	IndexStatusInProgress indexStatus = "inProgress"
-	IndexStatusFailed     indexStatus = "failed"
+	IndexStatusReady      IndexStatus = "ready"
+	IndexStatusInProgress IndexStatus = "inProgress"
+	IndexStatusFailed     IndexStatus = "failed"
 )
 
 type AtlasSearch struct {
@@ -22,7 +22,7 @@ type AtlasIndex struct {
 	Name           string      `json:"name"`
 	Database       string      `json:"database"`
 	CollectionName string      `json:"collectionName"`
-	Status         indexStatus `json:"status"`
+	Status         IndexStatus `json:"status"`
 	Error          string      `json:"error,omitempty"`
 }
 
@@ -34,7 +34,7 @@ func NewStatusFromAtlas(index *mongodbatlas.SearchIndex, err error) *AtlasIndex 
 		}
 	}
 
-	var status indexStatus
+	var status IndexStatus
 	var errMessage string
 
 	switch index.Status {
