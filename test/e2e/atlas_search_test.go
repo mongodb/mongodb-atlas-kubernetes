@@ -120,16 +120,15 @@ var _ = Describe("DeploymentAtlasSearch", Label("atlas-search"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateRegularDeployment("as-regular-deployment")),
 			atlasSearchConfig,
 		),
-		/*
-			Entry("Test[as-advanced-deployment]: Advanced Deployment with Atlas Search", Label("as-advanced-deployment"),
-				model.DataProvider(
-					"as-advanced-deployment",
-					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					40000,
-					[]func(*model.TestDataProvider){},
-				).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("as-advanced-deployment")),
-				atlasSearchConfig,
-			),*/
+		Entry("Test[as-advanced-deployment]: Advanced Deployment with Atlas Search", Label("as-advanced-deployment"),
+			model.DataProvider(
+				"as-advanced-deployment",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("as-advanced-deployment")),
+			atlasSearchConfig,
+		),
 	)
 })
 
@@ -186,10 +185,10 @@ func AtlasSearchFlow(userData *model.TestDataProvider, atlasSearch *v1.AtlasSear
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 
-			Expect(userData.InitialDeployments[0].Status.AtlasSearch).ShouldNot(BeNil())
-			Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes).Should(HaveLen(2))
-			Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[0].Status).Should(Equal("ready"))
-			Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[1].Status).Should(Equal("ready"))
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch).ToNot(BeNil())
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes).To(HaveLen(2))
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[0].Status).To(Equal("ready"))
+			g.Expect(userData.InitialDeployments[0].Status.AtlasSearch.Indexes[1].Status).To(Equal("ready"))
 
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
 				if condition.Type == status.AtlasSearchReadyType {
