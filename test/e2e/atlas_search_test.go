@@ -72,15 +72,6 @@ var _ = Describe("DeploymentAtlasSearch", Label("atlas-search"), func() {
 										},
 									},
 								},
-								Synonyms: []v1.AtlasSearchSynonym{
-									{
-										Name:     "my_synonym",
-										Analyzer: "lucene.standard",
-										Source: v1.SynonymSource{
-											Collection: "neighborhoods",
-										},
-									},
-								},
 							},
 						},
 					},
