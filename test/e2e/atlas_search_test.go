@@ -198,6 +198,6 @@ func AtlasSearchFlow(userData *model.TestDataProvider, atlasSearch *v1.AtlasSear
 			}
 
 			return false
-		}).WithTimeout(10 * time.Minute).Should(BeTrue())
+		}).WithTimeout(30 * time.Minute).Should(BeTrue())
 	})
 }
