@@ -83,14 +83,10 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	ctx.Log.Debugw("Deployments BEFORE Merging", "from Atlas", atlasDeploymentAsAtlas, "from the Spec", deployment.Spec.AdvancedDeploymentSpec)
-
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
-
-	ctx.Log.Debugw("Deployments AFTER Merging", "atlasDeployment", atlasDeployment, "specDeployment", specDeployment)
 
 	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
@@ -282,18 +278,19 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 }
 
 func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
-	if atlas.DiskSizeGB != nil {
-		value := int(*atlas.DiskSizeGB)
-		result.DiskSizeGB = toptr.MakePtr(value)
-		atlas.DiskSizeGB = nil
+	var value *int
+	if atlas.DiskSizeGB != nil && *atlas.DiskSizeGB >= 1 {
+		value = toptr.MakePtr(int(*atlas.DiskSizeGB))
 	}
+	result.DiskSizeGB = value
+	atlas.DiskSizeGB = nil
 }
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
 func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) bool {
 	deploymentAtlas = cleanupFieldsToCompare(deploymentAtlas, deploymentOperator)
 
-	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
+	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}

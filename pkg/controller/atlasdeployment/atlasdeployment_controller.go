@@ -187,7 +187,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			log.Errorw("failed to convert legacy deployment", "error", err)
 			return result.ReconcileResult(), nil
 		}
-		deployment.Spec.DeploymentSpec = nil
 	}
 
 	handleDeployment := r.selectDeploymentHandler(deployment)
@@ -452,9 +451,6 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx context.Contex
 	}
 
 	deleteDeploymentFunc := atlasClient.AdvancedClusters.Delete
-	if deployment.Spec.AdvancedDeploymentSpec != nil {
-		deleteDeploymentFunc = atlasClient.AdvancedClusters.Delete
-	}
 	if deployment.IsServerless() {
 		deleteDeploymentFunc = atlasClient.ServerlessInstances.Delete
 	}
