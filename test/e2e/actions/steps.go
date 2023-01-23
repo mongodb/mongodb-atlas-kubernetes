@@ -6,28 +6,23 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-
-	"k8s.io/apimachinery/pkg/types"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"go.mongodb.org/atlas/mongodbatlas"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
@@ -133,16 +128,6 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 	}
 }
 
-func WaitProject(data *model.TestDataProvider, generation int) {
-	EventuallyWithOffset(1, kube.ProjectReadyCondition(data), "25m", "10s").Should(Equal("True"), "Kubernetes resource: Project status `Ready` should be 'True'")
-	gen, err := k8s.GetProjectObservedGeneration(data.Context, data.K8SClient, data.Resources.Namespace, data.Resources.Project.GetK8sMetaName())
-	Expect(err).ToNot(HaveOccurred())
-	ExpectWithOffset(1, gen).Should(Equal(generation), "Kubernetes resource: Generation should be upgraded")
-	atlasProject, err := kube.GetProjectResource(data)
-	Expect(err).ShouldNot(HaveOccurred())
-	ExpectWithOffset(1, atlasProject.Status.ID).ShouldNot(BeNil(), "Kubernetes resource: Project status should have non-empty ID field")
-}
-
 func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
 	EventuallyWithOffset(1, func() string {
 		return kube.ProjectReadyCondition(data)
@@ -161,13 +146,6 @@ func WaitTestApplication(data *model.TestDataProvider, ns, labelKey, labelValue 
 		}
 	}
 	EventuallyWithOffset(1, isAppRunning(), "2m", "10s").Should(BeTrue(), "Test application should be running")
-}
-
-func CheckIfDeploymentExist(input model.UserInputs) func() bool {
-	return func() bool {
-		aClient := atlas.GetClientOrFail()
-		return aClient.IsDeploymentExist(input.ProjectID, input.Deployments[0].Spec.DeploymentSpec.Name)
-	}
 }
 
 func CheckIfUsersExist(input model.UserInputs) func() bool {
@@ -269,18 +247,6 @@ func CompareServerlessSpec(requested model.DeploymentSpec, created mongodbatlas.
 	Expect(created.GroupID).To(Not(BeEmpty()))
 }
 
-func SaveK8sResourcesTo(resources []string, ns string, destination string) {
-	for _, resource := range resources {
-		data := kubecli.GetYamlResource(resource, ns)
-		path := fmt.Sprintf("output/%s/%s.yaml", destination, resource)
-		utils.SaveToFile(path, data)
-	}
-}
-
-func SaveK8sResources(resources []string, ns string) {
-	SaveK8sResourcesTo(resources, ns, ns)
-}
-
 func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
 	yaml, err := k8s.ProjectListYaml(ctx, k8sClient, ns)
 	if err != nil {
@@ -335,19 +301,15 @@ func SaveUsersToFile(ctx context.Context, k8sClient client.Client, ns string) er
 
 func SaveTestAppLogs(input model.UserInputs) {
 	for _, user := range input.Users {
-		utils.SaveToFile(
-			fmt.Sprintf("output/%s/testapp-describe-%s.txt", input.Namespace, user.Spec.Username),
-			kubecli.DescribeTestApp(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
-		)
+		testAppName := fmt.Sprintf("test-app-%s", user.Spec.Username)
+		bytes, err := k8s.GetPodLogsByDeployment(testAppName, input.Namespace, corev1.PodLogOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
 		utils.SaveToFile(
 			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
-			kubecli.GetLogs(config.TestAppLabelPrefix+user.Spec.Username, input.Namespace),
+			bytes,
 		)
 	}
-}
-
-func SaveDeploymentDump(input model.UserInputs) {
-	kubecli.GetDeploymentDump(fmt.Sprintf("output/%s/dump", input.Namespace))
 }
 
 func CheckUsersAttributes(data *model.TestDataProvider) {
@@ -487,118 +449,11 @@ func CreateConnectionAtlasKey(data *model.TestDataProvider) {
 	})
 }
 
-func createConnectionAtlasKeyFrom(data *model.TestDataProvider, key *mongodbatlas.APIKey) {
-	By("Change resources depends on AtlasKey and create key", func() {
-		if data.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			err := k8s.CreateSecret(data.Context, data.K8SClient, key.PublicKey, key.PrivateKey, config.DefaultOperatorGlobalKey, data.Resources.Namespace)
-			Expect(err).NotTo(HaveOccurred())
-		} else {
-			err := k8s.CreateSecret(data.Context, data.K8SClient, key.PublicKey, key.PrivateKey, data.Resources.KeyName, data.Resources.Namespace)
-			Expect(err).NotTo(HaveOccurred())
-		}
-	})
-}
-
-func recreateAtlasKeyIfNeed(data *model.TestDataProvider) {
-	if !data.Resources.AtlasKeyAccessType.IsFullAccess() {
-		aClient, err := atlas.AClient()
-		Expect(err).ShouldNot(HaveOccurred())
-		globalKey, err := aClient.AddKeyWithAccessList(data.Resources.ProjectID, data.Resources.AtlasKeyAccessType.Roles, data.Resources.AtlasKeyAccessType.Whitelist)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(globalKey.PublicKey).ShouldNot(BeEmpty())
-		Expect(globalKey.PrivateKey).ShouldNot(BeEmpty())
-		data.Resources.AtlasKeyAccessType.GlobalKeyAttached = globalKey
-
-		k8s.DeleteKey(data.Context, data.K8SClient, data.Resources.KeyName, data.Resources.Namespace)
-		createConnectionAtlasKeyFrom(data, globalKey)
-	}
-}
-
-func DeployProjectAndWait(data *model.TestDataProvider, generation int) {
-	By("Create users resources: keys, project", func() {
-		CreateConnectionAtlasKey(data)
-		kubecli.Apply(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
-		By("Wait project creation and get projectID", func() {
-			WaitProject(data, generation)
-			atlasProject, err := kube.GetProjectResource(data)
-			Expect(err).Should(BeNil(), "Error has Occurred")
-			data.Resources.ProjectID = atlasProject.Status.ID
-			Expect(data.Resources.ProjectID).ShouldNot(BeEmpty())
-		})
-		recreateAtlasKeyIfNeed(data)
-	})
-}
-
-func DeployDeployment(data *model.TestDataProvider) {
-	if len(data.Resources.Deployments) > 0 {
-		By("Create deployment", func() {
-			kubecli.Apply(data.Resources.Deployments[0].DeploymentFileName(data.Resources), "-n", data.Resources.Namespace)
-		})
-		By("Wait deployment creation", func() {
-			WaitDeploymentWithoutGenerationCheck(data)
-		})
-		By("check deployment Attribute", func() {
-			aClient, err := atlas.AClient()
-			Expect(err).NotTo(HaveOccurred())
-			deployment := aClient.GetDeployment(data.Resources.ProjectID, data.Resources.Deployments[0].Spec.DeploymentSpec.Name)
-			CompareDeploymentsSpec(data.Resources.Deployments[0].Spec, deployment)
-		})
-	}
-}
-
-func DeployUsers(data *model.TestDataProvider) {
-	By("create users", func() {
-		kubecli.Apply(data.Resources.GetResourceFolder()+"/user/", "-n", data.Resources.Namespace)
-	})
-	By("check database users Attributes", func() {
-		Eventually(CheckIfUsersExist(data.Resources), "2m", "10s").Should(BeTrue())
-		CheckUsersAttributes(data)
-	})
-	By("Deploy application for user", func() {
-		CheckUsersCanUseApp(data)
-	})
-}
-
-// DeployUserResourcesAction deploy all user resources, wait, and check results
-func DeployUserResourcesAction(data *model.TestDataProvider) {
-	DeployProjectAndWait(data, 1)
-	DeployDeployment(data)
-	DeployUsers(data)
-}
-
 func DeleteDBUsersApps(data model.TestDataProvider) {
 	By("Delete dbusers applications", func() {
 		for _, user := range data.Resources.Users {
 			helm.Uninstall("test-app-"+user.Spec.Username, data.Resources.Namespace)
 		}
-	})
-}
-
-func DeleteUserResources(data *model.TestDataProvider) {
-	DeleteUserResourcesDeployment(data)
-	DeleteUserResourcesProject(data)
-}
-
-func DeleteUserResourcesDeployment(data *model.TestDataProvider) {
-	By("Delete deployment", func() {
-		kubecli.Delete(data.Resources.Deployments[0].DeploymentFileName(data.Resources), "-n", data.Resources.Namespace)
-		Eventually(
-			CheckIfDeploymentExist(data.Resources),
-			"10m", "1m",
-		).Should(BeFalse(), "Deployment should be deleted from Atlas")
-	})
-}
-
-func DeleteUserResourcesProject(data *model.TestDataProvider) {
-	By("Delete project", func() {
-		kubecli.Delete(data.Resources.ProjectPath, "-n", data.Resources.Namespace)
-		Eventually(
-			func(g Gomega) bool {
-				aClient := atlas.GetClientOrFail()
-				return aClient.IsProjectExists(g, data.Resources.ProjectID)
-			},
-			"5m", "20s",
-		).Should(BeFalse(), "Project should be deleted from Atlas")
 	})
 }
 
@@ -644,6 +499,16 @@ func DeleteTestDataDeployments(data *model.TestDataProvider) {
 				},
 				"7m", "20s",
 			).Should(BeFalse(), "Deployment should be deleted from Atlas")
+		}
+	})
+}
+
+func DeleteTestDataUsers(data *model.TestDataProvider) {
+	By("Delete Users", func() {
+		for _, user := range data.Users {
+			Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Project.Namespace}, data.Project)).Should(Succeed())
+			Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, user)).Should(Succeed())
+			Expect(data.K8SClient.Delete(data.Context, user)).Should(Succeed())
 		}
 	})
 }

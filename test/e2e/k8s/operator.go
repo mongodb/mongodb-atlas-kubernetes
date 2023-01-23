@@ -57,6 +57,8 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 
 	syncPeriod := time.Hour * 3
 
+	logger.Info("starting manager", zap.Any("config", config))
+
 	var cacheFunc cache.NewCacheFunc
 	if len(config.WatchedNamespaces) > 1 {
 		var namespaces []string

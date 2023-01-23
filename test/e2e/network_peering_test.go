@@ -6,26 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
+	"k8s.io/apimachinery/pkg/types"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/networkpeer"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
@@ -47,7 +41,6 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()

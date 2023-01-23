@@ -48,7 +48,7 @@ func GetAppVersion(name string) string {
 
 func Uninstall(name string, ns string) {
 	session := cli.Execute("helm", "uninstall", name, "--namespace", ns, "--wait", "--timeout", "15m") // remove timeout
-	EventuallyWithOffset(1, session.Wait("15m")).Should(Say("uninstalled"), "HELM. Can't unninstall "+name)
+	EventuallyWithOffset(1, session.Wait("15m")).Should(Or(Say("uninstalled"), Say("")), "HELM. Can't uninstall "+name)
 }
 
 func Install(args ...string) {

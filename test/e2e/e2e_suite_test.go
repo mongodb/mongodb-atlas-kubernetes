@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )

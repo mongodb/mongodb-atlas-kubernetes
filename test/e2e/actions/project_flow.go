@@ -31,12 +31,7 @@ func ProjectCreationFlow(userData *model.TestDataProvider) {
 }
 
 func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Manager {
-	By(fmt.Sprintf("Create namespace %s", userData.Resources.Namespace))
-	Expect(k8s.CreateNamespace(userData.Context, userData.K8SClient, userData.Resources.Namespace)).Should(Succeed())
-	k8s.CreateDefaultSecret(userData.Context, userData.K8SClient, config.DefaultOperatorGlobalKey, userData.Resources.Namespace)
-	if !userData.Resources.AtlasKeyAccessType.GlobalLevelKey {
-		CreateConnectionAtlasKey(userData)
-	}
+	CreateNamespaceAndSecrets(userData)
 	logPath := path.Join("output", userData.Resources.Namespace)
 	mgr, err := k8s.RunOperator(&k8s.Config{
 		Namespace: userData.Resources.Namespace,
@@ -51,4 +46,13 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return mgr
+}
+
+func CreateNamespaceAndSecrets(userData *model.TestDataProvider) {
+	By(fmt.Sprintf("Create namespace %s", userData.Resources.Namespace))
+	Expect(k8s.CreateNamespace(userData.Context, userData.K8SClient, userData.Resources.Namespace)).Should(Succeed())
+	k8s.CreateDefaultSecret(userData.Context, userData.K8SClient, config.DefaultOperatorGlobalKey, userData.Resources.Namespace)
+	if !userData.Resources.AtlasKeyAccessType.GlobalLevelKey {
+		CreateConnectionAtlasKey(userData)
+	}
 }

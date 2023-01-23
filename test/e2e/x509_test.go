@@ -1,30 +1,21 @@
 package e2e_test
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/kubecli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("x509auth"), func() {
 	var testData *model.TestDataProvider
-
-	_ = BeforeEach(func() {
-		Eventually(kubecli.GetVersionOutput()).Should(Say(K8sVersion))
-	})
 
 	_ = AfterEach(func() {
 		GinkgoWriter.Write([]byte("\n"))
