@@ -33,7 +33,7 @@ jobs:
           fi
 
           echo "VERSION:$version"
-          tag="${version}"
+          tag="v${version}"
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "tag=$tag" >> $GITHUB_OUTPUT
       - name: Trigger helm post release workflow
@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.tag }}
+          version: ${{ steps.tag.outputs.version}}
           platforms: linux/amd64,linux/arm64
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
@@ -65,7 +65,7 @@ jobs:
         uses: ./.github/actions/certify-openshift-images
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.tag }}
+          version: ${{ steps.tag.outputs.version}}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
