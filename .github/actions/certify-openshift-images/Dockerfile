@@ -7,7 +7,7 @@ RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/r
   chmod +x ./preflight-linux-amd64 && \
   mv ./preflight-linux-amd64 /usr/local/bin/preflight
 
-COPY entrypoint.sh /home/entrypoint.sh
+COPY ./entrypoint.sh /home/entrypoint.sh
 RUN chmod +x /home/entrypoint.sh
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
