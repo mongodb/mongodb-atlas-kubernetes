@@ -33,7 +33,7 @@ jobs:
           fi
 
           echo "VERSION:$version"
-          tag="v${version}"
+          tag="${version}"
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "tag=$tag" >> $GITHUB_OUTPUT
       - name: Trigger helm post release workflow
