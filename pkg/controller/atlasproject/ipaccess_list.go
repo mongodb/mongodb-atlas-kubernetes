@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -119,11 +118,6 @@ func validateSingleIPAccessList(list project.IPAccessList) error {
 		if err != nil {
 			return err
 		}
-	}
-	onlyOneSpecified := onlyOneSpecified(list.AwsSecurityGroup, list.CIDRBlock, list.IPAddress)
-	allSpecified := isNotEmpty(list.AwsSecurityGroup) && isNotEmpty(list.CIDRBlock) && isNotEmpty(list.IPAddress)
-	if !onlyOneSpecified || allSpecified {
-		return errors.New("only one of the 'awsSecurityGroup', 'cidrBlock' or 'ipAddress' is required be specified")
 	}
 	if strings.Contains(list.IPAddress, "/") {
 		return fmt.Errorf("ipAddress %s cannot contain a / character", list.IPAddress)
@@ -250,25 +244,4 @@ func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IP
 		active = append(active, list)
 	}
 	return active, expired
-}
-
-func isNotEmpty(s string) bool {
-	return s != ""
-}
-
-func onlyOneSpecified(values ...string) bool {
-	found := false
-	for _, v := range values {
-		if v == "" {
-			continue
-		}
-
-		if found {
-			return false
-		}
-
-		found = true
-	}
-
-	return found
 }

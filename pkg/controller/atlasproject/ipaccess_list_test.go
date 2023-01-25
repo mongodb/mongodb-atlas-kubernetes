@@ -21,13 +21,6 @@ func TestValidateSingleIPAccessList(t *testing.T) {
 		{in: project.IPAccessList{DeleteAfterDate: "2020-11-02T20:04:05-0700", IPAddress: "192.158.0.0"}},
 		{in: project.IPAccessList{DeleteAfterDate: "2020-11-02T20:04:05+03", IPAddress: "192.158.0.0"}},
 		{in: project.IPAccessList{DeleteAfterDate: "2011-01-02T15:04:05", IPAddress: "192.158.0.0"}},
-
-		// Only one other field is allowed (and required)
-		{in: project.IPAccessList{DeleteAfterDate: "2011-01-02T15:04:05", IPAddress: "192.158.0.0", CIDRBlock: "203.0.113.0/24"}, errorExpectedRegex: "only one of the "},
-		{in: project.IPAccessList{IPAddress: "192.158.0.0", AwsSecurityGroup: "sg-0026348ec11780bd1"}, errorExpectedRegex: "only one of the "},
-		{in: project.IPAccessList{CIDRBlock: "203.0.113.0/24", AwsSecurityGroup: "sg-0026348ec11780bd1"}, errorExpectedRegex: "only one of the "},
-		{in: project.IPAccessList{CIDRBlock: "203.0.113.0/24", AwsSecurityGroup: "sg-0026348ec11780bd1", IPAddress: "192.158.0.0"}, errorExpectedRegex: "only one of the "},
-		{in: project.IPAccessList{}, errorExpectedRegex: "only one of the "},
 	}
 
 	for _, testCase := range testCases {
