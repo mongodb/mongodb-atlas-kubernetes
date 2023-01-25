@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -221,7 +222,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
 	if err != nil {
-		return fmt.Errorf("can not compare BackupSchedule resources: %v", err)
+		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
 	}
 
 	if equal {

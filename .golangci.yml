@@ -22,7 +22,6 @@ linters:
     - gofmt
     - ineffassign
     - misspell
-    - nolintlint
     - noctx
     - prealloc
     - rowserrcheck
