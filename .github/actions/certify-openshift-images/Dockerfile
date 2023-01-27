@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM docker:23.0-rc-cli
 
 RUN apk update && \
   apk add --no-cache curl jq
