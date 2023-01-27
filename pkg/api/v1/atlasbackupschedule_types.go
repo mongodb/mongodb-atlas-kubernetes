@@ -20,7 +20,7 @@ import (
 type AtlasBackupScheduleSpec struct {
 	// Specify true to enable automatic export of cloud backup snapshots to the AWS bucket. You must also define the export policy using export. If omitted, defaults to false.
 	// +optional
-	// +kubebuilder:default:=true
+	// +kubebuilder:default:=false
 	AutoExportEnabled bool `json:"autoExportEnabled,omitempty"`
 
 	// Export policy for automatically exporting cloud backup snapshots to AWS bucket.

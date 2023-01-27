@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
@@ -189,30 +193,42 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	r.Log.Debugf("updating backup configuration for the atlas deployment: %v", clusterName)
 	apiScheduleReq := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-		ClusterName:           clusterName,
-		ReferenceHourOfDay:    &bSchedule.Spec.ReferenceHourOfDay,
-		ReferenceMinuteOfHour: &bSchedule.Spec.ReferenceMinuteOfHour,
-		RestoreWindowDays:     &bSchedule.Spec.RestoreWindowDays,
-		UpdateSnapshots:       &bSchedule.Spec.UpdateSnapshots,
-		Policies:              []mongodbatlas.Policy{apiPolicy},
+		ClusterName:                       clusterName,
+		ReferenceHourOfDay:                &bSchedule.Spec.ReferenceHourOfDay,
+		ReferenceMinuteOfHour:             &bSchedule.Spec.ReferenceMinuteOfHour,
+		RestoreWindowDays:                 &bSchedule.Spec.RestoreWindowDays,
+		UpdateSnapshots:                   &bSchedule.Spec.UpdateSnapshots,
+		Policies:                          []mongodbatlas.Policy{apiPolicy},
+		AutoExportEnabled:                 &bSchedule.Spec.AutoExportEnabled,
+		UseOrgAndGroupNamesInExportPrefix: &bSchedule.Spec.UseOrgAndGroupNamesInExportPrefix,
 	}
 
-	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Delete(ctx, projectID, clusterName)
+	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
 	if err != nil {
-		errMessage := "unable to delete current backup configuration for project"
+		errMessage := "unable to get current backup configuration for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, clusterName, err)
 		return fmt.Errorf("%s: %s:%s, %w", errMessage, projectID, clusterName, err)
 	}
 
 	if currentSchedule == nil && response != nil {
-		return fmt.Errorf("can't delete сurrent backup configuration. response status: %s", response.Status)
+		return fmt.Errorf("can not get сurrent backup configuration. response status: %s", response.Status)
 	}
 
-	r.Log.Debugf("successfully deleted backup configuration. Default schedule received: %v", currentSchedule)
+	r.Log.Debugf("successfully received backup configuration: %v", currentSchedule)
 
 	apiScheduleReq.ClusterID = currentSchedule.ClusterID
 	// There is only one policy, always
 	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
+
+	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
+	if err != nil {
+		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
+	}
+
+	if equal {
+		r.Log.Debug("backupschedules are equal, nothing to change")
+		return nil
+	}
 
 	r.Log.Debugf("applying backup configuration: %v", *bSchedule)
 	if _, _, err := service.Client.CloudProviderSnapshotBackupPolicies.Update(ctx, projectID, clusterName, apiScheduleReq); err != nil {
@@ -220,6 +236,38 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	}
 	r.Log.Infof("successfully updated backup configuration for deployment %v", clusterName)
 	return nil
+}
+
+func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {
+	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
+	err := compat.JSONCopy(&currentCopy, currentSchedule)
+	if err != nil {
+		return false, err
+	}
+
+	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
+	err = compat.JSONCopy(&newCopy, newSchedule)
+	if err != nil {
+		return false, err
+	}
+
+	normalizeBackupSchedule(&currentCopy)
+	normalizeBackupSchedule(&newCopy)
+	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
+	if d != "" {
+		return false, nil
+	}
+	return true, nil
+}
+
+func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) {
+	s.CopySettings = nil
+	s.Links = nil
+	s.NextSnapshot = ""
+	if len(s.Policies) > 0 && len(s.Policies[0].PolicyItems) > 0 {
+		s.Policies[0].PolicyItems[0].ID = ""
+	}
+	s.UpdateSnapshots = nil
 }
 
 func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Context, clusterName string) error {
