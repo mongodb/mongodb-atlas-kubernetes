@@ -194,6 +194,7 @@ func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 	deployment := CreateRegularDeployment(name)
 	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = InstanceSizeM2
 	deployment.Spec.DeploymentSpec.ProviderSettings.ProviderName = "TENANT"
+	deployment.Spec.DeploymentSpec.ProviderSettings.BackingProviderName = "AWS"
 
 	return deployment
 }
@@ -294,6 +295,7 @@ func CreateBasicFreeDeployment(name string) *v1.AtlasDeployment {
 	deployment := CreateRegularDeployment(name)
 	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = InstanceSizeM0
 	deployment.Spec.DeploymentSpec.ProviderSettings.ProviderName = "TENANT"
+	deployment.Spec.DeploymentSpec.ProviderSettings.BackingProviderName = "AWS"
 
 	return deployment
 }
