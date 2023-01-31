@@ -207,13 +207,13 @@ func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
 	return deployment
 }
 
-func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
+func NewDeploymentWithBackupSpec(name string) v1.AtlasDeploymentSpec {
 	return v1.AtlasDeploymentSpec{
 		Project: common.ResourceRefNamespaced{
 			Name: ProjectName,
 		},
 		DeploymentSpec: &v1.DeploymentSpec{
-			Name:                  "deployment-backup",
+			Name:                  name,
 			ProviderBackupEnabled: toptr.MakePtr(false),
 			ProviderSettings: &v1.ProviderSettingsSpec{
 				InstanceSizeName: InstanceSizeM20,

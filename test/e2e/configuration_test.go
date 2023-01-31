@@ -54,7 +54,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30001,
 				[]func(*model.TestDataProvider){
-					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec(), 0),
+					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec("backup-deployment"), 0),
 					actions.SuspendDeployment,
 					actions.ReactivateDeployment,
 					actions.DeleteFirstUser,
@@ -110,7 +110,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 				model.NewEmptyAtlasKeyType().WithRoles([]model.AtlasRoles{model.GroupOwner}).WithWhiteList([]string{"0.0.0.1/1", "128.0.0.0/1"}),
 				30010,
 				[]func(*model.TestDataProvider){
-					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec(), 0),
+					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec("backup-deployment"), 0),
 				},
 			).WithProject(data.DefaultProject()).
 				WithInitialDeployments(data.CreateDeploymentWithBackup("backup-deployment")).
