@@ -137,6 +137,7 @@ jobs:
             "deployment-ns",
             "deployment-wide",
             "encryption-at-rest",
+            "free-tier",
             "global-deployment",
             "helm-ns",
             "helm-update",
