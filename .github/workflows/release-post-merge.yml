@@ -37,6 +37,7 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "tag=$tag" >> $GITHUB_OUTPUT
       - name: Trigger helm post release workflow
+        # Please provide a token with write access to the repository into secrets.HELM_REPO_TOKEN
         run: |
           curl \
             -X POST \
