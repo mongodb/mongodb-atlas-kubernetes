@@ -681,7 +681,7 @@ func (in *AtlasProjectSpec) DeepCopyInto(out *AtlasProjectSpec) {
 	*out = *in
 	if in.ConnectionSecret != nil {
 		in, out := &in.ConnectionSecret, &out.ConnectionSecret
-		*out = new(common.ResourceRef)
+		*out = new(common.ResourceRefNamespaced)
 		**out = **in
 	}
 	if in.ProjectIPAccessList != nil {

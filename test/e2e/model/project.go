@@ -49,7 +49,12 @@ func (p *AProject) ProjectName(name string) *AProject {
 }
 
 func (p *AProject) WithSecretRef(name string) *AProject {
-	p.Spec.ConnectionSecret = &common.ResourceRef{Name: name}
+	p.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: name, Namespace: p.ObjectMeta.Namespace}
+	return p
+}
+
+func (p *AProject) WithSecretRefNamespaced(name, namespace string) *AProject {
+	p.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: name, Namespace: namespace}
 	return p
 }
 

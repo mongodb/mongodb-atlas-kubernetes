@@ -92,7 +92,7 @@ func deployMultiNSResources(testData *model.TestDataProvider) {
 			testData.Project.Namespace = testData.Resources.Namespace
 		}
 		if !testData.Resources.AtlasKeyAccessType.GlobalLevelKey {
-			testData.Project.Spec.ConnectionSecret = &common.ResourceRef{Name: testData.Prefix}
+			testData.Project.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: testData.Prefix, Namespace: testData.Project.Namespace}
 		}
 		By(fmt.Sprintf("Deploy Project %s", testData.Project.GetName()), func() {
 			err := testData.K8SClient.Create(testData.Context, testData.Project)

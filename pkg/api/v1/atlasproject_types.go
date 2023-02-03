@@ -48,7 +48,7 @@ type AtlasProjectSpec struct {
 	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
 	// +optional
-	ConnectionSecret *common.ResourceRef `json:"connectionSecretRef,omitempty"`
+	ConnectionSecret *common.ResourceRefNamespaced `json:"connectionSecretRef,omitempty"`
 
 	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
@@ -142,7 +142,12 @@ func (p AtlasProject) ID() string {
 
 func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	if p.Spec.ConnectionSecret != nil {
-		key := kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
+		var key client.ObjectKey
+		if p.Spec.ConnectionSecret.Namespace != "" {
+			key = kube.ObjectKey(p.Spec.ConnectionSecret.Namespace, p.Spec.ConnectionSecret.Name)
+		} else {
+			key = kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
+		}
 		return &key
 	}
 	return nil
@@ -203,7 +208,14 @@ func (p *AtlasProject) WithAtlasName(name string) *AtlasProject {
 
 func (p *AtlasProject) WithConnectionSecret(name string) *AtlasProject {
 	if name != "" {
-		p.Spec.ConnectionSecret = &common.ResourceRef{Name: name}
+		p.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: name, Namespace: p.Namespace}
+	}
+	return p
+}
+
+func (p *AtlasProject) WithConnectionSecretNamespaced(name, namespace string) *AtlasProject {
+	if name != "" {
+		p.Spec.ConnectionSecret = &common.ResourceRefNamespaced{Name: name, Namespace: namespace}
 	}
 	return p
 }
