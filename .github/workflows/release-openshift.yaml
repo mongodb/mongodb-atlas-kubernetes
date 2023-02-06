@@ -62,6 +62,7 @@ jobs:
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          submit: "true"
       - name: Configure certified release
         if: ${{ matrix.certified }}
         env:

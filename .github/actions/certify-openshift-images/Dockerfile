@@ -1,7 +1,21 @@
-FROM docker:23.0-rc-cli
+FROM registry.access.redhat.com/ubi8/ubi:latest
 
-RUN apk update && \
-  apk add --no-cache curl jq
+RUN yum install -y \
+      bzip2 \
+      gzip \
+      tar \
+      iptables \
+      yum-utils \
+      jq
+
+RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
+    yum list docker-ce --showduplicates | sort -r && \
+    yum install -y \
+      docker-ce \
+      docker-ce-cli \
+      containerd.io
+
+RUN yum clean all
 
 RUN curl -LO https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.4.3/preflight-linux-amd64  && \
   chmod +x ./preflight-linux-amd64 && \
