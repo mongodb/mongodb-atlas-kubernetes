@@ -134,7 +134,7 @@ func cleanupDeployment(deployment mongodbatlas.Cluster) mongodbatlas.Cluster {
 }
 
 func IsFreeTierCluster(deployment *mongodbatlas.Cluster) bool {
-	if deployment != nil && deployment.ProviderSettings != nil && deployment.ProviderSettings.InstanceSizeName == "M10" {
+	if deployment != nil && deployment.ProviderSettings != nil && deployment.ProviderSettings.InstanceSizeName == "M0" {
 		return true
 	}
 	return false
