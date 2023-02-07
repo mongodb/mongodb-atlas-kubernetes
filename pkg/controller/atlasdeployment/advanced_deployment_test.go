@@ -59,7 +59,7 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 		assert.NoError(t, err)
 
 		logger, _ := zap.NewProduction()
-		areEqual := AdvancedDeploymentsEqual(logger.Sugar(), merged, atlas)
+		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), merged, atlas)
 		assert.True(t, areEqual, "Deploymnts should be equal")
 	})
 }

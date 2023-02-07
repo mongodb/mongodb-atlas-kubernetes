@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
@@ -26,7 +25,7 @@ func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		ClusterType:              getDefaultClusterType(legacy.ClusterType),
 		DiskSizeGB:               legacy.DiskSizeGB,
 		EncryptionAtRestProvider: legacy.EncryptionAtRestProvider,
-		Labels:                   []common.LabelSpec{},
+		Labels:                   legacy.Labels,
 		MongoDBMajorVersion:      legacy.MongoDBMajorVersion,
 		Name:                     legacy.Name,
 		Paused:                   legacy.Paused,
@@ -81,7 +80,7 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
 					NodeCount:     convertLegacyInt64(legacyRegionConfig.ReadOnlyNodes),
 				},
-				AutoScaling:         convertLegacyAutoScaling(legacy.ProviderSettings.AutoScaling),
+				AutoScaling:         convertLegacyAutoScaling(legacy.AutoScaling, legacy.ProviderSettings.AutoScaling),
 				BackingProviderName: legacy.ProviderSettings.BackingProviderName,
 				Priority:            convertLegacyInt64(legacyRegionConfig.Priority),
 				ProviderName:        string(legacy.ProviderSettings.ProviderName),
@@ -97,28 +96,36 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 	return result, nil
 }
 
-func convertLegacyAutoScaling(legacy *mdbv1.AutoScalingSpec) *mdbv1.AdvancedAutoScalingSpec {
-	if legacy == nil {
+func convertLegacyAutoScaling(legacyRoot, legacyPS *mdbv1.AutoScalingSpec) *mdbv1.AdvancedAutoScalingSpec {
+	if legacyRoot == nil || legacyPS == nil {
 		return nil
 	}
 
 	autoScaling := &mdbv1.AdvancedAutoScalingSpec{
 		DiskGB: &mdbv1.DiskGB{
-			Enabled: defaultBool(legacy.DiskGBEnabled, true),
+			Enabled: legacyRoot.DiskGBEnabled,
 		},
 	}
 
-	if legacy.Compute != nil && legacy.Compute.Enabled != nil {
+	if legacyRoot.Compute != nil && legacyRoot.Compute.Enabled != nil {
 		autoScaling.Compute = &mdbv1.ComputeSpec{
-			Enabled:          defaultBool(legacy.Compute.Enabled, false),
-			ScaleDownEnabled: defaultBool(legacy.Compute.ScaleDownEnabled, false),
-			MinInstanceSize:  emptyIfDisabled(legacy.Compute.MinInstanceSize, legacy.Compute.Enabled),
-			MaxInstanceSize:  emptyIfDisabled(legacy.Compute.MaxInstanceSize, legacy.Compute.Enabled),
+			Enabled:          legacyRoot.Compute.Enabled,
+			ScaleDownEnabled: legacyRoot.Compute.ScaleDownEnabled,
+			MinInstanceSize:  emptyIfDisabled(legacyPS.Compute.MinInstanceSize, legacyRoot.Compute.Enabled),
+			MaxInstanceSize:  emptyIfDisabled(legacyPS.Compute.MaxInstanceSize, legacyRoot.Compute.Enabled),
 		}
 	}
 
 	return autoScaling
 }
+
+// func pickAutoScalingField[T interface{}](fieldOne, fieldTwo *T) *T {
+// 	if fieldOne != nil {
+// 		return fieldOne
+// 	}
+
+// 	return fieldTwo
+// }
 
 func fillDefaultReplicationSpec(legacy *mdbv1.DeploymentSpec) {
 	replicationSpec := mdbv1.ReplicationSpec{
@@ -158,12 +165,12 @@ func convertLegacyInt64(input *int64) *int {
 	return toptr.MakePtr(int(*input))
 }
 
-func defaultBool(legacy *bool, defaultValue bool) *bool {
-	if legacy != nil {
-		return legacy
-	}
-	return toptr.MakePtr(defaultValue)
-}
+// func defaultBool(legacy *bool, defaultValue bool) *bool {
+// 	if legacy != nil {
+// 		return legacy
+// 	}
+// 	return toptr.MakePtr(defaultValue)
+// }
 
 func emptyIfDisabled(value string, flag *bool) string {
 	if flag == nil || !*flag {

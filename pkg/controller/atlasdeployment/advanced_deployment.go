@@ -88,7 +88,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
+	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
 
@@ -105,7 +105,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	cleanupTheSpec(&specDeployment)
+	cleanupTheSpec(ctx, &specDeployment)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -120,11 +120,25 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupTheSpec(specMerged *mdbv1.AdvancedDeploymentSpec) {
+func cleanupTheSpec(ctx *workflow.Context, specMerged *mdbv1.AdvancedDeploymentSpec) {
 	specMerged.MongoDBVersion = ""
 
 	globalInstanceSize := ""
 	for i, replicationSpec := range specMerged.ReplicationSpecs {
+		autoScalingMissing := false
+		applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
+			if config.AutoScaling == nil {
+				autoScalingMissing = true
+			}
+		})
+
+		if autoScalingMissing {
+			ctx.Log.Debug("Not all RegionConfigs have AutoScaling set after object merge, removing it everywhere")
+			applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
+				config.AutoScaling = nil
+			})
+		}
+
 		for k := range replicationSpec.RegionConfigs {
 			regionConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
 
@@ -134,25 +148,30 @@ func cleanupTheSpec(specMerged *mdbv1.AdvancedDeploymentSpec) {
 				regionConfig.ReadOnlySpecs,
 			}
 
-			forEachSpec := func(f func(spec *mdbv1.Specs)) {
-				for _, spec := range specs {
-					if spec != nil {
-						f(spec)
-					}
-				}
-			}
-
-			forEachSpec(func(spec *mdbv1.Specs) {
+			applyToEach(specs, func(spec *mdbv1.Specs) {
 				if globalInstanceSize == "" && spec.NodeCount != nil && *spec.NodeCount != 0 {
 					globalInstanceSize = spec.InstanceSize
 				}
 			})
 
-			forEachSpec(func(spec *mdbv1.Specs) {
+			applyToEach(specs, func(spec *mdbv1.Specs) {
 				if spec.NodeCount == nil || *spec.NodeCount == 0 {
 					spec.InstanceSize = globalInstanceSize
 				}
 			})
+
+			if !autoScalingMissing && regionConfig.AutoScaling.Compute != nil && (regionConfig.AutoScaling.Compute.Enabled == nil || !*regionConfig.AutoScaling.Compute.Enabled) {
+				regionConfig.AutoScaling.Compute.MinInstanceSize = ""
+				regionConfig.AutoScaling.Compute.MaxInstanceSize = ""
+			}
+		}
+	}
+}
+
+func applyToEach[T interface{}](items []*T, f func(spec *T)) {
+	for _, item := range items {
+		if item != nil {
+			f(item)
 		}
 	}
 }
@@ -287,15 +306,15 @@ func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbat
 }
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) bool {
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) (areEqual bool, diff string) {
 	deploymentAtlas = cleanupFieldsToCompare(deploymentAtlas, deploymentOperator)
 
-	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
+	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
 
-	return d == ""
+	return d == "", d
 }
 
 func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.AdvancedDeploymentSpec {
