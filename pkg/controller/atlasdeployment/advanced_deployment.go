@@ -15,6 +15,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
 
+const FreeTier = "M0"
+
 func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	advancedDeploymentSpec := deployment.Spec.AdvancedDeploymentSpec
 
@@ -210,12 +212,16 @@ func handleAutoscaling(ctx *workflow.Context, desiredDeployment *mdbv1.AdvancedD
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
 func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment mdbv1.AdvancedDeploymentSpec) (mergedDeployment mdbv1.AdvancedDeploymentSpec, atlasDeployment mdbv1.AdvancedDeploymentSpec, err error) {
+	if IsFreeTierAdvancedDeployment(&atlasDeploymentAsAtlas) {
+		atlasDeploymentAsAtlas.DiskSizeGB = nil
+	}
 	atlasDeployment, err = AdvancedDeploymentFromAtlas(atlasDeploymentAsAtlas)
 	if err != nil {
 		return
 	}
 
 	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
+
 	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
 		return
 	}
@@ -234,6 +240,23 @@ func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluste
 		}
 	}
 	return
+}
+
+func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool {
+	if deployment != nil && deployment.ReplicationSpecs != nil {
+		for _, replicationSpec := range deployment.ReplicationSpecs {
+			if replicationSpec.RegionConfigs != nil {
+				for _, regionConfig := range replicationSpec.RegionConfigs {
+					if regionConfig != nil &&
+						regionConfig.ElectableSpecs != nil &&
+						regionConfig.ElectableSpecs.InstanceSize == FreeTier {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {

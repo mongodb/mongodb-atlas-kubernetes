@@ -126,8 +126,18 @@ func cleanupDeployment(deployment mongodbatlas.Cluster) mongodbatlas.Cluster {
 	deployment.ReplicationSpec = nil
 	deployment.ConnectionStrings = nil
 	deployment = removeOutdatedFields(&deployment, nil)
+	if IsFreeTierCluster(&deployment) {
+		deployment.DiskSizeGB = nil
+	}
 
 	return deployment
+}
+
+func IsFreeTierCluster(deployment *mongodbatlas.Cluster) bool {
+	if deployment != nil && deployment.ProviderSettings != nil && deployment.ProviderSettings.InstanceSizeName == "M0" {
+		return true
+	}
+	return false
 }
 
 // removeOutdatedFields unsets fields which are should be empty based on flags

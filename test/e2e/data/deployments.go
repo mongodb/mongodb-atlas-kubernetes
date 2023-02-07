@@ -18,6 +18,7 @@ const (
 	InstanceSizeM20 = "M20"
 	InstanceSizeM30 = "M30"
 	InstanceSizeM0  = "M0"
+	AWSRegion       = "US_EAST_1"
 
 	ServerlessProviderName = "SERVERLESS"
 )
@@ -274,13 +275,62 @@ func CreateBasicFreeDeployment(name string) *v1.AtlasDeployment {
 				Name: ProjectName,
 			},
 			DeploymentSpec: &v1.DeploymentSpec{
-				Name: "cluster-basics-free",
+				Name: name,
 				ProviderSettings: &v1.ProviderSettingsSpec{
 					InstanceSizeName:    InstanceSizeM0,
 					ProviderName:        "TENANT",
 					RegionName:          "US_EAST_1",
 					BackingProviderName: "AWS",
 				},
+			},
+		},
+	}
+}
+
+func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Name:          name,
+				BackupEnabled: toptr.MakePtr(false),
+				BiConnector: &v1.BiConnectorSpec{
+					Enabled:        toptr.MakePtr(false),
+					ReadPreference: "secondary",
+				},
+				ClusterType:              string(v1.TypeReplicaSet),
+				EncryptionAtRestProvider: "NONE",
+				PitEnabled:               toptr.MakePtr(false),
+				Paused:                   toptr.MakePtr(false),
+				RootCertType:             "ISRGROOTX1",
+				VersionReleaseSystem:     "LTS",
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "Zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM0,
+								},
+								Priority:            toptr.MakePtr(7),
+								ProviderName:        string(provider.ProviderTenant),
+								BackingProviderName: string(provider.ProviderAWS),
+								RegionName:          AWSRegion,
+							},
+						},
+					},
+				},
+			},
+			ProcessArgs: &v1.ProcessArgs{
+				JavascriptEnabled:         toptr.MakePtr(true),
+				MinimumEnabledTLSProtocol: "TLS1_2",
+				NoTableScan:               toptr.MakePtr(false),
 			},
 		},
 	}
