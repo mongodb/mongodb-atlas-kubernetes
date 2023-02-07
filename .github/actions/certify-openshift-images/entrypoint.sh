@@ -9,7 +9,7 @@ DIGESTS=$(docker manifest inspect "${REPOSITORY}:${VERSION}" | jq -r .manifests[
 for DIGEST in $DIGESTS; do
   echo "Checking image $DIGEST"
   # Do the preflight check first
-  preflight check container "${REPOSITORY}@${DIGEST}" --artifacts "${DIGEST}" --docker-config="${HOME}/.docker/config.json"
+  preflight check container "${REPOSITORY}:${VERSION}@${DIGEST}" --artifacts "${DIGEST}" --docker-config="${HOME}/.docker/config.json"
 
   if [ "$SUBMIT" = "true" ]; then
     rm -rf "${DIGEST}"
