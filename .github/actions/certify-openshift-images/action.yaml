@@ -16,6 +16,10 @@ inputs:
   rhcc_project:
     description: The Redhat certification central project id
     required: true
+  submit:
+    description: Submit result to RedHat Connect
+    required: false
+    default: "false"
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -25,3 +29,4 @@ runs:
     QUAY_PASSWORD: ${{ inputs.quay_password }}
     RHCC_TOKEN: ${{ inputs.rhcc_token }}
     RHCC_PROJECT: ${{ inputs.rhcc_project }}
+    SUBMIT: ${{ inputs.submit }}
