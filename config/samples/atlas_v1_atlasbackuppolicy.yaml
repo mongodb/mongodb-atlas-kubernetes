@@ -3,10 +3,8 @@ kind: AtlasBackupPolicy
 metadata:
   name: atlasbackuppolicy-sample
 spec:
-  id: "1"
   items:
-    - id: "2"
-      frequencyType: "WEEKLY"
-      frequencyInterval: 6
-      retentionUnit: "DAYS"
-      retentionValue: 6
+    - frequencyType: daily
+      frequencyInterval: 3
+      retentionUnit: weeks
+      retentionValue: 2

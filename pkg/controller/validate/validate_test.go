@@ -3,6 +3,8 @@ package validate
 import (
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"github.com/stretchr/testify/assert"
@@ -294,6 +296,148 @@ func TestProjectValidation(t *testing.T) {
 				},
 			}
 			assert.Error(t, Project(spec))
+		})
+	})
+}
+
+func TestBackupScheduleValidation(t *testing.T) {
+	t.Run("auto export is enabled without export policy", func(t *testing.T) {
+		bSchedule := &mdbv1.AtlasBackupSchedule{
+			Spec: mdbv1.AtlasBackupScheduleSpec{
+				AutoExportEnabled: true,
+			},
+		}
+		deployment := &mdbv1.AtlasDeployment{
+			Status: status.AtlasDeploymentStatus{},
+		}
+		assert.Error(t, BackupSchedule(bSchedule, deployment))
+	})
+
+	t.Run("copy settings on advanced deployment", func(t *testing.T) {
+		t.Run("copy settings is valid", func(t *testing.T) {
+			bSchedule := &mdbv1.AtlasBackupSchedule{
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					CopySettings: []mdbv1.CopySetting{
+						{
+							RegionName:        toptr.MakePtr("US_WEST_1"),
+							ReplicationSpecID: toptr.MakePtr("123"),
+							CloudProvider:     toptr.MakePtr("AWS"),
+							ShouldCopyOplogs:  toptr.MakePtr(true),
+							Frequencies:       []string{"WEEKLY"},
+						},
+					},
+				},
+			}
+			deployment := &mdbv1.AtlasDeployment{
+				Spec: mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+						PitEnabled: toptr.MakePtr(true),
+					},
+				},
+				Status: status.AtlasDeploymentStatus{
+					ReplicaSets: []status.ReplicaSet{
+						{
+							ID:       "123",
+							ZoneName: "Zone 1",
+						},
+					},
+				},
+			}
+			assert.NoError(t, BackupSchedule(bSchedule, deployment))
+		})
+
+		t.Run("copy settings is invalid", func(t *testing.T) {
+			bSchedule := &mdbv1.AtlasBackupSchedule{
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					CopySettings: []mdbv1.CopySetting{
+						{
+							ShouldCopyOplogs: toptr.MakePtr(true),
+						},
+						{
+							RegionName:        toptr.MakePtr("US_WEST_1"),
+							ReplicationSpecID: toptr.MakePtr("123"),
+						},
+					},
+				},
+			}
+			deployment := &mdbv1.AtlasDeployment{
+				Spec: mdbv1.AtlasDeploymentSpec{
+					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
+				},
+				Status: status.AtlasDeploymentStatus{
+					ReplicaSets: []status.ReplicaSet{
+						{
+							ID:       "321",
+							ZoneName: "Zone 1",
+						},
+					},
+				},
+			}
+			assert.Error(t, BackupSchedule(bSchedule, deployment))
+		})
+	})
+
+	t.Run("copy settings on legacy deployment", func(t *testing.T) {
+		t.Run("copy settings is valid", func(t *testing.T) {
+			bSchedule := &mdbv1.AtlasBackupSchedule{
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					CopySettings: []mdbv1.CopySetting{
+						{
+							RegionName:        toptr.MakePtr("US_WEST_1"),
+							ReplicationSpecID: toptr.MakePtr("123"),
+							CloudProvider:     toptr.MakePtr("AWS"),
+							ShouldCopyOplogs:  toptr.MakePtr(true),
+							Frequencies:       []string{"WEEKLY"},
+						},
+					},
+				},
+			}
+			deployment := &mdbv1.AtlasDeployment{
+				Spec: mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{
+						PitEnabled: toptr.MakePtr(true),
+					},
+				},
+				Status: status.AtlasDeploymentStatus{
+					ReplicaSets: []status.ReplicaSet{
+						{
+							ID:       "123",
+							ZoneName: "Zone 1",
+						},
+					},
+				},
+			}
+			assert.NoError(t, BackupSchedule(bSchedule, deployment))
+		})
+
+		t.Run("copy settings is invalid", func(t *testing.T) {
+			bSchedule := &mdbv1.AtlasBackupSchedule{
+				Spec: mdbv1.AtlasBackupScheduleSpec{
+					CopySettings: []mdbv1.CopySetting{
+						{
+							ShouldCopyOplogs: toptr.MakePtr(true),
+						},
+						{
+							RegionName:        toptr.MakePtr("US_WEST_1"),
+							ReplicationSpecID: toptr.MakePtr("123"),
+						},
+					},
+				},
+			}
+			deployment := &mdbv1.AtlasDeployment{
+				Spec: mdbv1.AtlasDeploymentSpec{
+					DeploymentSpec: &mdbv1.DeploymentSpec{},
+				},
+				Status: status.AtlasDeploymentStatus{
+					ReplicaSets: []status.ReplicaSet{
+						{
+							ID:       "321",
+							ZoneName: "Zone 1",
+						},
+					},
+				},
+			}
+			assert.Error(t, BackupSchedule(bSchedule, deployment))
 		})
 	})
 }

@@ -60,6 +60,49 @@ func DatabaseUser(_ *mdbv1.AtlasDatabaseUser) error {
 	return nil
 }
 
+func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.AtlasDeployment) error {
+	var err error
+
+	if bSchedule.Spec.Export == nil && bSchedule.Spec.AutoExportEnabled {
+		err = multierror.Append(err, errors.New("you must specify export policy when auto export is enabled"))
+	}
+
+	replicaSets := map[string]struct{}{}
+	if deployment.Status.ReplicaSets != nil {
+		for _, replicaSet := range deployment.Status.ReplicaSets {
+			replicaSets[replicaSet.ID] = struct{}{}
+		}
+	}
+
+	for position, copySetting := range bSchedule.Spec.CopySettings {
+		if copySetting.RegionName == nil {
+			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must set a region name", position))
+		}
+
+		if copySetting.ReplicationSpecID == nil {
+			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must set a valid ReplicationSpecID", position))
+		} else if _, ok := replicaSets[*copySetting.ReplicationSpecID]; !ok {
+			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: referenced ReplicationSpecID is invalid", position))
+		}
+
+		if copySetting.ShouldCopyOplogs != nil && *copySetting.ShouldCopyOplogs {
+			if deployment.Spec.AdvancedDeploymentSpec != nil &&
+				(deployment.Spec.AdvancedDeploymentSpec.PitEnabled == nil ||
+					!*deployment.Spec.AdvancedDeploymentSpec.PitEnabled) {
+				err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
+			}
+
+			if deployment.Spec.DeploymentSpec != nil &&
+				(deployment.Spec.DeploymentSpec.PitEnabled == nil ||
+					!*deployment.Spec.DeploymentSpec.PitEnabled) {
+				err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
+			}
+		}
+	}
+
+	return err
+}
+
 func getNonNilCount(values ...interface{}) int {
 	nonNilCount := 0
 	for _, v := range values {

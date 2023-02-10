@@ -54,6 +54,10 @@ type AtlasBackupScheduleSpec struct {
 	// Specify true to use organization and project names instead of organization and project UUIDs in the path for the metadata files that Atlas uploads to your S3 bucket after it finishes exporting the snapshots
 	// +optional
 	UseOrgAndGroupNamesInExportPrefix bool `json:"useOrgAndGroupNamesInExportPrefix,omitempty"`
+
+	// Copy backups to other regions for increased resiliency and faster restores.
+	// +optional
+	CopySettings []CopySetting `json:"copySettings,omitempty"`
 }
 
 type AtlasBackupExportSpec struct {
@@ -62,6 +66,22 @@ type AtlasBackupExportSpec struct {
 	// +kubebuilder:validation:Enum:=MONTHLY
 	// +kubebuilder:default:=MONTHLY
 	FrequencyType string `json:"frequencyType"`
+}
+
+type CopySetting struct {
+	// Identifies the cloud provider that stores the snapshot copy.
+	// +kubebuilder:validation:Enum:=AWS;GCP;AZURE
+	// +kubebuilder:default:=AWS
+	CloudProvider *string `json:"cloudProvider,omitempty"`
+	// Target region to copy snapshots belonging to replicationSpecId to.
+	RegionName *string `json:"regionName,omitempty"`
+	// Unique identifier that identifies the replication object for a zone in a cluster.
+	ReplicationSpecID *string `json:"replicationSpecId,omitempty"`
+	// Flag that indicates whether to copy the oplogs to the target region.
+	ShouldCopyOplogs *bool `json:"shouldCopyOplogs,omitempty"`
+	// List that describes which types of snapshots to copy.
+	// +kubebuilder:validation:MinItems=1
+	Frequencies []string `json:"frequencies,omitempty"`
 }
 
 // AtlasBackupSchedule is the Schema for the atlasbackupschedules API

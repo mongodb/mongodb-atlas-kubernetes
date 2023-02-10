@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -29,15 +31,14 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	ctx context.Context,
 	service *workflow.Context,
 	projectID string,
-	clusterName string,
-	backupScheduleRef types.NamespacedName,
-	enabled bool,
+	deployment *mdbv1.AtlasDeployment,
+	isEnabled bool,
 	requestNamespacedName client.ObjectKey,
 ) error {
-	if backupScheduleRef.Name == "" || backupScheduleRef.Namespace == "" {
+	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
-		err := r.garbageCollectBackupResource(ctx, clusterName)
+		err := r.garbageCollectBackupResource(ctx, deployment.GetDeploymentName())
 		if err != nil {
 			return err
 		}
@@ -45,8 +46,8 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return nil
 	}
 
-	if !enabled {
-		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", clusterName)
+	if !isEnabled {
+		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())
 	}
 
 	resourcesToWatch := []watch.WatchedObject{}
@@ -55,7 +56,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.WatchedResources)
 	}()
 
-	bSchedule, err := r.ensureBackupSchedule(ctx, service, backupScheduleRef, clusterName, &resourcesToWatch)
+	bSchedule, err := r.ensureBackupSchedule(ctx, service, deployment, &resourcesToWatch)
 	if err != nil {
 		return err
 	}
@@ -65,20 +66,20 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return err
 	}
 
-	return r.updateBackupScheduleAndPolicy(ctx, service, projectID, clusterName, bSchedule, bPolicy)
+	return r.updateBackupScheduleAndPolicy(ctx, service, projectID, deployment.GetDeploymentName(), bSchedule, bPolicy)
 }
 
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	ctx context.Context,
 	service *workflow.Context,
-	backupScheduleRef types.NamespacedName,
-	clusterName string,
+	deployment *mdbv1.AtlasDeployment,
 	resourcesToWatch *[]watch.WatchedObject,
 ) (*mdbv1.AtlasBackupSchedule, error) {
+	backupScheduleRef := deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace)
 	bSchedule := &mdbv1.AtlasBackupSchedule{}
-	err := r.Client.Get(ctx, backupScheduleRef, bSchedule)
+	err := r.Client.Get(ctx, *backupScheduleRef, bSchedule)
 	if err != nil {
-		return nil, fmt.Errorf("%v backupschedule resource is not found. e: %w", backupScheduleRef, err)
+		return nil, fmt.Errorf("%v backupschedule resource is not found. e: %w", *backupScheduleRef, err)
 	}
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(service, bSchedule, r.Log)
@@ -88,7 +89,11 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		return nil, errors.New(errText)
 	}
 
-	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(clusterName))
+	if err = validate.BackupSchedule(bSchedule, deployment); err != nil {
+		return nil, err
+	}
+
+	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(deployment.GetDeploymentName()))
 
 	if err = r.Client.Status().Update(ctx, bSchedule); err != nil {
 		r.Log.Errorw("failed to update BackupSchedule status", "error", err)
@@ -114,7 +119,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		return nil, err
 	}
 
-	*resourcesToWatch = append(*resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: backupScheduleRef})
+	*resourcesToWatch = append(*resourcesToWatch, watch.WatchedObject{ResourceKind: bSchedule.Kind, Resource: *backupScheduleRef})
 
 	return bSchedule, nil
 }
@@ -201,6 +206,20 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 		Policies:                          []mongodbatlas.Policy{apiPolicy},
 		AutoExportEnabled:                 &bSchedule.Spec.AutoExportEnabled,
 		UseOrgAndGroupNamesInExportPrefix: &bSchedule.Spec.UseOrgAndGroupNamesInExportPrefix,
+		CopySettings:                      make([]mongodbatlas.CopySetting, 0, len(bSchedule.Spec.CopySettings)),
+	}
+
+	for _, copySetting := range bSchedule.Spec.CopySettings {
+		apiScheduleReq.CopySettings = append(
+			apiScheduleReq.CopySettings,
+			mongodbatlas.CopySetting{
+				CloudProvider:     copySetting.CloudProvider,
+				RegionName:        copySetting.RegionName,
+				ReplicationSpecID: copySetting.ReplicationSpecID,
+				ShouldCopyOplogs:  copySetting.ShouldCopyOplogs,
+				Frequencies:       copySetting.Frequencies,
+			},
+		)
 	}
 
 	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
@@ -261,7 +280,6 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 }
 
 func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) {
-	s.CopySettings = nil
 	s.Links = nil
 	s.NextSnapshot = ""
 	if len(s.Policies) > 0 && len(s.Policies[0].PolicyItems) > 0 {
