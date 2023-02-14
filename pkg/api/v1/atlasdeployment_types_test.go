@@ -43,6 +43,8 @@ func init() {
 	// Root cert type
 	excludedClusterFieldsTheirs["rootCertType"] = true
 
+	excludedClusterFieldsTheirs["autoIndexingEnabled"] = true
+
 	// These fields are shown in the status
 	excludedClusterFieldsTheirs["mongoDBVersion"] = true
 	excludedClusterFieldsTheirs["mongoURI"] = true
