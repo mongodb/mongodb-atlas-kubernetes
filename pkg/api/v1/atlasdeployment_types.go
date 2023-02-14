@@ -255,9 +255,6 @@ type Specs struct {
 
 // AutoScalingSpec configures your deployment to automatically scale its storage
 type AutoScalingSpec struct {
-	// Flag that indicates whether autopilot mode for Performance Advisor is enabled.
-	// The default is false.
-	AutoIndexingEnabled *bool `json:"autoIndexingEnabled,omitempty"`
 	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
 	// +optional
 	DiskGBEnabled *bool `json:"diskGBEnabled,omitempty"`
@@ -670,8 +667,7 @@ func (c *AtlasDeployment) WithDiskSizeGB(size int) *AtlasDeployment {
 func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
 	f := false
 	c.Spec.DeploymentSpec.AutoScaling = &AutoScalingSpec{
-		AutoIndexingEnabled: &f,
-		DiskGBEnabled:       &f,
+		DiskGBEnabled: &f,
 		Compute: &ComputeSpec{
 			Enabled:          &f,
 			ScaleDownEnabled: &f,
