@@ -15,7 +15,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
 )
 
-const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
+const (
+	ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
+	CloudGovDomain                = "cloudgov.mongodb.com"
+)
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
@@ -33,23 +36,26 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 
 	serverlessDeployments, _, err := ctx.Client.ServerlessInstances.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
-		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
-	}
-	for _, c := range serverlessDeployments.Results {
-		found := false
-
-		for _, advancedDeployment := range advancedDeployments.Results {
-			if advancedDeployment.Name == c.Name {
-				found = true
-				break
-			}
+		if strings.HasPrefix(ctx.Client.BaseURL.Host, CloudGovDomain) {
+			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
+	} else {
+		for _, c := range serverlessDeployments.Results {
+			found := false
 
-		if !found {
-			deploymentSecrets = append(deploymentSecrets, deploymentSecret{
-				name:              c.Name,
-				connectionStrings: c.ConnectionStrings,
-			})
+			for _, advancedDeployment := range advancedDeployments.Results {
+				if advancedDeployment.Name == c.Name {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				deploymentSecrets = append(deploymentSecrets, deploymentSecret{
+					name:              c.Name,
+					connectionStrings: c.ConnectionStrings,
+				})
+			}
 		}
 	}
 
