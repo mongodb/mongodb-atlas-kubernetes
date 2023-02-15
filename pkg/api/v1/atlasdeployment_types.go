@@ -255,6 +255,10 @@ type Specs struct {
 
 // AutoScalingSpec configures your deployment to automatically scale its storage
 type AutoScalingSpec struct {
+	// Deprecated: This flag is not supported anymore.
+	// Flag that indicates whether autopilot mode for Performance Advisor is enabled.
+	// The default is false.
+	AutoIndexingEnabled *bool `json:"autoIndexingEnabled,omitempty"`
 	// Flag that indicates whether disk auto-scaling is enabled. The default is true.
 	// +optional
 	DiskGBEnabled *bool `json:"diskGBEnabled,omitempty"`
@@ -489,6 +493,15 @@ var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
 func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}
 	err := compat.JSONCopy(result, *spec.DeploymentSpec)
+
+	if result.AutoScaling != nil {
+		result.AutoScaling.AutoIndexingEnabled = nil
+	}
+
+	if result.ProviderSettings.AutoScaling != nil {
+		result.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
+	}
+
 	return result, err
 }
 

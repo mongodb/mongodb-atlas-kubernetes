@@ -255,6 +255,11 @@ spec:
                       object, you must also specify the providerSettings.autoScaling
                       object.
                     properties:
+                      autoIndexingEnabled:
+                        description: 'Deprecated: This flag is not supported anymore.
+                          Flag that indicates whether autopilot mode for Performance
+                          Advisor is enabled. The default is false.'
+                        type: boolean
                       compute:
                         description: Collection of settings that configure how a deployment
                           might scale its deployment tier and whether the deployment
@@ -419,6 +424,11 @@ spec:
                         description: Range of instance sizes to which your deployment
                           can scale.
                         properties:
+                          autoIndexingEnabled:
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
+                            type: boolean
                           compute:
                             description: Collection of settings that configure how
                               a deployment might scale its deployment tier and whether
@@ -644,6 +654,11 @@ spec:
                         description: Range of instance sizes to which your deployment
                           can scale.
                         properties:
+                          autoIndexingEnabled:
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
+                            type: boolean
                           compute:
                             description: Collection of settings that configure how
                               a deployment might scale its deployment tier and whether
