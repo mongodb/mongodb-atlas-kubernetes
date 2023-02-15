@@ -498,7 +498,7 @@ func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.Cluster, error) {
 		result.AutoScaling.AutoIndexingEnabled = nil
 	}
 
-	if result.ProviderSettings.AutoScaling != nil {
+	if result.ProviderSettings != nil && result.ProviderSettings.AutoScaling != nil {
 		result.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
 	}
 

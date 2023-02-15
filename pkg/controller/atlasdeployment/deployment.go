@@ -134,7 +134,7 @@ func cleanupDeployment(deployment mongodbatlas.Cluster) mongodbatlas.Cluster {
 		deployment.AutoScaling.AutoIndexingEnabled = nil
 	}
 
-	if deployment.ProviderSettings.AutoScaling != nil {
+	if deployment.ProviderSettings != nil && deployment.ProviderSettings.AutoScaling != nil {
 		deployment.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
 	}
 
@@ -166,6 +166,7 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 				result.ProviderSettings.AutoScaling = &mongodbatlas.AutoScaling{}
 			}
 			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
+			result.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
 		}
 	}
 
