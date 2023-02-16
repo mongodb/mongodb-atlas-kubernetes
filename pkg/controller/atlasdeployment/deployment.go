@@ -130,6 +130,14 @@ func cleanupDeployment(deployment mongodbatlas.Cluster) mongodbatlas.Cluster {
 		deployment.DiskSizeGB = nil
 	}
 
+	if deployment.AutoScaling != nil {
+		deployment.AutoScaling.AutoIndexingEnabled = nil
+	}
+
+	if deployment.ProviderSettings != nil && deployment.ProviderSettings.AutoScaling != nil {
+		deployment.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
+	}
+
 	return deployment
 }
 
@@ -158,10 +166,13 @@ func removeOutdatedFields(removeFrom *mongodbatlas.Cluster, lookAt *mongodbatlas
 				result.ProviderSettings.AutoScaling = &mongodbatlas.AutoScaling{}
 			}
 			result.ProviderSettings.AutoScaling.Compute = &mongodbatlas.Compute{}
+			result.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
 		}
 	}
 
 	if lookAt.AutoScaling != nil {
+		result.AutoScaling.AutoIndexingEnabled = nil
+
 		if lookAt.AutoScaling.DiskGBEnabled != nil && *lookAt.AutoScaling.DiskGBEnabled {
 			result.DiskSizeGB = nil
 		}

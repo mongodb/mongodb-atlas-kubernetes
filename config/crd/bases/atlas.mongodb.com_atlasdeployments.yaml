@@ -256,8 +256,9 @@ spec:
                       object.
                     properties:
                       autoIndexingEnabled:
-                        description: Flag that indicates whether autopilot mode for
-                          Performance Advisor is enabled. The default is false.
+                        description: 'Deprecated: This flag is not supported anymore.
+                          Flag that indicates whether autopilot mode for Performance
+                          Advisor is enabled. The default is false.'
                         type: boolean
                       compute:
                         description: Collection of settings that configure how a deployment
@@ -424,8 +425,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
@@ -653,8 +655,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
