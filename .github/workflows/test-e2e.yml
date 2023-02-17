@@ -189,9 +189,9 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
-      - name: Install operator-sdk-v1.22.0
+      - name: Install operator-sdk-v1.27.0
         run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.0/operator-sdk_linux_amd64 -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.27.0/operator-sdk_linux_amd64 -q
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk version
       - name: Print kubectl version
