@@ -3,6 +3,7 @@ package actions
 import (
 	"context"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"strconv"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	of "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 func WaitDeployment(data *model.TestDataProvider, generation int) {
@@ -245,6 +247,42 @@ func CompareServerlessSpec(requested model.DeploymentSpec, created mongodbatlas.
 	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
 	Expect(created.Name).To(Equal(serverlessSpec.Name))
 	Expect(created.GroupID).To(Not(BeEmpty()))
+}
+
+func SaveInstallPlansToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	ipList := &of.InstallPlanList{}
+	err := k8sClient.List(ctx, ipList, client.InNamespace(ns))
+	if err != nil {
+		return fmt.Errorf("error getting InstallPlans: %w", err)
+	}
+	data, err := yaml.Marshal(ipList)
+	if err != nil {
+		return fmt.Errorf("unable to serialize InstallPlans to YAML: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "installplans")
+	err = utils.SaveToFile(path, data)
+	if err != nil {
+		return fmt.Errorf("error saving InstallPlans to file: %w", err)
+	}
+	return nil
+}
+
+func SaveSubscriptionsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	sbList := &of.SubscriptionList{}
+	err := k8sClient.List(ctx, sbList, client.InNamespace(ns))
+	if err != nil {
+		return fmt.Errorf("error getting Subscriptions: %w", err)
+	}
+	data, err := yaml.Marshal(sbList)
+	if err != nil {
+		return fmt.Errorf("unable to serialize Subscriptions to YAML: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "subscriptions")
+	err = utils.SaveToFile(path, data)
+	if err != nil {
+		return fmt.Errorf("error saving Subscriptions to file: %w", err)
+	}
+	return nil
 }
 
 func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
