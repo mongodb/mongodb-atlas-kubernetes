@@ -287,6 +287,24 @@ func SaveSubscriptionsToFile(ctx context.Context, k8sClient client.Client, ns st
 	return nil
 }
 
+func SaveCatalogSourcesToFile(ctx context.Context, k8sClient client.Client, ns string) error {
+	csList := &of.CatalogSourceList{}
+	err := k8sClient.List(ctx, csList, client.InNamespace(ns))
+	if err != nil {
+		return fmt.Errorf("error getting CatalogSources: %w", err)
+	}
+	data, err := yaml.Marshal(csList)
+	if err != nil {
+		return fmt.Errorf("unable to serialize CatalogSources to YAML: %w", err)
+	}
+	path := fmt.Sprintf("output/%s/%s.yaml", ns, "catalogsources")
+	err = utils.SaveToFile(path, data)
+	if err != nil {
+		return fmt.Errorf("error saving CatalogSources to file: %w", err)
+	}
+	return nil
+}
+
 func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
 	yaml, err := k8s.ProjectListYaml(ctx, k8sClient, ns)
 	if err != nil {

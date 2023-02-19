@@ -30,6 +30,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveInstallPlansToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 			Expect(actions.SaveSubscriptionsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveCatalogSourcesToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		actions.DeleteTestDataDeployments(testData)
 		actions.DeleteTestDataProject(testData)
