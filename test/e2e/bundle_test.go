@@ -27,17 +27,15 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
 	})
 	_ = AfterEach(func() {
-		By("After each.", func() {
-			if CurrentSpecReport().Failed() {
-				Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-				Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-				Expect(actions.SaveInstallPlansToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-				Expect(actions.SaveSubscriptionsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			}
-			actions.DeleteTestDataDeployments(testData)
-			actions.DeleteTestDataProject(testData)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
-		})
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveInstallPlansToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveSubscriptionsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		actions.DeleteTestDataDeployments(testData)
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
 	It("User can install operator with OLM", Label("bundle-test"), func() {
@@ -57,7 +55,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 
 		By("OLM install", func() {
 			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, fmt.Sprintf("--namespace=%s", testData.Resources.Namespace), "--verbose", "--timeout", "40m"), "40m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, fmt.Sprintf("--namespace=%s", testData.Resources.Namespace), "--verbose", "--timeout", "30m"), "30m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {

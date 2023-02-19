@@ -16,6 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	of "github.com/operator-framework/api/pkg/operators/v1alpha1"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
@@ -28,6 +30,10 @@ func CreateNewClient() (client.Client, error) {
 		return nil, err
 	}
 	err = v1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = of.AddToScheme(scheme.Scheme)
 	if err != nil {
 		return nil, err
 	}
