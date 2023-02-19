@@ -27,12 +27,12 @@ var _ = Describe("User can deploy operator from bundles", func() {
 		Expect(imageURL).ShouldNot(BeEmpty(), "SetUP BUNDLE_IMAGE")
 	})
 	_ = AfterEach(func() {
-		if CurrentSpecReport().Failed() {
-			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			Expect(actions.SaveInstallPlansToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-			Expect(actions.SaveSubscriptionsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
-		}
+		//if CurrentSpecReport().Failed() {
+		Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		Expect(actions.SaveInstallPlansToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		Expect(actions.SaveSubscriptionsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		//}
 		actions.DeleteTestDataDeployments(testData)
 		actions.DeleteTestDataProject(testData)
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
