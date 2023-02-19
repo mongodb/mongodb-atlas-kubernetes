@@ -54,7 +54,7 @@ var _ = Describe("User can deploy operator from bundles", func() {
 
 		By("OLM install", func() {
 			Eventually(cli.Execute("operator-sdk", "olm", "install"), "3m").Should(gexec.Exit(0))
-			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, fmt.Sprintf("--namespace=%s", testData.Resources.Namespace), "--verbose", "--timeout", "30m"), "30m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
+			Eventually(cli.Execute("operator-sdk", "run", "bundle", imageURL, "--index-image=quay.io/operator-framework/opm:v1.23.0", fmt.Sprintf("--namespace=%s", testData.Resources.Namespace), "--verbose", "--timeout", "30m"), "30m").Should(gexec.Exit(0)) // timeout of operator-sdk is bigger then our default
 		})
 
 		By("Apply configuration", func() {
