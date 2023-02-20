@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	"golang.org/x/exp/maps"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -442,21 +444,23 @@ var notReadyServiceResult = workflow.InProgress(workflow.ProjectPEServiceIsNotRe
 var notReadyInterfaceResult = workflow.InProgress(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
 
 func getEndpointsNotInSpec(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []atlasPE {
-	difference := set.Difference(atlasPEs, specPEs)
-	result := []atlasPE{}
-	for _, item := range difference {
-		result = append(result, item.(atlasPE))
-	}
-	return result
+	return getUniqueDifference(atlasPEs, specPEs)
 }
 
 func getEndpointsNotInAtlas(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []mdbv1.PrivateEndpoint {
-	difference := set.Difference(specPEs, atlasPEs)
-	result := []mdbv1.PrivateEndpoint{}
+	return getUniqueDifference(specPEs, atlasPEs)
+}
+
+func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []ResultType, right []OtherType) []ResultType {
+	difference := set.Difference(left, right)
+
+	uniqueItems := make(map[string]ResultType)
 	for _, item := range difference {
-		result = append(result, item.(mdbv1.PrivateEndpoint))
+		key := item.Identifier().(string)
+		uniqueItems[key] = item.(ResultType)
 	}
-	return result
+
+	return maps.Values(uniqueItems)
 }
 
 func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
