@@ -86,9 +86,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				region:   config.AzureRegionEU,
 			}},
 		),
-		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
+		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("privatelink-aws-2"),
 			model.DataProvider(
-				"privatelink-aws-2",
+				"privatelink-two-identical-aws",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
@@ -100,7 +100,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 				{
 					provider: "AWS",
-					region:   config.AWSRegionUS,
+					region:   config.AWSRegionEU,
 				},
 			},
 		),
