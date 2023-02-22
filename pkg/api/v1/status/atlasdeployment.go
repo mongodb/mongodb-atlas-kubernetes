@@ -20,6 +20,8 @@ type AtlasDeploymentStatus struct {
 	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
 	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
+	ReplicaSets []ReplicaSet `json:"replicaSets,omitempty"`
+
 	ServerlessPrivateEndpoints []ServerlessPrivateEndpoint `json:"serverlessPrivateEndpoints,omitempty"`
 
 	CustomZoneMapping *CustomZoneMapping `json:"customZoneMapping,omitempty"`
@@ -39,6 +41,11 @@ const (
 	StateDELETED   = "DELETED"
 	StateREPAIRING = "REPAIRING"
 )
+
+type ReplicaSet struct {
+	ID       string `json:"id"`
+	ZoneName string `json:"zoneName,omitempty"`
+}
 
 // ConnectionStrings contains configuration for applications use to connect to this cluster
 type ConnectionStrings struct {
@@ -111,6 +118,12 @@ type AtlasDeploymentStatusOption func(s *AtlasDeploymentStatus)
 func AtlasDeploymentStateNameOption(stateName string) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.StateName = stateName
+	}
+}
+
+func AtlasDeploymentReplicaSet(replicas []ReplicaSet) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		s.ReplicaSets = replicas
 	}
 }
 

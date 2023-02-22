@@ -258,6 +258,19 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		return result, nil
 	}
 
+	replicaSetStatus := make([]status.ReplicaSet, 0, len(deployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs))
+	for _, replicaSet := range c.ReplicationSpecs {
+		replicaSetStatus = append(
+			replicaSetStatus,
+			status.ReplicaSet{
+				ID:       replicaSet.ID,
+				ZoneName: replicaSet.ZoneName,
+			},
+		)
+	}
+
+	ctx.EnsureStatusOption(status.AtlasDeploymentReplicaSet(replicaSetStatus))
+
 	backupEnabled := false
 	if c.BackupEnabled != nil {
 		backupEnabled = *c.BackupEnabled
@@ -266,8 +279,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 	if err := r.ensureBackupScheduleAndPolicy(
 		context.Background(),
 		ctx, project.ID(),
-		c.Name,
-		*deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace),
+		deployment,
 		backupEnabled,
 		req.NamespacedName,
 	); err != nil {
@@ -306,6 +318,19 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		return result, nil
 	}
 
+	replicaSetStatus := make([]status.ReplicaSet, 0, len(deployment.Spec.DeploymentSpec.ReplicationSpecs))
+	for _, replicaSet := range atlasDeployment.ReplicationSpecs {
+		replicaSetStatus = append(
+			replicaSetStatus,
+			status.ReplicaSet{
+				ID:       replicaSet.ID,
+				ZoneName: replicaSet.ZoneName,
+			},
+		)
+	}
+
+	ctx.EnsureStatusOption(status.AtlasDeploymentReplicaSet(replicaSetStatus))
+
 	backupEnabled := false
 	providerBackupEnabled := false
 	if atlasDeployment.ProviderBackupEnabled != nil {
@@ -319,8 +344,7 @@ func (r *AtlasDeploymentReconciler) handleRegularDeployment(ctx *workflow.Contex
 		context.Background(),
 		ctx,
 		project.ID(),
-		atlasDeployment.Name,
-		*deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace),
+		deployment,
 		providerBackupEnabled || backupEnabled,
 		req.NamespacedName,
 	); err != nil {

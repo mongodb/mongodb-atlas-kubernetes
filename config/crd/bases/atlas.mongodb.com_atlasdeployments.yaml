@@ -917,6 +917,17 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              replicaSets:
+                items:
+                  properties:
+                    id:
+                      type: string
+                    zoneName:
+                      type: string
+                  required:
+                  - id
+                  type: object
+                type: array
               serverlessPrivateEndpoints:
                 items:
                   properties:
