@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -113,22 +114,24 @@ func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Re
 
 func getStatusForInterfaces(ctx *workflow.Context, atlasPEs []atlasPE, projectID string) workflow.Result {
 	for _, atlasPeService := range atlasPEs {
-		interfaceEndpointID := atlasPeService.InterfaceEndpointID()
-		if interfaceEndpointID == "" {
-			return notReadyInterfaceResult
-		}
+		interfaceEndpointIDs := atlasPeService.InterfaceEndpointIDs()
+		for _, interfaceEndpointID := range interfaceEndpointIDs {
+			if interfaceEndpointID == "" {
+				return notReadyInterfaceResult
+			}
 
-		interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, atlasPeService.ProviderName, atlasPeService.ID, interfaceEndpointID)
-		if err != nil {
-			return workflow.Terminate(workflow.Internal, err.Error())
-		}
+			interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, atlasPeService.ProviderName, atlasPeService.ID, interfaceEndpointID)
+			if err != nil {
+				return workflow.Terminate(workflow.Internal, err.Error())
+			}
 
-		interfaceIsAvailable, interfaceFailureMessage := checkIfInterfaceIsAvailable(interfaceEndpoint)
-		if interfaceFailureMessage != "" {
-			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, interfaceFailureMessage)
-		}
-		if !interfaceIsAvailable {
-			return notReadyInterfaceResult
+			interfaceIsAvailable, interfaceFailureMessage := checkIfInterfaceIsAvailable(interfaceEndpoint)
+			if interfaceFailureMessage != "" {
+				return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, interfaceFailureMessage)
+			}
+			if !interfaceIsAvailable {
+				return notReadyInterfaceResult
+			}
 		}
 	}
 
@@ -172,20 +175,20 @@ func (a atlasPE) Identifier() interface{} {
 	return a.ProviderName + status.TransformRegionToID(a.RegionName)
 }
 
-func (a atlasPE) InterfaceEndpointID() string {
+func (a atlasPE) InterfaceEndpointIDs() []string {
 	if len(a.InterfaceEndpoints) != 0 {
-		return a.InterfaceEndpoints[0]
+		return a.InterfaceEndpoints
 	}
 
 	if len(a.PrivateEndpoints) != 0 {
-		return a.PrivateEndpoints[0]
+		return a.PrivateEndpoints
 	}
 
 	if len(a.EndpointGroupNames) != 0 {
-		return a.EndpointGroupNames[0]
+		return a.EndpointGroupNames
 	}
 
-	return ""
+	return nil
 }
 
 func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
@@ -267,9 +270,9 @@ func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService a
 	if isAvailable(atlasPeService.Status) && endpointDefinedInSpec(specPeService) {
 		switch specPeService.Provider {
 		case provider.ProviderAWS, provider.ProviderAzure:
-			return specPeService.ID != atlasPeService.InterfaceEndpointID()
+			return !slices.Contains(atlasPeService.InterfaceEndpointIDs(), specPeService.ID)
 		case provider.ProviderGCP:
-			return specPeService.EndpointGroupName != atlasPeService.InterfaceEndpointID() || len(atlasPeService.ServiceAttachmentNames) != len(specPeService.Endpoints)
+			return !slices.Contains(atlasPeService.InterfaceEndpointIDs(), specPeService.EndpointGroupName) || len(atlasPeService.ServiceAttachmentNames) != len(specPeService.Endpoints)
 		}
 	}
 
@@ -311,9 +314,12 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 			continue
 		}
 
-		if peService.InterfaceEndpointID() != "" {
-			if _, err := ctx.Client.PrivateEndpoints.DeleteOnePrivateEndpoint(context.Background(), projectID, peService.ProviderName, peService.ID, peService.InterfaceEndpointID()); err != nil {
-				return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "failed to delete Private Endpoint")
+		interfaceEndpointIDs := peService.InterfaceEndpointIDs()
+		if len(interfaceEndpointIDs) != 0 {
+			for _, interfaceEndpointID := range interfaceEndpointIDs {
+				if _, err := ctx.Client.PrivateEndpoints.DeleteOnePrivateEndpoint(context.Background(), projectID, peService.ProviderName, peService.ID, interfaceEndpointID); err != nil {
+					return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "failed to delete Private Endpoint")
+				}
 			}
 
 			continue
@@ -331,44 +337,56 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 
 func convertAllToStatus(ctx *workflow.Context, projectID string, peList []atlasPE) (result []status.ProjectPrivateEndpoint) {
 	for _, endpoint := range peList {
-		result = append(result, convertOneToStatus(ctx, projectID, endpoint))
+		result = append(result, convertOneServiceToStatus(ctx, projectID, endpoint)...)
 	}
 
 	return result
 }
 
-func convertOneToStatus(ctx *workflow.Context, projectID string, conn atlasPE) status.ProjectPrivateEndpoint {
+func convertOneServiceToStatus(ctx *workflow.Context, projectID string, conn atlasPE) []status.ProjectPrivateEndpoint {
+	interfaceEndpointIDs := conn.InterfaceEndpointIDs()
+
+	if len(interfaceEndpointIDs) == 0 {
+		return []status.ProjectPrivateEndpoint{
+			filledPEStatus(ctx, projectID, conn, ""),
+		}
+	}
+
+	result := make([]status.ProjectPrivateEndpoint, 0)
+	for _, interfaceEndpointID := range interfaceEndpointIDs {
+		result = append(result, filledPEStatus(ctx, projectID, conn, interfaceEndpointID))
+	}
+
+	ctx.Log.Debugw("Converted Status", "connection", conn, "status result", result)
+
+	return result
+}
+
+func filledPEStatus(ctx *workflow.Context, projectID string, conn atlasPE, InterfaceEndpointID string) status.ProjectPrivateEndpoint {
 	pe := status.ProjectPrivateEndpoint{
-		ID:       conn.ID,
-		Provider: provider.ProviderName(conn.ProviderName),
-		Region:   conn.Region,
+		ID:                  conn.ID,
+		Provider:            provider.ProviderName(conn.ProviderName),
+		Region:              conn.Region,
+		InterfaceEndpointID: InterfaceEndpointID,
 	}
 
 	switch pe.Provider {
 	case provider.ProviderAWS:
 		pe.ServiceName = conn.EndpointServiceName
 		pe.ServiceResourceID = conn.ID
-		if len(conn.InterfaceEndpoints) != 0 {
-			pe.InterfaceEndpointID = conn.InterfaceEndpoints[0]
-		}
 	case provider.ProviderAzure:
 		pe.ServiceName = conn.PrivateLinkServiceName
 		pe.ServiceResourceID = conn.PrivateLinkServiceResourceID
-		if len(conn.PrivateEndpoints) != 0 {
-			pe.InterfaceEndpointID = conn.PrivateEndpoints[0]
-		}
 	case provider.ProviderGCP:
 		pe.ServiceAttachmentNames = conn.ServiceAttachmentNames
-		if len(conn.EndpointGroupNames) != 0 {
+		if InterfaceEndpointID != "" {
 			var err error
-			pe.InterfaceEndpointID = conn.EndpointGroupNames[0]
 			pe.Endpoints, err = getGCPInterfaceEndpoint(ctx, projectID, pe)
 			if err != nil {
 				ctx.Log.Warnw("failed to get Interface Endpoint Data for GCP", "err", err, "pe", pe)
 			}
 		}
 	}
-	ctx.Log.Debugw("Converted Status", "status", pe, "connection", conn)
 
 	return pe
 }

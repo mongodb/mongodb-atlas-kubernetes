@@ -80,12 +80,20 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	}
 
 	secret.Data = map[string][]byte{
-		connectionSecretStdKey:    []byte(connURL),
-		connectionSecretStdSrvKey: []byte(srvConnURL),
-		connectionSecretPvtKey:    []byte(pvtConnURL),
-		connectionSecretPvtSrvKey: []byte(pvtSrvConnURL),
-		userNameKey:               []byte(data.DBUserName),
-		passwordKey:               []byte(data.Password),
+		connectionSecretStdKey:       []byte(connURL),
+		connectionSecretStdSrvKey:    []byte(srvConnURL),
+		connectionSecretPvtKey:       []byte(pvtConnURL),
+		connectionSecretPvtSrvKey:    []byte(pvtSrvConnURL),
+		"connectionSecretPvtKey0":    []byte(pvtConnURL),
+		"connectionSecretPvtSrvKey0": []byte(pvtSrvConnURL),
+		"connectionSecretPvtKey1":    []byte(pvtConnURL),
+		"connectionSecretPvtSrvKey1": []byte(pvtSrvConnURL),
+		"connectionSecretPvtKey2":    []byte(pvtConnURL),
+		"connectionSecretPvtSrvKey2": []byte(pvtSrvConnURL),
+		"connectionSecretPvtKey3":    []byte(pvtConnURL),
+		"connectionSecretPvtSrvKey3": []byte(pvtSrvConnURL),
+		userNameKey:                  []byte(data.DBUserName),
+		passwordKey:                  []byte(data.Password),
 	}
 	return nil
 }

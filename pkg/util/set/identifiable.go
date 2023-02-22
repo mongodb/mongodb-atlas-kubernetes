@@ -60,6 +60,31 @@ func intersectionIdentifiable(left, right []Identifiable) [][]Identifiable {
 	return result
 }
 
+// func intersectionIdentifiable(left, right []Identifiable) [][]Identifiable {
+// 	matches := make(map[string][]Identifiable)
+// 	for _, l := range left {
+// 		keyL := l.Identifier().(string)
+// 		_, found := matches[keyL]
+// 		if !found {
+// 			matches[keyL] = []Identifiable{l}
+// 		}
+// 		for _, r := range right {
+// 			if r.Identifier() == l.Identifier() {
+// 				matches[keyL] = append(matches[keyL], r)
+// 			}
+// 		}
+// 	}
+
+// 	result := make([][]Identifiable, 0)
+// 	for _, match := range maps.Values(matches) {
+// 		for i := 1; i < len(match); i++ {
+// 			result = append(result, []Identifiable{match[0], match[i]})
+// 		}
+// 	}
+
+// 	return result
+// }
+
 // toIdentifiableSlice uses reflection to cast the array
 func toIdentifiableSlice(data interface{}) []Identifiable {
 	value := reflect.ValueOf(data)
