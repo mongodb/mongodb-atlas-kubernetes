@@ -90,6 +90,8 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 		passwordKey:    []byte(data.Password),
 		standardKey:    []byte(data.ConnURL),
 		standardKeySrv: []byte(data.SrvConnURL),
+		privateKey:     []byte(""),
+		privateKeySrv:  []byte(""),
 	}
 
 	for idx, privateConn := range data.PrivateConnURLs {
