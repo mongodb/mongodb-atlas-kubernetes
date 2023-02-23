@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -100,7 +102,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 				{
 					provider: "AWS",
-					region:   config.AWSRegionUS, // todo: swap to config.AWSRegionEU,
+					region:   config.AWSRegionEU,
 				},
 			},
 		),
@@ -168,14 +170,16 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 
-		for _, peitem := range userData.Project.Status.PrivateEndpoints {
+		for idx, peitem := range userData.Project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			privateEndpointID := peitem.ID
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			output, err := cloudTest.CreatePrivateEndpoint(privateEndpointID)
+			peName := getPrivateLinkName(privateEndpointID, peitem.Provider, idx)
+
+			output, err := cloudTest.CreatePrivateEndpoint(peName)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
@@ -247,4 +251,11 @@ func AllPEndpointUpdated(data *model.TestDataProvider) bool {
 		return false
 	}
 	return len(data.Project.Spec.PrivateEndpoints) == len(data.Project.Status.PrivateEndpoints)
+}
+
+func getPrivateLinkName(privateEndpointID string, providerName provider.ProviderName, idx int) string {
+	if providerName == provider.ProviderAWS {
+		return fmt.Sprintf("%s_%d", privateEndpointID, idx)
+	}
+	return privateEndpointID
 }
