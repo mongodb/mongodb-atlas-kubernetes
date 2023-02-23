@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -75,9 +74,9 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, spec
 		return result, status.PrivateEndpointServiceReadyType
 	}
 
-	endpointsToCreate := getEndpointsNotInAtlas(specPEs, atlasPEs)
+	endpointsToCreate, endpointCounts := getEndpointsNotInAtlas(specPEs, atlasPEs)
 	log.Debugf("Number of Private Endpoints to create: %d", len(endpointsToCreate))
-	newConnections, err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate)
+	newConnections, err := createPeServiceInAtlas(ctx, projectID, endpointsToCreate, endpointCounts)
 	if err != nil {
 		return terminateWithError(ctx, status.PrivateEndpointServiceReadyType, "Failed to create PE Service in Atlas", err)
 	}
@@ -211,9 +210,9 @@ func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (resul
 	return
 }
 
-func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []mdbv1.PrivateEndpoint) (newConnections []atlasPE, err error) {
+func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []mdbv1.PrivateEndpoint, endpointCounts []int) (newConnections []atlasPE, err error) {
 	newConnections = make([]atlasPE, 0)
-	for _, pe := range endpointsToCreate {
+	for idx, pe := range endpointsToCreate {
 		conn, _, err := ctx.Client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
 			ProviderName: string(pe.Provider),
 			Region:       pe.Region,
@@ -224,7 +223,11 @@ func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 
 		conn.ProviderName = string(pe.Provider)
 		conn.Region = pe.Region
-		newConnections = append(newConnections, atlasPE(*conn))
+		newConn := atlasPE(*conn)
+
+		for i := 0; i < endpointCounts[idx]; i++ {
+			newConnections = append(newConnections, newConn)
+		}
 	}
 
 	return newConnections, nil
@@ -462,23 +465,42 @@ var notReadyServiceResult = workflow.InProgress(workflow.ProjectPEServiceIsNotRe
 var notReadyInterfaceResult = workflow.InProgress(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
 
 func getEndpointsNotInSpec(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []atlasPE {
-	return getUniqueDifference(atlasPEs, specPEs)
+	uniqueItems, _ := getUniqueDifference(atlasPEs, specPEs)
+	return uniqueItems
 }
 
-func getEndpointsNotInAtlas(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []mdbv1.PrivateEndpoint {
+func getEndpointsNotInAtlas(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) (toCreate []mdbv1.PrivateEndpoint, counts []int) {
 	return getUniqueDifference(specPEs, atlasPEs)
 }
 
-func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []ResultType, right []OtherType) []ResultType {
+func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []ResultType, right []OtherType) (uniques []ResultType, counts []int) {
 	difference := set.Difference(left, right)
 
-	uniqueItems := make(map[string]ResultType)
+	uniqueItems := make(map[string]itemCount)
 	for _, item := range difference {
 		key := item.Identifier().(string)
-		uniqueItems[key] = item.(ResultType)
+		if uniqueItem, found := uniqueItems[key]; found {
+			uniqueItem.Count += 1
+			uniqueItems[key] = uniqueItem
+		} else {
+			uniqueItems[key] = itemCount{
+				Item:  item,
+				Count: 1,
+			}
+		}
 	}
 
-	return maps.Values(uniqueItems)
+	for _, value := range uniqueItems {
+		uniques = append(uniques, value.Item.(ResultType))
+		counts = append(counts, value.Count)
+	}
+
+	return
+}
+
+type itemCount struct {
+	Item  interface{}
+	Count int
 }
 
 func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {

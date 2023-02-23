@@ -27,15 +27,17 @@ func TestGetEndpointsNotInAtlas(t *testing.T) {
 		},
 	}
 	atlasPEs := []atlasPE{}
-	result := getEndpointsNotInAtlas(specPEs, atlasPEs)
-	assert.Equalf(t, len(result), 2, "getEndpointsNotInAtlas should remove a duplicate PE Service")
-	assert.NotEqualf(t, result[0].Region, result[1].Region, "getEndpointsNotInAtlas should return unique PEs")
+	uniqueItems, itemCounts := getEndpointsNotInAtlas(specPEs, atlasPEs)
+	assert.Equalf(t, 2, len(uniqueItems), "getEndpointsNotInAtlas should remove a duplicate PE Service")
+	assert.NotEqualf(t, uniqueItems[0].Region, uniqueItems[1].Region, "getEndpointsNotInAtlas should return unique PEs")
+	assert.Equalf(t, len(uniqueItems), len(itemCounts), "item counts should have the same length as items")
+	assert.Equalf(t, 3, itemCounts[0]+itemCounts[1], "item counts should sum up to the actual value of spec endpoints")
 
 	atlasPEs = append(atlasPEs, atlasPE{
 		ProviderName: string(provider.ProviderAWS),
 		RegionName:   region1,
 	})
 
-	result = getEndpointsNotInAtlas(specPEs, atlasPEs)
-	assert.Equalf(t, len(result), 1, "getEndpointsNotInAtlas should remove both PE Service copies if there is one in Atlas")
+	uniqueItems, _ = getEndpointsNotInAtlas(specPEs, atlasPEs)
+	assert.Equalf(t, len(uniqueItems), 1, "getEndpointsNotInAtlas should remove both PE Service copies if there is one in Atlas")
 }
