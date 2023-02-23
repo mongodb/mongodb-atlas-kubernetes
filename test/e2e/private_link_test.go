@@ -100,7 +100,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 				{
 					provider: "AWS",
-					region:   config.AWSRegionEU,
+					region:   config.AWSRegionUS, // todo: swap to config.AWSRegionEU,
 				},
 			},
 		),
@@ -179,6 +179,10 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
+				if userData.Project.Spec.PrivateEndpoints[i].ID != "" {
+					continue
+				}
+
 				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
 					userData.Project.Spec.PrivateEndpoints[i] = output
 				}

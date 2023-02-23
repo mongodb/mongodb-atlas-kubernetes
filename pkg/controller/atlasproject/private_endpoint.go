@@ -58,7 +58,7 @@ func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdb
 		}
 	}
 
-	interfaceStatus := getStatusForInterfaces(ctx, atlasPEs, projectID)
+	interfaceStatus := getStatusForInterfaces(ctx, projectID, specPEs, atlasPEs)
 	ctx.SetConditionFromResult(status.PrivateEndpointReadyType, interfaceStatus)
 
 	return interfaceStatus
@@ -111,9 +111,13 @@ func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Re
 	return workflow.OK()
 }
 
-func getStatusForInterfaces(ctx *workflow.Context, atlasPEs []atlasPE, projectID string) workflow.Result {
+func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) workflow.Result {
+	totalInterfaceCount := 0
+
 	for _, atlasPeService := range atlasPEs {
 		interfaceEndpointIDs := atlasPeService.InterfaceEndpointIDs()
+		totalInterfaceCount += len(interfaceEndpointIDs)
+
 		for _, interfaceEndpointID := range interfaceEndpointIDs {
 			if interfaceEndpointID == "" {
 				return notReadyInterfaceResult
@@ -132,6 +136,10 @@ func getStatusForInterfaces(ctx *workflow.Context, atlasPEs []atlasPE, projectID
 				return notReadyInterfaceResult
 			}
 		}
+	}
+
+	if len(specPEs) != totalInterfaceCount {
+		return notReadyInterfaceResult
 	}
 
 	return workflow.OK()
@@ -360,8 +368,6 @@ func convertOneServiceToStatus(ctx *workflow.Context, projectID string, conn atl
 		result = append(result, filledPEStatus(ctx, projectID, conn, interfaceEndpointID))
 	}
 
-	ctx.Log.Debugw("Converted Status", "connection", conn, "status result", result)
-
 	return result
 }
 
@@ -390,6 +396,8 @@ func filledPEStatus(ctx *workflow.Context, projectID string, conn atlasPE, Inter
 			}
 		}
 	}
+
+	ctx.Log.Debugw("Converted One Status", "connection", conn, "private endpoint", pe)
 
 	return pe
 }
