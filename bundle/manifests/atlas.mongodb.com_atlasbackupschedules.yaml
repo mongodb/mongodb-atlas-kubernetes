@@ -45,6 +45,41 @@ spec:
                   snapshots to the AWS bucket. You must also define the export policy
                   using export. If omitted, defaults to false.
                 type: boolean
+              copySettings:
+                description: Copy backups to other regions for increased resiliency
+                  and faster restores.
+                items:
+                  properties:
+                    cloudProvider:
+                      default: AWS
+                      description: Identifies the cloud provider that stores the snapshot
+                        copy.
+                      enum:
+                      - AWS
+                      - GCP
+                      - AZURE
+                      type: string
+                    frequencies:
+                      description: List that describes which types of snapshots to
+                        copy.
+                      items:
+                        type: string
+                      minItems: 1
+                      type: array
+                    regionName:
+                      description: Target region to copy snapshots belonging to replicationSpecId
+                        to.
+                      type: string
+                    replicationSpecId:
+                      description: Unique identifier that identifies the replication
+                        object for a zone in a cluster.
+                      type: string
+                    shouldCopyOplogs:
+                      description: Flag that indicates whether to copy the oplogs
+                        to the target region.
+                      type: boolean
+                  type: object
+                type: array
               export:
                 description: Export policy for automatically exporting cloud backup
                   snapshots to AWS bucket.

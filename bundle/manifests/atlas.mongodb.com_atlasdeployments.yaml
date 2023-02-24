@@ -259,8 +259,9 @@ spec:
                       object.
                     properties:
                       autoIndexingEnabled:
-                        description: Flag that indicates whether autopilot mode for
-                          Performance Advisor is enabled. The default is false.
+                        description: 'Deprecated: This flag is not supported anymore.
+                          Flag that indicates whether autopilot mode for Performance
+                          Advisor is enabled. The default is false.'
                         type: boolean
                       compute:
                         description: Collection of settings that configure how a deployment
@@ -427,8 +428,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
@@ -656,8 +658,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
@@ -917,6 +920,17 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              replicaSets:
+                items:
+                  properties:
+                    id:
+                      type: string
+                    zoneName:
+                      type: string
+                  required:
+                  - id
+                  type: object
+                type: array
               serverlessPrivateEndpoints:
                 items:
                   properties:

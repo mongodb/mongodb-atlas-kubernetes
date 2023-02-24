@@ -45,6 +45,7 @@ go.mongodb.org/atlas/mongodbatlas,https://github.com/mongodb/go-client-mongodb-a
 go.uber.org/atomic,https://github.com/uber-go/atomic/blob/v1.9.0/LICENSE.txt,MIT
 go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.7.0/LICENSE.txt,MIT
 go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.23.0/LICENSE.txt,MIT
+golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/5e25df02:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.2.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/6fdb5e3d:LICENSE,BSD-3-Clause
 golang.org/x/sync/errgroup,https://cs.opensource.google/go/x/sync/+/v0.1.0:LICENSE,BSD-3-Clause

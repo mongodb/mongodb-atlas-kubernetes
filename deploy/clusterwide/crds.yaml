@@ -203,6 +203,41 @@ spec:
                   snapshots to the AWS bucket. You must also define the export policy
                   using export. If omitted, defaults to false.
                 type: boolean
+              copySettings:
+                description: Copy backups to other regions for increased resiliency
+                  and faster restores.
+                items:
+                  properties:
+                    cloudProvider:
+                      default: AWS
+                      description: Identifies the cloud provider that stores the snapshot
+                        copy.
+                      enum:
+                      - AWS
+                      - GCP
+                      - AZURE
+                      type: string
+                    frequencies:
+                      description: List that describes which types of snapshots to
+                        copy.
+                      items:
+                        type: string
+                      minItems: 1
+                      type: array
+                    regionName:
+                      description: Target region to copy snapshots belonging to replicationSpecId
+                        to.
+                      type: string
+                    replicationSpecId:
+                      description: Unique identifier that identifies the replication
+                        object for a zone in a cluster.
+                      type: string
+                    shouldCopyOplogs:
+                      description: Flag that indicates whether to copy the oplogs
+                        to the target region.
+                      type: boolean
+                  type: object
+                type: array
               export:
                 description: Export policy for automatically exporting cloud backup
                   snapshots to AWS bucket.
@@ -791,8 +826,9 @@ spec:
                       object.
                     properties:
                       autoIndexingEnabled:
-                        description: Flag that indicates whether autopilot mode for
-                          Performance Advisor is enabled. The default is false.
+                        description: 'Deprecated: This flag is not supported anymore.
+                          Flag that indicates whether autopilot mode for Performance
+                          Advisor is enabled. The default is false.'
                         type: boolean
                       compute:
                         description: Collection of settings that configure how a deployment
@@ -959,8 +995,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
@@ -1188,8 +1225,9 @@ spec:
                           can scale.
                         properties:
                           autoIndexingEnabled:
-                            description: Flag that indicates whether autopilot mode
-                              for Performance Advisor is enabled. The default is false.
+                            description: 'Deprecated: This flag is not supported anymore.
+                              Flag that indicates whether autopilot mode for Performance
+                              Advisor is enabled. The default is false.'
                             type: boolean
                           compute:
                             description: Collection of settings that configure how
@@ -1449,6 +1487,17 @@ spec:
                   reconciliation of the resource.
                 format: int64
                 type: integer
+              replicaSets:
+                items:
+                  properties:
+                    id:
+                      type: string
+                    zoneName:
+                      type: string
+                  required:
+                  - id
+                  type: object
+                type: array
               serverlessPrivateEndpoints:
                 items:
                   properties:
@@ -1780,6 +1829,9 @@ spec:
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
                     type: string
                 required:
                 - name
