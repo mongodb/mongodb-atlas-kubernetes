@@ -2,6 +2,7 @@ package connectionsecret
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -31,11 +32,11 @@ func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Cli
 		})
 	}
 
-	serverlessDeployments, _, err := ctx.Client.ServerlessInstances.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	serverlessDeployments, err := GetAllServerless(ctx, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
-	for _, c := range serverlessDeployments.Results {
+	for _, c := range serverlessDeployments {
 		found := false
 
 		for _, advancedDeployment := range advancedDeployments.Results {
@@ -188,4 +189,31 @@ func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *C
 		data.PvtConnURL = pe.ConnectionString
 		data.PvtSrvConnURL = pe.SRVConnectionString
 	}
+}
+
+func GetAllServerless(ctx *workflow.Context, projectID string) ([]*mongodbatlas.Cluster, error) {
+	serverless, _, err := ctx.Client.ServerlessInstances.List(context.Background(), projectID, nil)
+	if err != nil {
+		if !IsCloudGovDomain(ctx) {
+			return nil, fmt.Errorf("error getting serverless: %w", err)
+		} else {
+			return make([]*mongodbatlas.Cluster, 0), nil
+		}
+	}
+	return serverless.Results, nil
+}
+
+func IsCloudGovDomain(ctx *workflow.Context) bool {
+	domains := []string{
+		"cloudgov.mongodb.com",
+		"cloud-dev.mongodbgov.com",
+	}
+
+	for _, domain := range domains {
+		if strings.HasPrefix(ctx.Client.BaseURL.Host, domain) {
+			return true
+		}
+	}
+
+	return false
 }
