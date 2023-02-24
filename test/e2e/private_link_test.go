@@ -189,6 +189,7 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 
 				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
 					userData.Project.Spec.PrivateEndpoints[i] = output
+					break
 				}
 			}
 		}
