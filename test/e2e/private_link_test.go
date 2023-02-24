@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -86,9 +88,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				region:   config.AzureRegionEU,
 			}},
 		),
-		Entry("Test[privatelink-aws-2]: User has project which was updated with 2 AWS PrivateEndpoint", Label("privatelink-aws-2"),
+		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("privatelink-aws-2"),
 			model.DataProvider(
-				"privatelink-aws-2",
+				"privatelink-two-identical-aws",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
@@ -100,7 +102,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 				{
 					provider: "AWS",
-					region:   config.AWSRegionUS,
+					region:   config.AWSRegionEU,
 				},
 			},
 		),
@@ -168,19 +170,26 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 
-		for _, peitem := range userData.Project.Status.PrivateEndpoints {
+		for idx, peitem := range userData.Project.Status.PrivateEndpoints {
 			cloudTest, err := cloud.CreatePEActions(peitem)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			privateEndpointID := peitem.ID
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			output, err := cloudTest.CreatePrivateEndpoint(privateEndpointID)
+			peName := getPrivateLinkName(privateEndpointID, peitem.Provider, idx)
+
+			output, err := cloudTest.CreatePrivateEndpoint(peName)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
+				if userData.Project.Spec.PrivateEndpoints[i].ID != "" {
+					continue
+				}
+
 				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
 					userData.Project.Spec.PrivateEndpoints[i] = output
+					break
 				}
 			}
 		}
@@ -243,4 +252,11 @@ func AllPEndpointUpdated(data *model.TestDataProvider) bool {
 		return false
 	}
 	return len(data.Project.Spec.PrivateEndpoints) == len(data.Project.Status.PrivateEndpoints)
+}
+
+func getPrivateLinkName(privateEndpointID string, providerName provider.ProviderName, idx int) string {
+	if providerName == provider.ProviderAWS {
+		return fmt.Sprintf("%s_%d", privateEndpointID, idx)
+	}
+	return privateEndpointID
 }

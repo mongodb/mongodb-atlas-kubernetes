@@ -180,14 +180,17 @@ func RemoveStaleSecretsByUserName(k8sClient client.Client, projectID, userName s
 
 func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *ConnectionData) {
 	if connStrings.Private != "" {
-		data.PvtConnURL = connStrings.Private
-		data.PvtSrvConnURL = connStrings.PrivateSrv
+		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			PvtConnURL:    connStrings.Private,
+			PvtSrvConnURL: connStrings.PrivateSrv,
+		})
 	}
 
-	if len(connStrings.PrivateEndpoint) == 1 {
-		pe := connStrings.PrivateEndpoint[0]
-		data.PvtConnURL = pe.ConnectionString
-		data.PvtSrvConnURL = pe.SRVConnectionString
+	for _, pe := range connStrings.PrivateEndpoint {
+		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
+			PvtConnURL:    pe.ConnectionString,
+			PvtSrvConnURL: pe.SRVConnectionString,
+		})
 	}
 }
 

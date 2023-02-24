@@ -19,16 +19,25 @@ const (
 	TypeLabelKey           = "atlas.mongodb.com/type"
 	CredLabelVal           = "credentials"
 
-	connectionSecretStdKey    string = "connectionStringStandard"
-	connectionSecretStdSrvKey string = "connectionStringStandardSrv"
-	connectionSecretPvtKey    string = "connectionStringPrivate"
-	connectionSecretPvtSrvKey string = "connectionStringPrivateSrv"
-	userNameKey               string = "username"
-	passwordKey               string = "password"
+	standardKey    string = "connectionStringStandard"
+	standardKeySrv string = "connectionStringStandardSrv"
+	privateKey     string = "connectionStringPrivate"
+	privateKeySrv  string = "connectionStringPrivateSrv"
+	userNameKey    string = "username"
+	passwordKey    string = "password"
 )
 
 type ConnectionData struct {
-	DBUserName, ConnURL, SrvConnURL, PvtConnURL, PvtSrvConnURL, Password string
+	DBUserName      string
+	Password        string
+	ConnURL         string
+	SrvConnURL      string
+	PrivateConnURLs []PrivateLinkConnURLs
+}
+
+type PrivateLinkConnURLs struct {
+	PvtConnURL    string
+	PvtSrvConnURL string
 }
 
 // Ensure creates or updates the connection Secret for the specific cluster and db user. Returns the name of the Secret
@@ -54,21 +63,18 @@ func Ensure(client client.Client, namespace, projectName, projectID, clusterName
 }
 
 func fillSecret(secret *corev1.Secret, projectID string, clusterName string, data ConnectionData) error {
-	var connURL, srvConnURL, pvtConnURL, pvtSrvConnURL string
 	var err error
-	if connURL, err = AddCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
+	if data.ConnURL, err = AddCredentialsToConnectionURL(data.ConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
-	if srvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
+	if data.SrvConnURL, err = AddCredentialsToConnectionURL(data.SrvConnURL, data.DBUserName, data.Password); err != nil {
 		return err
 	}
-	if data.PvtConnURL != "" {
-		if pvtConnURL, err = AddCredentialsToConnectionURL(data.PvtConnURL, data.DBUserName, data.Password); err != nil {
+	for idx, privateConn := range data.PrivateConnURLs {
+		if data.PrivateConnURLs[idx].PvtConnURL, err = AddCredentialsToConnectionURL(privateConn.PvtConnURL, data.DBUserName, data.Password); err != nil {
 			return err
 		}
-	}
-	if data.PvtSrvConnURL != "" {
-		if pvtSrvConnURL, err = AddCredentialsToConnectionURL(data.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
+		if data.PrivateConnURLs[idx].PvtSrvConnURL, err = AddCredentialsToConnectionURL(privateConn.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
 			return err
 		}
 	}
@@ -80,14 +86,29 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 	}
 
 	secret.Data = map[string][]byte{
-		connectionSecretStdKey:    []byte(connURL),
-		connectionSecretStdSrvKey: []byte(srvConnURL),
-		connectionSecretPvtKey:    []byte(pvtConnURL),
-		connectionSecretPvtSrvKey: []byte(pvtSrvConnURL),
-		userNameKey:               []byte(data.DBUserName),
-		passwordKey:               []byte(data.Password),
+		userNameKey:    []byte(data.DBUserName),
+		passwordKey:    []byte(data.Password),
+		standardKey:    []byte(data.ConnURL),
+		standardKeySrv: []byte(data.SrvConnURL),
+		privateKey:     []byte(""),
+		privateKeySrv:  []byte(""),
 	}
+
+	for idx, privateConn := range data.PrivateConnURLs {
+		suffix := getSuffix(idx)
+		secret.Data[privateKey+suffix] = []byte(privateConn.PvtConnURL)
+		secret.Data[privateKeySrv+suffix] = []byte(privateConn.PvtSrvConnURL)
+	}
+
 	return nil
+}
+
+func getSuffix(idx int) string {
+	if idx == 0 {
+		return ""
+	}
+
+	return fmt.Sprint(idx)
 }
 
 func formatSecretName(projectName, clusterName, dbUserName string) string {

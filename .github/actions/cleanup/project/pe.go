@@ -22,9 +22,9 @@ func deleteAllPE(ctx context.Context, client mongodbatlas.PrivateEndpointsServic
 
 func deletePrivateEndpointsFromAtlas(ctx context.Context, client mongodbatlas.PrivateEndpointsService, projectID string, listsToRemove []mongodbatlas.PrivateEndpointConnection) error {
 	for _, peService := range listsToRemove {
-		if interfaceEndpointID(peService) != "" {
-			log.Printf("Deleting private endpoint %s", interfaceEndpointID(peService))
-			if _, err := client.DeleteOnePrivateEndpoint(ctx, projectID, peService.ProviderName, peService.ID, interfaceEndpointID(peService)); err != nil {
+		if firstInterfaceEndpointID(peService) != "" {
+			log.Printf("Deleting private endpoint %s", firstInterfaceEndpointID(peService))
+			if _, err := client.DeleteOnePrivateEndpoint(ctx, projectID, peService.ProviderName, peService.ID, firstInterfaceEndpointID(peService)); err != nil {
 				return fmt.Errorf("error deleting private endpoint interface: %s", err)
 			}
 
@@ -39,8 +39,7 @@ func deletePrivateEndpointsFromAtlas(ctx context.Context, client mongodbatlas.Pr
 	return nil
 }
 
-func interfaceEndpointID(connection mongodbatlas.PrivateEndpointConnection) string {
-
+func firstInterfaceEndpointID(connection mongodbatlas.PrivateEndpointConnection) string {
 	if len(connection.InterfaceEndpoints) != 0 {
 		return connection.InterfaceEndpoints[0]
 	}
