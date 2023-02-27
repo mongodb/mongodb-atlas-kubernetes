@@ -35,6 +35,7 @@ RUN microdnf install yum &&\
     dnf remove python3-pip -y &&\
     microdnf clean all
 
+RUN rm -f /tmp/tls-ca-bundle.pem
 #FROM registry.access.redhat.com/ubi8/ubi
 #
 #RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
