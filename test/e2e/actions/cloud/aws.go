@@ -23,7 +23,7 @@ func (awsAction *AwsAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoi
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
-	subnetID, err := session.GetSubnetID()
+	subnetID, err := session.GetSubnetIDForVpc(vpcID)
 	if err != nil {
 		return v1.PrivateEndpoint{}, err
 	}
