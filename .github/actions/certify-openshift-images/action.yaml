@@ -16,10 +16,6 @@ inputs:
   rhcc_project:
     description: The Redhat certification central project id
     required: true
-  submit:
-    description: Submit result to RedHat Connect
-    required: false
-    default: "false"
 runs:
   using: 'docker'
   image: 'Dockerfile'
