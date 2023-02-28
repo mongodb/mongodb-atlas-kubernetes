@@ -25,4 +25,3 @@ runs:
     QUAY_PASSWORD: ${{ inputs.quay_password }}
     RHCC_TOKEN: ${{ inputs.rhcc_token }}
     RHCC_PROJECT: ${{ inputs.rhcc_project }}
-    SUBMIT: ${{ inputs.submit }}
