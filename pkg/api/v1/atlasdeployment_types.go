@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -523,6 +524,9 @@ func (spec *AtlasDeploymentSpec) LegacyDeployment() (*mongodbatlas.Cluster, erro
 // Deployment converts the Spec to native Atlas client format.
 func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.AdvancedCluster, error) {
 	result := &mongodbatlas.AdvancedCluster{}
+	if spec.AdvancedDeploymentSpec == nil {
+		return result, errors.New("AdvancedDeploymentSpec is empty")
+	}
 	err := compat.JSONCopy(result, *spec.AdvancedDeploymentSpec)
 	return result, err
 }

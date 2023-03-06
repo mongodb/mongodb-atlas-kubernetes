@@ -187,6 +187,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			log.Errorw("failed to convert legacy deployment", "error", err)
 			return result.ReconcileResult(), nil
 		}
+		deployment.Spec.DeploymentSpec = nil
 	}
 
 	handleDeployment := r.selectDeploymentHandler(deployment)

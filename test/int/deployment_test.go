@@ -176,10 +176,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		By("Verifying Deployment state in Atlas", func() {
 			legacyDeployment := createdDeployment.Spec.DeploymentSpec
 
-			err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-			Expect(err).ToNot(HaveOccurred())
+			if legacyDeployment != nil {
+				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
+				Expect(err).ToNot(HaveOccurred())
 
-			createdDeployment.Spec.DeploymentSpec = nil
+				createdDeployment.Spec.DeploymentSpec = nil
+			}
 
 			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
 			Expect(err).ToNot(HaveOccurred())
@@ -194,6 +196,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			for _, check := range additionalChecks {
 				check(atlasDeploymentAsAtlas)
+			}
+
+			if legacyDeployment != nil {
+				createdDeployment.Spec.AdvancedDeploymentSpec = nil
 			}
 		})
 	}
@@ -225,37 +231,19 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	}
 
 	performCreate := func(deployment *mdbv1.AtlasDeployment, timeout time.Duration) {
-		legacyDeployment := deployment.Spec.DeploymentSpec
-
-		err := atlasdeployment.ConvertLegacyDeployment(&deployment.Spec)
-		Expect(err).ToNot(HaveOccurred())
-
-		deployment.Spec.DeploymentSpec = nil
-
 		Expect(k8sClient.Create(context.Background(), deployment)).To(Succeed())
 
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc(g))
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
-
-		deployment.Spec.DeploymentSpec = legacyDeployment
 	}
 
 	performUpdate := func(timeout time.Duration) {
-		legacyDeployment := createdDeployment.Spec.DeploymentSpec
-
-		err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-		Expect(err).ToNot(HaveOccurred())
-
-		createdDeployment.Spec.DeploymentSpec = nil
-
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
-
-		createdDeployment.Spec.DeploymentSpec = legacyDeployment
 
 		lastGeneration++
 	}
@@ -266,9 +254,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
-
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
 
 				performCreate(expectedDeployment, 30*time.Minute)
 
@@ -365,9 +350,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
 
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
 				performCreate(expectedDeployment, 30*time.Minute)
 
 				createdDeployment.Spec.DeploymentSpec = expectedDeployment.Spec.DeploymentSpec
@@ -391,13 +373,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
-
-				err := atlasdeployment.ConvertLegacyDeployment(&expectedDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
 				performCreate(expectedDeployment, 30*time.Minute)
-
-				createdDeployment.Spec.DeploymentSpec = expectedDeployment.Spec.DeploymentSpec
 
 				doDeploymentStatusChecks()
 				checkAtlasState()
@@ -470,6 +446,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				expectedReplicationSpecs := mergedDeployment.ReplicationSpecs
+				createdDeployment.Spec.AdvancedDeploymentSpec = nil
 
 				// The ID field is added by Atlas - we don't have it in our specs
 				Expect(c.ReplicationSpecs[0].ID).NotTo(BeNil())
@@ -640,14 +617,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Deployment configuration while paused (should fail)", func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(false)
-
-				legacyDeployment := createdDeployment.Spec.DeploymentSpec
-
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
-				createdDeployment.Spec.DeploymentSpec = nil
-
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 				Eventually(func() bool {
 					return testutil.CheckCondition(
@@ -662,8 +631,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					WithTimeout(DeploymentUpdateTimeout).
 					WithPolling(interval).
 					Should(BeTrue())
-
-				createdDeployment.Spec.DeploymentSpec = legacyDeployment
 
 				lastGeneration++
 			})
@@ -687,14 +654,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Setting incorrect instance size (should fail)", func() {
 				oldSizeName := createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName
 				createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M42"
-
-				legacyDeployment := createdDeployment.Spec.DeploymentSpec
-
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
-				createdDeployment.Spec.DeploymentSpec = nil
-
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 				Eventually(func() bool {
 					return testutil.CheckCondition(
@@ -708,9 +667,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				}).WithTimeout(DeploymentUpdateTimeout).
 					WithPolling(interval).
 					Should(BeTrue())
-
-				createdDeployment.Spec.DeploymentSpec = legacyDeployment
-
 				lastGeneration++
 
 				By("Fixing the Deployment", func() {
