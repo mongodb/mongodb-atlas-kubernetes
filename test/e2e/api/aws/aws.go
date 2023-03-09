@@ -98,24 +98,28 @@ func (s sessionAWS) DeleteVPC(vpcID string) error {
 	return nil
 }
 
-func (s sessionAWS) GetSubnetID() (string, error) {
+func (s sessionAWS) GetOrCreateSubnetIDForVpc(vpcID string) (string, error) {
 	input := &ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{{
-			Name: aws.String("tag:Name"),
-			Values: []*string{
-				aws.String(config.TagName),
+		Filters: []*ec2.Filter{
+			{
+				Name: aws.String("vpc-id"),
+				Values: []*string{
+					aws.String(vpcID),
+				},
 			},
-		}},
+		},
 	}
+
 	result, err := s.ec2.DescribeSubnets(input)
 	if err != nil {
 		return "", getError(err)
 	}
-	if len(result.Subnets) < 1 {
-		return "", errors.New("can not find Subnet")
+
+	if len(result.Subnets) > 0 {
+		return *result.Subnets[0].SubnetId, nil
 	}
-	fmt.Println(result)
-	return *result.Subnets[0].SubnetId, nil
+
+	return s.CreateSubnet(vpcID, "10.0.0.0/24", "pe-aws-test")
 }
 
 func (s sessionAWS) CreateSubnet(vpcID, cidr, testID string) (string, error) {
