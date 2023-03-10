@@ -151,9 +151,8 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(mdbv1.DeploymentScopeType) {
 		var apiError *mongodbatlas.ErrorResponse
-		_, _, regularErr := ctx.Client.Clusters.Get(context.Background(), projectID, s)
 		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(context.Background(), projectID, s)
-		if errors.As(regularErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound && errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
+		if errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
 	}

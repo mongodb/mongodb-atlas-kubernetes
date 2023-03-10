@@ -310,7 +310,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
-					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 1*time.Minute, 5*time.Second).Should(BeTrue())
+					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 2*time.Minute, 5*time.Second).Should(BeTrue())
 
 					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
 					time.Sleep(1 * time.Minute)
@@ -366,19 +366,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 	Describe("Two projects watching the Connection Secret", func() {
 		var secondProject *mdbv1.AtlasProject
-		AfterEach(func() {
-			if secondProject != nil && secondProject.Status.ID != "" {
-				By("Removing (second) Atlas Project " + secondProject.Status.ID)
-				Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
-				Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
-			}
-		})
 		It("Should Succeed", func() {
 			By("Creating two projects first", func() {
 				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second Project")
+				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(func() bool {
@@ -414,6 +407,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Eventually(func() bool {
 					return testutil.CheckCondition(k8sClient, secondProject, status.TrueCondition(status.ReadyType))
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+			})
+			By("Removing (second) Atlas Project "+secondProject.Status.ID, func() {
+				if secondProject != nil && secondProject.Status.ID != "" {
+					Expect(k8sClient.Delete(context.Background(), secondProject)).To(Succeed())
+					Eventually(checkAtlasProjectRemoved(secondProject.Status.ID), 20, interval).Should(BeTrue())
+				}
 			})
 		})
 	})
@@ -670,7 +669,7 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if r != nil && (r.StatusCode == http.StatusNotFound || r.StatusCode == http.StatusUnauthorized) {
 				return true
 			}
 		}

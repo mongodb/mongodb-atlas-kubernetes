@@ -9,13 +9,13 @@ import (
 
 // WaitForAtlasDeploymentStateToNotBeReached periodically checks the given atlas deployment for a given condition. The function
 // returns true after the given context timeout is exceeded.
-func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, projectName, deploymentName string, fns ...func(*mongodbatlas.Cluster) bool) func() bool {
+func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, projectName, deploymentName string, fns ...func(*mongodbatlas.AdvancedCluster) bool) func() bool {
 	return func() bool {
 		select {
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDeployment, _, err := atlasClient.Clusters.Get(context.Background(), projectName, deploymentName)
+			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectName, deploymentName)
 			if err != nil {
 				return false
 			}

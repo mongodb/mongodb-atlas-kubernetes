@@ -4,15 +4,22 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 const FreeTier = "M0"
@@ -81,7 +88,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if areEqual := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
+	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
 
@@ -98,7 +105,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	cleanupTheSpec(&specDeployment)
+	cleanupTheSpec(ctx, &specDeployment)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -113,11 +120,25 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 }
 
-func cleanupTheSpec(specMerged *mdbv1.AdvancedDeploymentSpec) {
+func cleanupTheSpec(ctx *workflow.Context, specMerged *mdbv1.AdvancedDeploymentSpec) {
 	specMerged.MongoDBVersion = ""
 
 	globalInstanceSize := ""
 	for i, replicationSpec := range specMerged.ReplicationSpecs {
+		autoScalingMissing := false
+		applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
+			if config.AutoScaling == nil {
+				autoScalingMissing = true
+			}
+		})
+
+		if autoScalingMissing {
+			ctx.Log.Debug("Not all RegionConfigs have AutoScaling set after object merge, removing it everywhere")
+			applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
+				config.AutoScaling = nil
+			})
+		}
+
 		for k := range replicationSpec.RegionConfigs {
 			regionConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
 
@@ -127,25 +148,30 @@ func cleanupTheSpec(specMerged *mdbv1.AdvancedDeploymentSpec) {
 				regionConfig.ReadOnlySpecs,
 			}
 
-			forEachSpec := func(f func(spec *mdbv1.Specs)) {
-				for _, spec := range specs {
-					if spec != nil {
-						f(spec)
-					}
-				}
-			}
-
-			forEachSpec(func(spec *mdbv1.Specs) {
+			applyToEach(specs, func(spec *mdbv1.Specs) {
 				if globalInstanceSize == "" && spec.NodeCount != nil && *spec.NodeCount != 0 {
 					globalInstanceSize = spec.InstanceSize
 				}
 			})
 
-			forEachSpec(func(spec *mdbv1.Specs) {
+			applyToEach(specs, func(spec *mdbv1.Specs) {
 				if spec.NodeCount == nil || *spec.NodeCount == 0 {
 					spec.InstanceSize = globalInstanceSize
 				}
 			})
+
+			if !autoScalingMissing && regionConfig.AutoScaling.Compute != nil && (regionConfig.AutoScaling.Compute.Enabled == nil || !*regionConfig.AutoScaling.Compute.Enabled) {
+				regionConfig.AutoScaling.Compute.MinInstanceSize = ""
+				regionConfig.AutoScaling.Compute.MaxInstanceSize = ""
+			}
+		}
+	}
+}
+
+func applyToEach[T any](items []*T, f func(spec *T)) {
+	for _, item := range items {
+		if item != nil {
+			f(item)
 		}
 	}
 }
@@ -261,6 +287,8 @@ func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool
 
 func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {
 	result := mdbv1.AdvancedDeploymentSpec{}
+
+	convertDiskSizeField(&result, &advancedDeployment)
 	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
 		return result, err
 	}
@@ -268,49 +296,68 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 	return result, nil
 }
 
+func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
+	var value *int
+	if atlas.DiskSizeGB != nil && *atlas.DiskSizeGB >= 1 {
+		value = toptr.MakePtr(int(*atlas.DiskSizeGB))
+	}
+	result.DiskSizeGB = value
+	atlas.DiskSizeGB = nil
+}
+
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentAtlas mdbv1.AdvancedDeploymentSpec, deploymentOperator mdbv1.AdvancedDeploymentSpec) bool {
-	d := cmp.Diff(deploymentOperator, deploymentAtlas, cmpopts.EquateEmpty())
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) (areEqual bool, diff string) {
+	deploymentAtlas = cleanupFieldsToCompare(deploymentAtlas, deploymentOperator)
+
+	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
 
-	return d == ""
+	return d == "", d
+}
+
+func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.AdvancedDeploymentSpec {
+	if atlas.ReplicationSpecs == nil {
+		return atlas
+	}
+
+	for specIdx, replicationSpec := range atlas.ReplicationSpecs {
+		if replicationSpec.RegionConfigs == nil {
+			continue
+		}
+
+		for configIdx, regionConfig := range replicationSpec.RegionConfigs {
+			if regionConfig.AnalyticsSpecs == nil || regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0 {
+				regionConfig.AnalyticsSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].AnalyticsSpecs
+			}
+
+			if regionConfig.ElectableSpecs == nil || regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0 {
+				regionConfig.ElectableSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ElectableSpecs
+			}
+
+			if regionConfig.ReadOnlySpecs == nil || regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0 {
+				regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
+			}
+		}
+	}
+
+	return atlas
 }
 
 // GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
 func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]string, error) {
 	var deploymentNames []string
-	deployment, _, err := client.Clusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
 
 	advancedDeployments, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, c := range deployment {
-		deploymentNames = append(deploymentNames, c.Name)
-	}
-
 	for _, d := range advancedDeployments.Results {
-		// based on configuration settings, some advanced deployment also show up in the regular deployments API.
-		// For these deployments, we don't want to duplicate the secret so we skip them.
-		found := false
-		for _, regularDeployment := range deployment {
-			if regularDeployment.Name == d.Name {
-				found = true
-				break
-			}
-		}
-
-		// we only include deployment names which have not been handled by the regular deployment API.
-		if !found {
-			deploymentNames = append(deploymentNames, d.Name)
-		}
+		deploymentNames = append(deploymentNames, d.Name)
 	}
+
 	return deploymentNames, nil
 }
 
@@ -345,4 +392,60 @@ func normalizeInstanceSize(ctx *workflow.Context, currentInstanceSize string, au
 
 func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desiredInstanceSize string) bool {
 	return desiredInstanceSize == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
+}
+
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
+	databaseUsers := mdbv1.AtlasDatabaseUserList{}
+	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	if err != nil {
+		return workflow.Terminate(workflow.Internal, err.Error())
+	}
+
+	secrets := make([]string, 0)
+	for _, dbUser := range databaseUsers.Items {
+		found := false
+		for _, c := range dbUser.Status.Conditions {
+			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			ctx.Log.Debugw("AtlasDatabaseUser not ready - not creating connection secret", "user.name", dbUser.Name)
+			continue
+		}
+
+		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
+			continue
+		}
+
+		password, err := dbUser.ReadPassword(r.Client)
+		if err != nil {
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+		}
+
+		data := connectionsecret.ConnectionData{
+			DBUserName: dbUser.Spec.Username,
+			Password:   password,
+			ConnURL:    connectionStrings.Standard,
+			SrvConnURL: connectionStrings.StandardSrv,
+		}
+		connectionsecret.FillPrivateConnStrings(connectionStrings, &data)
+
+		ctx.Log.Debugw("Creating a connection Secret", "data", data)
+
+		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
+		if err != nil {
+			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
+		}
+		secrets = append(secrets, secretName)
+	}
+
+	if len(secrets) > 0 {
+		r.EventRecorder.Eventf(deploymentResource, "Normal", "ConnectionSecretsEnsured", "Connection Secrets were created/updated: %s", strings.Join(secrets, ", "))
+	}
+
+	return workflow.OK()
 }

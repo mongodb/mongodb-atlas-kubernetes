@@ -16,6 +16,7 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
@@ -76,7 +77,7 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 	case deployment.Spec.AdvancedDeploymentSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetAdvancedDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
+		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
@@ -87,7 +88,9 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
 		aClient := atlas.GetClientOrFail()
-		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
+		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
+		Expect(err).To(BeNil())
+		Expect(deployment.StateName).Should(Equal("IDLE"))
 	}
 }
 
@@ -113,7 +116,7 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 	case deployment.Spec.AdvancedDeploymentSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetAdvancedDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
+		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
 		Expect(err).To(BeNil())
 		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
@@ -124,7 +127,9 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
 	default:
 		aClient := atlas.GetClientOrFail()
-		Expect(aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName()).StateName).Should(Equal("IDLE"))
+		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
+		Expect(err).To(BeNil())
+		Expect(deployment.StateName).Should(Equal("IDLE"))
 	}
 }
 
@@ -219,11 +224,20 @@ func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas
 
 func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas.AdvancedCluster) {
 	advancedSpec := requested.AdvancedDeploymentSpec
+
+	if advancedSpec == nil {
+		converted := v1.AtlasDeploymentSpec(requested)
+		err := atlasdeployment.ConvertLegacyDeployment(&converted)
+		Expect(err).ShouldNot(HaveOccurred())
+		converted.DeploymentSpec = nil
+		advancedSpec = converted.AdvancedDeploymentSpec
+	}
+
 	Expect(created.MongoDBVersion).ToNot(BeEmpty())
 	Expect(created.MongoDBVersion).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
 	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
-	Expect(created.Name).To(Equal(advancedSpec.Name))
+	Expect(created.Name).To(Equal(requested.GetDeploymentName()))
 	Expect(created.GroupID).To(Not(BeEmpty()))
 
 	defaultPriority := 7

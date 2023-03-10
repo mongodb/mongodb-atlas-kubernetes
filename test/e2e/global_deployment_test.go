@@ -153,7 +153,7 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []v1.CustomZone
 		}).WithTimeout(10 * time.Minute).Should(BeTrue())
 	})
 
-	By("Delete global  cluster config and wait idle state of cluster", func() {
+	By("Delete global cluster config and wait idle state of cluster", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 			Name:      userData.InitialDeployments[0].Name,
 			Namespace: userData.InitialDeployments[0].Namespace,

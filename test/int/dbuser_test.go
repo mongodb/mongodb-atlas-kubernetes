@@ -236,7 +236,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				}).WithTimeout(DBUserUpdateTimeout).WithPolling(intervalShort).Should(BeTrue())
 			})
 			By("Fixing second user", func() {
-				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdDeploymentAzure.Spec.DeploymentSpec.Name)
+				secondDBUser = secondDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdDeploymentAzure.GetDeploymentName())
 
 				Expect(k8sClient.Update(context.Background(), secondDBUser)).ToNot(HaveOccurred())
 
@@ -451,7 +451,7 @@ var _ = Describe("AtlasDatabaseUser", Label("int", "AtlasDatabaseUser"), func() 
 				Expect(tryConnect(createdProject.ID(), *createdDeploymentAWS, *createdDBUser)).Should(Succeed())
 			})
 			By("Changing the scopes - one stale secret is expected to be removed", func() {
-				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdDeploymentAzure.Spec.DeploymentSpec.Name)
+				createdDBUser = createdDBUser.ClearScopes().WithScope(mdbv1.DeploymentScopeType, createdDeploymentAzure.GetDeploymentName())
 				Expect(k8sClient.Update(context.Background(), createdDBUser)).To(Succeed())
 
 				Eventually(func() bool {
@@ -661,7 +661,7 @@ func tryConnect(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.A
 func mongoClient(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.Clusters.Get(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name)
+	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deployment.GetDeploymentName())
 	Expect(err).NotTo(HaveOccurred())
 
 	if c.ConnectionStrings == nil {
@@ -731,7 +731,7 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, deploym
 	password, err := user.ReadPassword(k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.Clusters.Get(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name)
+	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), project.ID(), deployment.GetDeploymentName())
 	Expect(err).NotTo(HaveOccurred())
 
 	expectedData := map[string][]byte{

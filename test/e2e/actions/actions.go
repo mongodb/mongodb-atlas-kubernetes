@@ -52,7 +52,8 @@ func changeFirstDeploymentPauseSpec(data *model.TestDataProvider, paused bool) {
 	By("Check additional Deployment field `paused`\n", func() {
 		aClient := atlas.GetClientOrFail()
 		Eventually(func(g Gomega) {
-			uDeployment := aClient.GetDeployment(data.Project.ID(), data.InitialDeployments[0].AtlasName())
+			uDeployment, err := aClient.GetDeployment(data.Project.ID(), data.InitialDeployments[0].AtlasName())
+			g.Expect(err).To(BeNil())
 			g.Expect(*uDeployment.Paused).Should(Equal(paused))
 		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 	})

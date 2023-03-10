@@ -85,7 +85,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 				Expect(k8sClient.Delete(context.Background(), &list.Items[i])).To(Succeed())
 			}
 			for i := range list.Items {
-				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), list.Items[i].Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), list.Items[i].GetDeploymentName()), 600, interval).Should(BeTrue())
 			}
 
 			By("Removing Atlas Project " + createdProject.Status.ID)
@@ -125,7 +125,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			By("Removing the deployment", func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeploymentAWS)).To(Succeed())
-				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdDeploymentAWS.Spec.DeploymentSpec.Name), 600, interval).Should(BeTrue())
+				Eventually(checkAtlasDeploymentRemoved(createdProject.ID(), createdDeploymentAWS.GetDeploymentName()), 600, interval).Should(BeTrue())
 			})
 		})
 	})
@@ -166,7 +166,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUse
 
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.Clusters.Get(context.Background(), projectID, deploymentName)
+		_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
