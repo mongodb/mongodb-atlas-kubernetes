@@ -119,14 +119,6 @@ func convertLegacyAutoScaling(legacyRoot, legacyPS *mdbv1.AutoScalingSpec) *mdbv
 	return autoScaling
 }
 
-// func pickAutoScalingField[T interface{}](fieldOne, fieldTwo *T) *T {
-// 	if fieldOne != nil {
-// 		return fieldOne
-// 	}
-
-// 	return fieldTwo
-// }
-
 func fillDefaultReplicationSpec(legacy *mdbv1.DeploymentSpec) {
 	replicationSpec := mdbv1.ReplicationSpec{
 		NumShards: toptr.MakePtr[int64](1),
@@ -164,13 +156,6 @@ func convertLegacyInt64(input *int64) *int {
 
 	return toptr.MakePtr(int(*input))
 }
-
-// func defaultBool(legacy *bool, defaultValue bool) *bool {
-// 	if legacy != nil {
-// 		return legacy
-// 	}
-// 	return toptr.MakePtr(defaultValue)
-// }
 
 func emptyIfDisabled(value string, flag *bool) string {
 	if flag == nil || !*flag {

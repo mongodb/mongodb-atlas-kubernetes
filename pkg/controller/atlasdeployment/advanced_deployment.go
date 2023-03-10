@@ -168,7 +168,7 @@ func cleanupTheSpec(ctx *workflow.Context, specMerged *mdbv1.AdvancedDeploymentS
 	}
 }
 
-func applyToEach[T interface{}](items []*T, f func(spec *T)) {
+func applyToEach[T any](items []*T, f func(spec *T)) {
 	for _, item := range items {
 		if item != nil {
 			f(item)
