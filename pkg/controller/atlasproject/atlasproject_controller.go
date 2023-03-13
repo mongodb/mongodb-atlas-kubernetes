@@ -168,9 +168,12 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	ctx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	if result := r.ensureProjectResources(ctx, projectID, project, context); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result.ReconcileResult(), nil
+	results := r.ensureProjectResources(ctx, projectID, project, context)
+	for i := range results {
+		if !results[i].IsOk() {
+			logIfWarning(ctx, result)
+			return results[i].ReconcileResult(), nil
+		}
 	}
 
 	ctx.SetConditionTrue(status.ReadyType)
@@ -221,72 +224,69 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, 
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, context context.Context) (result workflow.Result) {
-	if result = ensureIPAccessList(ctx, projectID, project); !result.IsOk() {
-		return result
+func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, context context.Context) (results []workflow.Result) {
+	var result workflow.Result
+	if result = ensureIPAccessList(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+	results = append(results, result)
 
-	if result = ensurePrivateEndpoint(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensurePrivateEndpoint(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
+	results = append(results, result)
 
-	if result = ensureProviderAccessStatus(context, ctx, project, projectID); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result
+	if result = ensureProviderAccessStatus(context, ctx, project, projectID); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
+	results = append(results, result)
 
-	if result = ensureNetworkPeers(ctx, projectID, project); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result
+	if result = ensureNetworkPeers(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
+	results = append(results, result)
 
-	if result = ensureAlertConfigurations(ctx, project, projectID); !result.IsOk() {
-		logIfWarning(ctx, result)
-		return result
+	if result = ensureAlertConfigurations(ctx, project, projectID); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
 	}
+	results = append(results, result)
 
-	r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
-
-	if result = r.ensureIntegration(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = r.ensureIntegration(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
+	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensureMaintenanceWindow(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
+	results = append(results, result)
 
-	if result = ensureEncryptionAtRest(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
+	results = append(results, result)
 
-	if result = ensureAuditing(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensureAuditing(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
+	results = append(results, result)
 
-	if result = ensureProjectSettings(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensureProjectSettings(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
+	results = append(results, result)
 
-	if result = ensureCustomRoles(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = ensureCustomRoles(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
+	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(ctx, projectID, project); !result.IsOk() {
-		return result
+	if result = r.ensureAssignedTeams(ctx, projectID, project); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
 	}
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
+	results = append(results, result)
 
-	return workflow.OK()
+	return results
 }
 
 func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
