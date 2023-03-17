@@ -101,7 +101,7 @@ runs:
         registry: quay.io
         username: ${{ inputs.quay_username }}
         password: ${{ inputs.quay_password }}
-    - name: Build and Push Operator to Docker Registry
+    - name: Build and Push Operator to Quay Registry
       if: ${{ inputs.push_to_quay == 'true' }}
       uses: docker/build-push-action@v3
       with:
