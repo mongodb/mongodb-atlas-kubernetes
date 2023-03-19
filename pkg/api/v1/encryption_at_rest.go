@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"go.uber.org/zap/zapcore"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -42,6 +44,12 @@ type GoogleCloudKms struct {
 	Enabled              *bool  `json:"enabled,omitempty"`              // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
 	ServiceAccountKey    string `json:"serviceAccountKey,omitempty"`    // String-formatted JSON object containing GCP KMS credentials from your GCP account.
 	KeyVersionResourceID string `json:"keyVersionResourceID,omitempty"` // 	The Key Version Resource ID from your GCP account.
+}
+
+//nolint:errcheck
+func (g GoogleCloudKms) MarshalLogObject(e zapcore.ObjectEncoder) error {
+	e.AddReflected("Enabled", g.Enabled)
+	return nil
 }
 
 func (e EncryptionAtRest) ToAtlas(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
