@@ -43,7 +43,7 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
       - name: Run testing

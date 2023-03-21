@@ -186,7 +186,7 @@ jobs:
           cluster_name: ${{ matrix.test }}
           wait: 180s
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
       - name: Install operator-sdk-v1.22.0
