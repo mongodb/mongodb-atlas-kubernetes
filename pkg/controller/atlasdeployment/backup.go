@@ -209,6 +209,13 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 		CopySettings:                      make([]mongodbatlas.CopySetting, 0, len(bSchedule.Spec.CopySettings)),
 	}
 
+	if bSchedule.Spec.Export != nil {
+		apiScheduleReq.Export = &mongodbatlas.Export{
+			ExportBucketID: bSchedule.Spec.Export.ExportBucketID,
+			FrequencyType:  bSchedule.Spec.Export.FrequencyType,
+		}
+	}
+
 	for _, copySetting := range bSchedule.Spec.CopySettings {
 		apiScheduleReq.CopySettings = append(
 			apiScheduleReq.CopySettings,
