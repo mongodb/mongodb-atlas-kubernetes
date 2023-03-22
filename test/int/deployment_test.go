@@ -1102,7 +1102,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					ReferenceMinuteOfHour: 10,
 					RestoreWindowDays:     5,
 					UpdateSnapshots:       false,
-					Export:                &mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
 				},
 			}
 
@@ -1216,7 +1215,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						ReferenceMinuteOfHour: 10,
 						RestoreWindowDays:     5,
 						UpdateSnapshots:       false,
-						Export:                &mdbv1.AtlasBackupExportSpec{FrequencyType: "MONTHLY"},
 						CopySettings: []mdbv1.CopySetting{
 							{
 								CloudProvider:     toptr.MakePtr("AWS"),
