@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -109,6 +110,40 @@ type AtlasProjectSpec struct {
 	// Teams enable you to grant project access roles to multiple users.
 	// +optional
 	Teams []Team `json:"teams,omitempty"`
+}
+
+const hiddenField = "*** redacted ***"
+
+//nolint:errcheck
+func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
+	printable := p.DeepCopy()
+	// cleanup encryption at EncryptionAtRest
+	if printable.EncryptionAtRest != nil {
+		printable.EncryptionAtRest.AwsKms.AccessKeyID = hiddenField
+		printable.EncryptionAtRest.AwsKms.CustomerMasterKeyID = hiddenField
+		printable.EncryptionAtRest.AwsKms.SecretAccessKey = hiddenField
+		printable.EncryptionAtRest.AwsKms.RoleID = hiddenField
+		printable.EncryptionAtRest.AzureKeyVault.Secret = hiddenField
+		printable.EncryptionAtRest.GoogleCloudKms.ServiceAccountKey = hiddenField
+	}
+
+	// cleanup AlertConfigurations
+	for i := range printable.AlertConfigurations {
+		for j := range printable.AlertConfigurations[i].Notifications {
+			printable.AlertConfigurations[i].Notifications[j].APIToken = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].FlowdockAPIToken = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].MobileNumber = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].OpsGenieAPIKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].ServiceKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].VictorOpsAPIKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].VictorOpsRoutingKey = hiddenField
+		}
+	}
+
+	e.AddReflected("AtlasProjectSpec", printable)
+	return nil
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
