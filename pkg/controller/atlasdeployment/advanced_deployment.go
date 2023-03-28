@@ -396,7 +396,7 @@ func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desi
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
-	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	err := r.Client.List(context.TODO(), &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -436,7 +436,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
-		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
+		secretName, err := connectionsecret.Ensure(r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
