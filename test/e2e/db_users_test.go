@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -25,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namaspace", Label("deployment-ns"), func() {
+var _ = FDescribe("Operator watch all namespace should create connection secrets for database users in any namaspace", Label("deployment-ns"), func() {
 	var testData *model.TestDataProvider
 	secondNamespace := "second-namespace"
 
@@ -36,7 +38,6 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			Expect(actions.SaveUsersToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		actions.DeleteTestDataUsers(testData)
-		actions.DeleteTestDataDeployments(testData)
 		actions.DeleteTestDataProject(testData)
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 		Expect(k8s.DeleteNamespace(testData.Context, testData.K8SClient, secondNamespace)).Should(Succeed())
@@ -114,7 +115,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 
 			Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(0))
 		})
-		By("Should create deployment and connection secrets for all users", func() {
+		By("Create deployment and connection secrets for all related users", func() {
 			Expect(testData.K8SClient.Create(testData.Context, testData.InitialDeployments[0])).To(Succeed())
 
 			Eventually(func(g Gomega) bool {
@@ -130,6 +131,21 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 				return g.Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(2))
 			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 		})
+		By("Delete deployment and connection secrets for all related users", func() {
+			Expect(testData.K8SClient.Delete(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+
+			projectID := testData.Project.Status.ID
+			deploymentName := testData.InitialDeployments[0].AtlasName()
+			Eventually(func(g Gomega) bool {
+				aClient := atlas.GetClientOrFail()
+				return aClient.IsDeploymentExist(projectID, deploymentName)
+			},
+			).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(BeFalse())
+
+			Eventually(func(g Gomega) bool {
+				return g.Expect(countConnectionSecrets(testData.K8SClient, testData.Project.Spec.Name)).To(Equal(0))
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+		})
 	})
 })
 
@@ -139,7 +155,6 @@ func countConnectionSecrets(k8sClient client.Client, projectName string) int {
 
 	names := make([]string, 0)
 	for _, item := range secretList.Items {
-		fmt.Println(item.Name, projectName, kube.NormalizeIdentifier(projectName))
 		if strings.HasPrefix(item.Name, kube.NormalizeIdentifier(projectName)) {
 			names = append(names, item.Name)
 		}
