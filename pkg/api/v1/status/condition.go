@@ -63,6 +63,12 @@ const (
 	DatabaseUserReadyType ConditionType = "DatabaseUserReady"
 )
 
+// Atlas Data Federation condition types
+const (
+	DataFederationReadyType   ConditionType = "DataFederationReady"
+	DataFederationPEReadyType ConditionType = "DataFederationPrivateEndpointsReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"
