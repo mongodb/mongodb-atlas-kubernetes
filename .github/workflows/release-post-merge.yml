@@ -32,10 +32,13 @@ jobs:
             version=$(echo $BRANCH | awk -F '/' '{print $2}')
           fi
 
+
           echo "VERSION:$version"
           tag="v${version}"
+          certified_version="${version}-certified"
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "certified_version=$certified_version" >> $GITHUB_OUTPUT
       - name: Trigger helm post release workflow
         # Please provide a token with write access to the repository into secrets.HELM_REPO_TOKEN
         run: |
@@ -55,7 +58,18 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.version}}
+          version: ${{ steps.tag.outputs.version }}
+          platforms: linux/amd64,linux/arm64
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          push_to_quay: true
+          quay_username: mongodb+mongodb_atlas_kubernetes
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Build and Push certified image
+        uses: ./.github/actions/build-push-image
+        with:
+          repository: ${{ env.IMAGE_REPOSITORY }}
+          version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
@@ -66,7 +80,7 @@ jobs:
         uses: ./.github/actions/certify-openshift-images
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.version}}
+          version: ${{ steps.tag.outputs.version }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
