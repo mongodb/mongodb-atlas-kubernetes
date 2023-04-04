@@ -5,6 +5,9 @@ Use the GitHub UI to create the new "Release Branch" workflow. Specify the versi
 The deployment scripts (K8s configs, OLM bundle) will be generated and PR will be created with new changes on behalf
 of the `github-actions` bot.
 
+NOTE: The X- and Y- stream releases should only be launched using the workflow from the MAIN branch. Z-stream (patch)
+releases can be launched from a separate branch
+
 ## Approve the Pull Request named "Release x.y.z"
 Review the Pull Request. Approve and merge it to main.
 The new job "Create Release" will be triggered and the following will be done:
