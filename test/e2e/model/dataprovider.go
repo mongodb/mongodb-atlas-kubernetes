@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
+
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -28,6 +32,7 @@ type TestDataProvider struct {
 	Users                    []*v1.AtlasDatabaseUser
 	Teams                    []*v1.AtlasTeam
 	ManagerContext           context.Context
+	AWSResourcesGenerator    *helper.AwsResourcesGenerator
 }
 
 func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasKeyType, initDeploymentConfigs []string, updateDeploymentConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
@@ -45,6 +50,9 @@ func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasK
 	k8sClient, err := kubecli.CreateNewClient()
 	Expect(err).NotTo(HaveOccurred(), "Failed to create k8s client")
 	data.K8SClient = k8sClient
+
+	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(GinkgoT(), nil)
+
 	return data
 }
 
@@ -58,6 +66,9 @@ func DataProvider(keyTestPrefix string, r *AtlasKeyType, portGroup int, actions 
 	k8sClient, err := kubecli.CreateNewClient()
 	Expect(err).NotTo(HaveOccurred(), "Failed to create k8s client")
 	data.K8SClient = k8sClient
+
+	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(GinkgoT(), nil)
+
 	return &data
 }
 

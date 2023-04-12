@@ -206,3 +206,20 @@ func (a *Atlas) GetOrgUsers(projectID string) ([]mongodbatlas.AtlasUser, error) 
 
 	return users, nil
 }
+
+func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*mongodbatlas.CloudProviderSnapshotExportBucket, error) {
+	r, _, err := a.Client.CloudProviderSnapshotExportBuckets.Create(
+		context.Background(),
+		projectID,
+		&mongodbatlas.CloudProviderSnapshotExportBucket{
+			BucketName:    bucketName,
+			CloudProvider: "AWS",
+			IAMRoleID:     roleID,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
