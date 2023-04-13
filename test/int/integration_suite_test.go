@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatafederation"
+
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/go-logr/zapr"
@@ -70,9 +72,10 @@ var (
 	testEnv *envtest.Environment
 
 	// These variables are initialized once per each node
-	k8sClient   client.Client
-	atlasClient *mongodbatlas.Client
-	connection  atlas.Connection
+	k8sClient            client.Client
+	atlasClient          *mongodbatlas.Client
+	dataFederationClient *atlasdatafederation.DataFederationServiceOp
+	connection           atlas.Connection
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
@@ -139,6 +142,8 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	atlasClient, connection = prepareAtlasClient()
 	defaultTimeouts()
+
+	dataFederationClient = atlasdatafederation.NewClient(*atlasClient, atlasDomain)
 })
 
 var _ = SynchronizedAfterSuite(func() {
@@ -238,6 +243,17 @@ func prepareControllers() {
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 		Client:           k8sManager.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		AtlasDomain:      atlasDomain,
+		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates: globalPredicates,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasdatafederation.AtlasDataFederationReconciler{
+		Client:           k8sManager.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
 		AtlasDomain:      atlasDomain,
 		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher:  watch.NewResourceWatcher(),

@@ -49,6 +49,10 @@ func DeleteProjects(ctx context.Context, client mongodbatlas.Client, projectList
 		if err != nil {
 			log.Printf("error deleting serverless: %s", err)
 		}
+		err = deployment.DeleteAllDataFederationInstances(ctx, client.DataFederation, project.ID)
+		if err != nil {
+			log.Printf("error deleting DataFederation: %s", err)
+		}
 		err = deployment.DeleteAllAdvancedClusters(ctx, client.AdvancedClusters, project.ID)
 		_, err = client.Projects.Delete(context.Background(), project.ID)
 		if err != nil {

@@ -169,6 +169,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 		Expect(userData.Project.ID()).ShouldNot(BeEmpty())
 	})
 
+	//nolint:dupl
 	By("Create Endpoint in requested Cloud Provider", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
