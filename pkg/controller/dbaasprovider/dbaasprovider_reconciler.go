@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -48,7 +47,6 @@ import (
 
 const (
 	resourceName        = "mongodb-atlas-registration"
-	dbaasProviderKind   = "DBaaSProvider"
 	defaultProviderFile = "./dbaas_provider.yaml"
 )
 
@@ -60,7 +58,6 @@ type DBaaSProviderReconciler struct {
 	operatorNameVersion      string
 	operatorInstallNamespace string
 	providerFile             string
-	crdChecker               func(groupVersion, kind string) (bool, error)
 }
 
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
@@ -85,22 +82,6 @@ func (r *DBaaSProviderReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		log.Error(err, "error fetching Deployment CR")
 		return ctrl.Result{}, err
 	}
-
-	if r.crdChecker == nil {
-		r.crdChecker = r.checkCrdInstalled
-	}
-
-	isCrdInstalled, err := r.crdChecker(dbaasoperator.GroupVersion.String(), dbaasProviderKind)
-	if err != nil {
-		log.Error(err, "error discovering OpenShift Database Access DBaaSProvider CRD")
-		return ctrl.Result{}, err
-	}
-	if !isCrdInstalled {
-		log.Info("OpenShift Database Access DBaaSProvider CRD not found, requeueing with rate limiter")
-		// returning with 'Requeue: true' will invoke our custom rate limiter seen in SetupWithManager below
-		return ctrl.Result{Requeue: true}, nil
-	}
-
 	instance := &dbaasoperator.DBaaSProvider{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: resourceName,
@@ -176,23 +157,6 @@ func (r *DBaaSProviderReconciler) getAtlasProviderCR(clusterRoleList *rbac.Clust
 		},
 	}
 	return instance, nil
-}
-
-// CheckCrdInstalled checks whether dbaas provider CRD, has been created yet
-func (r *DBaaSProviderReconciler) checkCrdInstalled(groupVersion, kind string) (bool, error) {
-	resources, err := r.Clientset.Discovery().ServerResourcesForGroupVersion(groupVersion)
-	if err != nil {
-		if apiErrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to check DBaaSProvider CRD:%w", err)
-	}
-	for _, r := range resources.APIResources {
-		if r.Kind == kind {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

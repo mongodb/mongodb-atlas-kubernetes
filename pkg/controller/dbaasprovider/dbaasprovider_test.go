@@ -17,7 +17,6 @@ package dbaasprovider
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,24 +51,13 @@ func TestDBaaSProviderCreate(t *testing.T) {
 	logger := zaptest.Logger(t)
 
 	testCase := map[string]struct {
-		crdChecker        func(groupVersion, kind string) (bool, error)
+		crdChecker        func(clientset kubernetes.Interface) (bool, error)
 		expectedRequeue   bool
 		expectedErrString string
 	}{
 		"Nominal": {
-			crdChecker:        crdCheckerOK,
 			expectedErrString: "",
 			expectedRequeue:   false,
-		},
-		"CRDCheckFail": {
-			crdChecker:        crdCheckerFail,
-			expectedErrString: "failed to check DBaaSProvider CRD",
-			expectedRequeue:   false,
-		},
-		"CRDCheckNotFound": {
-			crdChecker:        crdCheckerNotFound,
-			expectedErrString: "",
-			expectedRequeue:   true,
 		},
 	}
 	for tcName, tc := range testCase {
@@ -120,7 +109,6 @@ func TestDBaaSProviderCreate(t *testing.T) {
 				Clientset:           clientSet,
 				Scheme:              s,
 				Log:                 logger.Sugar(),
-				crdChecker:          tc.crdChecker,
 				operatorNameVersion: mongDBAtlasOperatorLabel,
 				providerFile:        "../../../config/dbaasprovider/dbaas_provider.yaml",
 			}
@@ -142,15 +130,4 @@ func TestDBaaSProviderCreate(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-}
-
-// Mock functions to to check DBaaSProvider CRD
-func crdCheckerOK(groupVersion, kind string) (bool, error) {
-	return true, nil
-}
-func crdCheckerNotFound(groupVersion, kind string) (bool, error) {
-	return false, nil
-}
-func crdCheckerFail(groupVersion, kind string) (bool, error) {
-	return false, errors.New("failed to check DBaaSProvider CRD:")
 }

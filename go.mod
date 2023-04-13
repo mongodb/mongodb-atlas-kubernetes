@@ -8,7 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/RHEcosystemAppEng/dbaas-operator v0.4.1-0.20230315151811-07a580d55781
+	github.com/RHEcosystemAppEng/dbaas-operator v0.4.1-0.20230403142057-6112a98be1a6
 	github.com/aws/aws-sdk-go v1.44.151
 	github.com/fatih/structtag v1.2.0
 	github.com/fgrosse/zaptest v1.1.0

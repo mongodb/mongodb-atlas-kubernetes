@@ -15,6 +15,7 @@ RUN go install golang.org/x/tools/cmd/goimports@latest
 
 # Copy the go source & git info
 COPY cmd/manager/main.go cmd/manager/main.go
+COPY cmd/manager/dbaas.go cmd/manager/dbaas.go
 COPY .git/ .git/
 COPY pkg/ pkg/
 COPY Makefile Makefile

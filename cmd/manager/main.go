@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,14 +49,10 @@ import (
 
 	dbaas "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/dbaas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasconnection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinstance"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasinventory"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/dbaasprovider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 	// +kubebuilder:scaffold:imports
@@ -66,6 +61,10 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+)
+
+const (
+	dbaasProviderKind = "DBaaSProvider"
 )
 
 func init() {
@@ -148,64 +147,6 @@ func main() {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
-	cfg := mgr.GetConfig()
-	clientset, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		setupLog.Error(err, "unable to create clientset")
-		os.Exit(1)
-	}
-
-	if err = (&dbaasprovider.DBaaSProviderReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Log:       logger.Named("controllers").Named("DBaaSProvider").Sugar(),
-		Clientset: clientset,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "DBaaSProvider")
-		os.Exit(1)
-	}
-
-	if err = (&atlasinventory.MongoDBAtlasInventoryReconciler{
-		Client:          mgr.GetClient(),
-		Log:             logger.Named("controllers").Named("MongoDBAtlasInventory").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasInventory"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasInventory")
-		os.Exit(1)
-	}
-
-	if err = (&atlasconnection.MongoDBAtlasConnectionReconciler{
-		Client:          mgr.GetClient(),
-		Clientset:       clientset,
-		Log:             logger.Named("controllers").Named("MongoDBAtlasConnection").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasConnection"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasConnection")
-		os.Exit(1)
-	}
-
-	if err = (&atlasinstance.MongoDBAtlasInstanceReconciler{
-		Client:          mgr.GetClient(),
-		Clientset:       clientset,
-		Log:             logger.Named("controllers").Named("MongoDBAtlasInstance").Sugar(),
-		Scheme:          mgr.GetScheme(),
-		AtlasDomain:     config.AtlasDomain,
-		ResourceWatcher: watch.NewResourceWatcher(),
-		GlobalAPISecret: config.GlobalAPISecret,
-		EventRecorder:   mgr.GetEventRecorderFor("MongoDBAtlasInstance"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MongoDBAtlasInstance")
-		os.Exit(1)
-	}
-
 	if err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:           mgr.GetClient(),
 		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
@@ -247,6 +188,15 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
 	}
+
+	dbaasEnabled, err := checkAndEnableDBaaS(mgr, logger, config)
+	if err != nil {
+		setupLog.Error(err, "unable to check or enable DBaaS")
+	}
+	if dbaasEnabled {
+		setupLog.Info("OpenShift Database Access (DBaaS) installation is found. The related controllers for DBaaS have started.")
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
