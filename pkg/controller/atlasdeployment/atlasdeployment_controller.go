@@ -362,7 +362,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context,
 			return workflow.Terminate(workflow.DeploymentAdvancedOptionsReady, "cannot update process args")
 		}
 
-		workflow.InProgress(workflow.DeploymentAdvancedOptionsReady, "deployment Advanced Configuration Options are being updated")
+		return workflow.InProgress(workflow.DeploymentAdvancedOptionsReady, "deployment Advanced Configuration Options are being updated")
 	}
 
 	return workflow.OK()
