@@ -4,6 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"time"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -55,4 +63,45 @@ func CreateNamespaceAndSecrets(userData *model.TestDataProvider) {
 	if !userData.Resources.AtlasKeyAccessType.GlobalLevelKey {
 		CreateConnectionAtlasKey(userData)
 	}
+}
+
+func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atlasIAMRoleName string) {
+	ProjectCreationFlow(testData)
+
+	By("Configure cloud provider access", func() {
+		testData.Project.Spec.CloudProviderAccessRoles = []mdbv1.CloudProviderAccessRole{
+			{
+				ProviderName: "AWS",
+			},
+		}
+		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+
+		Eventually(func(g Gomega) bool {
+			g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+				Name:      testData.Project.Name,
+				Namespace: testData.Project.Namespace,
+			}, testData.Project)).To(Succeed())
+
+			g.Expect(testData.Project.Status.CloudProviderAccessRoles).ShouldNot(BeEmpty())
+
+			return testData.Project.Status.CloudProviderAccessRoles[0].Status == status.StatusEmptyARN
+		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+
+		roleArn, err := testData.AWSResourcesGenerator.CreateIAMRole(atlasIAMRoleName, func() helper.IAMPolicy {
+			cloudProviderAccess := testData.Project.Status.CloudProviderAccessRoles[0]
+			return helper.CloudProviderAccessPolicy(cloudProviderAccess.AtlasAWSAccountArn, cloudProviderAccess.AtlasAssumedRoleExternalID)
+		})
+
+		Expect(err).Should(BeNil())
+		Expect(roleArn).ShouldNot(BeEmpty())
+
+		testData.AWSResourcesGenerator.Cleanup(func() {
+			Expect(testData.AWSResourcesGenerator.DeleteIAMRole(atlasIAMRoleName)).To(Succeed())
+		})
+
+		testData.Project.Spec.CloudProviderAccessRoles[0].IamAssumedRoleArn = roleArn
+		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+
+		WaitForConditionsToBecomeTrue(testData, status.CloudProviderAccessReadyType, status.ReadyType)
+	})
 }

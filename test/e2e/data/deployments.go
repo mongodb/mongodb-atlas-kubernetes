@@ -335,3 +335,52 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 		},
 	}
 }
+
+func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
+	return &v1.AtlasDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.AtlasDeploymentSpec{
+			Project: common.ResourceRefNamespaced{
+				Name: ProjectName,
+			},
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Name:          name,
+				BackupEnabled: toptr.MakePtr(false),
+				BiConnector: &v1.BiConnectorSpec{
+					Enabled:        toptr.MakePtr(false),
+					ReadPreference: "secondary",
+				},
+				ClusterType:              string(v1.TypeReplicaSet),
+				EncryptionAtRestProvider: "NONE",
+				PitEnabled:               toptr.MakePtr(false),
+				Paused:                   toptr.MakePtr(false),
+				RootCertType:             "ISRGROOTX1",
+				VersionReleaseSystem:     "LTS",
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						NumShards: 1,
+						ZoneName:  "Zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(3),
+								},
+								Priority:     toptr.MakePtr(7),
+								ProviderName: string(provider.ProviderAWS),
+								RegionName:   AWSRegion,
+							},
+						},
+					},
+				},
+			},
+			ProcessArgs: &v1.ProcessArgs{
+				JavascriptEnabled:         toptr.MakePtr(true),
+				MinimumEnabledTLSProtocol: "TLS1_2",
+				NoTableScan:               toptr.MakePtr(false),
+			},
+		},
+	}
+}
