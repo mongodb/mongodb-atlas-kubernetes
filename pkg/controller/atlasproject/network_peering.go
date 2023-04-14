@@ -567,7 +567,7 @@ func DeleteAllNetworkPeers(ctx context.Context, groupID string, service mongodba
 	result := workflow.OK()
 	err := deleteAllNetworkPeers(ctx, groupID, service, logger)
 	if err != nil {
-		workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete NetworkPeers")
+		result = workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete NetworkPeers")
 	}
 	return result
 }

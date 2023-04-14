@@ -62,11 +62,11 @@ jobs:
           sudo mkdir -p /usr/local/kubebuilder/bin && \
           sudo /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder"
   
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1 && \
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.1 && \
           go install github.com/onsi/gomega/...
           
           cd ${{ matrix.path }}
-          ginkgo --label-filter="${TEST_NAME}" --timeout 80m --v --nodes="${PARALLEL_NODES}" --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/pkg/...
+          ginkgo --label-filter="${TEST_NAME}" --timeout 90m --v --nodes="${PARALLEL_NODES}" --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/pkg/...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

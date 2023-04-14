@@ -189,8 +189,9 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 
 	g, taskContext := errgroup.WithContext(ctx)
 
-	for _, user := range atlasUsers {
-		if _, ok := usernamesMap[user.Username]; !ok {
+	for i := range atlasUsers {
+		user := atlasUsers[i]
+		if _, ok := usernamesMap[atlasUsers[i].Username]; !ok {
 			g.Go(func() error {
 				workflowCtx.Log.Debugf("removing user %s from team %s", user.ID, teamID)
 				_, err := workflowCtx.Client.Teams.RemoveUserToTeam(taskContext, workflowCtx.Connection.OrgID, teamID, user.ID)
@@ -209,7 +210,8 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 	g, taskContext = errgroup.WithContext(ctx)
 	toAdd := make([]string, 0, len(team.Spec.Usernames))
 	lock := sync.Mutex{}
-	for _, username := range team.Spec.Usernames {
+	for i := range team.Spec.Usernames {
+		username := team.Spec.Usernames[i]
 		if _, ok := atlasUsernamesMap[string(username)]; !ok {
 			g.Go(func() error {
 				user, _, err := workflowCtx.Client.AtlasUsers.GetByName(taskContext, string(username))
