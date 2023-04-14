@@ -363,7 +363,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context,
 		}
 
 		// TODO(helderjs): Revisit the advanced options configuration to check if this condition should exist or not
-		workflow.InProgress(workflow.DeploymentAdvancedOptionsReady, "deployment Advanced Configuration Options are being updated")
+		// workflow.InProgress(workflow.DeploymentAdvancedOptionsReady, "deployment Advanced Configuration Options are being updated")
 	}
 
 	return workflow.OK()
