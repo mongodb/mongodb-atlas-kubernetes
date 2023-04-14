@@ -48,7 +48,7 @@ jobs:
     env:
       DOCKER_REGISTRY: docker.io
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_BUNDLES_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      DOCKER_BUNDLES_REPO: mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
