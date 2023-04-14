@@ -1,4 +1,4 @@
-# Please push to mongodbinternal/test-app:v1
+# Please push to quay.io/mongodb/mongodb-atlas-kubernetes-operator-test-app:v1
 
 # Build the manager binary
 FROM golang:1.19 as builder

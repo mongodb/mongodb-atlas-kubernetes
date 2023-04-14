@@ -48,7 +48,7 @@ jobs:
     env:
       DOCKER_REGISTRY: docker.io
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
+      DOCKER_BUNDLES_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
@@ -110,9 +110,10 @@ jobs:
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: false
+          push_to_docker: false
+          push_to_quay: true
+          quay_username: mongodb+mongodb_atlas_kubernetes
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
           forked: ${{ inputs.forked }}
   e2e:
     name: E2E tests
@@ -121,7 +122,7 @@ jobs:
     env:
       DOCKER_REGISTRY: docker.io
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_BUNDLES_REPO: mongodbinternal/mongodb-atlas-kubernetes-bundles-prerelease
+      DOCKER_BUNDLES_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     strategy:
       fail-fast: false
       matrix:
