@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
@@ -15,7 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
 func TestMergedAdvancedDeployment(t *testing.T) {
@@ -24,7 +27,7 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 	fillInSpecs(atlasRegionConfig, "M10", "AWS")
 
 	t.Run("Test merging clusters removes backing provider name if empty", func(t *testing.T) {
-		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 
 		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
@@ -36,7 +39,7 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 		atlasRegionConfig.ProviderName = "TENANT"
 		atlasRegionConfig.BackingProviderName = "AWS"
 
-		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M5"
 		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
 		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
@@ -53,7 +56,7 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 	fillInSpecs(regionConfig, "M10", "AWS")
 
 	t.Run("Test ", func(t *testing.T) {
-		advancedCluster := v1.DefaultAwsAdvancedDeployment("default", "my-project")
+		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 
 		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
@@ -105,34 +108,34 @@ func fillInSpecs(regionConfig *mongodbatlas.AdvancedRegionConfig, instanceSize s
 
 func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 	testCases := []struct {
-		desiredDeployment *v1.AdvancedDeploymentSpec
+		desiredDeployment *mdbv1.AdvancedDeploymentSpec
 		currentDeployment *mongodbatlas.AdvancedCluster
-		expected          *v1.AdvancedDeploymentSpec
+		expected          *mdbv1.AdvancedDeploymentSpec
 		shouldFail        bool
 		testName          string
 		err               error
 	}{
 		{
 			testName: "One region and autoscaling ENABLED for compute AND disk",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -157,25 +160,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -191,25 +194,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One region and autoscaling ENABLED for compute ONLY",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(false),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -234,25 +237,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(false),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -268,25 +271,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One region and autoscaling ENABLED for diskGB ONLY",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -298,25 +301,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -332,26 +335,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "Two regions and autoscaling ENABLED for compute AND disk in different regions",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -361,17 +364,17 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 							},
 							{
 								RegionName: "EASTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -401,26 +404,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -430,17 +433,17 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 							},
 							{
 								RegionName: "EASTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -456,25 +459,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One region and autoscaling DISABLED for diskGB AND compute",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(false),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -499,25 +502,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(false),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(false),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -533,26 +536,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One regions and autoscaling ENABLED for compute and InstanceSize outside of min boundary",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M10",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M20",
@@ -577,26 +580,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M20",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M20",
@@ -612,26 +615,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One regions and autoscaling ENABLED for compute and InstanceSize outside of max boundary",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M50",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -656,26 +659,26 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
 								RegionName: "WESTERN_EUROPE",
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M40",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "M10",
@@ -691,25 +694,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 		},
 		{
 			testName: "One region and autoscaling with wrong configuration",
-			desiredDeployment: &v1.AdvancedDeploymentSpec{
+			desiredDeployment: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: toptr.MakePtr(15),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "S10",
@@ -734,25 +737,25 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 					},
 				},
 			},
-			expected: &v1.AdvancedDeploymentSpec{
+			expected: &mdbv1.AdvancedDeploymentSpec{
 				DiskSizeGB: nil,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "us-east-1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &mdbv1.Specs{
 									DiskIOPS:      nil,
 									EbsVolumeType: "",
 									InstanceSize:  "M30",
 									NodeCount:     toptr.MakePtr(1),
 								},
-								AutoScaling: &v1.AdvancedAutoScalingSpec{
-									DiskGB: &v1.DiskGB{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
 										Enabled: toptr.MakePtr(true),
 									},
-									Compute: &v1.ComputeSpec{
+									Compute: &mdbv1.ComputeSpec{
 										Enabled:          toptr.MakePtr(true),
 										ScaleDownEnabled: nil,
 										MinInstanceSize:  "S10",
@@ -792,8 +795,8 @@ func TestAdvancedDeployment_handleAutoscaling(t *testing.T) {
 func TestNormalizeInstanceSize(t *testing.T) {
 	t.Run("InstanceSizeName should not change when inside of autoscaling configuration boundaries", func(t *testing.T) {
 		ctx := workflow.NewContext(zap.S(), []status.Condition{})
-		autoscaling := &v1.AdvancedAutoScalingSpec{
-			Compute: &v1.ComputeSpec{
+		autoscaling := &mdbv1.AdvancedAutoScalingSpec{
+			Compute: &mdbv1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
 				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M10",
@@ -808,8 +811,8 @@ func TestNormalizeInstanceSize(t *testing.T) {
 	})
 	t.Run("InstanceSizeName should change to minimum size when outside of the bottom autoscaling configuration boundaries", func(t *testing.T) {
 		ctx := workflow.NewContext(zap.S(), []status.Condition{})
-		autoscaling := &v1.AdvancedAutoScalingSpec{
-			Compute: &v1.ComputeSpec{
+		autoscaling := &mdbv1.AdvancedAutoScalingSpec{
+			Compute: &mdbv1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
 				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M20",
@@ -824,8 +827,8 @@ func TestNormalizeInstanceSize(t *testing.T) {
 	})
 	t.Run("InstanceSizeName should change to maximum size when outside of the top autoscaling configuration boundaries", func(t *testing.T) {
 		ctx := workflow.NewContext(zap.S(), []status.Condition{})
-		autoscaling := &v1.AdvancedAutoScalingSpec{
-			Compute: &v1.ComputeSpec{
+		autoscaling := &mdbv1.AdvancedAutoScalingSpec{
+			Compute: &mdbv1.ComputeSpec{
 				Enabled:          toptr.MakePtr(true),
 				ScaleDownEnabled: toptr.MakePtr(true),
 				MinInstanceSize:  "M20",
@@ -837,5 +840,83 @@ func TestNormalizeInstanceSize(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, "M30", size)
+	})
+}
+
+func TestDbUserBelongsToProjects(t *testing.T) {
+	t.Run("Database User refer to a different project name", func(*testing.T) {
+		dbUser := &mdbv1.AtlasDatabaseUser{
+			Spec: mdbv1.AtlasDatabaseUserSpec{
+				Project: common.ResourceRefNamespaced{
+					Name: "project2",
+				},
+			},
+		}
+		project := &mdbv1.AtlasProject{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "project1",
+			},
+		}
+
+		assert.False(t, dbUserBelongsToProject(dbUser, project))
+	})
+
+	t.Run("Database User is no", func(*testing.T) {
+		dbUser := &mdbv1.AtlasDatabaseUser{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "ns-2",
+			},
+			Spec: mdbv1.AtlasDatabaseUserSpec{
+				Project: common.ResourceRefNamespaced{
+					Name: "project1",
+				},
+			},
+		}
+		project := &mdbv1.AtlasProject{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "project1",
+				Namespace: "ns-1",
+			},
+		}
+
+		assert.False(t, dbUserBelongsToProject(dbUser, project))
+	})
+
+	t.Run("Database User refer to a project with same name but in another namespace", func(*testing.T) {
+		dbUser := &mdbv1.AtlasDatabaseUser{
+			Spec: mdbv1.AtlasDatabaseUserSpec{
+				Project: common.ResourceRefNamespaced{
+					Name:      "project1",
+					Namespace: "ns-2",
+				},
+			},
+		}
+		project := &mdbv1.AtlasProject{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "project1",
+				Namespace: "ns-1",
+			},
+		}
+
+		assert.False(t, dbUserBelongsToProject(dbUser, project))
+	})
+
+	t.Run("Database User refer to a valid project and namespace", func(*testing.T) {
+		dbUser := &mdbv1.AtlasDatabaseUser{
+			Spec: mdbv1.AtlasDatabaseUserSpec{
+				Project: common.ResourceRefNamespaced{
+					Name:      "project1",
+					Namespace: "ns-1",
+				},
+			},
+		}
+		project := &mdbv1.AtlasProject{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "project1",
+				Namespace: "ns-1",
+			},
+		}
+
+		assert.True(t, dbUserBelongsToProject(dbUser, project))
 	})
 }
