@@ -8,7 +8,7 @@ export KUBECONFIG="./kube.config"
 kubectl version
 
 #Prepare CRDs
-controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
 
 #Installing the CRD,Operator,Role
 ns=mongodb-atlas-system
