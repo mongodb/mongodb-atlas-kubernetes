@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
 
       - name: Login to docker registry
         uses: docker/login-action@v2

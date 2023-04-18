@@ -35,13 +35,13 @@ jobs:
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           fetch-depth: 0 # required for tags
 
       - if: ${{ inputs.forked == true }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}

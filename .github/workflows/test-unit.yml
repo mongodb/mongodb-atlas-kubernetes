@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: ${{ inputs.forked == false }}
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
 
       - if: ${{ inputs.forked == true }}
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
