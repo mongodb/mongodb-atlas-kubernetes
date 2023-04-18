@@ -1523,6 +1523,11 @@ func (in *ProjectSettings) DeepCopyInto(out *ProjectSettings) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.IsExtendedStorageSizesEnabled != nil {
+		in, out := &in.IsExtendedStorageSizesEnabled, &out.IsExtendedStorageSizesEnabled
+		*out = new(bool)
+		**out = **in
+	}
 	if in.IsPerformanceAdvisorEnabled != nil {
 		in, out := &in.IsPerformanceAdvisorEnabled, &out.IsPerformanceAdvisorEnabled
 		*out = new(bool)
