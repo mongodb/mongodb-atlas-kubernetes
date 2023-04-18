@@ -29,7 +29,12 @@ func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName
 			TypeLabelKey: CredLabelVal,
 		}),
 	}
-	if err := k8sClient.List(context.Background(), &secrets, client.InNamespace(namespace), opts); err != nil {
+
+	if namespace != "" {
+		opts.Namespace = namespace
+	}
+
+	if err := k8sClient.List(context.Background(), &secrets, opts); err != nil {
 		return nil, err
 	}
 

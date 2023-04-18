@@ -401,7 +401,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						},
 					},
 				}
-				performUpdate(80 * time.Minute)
+				performUpdate(90 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})

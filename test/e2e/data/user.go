@@ -77,3 +77,18 @@ func WithCustomRole(role, db, collection string) func(user *v1.AtlasDatabaseUser
 		})
 	}
 }
+
+func WithNamespace(namespace string) func(user *v1.AtlasDatabaseUser) {
+	return func(user *v1.AtlasDatabaseUser) {
+		user.Namespace = namespace
+	}
+}
+
+func WithProject(project *v1.AtlasProject) func(user *v1.AtlasDatabaseUser) {
+	return func(user *v1.AtlasDatabaseUser) {
+		user.Spec.Project = common.ResourceRefNamespaced{
+			Name:      project.Name,
+			Namespace: project.Namespace,
+		}
+	}
+}

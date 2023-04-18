@@ -396,13 +396,19 @@ func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desi
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
-	err := r.Client.List(context.TODO(), &databaseUsers, client.InNamespace(project.Namespace))
+	err := r.Client.List(context.TODO(), &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
 	secrets := make([]string, 0)
-	for _, dbUser := range databaseUsers.Items {
+	for i := range databaseUsers.Items {
+		dbUser := databaseUsers.Items[i]
+
+		if !dbUserBelongsToProject(&dbUser, project) {
+			continue
+		}
+
 		found := false
 		for _, c := range dbUser.Status.Conditions {
 			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
@@ -436,7 +442,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
-		secretName, err := connectionsecret.Ensure(r.Client, project.Namespace, project.Spec.Name, project.ID(), name, data)
+		secretName, err := connectionsecret.Ensure(r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
@@ -448,4 +454,20 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	}
 
 	return workflow.OK()
+}
+
+func dbUserBelongsToProject(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) bool {
+	if dbUser.Spec.Project.Name != project.Name {
+		return false
+	}
+
+	if dbUser.Spec.Project.Namespace == "" && dbUser.Namespace != project.Namespace {
+		return false
+	}
+
+	if dbUser.Spec.Project.Namespace != "" && dbUser.Spec.Project.Namespace != project.Namespace {
+		return false
+	}
+
+	return true
 }

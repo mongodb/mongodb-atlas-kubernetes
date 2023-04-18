@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,7 +32,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -163,7 +164,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			if customresource.ResourceShouldBeLeftInAtlas(deployment) {
 				log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 			} else {
-				if err = r.deleteDeploymentFromAtlas(context, deployment, project, log); err != nil {
+				if err = r.deleteDeploymentFromAtlas(context, project, deployment, atlasClient, log); err != nil {
 					log.Errorf("failed to remove deployment from Atlas: %s", err)
 					result = workflow.Terminate(workflow.Internal, err.Error())
 					ctx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -383,7 +384,7 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasDeployment & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDeployment{}}, &watch.EventHandlerWithDelete{Controller: r}, r.GlobalPredicates...)
+	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDeployment{}}, &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
@@ -404,33 +405,20 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // Delete implements a handler for the Delete event.
-func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
-	deployment, ok := e.Object.(*mdbv1.AtlasDeployment)
-	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)
-		return nil
-	}
-
-	log := r.Log.With("atlasdeployment", kube.ObjectKeyFromObject(deployment))
-
-	log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment.Spec)
-
-	context := context.Background()
-	project := &mdbv1.AtlasProject{}
-	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
-		return errors.New("cannot read project resource")
-	}
-
-	log = log.With("projectID", project.Status.ID, "deploymentName", deployment.GetDeploymentName())
-
+func (r *AtlasDeploymentReconciler) deleteConnectionStrings(
+	ctx context.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment,
+	log *zap.SugaredLogger,
+) error {
 	// We always remove the connection secrets even if the deployment is not removed from Atlas
-	secrets, err := connectionsecret.ListByDeploymentName(r.Client, deployment.Namespace, project.ID(), deployment.GetDeploymentName())
+	secrets, err := connectionsecret.ListByDeploymentName(r.Client, "", project.ID(), deployment.GetDeploymentName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}
 
 	for i := range secrets {
-		if err := r.Client.Delete(context, &secrets[i]); err != nil {
+		if err := r.Client.Delete(ctx, &secrets[i]); err != nil {
 			if k8serrors.IsNotFound(err) {
 				continue
 			}
@@ -441,15 +429,18 @@ func (r *AtlasDeploymentReconciler) Delete(e event.DeleteEvent) error {
 	return nil
 }
 
-func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(ctx context.Context, deployment *mdbv1.AtlasDeployment, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
-	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
+func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
+	ctx context.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment,
+	atlasClient mongodbatlas.Client,
+	log *zap.SugaredLogger,
+) error {
+	log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment.Spec)
+
+	err := r.deleteConnectionStrings(ctx, project, deployment, log)
 	if err != nil {
 		return err
-	}
-
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
-	if err != nil {
-		return fmt.Errorf("cannot build Atlas client: %w", err)
 	}
 
 	deleteDeploymentFunc := atlasClient.AdvancedClusters.Delete

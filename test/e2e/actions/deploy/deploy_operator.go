@@ -90,7 +90,7 @@ func CreateUsers(testData *model.TestDataProvider) {
 			if user.Spec.PasswordSecret != nil {
 				secret := utils.UserSecretPassword()
 				Expect(k8s.CreateUserSecret(testData.Context, testData.K8SClient, secret,
-					user.Spec.PasswordSecret.Name, testData.Resources.Namespace)).Should(Succeed(),
+					user.Spec.PasswordSecret.Name, user.Namespace)).Should(Succeed(),
 					"Create user secret failed")
 			}
 			err := testData.K8SClient.Create(testData.Context, user)
