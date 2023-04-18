@@ -1,10 +1,10 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/test/app
 
-go 1.19
+go 1.20
 
 require (
 	github.com/gorilla/mux v1.8.0
-	go.mongodb.org/mongo-driver v1.10.2
+	go.mongodb.org/mongo-driver v1.11.4
 )
 
 require (

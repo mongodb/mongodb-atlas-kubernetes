@@ -1,4 +1,4 @@
-FROM golang:1.19
+FROM golang:1.20
 
 ENV GO111MODULE=on
 
@@ -7,7 +7,7 @@ RUN curl -Lo setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/
     mkdir -p /usr/local/kubebuilder/bin && \
     /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder"
 
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.2 && \
     go install github.com/onsi/gomega/...
 
 COPY entrypoint.sh /home/entrypoint.sh
