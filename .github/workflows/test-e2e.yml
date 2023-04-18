@@ -17,13 +17,13 @@ jobs:
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           submodules: true
           fetch-depth: 0
       - if: ${{ inputs.forked == true }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           submodules: true
           ref: ${{github.event.pull_request.head.sha}}
@@ -52,13 +52,13 @@ jobs:
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           submodules: true
           fetch-depth: 0
       - if: ${{ inputs.forked == true }}
         name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           submodules: true
           ref: ${{github.event.pull_request.head.sha}}

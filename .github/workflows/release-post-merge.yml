@@ -47,7 +47,7 @@ jobs:
             https://api.github.com/repos/mongodb/helm-charts/actions/workflows/post-atlas-operator-release.yaml/dispatches \
             -d '{"ref":"main","inputs":{"version":"'"${{ steps.tag.outputs.version }}"'"}}'
       - name: Check out code
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.5.2
         with:
           submodules: true
           fetch-depth: 0
