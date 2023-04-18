@@ -85,13 +85,13 @@ spec:
                   snapshots to AWS bucket.
                 properties:
                   exportBucketId:
-                    description: Unique identifier of the AWS bucket to export the
-                      cloud backup snapshot to.
+                    description: Unique Atlas identifier of the AWS bucket which was
+                      granted access to export backup snapshot
                     type: string
                   frequencyType:
-                    default: MONTHLY
+                    default: monthly
                     enum:
-                    - MONTHLY
+                    - monthly
                     type: string
                 required:
                 - exportBucketId
