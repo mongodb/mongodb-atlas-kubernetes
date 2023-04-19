@@ -24,6 +24,10 @@ inputs:
   docker_password:
     description: The password to access the docker registry
     required: true
+  push_to_docker:
+    description: Push image to docker.io
+    required: false
+    default: "true"
   push_to_quay:
     description: Also push image to quay.io
     required: false
@@ -63,6 +67,7 @@ runs:
       with:
         platforms: ${{ inputs.platforms }}
     - name: Login to docker registry
+      if: ${{ inputs.push_to_docker == 'true' }}
       uses: docker/login-action@v2
       with:
         username: ${{ inputs.docker_username }}
@@ -84,6 +89,7 @@ runs:
       run: |
         go mod download
     - name: Build and Push Operator to Docker Registry
+      if: ${{ inputs.push_to_docker == 'true' }}
       uses: docker/build-push-action@v3
       with:
         context: .
