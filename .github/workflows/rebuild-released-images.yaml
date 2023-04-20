@@ -1,0 +1,106 @@
+# Github workflow that rebuilds already released images
+
+name: Daily build 
+on:
+  schedule:
+    - cron: "0 1 * * 1-5"
+    - cron: "0 3 * * 1-5"
+
+jobs:
+  read-versions:
+    name: Read config file 
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.images-matrix.outputs.matrix }}
+      platforms: ${{ steps.images-matrix.outputs.platforms }}
+      date: ${{ steps.set-date.outputs.date }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Read config file (daily-builds.json) 
+        id: images-matrix
+        run: |
+          CONTENT=`cat ./daily-builds.json`
+          CONTENT="${CONTENT//'%'/'%25'}"
+          echo matrix=${CONTENT} >> $GITHUB_OUTPUT
+      - name: Set date
+        id: set-date
+        run: |
+          DATE=$(date -f '%Y-%m-%d')
+          echo date=${DATE} >> $GITHUB_OUTPUT
+  
+  build-and-publish-image:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPOSITORY: mongodb/mongodb-atlas-kubernetes-operator
+    needs:
+      - read-versions
+    strategy:
+      matrix:
+        version: ${{ fromJSON(needs.read-versions.outputs.matrix).versions }}
+    steps:
+      - name: Print daily tag
+        id: daily-tag
+        run: |
+          DAILY_TAG="${{ matrix.version }}-${{needs.read-versions.outputs.date}}"
+          echo "daily-tag=${DAILY_TAG}" >> $GITHUB_OUTPUT
+      - name: Rebuild ${{matrix.version}}
+        run: |
+          echo "Building ${{matrix.version}} version"
+      - name: Check out code
+        uses: actions/checkout@v3.1.0
+        with:
+          ref: ${{ matrix.version }}
+          submodules: true
+          fetch-depth: 0
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v2
+        with:
+          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+      - name: Login to docker registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+      - name: Download go build dependencies
+        shell: bash
+        run: |
+          go mod download
+      - name: Build and push operator to the DockerHub (daily-tag)
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          build-args: VERSION=${{ matrix.version }}
+          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+      - name: Build and push operator to the DockerHub (release-tag)
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          build-args: VERSION=${{ matrix.version }}
+          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
