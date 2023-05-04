@@ -771,6 +771,8 @@ spec:
                     type: boolean
                   isDataExplorerEnabled:
                     type: boolean
+                  isExtendedStorageSizesEnabled:
+                    type: boolean
                   isPerformanceAdvisorEnabled:
                     type: boolean
                   isRealtimePerformancePanelEnabled:
