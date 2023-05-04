@@ -2353,6 +2353,8 @@ spec:
                     type: boolean
                   isDataExplorerEnabled:
                     type: boolean
+                  isExtendedStorageSizesEnabled:
+                    type: boolean
                   isPerformanceAdvisorEnabled:
                     type: boolean
                   isRealtimePerformancePanelEnabled:
@@ -3139,11 +3141,21 @@ metadata:
   namespace: mongodb-atlas-system
 rules:
 - apiGroups:
-  - ""
   - coordination.k8s.io
   resources:
-  - configmaps
   - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
   verbs:
   - get
   - list
@@ -3387,7 +3399,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:1.7.2
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.7.3
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
