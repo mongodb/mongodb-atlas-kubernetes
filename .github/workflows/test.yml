@@ -26,6 +26,10 @@ jobs:
       github.ref == 'refs/heads/master' ||
       (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - name: allowed message
         run: echo "Allowed to run"
       - name: check Github action bot comment
