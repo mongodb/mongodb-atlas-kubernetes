@@ -12,7 +12,7 @@ const (
 	vpcName    = "atlas-operator-e2e-test-vpc"
 	vpcCIDR    = "10.0.0.0/16"
 	subnetName = "atlas-operator-e2e-test-subnet"
-	subnetCIDR = "10.1.1.0/24"
+	subnetCIDR = "10.0.1.0/24"
 )
 
 type Provider interface {
