@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -13,7 +16,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/serverlessprivateendpoint"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
@@ -36,9 +38,6 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Clean Cloud", func() {
-			DeleteSPE(testData)
-		})
 		By("Delete Resources", func() {
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
@@ -50,7 +49,18 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		func(test *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			speFlow(test, spe)
+
+			providerAction, err := prepareProviderAction()
+			Expect(err).To(BeNil())
+			Expect(
+				providerAction.SetupNetwork(
+					cloud.WithAWSConfig(config.AWSRegionEU),
+					cloud.WithGCPConfig(config.GCPRegion),
+					cloud.WithAzureConfig(config.AzureRegionEU),
+				),
+			).To(Succeed())
+
+			speFlow(test, providerAction, spe)
 		},
 		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE", Label("spe-aws-1"),
 			model.DataProvider(
@@ -99,7 +109,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	)
 })
 
-func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
+func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, spe []v1.ServerlessPrivateEndpoint) {
 	By("Apply deployment", func() {
 		Expect(userData.InitialDeployments).ShouldNot(BeEmpty())
 		userData.InitialDeployments[0].Namespace = userData.Resources.Namespace
@@ -110,7 +120,7 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			return userData.InitialDeployments[0].Status.StateName == status.StateIDLE
-		}).WithTimeout(10 * time.Minute).Should(BeTrue())
+		}).WithTimeout(15 * time.Minute).Should(BeTrue())
 	})
 
 	By("Adding Private Endpoints to Deployment", func() {
@@ -120,8 +130,40 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 	})
 
 	By("Create Private Endpoints in Cloud", func() {
-		Expect(serverlessprivateendpoint.ConnectSPE(spe, userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints,
-			provider.ProviderName(userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.BackingProviderName))).To(Succeed())
+		var pe *cloud.PrivateEndpointDetails
+		var err error
+
+		for index, peItem := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
+			peName := getPrivateLinkName(peItem.Name, provider.ProviderName(peItem.ProviderName), index)
+
+			switch provider.ProviderName(peItem.ProviderName) {
+			case provider.ProviderAWS:
+				pe, err = providerAction.SetupPrivateEndpoint(
+					&cloud.AWSPrivateEndpointRequest{
+						ID:          peName,
+						Region:      userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName,
+						ServiceName: peItem.EndpointServiceName,
+					},
+				)
+				Expect(err).To(BeNil())
+			case provider.ProviderAzure:
+				pe, err = providerAction.SetupPrivateEndpoint(
+					&cloud.AzurePrivateEndpointRequest{
+						ID:                peName,
+						Region:            userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName,
+						ServiceResourceID: peItem.PrivateLinkServiceResourceID,
+					},
+				)
+				Expect(err).To(BeNil())
+			}
+
+			for i, specPE := range spe {
+				if specPE.Name == peItem.Name {
+					spe[i].CloudProviderEndpointID = pe.ID
+					spe[i].PrivateEndpointIPAddress = pe.IP
+				}
+			}
+		}
 	})
 
 	By("Update Private Endpoints in Deployment", func() {
@@ -176,13 +218,6 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivate
 		}
 		updateSPE(userData, spe)
 	}
-}
-
-func DeleteSPE(userData *model.TestDataProvider) {
-	By("Delete Private Endpoints in Cloud", func() {
-		Expect(serverlessprivateendpoint.DeleteSPE(userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints,
-			provider.ProviderName(userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.BackingProviderName))).To(Succeed())
-	})
 }
 
 func updateSPE(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {

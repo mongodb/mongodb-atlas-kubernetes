@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,9 +48,6 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Clean Cloud", func() {
-			DeleteAllPrivateEndpoints(testData)
-		})
 		By("Delete Resources, Project with PEService", func() {
 			actions.DeleteTestDataProject(testData)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
@@ -60,7 +58,18 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		func(test *model.TestDataProvider, pe []privateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			privateFlow(test, pe)
+
+			providerAction, err := prepareProviderAction()
+			Expect(err).To(BeNil())
+			Expect(
+				providerAction.SetupNetwork(
+					cloud.WithAWSConfig(config.AWSRegionEU),
+					cloud.WithGCPConfig(config.GCPRegion),
+					cloud.WithAzureConfig(config.AzureRegionEU),
+				),
+			).To(Succeed())
+
+			privateFlow(test, providerAction, pe)
 		},
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
 			model.DataProvider(
@@ -145,7 +154,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	)
 })
 
-func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint) {
+func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
 	By("Create Private Link and the rest users resources", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
@@ -170,25 +179,70 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 
-		for idx, peitem := range userData.Project.Status.PrivateEndpoints {
-			cloudTest, err := cloud.CreatePEActions(peitem)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			privateEndpointID := peitem.ID
+		for idx, peStatusItem := range userData.Project.Status.PrivateEndpoints {
+			privateEndpointID := peStatusItem.ID
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			peName := getPrivateLinkName(privateEndpointID, peitem.Provider, idx)
+			peName := getPrivateLinkName(privateEndpointID, peStatusItem.Provider, idx)
+			var pe *cloud.PrivateEndpointDetails
+			var err error
 
-			output, err := cloudTest.CreatePrivateEndpoint(peName)
-			Expect(err).ShouldNot(HaveOccurred())
+			switch peStatusItem.Provider {
+			case provider.ProviderAWS:
+				pe, err = providerAction.SetupPrivateEndpoint(
+					&cloud.AWSPrivateEndpointRequest{
+						ID:          peName,
+						Region:      peStatusItem.Region,
+						ServiceName: peStatusItem.ServiceName,
+					},
+				)
+				Expect(err).To(BeNil())
+			case provider.ProviderGCP:
+				pe, err = providerAction.SetupPrivateEndpoint(
+					&cloud.GCPPrivateEndpointRequest{
+						ID:      peName,
+						Region:  peStatusItem.Region,
+						Targets: peStatusItem.ServiceAttachmentNames,
+					},
+				)
+				Expect(err).To(BeNil())
+			case provider.ProviderAzure:
+				pe, err = providerAction.SetupPrivateEndpoint(
+					&cloud.AzurePrivateEndpointRequest{
+						ID:                peName,
+						Region:            peStatusItem.Region,
+						ServiceResourceID: peStatusItem.ServiceResourceID,
+					},
+				)
+				Expect(err).To(BeNil())
+			}
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
 				if userData.Project.Spec.PrivateEndpoints[i].ID != "" {
 					continue
 				}
 
-				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
-					userData.Project.Spec.PrivateEndpoints[i] = output
+				if (peItem.Provider == pe.ProviderName) && (peItem.Region == pe.Region) {
+					peItem.ID = pe.ID
+					peItem.IP = pe.IP
+					peItem.GCPProjectID = pe.GCPProjectID
+					peItem.EndpointGroupName = pe.EndpointGroupName
+
+					if len(pe.Endpoints) > 0 {
+						peItem.Endpoints = make([]v1.GCPEndpoint, 0, len(pe.Endpoints))
+
+						for _, ep := range pe.Endpoints {
+							peItem.Endpoints = append(
+								peItem.Endpoints,
+								v1.GCPEndpoint{
+									EndpointName: ep.Name,
+									IPAddress:    ep.IP,
+								},
+							)
+						}
+					}
+
+					userData.Project.Spec.PrivateEndpoints[i] = peItem
 					break
 				}
 			}
@@ -203,13 +257,13 @@ func privateFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint)
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
-			cloudTest, err := cloud.CreatePEActions(peStatus)
-			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
-				func() bool {
-					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
+				func(g Gomega) {
+					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region)
+					g.Expect(err).To(BeNil())
+					g.Expect(ok).To(BeTrue())
 				},
 			).Should(BeTrue())
 		}
@@ -221,29 +275,6 @@ func GetPrivateEndpointID(endpoint status.ProjectPrivateEndpoint) string {
 		return endpoint.InterfaceEndpointID
 	}
 	return endpoint.ID
-}
-
-// DeleteAllPrivateEndpoints Specific for the current suite  - delete all requested Private Endpoints by test data
-func DeleteAllPrivateEndpoints(data *model.TestDataProvider) {
-	errorList := make([]string, 0)
-	Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
-		Namespace: data.Resources.Namespace}, data.Project)).To(Succeed())
-	for _, peStatus := range data.Project.Status.PrivateEndpoints {
-		cloudTest, err := cloud.CreatePEActions(peStatus)
-		if err == nil {
-			privateEndpointID := data.Resources.Project.GetPrivateIDByProviderRegion(peStatus)
-			if privateEndpointID != "" {
-				err = cloudTest.DeletePrivateEndpoint(privateEndpointID)
-				if err != nil {
-					GinkgoWriter.Write([]byte(err.Error()))
-					errorList = append(errorList, err.Error())
-				}
-			}
-		} else {
-			errorList = append(errorList, err.Error())
-		}
-	}
-	Expect(len(errorList)).Should(Equal(0), errorList)
 }
 
 func AllPEndpointUpdated(data *model.TestDataProvider) bool {
@@ -259,4 +290,25 @@ func getPrivateLinkName(privateEndpointID string, providerName provider.Provider
 		return fmt.Sprintf("%s_%d", privateEndpointID, idx)
 	}
 	return privateEndpointID
+}
+
+func prepareProviderAction() (*cloud.ProviderAction, error) {
+	t := GinkgoT()
+
+	aws, err := cloud.NewAWSAction(t)
+	if err != nil {
+		return nil, err
+	}
+
+	gcp, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	return cloud.NewProviderAction(t, aws, gcp, azure), nil
 }

@@ -1,17 +1,35 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/gcp"
+	"google.golang.org/api/iterator"
+
+	"github.com/onsi/ginkgo/v2/dsl/core"
+	"k8s.io/apimachinery/pkg/util/rand"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+
+	compute "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 )
 
-type gcpAction struct{}
+type GCPAction struct {
+	t         core.GinkgoTInterface
+	projectID string
+	network   *gcpNetwork
+
+	networkClient     *compute.NetworksClient
+	subnetClient      *compute.SubnetworksClient
+	addressClient     *compute.AddressesClient
+	forwardRuleClient *compute.ForwardingRulesClient
+}
+
+type gcpNetwork struct {
+	VPC     string
+	Subnets map[string]string
+}
 
 const (
 	// TODO get from GCP
@@ -19,132 +37,332 @@ const (
 	GoogleVPC           = "atlas-operator-test"       // VPC Name
 	GoogleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
 	googleConnectPrefix = "ao"                        // Private Service Connect Endpoint Prefix
+
+	gcpSubnetIPMask = "10.0.0.%d"
 )
 
-func (gcpAction *gcpAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
-	session, err := gcp.SessionGCP(GoogleProjectID)
-	if err != nil {
-		return v1.PrivateEndpoint{}, err
-	}
-	var cResponse v1.PrivateEndpoint
-	for i, target := range pe.ServiceAttachmentNames {
-		addressName := formAddressName(privatelinkName, i)
-		ruleName := formRuleName(privatelinkName, i)
-		ip, err := session.AddIPAddress(pe.Region, addressName, GoogleSubnetName)
-		if err != nil {
-			return v1.PrivateEndpoint{}, err
-		}
+// InitNetwork Check if minimum network resources exist and when not, create them
+func (a *GCPAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string) error {
+	a.t.Helper()
+	ctx := context.Background()
 
-		cResponse.Endpoints = append(cResponse.Endpoints, v1.GCPEndpoint{
-			EndpointName: ruleName,
-			IPAddress:    ip,
-		})
-		cResponse.EndpointGroupName = GoogleVPC
-		cResponse.Region = pe.Region
-		cResponse.Provider = pe.Provider
-		cResponse.GCPProjectID = GoogleProjectID
-
-		err = session.AddForwardRule(pe.Region, ruleName, addressName, GoogleVPC, GoogleSubnetName, target)
-		if err != nil {
-			return v1.PrivateEndpoint{}, err
-		}
-	}
-	return cResponse, nil
-}
-
-func (gcpAction *gcpAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	session, err := gcp.SessionGCP(GoogleProjectID)
+	vpc, err := a.findVPC(ctx, vpcName)
 	if err != nil {
 		return err
 	}
-	for i := range pe.Endpoints {
-		err = session.DeleteForwardRule(pe.Region, formRuleName(privatelinkName, i), 10, 20*time.Second)
-		if err != nil {
-			return err
-		}
-		err = session.DeleteIPAdress(pe.Region, formAddressName(privatelinkName, i))
+
+	if vpc == nil {
+		err = a.createVPC(ctx, vpcName, cidr)
 		if err != nil {
 			return err
 		}
 	}
+
+	existingSubnets, err := a.getSubnet(ctx, vpcName, region)
+	if err != nil {
+		return err
+	}
+
+	for name, ipRange := range subnets {
+		if _, ok := existingSubnets[name]; !ok {
+			if err = a.createSubnet(ctx, vpcName, name, ipRange, region); err != nil {
+				return err
+			}
+		}
+	}
+
+	a.network = &gcpNetwork{
+		VPC:     vpcName,
+		Subnets: subnets,
+	}
+
+	return nil
+}
+func (a *GCPAction) CreatePrivateEndpoint(name, region, subnet, target string) (string, string, error) {
+	a.t.Helper()
+	ctx := context.Background()
+
+	address := fmt.Sprintf("%s-%s-ip", googleConnectPrefix, name)
+	rule := fmt.Sprintf("%s-%s-fr", googleConnectPrefix, name)
+
+	ipAddress, err := a.createVirtualAddress(ctx, address, a.network.Subnets[subnet], region)
+	if err != nil {
+		return "", "", err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deleteVirtualAddress(ctx, address, region)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	err = a.createForwardRule(ctx, rule, address, region, target)
+	if err != nil {
+		return "", "", err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deleteForwardRule(ctx, rule, region)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	return rule, ipAddress, err
+}
+
+func (a *GCPAction) GetForwardingRule(name, region string) (*computepb.ForwardingRule, error) {
+	a.t.Helper()
+
+	ruleRequest := &computepb.GetForwardingRuleRequest{
+		Project:        a.projectID,
+		ForwardingRule: fmt.Sprintf("%s-%s-fr", googleConnectPrefix, name),
+		Region:         region,
+	}
+
+	rule, err := a.forwardRuleClient.Get(context.Background(), ruleRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return rule, nil
+}
+
+func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Network, error) {
+	a.t.Helper()
+
+	vpcRequest := &computepb.GetNetworkRequest{
+		Project: a.projectID,
+		Network: vpcName,
+	}
+
+	vpc, err := a.networkClient.Get(ctx, vpcRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return vpc, nil
+}
+
+func (a *GCPAction) createVPC(ctx context.Context, vpcName, cidr string) error {
+	a.t.Helper()
+
+	vpcRequest := &computepb.InsertNetworkRequest{
+		Project: a.projectID,
+		NetworkResource: &computepb.Network{
+			Name:                  toptr.MakePtr(vpcName),
+			IPv4Range:             toptr.MakePtr(cidr),
+			Description:           toptr.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
+			AutoCreateSubnetworks: toptr.MakePtr(false),
+			EnableUlaInternalIpv6: toptr.MakePtr(false),
+		},
+	}
+
+	op, err := a.networkClient.Insert(ctx, vpcRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (gcpAction *gcpAction) statusPrivateEndpointPending(region, privateID string) bool {
-	session, err := gcp.SessionGCP(GoogleProjectID)
-	if err != nil {
-		fmt.Print(err)
-		return false
+func (a *GCPAction) getSubnet(ctx context.Context, vpcName, region string) (map[string]string, error) {
+	a.t.Helper()
+
+	subnetRequest := &computepb.ListSubnetworksRequest{
+		Filter:  toptr.MakePtr(fmt.Sprintf("network = %s", vpcName)),
+		Project: a.projectID,
+		Region:  region,
 	}
-	ruleName := formRuleName(privateID, 1)
-	result, err := session.DescribePrivateLinkStatus(region, ruleName)
-	if err != nil {
-		fmt.Print(err)
-		return false
+
+	subnets := map[string]string{}
+	list := a.subnetClient.List(ctx, subnetRequest)
+	for {
+		subnet, err := list.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		subnets[*subnet.Name] = *subnet.IpCidrRange
 	}
-	return result == "PENDING"
+
+	return subnets, nil
 }
 
-func (gcpAction *gcpAction) statusPrivateEndpointAvailable(region, privateID string) bool {
-	session, err := gcp.SessionGCP(GoogleProjectID)
-	if err != nil {
-		fmt.Print(err)
-		return false
+func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange, region string) error {
+	a.t.Helper()
+
+	subnetRequest := &computepb.InsertSubnetworkRequest{
+		Project: a.projectID,
+		Region:  region,
+		SubnetworkResource: &computepb.Subnetwork{
+			Name:        toptr.MakePtr(subnetName),
+			Network:     toptr.MakePtr(vpcName),
+			IpCidrRange: toptr.MakePtr(ipRange),
+		},
 	}
-	ruleName := formRuleName(privateID, 1)
-	result, err := session.DescribePrivateLinkStatus(region, ruleName)
+
+	op, err := a.subnetClient.Insert(ctx, subnetRequest)
 	if err != nil {
-		fmt.Printf("Failed to describe PrivateLink Status: %s", err.Error())
-		return false
+		return err
 	}
-	return result == "ACCEPTED"
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func formAddressName(name string, i int) string {
-	return fmt.Sprintf("%s%s-ip-%d", googleConnectPrefix, name, i)
-}
+func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
+	a.t.Helper()
 
-func FormAddressNameByRuleName(ruleName string) (string, error) {
-	if !strings.HasPrefix(ruleName, googleConnectPrefix) {
-		return "", fmt.Errorf("invalid rule name. should contains %s: %s", googleConnectPrefix, ruleName)
+	ip := fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(2, 200))
+	addressRequest := &computepb.InsertAddressRequest{
+		Project: a.projectID,
+		Region:  region,
+		AddressResource: &computepb.Address{
+			Name:        toptr.MakePtr(name),
+			Description: toptr.MakePtr(name),
+			Address:     toptr.MakePtr(ip),
+			AddressType: toptr.MakePtr("INTERNAL"),
+			Subnetwork: toptr.MakePtr(
+				fmt.Sprintf(
+					"https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s",
+					a.projectID,
+					region,
+					subnet,
+				),
+			),
+		},
 	}
-	ruleName = strings.TrimPrefix(ruleName, googleConnectPrefix)
 
-	parts := strings.Split(ruleName, "-")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("invalid rule name. should contains - : %s", ruleName)
-	}
-
-	name := parts[0]
-	i, err := strconv.Atoi(parts[1])
+	op, err := a.addressClient.Insert(ctx, addressRequest)
 	if err != nil {
-		return "", fmt.Errorf("invalid rule name. should contains number after - : %s", ruleName)
-	}
-	return formAddressName(name, i), nil
-}
-
-func FormForwardRuleNameByAddressName(addressName string) (string, error) {
-	if !strings.HasPrefix(addressName, googleConnectPrefix) {
-		return "", fmt.Errorf("invalid address name. should contains %s: %s", googleConnectPrefix, addressName)
-	}
-	addressName = strings.TrimPrefix(addressName, googleConnectPrefix)
-
-	parts := strings.Split(addressName, "-")
-	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid address name. should contains - : %s", addressName)
-	}
-	if parts[1] != "ip" {
-		return "", fmt.Errorf("invalid address name. should contains ip : %s", addressName)
+		return "", err
 	}
 
-	name := parts[0]
-	i, err := strconv.Atoi(parts[2])
+	err = op.Wait(ctx)
 	if err != nil {
-		return "", fmt.Errorf("invalid address name. should contains number after - : %s", addressName)
+		return "", err
 	}
-	return formRuleName(name, i), nil
+
+	return ip, nil
 }
 
-func formRuleName(name string, i int) string {
-	return fmt.Sprintf("%s%s-%d", googleConnectPrefix, name, i)
+func (a *GCPAction) deleteVirtualAddress(ctx context.Context, name, region string) error {
+	a.t.Helper()
+
+	addressRequest := &computepb.DeleteAddressRequest{
+		Address: name,
+		Project: a.projectID,
+		Region:  region,
+	}
+
+	op, err := a.addressClient.Delete(ctx, addressRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *GCPAction) createForwardRule(ctx context.Context, rule, address, region, target string) error {
+	a.t.Helper()
+
+	ruleRequest := &computepb.InsertForwardingRuleRequest{
+		Project: a.projectID,
+		Region:  region,
+		ForwardingRuleResource: &computepb.ForwardingRule{
+			Name:      toptr.MakePtr(rule),
+			IPAddress: toptr.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/addresses/%s", a.projectID, region, address)),
+			Network:   toptr.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, a.network.VPC)),
+			Target:    toptr.MakePtr(target),
+		},
+	}
+
+	op, err := a.forwardRuleClient.Insert(ctx, ruleRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *GCPAction) deleteForwardRule(ctx context.Context, rule, region string) error {
+	a.t.Helper()
+
+	addressRequest := &computepb.DeleteForwardingRuleRequest{
+		ForwardingRule: rule,
+		Project:        a.projectID,
+		Region:         region,
+	}
+
+	op, err := a.forwardRuleClient.Delete(ctx, addressRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	networkClient, err := compute.NewNetworksRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	subnetClient, err := compute.NewSubnetworksRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	addressClient, err := compute.NewAddressesRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	forwardRuleClient, err := compute.NewForwardingRulesRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GCPAction{
+		t:         t,
+		projectID: projectID,
+
+		networkClient:     networkClient,
+		subnetClient:      subnetClient,
+		addressClient:     addressClient,
+		forwardRuleClient: forwardRuleClient,
+	}, nil
 }
