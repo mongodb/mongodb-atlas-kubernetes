@@ -158,11 +158,9 @@ func (a *GCPAction) createVPC(ctx context.Context, vpcName, cidr string) error {
 	vpcRequest := &computepb.InsertNetworkRequest{
 		Project: a.projectID,
 		NetworkResource: &computepb.Network{
-			Name:                  toptr.MakePtr(vpcName),
-			IPv4Range:             toptr.MakePtr(cidr),
-			Description:           toptr.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
-			AutoCreateSubnetworks: toptr.MakePtr(false),
-			EnableUlaInternalIpv6: toptr.MakePtr(false),
+			Name:        toptr.MakePtr(vpcName),
+			IPv4Range:   toptr.MakePtr(cidr),
+			Description: toptr.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
 		},
 	}
 
