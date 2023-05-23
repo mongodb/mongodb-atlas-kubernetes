@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"google.golang.org/api/googleapi"
+
 	"google.golang.org/api/iterator"
 
 	"github.com/onsi/ginkgo/v2/dsl/core"
@@ -140,6 +142,10 @@ func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Net
 
 	vpc, err := a.networkClient.Get(ctx, vpcRequest)
 	if err != nil {
+		var respErr *googleapi.Error
+		if errors.Is(err, respErr) && respErr.Code == 404 {
+			return nil, nil
+		}
 		return nil, err
 	}
 

@@ -2,7 +2,10 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
@@ -154,6 +157,10 @@ func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.
 
 	vpc, err := vpcClient.Get(ctx, a.resourceGroupName, vpcName, nil)
 	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.Is(err, respErr) && respErr.StatusCode == 404 {
+			return nil, nil
+		}
 		return nil, err
 	}
 
