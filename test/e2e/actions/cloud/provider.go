@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
@@ -145,8 +144,8 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) (*
 		}, nil
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
-		for index, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(fmt.Sprintf("%s-%d", req.ID, index), req.Region, subnetName, target)
+		for _, target := range req.Targets {
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, subnetName, target)
 			if err != nil {
 				return nil, err
 			}

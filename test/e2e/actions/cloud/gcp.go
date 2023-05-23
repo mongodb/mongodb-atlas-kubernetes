@@ -61,7 +61,7 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 		}
 	}
 
-	existingSubnets, err := a.getSubnet(ctx, vpcName, region)
+	existingSubnets, err := a.getSubnets(ctx, region)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (a *GCPAction) CreatePrivateEndpoint(name, region, subnet, target string) (
 	address := fmt.Sprintf("%s-%s-ip", googleConnectPrefix, name)
 	rule := fmt.Sprintf("%s-%s-fr", googleConnectPrefix, name)
 
-	ipAddress, err := a.createVirtualAddress(ctx, address, a.network.Subnets[subnet], region)
+	ipAddress, err := a.createVirtualAddress(ctx, address, subnet, region)
 	if err != nil {
 		return "", "", err
 	}
@@ -177,11 +177,10 @@ func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 	return nil
 }
 
-func (a *GCPAction) getSubnet(ctx context.Context, vpcName, region string) (map[string]string, error) {
+func (a *GCPAction) getSubnets(ctx context.Context, region string) (map[string]string, error) {
 	a.t.Helper()
 
 	subnetRequest := &computepb.ListSubnetworksRequest{
-		Filter:  toptr.MakePtr(fmt.Sprintf("network = %s", vpcName)),
 		Project: a.projectID,
 		Region:  region,
 	}
@@ -211,7 +210,7 @@ func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRan
 		Region:  region,
 		SubnetworkResource: &computepb.Subnetwork{
 			Name:        toptr.MakePtr(subnetName),
-			Network:     toptr.MakePtr(vpcName),
+			Network:     toptr.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, vpcName)),
 			IpCidrRange: toptr.MakePtr(ipRange),
 		},
 	}
