@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/api/iterator"
@@ -185,7 +186,7 @@ func (a *GCPAction) getSubnet(ctx context.Context, vpcName, region string) (map[
 	list := a.subnetClient.List(ctx, subnetRequest)
 	for {
 		subnet, err := list.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

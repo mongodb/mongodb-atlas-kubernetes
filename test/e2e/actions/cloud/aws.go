@@ -1,14 +1,13 @@
 package cloud
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
-	"github.com/onsi/ginkgo/v2/dsl/core"
-
 	aws_sdk "github.com/aws/aws-sdk-go/aws"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/onsi/ginkgo/v2/dsl/core"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 

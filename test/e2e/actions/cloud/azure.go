@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/onsi/ginkgo/v2/dsl/core"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+	"github.com/onsi/ginkgo/v2/dsl/core"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 type AzureAction struct {
@@ -43,7 +43,9 @@ func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[stri
 
 	if vpc == nil {
 		vpc, err = a.createVpcWithSubnets(ctx, vpcName, cidr, region, subnets)
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	existingSubnets := map[string]*armnetwork.Subnet{}
