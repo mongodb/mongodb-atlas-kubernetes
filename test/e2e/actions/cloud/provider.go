@@ -70,7 +70,7 @@ func (a *ProviderAction) SetupNetwork(configs ...ProviderConfig) error {
 				return err
 			}
 		case provider.ProviderGCP:
-			err := a.gcpProvider.InitNetwork(vpcName, vpcCIDR, a.gcpRegion, map[string]string{subnetName: subnetCIDR})
+			err := a.gcpProvider.InitNetwork(vpcName, a.gcpRegion, map[string]string{subnetName: subnetCIDR})
 			if err != nil {
 				return err
 			}

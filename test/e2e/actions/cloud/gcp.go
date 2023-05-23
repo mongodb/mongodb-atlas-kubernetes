@@ -45,7 +45,7 @@ const (
 )
 
 // InitNetwork Check if minimum network resources exist and when not, create them
-func (a *GCPAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string) error {
+func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string) error {
 	a.t.Helper()
 	ctx := context.Background()
 
@@ -55,7 +55,7 @@ func (a *GCPAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 	}
 
 	if vpc == nil {
-		err = a.createVPC(ctx, vpcName, cidr)
+		err = a.createVPC(ctx, vpcName)
 		if err != nil {
 			return err
 		}
@@ -152,15 +152,15 @@ func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Net
 	return vpc, nil
 }
 
-func (a *GCPAction) createVPC(ctx context.Context, vpcName, cidr string) error {
+func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 	a.t.Helper()
 
 	vpcRequest := &computepb.InsertNetworkRequest{
 		Project: a.projectID,
 		NetworkResource: &computepb.Network{
-			Name:        toptr.MakePtr(vpcName),
-			IPv4Range:   toptr.MakePtr(cidr),
-			Description: toptr.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
+			Name:                  toptr.MakePtr(vpcName),
+			Description:           toptr.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
+			AutoCreateSubnetworks: toptr.MakePtr(false),
 		},
 	}
 
