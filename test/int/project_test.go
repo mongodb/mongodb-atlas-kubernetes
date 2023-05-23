@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	ProjectCreationTimeout = 40 * time.Second
+	ProjectCreationTimeout = 5 * time.Minute
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {

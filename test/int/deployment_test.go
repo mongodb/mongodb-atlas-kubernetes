@@ -1140,11 +1140,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Adding BackupSchedule with Snapshot distribution", func() {
 				bScheduleName := "schedule-1"
 
-				Expect(
-					k8sClient.Get(context.Background(), types.NamespacedName{Namespace: namespace.Name, Name: "test-deployment-advanced-k8s"}, createdDeployment),
-				).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					g.Expect(
+						k8sClient.Get(context.Background(), types.NamespacedName{Namespace: namespace.Name, Name: "test-deployment-advanced-k8s"}, createdDeployment),
+					).NotTo(HaveOccurred())
 
-				Expect(createdDeployment.Status.ReplicaSets).ToNot(BeEmpty())
+					g.Expect(createdDeployment.Status.ReplicaSets).ToNot(BeEmpty())
+					g.Expect(createdDeployment.Status.ReplicaSets[0].ID).ToNot(BeEmpty())
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+
 				replicaSetID := createdDeployment.Status.ReplicaSets[0].ID
 
 				backupPolicyDefault := &mdbv1.AtlasBackupPolicy{
