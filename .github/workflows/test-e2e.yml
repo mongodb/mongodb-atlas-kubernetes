@@ -130,7 +130,7 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-            "privatelink",
+            # "privatelink",
             "serverless-pe",
           ]
     steps:

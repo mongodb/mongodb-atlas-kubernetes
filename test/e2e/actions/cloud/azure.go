@@ -158,7 +158,7 @@ func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.
 	vpc, err := vpcClient.Get(ctx, a.resourceGroupName, vpcName, nil)
 	if err != nil {
 		var respErr *azcore.ResponseError
-		if errors.Is(err, respErr) && respErr.StatusCode == 404 {
+		if ok := errors.As(err, &respErr); ok && respErr.StatusCode == 404 {
 			return nil, nil
 		}
 		return nil, err
