@@ -167,7 +167,7 @@ func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.
 	return &vpc.VirtualNetwork, nil
 }
 
-func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, region, cidr string, subnets map[string]string) (*armnetwork.VirtualNetwork, error) {
+func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, region string, subnets map[string]string) (*armnetwork.VirtualNetwork, error) {
 	a.t.Helper()
 	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
 

@@ -130,8 +130,8 @@ jobs:
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         test:
           [
-            # "privatelink",
-            "serverless-pe",
+            "privatelink",
+            #"serverless-pe",
           ]
     steps:
       - name: Get repo files from cache
