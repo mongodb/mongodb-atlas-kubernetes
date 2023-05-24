@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,6 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
@@ -31,13 +29,6 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 
 		action, err := prepareProviderAction()
 		Expect(err).To(BeNil())
-		Expect(
-			action.SetupNetwork(
-				cloud.WithAWSConfig(config.AWSRegionEU),
-				cloud.WithGCPConfig(config.GCPRegion),
-				cloud.WithAzureConfig(config.AzureRegionEU),
-			),
-		).To(Succeed())
 		providerAction = action
 	})
 
@@ -139,6 +130,12 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 
 			switch provider.ProviderName(peItem.ProviderName) {
 			case provider.ProviderAWS:
+				Expect(
+					providerAction.SetupNetwork(
+						provider.ProviderAWS,
+						cloud.WithAWSConfig(&cloud.AWSConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
+					),
+				).To(Succeed())
 				pe, err = providerAction.SetupPrivateEndpoint(
 					&cloud.AWSPrivateEndpointRequest{
 						ID:          peName,
@@ -148,6 +145,12 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 				)
 				Expect(err).To(BeNil())
 			case provider.ProviderAzure:
+				Expect(
+					providerAction.SetupNetwork(
+						provider.ProviderAzure,
+						cloud.WithAzureConfig(&cloud.AzureConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
+					),
+				).To(Succeed())
 				pe, err = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
 						ID:                peName,

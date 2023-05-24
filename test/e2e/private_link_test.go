@@ -42,13 +42,6 @@ var _ = FDescribe("UserLogin", Label("privatelink"), func() {
 
 		action, err := prepareProviderAction()
 		Expect(err).To(BeNil())
-		Expect(
-			action.SetupNetwork(
-				cloud.WithAWSConfig(config.AWSRegionEU),
-				cloud.WithGCPConfig(config.GCPRegion),
-				cloud.WithAzureConfig(config.AzureRegionEU),
-			),
-		).To(Succeed())
 		providerAction = action
 	})
 
@@ -190,6 +183,12 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 
 			switch peStatusItem.Provider {
 			case provider.ProviderAWS:
+				Expect(
+					providerAction.SetupNetwork(
+						peStatusItem.Provider,
+						cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}),
+					),
+				).To(Succeed())
 				pe, err = providerAction.SetupPrivateEndpoint(
 					&cloud.AWSPrivateEndpointRequest{
 						ID:          peName,
@@ -199,6 +198,12 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 				)
 				Expect(err).To(BeNil())
 			case provider.ProviderGCP:
+				Expect(
+					providerAction.SetupNetwork(
+						peStatusItem.Provider,
+						cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}),
+					),
+				).To(Succeed())
 				pe, err = providerAction.SetupPrivateEndpoint(
 					&cloud.GCPPrivateEndpointRequest{
 						ID:      peName,
@@ -208,6 +213,12 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 				)
 				Expect(err).To(BeNil())
 			case provider.ProviderAzure:
+				Expect(
+					providerAction.SetupNetwork(
+						peStatusItem.Provider,
+						cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}),
+					),
+				).To(Succeed())
 				pe, err = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
 						ID:                peName,
@@ -256,10 +267,14 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 	By("Check statuses", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
-		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
+		for index, peStatus := range userData.Project.Status.PrivateEndpoints {
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
+
+			if peStatus.Provider == provider.ProviderGCP {
+				privateEndpointID = fmt.Sprintf("%s-%d", privateEndpointID, index)
+			}
 			Eventually(
 				func(g Gomega) bool {
 					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region)

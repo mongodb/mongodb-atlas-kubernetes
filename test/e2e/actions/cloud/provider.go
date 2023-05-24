@@ -9,14 +9,17 @@ import (
 )
 
 const (
-	vpcName    = "atlas-operator-e2e-test-vpc"
-	vpcCIDR    = "10.0.0.0/24"
-	subnetName = "atlas-operator-e2e-test-subnet"
-	subnetCIDR = "10.0.0.0/24"
+	gcpRegion   = "europe-west1"
+	awsRegion   = "eu-west-2"
+	azureRegion = "northeurope"
+	vpcName     = "atlas-operator-e2e-test-vpc"
+	vpcCIDR     = "10.0.0.0/24"
+	subnetName  = "atlas-operator-e2e-test-subnet"
+	subnetCIDR  = "10.0.0.0/24"
 )
 
 type Provider interface {
-	SetupNetwork(configs ...ProviderConfig) error
+	SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) error
 	SetupPrivateEndpoint(request PrivateEndpointRequest) (*PrivateEndpointDetails, error)
 	IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string) (bool, error)
 }
@@ -24,60 +27,115 @@ type Provider interface {
 type ProviderAction struct {
 	t core.GinkgoTInterface
 
-	awsRegion   string
-	gcpRegion   string
-	azureRegion string
+	awsConfig   *AWSConfig
+	gcpConfig   *GCPConfig
+	azureConfig *AzureConfig
 
 	awsProvider   *AwsAction
 	gcpProvider   *GCPAction
 	azureProvider *AzureAction
 }
 
+type AWSConfig struct {
+	Region  string
+	VPC     string
+	CIDR    string
+	Subnets []string
+}
+
+type GCPConfig struct {
+	Region  string
+	VPC     string
+	Subnets map[string]string
+}
+
+type AzureConfig struct {
+	Region  string
+	VPC     string
+	CIDR    string
+	Subnets map[string]string
+}
+
 type ProviderConfig func(action *ProviderAction)
 
-func WithAWSConfig(region string) ProviderConfig {
+func WithAWSConfig(config *AWSConfig) ProviderConfig {
 	return func(action *ProviderAction) {
-		action.awsRegion = region
+		if config.Region != "" {
+			action.awsConfig.Region = config.Region
+		}
+
+		if config.VPC != "" {
+			action.awsConfig.VPC = config.VPC
+		}
+
+		if config.CIDR != "" {
+			action.awsConfig.CIDR = config.CIDR
+		}
+
+		if len(config.Subnets) > 0 {
+			action.awsConfig.Subnets = config.Subnets
+		}
 	}
 }
 
-func WithGCPConfig(region string) ProviderConfig {
+func WithGCPConfig(config *GCPConfig) ProviderConfig {
 	return func(action *ProviderAction) {
-		action.gcpRegion = region
+		if config.Region != "" {
+			action.gcpConfig.Region = config.Region
+		}
+
+		if config.VPC != "" {
+			action.gcpConfig.VPC = config.VPC
+		}
+
+		if len(config.Subnets) > 0 {
+			action.gcpConfig.Subnets = config.Subnets
+		}
 	}
 }
 
-func WithAzureConfig(region string) ProviderConfig {
+func WithAzureConfig(config *AzureConfig) ProviderConfig {
 	return func(action *ProviderAction) {
-		action.azureRegion = region
+		if config.Region != "" {
+			action.azureConfig.Region = config.Region
+		}
+
+		if config.VPC != "" {
+			action.azureConfig.VPC = config.VPC
+		}
+
+		if config.CIDR != "" {
+			action.azureConfig.CIDR = config.CIDR
+		}
+
+		if len(config.Subnets) > 0 {
+			action.azureConfig.Subnets = config.Subnets
+		}
 	}
 }
 
-func (a *ProviderAction) SetupNetwork(configs ...ProviderConfig) error {
+func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) error {
 	a.t.Helper()
 
 	for _, config := range configs {
 		config(a)
 	}
 
-	providers := []provider.ProviderName{provider.ProviderAWS, provider.ProviderGCP, provider.ProviderAzure}
-	for _, p := range providers {
-		switch p {
-		case provider.ProviderAWS:
-			err := a.awsProvider.InitNetwork(vpcName, vpcCIDR, a.awsRegion, []string{subnetCIDR})
-			if err != nil {
-				return err
-			}
-		case provider.ProviderGCP:
-			err := a.gcpProvider.InitNetwork(vpcName, a.gcpRegion, map[string]string{subnetName: subnetCIDR})
-			if err != nil {
-				return err
-			}
-		case provider.ProviderAzure:
-			err := a.azureProvider.InitNetwork(vpcName, vpcCIDR, a.azureRegion, map[string]string{subnetName: subnetCIDR})
-			if err != nil {
-				return err
-			}
+	switch providerName {
+	case provider.ProviderAWS:
+		err := a.awsProvider.InitNetwork(a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets)
+		if err != nil {
+			return err
+		}
+	case provider.ProviderGCP:
+		err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets)
+		if err != nil {
+			return err
+		}
+	case provider.ProviderAzure:
+		err := a.azureProvider.InitNetwork(a.azureConfig.VPC, a.azureConfig.CIDR, a.azureConfig.Region, a.azureConfig.Subnets)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -215,9 +273,40 @@ func (a *ProviderAction) IsPrivateEndpointAvailable(providerName provider.Provid
 
 func NewProviderAction(t core.GinkgoTInterface, aws *AwsAction, gcp *GCPAction, azure *AzureAction) *ProviderAction {
 	return &ProviderAction{
-		t:             t,
+		t: t,
+
+		awsConfig:   getAWSConfigDefaults(),
+		gcpConfig:   getGCPConfigDefaults(),
+		azureConfig: getAzureConfigDefaults(),
+
 		awsProvider:   aws,
 		gcpProvider:   gcp,
 		azureProvider: azure,
+	}
+}
+
+func getAWSConfigDefaults() *AWSConfig {
+	return &AWSConfig{
+		Region:  awsRegion,
+		VPC:     vpcName,
+		CIDR:    vpcCIDR,
+		Subnets: []string{subnetCIDR},
+	}
+}
+
+func getGCPConfigDefaults() *GCPConfig {
+	return &GCPConfig{
+		Region:  gcpRegion,
+		VPC:     vpcName,
+		Subnets: map[string]string{subnetName: subnetCIDR},
+	}
+}
+
+func getAzureConfigDefaults() *AzureConfig {
+	return &AzureConfig{
+		Region:  azureRegion,
+		VPC:     vpcName,
+		CIDR:    vpcCIDR,
+		Subnets: map[string]string{subnetName: subnetCIDR},
 	}
 }
