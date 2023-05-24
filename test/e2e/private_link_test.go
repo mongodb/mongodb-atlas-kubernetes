@@ -31,13 +31,25 @@ type privateEndpoint struct {
 	region   string
 }
 
-var _ = Describe("UserLogin", Label("privatelink"), func() {
+var _ = FDescribe("UserLogin", Label("privatelink"), func() {
 	var testData *model.TestDataProvider
+	var providerAction cloud.Provider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
+
+		action, err := prepareProviderAction()
+		Expect(err).To(BeNil())
+		Expect(
+			action.SetupNetwork(
+				cloud.WithAWSConfig(config.AWSRegionEU),
+				cloud.WithGCPConfig(config.GCPRegion),
+				cloud.WithAzureConfig(config.AzureRegionEU),
+			),
+		).To(Succeed())
+		providerAction = action
 	})
 
 	_ = AfterEach(func() {
@@ -58,17 +70,6 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		func(test *model.TestDataProvider, pe []privateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-
-			providerAction, err := prepareProviderAction()
-			Expect(err).To(BeNil())
-			Expect(
-				providerAction.SetupNetwork(
-					cloud.WithAWSConfig(config.AWSRegionEU),
-					cloud.WithGCPConfig(config.GCPRegion),
-					cloud.WithAzureConfig(config.AzureRegionEU),
-				),
-			).To(Succeed())
-
 			privateFlow(test, providerAction, pe)
 		},
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
@@ -260,10 +261,12 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 			Eventually(
-				func(g Gomega) {
+				func(g Gomega) bool {
 					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region)
 					g.Expect(err).To(BeNil())
 					g.Expect(ok).To(BeTrue())
+
+					return true
 				},
 			).Should(BeTrue())
 		}

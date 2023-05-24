@@ -22,11 +22,23 @@ import (
 
 var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	var testData *model.TestDataProvider
+	var providerAction cloud.Provider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
+
+		action, err := prepareProviderAction()
+		Expect(err).To(BeNil())
+		Expect(
+			action.SetupNetwork(
+				cloud.WithAWSConfig(config.AWSRegionEU),
+				cloud.WithGCPConfig(config.GCPRegion),
+				cloud.WithAzureConfig(config.AzureRegionEU),
+			),
+		).To(Succeed())
+		providerAction = action
 	})
 
 	_ = AfterEach(func() {
@@ -49,17 +61,6 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		func(test *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-
-			providerAction, err := prepareProviderAction()
-			Expect(err).To(BeNil())
-			Expect(
-				providerAction.SetupNetwork(
-					cloud.WithAWSConfig(config.AWSRegionEU),
-					cloud.WithGCPConfig(config.GCPRegion),
-					cloud.WithAzureConfig(config.AzureRegionEU),
-				),
-			).To(Succeed())
-
 			speFlow(test, providerAction, spe)
 		},
 		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE", Label("spe-aws-1"),

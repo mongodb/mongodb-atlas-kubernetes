@@ -144,8 +144,8 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) (*
 		}, nil
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
-		for _, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, subnetName, target)
+		for index, target := range req.Targets {
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, subnetName, target, index)
 			if err != nil {
 				return nil, err
 			}
