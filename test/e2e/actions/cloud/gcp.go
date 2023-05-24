@@ -115,12 +115,12 @@ func (a *GCPAction) CreatePrivateEndpoint(name, region, subnet, target string, i
 	return rule, ipAddress, err
 }
 
-func (a *GCPAction) GetForwardingRule(name, region string) (*computepb.ForwardingRule, error) {
+func (a *GCPAction) GetForwardingRule(name, region string, suffixIndex int) (*computepb.ForwardingRule, error) {
 	a.t.Helper()
 
 	ruleRequest := &computepb.GetForwardingRuleRequest{
 		Project:        a.projectID,
-		ForwardingRule: fmt.Sprintf("%s-%s-fr", googleConnectPrefix, name),
+		ForwardingRule: fmt.Sprintf("%s-%s-fr-%d", googleConnectPrefix, name, suffixIndex),
 		Region:         region,
 	}
 

@@ -21,7 +21,7 @@ const (
 type Provider interface {
 	SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) error
 	SetupPrivateEndpoint(request PrivateEndpointRequest) (*PrivateEndpointDetails, error)
-	IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string) (bool, error)
+	IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) (bool, error)
 }
 
 type ProviderAction struct {
@@ -241,7 +241,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) (*
 	return nil, nil
 }
 
-func (a *ProviderAction) IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string) (bool, error) {
+func (a *ProviderAction) IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) (bool, error) {
 	a.t.Helper()
 
 	switch providerName {
@@ -253,12 +253,17 @@ func (a *ProviderAction) IsPrivateEndpointAvailable(providerName provider.Provid
 
 		return *pe.State == "available", nil
 	case provider.ProviderGCP:
-		rule, err := a.gcpProvider.GetForwardingRule(endpoint, region)
-		if err != nil {
-			return false, err
+		res := false
+		for i := 0; i < gcpNumAttachments; i++ {
+			rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
+			if err != nil {
+				return false, err
+			}
+
+			res = res && (*rule.PscConnectionStatus == "ACCEPTED")
 		}
 
-		return *rule.PscConnectionStatus == "ACCEPTED", nil
+		return res, nil
 	case provider.ProviderAzure:
 		pe, err := a.azureProvider.GetPrivateEndpoint(endpoint)
 		if err != nil {

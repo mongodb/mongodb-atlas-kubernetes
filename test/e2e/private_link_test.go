@@ -267,17 +267,14 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 	By("Check statuses", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
-		for index, peStatus := range userData.Project.Status.PrivateEndpoints {
+		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			if peStatus.Provider == provider.ProviderGCP {
-				privateEndpointID = fmt.Sprintf("%s-%d", privateEndpointID, index)
-			}
 			Eventually(
 				func(g Gomega) bool {
-					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region)
+					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
 					g.Expect(err).To(BeNil())
 					g.Expect(ok).To(BeTrue())
 
