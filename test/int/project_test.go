@@ -388,9 +388,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
 				createdProject.Spec.AlertConfigurationSyncEnabled = true
-				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
+				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
 				secondProject.Spec.AlertConfigurationSyncEnabled = true
-				Expect(k8sClient.Create(context.Background(), secondProject)).To(Succeed())
+				Expect(k8sClient.Update(context.Background(), secondProject)).To(Succeed())
 
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
