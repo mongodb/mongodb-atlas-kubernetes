@@ -86,7 +86,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "northeurope")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
 					Name: "pe1",
