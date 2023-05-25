@@ -123,42 +123,35 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 
 	By("Create Private Endpoints in Cloud", func() {
 		var pe *cloud.PrivateEndpointDetails
-		var err error
 
 		for index, peItem := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
 			peName := getPrivateLinkName(peItem.Name, provider.ProviderName(peItem.ProviderName), index)
 
 			switch provider.ProviderName(peItem.ProviderName) {
 			case provider.ProviderAWS:
-				Expect(
-					providerAction.SetupNetwork(
-						provider.ProviderAWS,
-						cloud.WithAWSConfig(&cloud.AWSConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
-					),
-				).To(Succeed())
-				pe, err = providerAction.SetupPrivateEndpoint(
+				providerAction.SetupNetwork(
+					provider.ProviderAWS,
+					cloud.WithAWSConfig(&cloud.AWSConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AWSPrivateEndpointRequest{
 						ID:          peName,
 						Region:      userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName,
 						ServiceName: peItem.EndpointServiceName,
 					},
 				)
-				Expect(err).To(BeNil())
 			case provider.ProviderAzure:
-				Expect(
-					providerAction.SetupNetwork(
-						provider.ProviderAzure,
-						cloud.WithAzureConfig(&cloud.AzureConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
-					),
-				).To(Succeed())
-				pe, err = providerAction.SetupPrivateEndpoint(
+				providerAction.SetupNetwork(
+					provider.ProviderAzure,
+					cloud.WithAzureConfig(&cloud.AzureConfig{Region: userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
 						ID:                peName,
 						Region:            userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.RegionName,
 						ServiceResourceID: peItem.PrivateLinkServiceResourceID,
 					},
 				)
-				Expect(err).To(BeNil())
 			}
 
 			for i, specPE := range spe {

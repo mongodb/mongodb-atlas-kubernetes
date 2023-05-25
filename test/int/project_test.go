@@ -387,11 +387,18 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
+				createdProject.Spec.AlertConfigurationSyncEnabled = true
+				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
+				secondProject.Spec.AlertConfigurationSyncEnabled = true
+				Expect(k8sClient.Create(context.Background(), secondProject)).To(Succeed())
+
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
 				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, createdProject, expectedCondition) &&
-						testutil.CheckCondition(k8sClient, secondProject, expectedCondition)
+					return testutil.CheckCondition(k8sClient, createdProject, expectedCondition)
+				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, secondProject, expectedCondition)
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 			})
 			By("Fixing the Connection Secret", func() {

@@ -179,54 +179,44 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 
 			peName := getPrivateLinkName(privateEndpointID, peStatusItem.Provider, idx)
 			var pe *cloud.PrivateEndpointDetails
-			var err error
 
 			switch peStatusItem.Provider {
 			case provider.ProviderAWS:
-				Expect(
-					providerAction.SetupNetwork(
-						peStatusItem.Provider,
-						cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}),
-					),
-				).To(Succeed())
-				pe, err = providerAction.SetupPrivateEndpoint(
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AWSPrivateEndpointRequest{
 						ID:          peName,
 						Region:      peStatusItem.Region,
 						ServiceName: peStatusItem.ServiceName,
 					},
 				)
-				Expect(err).To(BeNil())
 			case provider.ProviderGCP:
-				Expect(
-					providerAction.SetupNetwork(
-						peStatusItem.Provider,
-						cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}),
-					),
-				).To(Succeed())
-				pe, err = providerAction.SetupPrivateEndpoint(
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.GCPPrivateEndpointRequest{
 						ID:      peName,
 						Region:  peStatusItem.Region,
 						Targets: peStatusItem.ServiceAttachmentNames,
 					},
 				)
-				Expect(err).To(BeNil())
 			case provider.ProviderAzure:
-				Expect(
-					providerAction.SetupNetwork(
-						peStatusItem.Provider,
-						cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}),
-					),
-				).To(Succeed())
-				pe, err = providerAction.SetupPrivateEndpoint(
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
 						ID:                peName,
 						Region:            peStatusItem.Region,
 						ServiceResourceID: peStatusItem.ServiceResourceID,
 					},
 				)
-				Expect(err).To(BeNil())
 			}
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
@@ -272,15 +262,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			Eventually(
-				func(g Gomega) bool {
-					ok, err := providerAction.IsPrivateEndpointAvailable(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
-					g.Expect(err).To(BeNil())
-					g.Expect(ok).To(BeTrue())
-
-					return true
-				},
-			).Should(BeTrue())
+			providerAction.ValidatePrivateEndpointStatus(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
 		}
 	})
 }
@@ -320,7 +302,7 @@ func prepareProviderAction() (*cloud.ProviderAction, error) {
 		return nil, err
 	}
 
-	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroup)
+	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), "atlas-operator")
 	if err != nil {
 		return nil, err
 	}

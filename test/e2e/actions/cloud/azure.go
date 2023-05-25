@@ -74,13 +74,13 @@ func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[stri
 	return nil
 }
 
-func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, serviceID, region string) (string, string, error) {
+func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, serviceID, region string) (*armnetwork.PrivateEndpoint, error) {
 	a.t.Helper()
 	ctx := context.Background()
 
 	updatedSubnet, err := a.disableSubnetPENetworkPolicy(ctx, vpcName, subnetName)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	a.network.Subnets[subnetName] = updatedSubnet
@@ -115,12 +115,12 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 		nil,
 	)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	pe, err := op.PollUntilDone(ctx, nil)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	a.t.Cleanup(func() {
@@ -130,7 +130,7 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 		}
 	})
 
-	return *pe.PrivateEndpoint.ID, *pe.PrivateEndpoint.Properties.NetworkInterfaces[0].ID, nil
+	return &pe.PrivateEndpoint, nil
 }
 
 func (a *AzureAction) GetPrivateEndpoint(endpointName string) (*armnetwork.PrivateEndpoint, error) {
@@ -148,6 +148,23 @@ func (a *AzureAction) GetPrivateEndpoint(endpointName string) (*armnetwork.Priva
 	}
 
 	return &pe.PrivateEndpoint, nil
+}
+
+func (a *AzureAction) GetInterface(name string) (*armnetwork.Interface, error) {
+	a.t.Helper()
+
+	interfaceClient := a.resourceFactory.NewInterfacesClient()
+	i, err := interfaceClient.Get(
+		context.Background(),
+		a.resourceGroupName,
+		name,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &i.Interface, nil
 }
 
 func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.VirtualNetwork, error) {

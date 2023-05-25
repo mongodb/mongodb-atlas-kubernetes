@@ -1,7 +1,13 @@
 package cloud
 
 import (
-	"errors"
+	"fmt"
+	"path"
+	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
@@ -19,9 +25,9 @@ const (
 )
 
 type Provider interface {
-	SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) error
-	SetupPrivateEndpoint(request PrivateEndpointRequest) (*PrivateEndpointDetails, error)
-	IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) (bool, error)
+	SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig)
+	SetupPrivateEndpoint(request PrivateEndpointRequest) *PrivateEndpointDetails
+	ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int)
 }
 
 type ProviderAction struct {
@@ -114,7 +120,7 @@ func WithAzureConfig(config *AzureConfig) ProviderConfig {
 	}
 }
 
-func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) error {
+func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) {
 	a.t.Helper()
 
 	for _, config := range configs {
@@ -124,22 +130,14 @@ func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, config
 	switch providerName {
 	case provider.ProviderAWS:
 		err := a.awsProvider.InitNetwork(a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets)
-		if err != nil {
-			return err
-		}
+		Expect(err).To(BeNil())
 	case provider.ProviderGCP:
 		err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets)
-		if err != nil {
-			return err
-		}
+		Expect(err).To(BeNil())
 	case provider.ProviderAzure:
 		err := a.azureProvider.InitNetwork(a.azureConfig.VPC, a.azureConfig.CIDR, a.azureConfig.Region, a.azureConfig.Subnets)
-		if err != nil {
-			return err
-		}
+		Expect(err).To(BeNil())
 	}
-
-	return nil
 }
 
 type PrivateEndpointRequest interface {
@@ -185,28 +183,24 @@ type GCPPrivateEndpoint struct {
 	IP   string
 }
 
-func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) (*PrivateEndpointDetails, error) {
+func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *PrivateEndpointDetails {
 	a.t.Helper()
 
 	switch req := request.(type) {
 	case *AWSPrivateEndpointRequest:
 		ID, err := a.awsProvider.CreatePrivateEndpoint(req.ServiceName, req.ID, req.Region)
-		if err != nil {
-			return nil, err
-		}
+		Expect(err).To(BeNil())
 
 		return &PrivateEndpointDetails{
 			ProviderName: provider.ProviderAWS,
 			Region:       req.Region,
 			ID:           ID,
-		}, nil
+		}
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
 			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, subnetName, target, index)
-			if err != nil {
-				return nil, err
-			}
+			Expect(err).To(BeNil())
 
 			endpoints = append(
 				endpoints,
@@ -223,57 +217,69 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) (*
 			GCPProjectID:      a.gcpProvider.projectID,
 			EndpointGroupName: a.gcpProvider.network.VPC,
 			Endpoints:         endpoints,
-		}, nil
-	case *AzurePrivateEndpointRequest:
-		ID, ip, err := a.azureProvider.CreatePrivateEndpoint(vpcName, subnetName, req.ID, req.ServiceResourceID, req.Region)
-		if err != nil {
-			return nil, err
 		}
+	case *AzurePrivateEndpointRequest:
+		pe, err := a.azureProvider.CreatePrivateEndpoint(vpcName, subnetName, req.ID, req.ServiceResourceID, req.Region)
+		Expect(err).To(BeNil())
+		Expect(pe).ShouldNot(BeNil())
+		Expect(pe.Properties).ShouldNot(BeNil())
+		Expect(pe.Properties.NetworkInterfaces).ShouldNot(BeNil())
+		Expect(pe.Properties.NetworkInterfaces).ShouldNot(BeEmpty())
+		fmt.Println(*pe.Properties.NetworkInterfaces[0])
+
+		var itf *armnetwork.Interface
+		Eventually(func(g Gomega) bool {
+			itf, err = a.azureProvider.GetInterface(path.Base(*pe.Properties.NetworkInterfaces[0].ID))
+			g.Expect(err).To(BeNil())
+			g.Expect(itf).ShouldNot(BeNil())
+			g.Expect(itf.Properties).ShouldNot(BeNil())
+			g.Expect(itf.Properties.IPConfigurations).ShouldNot(BeNil())
+			g.Expect(itf.Properties.IPConfigurations).ShouldNot(BeEmpty())
+			g.Expect(itf.Properties.IPConfigurations[0].Properties).ShouldNot(BeNil())
+
+			return true
+		}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).Should(BeTrue())
 
 		return &PrivateEndpointDetails{
 			ProviderName: provider.ProviderAzure,
 			Region:       req.Region,
-			ID:           ID,
-			IP:           ip,
-		}, nil
+			ID:           *pe.ID,
+			IP:           *itf.Properties.IPConfigurations[0].Properties.PrivateIPAddress,
+		}
 	}
 
-	return nil, nil
+	return nil
 }
 
-func (a *ProviderAction) IsPrivateEndpointAvailable(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) (bool, error) {
+func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
 	a.t.Helper()
 
-	switch providerName {
-	case provider.ProviderAWS:
-		pe, err := a.awsProvider.GetPrivateEndpoint(endpoint, region)
-		if err != nil {
-			return false, err
-		}
+	Eventually(func() bool {
+		switch providerName {
+		case provider.ProviderAWS:
+			pe, err := a.awsProvider.GetPrivateEndpoint(endpoint, region)
+			Expect(err).To(BeNil())
 
-		return *pe.State == "available", nil
-	case provider.ProviderGCP:
-		res := false
-		for i := 0; i < gcpNumAttachments; i++ {
-			rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
-			if err != nil {
-				return false, err
+			return *pe.State == "available"
+		case provider.ProviderGCP:
+			res := true
+			for i := 0; i < gcpNumAttachments; i++ {
+				rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
+				Expect(err).To(BeNil())
+
+				res = res && (*rule.PscConnectionStatus == "ACCEPTED")
 			}
 
-			res = res && (*rule.PscConnectionStatus == "ACCEPTED")
+			return res
+		case provider.ProviderAzure:
+			pe, err := a.azureProvider.GetPrivateEndpoint(endpoint)
+			Expect(err).To(BeNil())
+
+			return *pe.Properties.ManualPrivateLinkServiceConnections[0].Properties.PrivateLinkServiceConnectionState.Status == "Approved"
 		}
 
-		return res, nil
-	case provider.ProviderAzure:
-		pe, err := a.azureProvider.GetPrivateEndpoint(endpoint)
-		if err != nil {
-			return false, err
-		}
-
-		return *pe.Properties.ManualPrivateLinkServiceConnections[0].Properties.PrivateLinkServiceConnectionState.Status == "Approved", nil
-	}
-
-	return false, errors.New("invalid data")
+		return false
+	}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 }
 
 func NewProviderAction(t core.GinkgoTInterface, aws *AwsAction, gcp *GCPAction, azure *AzureAction) *ProviderAction {
