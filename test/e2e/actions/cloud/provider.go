@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	gcpRegion   = "europe-west1"
-	awsRegion   = "eu-west-2"
-	azureRegion = "northeurope"
+	GCPRegion   = "europe-west1"
+	AWSRegion   = "eu-west-2"
+	AzureRegion = "northeurope"
 	vpcName     = "atlas-operator-e2e-test-vpc"
 	vpcCIDR     = "10.0.0.0/24"
 	subnetName  = "atlas-operator-e2e-test-subnet"
@@ -296,7 +296,7 @@ func NewProviderAction(t core.GinkgoTInterface, aws *AwsAction, gcp *GCPAction, 
 
 func getAWSConfigDefaults() *AWSConfig {
 	return &AWSConfig{
-		Region:  awsRegion,
+		Region:  AWSRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
 		Subnets: []string{subnetCIDR},
@@ -305,7 +305,7 @@ func getAWSConfigDefaults() *AWSConfig {
 
 func getGCPConfigDefaults() *GCPConfig {
 	return &GCPConfig{
-		Region:  gcpRegion,
+		Region:  GCPRegion,
 		VPC:     vpcName,
 		Subnets: map[string]string{subnetName: subnetCIDR},
 	}
@@ -313,7 +313,7 @@ func getGCPConfigDefaults() *GCPConfig {
 
 func getAzureConfigDefaults() *AzureConfig {
 	return &AzureConfig{
-		Region:  azureRegion,
+		Region:  AzureRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
 		Subnets: map[string]string{subnetName: subnetCIDR},

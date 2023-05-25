@@ -31,7 +31,7 @@ type privateEndpoint struct {
 	region   string
 }
 
-var _ = FDescribe("UserLogin", Label("privatelink"), func() {
+var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
