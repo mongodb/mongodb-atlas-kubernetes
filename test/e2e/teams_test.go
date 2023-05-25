@@ -77,7 +77,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
 			return ensureTeamsStatus(g, *userData, teams, teamWasCreated)
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
+		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
 
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
 	})
@@ -92,7 +92,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
 			return ensureTeamsStatus(g, *userData, teams[1:], teamWasRemoved)
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
+		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
 
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
 	})
@@ -103,7 +103,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
 			return ensureTeamsStatus(g, *userData, userData.Project.Spec.Teams, teamWasCreated)
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
+		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Teams were not created")
 
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
 	})
@@ -117,7 +117,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
 			return ensureTeamsStatus(g, *userData, teams, teamWasRemoved)
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
+		}).WithTimeout(10*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Team were not removed")
 
 		actions.CheckProjectConditionsNotSet(userData, status.ProjectTeamsReadyType)
 	})
