@@ -131,7 +131,7 @@ jobs:
         test:
           [
             "privatelink",
-            #"serverless-pe",
+            "serverless-pe",
           ]
     steps:
       - name: Get repo files from cache

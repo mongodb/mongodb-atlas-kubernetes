@@ -1,7 +1,6 @@
 package cloud
 
 import (
-	"fmt"
 	"path"
 	"time"
 
@@ -225,7 +224,6 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 		Expect(pe.Properties).ShouldNot(BeNil())
 		Expect(pe.Properties.NetworkInterfaces).ShouldNot(BeNil())
 		Expect(pe.Properties.NetworkInterfaces).ShouldNot(BeEmpty())
-		fmt.Println(*pe.Properties.NetworkInterfaces[0])
 
 		var itf *armnetwork.Interface
 		Eventually(func(g Gomega) bool {

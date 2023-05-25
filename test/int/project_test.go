@@ -387,8 +387,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdProject), createdProject)).To(Succeed())
 				createdProject.Spec.AlertConfigurationSyncEnabled = true
 				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(secondProject), secondProject)).To(Succeed())
 				secondProject.Spec.AlertConfigurationSyncEnabled = true
 				Expect(k8sClient.Update(context.Background(), secondProject)).To(Succeed())
 
