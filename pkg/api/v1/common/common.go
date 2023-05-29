@@ -41,33 +41,34 @@ type LabelSpec struct {
 	Value string `json:"value"`
 }
 
-func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.ObjectKey {
+func (rn *ResourceRefNamespaced) GetObject(fallbackNamespace string) *client.ObjectKey {
 	if rn == nil {
 		return nil
 	}
 
-	ns := SelectNamespace(rn.Namespace, parentNamespace)
+	ns := SelectNamespace(rn.Namespace, fallbackNamespace)
 	key := kube.ObjectKey(ns, rn.Name)
 	return &key
 }
 
-func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {
-	if rn != nil {
-		secret := &v1.Secret{}
-		if err := kubeClient.Get(context.Background(), *rn.GetObject(parentNamespace), secret); err != nil {
-			return "", err
-		}
-		p, exist := secret.Data["password"]
-		switch {
-		case !exist:
-			return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
-		case len(p) == 0:
-			return "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
-		default:
-			return string(p), nil
-		}
+func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, fallbackNamespace string) (string, error) {
+	if rn == nil {
+		return "", nil
 	}
-	return "", nil
+	secret := &v1.Secret{}
+	err := kubeClient.Get(context.Background(), *rn.GetObject(fallbackNamespace), secret)
+	if err != nil {
+		return "", err
+	}
+	p, exist := secret.Data["password"]
+	switch {
+	case !exist:
+		return "", fmt.Errorf("secret %s is invalid: it doesn't contain 'password' field", secret.Name)
+	case len(p) == 0:
+		return "", fmt.Errorf("secret %s is invalid: the 'password' field is empty", secret.Name)
+	default:
+		return string(p), nil
+	}
 }
 
 // SelectNamespace returns first non-empty namespace from the list
