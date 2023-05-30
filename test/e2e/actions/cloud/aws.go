@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	aws_sdk "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
 )
 

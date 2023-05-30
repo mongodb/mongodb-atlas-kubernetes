@@ -183,7 +183,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 					Region:        peer.AccepterRegionName,
 					VPC:           newRandomVPCName("ao-vpc-peering-e2e"),
 					CIDR:          peer.RouteTableCIDRBlock,
-					Subnets:       []string{peer.RouteTableCIDRBlock},
+					Subnets:       map[string]string{"ao-peering-e2e-subnet": peer.RouteTableCIDRBlock},
 					EnableCleanup: true,
 				}
 				peers[ix].VpcID = providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithAWSConfig(cfg))
