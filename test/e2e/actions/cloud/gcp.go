@@ -328,7 +328,10 @@ func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string)
 func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
 	a.t.Helper()
 
-	ip := fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(2, 200))
+	ip := fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(10, 120))
+	if subnet == Subnet2Name {
+		ip = fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(150, 250))
+	}
 	addressRequest := &computepb.InsertAddressRequest{
 		Project: a.projectID,
 		Region:  region,

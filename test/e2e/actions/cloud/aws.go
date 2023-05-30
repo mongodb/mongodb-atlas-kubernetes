@@ -1,15 +1,17 @@
 package cloud
 
 import (
+	"fmt"
+
 	aws_sdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 type AwsAction struct {
@@ -45,7 +47,7 @@ func (a *AwsAction) GetAccountID() (string, error) {
 	return *identity.Account, nil
 }
 
-func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string, cleanup bool) (string, error) {
+func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
 	a.t.Helper()
 
 	vpc, err := a.findVPC(vpcName, region)
@@ -75,11 +77,13 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string, 
 	}
 
 	subnetsIDs := make([]*string, 0, len(subnets))
+	azs := []string{"a", "b", "c"}
+	counter := 0
 
-	for _, subnet := range subnets {
-		subnetID, ok := subnetsMap[subnet]
+	for subnetName, subnetCidr := range subnets {
+		subnetID, ok := subnetsMap[subnetCidr]
 		if !ok {
-			subnetID, err = a.createSubnet(vpc, subnet, region)
+			subnetID, err = a.createSubnet(vpc, subnetName, subnetCidr, region, azs[counter%len(azs)])
 			if err != nil {
 				return "", err
 			}
@@ -95,6 +99,7 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string, 
 		}
 
 		subnetsIDs = append(subnetsIDs, subnetID)
+		counter++
 	}
 
 	a.network = &awsNetwork{
@@ -116,7 +121,6 @@ func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, regi
 		TagSpecifications: []*ec2.TagSpecification{{
 			ResourceType: aws_sdk.String(ec2.ResourceTypeVpcEndpoint),
 			Tags: []*ec2.Tag{
-				{Key: aws_sdk.String("Name"), Value: aws_sdk.String(config.TagName)},
 				{Key: aws_sdk.String("PrivateEndpointName"), Value: aws_sdk.String(privateEndpointName)},
 			},
 		}},
@@ -276,7 +280,7 @@ func (a *AwsAction) getSubnets(vpcID, region string) (map[string]*string, error)
 	return subnetsMap, nil
 }
 
-func (a *AwsAction) createSubnet(vpcID, cidr, region string) (*string, error) {
+func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (*string, error) {
 	a.t.Helper()
 
 	ec2Client := ec2.New(a.session, aws_sdk.NewConfig().WithRegion(region))
@@ -286,10 +290,11 @@ func (a *AwsAction) createSubnet(vpcID, cidr, region string) (*string, error) {
 		TagSpecifications: []*ec2.TagSpecification{{
 			ResourceType: aws_sdk.String(ec2.ResourceTypeSubnet),
 			Tags: []*ec2.Tag{
-				{Key: aws_sdk.String("Name"), Value: aws_sdk.String(config.TagName)},
+				{Key: aws_sdk.String("Name"), Value: aws_sdk.String(name)},
 			},
 		}},
-		VpcId: aws_sdk.String(vpcID),
+		VpcId:            aws_sdk.String(vpcID),
+		AvailabilityZone: toptr.MakePtr(fmt.Sprintf("%s%s", region, az)),
 	}
 	result, err := ec2Client.CreateSubnet(input)
 	if err != nil {

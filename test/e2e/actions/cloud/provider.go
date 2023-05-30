@@ -50,7 +50,7 @@ type AWSConfig struct {
 	Region        string
 	VPC           string
 	CIDR          string
-	Subnets       []string
+	Subnets       map[string]string
 	EnableCleanup bool
 }
 
@@ -336,7 +336,7 @@ func getAWSConfigDefaults() *AWSConfig {
 		Region:  AWSRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
-		Subnets: []string{Subnet1CIDR, Subnet2CIDR},
+		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
 	}
 }
 
