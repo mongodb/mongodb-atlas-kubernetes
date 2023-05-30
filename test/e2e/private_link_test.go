@@ -200,9 +200,10 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 				)
 				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.GCPPrivateEndpointRequest{
-						ID:      peName,
-						Region:  peStatusItem.Region,
-						Targets: peStatusItem.ServiceAttachmentNames,
+						ID:         peName,
+						Region:     peStatusItem.Region,
+						Targets:    peStatusItem.ServiceAttachmentNames,
+						SubnetName: cloud.Subnet1Name,
 					},
 				)
 			case provider.ProviderAzure:
@@ -215,6 +216,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 						ID:                peName,
 						Region:            peStatusItem.Region,
 						ServiceResourceID: peStatusItem.ServiceResourceID,
+						SubnetName:        cloud.Subnet1Name,
 					},
 				)
 			}

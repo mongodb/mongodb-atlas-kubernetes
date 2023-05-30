@@ -18,10 +18,12 @@ const (
 	AWSRegion         = "eu-west-2"
 	AzureRegion       = "northeurope"
 	ResourceGroupName = "svet-test"
+	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
+	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
+	Subnet1CIDR       = "10.0.1.0/24"
+	Subnet2CIDR       = "10.0.2.0/24"
 	vpcName           = "atlas-operator-e2e-test-vpc"
-	vpcCIDR           = "10.0.0.0/24"
-	subnetName        = "atlas-operator-e2e-test-subnet"
-	subnetCIDR        = "10.0.0.0/24"
+	vpcCIDR           = "10.0.0.0/16"
 )
 
 type Provider interface {
@@ -179,14 +181,16 @@ type AzurePrivateEndpointRequest struct {
 	ID                string
 	Region            string
 	ServiceResourceID string
+	SubnetName        string
 }
 
 func (r *AzurePrivateEndpointRequest) isPrivateEndpointRequest() {}
 
 type GCPPrivateEndpointRequest struct {
-	ID      string
-	Region  string
-	Targets []string
+	ID         string
+	Region     string
+	Targets    []string
+	SubnetName string
 }
 
 func (r *GCPPrivateEndpointRequest) isPrivateEndpointRequest() {}
@@ -222,7 +226,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, subnetName, target, index)
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, req.SubnetName, target, index)
 			Expect(err).To(BeNil())
 
 			endpoints = append(
@@ -242,7 +246,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 			Endpoints:         endpoints,
 		}
 	case *AzurePrivateEndpointRequest:
-		pe, err := a.azureProvider.CreatePrivateEndpoint(vpcName, subnetName, req.ID, req.ServiceResourceID, req.Region)
+		pe, err := a.azureProvider.CreatePrivateEndpoint(vpcName, req.SubnetName, req.ID, req.ServiceResourceID, req.Region)
 		Expect(err).To(BeNil())
 		Expect(pe).ShouldNot(BeNil())
 		Expect(pe.Properties).ShouldNot(BeNil())
@@ -332,7 +336,7 @@ func getAWSConfigDefaults() *AWSConfig {
 		Region:  AWSRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
-		Subnets: []string{subnetCIDR},
+		Subnets: []string{Subnet1CIDR, Subnet2CIDR},
 	}
 }
 
@@ -340,7 +344,7 @@ func getGCPConfigDefaults() *GCPConfig {
 	return &GCPConfig{
 		Region:  GCPRegion,
 		VPC:     vpcName,
-		Subnets: map[string]string{subnetName: subnetCIDR},
+		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
 	}
 }
 
@@ -349,6 +353,6 @@ func getAzureConfigDefaults() *AzureConfig {
 		Region:  AzureRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
-		Subnets: map[string]string{subnetName: subnetCIDR},
+		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
 	}
 }

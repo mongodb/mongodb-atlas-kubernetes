@@ -147,6 +147,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 						ID:                peName,
 						Region:            cloud.AzureRegion,
 						ServiceResourceID: peItem.PrivateLinkServiceResourceID,
+						SubnetName:        cloud.Subnet2Name,
 					},
 				)
 			}
