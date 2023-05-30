@@ -21,7 +21,7 @@ const (
 	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
 	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
 	Subnet1CIDR       = "10.0.0.0/25"
-	Subnet2CIDR       = "10.0.0.16/25"
+	Subnet2CIDR       = "10.0.0.128/25"
 	vpcName           = "atlas-operator-e2e-test-vpc"
 	vpcCIDR           = "10.0.0.0/24"
 )
