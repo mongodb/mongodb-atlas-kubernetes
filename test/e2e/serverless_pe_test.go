@@ -67,6 +67,37 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				},
 			},
 		),
+		Entry("Test[spe-azure-1]: Serverless deployment with one Azure PE", Label("spe-azure-1"),
+			model.DataProvider(
+				"spe-azure-1",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
+			[]v1.ServerlessPrivateEndpoint{
+				{
+					Name: "pe1",
+				},
+			},
+		),
+		Entry("Test[spe-azure-2]: Serverless deployment with one valid and one non-valid Azure PEs", Label("spe-azure-2"),
+			model.DataProvider(
+				"spe-azure-2",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
+			[]v1.ServerlessPrivateEndpoint{
+				{
+					Name: "pe1",
+				},
+				{
+					Name:                     "pe2",
+					CloudProviderEndpointID:  "invalid",
+					PrivateEndpointIPAddress: "invalid",
+				},
+			},
+		),
 	)
 })
 
@@ -110,7 +141,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 					},
 				)
 			case provider.ProviderAzure:
-				providerAction.SetupNetwork(provider.ProviderAzure)
+				providerAction.SetupNetwork(provider.ProviderAzure, nil)
 				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
 						ID:                peName,

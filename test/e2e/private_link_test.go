@@ -302,7 +302,7 @@ func prepareProviderAction() (*cloud.ProviderAction, error) {
 		return nil, err
 	}
 
-	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroup)
+	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroupName)
 	if err != nil {
 		return nil, err
 	}

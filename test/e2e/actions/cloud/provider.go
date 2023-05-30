@@ -14,19 +14,22 @@ import (
 )
 
 const (
-	GCPRegion   = "europe-west1"
-	AWSRegion   = "eu-west-2"
-	AzureRegion = "northeurope"
-	vpcName     = "atlas-operator-e2e-test-vpc"
-	vpcCIDR     = "10.0.0.0/24"
-	subnetName  = "atlas-operator-e2e-test-subnet"
-	subnetCIDR  = "10.0.0.0/24"
+	GCPRegion         = "europe-west1"
+	AWSRegion         = "eu-west-2"
+	AzureRegion       = "northeurope"
+	ResourceGroupName = "svet-test"
+	vpcName           = "atlas-operator-e2e-test-vpc"
+	vpcCIDR           = "10.0.0.0/24"
+	subnetName        = "atlas-operator-e2e-test-subnet"
+	subnetCIDR        = "10.0.0.0/24"
 )
 
 type Provider interface {
-	SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig)
+	GetAWSAccountID() string
+	SetupNetwork(providerName provider.ProviderName, configs ProviderConfig) string
 	SetupPrivateEndpoint(request PrivateEndpointRequest) *PrivateEndpointDetails
 	ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int)
+	SetupNetworkPeering(providerName provider.ProviderName, peerID, peerVPC string)
 }
 
 type ProviderAction struct {
@@ -42,23 +45,26 @@ type ProviderAction struct {
 }
 
 type AWSConfig struct {
-	Region  string
-	VPC     string
-	CIDR    string
-	Subnets []string
+	Region        string
+	VPC           string
+	CIDR          string
+	Subnets       []string
+	EnableCleanup bool
 }
 
 type GCPConfig struct {
-	Region  string
-	VPC     string
-	Subnets map[string]string
+	Region        string
+	VPC           string
+	Subnets       map[string]string
+	EnableCleanup bool
 }
 
 type AzureConfig struct {
-	Region  string
-	VPC     string
-	CIDR    string
-	Subnets map[string]string
+	Region        string
+	VPC           string
+	CIDR          string
+	Subnets       map[string]string
+	EnableCleanup bool
 }
 
 type ProviderConfig func(action *ProviderAction)
@@ -80,6 +86,8 @@ func WithAWSConfig(config *AWSConfig) ProviderConfig {
 		if len(config.Subnets) > 0 {
 			action.awsConfig.Subnets = config.Subnets
 		}
+
+		action.awsConfig.EnableCleanup = config.EnableCleanup
 	}
 }
 
@@ -96,6 +104,8 @@ func WithGCPConfig(config *GCPConfig) ProviderConfig {
 		if len(config.Subnets) > 0 {
 			action.gcpConfig.Subnets = config.Subnets
 		}
+
+		action.gcpConfig.EnableCleanup = config.EnableCleanup
 	}
 }
 
@@ -116,27 +126,41 @@ func WithAzureConfig(config *AzureConfig) ProviderConfig {
 		if len(config.Subnets) > 0 {
 			action.azureConfig.Subnets = config.Subnets
 		}
+
+		action.azureConfig.EnableCleanup = config.EnableCleanup
 	}
 }
 
-func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, configs ...ProviderConfig) {
+func (a *ProviderAction) GetAWSAccountID() string {
+	ID, err := a.awsProvider.GetAccountID()
+	Expect(err).To(BeNil())
+
+	return ID
+}
+
+func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, config ProviderConfig) string {
 	a.t.Helper()
 
-	for _, config := range configs {
+	if config != nil {
 		config(a)
 	}
 
 	switch providerName {
 	case provider.ProviderAWS:
-		err := a.awsProvider.InitNetwork(a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets)
+		id, err := a.awsProvider.InitNetwork(a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets, a.awsConfig.EnableCleanup)
 		Expect(err).To(BeNil())
+		return id
 	case provider.ProviderGCP:
-		err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets)
+		id, err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets, a.gcpConfig.EnableCleanup)
 		Expect(err).To(BeNil())
+		return id
 	case provider.ProviderAzure:
-		err := a.azureProvider.InitNetwork(a.azureConfig.VPC, a.azureConfig.CIDR, a.azureConfig.Region, a.azureConfig.Subnets)
+		id, err := a.azureProvider.InitNetwork(a.azureConfig.VPC, a.azureConfig.CIDR, a.azureConfig.Region, a.azureConfig.Subnets, a.azureConfig.EnableCleanup)
 		Expect(err).To(BeNil())
+		return id
 	}
+
+	return ""
 }
 
 type PrivateEndpointRequest interface {
@@ -278,6 +302,15 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.Pro
 
 		return false
 	}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+}
+
+func (a *ProviderAction) SetupNetworkPeering(providerName provider.ProviderName, peerID, peerVPC string) {
+	switch providerName {
+	case provider.ProviderAWS:
+		Expect(a.awsProvider.AcceptVpcPeeringConnection(peerID, a.awsConfig.Region)).To(Succeed())
+	case provider.ProviderGCP:
+		Expect(a.gcpProvider.CreateNetworkPeering(a.gcpConfig.VPC, peerID, peerVPC)).To(Succeed())
+	}
 }
 
 func NewProviderAction(t core.GinkgoTInterface, aws *AwsAction, gcp *GCPAction, azure *AzureAction) *ProviderAction {

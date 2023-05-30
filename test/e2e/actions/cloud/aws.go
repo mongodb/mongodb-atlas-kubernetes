@@ -2,6 +2,7 @@ package cloud
 
 import (
 	aws_sdk "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/sts"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -32,25 +33,45 @@ func (awsAction *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn st
 	return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
 }
 
-// InitNetwork Check if minimum network resources exist and when not, create them
-func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string) error {
+func (a *AwsAction) GetAccountID() (string, error) {
+	a.t.Helper()
+
+	stsClient := sts.New(a.session)
+	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+
+	return *identity.Account, nil
+}
+
+func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string, cleanup bool) (string, error) {
 	a.t.Helper()
 
 	vpc, err := a.findVPC(vpcName, region)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if vpc == "" {
 		vpc, err = a.createVPC(vpcName, cidr, region)
 		if err != nil {
-			return err
+			return "", err
 		}
+	}
+
+	if cleanup {
+		a.t.Cleanup(func() {
+			err = a.deleteVPC(vpc, region)
+			if err != nil {
+				a.t.Error(err)
+			}
+		})
 	}
 
 	subnetsMap, err := a.getSubnets(vpc, region)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	subnetsIDs := make([]*string, 0, len(subnets))
@@ -60,7 +81,16 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string) 
 		if !ok {
 			subnetID, err = a.createSubnet(vpc, subnet, region)
 			if err != nil {
-				return err
+				return "", err
+			}
+
+			if cleanup {
+				a.t.Cleanup(func() {
+					err = a.deleteSubnet(*subnetID, region)
+					if err != nil {
+						a.t.Error(err)
+					}
+				})
 			}
 		}
 
@@ -72,7 +102,7 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets []string) 
 		Subnets: subnetsIDs,
 	}
 
-	return nil
+	return vpc, nil
 }
 
 func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, region string) (string, error) {
@@ -128,6 +158,30 @@ func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (*ec2.VpcEndpo
 	return result.VpcEndpoints[0], nil
 }
 
+func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) error {
+	a.t.Helper()
+
+	ec2Client := ec2.New(a.session, aws_sdk.NewConfig().WithRegion(region))
+	_, err := ec2Client.AcceptVpcPeeringConnection(
+		&ec2.AcceptVpcPeeringConnectionInput{
+			VpcPeeringConnectionId: aws_sdk.String(connectionID),
+		},
+	)
+
+	a.t.Cleanup(func() {
+		_, err = ec2Client.DeleteVpcPeeringConnection(
+			&ec2.DeleteVpcPeeringConnectionInput{
+				VpcPeeringConnectionId: aws_sdk.String(connectionID),
+			},
+		)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	return err
+}
+
 func (a *AwsAction) findVPC(name, region string) (string, error) {
 	a.t.Helper()
 
@@ -175,6 +229,21 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 	}
 
 	return *result.Vpc.VpcId, nil
+}
+
+func (a *AwsAction) deleteVPC(id, region string) error {
+	a.t.Helper()
+
+	ec2Client := ec2.New(a.session, aws_sdk.NewConfig().WithRegion(region))
+
+	input := &ec2.DeleteVpcInput{
+		DryRun: aws_sdk.Bool(false),
+		VpcId:  aws_sdk.String(id),
+	}
+
+	_, err := ec2Client.DeleteVpc(input)
+
+	return err
 }
 
 func (a *AwsAction) getSubnets(vpcID, region string) (map[string]*string, error) {
@@ -228,6 +297,22 @@ func (a *AwsAction) createSubnet(vpcID, cidr, region string) (*string, error) {
 	}
 
 	return result.Subnet.SubnetId, nil
+}
+
+func (a *AwsAction) deleteSubnet(subnetID, region string) error {
+	a.t.Helper()
+
+	ec2Client := ec2.New(a.session, aws_sdk.NewConfig().WithRegion(region))
+
+	input := &ec2.DeleteSubnetInput{
+		SubnetId: aws_sdk.String(subnetID),
+	}
+	_, err := ec2Client.DeleteSubnet(input)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewAWSAction(t core.GinkgoTInterface) (*AwsAction, error) {

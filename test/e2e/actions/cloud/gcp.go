@@ -44,32 +44,49 @@ const (
 	gcpSubnetIPMask = "10.0.0.%d"
 )
 
-// InitNetwork Check if minimum network resources exist and when not, create them
-func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string) error {
+func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string, cleanup bool) (string, error) {
 	a.t.Helper()
 	ctx := context.Background()
 
 	vpc, err := a.findVPC(ctx, vpcName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if vpc == nil {
 		err = a.createVPC(ctx, vpcName)
 		if err != nil {
-			return err
+			return "", err
 		}
+	}
+
+	if cleanup {
+		a.t.Cleanup(func() {
+			err = a.deleteVPC(ctx, vpcName)
+			if err != nil {
+				a.t.Error(err)
+			}
+		})
 	}
 
 	existingSubnets, err := a.getSubnets(ctx, region)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	for name, ipRange := range subnets {
 		if _, ok := existingSubnets[name]; !ok {
 			if err = a.createSubnet(ctx, vpcName, name, ipRange, region); err != nil {
-				return err
+				return "", err
+			}
+
+			if cleanup {
+				a.t.Cleanup(func() {
+					err = a.deleteSubnet(ctx, name, region)
+					if err != nil {
+						a.t.Error(err)
+					}
+				})
 			}
 		}
 	}
@@ -79,7 +96,7 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 		Subnets: subnets,
 	}
 
-	return nil
+	return vpcName, nil
 }
 func (a *GCPAction) CreatePrivateEndpoint(name, region, subnet, target string, index int) (string, string, error) {
 	a.t.Helper()
@@ -132,6 +149,43 @@ func (a *GCPAction) GetForwardingRule(name, region string, suffixIndex int) (*co
 	return rule, nil
 }
 
+func (a *GCPAction) CreateNetworkPeering(vpcName, peerProjectID, peerVPCName string) error {
+	a.t.Helper()
+	ctx := context.Background()
+
+	peerName := "atlas-networking-peering"
+	peerRequest := &computepb.AddPeeringNetworkRequest{
+		Project: a.projectID,
+		Network: vpcName,
+		NetworksAddPeeringRequestResource: &computepb.NetworksAddPeeringRequest{
+			NetworkPeering: &computepb.NetworkPeering{
+				Name:                 toptr.MakePtr(peerName),
+				Network:              toptr.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", peerProjectID, peerVPCName)),
+				ExchangeSubnetRoutes: toptr.MakePtr(true),
+			},
+		},
+	}
+
+	op, err := a.networkClient.AddPeering(ctx, peerRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deleteVPCPeering(ctx, vpcName, peerName)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	return nil
+}
+
 func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Network, error) {
 	a.t.Helper()
 
@@ -165,6 +219,27 @@ func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 	}
 
 	op, err := a.networkClient.Insert(ctx, vpcRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *GCPAction) deleteVPC(ctx context.Context, vpcName string) error {
+	a.t.Helper()
+
+	vpcRequest := &computepb.DeleteNetworkRequest{
+		Project: a.projectID,
+		Network: vpcName,
+	}
+
+	op, err := a.networkClient.Delete(ctx, vpcRequest)
 	if err != nil {
 		return err
 	}
@@ -216,6 +291,28 @@ func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRan
 	}
 
 	op, err := a.subnetClient.Insert(ctx, subnetRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string) error {
+	a.t.Helper()
+
+	subnetRequest := &computepb.DeleteSubnetworkRequest{
+		Subnetwork: subnetName,
+		Project:    a.projectID,
+		Region:     region,
+	}
+
+	op, err := a.subnetClient.Delete(ctx, subnetRequest)
 	if err != nil {
 		return err
 	}
@@ -323,6 +420,30 @@ func (a *GCPAction) deleteForwardRule(ctx context.Context, rule, region string) 
 	}
 
 	op, err := a.forwardRuleClient.Delete(ctx, addressRequest)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName string) error {
+	a.t.Helper()
+
+	peerRequest := &computepb.RemovePeeringNetworkRequest{
+		Project: a.projectID,
+		Network: vpcName,
+		NetworksRemovePeeringRequestResource: &computepb.NetworksRemovePeeringRequest{
+			Name: toptr.MakePtr(peerName),
+		},
+	}
+
+	op, err := a.networkClient.RemovePeering(ctx, peerRequest)
 	if err != nil {
 		return err
 	}

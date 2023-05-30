@@ -27,28 +27,29 @@ type azureNetwork struct {
 	Subnets map[string]*armnetwork.Subnet
 }
 
-const (
-	// TODO get from Azure
-	ResourceGroup   = "svet-test"
-	AzureVPC        = "svet-test-vpc"
-	AzureSubnetName = "default"
-)
-
-// InitNetwork Check if minimum network resources exist and when not, create them
-func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string) error {
+func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
 	a.t.Helper()
 	ctx := context.Background()
 
 	vpc, err := a.findVpc(ctx, vpcName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if vpc == nil {
 		vpc, err = a.createVpcWithSubnets(ctx, vpcName, cidr, region, subnets)
 		if err != nil {
-			return err
+			return "", err
 		}
+	}
+
+	if cleanup {
+		a.t.Cleanup(func() {
+			err = a.deleteVpc(ctx, vpcName)
+			if err != nil {
+				a.t.Error(err)
+			}
+		})
 	}
 
 	existingSubnets := map[string]*armnetwork.Subnet{}
@@ -60,9 +61,18 @@ func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[stri
 		if _, ok := existingSubnets[name]; !ok {
 			subnet, err := a.createSubnet(ctx, vpcName, name, ipRange)
 			if err != nil {
-				return err
+				return "", err
 			}
 			existingSubnets[name] = subnet
+
+			if cleanup {
+				a.t.Cleanup(func() {
+					err = a.deleteSubnet(ctx, *vpc.ID, *subnet.ID)
+					if err != nil {
+						a.t.Error(err)
+					}
+				})
+			}
 		}
 	}
 
@@ -71,7 +81,7 @@ func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[stri
 		Subnets: existingSubnets,
 	}
 
-	return nil
+	return *vpc.ID, nil
 }
 
 func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, serviceID, region string) (*armnetwork.PrivateEndpoint, error) {
@@ -233,6 +243,25 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 	return &vpc.VirtualNetwork, nil
 }
 
+func (a *AzureAction) deleteVpc(ctx context.Context, vpcName string) error {
+	a.t.Helper()
+	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+
+	op, err := vpcClient.BeginDelete(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = op.PollUntilDone(ctx, nil)
+
+	return err
+}
+
 func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange string) (*armnetwork.Subnet, error) {
 	a.t.Helper()
 	subnetClient := a.resourceFactory.NewSubnetsClient()
@@ -260,6 +289,26 @@ func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipR
 	}
 
 	return &resp.Subnet, nil
+}
+
+func (a *AzureAction) deleteSubnet(ctx context.Context, vpcName, subnetName string) error {
+	a.t.Helper()
+	subnetClient := a.resourceFactory.NewSubnetsClient()
+
+	op, err := subnetClient.BeginDelete(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		subnetName,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = op.PollUntilDone(ctx, nil)
+
+	return err
 }
 
 func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName, subnetName string) (*armnetwork.Subnet, error) {

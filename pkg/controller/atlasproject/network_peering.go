@@ -500,14 +500,10 @@ func createContainer(ctx context.Context, containerService mongodbatlas.Containe
 }
 
 func createNetworkPeer(ctx context.Context, groupID string, service mongodbatlas.PeersService, peer mdbv1.NetworkPeer, logger *zap.SugaredLogger) (*mongodbatlas.Peer, error) {
-	peerToCreate, err := peer.ToAtlas()
-	if err != nil {
-		return nil, err
-	}
-	p, _, err := service.Create(ctx, groupID, peerToCreate)
+	p, _, err := service.Create(ctx, groupID, peer.ToAtlasPeer())
 	if err != nil {
 		logger.Errorf("failed to create network peer %v: %v", peer, err)
-		return peerToCreate, err
+		return p, err
 	}
 	return p, nil
 }
