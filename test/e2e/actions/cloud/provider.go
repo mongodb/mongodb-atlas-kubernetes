@@ -20,10 +20,10 @@ const (
 	ResourceGroupName = "svet-test"
 	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
 	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
-	Subnet1CIDR       = "10.0.1.0/24"
-	Subnet2CIDR       = "10.0.2.0/24"
+	Subnet1CIDR       = "10.0.0.0/25"
+	Subnet2CIDR       = "10.0.0.16/25"
 	vpcName           = "atlas-operator-e2e-test-vpc"
-	vpcCIDR           = "10.0.0.0/16"
+	vpcCIDR           = "10.0.0.0/24"
 )
 
 type Provider interface {
