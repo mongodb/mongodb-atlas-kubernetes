@@ -89,10 +89,10 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: "pe2",
 				},
 				{
-					Name:                     "pe2",
+					Name:                     "pe3",
 					CloudProviderEndpointID:  "invalid",
 					PrivateEndpointIPAddress: "invalid",
 				},
