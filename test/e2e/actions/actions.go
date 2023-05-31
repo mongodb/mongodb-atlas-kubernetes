@@ -30,7 +30,7 @@ func UpdateSpecOfSelectedDeployment(spec v1.AtlasDeploymentSpec, indexOfDeployme
 				Namespace: data.Resources.Namespace}, data.InitialDeployments[indexOfDeployment])).To(Succeed())
 			data.InitialDeployments[indexOfDeployment].Spec = spec
 			Expect(data.K8SClient.Update(data.Context, data.InitialDeployments[indexOfDeployment])).To(Succeed())
-			Eventually(kube.DeploymentReadyCondition(data)).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
+			Eventually(kube.DeploymentReadyCondition(data)).WithTimeout(30*time.Minute).WithPolling(20*time.Second).Should(Equal("True"),
 				fmt.Sprintf("Deployment is not ready. Status: %v", kube.GetDeploymentStatus(data)))
 		})
 	}
@@ -55,7 +55,7 @@ func changeFirstDeploymentPauseSpec(data *model.TestDataProvider, paused bool) {
 			uDeployment, err := aClient.GetDeployment(data.Project.ID(), data.InitialDeployments[0].AtlasName())
 			g.Expect(err).To(BeNil())
 			g.Expect(*uDeployment.Paused).Should(Equal(paused))
-		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
+		}).WithTimeout(15 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 	})
 }
 

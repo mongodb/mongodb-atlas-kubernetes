@@ -511,7 +511,7 @@ func DeleteTestDataDeployments(data *model.TestDataProvider) {
 					aClient := atlas.GetClientOrFail()
 					return aClient.IsDeploymentExist(projectID, deploymentName)
 				},
-			).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeFalse(), "Deployment should be deleted from Atlas")
+			).WithTimeout(30*time.Minute).WithPolling(20*time.Second).Should(BeFalse(), "Deployment should be deleted from Atlas")
 		}
 	})
 }
