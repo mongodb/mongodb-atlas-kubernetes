@@ -113,7 +113,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 					actions.UpdateSpecOfSelectedDeployment(data.NewDeploymentWithBackupSpec(), 0),
 				},
 			).WithProject(data.DefaultProject()).
-				WithInitialDeployments(data.CreateDeploymentWithBackup("backup-deployment")).
+				WithInitialDeployments(data.CreateDeploymentWithBackup("backup-deployment-owner")).
 				WithUsers(
 					data.BasicUser("user1", "user1", data.WithSecretRef("dbuser-secret-u1"), data.WithAdminRole()),
 				)),

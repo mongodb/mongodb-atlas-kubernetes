@@ -63,7 +63,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest1", "AWS", "US_EAST_1")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: newRandomName("pe"),
 				},
 			},
 		),
@@ -76,7 +76,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: newRandomName("pe"),
 				},
 			},
 		),
@@ -89,10 +89,10 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe2",
+					Name: newRandomName("pe"),
 				},
 				{
-					Name:                     "pe3",
+					Name:                     newRandomName("pe"),
 					CloudProviderEndpointID:  "invalid",
 					PrivateEndpointIPAddress: "invalid",
 				},
@@ -124,9 +124,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 	By("Create Private Endpoints in Cloud", func() {
 		var pe *cloud.PrivateEndpointDetails
 
-		for index, peItem := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
-			peName := getPrivateLinkName(peItem.Name, provider.ProviderName(peItem.ProviderName), index)
-
+		for _, peItem := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
 			switch provider.ProviderName(peItem.ProviderName) {
 			case provider.ProviderAWS:
 				providerAction.SetupNetwork(
@@ -135,7 +133,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 				)
 				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AWSPrivateEndpointRequest{
-						ID:          peName,
+						ID:          peItem.Name,
 						Region:      "us-east-1",
 						ServiceName: peItem.EndpointServiceName,
 					},
@@ -144,7 +142,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 				providerAction.SetupNetwork(provider.ProviderAzure, nil)
 				pe = providerAction.SetupPrivateEndpoint(
 					&cloud.AzurePrivateEndpointRequest{
-						ID:                peName,
+						ID:                peItem.Name,
 						Region:            cloud.AzureRegion,
 						ServiceResourceID: peItem.PrivateLinkServiceResourceID,
 						SubnetName:        cloud.Subnet2Name,

@@ -29,7 +29,7 @@ const (
 	AzureVPCName            = "test-vnet"
 )
 
-func newRandomVPCName(base string) string {
+func newRandomName(base string) string {
 	randomSuffix := uuid.New().String()[0:6]
 	return fmt.Sprintf("%s-%s", base, randomSuffix)
 }
@@ -138,7 +138,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 					AccepterRegionName:  config.GCPRegion,
 					RouteTableCIDRBlock: "192.168.0.0/16",
 					AtlasCIDRBlock:      "10.8.0.0/18",
-					NetworkName:         newRandomVPCName(GCPVPCName),
+					NetworkName:         newRandomName(GCPVPCName),
 					GCPProjectID:        cloud.GoogleProjectID,
 				},
 			},
@@ -156,7 +156,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 					ProviderName:        provider.ProviderAzure,
 					AccepterRegionName:  "US_EAST_2",
 					AtlasCIDRBlock:      "192.168.248.0/21",
-					VNetName:            newRandomVPCName(AzureVPCName),
+					VNetName:            newRandomName(AzureVPCName),
 					AzureSubscriptionID: os.Getenv(SubscriptionID),
 					ResourceGroupName:   cloud.ResourceGroupName,
 					AzureDirectoryID:    os.Getenv(DirectoryID),
@@ -181,7 +181,7 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 				peers[ix].AWSAccountID = providerActions[ix].GetAWSAccountID()
 				cfg := &cloud.AWSConfig{
 					Region:        peer.AccepterRegionName,
-					VPC:           newRandomVPCName("ao-vpc-peering-e2e"),
+					VPC:           newRandomName("ao-vpc-peering-e2e"),
 					CIDR:          peer.RouteTableCIDRBlock,
 					Subnets:       map[string]string{"ao-peering-e2e-subnet": peer.RouteTableCIDRBlock},
 					EnableCleanup: true,
