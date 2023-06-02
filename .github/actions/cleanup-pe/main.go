@@ -5,88 +5,75 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+)
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+const (
+	subnet1Name       = "atlas-operator-e2e-test-subnet1"
+	subnet2Name       = "atlas-operator-e2e-test-subnet2"
+	fileNameSAGCP     = "gcp_service_account.json"
+	googleProjectID   = "atlasoperator"
+	gcpVPCName        = "network-peering-gcp-1-vpc"
+	resourceGroupName = "svet-test"
 )
 
 func main() {
-	cleanOnlyTaggedPE := false
-	cleanAllEnv := os.Getenv("CLEAN_TAGGED_PE")
-	switch cleanAllEnv {
-	case "true":
-		cleanOnlyTaggedPE = true
-	case "false":
-	default:
-		log.Fatal("CLEAN_TAGGED_PE must be set to true or false")
-	}
-	err := SetGCPCredentials()
+	err := setGCPCredentials()
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = CleanAllPE(cleanOnlyTaggedPE)
+
+	err = CleanAllPE()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func SetGCPCredentials() error {
-	err := utils.SaveToFile(config.FileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")))
+func setGCPCredentials() error {
+	err := os.MkdirAll(filepath.Dir(fileNameSAGCP), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("error saving gcp sa cred to file: %v", err)
+		return err
 	}
-	err = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)
+
+	err = os.WriteFile(fileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	err = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", fileNameSAGCP)
 	if err != nil {
 		return fmt.Errorf("error setting GOOGLE_APPLICATION_CREDENTIALS: %v", err)
 	}
+
 	return nil
 }
 
-func CleanAllPE(onlyTagged bool) error {
+func CleanAllPE() error {
 	ctx := context.Background()
-	groupNameAzure := cloud.ResourceGroup
+	groupNameAzure := resourceGroupName
 	awsRegions := []string{
-		config.AWSRegionEU,
-		config.AWSRegionUS,
+		"eu-west-2",
+		"us-east-1",
 	}
-	gcpRegion := config.GCPRegion
+	gcpRegion := "europe-west1"
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 
-	if onlyTagged {
-		err := cleanAllTaggedAzurePE(ctx, config.TagForTestKey, config.TagForTestValue, groupNameAzure, subscriptionID)
-		if err != nil {
-			return fmt.Errorf("error while cleaning all azure pe: %v", err)
-		}
+	err := cleanAllAzurePE(ctx, groupNameAzure, subscriptionID, []string{subnet1Name, subnet2Name})
+	if err != nil {
+		return fmt.Errorf("error while cleaning all azure pe: %v", err)
+	}
 
-		for _, awsRegion := range awsRegions {
-			errClean := cleanAllTaggedAWSPE(awsRegion, config.TagForTestKey, config.TagForTestValue)
-			if errClean != nil {
-				return fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean)
-			}
-		}
-
-		err = cleanAllTaggedGCPPE(ctx, cloud.GoogleProjectID, gcpRegion, cloud.GoogleSubnetName)
-		if err != nil {
-			return fmt.Errorf("error while cleaning all gcp pe: %v", err)
-		}
-	} else {
-		err := cleanAllAzurePE(ctx, groupNameAzure, subscriptionID, cloud.SubnetName)
-		if err != nil {
-			return fmt.Errorf("error while cleaning all azure pe: %v", err)
-		}
-
-		for _, awsRegion := range awsRegions {
-			errClean := cleanAllAWSPE(awsRegion)
-			if errClean != nil {
-				return fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean)
-			}
-		}
-
-		err = cleanAllGCPPE(ctx, cloud.GoogleProjectID, cloud.GoogleVPC, gcpRegion, cloud.GoogleSubnetName)
-		if err != nil {
-			return fmt.Errorf("error while cleaning all gcp pe: %v", err)
+	for _, awsRegion := range awsRegions {
+		errClean := cleanAllAWSPE(awsRegion, []string{subnet1Name, subnet2Name})
+		if errClean != nil {
+			return fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean)
 		}
 	}
+
+	err = cleanAllGCPPE(ctx, googleProjectID, gcpVPCName, gcpRegion, []string{subnet1Name, subnet2Name})
+	if err != nil {
+		return fmt.Errorf("error while cleaning all gcp pe: %v", err)
+	}
+
 	return nil
 }
