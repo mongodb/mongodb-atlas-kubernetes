@@ -1,80 +1,413 @@
 package cloud
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"os"
-	"path"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/azure"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+	"github.com/onsi/ginkgo/v2/dsl/core"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
-type azureAction struct{}
+type AzureAction struct {
+	t                 core.GinkgoTInterface
+	resourceGroupName string
+	network           *azureNetwork
 
-const (
-	// TODO get from Azure
-	ResourceGroup = "svet-test"
-	Vpc           = "svet-test-vpc"
-	SubnetName    = "default"
-)
-
-func (azureAction *azureAction) createPrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) (v1.PrivateEndpoint, error) {
-	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
-	if err != nil {
-		return v1.PrivateEndpoint{}, err
-	}
-	err = session.DisableNetworkPolicies(ResourceGroup, Vpc, SubnetName)
-	if err != nil {
-		return v1.PrivateEndpoint{}, err
-	}
-	id, ip, err := session.CreatePrivateEndpoint(pe.Region, ResourceGroup, privatelinkName, pe.ServiceResourceID)
-	if err != nil {
-		return v1.PrivateEndpoint{}, err
-	}
-	cResponse := v1.PrivateEndpoint{
-		ID:       id,
-		IP:       ip,
-		Provider: provider.ProviderAzure,
-		Region:   pe.Region,
-	}
-	return cResponse, nil
+	resourceFactory *armnetwork.ClientFactory
 }
 
-func (azureAction *azureAction) deletePrivateEndpoint(pe status.ProjectPrivateEndpoint, privatelinkName string) error {
-	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+type azureNetwork struct {
+	VPC     *armnetwork.VirtualNetwork
+	Subnets map[string]*armnetwork.Subnet
+}
+
+func (a *AzureAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
+	a.t.Helper()
+	ctx := context.Background()
+
+	vpc, err := a.findVpc(ctx, vpcName)
+	if err != nil {
+		return "", err
+	}
+
+	if vpc == nil {
+		vpc, err = a.createVpcWithSubnets(ctx, vpcName, cidr, region, subnets)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if cleanup {
+		a.t.Cleanup(func() {
+			err = a.deleteVpc(ctx, vpcName)
+			if err != nil {
+				a.t.Error(err)
+			}
+		})
+	}
+
+	existingSubnets := map[string]*armnetwork.Subnet{}
+	for _, existingSubnet := range vpc.Properties.Subnets {
+		existingSubnets[*existingSubnet.Name] = existingSubnet
+	}
+
+	for name, ipRange := range subnets {
+		if _, ok := existingSubnets[name]; !ok {
+			subnet, err := a.createSubnet(ctx, vpcName, name, ipRange)
+			if err != nil {
+				return "", err
+			}
+			existingSubnets[name] = subnet
+
+			if cleanup {
+				a.t.Cleanup(func() {
+					err = a.deleteSubnet(ctx, *vpc.ID, *subnet.ID)
+					if err != nil {
+						a.t.Error(err)
+					}
+				})
+			}
+		}
+	}
+
+	a.network = &azureNetwork{
+		VPC:     vpc,
+		Subnets: existingSubnets,
+	}
+
+	return *vpc.ID, nil
+}
+
+func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, serviceID, region string) (*armnetwork.PrivateEndpoint, error) {
+	a.t.Helper()
+	ctx := context.Background()
+
+	updatedSubnet, err := a.disableSubnetPENetworkPolicy(ctx, vpcName, subnetName)
+	if err != nil {
+		return nil, err
+	}
+
+	a.network.Subnets[subnetName] = updatedSubnet
+
+	a.t.Cleanup(func() {
+		_, err = a.enableSubnetPENetworkPolicy(ctx, vpcName, subnetName)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	op, err := networkClient.BeginCreateOrUpdate(
+		ctx,
+		a.resourceGroupName,
+		endpointName,
+		armnetwork.PrivateEndpoint{
+			Name:     toptr.MakePtr(endpointName),
+			Location: toptr.MakePtr(region),
+			Properties: &armnetwork.PrivateEndpointProperties{
+				Subnet: updatedSubnet,
+				ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{
+					{
+						Name: toptr.MakePtr(endpointName),
+						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
+							PrivateLinkServiceID: toptr.MakePtr(serviceID),
+						},
+					},
+				},
+			},
+		},
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pe, err := op.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deletePrivateEndpoint(ctx, endpointName)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	return &pe.PrivateEndpoint, nil
+}
+
+func (a *AzureAction) GetPrivateEndpoint(endpointName string) (*armnetwork.PrivateEndpoint, error) {
+	a.t.Helper()
+
+	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	pe, err := networkClient.Get(
+		context.Background(),
+		a.resourceGroupName,
+		endpointName,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pe.PrivateEndpoint, nil
+}
+
+func (a *AzureAction) GetInterface(name string) (*armnetwork.Interface, error) {
+	a.t.Helper()
+
+	interfaceClient := a.resourceFactory.NewInterfacesClient()
+	i, err := interfaceClient.Get(
+		context.Background(),
+		a.resourceGroupName,
+		name,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &i.Interface, nil
+}
+
+func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.VirtualNetwork, error) {
+	a.t.Helper()
+
+	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+
+	vpc, err := vpcClient.Get(ctx, a.resourceGroupName, vpcName, nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if ok := errors.As(err, &respErr); ok && respErr.StatusCode == 404 {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &vpc.VirtualNetwork, nil
+}
+
+func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, region string, subnets map[string]string) (*armnetwork.VirtualNetwork, error) {
+	a.t.Helper()
+	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+
+	subnetsSpec := make([]*armnetwork.Subnet, 0, len(subnets))
+	for name, ipRange := range subnets {
+		subnetsSpec = append(
+			subnetsSpec,
+			&armnetwork.Subnet{
+				Name: toptr.MakePtr(name),
+				Properties: &armnetwork.SubnetPropertiesFormat{
+					AddressPrefix: toptr.MakePtr(ipRange),
+				},
+			},
+		)
+	}
+
+	op, err := vpcClient.BeginCreateOrUpdate(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		armnetwork.VirtualNetwork{
+			Location: toptr.MakePtr(region),
+			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+				AddressSpace: &armnetwork.AddressSpace{
+					AddressPrefixes: []*string{
+						toptr.MakePtr(cidr),
+					},
+				},
+				Subnets: subnetsSpec,
+			},
+			Tags: map[string]*string{
+				"Name": toptr.MakePtr(vpcName),
+			},
+		},
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	vpc, err := op.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vpc.VirtualNetwork, nil
+}
+
+func (a *AzureAction) deleteVpc(ctx context.Context, vpcName string) error {
+	a.t.Helper()
+	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+
+	op, err := vpcClient.BeginDelete(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
-	err = session.DeletePrivateEndpoint(ResourceGroup, path.Base(privatelinkName))
+
+	_, err = op.PollUntilDone(ctx, nil)
+
 	return err
 }
 
-func (azureAction *azureAction) statusPrivateEndpointPending(region, privatelinkName string) bool {
-	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange string) (*armnetwork.Subnet, error) {
+	a.t.Helper()
+	subnetClient := a.resourceFactory.NewSubnetsClient()
+
+	op, err := subnetClient.BeginCreateOrUpdate(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		subnetName,
+		armnetwork.Subnet{
+			Name: toptr.MakePtr(subnetName),
+			Properties: &armnetwork.SubnetPropertiesFormat{
+				AddressPrefix: toptr.MakePtr(ipRange),
+			},
+		},
+		nil,
+	)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	status, err := session.GetPrivateEndpointStatus(ResourceGroup, path.Base(privatelinkName))
+
+	resp, err := op.PollUntilDone(ctx, nil)
 	if err != nil {
-		fmt.Print(err)
-		return false
+		return nil, err
 	}
-	return (status == "Pending")
+
+	return &resp.Subnet, nil
 }
 
-func (azureAction *azureAction) statusPrivateEndpointAvailable(region, privatelinkName string) bool {
-	session, err := azure.SessionAzure(os.Getenv("AZURE_SUBSCRIPTION_ID"), config.TagName)
+func (a *AzureAction) deleteSubnet(ctx context.Context, vpcName, subnetName string) error {
+	a.t.Helper()
+	subnetClient := a.resourceFactory.NewSubnetsClient()
+
+	op, err := subnetClient.BeginDelete(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		subnetName,
+		nil,
+	)
 	if err != nil {
-		fmt.Print(err)
-		return false
+		return err
 	}
-	status, err := session.GetPrivateEndpointStatus(ResourceGroup, path.Base(privatelinkName))
+
+	_, err = op.PollUntilDone(ctx, nil)
+
+	return err
+}
+
+func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName, subnetName string) (*armnetwork.Subnet, error) {
+	a.t.Helper()
+	subnetClient := a.resourceFactory.NewSubnetsClient()
+
+	subnet, ok := a.network.Subnets[subnetName]
+	if !ok {
+		return nil, fmt.Errorf("subnet %s not found", subnetName)
+	}
+
+	subnet.Properties.PrivateEndpointNetworkPolicies = toptr.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled)
+	op, err := subnetClient.BeginCreateOrUpdate(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		subnetName,
+		*subnet,
+		nil,
+	)
 	if err != nil {
-		fmt.Print(err)
-		return false
+		return nil, err
 	}
-	return (status == "Approved")
+
+	newSubnet, err := op.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &newSubnet.Subnet, nil
+}
+
+func (a *AzureAction) enableSubnetPENetworkPolicy(ctx context.Context, vpcName, subnetName string) (*armnetwork.Subnet, error) {
+	a.t.Helper()
+	subnetClient := a.resourceFactory.NewSubnetsClient()
+
+	subnet, ok := a.network.Subnets[subnetName]
+	if !ok {
+		return nil, fmt.Errorf("subnet %s not found", subnetName)
+	}
+
+	subnet.Properties.PrivateEndpointNetworkPolicies = toptr.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesEnabled)
+	op, err := subnetClient.BeginCreateOrUpdate(
+		ctx,
+		a.resourceGroupName,
+		vpcName,
+		subnetName,
+		*subnet,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	newSubnet, err := op.PollUntilDone(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &newSubnet.Subnet, nil
+}
+
+func (a *AzureAction) deletePrivateEndpoint(ctx context.Context, endpointName string) error {
+	a.t.Helper()
+	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	op, err := networkClient.BeginDelete(
+		ctx,
+		a.resourceGroupName,
+		endpointName,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = op.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewAzureAction(t core.GinkgoTInterface, subscriptionID, resourceGroupName string) (*AzureAction, error) {
+	t.Helper()
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	factory, err := armnetwork.NewClientFactory(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AzureAction{
+		t:                 t,
+		resourceGroupName: resourceGroupName,
+		resourceFactory:   factory,
+	}, err
 }

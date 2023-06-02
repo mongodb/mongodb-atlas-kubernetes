@@ -4,9 +4,13 @@ import (
 	"context"
 	"log"
 	"os"
+)
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/networkpeer"
+const (
+	googleProjectID   = "atlasoperator"
+	gcpVPCName        = "network-peering-gcp-1-vpc"
+	resourceGroupName = "svet-test"
+	azureVPCName      = "test-vnet"
 )
 
 func main() {
@@ -14,7 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gcpOk, err := deleteGCPVPCBySubstr(cloud.GoogleProjectID, networkpeer.GCPVPCName)
+	gcpOk, err := deleteGCPVPCBySubstr(googleProjectID, gcpVPCName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,7 +30,7 @@ func main() {
 		log.Fatal("AZURE_SUBSCRIPTION_ID is not set")
 	}
 	ctx := context.Background()
-	azureOk, err := deleteAzureVPCBySubstr(ctx, subID, networkpeer.AzureResourceGroupName, networkpeer.AzureVPCName)
+	azureOk, err := deleteAzureVPCBySubstr(ctx, subID, resourceGroupName, azureVPCName)
 	if err != nil {
 		log.Fatal(err)
 	}

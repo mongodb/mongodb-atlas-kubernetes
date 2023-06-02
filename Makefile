@@ -113,6 +113,10 @@ manager: generate fmt vet ## Build manager binary
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
 	go run ./cmd/manager/main.go
 
+.PHONY: install
+install: manifests kustomize ## Install CRDs from a cluster
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -

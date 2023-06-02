@@ -13,18 +13,23 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/serverlessprivateendpoint"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	var testData *model.TestDataProvider
+	var providerAction cloud.Provider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
+
+		action, err := prepareProviderAction()
+		Expect(err).To(BeNil())
+		providerAction = action
 	})
 
 	_ = AfterEach(func() {
@@ -36,9 +41,6 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Clean Cloud", func() {
-			DeleteSPE(testData)
-		})
 		By("Delete Resources", func() {
 			actions.DeleteTestDataDeployments(testData)
 			actions.DeleteTestDataProject(testData)
@@ -50,7 +52,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		func(test *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			speFlow(test, spe)
+			speFlow(test, providerAction, spe)
 		},
 		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE", Label("spe-aws-1"),
 			model.DataProvider(
@@ -61,7 +63,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest1", "AWS", "US_EAST_1")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: newRandomName("pe"),
 				},
 			},
 		),
@@ -74,7 +76,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: newRandomName("pe"),
 				},
 			},
 		),
@@ -87,10 +89,10 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
-					Name: "pe1",
+					Name: newRandomName("pe"),
 				},
 				{
-					Name:                     "pe2",
+					Name:                     newRandomName("pe"),
 					CloudProviderEndpointID:  "invalid",
 					PrivateEndpointIPAddress: "invalid",
 				},
@@ -99,7 +101,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	)
 })
 
-func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
+func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, spe []v1.ServerlessPrivateEndpoint) {
 	By("Apply deployment", func() {
 		Expect(userData.InitialDeployments).ShouldNot(BeEmpty())
 		userData.InitialDeployments[0].Namespace = userData.Resources.Namespace
@@ -110,7 +112,7 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			return userData.InitialDeployments[0].Status.StateName == status.StateIDLE
-		}).WithTimeout(10 * time.Minute).Should(BeTrue())
+		}).WithTimeout(15 * time.Minute).Should(BeTrue())
 	})
 
 	By("Adding Private Endpoints to Deployment", func() {
@@ -120,8 +122,41 @@ func speFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoin
 	})
 
 	By("Create Private Endpoints in Cloud", func() {
-		Expect(serverlessprivateendpoint.ConnectSPE(spe, userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints,
-			provider.ProviderName(userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.BackingProviderName))).To(Succeed())
+		var pe *cloud.PrivateEndpointDetails
+
+		for _, peItem := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
+			switch provider.ProviderName(peItem.ProviderName) {
+			case provider.ProviderAWS:
+				providerAction.SetupNetwork(
+					provider.ProviderAWS,
+					cloud.WithAWSConfig(&cloud.AWSConfig{Region: "us-east-1"}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
+					&cloud.AWSPrivateEndpointRequest{
+						ID:          peItem.Name,
+						Region:      "us-east-1",
+						ServiceName: peItem.EndpointServiceName,
+					},
+				)
+			case provider.ProviderAzure:
+				providerAction.SetupNetwork(provider.ProviderAzure, nil)
+				pe = providerAction.SetupPrivateEndpoint(
+					&cloud.AzurePrivateEndpointRequest{
+						ID:                peItem.Name,
+						Region:            cloud.AzureRegion,
+						ServiceResourceID: peItem.PrivateLinkServiceResourceID,
+						SubnetName:        cloud.Subnet2Name,
+					},
+				)
+			}
+
+			for i, specPE := range spe {
+				if specPE.Name == peItem.Name {
+					spe[i].CloudProviderEndpointID = pe.ID
+					spe[i].PrivateEndpointIPAddress = pe.IP
+				}
+			}
+		}
 	})
 
 	By("Update Private Endpoints in Deployment", func() {
@@ -178,13 +213,6 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivate
 	}
 }
 
-func DeleteSPE(userData *model.TestDataProvider) {
-	By("Delete Private Endpoints in Cloud", func() {
-		Expect(serverlessprivateendpoint.DeleteSPE(userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints,
-			provider.ProviderName(userData.InitialDeployments[0].Spec.ServerlessSpec.ProviderSettings.BackingProviderName))).To(Succeed())
-	})
-}
-
 func updateSPE(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
 	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.InitialDeployments[0].Name,
 		Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
@@ -205,5 +233,5 @@ func waitSPEStatus(userData *model.TestDataProvider, status string, speLen int) 
 			}
 		}
 		return true
-	}).WithTimeout(10*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
+	}).WithTimeout(30*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
 }

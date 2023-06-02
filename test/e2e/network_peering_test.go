@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"fmt"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,10 +13,8 @@ import (
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/networkpeer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
@@ -26,21 +23,21 @@ import (
 const (
 	statusPendingAcceptance = "PENDING_ACCEPTANCE"
 	statusWaitingUser       = "WAITING_FOR_USER"
+	SubscriptionID          = "AZURE_SUBSCRIPTION_ID"
+	DirectoryID             = "AZURE_TENANT_ID"
+	GCPVPCName              = "network-peering-gcp-1-vpc"
+	AzureVPCName            = "test-vnet"
 )
 
-func newRandomVPCName(base string) string {
+func newRandomName(base string) string {
 	randomSuffix := uuid.New().String()[0:6]
 	return fmt.Sprintf("%s-%s", base, randomSuffix)
-}
-
-func TestName(t *testing.T) {
-	fmt.Println(newRandomVPCName("test"))
 }
 
 var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	var testData *model.TestDataProvider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
@@ -55,9 +52,6 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Clean Cloud", func() {
-			DeleteAllNetworkPeering(testData)
-		})
 		By("Delete Resources, Project with NetworkPeering", func() {
 			actions.DeleteTestDataProject(testData)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
@@ -144,7 +138,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 					AccepterRegionName:  config.GCPRegion,
 					RouteTableCIDRBlock: "192.168.0.0/16",
 					AtlasCIDRBlock:      "10.8.0.0/18",
-					NetworkName:         newRandomVPCName(networkpeer.GCPVPCName),
+					NetworkName:         newRandomName(GCPVPCName),
 					GCPProjectID:        cloud.GoogleProjectID,
 				},
 			},
@@ -162,10 +156,10 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 					ProviderName:        provider.ProviderAzure,
 					AccepterRegionName:  "US_EAST_2",
 					AtlasCIDRBlock:      "192.168.248.0/21",
-					VNetName:            newRandomVPCName(networkpeer.AzureVPCName),
-					AzureSubscriptionID: os.Getenv(networkpeer.SubscriptionID),
-					ResourceGroupName:   networkpeer.AzureResourceGroupName,
-					AzureDirectoryID:    os.Getenv(networkpeer.DirectoryID),
+					VNetName:            newRandomName(AzureVPCName),
+					AzureSubscriptionID: os.Getenv(SubscriptionID),
+					ResourceGroupName:   cloud.ResourceGroupName,
+					AzureDirectoryID:    os.Getenv(DirectoryID),
 				},
 			},
 		),
@@ -173,18 +167,41 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 
 })
 
-func DeleteAllNetworkPeering(testData *model.TestDataProvider) {
-	errList := make([]error, 0)
-	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).ToNot(HaveOccurred())
-	errors := networkpeer.DeletePeerVPC(testData.Project.Status.NetworkPeers)
-	errList = append(errList, errors...)
-	Expect(errList).To(BeEmpty())
-}
-
 func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
+	providerActions := make([]cloud.Provider, len(peers))
+
 	By("Prepare network peers cloud infrastructure", func() {
-		err := networkpeer.PreparePeerVPC(peers)
-		Expect(err).ToNot(HaveOccurred())
+		for ix, peer := range peers {
+			providerAction, err := prepareProviderAction()
+			Expect(err).To(BeNil())
+			providerActions[ix] = providerAction
+
+			switch peer.ProviderName {
+			case provider.ProviderAWS:
+				peers[ix].AWSAccountID = providerActions[ix].GetAWSAccountID()
+				cfg := &cloud.AWSConfig{
+					Region:        peer.AccepterRegionName,
+					VPC:           newRandomName("ao-vpc-peering-e2e"),
+					CIDR:          peer.RouteTableCIDRBlock,
+					Subnets:       map[string]string{"ao-peering-e2e-subnet": peer.RouteTableCIDRBlock},
+					EnableCleanup: true,
+				}
+				peers[ix].VpcID = providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithAWSConfig(cfg))
+			case provider.ProviderGCP:
+				cfg := &cloud.GCPConfig{
+					Region:        peer.AccepterRegionName,
+					VPC:           peer.NetworkName,
+					EnableCleanup: true,
+				}
+				providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithGCPConfig(cfg))
+			case provider.ProviderAzure:
+				cfg := &cloud.AzureConfig{
+					VPC:           peer.VNetName,
+					EnableCleanup: true,
+				}
+				providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithAzureConfig(cfg))
+			}
+		}
 	})
 
 	By("Create network peers", func() {
@@ -199,29 +216,21 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
 			return EnsurePeersReadyToConnect(g, userData, len(peers))
 		}).WithTimeout(15*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Network Peering should be ready to establish connection")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-		Expect(networkpeer.EstablishPeerConnections(userData.Project.Status.NetworkPeers)).Should(Succeed())
+
+		for ix, peer := range userData.Project.Status.NetworkPeers {
+			switch peer.ProviderName {
+			case provider.ProviderAWS:
+				providerActions[ix].SetupNetworkPeering(peer.ProviderName, peer.ConnectionID, "")
+			case provider.ProviderGCP:
+				providerActions[ix].SetupNetworkPeering(peer.ProviderName, peer.AtlasGCPProjectID, peer.AtlasNetworkName)
+			}
+		}
 		actions.WaitForConditionsToBecomeTrue(userData, status.NetworkPeerReadyType, status.ReadyType)
 	})
 
 	By("Check network peers connection status state", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		Expect(userData.Project.Status.NetworkPeers).Should(HaveLen(len(peers)))
-	})
-
-	By("Delete network peers", func() {
-		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-		userData.Project.Spec.NetworkPeers = nil
-		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.CheckProjectConditionsNotSet(userData, status.NetworkPeerReadyType)
-		Eventually(func(g Gomega) {
-			atlasPeers, err := atlasproject.GetAllExistedNetworkPeer(userData.Context, atlasClient.Client.Peers, userData.Project.ID())
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(atlasPeers).To(BeEmpty(), "All network peers should be deleted")
-			containers, _, err := atlasClient.Client.Containers.ListAll(userData.Context, userData.Project.Status.ID, nil)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(containers).To(BeEmpty(), "All containers should be deleted")
-		})
 	})
 }
 

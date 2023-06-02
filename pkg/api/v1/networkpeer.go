@@ -58,6 +58,38 @@ func (in *NetworkPeer) ToAtlas() (*mongodbatlas.Peer, error) {
 	return result, err
 }
 
+func (in *NetworkPeer) ToAtlasPeer() *mongodbatlas.Peer {
+	switch in.ProviderName {
+	case provider.ProviderAWS:
+		return &mongodbatlas.Peer{
+			AccepterRegionName:  in.AccepterRegionName,
+			AWSAccountID:        in.AWSAccountID,
+			ContainerID:         in.ContainerID,
+			ProviderName:        string(in.ProviderName),
+			RouteTableCIDRBlock: in.RouteTableCIDRBlock,
+			VpcID:               in.VpcID,
+		}
+	case provider.ProviderGCP:
+		return &mongodbatlas.Peer{
+			ContainerID:  in.ContainerID,
+			ProviderName: string(in.ProviderName),
+			GCPProjectID: in.GCPProjectID,
+			NetworkName:  in.NetworkName,
+		}
+	case provider.ProviderAzure:
+		return &mongodbatlas.Peer{
+			ContainerID:         in.ContainerID,
+			ProviderName:        string(in.ProviderName),
+			AzureDirectoryID:    in.AzureDirectoryID,
+			AzureSubscriptionID: in.AzureSubscriptionID,
+			ResourceGroupName:   in.ResourceGroupName,
+			VNetName:            in.VNetName,
+		}
+	}
+
+	return nil
+}
+
 func (in *NetworkPeer) GetContainerRegion() string {
 	if in.ContainerRegion != "" {
 		return in.ContainerRegion

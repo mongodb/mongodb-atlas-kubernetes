@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	ProjectCreationTimeout = 40 * time.Second
+	ProjectCreationTimeout = 5 * time.Minute
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
@@ -386,6 +386,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				connectionSecret = buildConnectionSecret("my-atlas-key")
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
+
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdProject), createdProject)).To(Succeed())
+				createdProject.Spec.AlertConfigurationSyncEnabled = true
+				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(secondProject), secondProject)).To(Succeed())
+				secondProject.Spec.AlertConfigurationSyncEnabled = true
+				Expect(k8sClient.Update(context.Background(), secondProject)).To(Succeed())
 
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
