@@ -27,29 +27,30 @@ ENV TARGET_OS=${TARGETOS}
 
 RUN make manager
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
 
 RUN microdnf install yum &&\
-    yum -y update &&\
-    yum clean all &&\
-    dnf remove python3-pip -y &&\
-    microdnf clean all
+  yum -y update &&\
+  yum -y upgrade &&\
+  yum clean all &&\
+  dnf remove python3-pip -y &&\
+  microdnf clean all
 
 #FROM registry.access.redhat.com/ubi8/ubi
 #
 #RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
 
 LABEL name="MongoDB Atlas Operator" \
-      maintainer="support@mongodb.com" \
-      vendor="MongoDB" \
-      release="1" \
-      summary="MongoDB Atlas Operator Image" \
-      description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster" \
-      io.k8s.display-name="MongoDB Atlas Operator" \
-      io.k8s.description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster" \
-      io.openshift.tags="mongodb,atlas" \
-      io.openshift.maintainer.product="MongoDB" \
-      License="Apache-2.0"
+  maintainer="support@mongodb.com" \
+  vendor="MongoDB" \
+  release="1" \
+  summary="MongoDB Atlas Operator Image" \
+  description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster" \
+  io.k8s.display-name="MongoDB Atlas Operator" \
+  io.k8s.description="MongoDB Atlas Operator is a Kubernetes Operator allowing to manage MongoDB Atlas resources not leaving Kubernetes cluster" \
+  io.openshift.tags="mongodb,atlas" \
+  io.openshift.maintainer.product="MongoDB" \
+  License="Apache-2.0"
 
 
 WORKDIR /
