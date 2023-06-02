@@ -280,18 +280,18 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
 	a.t.Helper()
 
-	Eventually(func() bool {
+	Eventually(func(g Gomega) bool {
 		switch providerName {
 		case provider.ProviderAWS:
 			pe, err := a.awsProvider.GetPrivateEndpoint(endpoint, region)
-			Expect(err).To(BeNil())
+			g.Expect(err).To(BeNil())
 
 			return *pe.State == "available"
 		case provider.ProviderGCP:
 			res := true
 			for i := 0; i < gcpNumAttachments; i++ {
 				rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
-				Expect(err).To(BeNil())
+				g.Expect(err).To(BeNil())
 
 				res = res && (*rule.PscConnectionStatus == "ACCEPTED")
 			}
@@ -299,7 +299,7 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.Pro
 			return res
 		case provider.ProviderAzure:
 			pe, err := a.azureProvider.GetPrivateEndpoint(endpoint)
-			Expect(err).To(BeNil())
+			g.Expect(err).To(BeNil())
 
 			return *pe.Properties.ManualPrivateLinkServiceConnections[0].Properties.PrivateLinkServiceConnectionState.Status == "Approved"
 		}
