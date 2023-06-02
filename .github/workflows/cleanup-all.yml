@@ -20,10 +20,6 @@ on:
         description: "Run PE cleaner(true) or not(false)?"
         default: "true"
         required: true
-      cleanTaggedPE:
-        description: "Clean only tagged PE(true) or all PE(false)?"
-        default: "false"
-        required: true
       cleanVPC:
         description: "Clean VPC(true) or not(false)?"
         default: "true"
@@ -66,7 +62,6 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-          CLEAN_TAGGED_PE: ${{ github.event.inputs.cleanTaggedPE || 'false'}}
         run: (cd .github/actions/cleanup-pe && go run .)
 
       - name: Run atlas project cleaner
