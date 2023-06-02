@@ -11,6 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
@@ -29,11 +30,15 @@ import (
 
 var _ = Describe("UserLogin", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
+	var providerAction cloud.Provider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
+		action, err := prepareProviderAction()
+		Expect(err).To(BeNil())
+		providerAction = action
 	})
 
 	_ = AfterEach(func() {
@@ -44,9 +49,6 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Clean Cloud", func() {
-			DeleteAllPrivateEndpoints(testData)
-		})
 		By("Delete Resources, Project with PEService", func() {
 			actions.DeleteTestDataProject(testData)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
@@ -57,7 +59,7 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 		func(test *model.TestDataProvider, pe []privateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			dataFederationFlow(test, pe)
+			dataFederationFlow(test, providerAction, pe)
 		},
 		Entry("Data Federation can be created with private endpoints", Label("datafederation-pe-aws"),
 			model.DataProvider(
@@ -76,7 +78,7 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 	)
 })
 
-func dataFederationFlow(userData *model.TestDataProvider, requstedPE []privateEndpoint) {
+func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
 	var createdDataFederation *v1.AtlasDataFederation
 	const dataFederationInstanceName = "test-data-federation-aws"
 
@@ -105,25 +107,78 @@ func dataFederationFlow(userData *model.TestDataProvider, requstedPE []privateEn
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 
-		for idx, peitem := range userData.Project.Status.PrivateEndpoints {
-			cloudTest, err := cloud.CreatePEActions(peitem)
-			Expect(err).ShouldNot(HaveOccurred())
+		for idx, peStatusItem := range userData.Project.Status.PrivateEndpoints {
+			privateEndpointID := peStatusItem.ID
+			peName := getPrivateLinkName(privateEndpointID, peStatusItem.Provider, idx)
+			var pe *cloud.PrivateEndpointDetails
 
-			privateEndpointID := peitem.ID
-			Expect(privateEndpointID).ShouldNot(BeEmpty())
-
-			peName := getPrivateLinkName(privateEndpointID, peitem.Provider, idx)
-
-			output, err := cloudTest.CreatePrivateEndpoint(peName)
-			Expect(err).ShouldNot(HaveOccurred())
+			switch peStatusItem.Provider {
+			case provider.ProviderAWS:
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
+					&cloud.AWSPrivateEndpointRequest{
+						ID:          peName,
+						Region:      peStatusItem.Region,
+						ServiceName: peStatusItem.ServiceName,
+					},
+				)
+			case provider.ProviderGCP:
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
+					&cloud.GCPPrivateEndpointRequest{
+						ID:         peName,
+						Region:     peStatusItem.Region,
+						Targets:    peStatusItem.ServiceAttachmentNames,
+						SubnetName: cloud.Subnet1Name,
+					},
+				)
+			case provider.ProviderAzure:
+				providerAction.SetupNetwork(
+					peStatusItem.Provider,
+					cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}),
+				)
+				pe = providerAction.SetupPrivateEndpoint(
+					&cloud.AzurePrivateEndpointRequest{
+						ID:                peName,
+						Region:            peStatusItem.Region,
+						ServiceResourceID: peStatusItem.ServiceResourceID,
+						SubnetName:        cloud.Subnet1Name,
+					},
+				)
+			}
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
 				if userData.Project.Spec.PrivateEndpoints[i].ID != "" {
 					continue
 				}
 
-				if (peItem.Provider == output.Provider) && (peItem.Region == output.Region) {
-					userData.Project.Spec.PrivateEndpoints[i] = output
+				if (peItem.Provider == pe.ProviderName) && (peItem.Region == pe.Region) {
+					peItem.ID = pe.ID
+					peItem.IP = pe.IP
+					peItem.GCPProjectID = pe.GCPProjectID
+					peItem.EndpointGroupName = pe.EndpointGroupName
+
+					if len(pe.Endpoints) > 0 {
+						peItem.Endpoints = make([]v1.GCPEndpoint, 0, len(pe.Endpoints))
+
+						for _, ep := range pe.Endpoints {
+							peItem.Endpoints = append(
+								peItem.Endpoints,
+								v1.GCPEndpoint{
+									EndpointName: ep.Name,
+									IPAddress:    ep.IP,
+								},
+							)
+						}
+					}
+
+					userData.Project.Spec.PrivateEndpoints[i] = peItem
 					break
 				}
 			}
@@ -138,15 +193,9 @@ func dataFederationFlow(userData *model.TestDataProvider, requstedPE []privateEn
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, peStatus := range userData.Project.Status.PrivateEndpoints {
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
-			cloudTest, err := cloud.CreatePEActions(peStatus)
-			Expect(err).ShouldNot(HaveOccurred())
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
-			Eventually(
-				func() bool {
-					return cloudTest.IsStatusPrivateEndpointAvailable(privateEndpointID)
-				},
-			).Should(BeTrue())
+			providerAction.ValidatePrivateEndpointStatus(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
 		}
 	})
 

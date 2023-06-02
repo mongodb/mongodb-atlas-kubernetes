@@ -3,8 +3,9 @@ package deployment
 import (
 	"context"
 	"fmt"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"log"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 func DeleteAllDataFederationInstances(ctx context.Context, client mongodbatlas.DataFederationService, projectID string) error {
