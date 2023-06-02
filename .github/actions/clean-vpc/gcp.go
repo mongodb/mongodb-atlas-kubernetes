@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
-
 	"google.golang.org/api/compute/v1"
+)
+
+const (
+	fileNameSAGCP = "gcp_service_account.json"
 )
 
 func deleteGCPVPCBySubstr(gcpProjectID, nameSubstr string) (bool, error) {
@@ -38,13 +40,20 @@ func deleteGCPVPCBySubstr(gcpProjectID, nameSubstr string) (bool, error) {
 }
 
 func setGCPCredentials() error {
-	err := utils.SaveToFile(config.FileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")))
+	err := os.MkdirAll(filepath.Dir(fileNameSAGCP), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("error saving gcp sa cred to file: %v", err)
+		return err
 	}
-	err = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.FileNameSAGCP)
+
+	err = os.WriteFile(fileNameSAGCP, []byte(os.Getenv("GCP_SA_CRED")), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	err = os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", fileNameSAGCP)
 	if err != nil {
 		return fmt.Errorf("error setting GOOGLE_APPLICATION_CREDENTIALS: %v", err)
 	}
+
 	return nil
 }
