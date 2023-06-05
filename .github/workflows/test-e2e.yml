@@ -232,7 +232,7 @@ jobs:
           helm version
           go version
           
-          go install github.com/onsi/ginkgo/v2/ginkgo && \
+          go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
           go install github.com/onsi/gomega/...
           
           cd test/e2e
