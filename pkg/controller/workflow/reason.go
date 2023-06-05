@@ -40,7 +40,7 @@ const (
 	ProjectTeamUnavailable                     ConditionReason = "ProjectTeamUnavailable"
 )
 
-// Atlas Cluster reasons
+// Atlas Deployment reasons
 const (
 	DeploymentNotCreatedInAtlas           ConditionReason = "DeploymentNotCreatedInAtlas"
 	DeploymentNotUpdatedInAtlas           ConditionReason = "DeploymentNotUpdatedInAtlas"
@@ -62,6 +62,14 @@ const (
 	DatabaseUserDeploymentAppliedChanges    ConditionReason = "DeploymentAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"
 	DatabaseUserExpired                     ConditionReason = "DatabaseUserExpired"
+)
+
+// Atlas Data Federation reasons
+const (
+	DataFederationNotCreatedInAtlas ConditionReason = "DataFederationNotCreatedInAtlas"
+	DataFederationNotUpdatedInAtlas ConditionReason = "DataFederationNotUpdatedInAtlas"
+	DataFederationCreating          ConditionReason = "DataFederationCreating"
+	DataFederationUpdating          ConditionReason = "DataFederationUpdating"
 )
 
 const (

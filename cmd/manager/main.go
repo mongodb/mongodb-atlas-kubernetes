@@ -46,6 +46,7 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
@@ -167,6 +168,20 @@ func main() {
 		EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
+		os.Exit(1)
+	}
+
+	if err = (&atlasdatafederation.AtlasDataFederationReconciler{
+		Client:           mgr.GetClient(),
+		Log:              logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		Scheme:           mgr.GetScheme(),
+		AtlasDomain:      config.AtlasDomain,
+		GlobalAPISecret:  config.GlobalAPISecret,
+		ResourceWatcher:  watch.NewResourceWatcher(),
+		GlobalPredicates: globalPredicates,
+		EventRecorder:    mgr.GetEventRecorderFor("AtlasDataFederation"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

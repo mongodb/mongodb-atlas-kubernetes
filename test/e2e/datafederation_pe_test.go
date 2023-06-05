@@ -1,12 +1,14 @@
 package e2e_test
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
@@ -26,12 +28,7 @@ import (
 
 // AWS NOTES: reserved VPC in eu-west-2, eu-south-1, us-east-1 (due to limitation no more 4 VPC per region)
 
-type privateEndpoint struct {
-	provider provider.ProviderName
-	region   string
-}
-
-var _ = Describe("UserLogin", Label("privatelink"), func() {
+var _ = Describe("UserLogin", Label("datafederation"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
@@ -39,7 +36,6 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
-
 		action, err := prepareProviderAction()
 		Expect(err).To(BeNil())
 		providerAction = action
@@ -63,9 +59,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 		func(test *model.TestDataProvider, pe []privateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			privateFlow(test, providerAction, pe)
+			dataFederationFlow(test, providerAction, pe)
 		},
-		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("privatelink-aws-1"),
+		Entry("Data Federation can be created with private endpoints", Label("datafederation-pe-aws"),
 			model.DataProvider(
 				"privatelink-aws-1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
@@ -79,76 +75,13 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 				},
 			},
 		),
-		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("privatelink-azure-1"),
-			model.DataProvider(
-				"privatelink-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
-			[]privateEndpoint{{
-				provider: "AZURE",
-				region:   config.AzureRegionEU,
-			}},
-		),
-		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("privatelink-aws-2"),
-			model.DataProvider(
-				"privatelink-two-identical-aws",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
-			[]privateEndpoint{
-				{
-					provider: "AWS",
-					region:   config.AWSRegionEU,
-				},
-				{
-					provider: "AWS",
-					region:   config.AWSRegionEU,
-				},
-			},
-		),
-		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("privatelink-aws-azure-2"),
-			model.DataProvider(
-				"privatelink-aws-azure",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
-			[]privateEndpoint{
-				{
-					provider: "AWS",
-					region:   config.AWSRegionEU,
-				},
-				{
-					provider: "AWS",
-					region:   config.AWSRegionUS,
-				},
-				{
-					provider: "AZURE",
-					region:   config.AzureRegionEU,
-				},
-			},
-		),
-		Entry("Test[privatelink-gpc-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("privatelink-gpc-1"),
-			model.DataProvider(
-				"privatelink-gpc-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
-			[]privateEndpoint{
-				{
-					provider: provider.ProviderGCP,
-					region:   config.GCPRegion,
-				},
-			},
-		),
 	)
 })
 
-func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
+func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
+	var createdDataFederation *v1.AtlasDataFederation
+	const dataFederationInstanceName = "test-data-federation-aws"
+
 	By("Create Private Link and the rest users resources", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
@@ -176,8 +109,6 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 
 		for idx, peStatusItem := range userData.Project.Status.PrivateEndpoints {
 			privateEndpointID := peStatusItem.ID
-			Expect(privateEndpointID).ShouldNot(BeEmpty())
-
 			peName := getPrivateLinkName(privateEndpointID, peStatusItem.Provider, idx)
 			var pe *cloud.PrivateEndpointDetails
 
@@ -264,51 +195,33 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 			Expect(peStatus.Region).ShouldNot(BeEmpty())
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
-
 			providerAction.ValidatePrivateEndpointStatus(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
 		}
 	})
-}
 
-func GetPrivateEndpointID(endpoint status.ProjectPrivateEndpoint) string {
-	if endpoint.Provider == provider.ProviderAWS {
-		return endpoint.InterfaceEndpointID
-	}
-	return endpoint.ID
-}
+	By("Creating DataFederation with a PrivateEndpoint", func() {
+		peData := userData.Project.Status.PrivateEndpoints[0]
+		createdDataFederation = v1.NewDataFederationInstance(
+			userData.Project.Name,
+			dataFederationInstanceName,
+			userData.Project.Namespace).WithPrivateEndpoint(GetPrivateEndpointID(peData), "AWS", "DATA_LAKE")
+		Expect(userData.K8SClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
-func AllPEndpointUpdated(data *model.TestDataProvider) bool {
-	err := data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Resources.Namespace}, data.Project)
-	if err != nil {
-		return false
-	}
-	return len(data.Project.Spec.PrivateEndpoints) == len(data.Project.Status.PrivateEndpoints)
-}
+		Eventually(func(g Gomega) {
+			df, _, err := atlasClient.Client.DataFederation.Get(context.Background(), userData.Project.ID(), createdDataFederation.Spec.Name)
+			g.Expect(err).ShouldNot(HaveOccurred())
+			g.Expect(df).NotTo(BeNil())
+		}).WithTimeout(20 * time.Minute).WithPolling(15 * time.Second).ShouldNot(HaveOccurred())
+	})
 
-func getPrivateLinkName(privateEndpointID string, providerName provider.ProviderName, idx int) string {
-	if providerName == provider.ProviderAWS {
-		return fmt.Sprintf("%s_%d", privateEndpointID, idx)
-	}
-	return privateEndpointID
-}
-
-func prepareProviderAction() (*cloud.ProviderAction, error) {
-	t := GinkgoT()
-
-	aws, err := cloud.NewAWSAction(t)
-	if err != nil {
-		return nil, err
-	}
-
-	gcp, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	azure, err := cloud.NewAzureAction(t, os.Getenv("AZURE_SUBSCRIPTION_ID"), cloud.ResourceGroupName)
-	if err != nil {
-		return nil, err
-	}
-
-	return cloud.NewProviderAction(t, aws, gcp, azure), nil
+	By("Checking the DataFederation is ready", func() {
+		df := &v1.AtlasDataFederation{}
+		Expect(userData.K8SClient.Get(context.Background(), types.NamespacedName{
+			Namespace: userData.Project.Namespace,
+			Name:      dataFederationInstanceName,
+		}, df)).To(Succeed())
+		Eventually(func() bool {
+			return testutil.CheckCondition(userData.K8SClient, df, status.TrueCondition(status.ReadyType))
+		}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
+	})
 }

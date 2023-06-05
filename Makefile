@@ -142,6 +142,11 @@ fmt: ## Run go fmt against code
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
 	find . -name "*.go" -not -path "./vendor/*" -exec goimports -l -w "{}" \;
 
+fix-lint:
+	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./pkg
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./test
+
 .PHONY: vet
 vet: ## Run go vet against code
 	go vet ./...
