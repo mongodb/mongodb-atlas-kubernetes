@@ -11,7 +11,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.44.274
+	github.com/aws/aws-sdk-go v1.44.276
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.3
 	github.com/google/go-cmp v0.5.9
