@@ -4,10 +4,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
-
 	. "github.com/onsi/gomega"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"

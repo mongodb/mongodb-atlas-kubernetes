@@ -40,7 +40,7 @@ func cleanAllAWSPE(region string, subnets []string) error {
 		}
 
 		if len(subnetOutput.Subnets) == 0 {
-			return fmt.Errorf("no subnets found")
+			continue
 		}
 		subnetID := subnetOutput.Subnets[0].SubnetId
 
