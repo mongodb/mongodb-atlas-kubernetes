@@ -15,9 +15,15 @@ spec:
     singular: atlasdatafederation
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.name
+      name: Name
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
+        description: AtlasDataFederation is the Schema for the Atlas Data Federation
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

@@ -1,0 +1,27 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasDataFederation
+metadata:
+  name: my-data-federation
+  namespace: mongodb-atlas-system
+spec:
+  projectRef:
+    name: my-project 
+    namespace: mongodb-atlas-system
+  name: my-data-federation
+  privateEndpoints:
+    - endpointId: vpce-03f9eeaa764e32454
+      provider: AWS
+      type: DATA_LAKE
+  storage:
+    stores:
+      - name: http-test
+        provider: http
+    databases:
+      - name: test-db-1
+        collections:
+          - name: test-collection-1
+            dataSources:
+              - storeName: http-test
+                urls:
+                  - https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv
+
