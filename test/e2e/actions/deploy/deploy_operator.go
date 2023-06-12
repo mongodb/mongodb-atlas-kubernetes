@@ -52,17 +52,20 @@ func CreateProject(testData *model.TestDataProvider) {
 	By(fmt.Sprintf("Deploy Project %s", testData.Project.GetName()), func() {
 		err := testData.K8SClient.Create(testData.Context, testData.Project)
 		Expect(err).ShouldNot(HaveOccurred(), "Project %s was not created", testData.Project.GetName())
-		Eventually(func(g Gomega) {
-			condition, _ := k8s.GetProjectStatusCondition(testData.Context, testData.K8SClient, status.ReadyType,
-				testData.Resources.Namespace, testData.Project.GetName())
+		Eventually(func(g Gomega) bool {
+			condition, _ := k8s.GetProjectStatusCondition(
+				testData.Context,
+				testData.K8SClient,
+				status.ReadyType,
+				testData.Resources.Namespace,
+				testData.Project.GetName(),
+			)
 			g.Expect(condition).Should(Equal("True"))
-		}).Should(Succeed(), "Project %s was not created", testData.Project.GetName())
-	})
-	By(fmt.Sprintf("Wait for Project %s", testData.Project.GetName()), func() {
-		Eventually(func() bool {
+
 			statuses := kube.GetProjectStatus(testData)
 			return statuses.ID != ""
-		}, 5*time.Minute, 5*time.Second).Should(BeTrue(), "Project %s is not ready", kube.GetProjectStatus(testData))
+		}).WithTimeout(10*time.Minute).WithPolling(10*time.Second).
+			Should(Succeed(), "Project %s was not created", testData.Project.GetName())
 	})
 }
 
