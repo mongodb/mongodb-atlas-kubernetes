@@ -7,8 +7,9 @@ updates:
       day: tuesday
     reviewers:
       - "igor-karpukhin"
-      - "fabritsius"
-      - "sugar-pack"
+      - "helderjs" 
+      - "josvazg"
+      - "roothorp"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -16,5 +17,6 @@ updates:
       day: tuesday
     reviewers:
       - "igor-karpukhin"
-      - "fabritsius"
-      - "sugar-pack"
+      - "helderjs" 
+      - "josvazg"
+      - "roothorp"

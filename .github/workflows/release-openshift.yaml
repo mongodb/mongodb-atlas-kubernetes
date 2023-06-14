@@ -94,7 +94,7 @@ jobs:
         env:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
-          ASSIGNEES: igor-karpukhin,helderjs
+          ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
         run: |
           cd "$REPOSITORY/$REPO_PATH"
           
