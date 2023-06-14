@@ -69,4 +69,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        REVIEWERS: igor-karpukhin,helderjs
+        REVIEWERS: igor-karpukhin,helderjs,josvazg,roothorp
