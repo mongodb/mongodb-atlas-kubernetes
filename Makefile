@@ -85,6 +85,7 @@ unit-test:
 
 .PHONY: int-test
 int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
+int-test: ENVTEST_K8S_VERSION = 1.26.1
 int-test: export ATLAS_ORG_ID=$(shell grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
 int-test: export ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
 int-test: export ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
@@ -94,7 +95,7 @@ int-test: export GINKGO_EDITOR_INTEGRATION="true"
 int-test: generate manifests ## Run integration tests. Sample with labels: `make int-test label=AtlasProject` or `make int-test label='AtlasDeployment && !slow'`
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.0/hack/setup-envtest.sh
-	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ./scripts/int_local.sh $(label)
+	export ENVTEST_K8S_VERSION=$(ENVTEST_K8S_VERSION) && source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); ./scripts/int_local.sh $(label)
 
 .PHONY: e2e
 e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
