@@ -2,7 +2,9 @@ package atlasproject
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"regexp"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -10,6 +12,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"go.mongodb.org/atlas/mongodbatlas"
+)
+
+const (
+	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
 func ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
@@ -67,11 +73,43 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 		GoogleCloudKms: getGoogleCloudKms(project),
 	}
 
+	if err := normalizeAwsKms(ctx, projectID, &requestBody.AwsKms); err != nil {
+		return err
+	}
+
 	if _, _, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
 		return err
 	}
 
 	return nil
+}
+
+func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatlas.AwsKms) error {
+	// verify if role ID is set as AtlasObjectID
+	matched, err := regexp.MatchString(ObjectIDRegex, awsKms.RoleID)
+	if err != nil {
+		ctx.Log.Debugf("normalizing aws kms roleID failed: %v", err)
+		return err
+	}
+	if matched {
+		return nil
+	}
+
+	// assume that role ID is set as AWS ARN
+	resp, _, err := ctx.Client.CloudProviderAccess.ListRoles(context.Background(), projectID)
+	if err != nil {
+		return err
+	}
+
+	for _, role := range resp.AWSIAMRoles {
+		if role.IAMAssumedRoleARN == awsKms.RoleID {
+			awsKms.RoleID = role.RoleID
+			return nil
+		}
+	}
+
+	ctx.Log.Debugf("no match for provided AWS RoleID ARN: '%s'. Is the CPA configured for the project?", awsKms.RoleID)
+	return fmt.Errorf("can not use '%s' aws roleID for encryption at rest. AWS ARN not configured as Cloud Provider Access", awsKms.RoleID)
 }
 
 func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtRest) (bool, error) {

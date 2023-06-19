@@ -33,6 +33,8 @@ if [[ "${build}" == "true" ]]; then
     docker push "${bundle_image}"
 fi
 
+kubectl apply -f deploy/crds
+
 export MCLI_OPS_MANAGER_URL="https://cloud-qa.mongodb.com/"
 export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
