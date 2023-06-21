@@ -96,6 +96,15 @@ func (c *Context) SetConditionFalse(conditionType status.ConditionType) *Context
 	return c
 }
 
+func (c *Context) SetConditionFalseMsg(conditionType status.ConditionType, msg string) *Context {
+	c.EnsureCondition(status.Condition{
+		Type:    conditionType,
+		Status:  corev1.ConditionFalse,
+		Message: msg,
+	})
+	return c
+}
+
 func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context {
 	c.EnsureCondition(status.Condition{
 		Type:   conditionType,

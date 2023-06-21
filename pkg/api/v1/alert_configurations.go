@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 )
@@ -138,10 +139,14 @@ func (in *Threshold) ToAtlas() (*mongodbatlas.Threshold, error) {
 type Notification struct {
 	// Slack API token or Bot token. Populated for the SLACK notifications type. If the token later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
 	APIToken string `json:"apiToken,omitempty"`
+	// +optional
+	APITokenRef common.ResourceRefNamespaced `json:"apiTokenRef,omitempty"`
 	// Slack channel name. Populated for the SLACK notifications type.
 	ChannelName string `json:"channelName,omitempty"`
 	// Datadog API Key. Found in the Datadog dashboard. Populated for the DATADOG notifications type.
 	DatadogAPIKey string `json:"datadogApiKey,omitempty"`
+	// +optional
+	DatadogAPIKeyRef common.ResourceRefNamespaced `json:"datadogAPIKeyRef,omitempty"`
 	// Region that indicates which API URL to use
 	DatadogRegion string `json:"datadogRegion,omitempty"`
 	// Number of minutes to wait after an alert condition is detected before sending out the first notification.
@@ -152,6 +157,8 @@ type Notification struct {
 	EmailEnabled *bool `json:"emailEnabled,omitempty"`
 	// The Flowdock personal API token. Populated for the FLOWDOCK notifications type. If the token later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
 	FlowdockAPIToken string `json:"flowdockApiToken,omitempty"`
+	// +optional
+	FlowdockAPITokenRef common.ResourceRefNamespaced `json:"flowdockApiTokenRef,omitempty"`
 	// Flowdock flow namse in lower-case letters.
 	FlowName string `json:"flowName,omitempty"`
 	// Number of minutes to wait between successive notifications for unacknowledged alerts that are not resolved.
@@ -160,12 +167,16 @@ type Notification struct {
 	MobileNumber string `json:"mobileNumber,omitempty"`
 	// Opsgenie API Key. Populated for the OPS_GENIE notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
 	OpsGenieAPIKey string `json:"opsGenieApiKey,omitempty"`
+	// +optional
+	OpsGenieAPIKeyRef common.ResourceRefNamespaced `json:"opsGenieApiKeyRef,omitempty"`
 	// Region that indicates which API URL to use.
 	OpsGenieRegion string `json:"opsGenieRegion,omitempty"`
 	// Flowdock organization name in lower-case letters. This is the name that appears after www.flowdock.com/app/ in the URL string. Populated for the FLOWDOCK notifications type.
 	OrgName string `json:"orgName,omitempty"`
 	// PagerDuty service key. Populated for the PAGER_DUTY notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the key.
 	ServiceKey string `json:"serviceKey,omitempty"`
+	// +optinal
+	ServiceKeyRef common.ResourceRefNamespaced `json:"serviceKeyRef,omitempty"`
 	// Flag indicating if text message notifications should be sent. Populated for ORG, GROUP, and USER notifications types.
 	SMSEnabled *bool `json:"smsEnabled,omitempty"`
 	// Unique identifier of a team.
@@ -178,6 +189,9 @@ type Notification struct {
 	Username string `json:"username,omitempty"`
 	// VictorOps API key. Populated for the VICTOR_OPS notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the key.
 	VictorOpsAPIKey string `json:"victorOpsApiKey,omitempty"`
+	// +optional
+	// Secret for VictorOps should contain both APIKey and RoutingKey values
+	VictorOpsSecretRef common.ResourceRefNamespaced `json:"victorOpsSecretRef,omitempty"`
 	// VictorOps routing key. Populated for the VICTOR_OPS notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the key.
 	VictorOpsRoutingKey string `json:"victorOpsRoutingKey,omitempty"`
 	// The following roles grant privileges within a project.

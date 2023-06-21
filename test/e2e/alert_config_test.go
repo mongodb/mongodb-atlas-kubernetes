@@ -1,11 +1,18 @@
 package e2e_test
 
 import (
+	"os"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
@@ -165,3 +172,99 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 	}
 	Expect(util.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
 }
+
+var _ = Describe("Alert configuration with secrets test", Label("alert-config"), func() {
+	var testData *model.TestDataProvider
+
+	alertConfigs := []v1.AlertConfiguration{
+		{
+			EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
+			Enabled:       true,
+			Threshold: &v1.Threshold{
+				Operator:  "LESS_THAN",
+				Threshold: "1",
+				Units:     "HOURS",
+			},
+			Notifications: []v1.Notification{
+				{
+					IntervalMin:  5,
+					DelayMin:     toptr.MakePtr(5),
+					EmailEnabled: toptr.MakePtr(true),
+					SMSEnabled:   toptr.MakePtr(false),
+					Roles: []string{
+						"GROUP_OWNER",
+					},
+					TypeName: "DATADOG",
+				},
+			},
+		},
+	}
+
+	datadogAPIKey := os.Getenv("DATADOG_API_KEY")
+	Expect(datadogAPIKey).ShouldNot(BeEmpty(), "Please setup DATADOG_API_KEY environment variable")
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "datadog-creds",
+		},
+		Data: map[string][]byte{
+			"ServiceKey": []byte(datadogAPIKey),
+		},
+	}
+
+	_ = AfterEach(func() {
+		GinkgoWriter.Write([]byte("\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		actions.DeleteTestDataProject(testData)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+	})
+
+	It("Should be able to create AtlasProject with Alert Config and secrets", func() {
+		testData = model.DataProvider(
+			"alert-configs-1",
+			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			40000,
+			[]func(*model.TestDataProvider){},
+		).WithProject(data.DefaultProject())
+
+		By("Creating an AtlasProject", func() {
+			actions.ProjectCreationFlow(testData)
+		})
+
+		By("Creating Datadog credentials secret", func() {
+			secret.Namespace = testData.Project.Namespace
+			Expect(testData.K8SClient.Create(testData.Context, secret)).To(Succeed())
+		})
+
+		By("Configuring the Datadog alert using secret ref", func() {
+			alertConfigs[0].Notifications[0].ServiceKeyRef = common.ResourceRefNamespaced{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			}
+
+			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
+			testData.Project.Spec.AlertConfigurationSyncEnabled = true
+			testData.Project.Spec.AlertConfigurations = alertConfigs
+			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+		})
+
+		By("Verifying the Datadog config in Atlas", func() {
+			Eventually(func(g Gomega) {
+				atlasClient := atlas.GetClientOrFail()
+				var err error
+				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurations.List(testData.Context, testData.Project.ID(), nil)
+				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(atlasAlertConfigs).Should(HaveLen(len(alertConfigs)))
+			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute)
+		})
+	})
+})

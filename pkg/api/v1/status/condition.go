@@ -42,7 +42,7 @@ const (
 	NetworkPeerReadyType            ConditionType = "NetworkPeerReady"
 	CloudProviderAccessReadyType    ConditionType = "CloudProviderAccessReady"
 	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
-	AlertConfigurationReadyType     ConditionType = "AlertConfigurationReadyType"
+	AlertConfigurationReadyType     ConditionType = "AlertConfigurationReady"
 	EncryptionAtRestReadyType       ConditionType = "EncryptionAtRestReady"
 	AuditingReadyType               ConditionType = "AuditingReady"
 	ProjectSettingsReadyType        ConditionType = "ProjectSettingsReady"
