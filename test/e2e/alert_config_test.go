@@ -14,6 +14,7 @@ import (
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
@@ -200,8 +201,8 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		},
 	}
 
-	datadogAPIKey := os.Getenv("DATADOG_API_KEY")
-	Expect(datadogAPIKey).ShouldNot(BeEmpty(), "Please setup DATADOG_API_KEY environment variable")
+	datadogAPIKey := os.Getenv("DATADOG_KEY")
+	Expect(datadogAPIKey).ShouldNot(BeEmpty(), "Please setup DATADOG_KEY environment variable")
 
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -209,9 +210,12 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "datadog-creds",
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
 		},
 		Data: map[string][]byte{
-			"ServiceKey": []byte(datadogAPIKey),
+			"DatadogAPIKey": []byte(datadogAPIKey),
 		},
 	}
 
@@ -245,7 +249,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		})
 
 		By("Configuring the Datadog alert using secret ref", func() {
-			alertConfigs[0].Notifications[0].ServiceKeyRef = common.ResourceRefNamespaced{
+			alertConfigs[0].Notifications[0].DatadogAPIKeyRef = common.ResourceRefNamespaced{
 				Name:      secret.Name,
 				Namespace: secret.Namespace,
 			}
@@ -257,14 +261,13 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		})
 
 		By("Verifying the Datadog config in Atlas", func() {
+			atlasClient := atlas.GetClientOrFail()
 			Eventually(func(g Gomega) {
-				atlasClient := atlas.GetClientOrFail()
-				var err error
 				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurations.List(testData.Context, testData.Project.ID(), nil)
-				Expect(err).NotTo(HaveOccurred())
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(atlasAlertConfigs).Should(HaveLen(len(alertConfigs)))
-			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute)
+				g.Expect(atlasAlertConfigs[0].Notifications[0].DatadogAPIKey).ShouldNot(BeEmpty())
+			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
 	})
 })
