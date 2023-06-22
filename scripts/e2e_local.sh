@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -exo pipefail
 focus_key=$1
 build=$2
 if [[ -z "${build:-}" ]]; then

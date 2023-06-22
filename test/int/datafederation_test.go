@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
@@ -74,7 +75,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas manually to let project get removed
-				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDataFederation.Name)
+				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDataFederation.Name, &mongodbatlas.DeleteAdvanceClusterOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDataFederation.Name), 600, interval).Should(BeTrue())
 				createdDataFederation = nil

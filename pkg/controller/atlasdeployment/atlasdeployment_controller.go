@@ -443,8 +443,12 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 		return err
 	}
 
-	deleteDeploymentFunc := atlasClient.AdvancedClusters.Delete
+	// Delete(ctx context.Context, groupID, clusterName string, options *DeleteAdvanceClusterOptions) (*Response, error)
+	deleteDeploymentFunc := func(ctx context.Context, groupID, clusterName string) (*mongodbatlas.Response, error) {
+		return atlasClient.AdvancedClusters.Delete(ctx, groupID, clusterName, &mongodbatlas.DeleteAdvanceClusterOptions{})
+	}
 	if deployment.IsServerless() {
+		// Delete(context.Context, string, string) (*Response, error)
 		deleteDeploymentFunc = atlasClient.ServerlessInstances.Delete
 	}
 
