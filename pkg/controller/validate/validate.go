@@ -1,9 +1,14 @@
 package validate
 
 import (
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -12,6 +17,20 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
+
+type googleServiceAccountKey struct {
+	Type                    string `json:"type"`
+	ProjectID               string `json:"project_id"`
+	PrivateKeyID            string `json:"private_key_id"`
+	PrivateKey              string `json:"private_key"`  // Expects valid PEM key
+	ClientEmail             string `json:"client_email"` // Expects a valid email
+	ClientID                string `json:"client_id"`
+	AuthURI                 string `json:"auth_uri"`                    // Expects valid URL
+	TokenURI                string `json:"token_uri"`                   // Expects valid URL
+	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url"` // Expects valid URL
+	ClientX509CertURL       string `json:"client_x509_cert_url"`        // Expects valid URL
+	UniverseDomain          string `json:"universe_domain"`
+}
 
 func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 	var err error
@@ -50,6 +69,10 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 
 func Project(project *mdbv1.AtlasProject) error {
 	if err := projectCustomRoles(project.Spec.CustomRoles); err != nil {
+		return err
+	}
+
+	if err := encryptionAtRest(project.Spec.EncryptionAtRest); err != nil {
 		return err
 	}
 
@@ -194,5 +217,60 @@ func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 		customRolesMap[customRole.Name] = struct{}{}
 	}
 
+	return err
+}
+
+func encryptionAtRest(encryption *mdbv1.EncryptionAtRest) error {
+	if encryption != nil &&
+		encryption.GoogleCloudKms.Enabled != nil &&
+		*encryption.GoogleCloudKms.Enabled {
+		if encryption.GoogleCloudKms.ServiceAccountKey == "" {
+			return fmt.Errorf("missing Google Service Account Key but GCP KMS is enabled")
+		}
+		if err := gceServiceAccountKey(encryption.GoogleCloudKms.ServiceAccountKey); err != nil {
+			return fmt.Errorf("failed to validate Google Service Account Key: %w", err)
+		}
+	}
+	return nil
+}
+
+func unfilter(key string) string {
+	return strings.ReplaceAll(key, "\\\\n", "\\n")
+}
+
+func gceServiceAccountKey(key string) error {
+	emptyKey := googleServiceAccountKey{}
+	gceSAKey := googleServiceAccountKey{}
+	if err := json.Unmarshal(([]byte)(unfilter(key)), &gceSAKey); err != nil {
+		return fmt.Errorf("invalid service account key format: %w", err)
+	}
+	if emptyKey == gceSAKey {
+		return fmt.Errorf("invalid empty service account key")
+	}
+	for _, rawURL := range []string{gceSAKey.AuthURI,
+		gceSAKey.TokenURI,
+		gceSAKey.ClientX509CertURL,
+		gceSAKey.AuthProviderX509CertURL} {
+		if _, err := url.ParseRequestURI(rawURL); err != nil {
+			return fmt.Errorf("invalid URL address %q: %w", rawURL, err)
+		}
+	}
+	block, _ := pem.Decode([]byte(gceSAKey.PrivateKey))
+	if block == nil || !strings.HasSuffix(block.Type, "PRIVATE KEY") {
+		return fmt.Errorf("failed to decode PEM block containing a private key")
+	}
+
+	err := assertParsePrivateKey(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse PEM private key: %w", err)
+	}
+	return nil
+}
+
+func assertParsePrivateKey(key []byte) error {
+	_, err := x509.ParsePKCS1PrivateKey(key)
+	if err != nil && strings.Contains(err.Error(), "ParsePKCS8PrivateKey") {
+		_, err = x509.ParsePKCS8PrivateKey(key)
+	}
 	return err
 }
