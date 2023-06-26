@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"google.golang.org/api/googleapi"
 
@@ -36,12 +37,9 @@ type gcpNetwork struct {
 
 const (
 	// TODO get from GCP
-	GoogleProjectID     = "atlasoperator"             // Google Cloud Project ID
-	GoogleVPC           = "atlas-operator-test"       // VPC Name
-	GoogleSubnetName    = "atlas-operator-subnet-leo" // Subnet Name
-	googleConnectPrefix = "ao"                        // Private Service Connect Endpoint Prefix
-
-	gcpSubnetIPMask = "10.0.0.%d"
+	GoogleProjectID     = "atlasoperator" // Google Cloud Project ID
+	googleConnectPrefix = "ao"            // Private Service Connect Endpoint Prefix
+	gcpSubnetIPMask     = "10.0.0.%d"
 )
 
 func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string, cleanup bool) (string, error) {
@@ -327,6 +325,8 @@ func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string)
 
 func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
 	a.t.Helper()
+
+	rand.Seed(time.Now().UnixNano())
 
 	ip := fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(10, 120))
 	if subnet == Subnet2Name {

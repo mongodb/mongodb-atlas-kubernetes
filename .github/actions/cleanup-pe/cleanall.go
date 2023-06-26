@@ -40,10 +40,11 @@ func cleanAllAWSPE(region string, subnets []string) error {
 		}
 
 		if len(subnetOutput.Subnets) == 0 {
-			return fmt.Errorf("no subnets found")
+			continue
 		}
 		subnetID := subnetOutput.Subnets[0].SubnetId
 
+		fmt.Printf("Listing private endpoints in subnet %s at region %s", *subnetID, region)
 		endpoints, err := svc.DescribeVpcEndpoints(&ec2.DescribeVpcEndpointsInput{})
 		if err != nil {
 			return fmt.Errorf("error fething all vpcEP: %v", err)
@@ -55,6 +56,8 @@ func cleanAllAWSPE(region string, subnets []string) error {
 				endpointIDs = append(endpointIDs, endpoint.VpcEndpointId)
 			}
 		}
+
+		fmt.Printf("Found %d private endpoints in subnet %s at region %s", len(endpointIDs), *subnetID, region)
 
 		err = deleteAWSPEsByID(svc, endpointIDs)
 		if err != nil {
@@ -92,6 +95,7 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 	peClient := network.NewPrivateEndpointsClient(azureSubscriptionID)
 	peClient.Authorizer = authorizer
 
+	fmt.Printf("Listing private endpoints at %s", resourceGroupName)
 	peList, err := peClient.List(ctx, resourceGroupName)
 	if err != nil {
 		return fmt.Errorf("error fething all PE: %v", err)
@@ -105,6 +109,8 @@ func cleanAllAzurePE(ctx context.Context, resourceGroupName, azureSubscriptionID
 			}
 		}
 	}
+
+	fmt.Printf("Found %d private endpoints at %s", len(endpointNames), resourceGroupName)
 
 	for _, peName := range endpointNames {
 		_, errDelete := peClient.Delete(ctx, resourceGroupName, peName)
@@ -129,10 +135,12 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 	for _, subnet := range subnets {
 		subnetURL := formSubnetURL(region, subnet, projectID)
 
+		fmt.Printf("Listing forward rules at %s", subnetURL)
 		forwardRules, err := computeService.ForwardingRules.List(projectID, region).Do()
 		if err != nil {
 			return fmt.Errorf("error while listing forwarding rules: %v", err)
 		}
+		log.Printf("Found %d forward rule(s)", len(forwardRules.Items))
 
 		counter := 0
 		for _, forwardRule := range forwardRules.Items {
@@ -147,7 +155,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 					forwardRule.Name, forwardRule.Network)
 			}
 		}
-		log.Printf("deleted %d GCP Forfard rules", counter)
+		log.Printf("deleted %d GCP Forward rules", counter)
 
 		time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
 		err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
@@ -160,6 +168,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 }
 
 func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subnetURL string) error {
+	fmt.Printf("Listing addresses at %s", subnetURL)
 	addressList, err := service.Addresses.List(projectID, region).Do()
 	if err != nil {
 		return fmt.Errorf("error while listing addresses: %v", err)
