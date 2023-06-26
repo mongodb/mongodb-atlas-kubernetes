@@ -246,7 +246,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	results = append(results, result)
 
-	if result = ensureAlertConfigurations(ctx, project, projectID); result.IsOk() {
+	if result = r.ensureAlertConfigurations(ctx, project, projectID); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
 	}
 	results = append(results, result)

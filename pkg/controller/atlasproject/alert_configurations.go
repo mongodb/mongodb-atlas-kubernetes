@@ -7,13 +7,19 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
+	service.Log.Debug("starting alert configurations processing")
+	defer service.Log.Debug("finished alert configurations processing")
+
 	if project.Spec.AlertConfigurationSyncEnabled {
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
@@ -22,6 +28,11 @@ func ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 		if len(specToSync) == 0 {
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
+		}
+		err := readAlertConfigurationsSecretsData(r.Client, project.Namespace, specToSync)
+		if err != nil {
+			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
+			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 		result := syncAlertConfigurations(ctx, service, groupID, specToSync)
 		if !result.IsOk() {
@@ -34,6 +45,76 @@ func ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasPr
 	service.UnsetCondition(status.AlertConfigurationReadyType)
 	service.Log.Debugf("Alert configuration sync is disabled for project %s", project.Name)
 	return workflow.OK()
+}
+
+// This method reads secrets refs and fills the secret data for the related Notification
+func readAlertConfigurationsSecretsData(kubeClient client.Client, projectNs string, alertConfigs []mdbv1.AlertConfiguration) error {
+	for i := 0; i < len(alertConfigs); i++ {
+		ac := &alertConfigs[i]
+		for j := 0; j < len(ac.Notifications); j++ {
+			nf := &ac.Notifications[j]
+			var err error
+			switch {
+			case nf.APITokenRef.Name != "":
+				nf.APIToken, err = readNotificationSecret(kubeClient, nf.APITokenRef, projectNs, "APIToken")
+				if err != nil {
+					return err
+				}
+			case nf.DatadogAPIKeyRef.Name != "":
+				nf.DatadogAPIKey, err = readNotificationSecret(kubeClient, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				if err != nil {
+					return err
+				}
+			case nf.FlowdockAPITokenRef.Name != "":
+				nf.FlowdockAPIToken, err = readNotificationSecret(kubeClient, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				if err != nil {
+					return err
+				}
+			case nf.OpsGenieAPIKeyRef.Name != "":
+				nf.OpsGenieAPIKey, err = readNotificationSecret(kubeClient, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				if err != nil {
+					return err
+				}
+			case nf.ServiceKeyRef.Name != "":
+				nf.ServiceKey, err = readNotificationSecret(kubeClient, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				if err != nil {
+					return err
+				}
+			case nf.VictorOpsSecretRef.Name != "":
+				nf.VictorOpsAPIKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				if err != nil {
+					return err
+				}
+				nf.VictorOpsRoutingKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func readNotificationSecret(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldName string) (string, error) {
+	secret := &v1.Secret{}
+	var ns string
+	if res.Namespace == "" {
+		ns = parentNamespace
+	} else {
+		ns = res.Namespace
+	}
+
+	if err := kubeClient.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: ns}, secret); err != nil {
+		return "", err
+	}
+	val, exists := secret.Data[fieldName]
+	switch {
+	case !exists:
+		return "", fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
+	case len(val) == 0:
+		return "", fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
+	}
+	return string(val), nil
 }
 
 func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
