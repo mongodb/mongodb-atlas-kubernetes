@@ -1,16 +1,22 @@
 package cloud
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	aws_sdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/aws"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 type AwsAction struct {
@@ -25,13 +31,137 @@ type awsNetwork struct {
 	Subnets []*string
 }
 
-func NewAwsAction() *AwsAction {
-	return new(AwsAction)
+type principal struct {
+	AWS []string `json:"AWS,omitempty"`
 }
 
-func (awsAction *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (key string, err error) {
-	session := aws.SessionAWS(region)
-	return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
+type kmsPolicy struct {
+	Version   string      `json:"Version"`
+	Statement []statement `json:"Statement"`
+}
+
+type statement struct {
+	Sid       string    `json:"Sid"`
+	Effect    string    `json:"Effect"`
+	Principal principal `json:"Principal"`
+	Action    []string  `json:"Action"`
+	Resource  string    `json:"Resource"`
+}
+
+func (a *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (key string, err error) {
+	a.t.Helper()
+
+	kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(config.AWSRegionUS))
+
+	keyId, adminARNs, err := getKeyIDAndAdminARNs()
+	if err != nil {
+		return "", err
+	}
+
+	policyString, err := rolePolicyString(atlasAccountArn, assumedRoleArn, adminARNs)
+	if err != nil {
+		return "", err
+	}
+
+	policyInput := &kms.PutKeyPolicyInput{
+		KeyId:      &keyId,
+		PolicyName: aws_sdk.String("default"),
+		Policy:     aws_sdk.String(policyString),
+	}
+
+	_, err = kmsClient.PutKeyPolicy(policyInput)
+	if err != nil {
+		return "", err
+	}
+
+	// return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
+	return keyId, nil
+}
+
+func getKeyIDAndAdminARNs() (keyID string, adminARNs []string, err error) {
+	keyID = os.Getenv("AWS_KMS_KEY_ID")
+	if keyID == "" {
+		err = errors.New("AWS_KMS_KEY_ID secret is empty")
+		return
+	}
+	adminArnString := os.Getenv("AWS_ACCOUNT_ARN_LIST")
+	if adminArnString == "" {
+		err = errors.New("AWS_ACCOUNT_ARN_LIST secret is empty")
+		return
+	}
+
+	adminARNs = strings.Split(adminArnString, ",")
+	if len(adminARNs) == 0 {
+		err = errors.New("AWS_ACCOUNT_ARN_LIST wasn't parsed properly, please separate accounts via a comma")
+		return
+	}
+
+	return keyID, adminARNs, nil
+}
+
+func rolePolicyString(atlasAccountARN, assumedRoleARN string, adminARNs []string) (string, error) {
+	policy := defaultKMSPolicy(atlasAccountARN, assumedRoleARN, adminARNs)
+	byteStr, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	return string(byteStr), nil
+}
+
+func defaultKMSPolicy(atlasAccountArn, assumedRoleArn string, adminARNs []string) kmsPolicy {
+	return kmsPolicy{
+		Version: "2012-10-17",
+		Statement: []statement{
+			{
+				Sid:    "Enable IAM User Permissions",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: []string{atlasAccountArn},
+				},
+				Action:   []string{"kms:*"},
+				Resource: "*",
+			},
+			{
+				Sid:    "Allow access for Key Administrators",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: adminARNs,
+				},
+				Action: []string{
+					"kms:Create*",
+					"kms:Describe*",
+					"kms:Enable*",
+					"kms:List*",
+					"kms:Put*",
+					"kms:Update*",
+					"kms:Revoke*",
+					"kms:Disable*",
+					"kms:Get*",
+					"kms:Delete*",
+					"kms:TagResource",
+					"kms:UntagResource",
+					"kms:ScheduleKeyDeletion",
+					"kms:CancelKeyDeletion",
+				},
+				Resource: "*",
+			},
+			{
+				Sid:    "Allow use of the key",
+				Effect: "Allow",
+				Principal: principal{
+					AWS: []string{assumedRoleArn},
+				},
+				Action: []string{
+					"kms:Encrypt",
+					"kms:Decrypt",
+					"kms:ReEncrypt*",
+					"kms:GenerateDataKey*",
+					"kms:DescribeKey",
+				},
+				Resource: "*",
+			},
+		},
+	}
 }
 
 func (a *AwsAction) GetAccountID() (string, error) {

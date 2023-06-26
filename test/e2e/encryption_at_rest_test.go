@@ -145,8 +145,11 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleA
 		return
 	}
 
+	t := GinkgoT()
+
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-	awsAction := cloud.NewAwsAction()
+	awsAction, err := cloud.NewAWSAction(t)
+	Expect(err).ToNot(HaveOccurred())
 	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
@@ -160,6 +163,7 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 	}
 
 	// todo: fill in
+
 }
 
 func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
