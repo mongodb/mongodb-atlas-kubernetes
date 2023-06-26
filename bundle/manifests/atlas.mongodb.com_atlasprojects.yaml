@@ -114,10 +114,38 @@ spec:
                               invalid, Atlas sends an email to the project owner and
                               eventually removes the token.
                             type: string
+                          apiTokenRef:
+                            description: ResourceRefNamespaced is a reference to a
+                              Kubernetes Resource that allows to configure the namespace
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                           channelName:
                             description: Slack channel name. Populated for the SLACK
                               notifications type.
                             type: string
+                          datadogAPIKeyRef:
+                            description: ResourceRefNamespaced is a reference to a
+                              Kubernetes Resource that allows to configure the namespace
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                           datadogApiKey:
                             description: Datadog API Key. Found in the Datadog dashboard.
                               Populated for the DATADOG notifications type.
@@ -147,6 +175,20 @@ spec:
                               becomes invalid, Atlas sends an email to the project
                               owner and eventually removes the token.
                             type: string
+                          flowdockApiTokenRef:
+                            description: ResourceRefNamespaced is a reference to a
+                              Kubernetes Resource that allows to configure the namespace
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                           intervalMin:
                             description: Number of minutes to wait between successive
                               notifications for unacknowledged alerts that are not
@@ -162,6 +204,20 @@ spec:
                               Atlas sends an email to the project owner and eventually
                               removes the token.
                             type: string
+                          opsGenieApiKeyRef:
+                            description: ResourceRefNamespaced is a reference to a
+                              Kubernetes Resource that allows to configure the namespace
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                           opsGenieRegion:
                             description: Region that indicates which API URL to use.
                             type: string
@@ -183,6 +239,20 @@ spec:
                               invalid, Atlas sends an email to the project owner and
                               eventually removes the key.
                             type: string
+                          serviceKeyRef:
+                            description: ResourceRefNamespaced is a reference to a
+                              Kubernetes Resource that allows to configure the namespace
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                           smsEnabled:
                             description: Flag indicating if text message notifications
                               should be sent. Populated for ORG, GROUP, and USER notifications
@@ -215,6 +285,20 @@ spec:
                               invalid, Atlas sends an email to the project owner and
                               eventually removes the key.
                             type: string
+                          victorOpsSecretRef:
+                            description: Secret for VictorOps should contain both
+                              APIKey and RoutingKey values
+                            properties:
+                              name:
+                                description: Name is the name of the Kubernetes Resource
+                                type: string
+                              namespace:
+                                description: Namespace is the namespace of the Kubernetes
+                                  Resource
+                                type: string
+                            required:
+                            - name
+                            type: object
                         type: object
                       type: array
                     threshold:
