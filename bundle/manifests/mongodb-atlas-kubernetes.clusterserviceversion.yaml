@@ -127,12 +127,12 @@ metadata:
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.7.3
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.8.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v1.7.3
+  name: mongodb-atlas-kubernetes.v1.8.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -152,6 +152,11 @@ spec:
         displayName: Atlas Database User
         kind: AtlasDatabaseUser
         name: atlasdatabaseusers.atlas.mongodb.com
+        version: v1
+      - description: AtlasDataFederation is the Schema for the Atlas Data Federation API
+        displayName: Atlas Data Federation
+        kind: AtlasDataFederation
+        name: atlasdatafederations.atlas.mongodb.com
         version: v1
       - description: AtlasDeployment is the Schema for the atlasdeployments API
         displayName: Atlas Deployment
@@ -367,6 +372,26 @@ spec:
             - apiGroups:
                 - atlas.mongodb.com
               resources:
+                - atlasdatafederations
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasdatafederations/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
                 - atlasdeployments
               verbs:
                 - create
@@ -465,7 +490,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:1.7.3
+                    image: mongodb/mongodb-atlas-kubernetes-operator:1.8.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -550,5 +575,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 1.7.3
-  replaces: mongodb-atlas-kubernetes.v1.7.2
+  version: 1.8.0
+  replaces: mongodb-atlas-kubernetes.v1.7.3
