@@ -34,6 +34,12 @@ linters-settings:
     locale: US
   goimports:
     local-prefixes: github.com/mongodb/mongodb-atlas-kubernetes
+  depguard:
+    rules:
+      all:
+        deny:
+          - pkg: io/ioutil
+            desc: 'io/ioutil package has been deprecated'
 
 issues:
   exclude-use-default: false
