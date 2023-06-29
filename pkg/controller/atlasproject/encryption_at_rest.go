@@ -85,6 +85,10 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 }
 
 func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatlas.AwsKms) error {
+	if awsKms == nil || awsKms.Enabled == nil || !*awsKms.Enabled {
+		return nil
+	}
+
 	// verify if role ID is set as AtlasObjectID
 	matched, err := regexp.MatchString(ObjectIDRegex, awsKms.RoleID)
 	if err != nil {
