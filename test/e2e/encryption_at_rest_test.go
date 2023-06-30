@@ -35,11 +35,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
+const (
+	ClientID         = "AZURE_CLIENT_ID"
+	KeyVaultName     = "ako-kms-test"
+	ClientSecret     = "AZURE_CLIENT_SECRET"
+	AzureEnvironment = "AZURE"
+)
+
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -90,20 +98,45 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				},
 			},
 		),
+		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("encryption-at-rest-azure"),
+			model.DataProvider(
+				"encryption-at-rest-azure",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			v1.EncryptionAtRest{
+				AzureKeyVault: v1.AzureKeyVault{
+					AzureEnvironment:  AzureEnvironment,
+					ClientID:          os.Getenv(ClientID),
+					Enabled:           toptr.MakePtr(true),
+					KeyVaultName:      KeyVaultName,
+					ResourceGroupName: cloud.ResourceGroupName,
+					Secret:            os.Getenv(ClientSecret),
+					TenantID:          os.Getenv(DirectoryID),
+					SubscriptionID:    os.Getenv(SubscriptionID),
+				},
+			},
+			nil,
+		),
 	)
 })
 
 func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
 	By("Add cloud access role (AWS only)", func() {
-		cloudAccessRolesFlow(userData, roles)
+		if roles != nil {
+			cloudAccessRolesFlow(userData, roles)
+		}
 	})
 
 	By("Create KMS", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-		Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
-		aRole := userData.Project.Status.CloudProviderAccessRoles[0]
+		var aRole status.CloudProviderAccessRole
+		if len(userData.Project.Status.CloudProviderAccessRoles) > 0 {
+			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
+		}
 
 		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(&encAtRest)
@@ -162,8 +195,14 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	// todo: fill in
+	t := GinkgoT()
 
+	azAction, err := cloud.NewAzureAction(t, os.Getenv(SubscriptionID), cloud.ResourceGroupName)
+	Expect(err).ToNot(HaveOccurred())
+
+	keyID, err := azAction.CreateKeyVault("test-key-name")
+	Expect(err).ToNot(HaveOccurred())
+	encAtRest.AzureKeyVault.KeyIdentifier = keyID
 }
 
 func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {

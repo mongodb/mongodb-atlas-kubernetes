@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
@@ -14,10 +16,15 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
+const (
+	AzureKeyVaultURI = "https://ako-kms-test.vault.azure.net/"
+)
+
 type AzureAction struct {
 	t                 core.GinkgoTInterface
 	resourceGroupName string
 	network           *azureNetwork
+	credentials       *azidentity.DefaultAzureCredential
 
 	resourceFactory *armnetwork.ClientFactory
 }
@@ -392,6 +399,62 @@ func (a *AzureAction) deletePrivateEndpoint(ctx context.Context, endpointName st
 	return nil
 }
 
+func (a *AzureAction) CreateKeyVault(keyName string) (string, error) {
+	a.t.Helper()
+
+	ctx := context.Background()
+
+	client, err := azkeys.NewClient(AzureKeyVaultURI, a.credentials, nil)
+	if err != nil {
+		return "", err
+	}
+
+	params := azkeys.CreateKeyParameters{
+		KeySize: toptr.MakePtr[int32](2048),
+		Kty:     toptr.MakePtr(azkeys.KeyTypeRSA),
+	}
+
+	r, err := client.CreateKey(ctx, keyName, params, nil)
+	if err != nil {
+		return "", err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deleteKeyVault(ctx, keyName)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	keyID := string(*r.KeyBundle.Key.KID)
+
+	return keyID, nil
+}
+
+func (a *AzureAction) deleteKeyVault(ctx context.Context, keyName string) error {
+	a.t.Helper()
+
+	client, err := azkeys.NewClient(AzureKeyVaultURI, a.credentials, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.DeleteKey(ctx, keyName, nil)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < 20; i++ {
+		_, err = client.PurgeDeletedKey(ctx, keyName, nil)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	return err
+}
+
 func NewAzureAction(t core.GinkgoTInterface, subscriptionID, resourceGroupName string) (*AzureAction, error) {
 	t.Helper()
 
@@ -409,5 +472,6 @@ func NewAzureAction(t core.GinkgoTInterface, subscriptionID, resourceGroupName s
 		t:                 t,
 		resourceGroupName: resourceGroupName,
 		resourceFactory:   factory,
+		credentials:       cred,
 	}, err
 }
