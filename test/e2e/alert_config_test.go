@@ -177,6 +177,10 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 var _ = Describe("Alert configuration with secrets test", Label("alert-config"), func() {
 	var testData *model.TestDataProvider
 
+	_ = BeforeEach(func() {
+		Expect(os.Getenv("DATADOG_KEY")).ShouldNot(BeEmpty(), "Please setup DATADOG_KEY environment variable")
+	})
+
 	alertConfigs := []v1.AlertConfiguration{
 		{
 			EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
@@ -201,9 +205,6 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		},
 	}
 
-	datadogAPIKey := os.Getenv("DATADOG_KEY")
-	Expect(datadogAPIKey).ShouldNot(BeEmpty(), "Please setup DATADOG_KEY environment variable")
-
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Secret",
@@ -215,7 +216,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 			},
 		},
 		Data: map[string][]byte{
-			"DatadogAPIKey": []byte(datadogAPIKey),
+			"DatadogAPIKey": []byte(os.Getenv("DATADOG_KEY")),
 		},
 	}
 
