@@ -151,7 +151,7 @@ $(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
-manifests: controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
+manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
 
 .PHONY: lint
 lint:
@@ -183,7 +183,7 @@ $(TIMESTAMPS_DIR)/generate: ${GO_SOURCES}
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: generate
-generate: controller-gen $(TIMESTAMPS_DIR)/generate ## Generate code
+generate: fmt controller-gen $(TIMESTAMPS_DIR)/generate ## Generate code
 
 .PHONY: controller-gen
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen

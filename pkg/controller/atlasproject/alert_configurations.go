@@ -8,11 +8,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
@@ -29,7 +31,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
 		}
-		err := readAlertConfigurationsSecretsData(r.Client, project.Namespace, specToSync)
+		err := r.readAlertConfigurationsSecretsData(project, specToSync)
 		if err != nil {
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
 			return workflow.Terminate(workflow.Internal, err.Error())
@@ -48,54 +50,69 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 }
 
 // This method reads secrets refs and fills the secret data for the related Notification
-func readAlertConfigurationsSecretsData(kubeClient client.Client, projectNs string, alertConfigs []mdbv1.AlertConfiguration) error {
+func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdbv1.AtlasProject, alertConfigs []mdbv1.AlertConfiguration) error {
+	resourcesToWatch := make([]watch.WatchedObject, 0)
+	projectNs := project.Namespace
+	defer func() {
+		r.EnsureMultiplesResourcesAreWatched(types.NamespacedName{Namespace: project.Namespace, Name: project.Name}, r.Log, resourcesToWatch...)
+		r.Log.Debugf("watching alert configuration secrets: %v\r\n", r.WatchedResources)
+	}()
+
 	for i := 0; i < len(alertConfigs); i++ {
 		ac := &alertConfigs[i]
 		for j := 0; j < len(ac.Notifications); j++ {
 			nf := &ac.Notifications[j]
 			var err error
+			var res *watch.WatchedObject
 			switch {
 			case nf.APITokenRef.Name != "":
-				nf.APIToken, err = readNotificationSecret(kubeClient, nf.APITokenRef, projectNs, "APIToken")
+				nf.APIToken, res, err = readNotificationSecret(r.Client, nf.APITokenRef, projectNs, "APIToken")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.DatadogAPIKeyRef.Name != "":
-				nf.DatadogAPIKey, err = readNotificationSecret(kubeClient, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				nf.DatadogAPIKey, res, err = readNotificationSecret(r.Client, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.FlowdockAPITokenRef.Name != "":
-				nf.FlowdockAPIToken, err = readNotificationSecret(kubeClient, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				nf.FlowdockAPIToken, res, err = readNotificationSecret(r.Client, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.OpsGenieAPIKeyRef.Name != "":
-				nf.OpsGenieAPIKey, err = readNotificationSecret(kubeClient, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				nf.OpsGenieAPIKey, res, err = readNotificationSecret(r.Client, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.ServiceKeyRef.Name != "":
-				nf.ServiceKey, err = readNotificationSecret(kubeClient, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				nf.ServiceKey, res, err = readNotificationSecret(r.Client, nf.ServiceKeyRef, projectNs, "ServiceKey")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.VictorOpsSecretRef.Name != "":
-				nf.VictorOpsAPIKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				nf.VictorOpsAPIKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
 				if err != nil {
 					return err
 				}
-				nf.VictorOpsRoutingKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
+				nf.VictorOpsRoutingKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
 				if err != nil {
 					return err
 				}
+				resourcesToWatch = append(resourcesToWatch, *res)
 			}
 		}
 	}
 	return nil
 }
 
-func readNotificationSecret(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldName string) (string, error) {
+func readNotificationSecret(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldName string) (string, *watch.WatchedObject, error) {
 	secret := &v1.Secret{}
 	var ns string
 	if res.Namespace == "" {
@@ -105,16 +122,16 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 	}
 
 	if err := kubeClient.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: ns}, secret); err != nil {
-		return "", err
+		return "", nil, err
 	}
 	val, exists := secret.Data[fieldName]
 	switch {
 	case !exists:
-		return "", fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
+		return "", nil, fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
 	case len(val) == 0:
-		return "", fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
+		return "", nil, fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
 	}
-	return string(val), nil
+	return string(val), &watch.WatchedObject{ResourceKind: "Secret", Resource: client.ObjectKeyFromObject(secret)}, nil
 }
 
 func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
