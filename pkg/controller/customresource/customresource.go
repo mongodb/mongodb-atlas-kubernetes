@@ -26,6 +26,7 @@ const (
 	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
 
 	ResourcePolicyKeep       = "keep"
+	ResourcePolicyDelete     = "delete"
 	ReconciliationPolicySkip = "skip"
 	ResourceVersionAllow     = "allow"
 )

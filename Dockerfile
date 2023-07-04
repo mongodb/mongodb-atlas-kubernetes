@@ -27,9 +27,9 @@ ENV TARGET_OS=${TARGETOS}
 
 RUN make manager
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2
 
-RUN microdnf install yum &&\
+RUN microdnf install -y yum &&\
   yum -y update &&\
   yum -y upgrade &&\
   yum clean all &&\

@@ -92,7 +92,7 @@ func init() {
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Project Controller Suite")
+	RunSpecs(t, "Atlas Operator Integration Test Suite")
 }
 
 // SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
@@ -179,7 +179,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
-func prepareControllers() {
+func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
 	err := mdbv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -241,13 +241,15 @@ func prepareControllers() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:      atlasDomain,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
-		GlobalPredicates: globalPredicates,
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		AtlasDomain:                 atlasDomain,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -271,6 +273,8 @@ func prepareControllers() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	return &namespace, managerCancelFunc
 }
 
 func removeControllersAndNamespace() {
