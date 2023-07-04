@@ -210,6 +210,13 @@ type ServerlessSpec struct {
 	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
 }
 
+// ToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
+func (s *ServerlessSpec) ToAtlas() (*mongodbatlas.Cluster, error) {
+	result := &mongodbatlas.Cluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
+}
+
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
 type BiConnector struct {
 	Enabled        *bool  `json:"enabled,omitempty"`
