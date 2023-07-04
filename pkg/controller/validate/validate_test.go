@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -439,5 +440,98 @@ func TestBackupScheduleValidation(t *testing.T) {
 			}
 			assert.Error(t, BackupSchedule(bSchedule, deployment))
 		})
+	})
+}
+
+// this key was removed immediately after download, so don't bother
+const sampleSAKey = `{
+	"type": "service_account",
+	"project_id": "some-project",
+	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",
+	"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCviL4+Bnn759sV\nNrtyexwHtR/5JYzwivupqOMdz1zuscqKfJOo6RXzq7Em3saoxLpHwwJzPq+HX1D+\ndaE0fB2hO0Mfjkcgmro0jBbLnRJgFCx7NwkyDfj8z6i4zx2CxZLiwdqo3Q3hEMNy\n5oZs52tFlTkOALCxa76Aq4eUIblupyhlhETQB1fb4D9+U57b4eeeFRyccwR7Cg0x\nfZUE1udV7YwKphLS8dCbLoqAQ3jmaxv+Qjo8e5Mj5oaMxzRAdOO1VtG9GaLU96Rc\nKGS75w+E/eR3Pm7b2dFo3jba2jvgm3U++EJi5/0zL/TQnOMwNHASPUsYQAhZezB5\nh5/MDwmjAgMBAAECggEAIOccZer33Zipz9GpFD3wVJ+GZUC9KO+cWcJ/A/z1Ggb4\nhLnyQbSjOUAjHjqe+U6a7k2m/WwwIctjlrb85yYmtayymc0lFv75zVS/Bx6jrZ/K\ncLQxxJCq7dSM90tXaEZZkKiusH1zFw9522VLqEk+qdXdUnsdo7wjAuJkMQebRxq8\n1lp3UGqAraBXLRrYUnQwBRezSYh93nZ+u+etjRCBjMYoy06PGDrJG05/FFNgQy1y\nGkBVKnmf9WNyDuX1ePyoXCAvRkwUW5ixTNGoGrRwbwleaFTvYPBlPM+TyCw4rdnU\nzRVNpoCqkf6S9tXjHKmGgwkyMqmYMCOk/5xCSb2p4QKBgQD14xcXIf9lnyHJCllU\nQdUIAmIp9/91Rdjpf/y98LCNrD/cyTvVr0+xSnN9ksBEGwvTIaaBcvdCMNBG8sI9\nsnO8W8GG1Bs80D3XIbJFaGmTmOngvrfie3tbP77wfcPgn659Q0I1+bNZGNVX+WEM\nn+f7rfGPa8Br/zHpQf2gaGWHAwKBgQC2wOrInJ+ndpqU49JVaT6YtQj0OKeLhSpc\n0N5DdW0jjD0WrnhOsLUMPC5V8R5fo4tFPfXVIfE2k8J5xxgopJzGLlHmhxq0ltmF\nbSoM2uHKf0UiRFmVTwZmzDwn+Ym/H9J/6L7Gd86u8kmWfJYFa3OzqJTvw7e+k4kD\nITb/NlEg4QKBgQCfW4AZg/Ur/Ug+LTDbxJa2TCUmog20CYKdQk+hIh6qktoI03qt\n8KKrel8DIVruSMEPIp3xA3twMIarlKWCqucLSkRQh6LndOa/SJ1rElJqUA4zlCdE\n51Z5OwUag8exCoxhrnd4183+jnOmQn89WV1V5dPKacEZvRix3gzsKvyx1QKBgFsH\nlOsAOPYtOapYIHiyx59A7YjYf3wbhJJe55cqcoZ2YCdgGET59/R0NZBRXhO9Xq3K\nwxy6n2/UAdauuPXlqMF+aQUu3rp9OTQgwAVPMZCv/DupWAXrKwEhUgWHYnl03GEi\nCYTKQIUb4lO3EvL4JtWiby1Oi8O9sU2ByectoxOBAoGASm9BXSN8Ru+dP5/E55mb\nd//aQlxlIvROhWSnotGzhyQ6DVk2fRRZQAuTEFVEprBX87gckdzb5cdaomziO9be\nhmtv1ValgmOCnta2AYw1blvfGK7B5FEpFckMniLjWap08aironIImj6ligLWDqc0\nNbdyAvc6N/5qG8gu4f8C2Q4=\n-----END PRIVATE KEY-----\n",
+	"client_email": "619108922856-compute@developer.gserviceaccount.com",
+	"client_id": "117865750705662546099",
+	"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+	"token_uri": "https://oauth2.googleapis.com/token",
+	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com",
+	"universe_domain": "googleapis.com"
+}`
+
+const sampleSAKeyOneLine = `{	"type": "service_account",	"project_id": "some-project",	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",	"private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCviL4+Bnn759sV\\nNrtyexwHtR/5JYzwivupqOMdz1zuscqKfJOo6RXzq7Em3saoxLpHwwJzPq+HX1D+\\ndaE0fB2hO0Mfjkcgmro0jBbLnRJgFCx7NwkyDfj8z6i4zx2CxZLiwdqo3Q3hEMNy\\n5oZs52tFlTkOALCxa76Aq4eUIblupyhlhETQB1fb4D9+U57b4eeeFRyccwR7Cg0x\\nfZUE1udV7YwKphLS8dCbLoqAQ3jmaxv+Qjo8e5Mj5oaMxzRAdOO1VtG9GaLU96Rc\\nKGS75w+E/eR3Pm7b2dFo3jba2jvgm3U++EJi5/0zL/TQnOMwNHASPUsYQAhZezB5\\nh5/MDwmjAgMBAAECggEAIOccZer33Zipz9GpFD3wVJ+GZUC9KO+cWcJ/A/z1Ggb4\\nhLnyQbSjOUAjHjqe+U6a7k2m/WwwIctjlrb85yYmtayymc0lFv75zVS/Bx6jrZ/K\\ncLQxxJCq7dSM90tXaEZZkKiusH1zFw9522VLqEk+qdXdUnsdo7wjAuJkMQebRxq8\\n1lp3UGqAraBXLRrYUnQwBRezSYh93nZ+u+etjRCBjMYoy06PGDrJG05/FFNgQy1y\\nGkBVKnmf9WNyDuX1ePyoXCAvRkwUW5ixTNGoGrRwbwleaFTvYPBlPM+TyCw4rdnU\\nzRVNpoCqkf6S9tXjHKmGgwkyMqmYMCOk/5xCSb2p4QKBgQD14xcXIf9lnyHJCllU\\nQdUIAmIp9/91Rdjpf/y98LCNrD/cyTvVr0+xSnN9ksBEGwvTIaaBcvdCMNBG8sI9\\nsnO8W8GG1Bs80D3XIbJFaGmTmOngvrfie3tbP77wfcPgn659Q0I1+bNZGNVX+WEM\\nn+f7rfGPa8Br/zHpQf2gaGWHAwKBgQC2wOrInJ+ndpqU49JVaT6YtQj0OKeLhSpc\\n0N5DdW0jjD0WrnhOsLUMPC5V8R5fo4tFPfXVIfE2k8J5xxgopJzGLlHmhxq0ltmF\\nbSoM2uHKf0UiRFmVTwZmzDwn+Ym/H9J/6L7Gd86u8kmWfJYFa3OzqJTvw7e+k4kD\\nITb/NlEg4QKBgQCfW4AZg/Ur/Ug+LTDbxJa2TCUmog20CYKdQk+hIh6qktoI03qt\\n8KKrel8DIVruSMEPIp3xA3twMIarlKWCqucLSkRQh6LndOa/SJ1rElJqUA4zlCdE\\n51Z5OwUag8exCoxhrnd4183+jnOmQn89WV1V5dPKacEZvRix3gzsKvyx1QKBgFsH\\nlOsAOPYtOapYIHiyx59A7YjYf3wbhJJe55cqcoZ2YCdgGET59/R0NZBRXhO9Xq3K\\nwxy6n2/UAdauuPXlqMF+aQUu3rp9OTQgwAVPMZCv/DupWAXrKwEhUgWHYnl03GEi\\nCYTKQIUb4lO3EvL4JtWiby1Oi8O9sU2ByectoxOBAoGASm9BXSN8Ru+dP5/E55mb\\nd//aQlxlIvROhWSnotGzhyQ6DVk2fRRZQAuTEFVEprBX87gckdzb5cdaomziO9be\\nhmtv1ValgmOCnta2AYw1blvfGK7B5FEpFckMniLjWap08aironIImj6ligLWDqc0\\nNbdyAvc6N/5qG8gu4f8C2Q4=\\n-----END PRIVATE KEY-----\\n",	"client_email": "619108922856-compute@developer.gserviceaccount.com",	"client_id": "117865750705662546099",	"auth_uri": "https://accounts.google.com/o/oauth2/auth",	"token_uri": "https://oauth2.googleapis.com/token",	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com",	"universe_domain": "googleapis.com"}`
+
+func testEncryptionAtRest(enabled bool) *mdbv1.EncryptionAtRest {
+	flag := enabled
+	return &mdbv1.EncryptionAtRest{
+		GoogleCloudKms: mdbv1.GoogleCloudKms{
+			Enabled:           &flag,
+			ServiceAccountKey: sampleSAKey,
+		},
+	}
+}
+
+func withProperUrls(properties string) string {
+	urls := `"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+	"token_uri": "https://oauth2.googleapis.com/token",
+	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com"`
+	return fmt.Sprintf(`{%s, %s}`, urls, properties)
+}
+
+func TestEncryptionAtRestValidation(t *testing.T) {
+	t.Run("google service account key validation succeeds if no encryption at rest is used", func(t *testing.T) {
+		assert.NoError(t, encryptionAtRest(&mdbv1.EncryptionAtRest{}))
+	})
+
+	t.Run("google service account key validation succeeds if encryption at rest is disabled", func(t *testing.T) {
+		assert.NoError(t, encryptionAtRest(testEncryptionAtRest(false)))
+	})
+
+	t.Run("google service account key validation succeeds if encryption is enabled but the key is empty", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = ""
+		assert.ErrorContains(t, encryptionAtRest(enc), "missing Google Service Account Key but GCP KMS is enabled")
+	})
+
+	t.Run("google service account key validation succeeds for a good key", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKey
+		assert.NoError(t, encryptionAtRest(enc))
+	})
+
+	t.Run("google service account key validation succeeds for a good key in a single line", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKeyOneLine
+		assert.NoError(t, encryptionAtRest(enc))
+	})
+
+	t.Run("google service account key validation fails for an empty json key", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = "{}"
+		assert.ErrorContains(t, encryptionAtRest(enc), "invalid empty service account key")
+	})
+
+	t.Run("google service account key validation fails for an empty array json as key", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = "[]"
+		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal array into Go value")
+	})
+
+	t.Run("google service account key validation fails for a json object with a wrong field type", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = `{"type":true}`
+		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal bool")
+	})
+
+	t.Run("google service account key validation fails for a bad pem key", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`)
+		assert.ErrorContains(t, encryptionAtRest(enc), "failed to decode PEM")
+	})
+
+	t.Run("google service account key validation fails for a bad URL", func(t *testing.T) {
+		enc := testEncryptionAtRest(true)
+		enc.GoogleCloudKms.ServiceAccountKey = withProperUrls(`"token_uri": "http//badurl.example"`)
+		assert.ErrorContains(t, encryptionAtRest(enc), "invalid URL address")
 	})
 }
