@@ -67,7 +67,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Track changes to sources to avoid repeating operations on sourced when soruces did not change
-TMPDIR := $(shell echo $(TMPDIR)/tmp || echo "/tmp")
+TMPDIR ?= /tmp
 TIMESTAMPS_DIR := $(TMPDIR)/mongodb-atlas-kubernetes
 GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
 
