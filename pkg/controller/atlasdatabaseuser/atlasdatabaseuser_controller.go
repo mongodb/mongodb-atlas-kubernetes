@@ -129,7 +129,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	workflowCtx.Client = atlasClient
 
-	owner, err := customresource.IsOwner(databaseUser, r.ObjectDeletionProtection, managedByOperator(), managedByAtlas(ctx, atlasClient, project.ID(), log))
+	owner, err := customresource.IsOwner(databaseUser, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, project.ID(), log))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -270,18 +270,5 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projec
 		}
 
 		return !isSame, nil
-	}
-}
-
-func managedByOperator() customresource.OperatorChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		annotations := resource.GetAnnotations()
-		if annotations == nil {
-			return false, nil
-		}
-
-		_, ok := annotations[customresource.AnnotationLastAppliedConfiguration]
-
-		return ok, nil
 	}
 }

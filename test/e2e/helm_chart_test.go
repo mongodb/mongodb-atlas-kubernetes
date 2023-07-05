@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -297,11 +298,14 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 	By("Check project, deployment does not exist", func() {
 		helm.Uninstall(data.Resources.Deployments[0].Spec.GetDeploymentName(), data.Resources.Namespace)
 		Eventually(
-			func(g Gomega) bool {
-				return atlasClient.IsProjectExists(g, data.Resources.ProjectID)
+			func(g Gomega) {
+				if atlasClient.IsProjectExists(g, data.Resources.ProjectID) {
+					_, err := atlasClient.Client.Projects.Delete(context.TODO(), data.Resources.ProjectID)
+					g.Expect(err).To(BeNil())
+				}
 			},
 			"7m", "20s",
-		).Should(BeFalse(), "Project and deployment should be deleted from Atlas")
+		).Should(Succeed(), "Project and deployment should be deleted from Atlas")
 	})
 
 	By("Delete HELM releases", func() {
