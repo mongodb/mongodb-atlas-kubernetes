@@ -67,45 +67,45 @@ func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdb
 			switch {
 			case nf.APITokenRef.Name != "":
 				nf.APIToken, res, err = readNotificationSecret(r.Client, nf.APITokenRef, projectNs, "APIToken")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.DatadogAPIKeyRef.Name != "":
 				nf.DatadogAPIKey, res, err = readNotificationSecret(r.Client, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.FlowdockAPITokenRef.Name != "":
 				nf.FlowdockAPIToken, res, err = readNotificationSecret(r.Client, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.OpsGenieAPIKeyRef.Name != "":
 				nf.OpsGenieAPIKey, res, err = readNotificationSecret(r.Client, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.ServiceKeyRef.Name != "":
 				nf.ServiceKey, res, err = readNotificationSecret(r.Client, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			case nf.VictorOpsSecretRef.Name != "":
 				nf.VictorOpsAPIKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 				nf.VictorOpsRoutingKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				resourcesToWatch = append(resourcesToWatch, *res)
 			}
 		}
 	}
