@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
@@ -1226,6 +1228,162 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 	})
+})
+
+func prePropulatedTestProject(ns, name, secretName string) *mdbv1.AtlasProject {
+	return mdbv1.NewProject(ns, name, name).
+		WithConnectionSecret(secretName).
+		WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0")).
+		WithAnnotations(map[string]string{
+			customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete,
+		})
+}
+
+var _ = Describe("AtlasDeployment Deletion", Label("AtlasDeployment", "deployment-deletion-protection"), func() {
+	var testNamespace *corev1.Namespace
+	var stopManager context.CancelFunc
+	var connectionSecret corev1.Secret
+	var testProject *mdbv1.AtlasProject
+
+	// This setupTestOperatorWithProject is NOT a BeforeEach because I could
+	// find no way to pass the protected argument to the BeforeEach call from
+	// each table test case run on the DescribeTables.
+	var setupTestOperatorWithProject = func(protected bool) {
+		By("Starting the operator", func() {
+			fakeAtlas := NewFakeDeploymentAndProjectInAtlasServer()
+			setFakeIntegrationAtlas(fakeAtlas)
+			workflow.Timeout = 2 * time.Second
+			workflow.RetryTime = 1 * time.Second
+			testNamespace, stopManager = prepareControllersWithCustomTransport(protected, fakeAtlas)
+			Expect(testNamespace).ToNot(BeNil())
+			Expect(stopManager).ToNot(BeNil())
+		})
+
+		By("Creating project connection secret", func() {
+			connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
+			Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+		})
+
+		By("Creating a project", func() {
+			projectName := "test-project"
+			testProject = prePropulatedTestProject(testNamespace.Name, projectName, connectionSecret.Name)
+			Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
+
+			Eventually(func() bool {
+				return testutil.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(10 * time.Second).WithPolling(5 * time.Second).Should(BeTrue())
+		})
+	}
+
+	AfterEach(func() {
+		By("Deleting project from k8s and atlas", func() {
+			Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
+			Eventually(
+				checkAtlasProjectRemoved(testProject.Status.ID),
+			).WithTimeout(30 * time.Second).WithPolling(2 * time.Nanosecond).Should(BeTrue())
+		})
+
+		By("Deleting project connection secret", func() {
+			Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
+		})
+
+		By("Stopping the operator", func() {
+			stopManager()
+			err := k8sClient.Delete(context.Background(), testNamespace)
+			Expect(err).ToNot(HaveOccurred())
+			unsetFakeIntegrationAtlas()
+		})
+	})
+
+	DescribeTable("removing an already deleted deployment in the cluster when protection is", func(protected bool) {
+		setupTestOperatorWithProject(protected)
+		fmt.Printf("TEST SETTING already removed deployment test protected=%v\n", protected)
+		testDeployment := &mdbv1.AtlasDeployment{}
+
+		By("Creating an already deleted deployment in the cluster", func() {
+			testDeployment = mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
+			Expect(k8sClient.Create(context.TODO(), testDeployment, &client.CreateOptions{})).To(Succeed())
+			Expect(k8sClient.Delete(context.TODO(), testDeployment, &client.DeleteOptions{})).To(Succeed())
+
+			Eventually(func() bool {
+				deployment := mdbv1.AtlasDeployment{}
+				err := k8sClient.Get(context.TODO(), kube.ObjectKey(testNamespace.Name, testDeployment.Name), &deployment, &client.GetOptions{})
+				return k8serrors.IsNotFound(err)
+			}).WithTimeout(10 * time.Second).WithPolling(2 * time.Second).Should(BeTrue())
+		})
+	},
+		Entry("ON succeeds immediately", true),
+		Entry("OFF also succeeds immediately", false),
+	)
+
+	DescribeTable("removing from Kubernetes when protection is", func(protected bool, policy string, expectRemoval bool) {
+		setupTestOperatorWithProject(protected)
+		fmt.Printf("TEST SETTING annotation test protected=%v policy=%q\n", protected, policy)
+		testDeployment := &mdbv1.AtlasDeployment{}
+
+		By("Creating a deployment in the cluster with annotation set to delete", func() {
+			testDeployment = mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
+			if policy != "" {
+				customresource.SetAnnotation(testDeployment, customresource.ResourcePolicyAnnotation, policy)
+			}
+			Expect(k8sClient.Create(context.TODO(), testDeployment, &client.CreateOptions{})).To(Succeed())
+		})
+
+		By("Waiting the deployment to settle in kubernetes", func() {
+			Eventually(func(g Gomega) bool {
+				return testutil.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
+			}).WithTimeout(10 * time.Second).WithPolling(1 * time.Second).Should(BeTrue())
+		})
+
+		By("Deleting the deployment from Kubernetes", func() {
+			Expect(k8sClient.Delete(context.TODO(), testDeployment, &client.DeleteOptions{})).To(Succeed())
+			Eventually(func() bool {
+				deployment := mdbv1.AtlasDeployment{}
+				err := k8sClient.Get(context.TODO(), kube.ObjectKey(testNamespace.Name, testDeployment.Name), &deployment, &client.GetOptions{})
+				return k8serrors.IsNotFound(err)
+			}).WithTimeout(10 * time.Second).WithPolling(1 * time.Second).Should(BeTrue())
+		})
+
+		By("Checking whether or not the Atlas deployment got also removed", func() {
+			deploymentAtlasName := testDeployment.Spec.DeploymentSpec.Name
+			if expectRemoval {
+				Expect(checkAtlasDeploymentRemoved(testProject.Name, deploymentAtlasName)()).To(BeTrue())
+			} else {
+				Expect(checkAtlasDeploymentRemoved(testProject.Name, deploymentAtlasName)()).To(BeFalse())
+			}
+		})
+	},
+		Entry("ON and resource policy is NOT SET, should NOT remove the Atlas Deployment",
+			/* protected = */ true,
+			"",
+			/* expectRemoval = */ false,
+		),
+		Entry("OFF and resource policy is NOT SET, should remove the Atlas Deployment",
+			/* protected = */ false,
+			"",
+			/* expectRemoval = */ true,
+		),
+		Entry("ON and resource policy is 'delete', should remove the Atlas Deployment",
+			/* protected = */ true,
+			customresource.ResourcePolicyDelete,
+			/* expectRemoval = */ true,
+		),
+		Entry("OFF and resource policy is 'delete' should remove the Atlas Deployment",
+			/* protected = */ false,
+			customresource.ResourcePolicyDelete,
+			/* expectRemoval = */ true,
+		),
+		Entry("ON and resource policy is 'keep' should NOT remove the Atlas Deployment",
+			/* protected = */ true,
+			customresource.ResourcePolicyKeep,
+			/* expectRemoval = */ false,
+		),
+		Entry("OFF and resource policy is 'keep' should NOT remove the Atlas Deployment",
+			/* protected = */ false,
+			customresource.ResourcePolicyKeep,
+			/* expectRemoval = */ false,
+		),
+	)
 })
 
 func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) {

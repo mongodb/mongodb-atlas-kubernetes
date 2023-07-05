@@ -11,6 +11,12 @@ const (
 	DefaultTimeout = time.Minute * 20
 )
 
+// RetryTime configurable time for a retry
+var RetryTime = DefaultRetry
+
+// Timeout configurable timeout
+var Timeout = DefaultTimeout
+
 type Result struct {
 	terminated   bool
 	requeueAfter time.Duration
@@ -36,7 +42,7 @@ func OK() Result {
 func Terminate(reason ConditionReason, message string) Result {
 	return Result{
 		terminated:   true,
-		requeueAfter: DefaultRetry,
+		requeueAfter: RetryTime,
 		reason:       reason,
 		message:      message,
 		warning:      true,

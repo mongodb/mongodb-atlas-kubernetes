@@ -57,6 +57,8 @@ type AtlasProjectReconciler struct {
 	GlobalAPISecret  client.ObjectKey
 	GlobalPredicates []predicate.Predicate
 	EventRecorder    record.EventRecorder
+
+	CustomClientFn func(string, atlas.Connection, *zap.SugaredLogger) (mongodbatlas.Client, error)
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -136,7 +138,7 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 	}
 	ctx.Connection = connection
 
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, err := r.newAtlasClient(connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		setCondition(ctx, status.DeploymentReadyType, result)
@@ -363,4 +365,11 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
 	}
+}
+
+func (r *AtlasProjectReconciler) newAtlasClient(connection atlas.Connection, log *zap.SugaredLogger) (mongodbatlas.Client, error) {
+	if r.CustomClientFn != nil {
+		return r.CustomClientFn(r.AtlasDomain, connection, log)
+	}
+	return atlas.Client(r.AtlasDomain, connection, log)
 }

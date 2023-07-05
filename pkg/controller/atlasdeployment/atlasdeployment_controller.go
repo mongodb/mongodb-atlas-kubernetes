@@ -52,13 +52,17 @@ import (
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
 type AtlasDeploymentReconciler struct {
 	watch.ResourceWatcher
-	Client           client.Client
-	Log              *zap.SugaredLogger
-	Scheme           *runtime.Scheme
-	AtlasDomain      string
-	GlobalAPISecret  client.ObjectKey
-	GlobalPredicates []predicate.Predicate
-	EventRecorder    record.EventRecorder
+	Client                      client.Client
+	Log                         *zap.SugaredLogger
+	Scheme                      *runtime.Scheme
+	AtlasDomain                 string
+	GlobalAPISecret             client.ObjectKey
+	GlobalPredicates            []predicate.Predicate
+	EventRecorder               record.EventRecorder
+	ObjectDeletionProtection    bool
+	SubObjectDeletionProtection bool
+
+	CustomClientFn func(string, atlas.Connection, *zap.SugaredLogger) (mongodbatlas.Client, error)
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -132,7 +136,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 	ctx.Connection = connection
 
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, err := r.newAtlasClient(connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -161,17 +165,23 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	if !deployment.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
-			if customresource.ResourceShouldBeLeftInAtlas(deployment) {
-				log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+			isProtected := customresource.IsResourceProtected(deployment, r.ObjectDeletionProtection)
+			log.Infow("RESOURCE PROTECTED", r.ObjectDeletionProtection, isProtected)
+			if isProtected {
+				log.Info("Not removing Atlas deployment from Atlas as per configuration")
 			} else {
-				if err = r.deleteDeploymentFromAtlas(context, project, deployment, atlasClient, log); err != nil {
-					log.Errorf("failed to remove deployment from Atlas: %s", err)
-					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(status.DeploymentReadyType, result)
-					return result.ReconcileResult(), nil
+				if customresource.ResourceShouldBeLeftInAtlas(deployment) {
+					log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+				} else {
+					if err = r.deleteDeploymentFromAtlas(context, project, deployment, atlasClient, log); err != nil {
+						log.Errorf("failed to remove deployment from Atlas: %s", err)
+						result = workflow.Terminate(workflow.Internal, err.Error())
+						ctx.SetConditionFromResult(status.DeploymentReadyType, result)
+						return result.ReconcileResult(), nil
+					}
 				}
 			}
-			err = r.removeDeletionFinalizer(context, deployment)
+			err = customresource.ManageFinalizer(context, r.Client, deployment, customresource.UnsetFinalizer)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("failed to remove finalizer", "error", err)
@@ -476,3 +486,10 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 }
 
 type deploymentHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
+
+func (r *AtlasDeploymentReconciler) newAtlasClient(connection atlas.Connection, log *zap.SugaredLogger) (mongodbatlas.Client, error) {
+	if r.CustomClientFn != nil {
+		return r.CustomClientFn(r.AtlasDomain, connection, log)
+	}
+	return atlas.Client(r.AtlasDomain, connection, log)
+}

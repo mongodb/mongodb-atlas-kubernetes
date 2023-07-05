@@ -35,7 +35,7 @@ func (tt *testTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func TestCustomTransport(t *testing.T) {
 	tt := &testTransport{used: false}
 
-	client, err := atlas.Client("https://cloud.mongodb.com", atlas.Connection{}, nil, httputil.CustomTransport(tt))
+	client, err := atlas.CustomClient("https://cloud.mongodb.com", atlas.Connection{}, httputil.CustomTransport(tt))
 	require.NoError(t, err)
 	client.Projects.GetAllProjects(context.Background(), &mongodbatlas.ListOptions{})
 	assert.True(t, tt.used)

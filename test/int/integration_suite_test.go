@@ -74,8 +74,10 @@ var (
 	// These variables are initialized once per each node
 	k8sClient            client.Client
 	atlasClient          *mongodbatlas.Client
+	savedAtlasClient     *mongodbatlas.Client
 	dataFederationClient *atlasdatafederation.DataFederationServiceOp
 	connection           atlas.Connection
+	savedConnection      atlas.Connection
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
@@ -160,12 +162,16 @@ func defaultTimeouts() {
 }
 
 func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
+	return prepareAtlasClientWithTransport(http.DefaultTransport)
+}
+
+func prepareAtlasClientWithTransport(transport http.RoundTripper) (*mongodbatlas.Client, atlas.Connection) {
 	orgID, publicKey, privateKey := os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
 	if orgID == "" || publicKey == "" || privateKey == "" {
 		Fail(`All of the "ATLAS_ORG_ID", "ATLAS_PUBLIC_KEY", and "ATLAS_PRIVATE_KEY" environment variables must be set!`)
 	}
 	withDigest := httputil.Digest(publicKey, privateKey)
-	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
+	httpClient, err := httputil.DecorateClient(&http.Client{Transport: transport}, withDigest)
 	Expect(err).ToNot(HaveOccurred())
 	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
 	Expect(err).ToNot(HaveOccurred())
@@ -180,6 +186,10 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
+	return prepareControllersWithCustomTransport(deletionProtection, nil)
+}
+
+func prepareControllersWithCustomTransport(deletionProtection bool, roundTripper http.RoundTripper) (*corev1.Namespace, context.CancelFunc) {
 	err := mdbv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -188,6 +198,13 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 			Namespace:    "test",
 			GenerateName: "test",
 		},
+	}
+
+	var customClient func(string, atlas.Connection, *zap.SugaredLogger) (mongodbatlas.Client, error)
+	if roundTripper != nil {
+		customClient = func(domain string, connection atlas.Connection, log *zap.SugaredLogger) (mongodbatlas.Client, error) {
+			return atlas.CustomClient(domain, connection, httputil.CustomTransport(roundTripper), httputil.LoggingTransport(log))
+		}
 	}
 
 	By("Creating the namespace " + namespace.Name)
@@ -226,17 +243,21 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates: globalPredicates,
 		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
+		CustomClientFn:   customClient,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdeployment.AtlasDeploymentReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		AtlasDomain:      atlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+		AtlasDomain:                 atlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDeployment"),
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: deletionProtection,
+		CustomClientFn:              customClient,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -284,4 +305,15 @@ func removeControllersAndNamespace() {
 	By("Removing the namespace " + namespace.Name)
 	err := k8sClient.Delete(context.Background(), &namespace)
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func setFakeIntegrationAtlas(roundTripper http.RoundTripper) {
+	savedAtlasClient = atlasClient
+	savedConnection = connection
+	atlasClient, savedConnection = prepareAtlasClientWithTransport(roundTripper)
+}
+
+func unsetFakeIntegrationAtlas() {
+	atlasClient = savedAtlasClient
+	connection = savedConnection
 }
