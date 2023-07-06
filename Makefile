@@ -170,6 +170,7 @@ fix-lint:
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
 	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./pkg
 	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./test
+	golangci-lint run --fix
 
 $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 	go vet ./...

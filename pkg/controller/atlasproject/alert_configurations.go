@@ -120,18 +120,19 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 	} else {
 		ns = res.Namespace
 	}
+	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: client.ObjectKeyFromObject(secret)}
 
 	if err := kubeClient.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: ns}, secret); err != nil {
-		return "", nil, err
+		return "", obj, err
 	}
 	val, exists := secret.Data[fieldName]
 	switch {
 	case !exists:
-		return "", nil, fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
+		return "", obj, fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
 	case len(val) == 0:
-		return "", nil, fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
+		return "", obj, fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
 	}
-	return string(val), &watch.WatchedObject{ResourceKind: "Secret", Resource: client.ObjectKeyFromObject(secret)}, nil
+	return string(val), obj, nil
 }
 
 func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
