@@ -23,3 +23,20 @@ func Test_DecorateClient(t *testing.T) {
 	// not going deeper here, just need to confirm that transport was changed
 	a.NotEqual(t, httpClient.Transport, decorated.Transport)
 }
+
+type dummyTripper struct{}
+
+// RoundTrip implements http.RoundTripper.
+func (*dummyTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
+func Test_DecorateClientCustomTransport(t *testing.T) {
+	dt := &dummyTripper{}
+	withTransport := CustomTransport(dt)
+
+	decorated, err := DecorateClient(&http.Client{Transport: http.DefaultTransport}, withTransport)
+	a := assert.New(t)
+	a.NoError(err)
+	a.Equal(decorated.Transport, dt)
+}

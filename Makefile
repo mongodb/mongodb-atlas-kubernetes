@@ -160,7 +160,7 @@ lint:
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	go fmt ./...
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	find . -name "*.go" -not -path "./vendor/*" -exec goimports -l -w "{}" \;
+	find . -name "*.go" -not -path "./vendor/*" -exec goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w "{}" \;
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: fmt
