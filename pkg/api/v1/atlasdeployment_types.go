@@ -119,6 +119,11 @@ type DeploymentSpec struct {
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 
+	// Custom resource for categorizing deployments.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags []*TagSpec `json:"tags,omitempty"`
+
 	// Positive integer that specifies the number of shards to deploy for a sharded deployment.
 	// The parameter is required if replicationSpecs are configured
 	// +kubebuilder:validation:Minimum=1
@@ -163,12 +168,16 @@ type AdvancedDeploymentSpec struct {
 	// After Atlas creates the deployment, you can't change its name.
 	// Can only contain ASCII letters, numbers, and hyphens.
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
-	Name                 string                     `json:"name,omitempty"`
-	Paused               *bool                      `json:"paused,omitempty"`
-	PitEnabled           *bool                      `json:"pitEnabled,omitempty"`
-	ReplicationSpecs     []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
-	RootCertType         string                     `json:"rootCertType,omitempty"`
-	VersionReleaseSystem string                     `json:"versionReleaseSystem,omitempty"`
+	Name             string                     `json:"name,omitempty"`
+	Paused           *bool                      `json:"paused,omitempty"`
+	PitEnabled       *bool                      `json:"pitEnabled,omitempty"`
+	ReplicationSpecs []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
+	RootCertType     string                     `json:"rootCertType,omitempty"`
+	// Custom resource for categorizing deployments.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags                 []*TagSpec `json:"tags,omitempty"`
+	VersionReleaseSystem string     `json:"versionReleaseSystem,omitempty"`
 	// +optional
 	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
 	// +optional
@@ -204,6 +213,10 @@ type ServerlessSpec struct {
 	// Can only contain ASCII letters, numbers, and hyphens.
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
+	// Key-value pairs for resource tagging.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags []*TagSpec `json:"tags,omitempty"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
 	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
 
@@ -214,6 +227,16 @@ type ServerlessSpec struct {
 type BiConnector struct {
 	Enabled        *bool  `json:"enabled,omitempty"`
 	ReadPreference string `json:"readPreference,omitempty"`
+}
+
+// TagSpec holds a key-value pair for resource tagging on this deployment.
+type TagSpec struct {
+	// +kubebuilder:validation:MaxLength:=255
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+-]*$
+	Key string `json:"key,omitempty"`
+	// +kubebuilder:validation:MaxLength:=255
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+-]*$
+	Value string `json:"value,omitempty"`
 }
 
 // ConnectionStrings configuration for applications use to connect to this deployment.

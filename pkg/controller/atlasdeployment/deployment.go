@@ -28,6 +28,7 @@ func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		Labels:                   legacy.Labels,
 		MongoDBMajorVersion:      legacy.MongoDBMajorVersion,
 		Name:                     legacy.Name,
+		Tags:                     legacy.Tags,
 		Paused:                   legacy.Paused,
 		PitEnabled:               legacy.PitEnabled,
 		ReplicationSpecs:         replicationSpecs,

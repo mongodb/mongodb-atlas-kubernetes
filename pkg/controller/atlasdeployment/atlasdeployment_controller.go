@@ -88,6 +88,8 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
+	log.Infow(fmt.Sprintf("--->>> DEBUG --->>>  Tags: %v >>>>>", deployment.Spec.DeploymentSpec.Tags))
+
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(deployment); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", deployment.Spec)
 		if !deployment.GetDeletionTimestamp().IsZero() {
@@ -203,7 +205,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			return result.ReconcileResult(), nil
 		}
 	}
-
 	return workflow.OK().ReconcileResult(), nil
 }
 
