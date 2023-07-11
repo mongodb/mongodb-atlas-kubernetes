@@ -38,7 +38,7 @@ import (
 const (
 	ClientID         = "AZURE_CLIENT_ID"
 	KeyVaultName     = "ako-kms-test"
-	ClientSecret     = "AZURE_CLIENT_SECRET"
+	ClientSecret     = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
 	AzureEnvironment = "AZURE"
 	KeyName          = "encryption-at-rest-test-key"
 )
