@@ -103,7 +103,10 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	ctx := customresource.MarkReconciliationStarted(r.Client, deployment, log)
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", deployment.Spec, "status", deployment.Status)
-	defer statushandler.Update(ctx, r.Client, r.EventRecorder, deployment)
+	defer func() {
+		statushandler.Update(ctx, r.Client, r.EventRecorder, deployment)
+		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, ctx.ListResourcesToWatch()...)
+	}()
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, deployment, r.Log)
 	if !resourceVersionIsValid.IsOk() {

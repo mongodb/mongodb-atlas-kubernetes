@@ -28,10 +28,7 @@ type TeamDataContainer struct {
 func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 	defer func() {
-		r.EnsureMultiplesResourcesAreWatched(
-			types.NamespacedName{Namespace: project.Namespace, Name: project.Name},
-			r.Log, resourcesToWatch...,
-		)
+		ctx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
 	}()
 

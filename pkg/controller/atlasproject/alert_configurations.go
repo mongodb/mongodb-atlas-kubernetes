@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -31,7 +30,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
 		}
-		err := r.readAlertConfigurationsSecretsData(project, specToSync)
+		err := r.readAlertConfigurationsSecretsData(project, service, specToSync)
 		if err != nil {
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
 			return workflow.Terminate(workflow.Internal, err.Error())
@@ -50,11 +49,11 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 }
 
 // This method reads secrets refs and fills the secret data for the related Notification
-func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdbv1.AtlasProject, alertConfigs []mdbv1.AlertConfiguration) error {
+func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdbv1.AtlasProject, service *workflow.Context, alertConfigs []mdbv1.AlertConfiguration) error {
 	resourcesToWatch := make([]watch.WatchedObject, 0)
 	projectNs := project.Namespace
 	defer func() {
-		r.EnsureMultiplesResourcesAreWatched(types.NamespacedName{Namespace: project.Namespace, Name: project.Name}, r.Log, resourcesToWatch...)
+		service.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching alert configuration secrets: %v\r\n", r.WatchedResources)
 	}()
 

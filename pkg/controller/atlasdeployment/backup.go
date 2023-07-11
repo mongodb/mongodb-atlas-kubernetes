@@ -52,7 +52,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 
 	resourcesToWatch := []watch.WatchedObject{}
 	defer func() {
-		r.EnsureMultiplesResourcesAreWatched(requestNamespacedName, r.Log, resourcesToWatch...)
+		service.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.WatchedResources)
 	}()
 
