@@ -40,6 +40,7 @@ const (
 	KeyVaultName     = "ako-kms-test"
 	ClientSecret     = "AZURE_CLIENT_SECRET"
 	AzureEnvironment = "AZURE"
+	KeyName          = "encryption-at-rest-test-key"
 )
 
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
@@ -48,6 +49,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 	_ = BeforeEach(func() {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -115,6 +117,21 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 					Secret:            os.Getenv(ClientSecret),
 					TenantID:          os.Getenv(DirectoryID),
 					SubscriptionID:    os.Getenv(SubscriptionID),
+				},
+			},
+			nil,
+		),
+		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("encryption-at-rest-gcp"),
+			model.DataProvider(
+				"encryption-at-rest-gcp",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			v1.EncryptionAtRest{
+				GoogleCloudKms: v1.GoogleCloudKms{
+					Enabled:           toptr.MakePtr(true),
+					ServiceAccountKey: os.Getenv("GCP_SA_CRED"),
 				},
 			},
 			nil,
@@ -200,8 +217,9 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 	azAction, err := cloud.NewAzureAction(t, os.Getenv(SubscriptionID), cloud.ResourceGroupName)
 	Expect(err).ToNot(HaveOccurred())
 
-	keyID, err := azAction.CreateKeyVault("test-key-name")
+	keyID, err := azAction.CreateKeyVault(KeyName)
 	Expect(err).ToNot(HaveOccurred())
+
 	encAtRest.AzureKeyVault.KeyIdentifier = keyID
 }
 
@@ -210,7 +228,15 @@ func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	// todo: fill in
+	t := GinkgoT()
+
+	gcpAction, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
+	Expect(err).ToNot(HaveOccurred())
+
+	keyID, err := gcpAction.CreateKMS()
+	Expect(err).ToNot(HaveOccurred())
+
+	encAtRest.GoogleCloudKms.KeyVersionResourceID = keyID
 }
 
 func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
