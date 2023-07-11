@@ -291,7 +291,6 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		ctx, project.ID(),
 		deployment,
 		backupEnabled,
-		req.NamespacedName,
 	); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)

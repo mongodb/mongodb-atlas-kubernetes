@@ -33,7 +33,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	projectID string,
 	deployment *mdbv1.AtlasDeployment,
 	isEnabled bool,
-	requestNamespacedName client.ObjectKey,
 ) error {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")

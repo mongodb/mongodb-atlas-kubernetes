@@ -123,9 +123,7 @@ func (c *Context) UnsetCondition(conditionType status.ConditionType) *Context {
 }
 
 func (c *Context) AddResourcesToWatch(resources ...watch.WatchedObject) {
-	for i := range resources {
-		c.resourcesToWatch = append(c.resourcesToWatch, resources[i])
-	}
+	c.resourcesToWatch = append(c.resourcesToWatch, resources...)
 }
 
 func (c *Context) ListResourcesToWatch() []watch.WatchedObject {

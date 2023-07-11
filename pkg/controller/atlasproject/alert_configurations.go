@@ -129,7 +129,7 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 	case !exists:
 		return "", obj, fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
 	case len(val) == 0:
-		return "", obj, fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
+		return "", obj, fmt.Errorf("secret '%s/%s' contains an empty value for '%s' parameter", ns, res.Name, fieldName)
 	}
 	return string(val), obj, nil
 }
