@@ -177,9 +177,8 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 				log.Errorw("failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
 			}
-		} else {
-			return result.ReconcileResult(), nil
 		}
+		return result.ReconcileResult(), nil
 	}
 
 	if deployment.IsLegacyDeployment() {
