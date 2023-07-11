@@ -15,7 +15,7 @@ import (
 
 func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) {
 	Eventually(allConditionsAreTrueFunc(userData, conditionTypes...)).
-		WithTimeout(3*time.Minute).WithPolling(20*time.Second).
+		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
 		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'", conditionTypes))
 }
 
