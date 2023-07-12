@@ -38,5 +38,5 @@ func TestCustomTransport(t *testing.T) {
 	client, err := atlas.Client("https://cloud.mongodb.com", atlas.Connection{}, nil, httputil.CustomTransport(tt))
 	require.NoError(t, err)
 	client.Projects.GetAllProjects(context.Background(), &mongodbatlas.ListOptions{})
-	assert.Equal(t, true, tt.used)
+	assert.True(t, tt.used)
 }
