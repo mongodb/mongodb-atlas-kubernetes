@@ -119,9 +119,11 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 	} else {
 		ns = res.Namespace
 	}
-	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: client.ObjectKeyFromObject(secret)}
 
-	if err := kubeClient.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: ns}, secret); err != nil {
+	secretObj := client.ObjectKey{Name: res.Name, Namespace: ns}
+	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: secretObj}
+
+	if err := kubeClient.Get(context.Background(), secretObj, secret); err != nil {
 		return "", obj, err
 	}
 	val, exists := secret.Data[fieldName]
