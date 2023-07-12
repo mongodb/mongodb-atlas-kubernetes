@@ -36,11 +36,11 @@ import (
 )
 
 const (
-	ClientID         = "AZURE_CLIENT_ID"
-	KeyVaultName     = "ako-kms-test"
-	ClientSecret     = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
-	AzureEnvironment = "AZURE"
-	KeyName          = "encryption-at-rest-test-key"
+	AzureClientID     = "AZURE_CLIENT_ID"
+	KeyVaultName      = "ako-kms-test"
+	AzureClientSecret = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
+	AzureEnvironment  = "AZURE"
+	KeyName           = "encryption-at-rest-test-key"
 )
 
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
@@ -110,11 +110,11 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			v1.EncryptionAtRest{
 				AzureKeyVault: v1.AzureKeyVault{
 					AzureEnvironment:  AzureEnvironment,
-					ClientID:          os.Getenv(ClientID),
+					ClientID:          os.Getenv(AzureClientID),
 					Enabled:           toptr.MakePtr(true),
 					KeyVaultName:      KeyVaultName,
 					ResourceGroupName: cloud.ResourceGroupName,
-					Secret:            os.Getenv(ClientSecret),
+					Secret:            os.Getenv(AzureClientSecret),
 					TenantID:          os.Getenv(DirectoryID),
 					SubscriptionID:    os.Getenv(SubscriptionID),
 				},
@@ -195,10 +195,8 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleA
 		return
 	}
 
-	t := GinkgoT()
-
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-	awsAction, err := cloud.NewAWSAction(t)
+	awsAction, err := cloud.NewAWSAction(GinkgoT())
 	Expect(err).ToNot(HaveOccurred())
 	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
@@ -212,9 +210,7 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	t := GinkgoT()
-
-	azAction, err := cloud.NewAzureAction(t, os.Getenv(SubscriptionID), cloud.ResourceGroupName)
+	azAction, err := cloud.NewAzureAction(GinkgoT(), os.Getenv(SubscriptionID), cloud.ResourceGroupName)
 	Expect(err).ToNot(HaveOccurred())
 
 	keyID, err := azAction.CreateKeyVault(KeyName)
@@ -228,9 +224,7 @@ func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	t := GinkgoT()
-
-	gcpAction, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
+	gcpAction, err := cloud.NewGCPAction(GinkgoT(), cloud.GoogleProjectID)
 	Expect(err).ToNot(HaveOccurred())
 
 	keyID, err := gcpAction.CreateKMS()

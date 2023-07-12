@@ -466,6 +466,8 @@ func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName stri
 }
 
 func (a *GCPAction) CreateKMS() (string, error) {
+	a.t.Helper()
+
 	ctx := context.Background()
 
 	result, err := a.keyManagementClient.CreateCryptoKeyVersion(ctx, &kmspb.CreateCryptoKeyVersionRequest{
@@ -497,6 +499,8 @@ func (a *GCPAction) CreateKMS() (string, error) {
 }
 
 func (a *GCPAction) deleteKMS(ctx context.Context, keyName string) error {
+	a.t.Helper()
+
 	req := &kmspb.DestroyCryptoKeyVersionRequest{
 		Name: keyName,
 	}

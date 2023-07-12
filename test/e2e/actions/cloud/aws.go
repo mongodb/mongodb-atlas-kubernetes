@@ -74,7 +74,6 @@ func (a *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (k
 		return "", err
 	}
 
-	// return session.GetCustomerMasterKeyID(atlasAccountArn, assumedRoleArn)
 	return keyId, nil
 }
 
