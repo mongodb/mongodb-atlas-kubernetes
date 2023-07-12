@@ -56,7 +56,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			})
 
 			// nolint:dupl
-			By("Deleting project in cluster don't delete from Atlas", func() {
+			By("Deleting project in cluster doesn't delete from Atlas", func() {
 				projectID := testProject.ID()
 				Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
 
@@ -98,7 +98,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			})
 
 			// nolint:dupl
-			By("Deleting project in cluster don't delete from Atlas", func() {
+			By("Deleting project in cluster doesn't delete from Atlas", func() {
 				projectID := testProject.ID()
 				Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
 
