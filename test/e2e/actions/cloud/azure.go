@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
@@ -17,7 +16,7 @@ import (
 )
 
 const (
-	AzureKeyVaultURI = "https://ako-kms-test.vault.azure.net/"
+	AzureKeyVaultName = "ako-kms-test"
 )
 
 type AzureAction struct {
@@ -26,7 +25,8 @@ type AzureAction struct {
 	network           *azureNetwork
 	credentials       *azidentity.DefaultAzureCredential
 
-	resourceFactory *armnetwork.ClientFactory
+	networkResourceFactory  *armnetwork.ClientFactory
+	keyVaultResourceFactory *armkeyvault.ClientFactory
 }
 
 type azureNetwork struct {
@@ -109,7 +109,7 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 		}
 	})
 
-	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	networkClient := a.networkResourceFactory.NewPrivateEndpointsClient()
 	op, err := networkClient.BeginCreateOrUpdate(
 		ctx,
 		a.resourceGroupName,
@@ -153,7 +153,7 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 func (a *AzureAction) GetPrivateEndpoint(endpointName string) (*armnetwork.PrivateEndpoint, error) {
 	a.t.Helper()
 
-	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	networkClient := a.networkResourceFactory.NewPrivateEndpointsClient()
 	pe, err := networkClient.Get(
 		context.Background(),
 		a.resourceGroupName,
@@ -170,7 +170,7 @@ func (a *AzureAction) GetPrivateEndpoint(endpointName string) (*armnetwork.Priva
 func (a *AzureAction) GetInterface(name string) (*armnetwork.Interface, error) {
 	a.t.Helper()
 
-	interfaceClient := a.resourceFactory.NewInterfacesClient()
+	interfaceClient := a.networkResourceFactory.NewInterfacesClient()
 	i, err := interfaceClient.Get(
 		context.Background(),
 		a.resourceGroupName,
@@ -187,7 +187,7 @@ func (a *AzureAction) GetInterface(name string) (*armnetwork.Interface, error) {
 func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.VirtualNetwork, error) {
 	a.t.Helper()
 
-	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+	vpcClient := a.networkResourceFactory.NewVirtualNetworksClient()
 
 	vpc, err := vpcClient.Get(ctx, a.resourceGroupName, vpcName, nil)
 	if err != nil {
@@ -203,7 +203,7 @@ func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.
 
 func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, region string, subnets map[string]string) (*armnetwork.VirtualNetwork, error) {
 	a.t.Helper()
-	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+	vpcClient := a.networkResourceFactory.NewVirtualNetworksClient()
 
 	subnetsSpec := make([]*armnetwork.Subnet, 0, len(subnets))
 	for name, ipRange := range subnets {
@@ -252,7 +252,7 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 
 func (a *AzureAction) deleteVpc(ctx context.Context, vpcName string) error {
 	a.t.Helper()
-	vpcClient := a.resourceFactory.NewVirtualNetworksClient()
+	vpcClient := a.networkResourceFactory.NewVirtualNetworksClient()
 
 	op, err := vpcClient.BeginDelete(
 		ctx,
@@ -271,7 +271,7 @@ func (a *AzureAction) deleteVpc(ctx context.Context, vpcName string) error {
 
 func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange string) (*armnetwork.Subnet, error) {
 	a.t.Helper()
-	subnetClient := a.resourceFactory.NewSubnetsClient()
+	subnetClient := a.networkResourceFactory.NewSubnetsClient()
 
 	op, err := subnetClient.BeginCreateOrUpdate(
 		ctx,
@@ -300,7 +300,7 @@ func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipR
 
 func (a *AzureAction) deleteSubnet(ctx context.Context, vpcName, subnetName string) error {
 	a.t.Helper()
-	subnetClient := a.resourceFactory.NewSubnetsClient()
+	subnetClient := a.networkResourceFactory.NewSubnetsClient()
 
 	op, err := subnetClient.BeginDelete(
 		ctx,
@@ -320,7 +320,7 @@ func (a *AzureAction) deleteSubnet(ctx context.Context, vpcName, subnetName stri
 
 func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName, subnetName string) (*armnetwork.Subnet, error) {
 	a.t.Helper()
-	subnetClient := a.resourceFactory.NewSubnetsClient()
+	subnetClient := a.networkResourceFactory.NewSubnetsClient()
 
 	subnet, ok := a.network.Subnets[subnetName]
 	if !ok {
@@ -350,7 +350,7 @@ func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName,
 
 func (a *AzureAction) enableSubnetPENetworkPolicy(ctx context.Context, vpcName, subnetName string) (*armnetwork.Subnet, error) {
 	a.t.Helper()
-	subnetClient := a.resourceFactory.NewSubnetsClient()
+	subnetClient := a.networkResourceFactory.NewSubnetsClient()
 
 	subnet, ok := a.network.Subnets[subnetName]
 	if !ok {
@@ -380,7 +380,7 @@ func (a *AzureAction) enableSubnetPENetworkPolicy(ctx context.Context, vpcName, 
 
 func (a *AzureAction) deletePrivateEndpoint(ctx context.Context, endpointName string) error {
 	a.t.Helper()
-	networkClient := a.resourceFactory.NewPrivateEndpointsClient()
+	networkClient := a.networkResourceFactory.NewPrivateEndpointsClient()
 	op, err := networkClient.BeginDelete(
 		ctx,
 		a.resourceGroupName,
@@ -404,55 +404,18 @@ func (a *AzureAction) CreateKeyVault(keyName string) (string, error) {
 
 	ctx := context.Background()
 
-	client, err := azkeys.NewClient(AzureKeyVaultURI, a.credentials, nil)
+	params := armkeyvault.KeyCreateParameters{
+		Properties: &armkeyvault.KeyProperties{
+			Kty: toptr.MakePtr(armkeyvault.JSONWebKeyTypeRSA),
+		},
+	}
+
+	r, err := a.keyVaultResourceFactory.NewKeysClient().CreateIfNotExist(ctx, a.resourceGroupName, AzureKeyVaultName, keyName, params, nil)
 	if err != nil {
 		return "", err
 	}
 
-	params := azkeys.CreateKeyParameters{
-		KeySize: toptr.MakePtr[int32](2048),
-		Kty:     toptr.MakePtr(azkeys.KeyTypeRSA),
-	}
-
-	r, err := client.CreateKey(ctx, keyName, params, nil)
-	if err != nil {
-		return "", err
-	}
-
-	a.t.Cleanup(func() {
-		err = a.deleteKeyVault(ctx, keyName)
-		if err != nil {
-			a.t.Error(err)
-		}
-	})
-
-	keyID := string(*r.KeyBundle.Key.KID)
-
-	return keyID, nil
-}
-
-func (a *AzureAction) deleteKeyVault(ctx context.Context, keyName string) error {
-	a.t.Helper()
-
-	client, err := azkeys.NewClient(AzureKeyVaultURI, a.credentials, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.DeleteKey(ctx, keyName, nil)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < 20; i++ {
-		_, err = client.PurgeDeletedKey(ctx, keyName, nil)
-		if err == nil {
-			return nil
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	return err
+	return *r.Properties.KeyURIWithVersion, nil
 }
 
 func NewAzureAction(t core.GinkgoTInterface, subscriptionID, resourceGroupName string) (*AzureAction, error) {
@@ -463,15 +426,21 @@ func NewAzureAction(t core.GinkgoTInterface, subscriptionID, resourceGroupName s
 		return nil, err
 	}
 
-	factory, err := armnetwork.NewClientFactory(subscriptionID, cred, nil)
+	networkFactory, err := armnetwork.NewClientFactory(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	vaultFactory, err := armkeyvault.NewClientFactory(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &AzureAction{
-		t:                 t,
-		resourceGroupName: resourceGroupName,
-		resourceFactory:   factory,
-		credentials:       cred,
+		t:                       t,
+		resourceGroupName:       resourceGroupName,
+		networkResourceFactory:  networkFactory,
+		keyVaultResourceFactory: vaultFactory,
+		credentials:             cred,
 	}, err
 }
