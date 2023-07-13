@@ -13,6 +13,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
@@ -29,7 +30,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
 		}
-		err := readAlertConfigurationsSecretsData(r.Client, project.Namespace, specToSync)
+		err := r.readAlertConfigurationsSecretsData(project, service, specToSync)
 		if err != nil {
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
 			return workflow.Terminate(workflow.Internal, err.Error())
@@ -48,44 +49,59 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 }
 
 // This method reads secrets refs and fills the secret data for the related Notification
-func readAlertConfigurationsSecretsData(kubeClient client.Client, projectNs string, alertConfigs []mdbv1.AlertConfiguration) error {
+func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdbv1.AtlasProject, service *workflow.Context, alertConfigs []mdbv1.AlertConfiguration) error {
+	resourcesToWatch := make([]watch.WatchedObject, 0)
+	projectNs := project.Namespace
+	defer func() {
+		service.AddResourcesToWatch(resourcesToWatch...)
+		r.Log.Debugf("watching alert configuration secrets: %v\r\n", r.WatchedResources)
+	}()
+
 	for i := 0; i < len(alertConfigs); i++ {
 		ac := &alertConfigs[i]
 		for j := 0; j < len(ac.Notifications); j++ {
 			nf := &ac.Notifications[j]
 			var err error
+			var res *watch.WatchedObject
 			switch {
 			case nf.APITokenRef.Name != "":
-				nf.APIToken, err = readNotificationSecret(kubeClient, nf.APITokenRef, projectNs, "APIToken")
+				nf.APIToken, res, err = readNotificationSecret(r.Client, nf.APITokenRef, projectNs, "APIToken")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
 			case nf.DatadogAPIKeyRef.Name != "":
-				nf.DatadogAPIKey, err = readNotificationSecret(kubeClient, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				nf.DatadogAPIKey, res, err = readNotificationSecret(r.Client, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
 			case nf.FlowdockAPITokenRef.Name != "":
-				nf.FlowdockAPIToken, err = readNotificationSecret(kubeClient, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				nf.FlowdockAPIToken, res, err = readNotificationSecret(r.Client, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
 			case nf.OpsGenieAPIKeyRef.Name != "":
-				nf.OpsGenieAPIKey, err = readNotificationSecret(kubeClient, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				nf.OpsGenieAPIKey, res, err = readNotificationSecret(r.Client, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
 			case nf.ServiceKeyRef.Name != "":
-				nf.ServiceKey, err = readNotificationSecret(kubeClient, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				nf.ServiceKey, res, err = readNotificationSecret(r.Client, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
 			case nf.VictorOpsSecretRef.Name != "":
-				nf.VictorOpsAPIKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				nf.VictorOpsAPIKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				nf.VictorOpsRoutingKey, err = readNotificationSecret(kubeClient, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				nf.VictorOpsRoutingKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
@@ -95,7 +111,7 @@ func readAlertConfigurationsSecretsData(kubeClient client.Client, projectNs stri
 	return nil
 }
 
-func readNotificationSecret(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldName string) (string, error) {
+func readNotificationSecret(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldName string) (string, *watch.WatchedObject, error) {
 	secret := &v1.Secret{}
 	var ns string
 	if res.Namespace == "" {
@@ -104,17 +120,20 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 		ns = res.Namespace
 	}
 
-	if err := kubeClient.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: ns}, secret); err != nil {
-		return "", err
+	secretObj := client.ObjectKey{Name: res.Name, Namespace: ns}
+	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: secretObj}
+
+	if err := kubeClient.Get(context.Background(), secretObj, secret); err != nil {
+		return "", obj, err
 	}
 	val, exists := secret.Data[fieldName]
 	switch {
 	case !exists:
-		return "", fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
+		return "", obj, fmt.Errorf("secret '%s/%s' doesn't contain '%s' parameter", ns, res.Name, fieldName)
 	case len(val) == 0:
-		return "", fmt.Errorf("secret '%s/%s' contain an empty value for '%s' parameter", ns, res.Name, fieldName)
+		return "", obj, fmt.Errorf("secret '%s/%s' contains an empty value for '%s' parameter", ns, res.Name, fieldName)
 	}
-	return string(val), nil
+	return string(val), obj, nil
 }
 
 func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {

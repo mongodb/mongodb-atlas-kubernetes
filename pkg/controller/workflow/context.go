@@ -7,6 +7,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 )
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
@@ -33,6 +34,9 @@ type Context struct {
 	// lastConditionWarn indicates if the last "terminal" condition was expected (for example wait for some resource)
 	// or unexpected (any errors)
 	lastConditionWarn bool
+
+	// A list of sub-resources to add to a resource watcher after the Reconcile loop
+	resourcesToWatch []watch.WatchedObject
 }
 
 func NewContext(log *zap.SugaredLogger, conditions []status.Condition) *Context {
@@ -116,4 +120,12 @@ func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context 
 func (c *Context) UnsetCondition(conditionType status.ConditionType) *Context {
 	c.status.RemoveCondition(conditionType)
 	return c
+}
+
+func (c *Context) AddResourcesToWatch(resources ...watch.WatchedObject) {
+	c.resourcesToWatch = append(c.resourcesToWatch, resources...)
+}
+
+func (c *Context) ListResourcesToWatch() []watch.WatchedObject {
+	return c.resourcesToWatch
 }
