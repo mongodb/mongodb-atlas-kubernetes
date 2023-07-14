@@ -147,14 +147,16 @@ func main() {
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             config.GlobalAPISecret,
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)

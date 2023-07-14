@@ -68,3 +68,14 @@ func ApplyLastConfigApplied(ctx context.Context, resource mdbv1.AtlasCustomResou
 
 	return k8sClient.Update(ctx, resource, &client.UpdateOptions{})
 }
+
+func IsResourceManagedByOperator(resource mdbv1.AtlasCustomResource) (bool, error) {
+	annotations := resource.GetAnnotations()
+	if annotations == nil {
+		return false, nil
+	}
+
+	_, ok := annotations[AnnotationLastAppliedConfiguration]
+
+	return ok, nil
+}
