@@ -213,14 +213,20 @@ type ServerlessSpec struct {
 	// Can only contain ASCII letters, numbers, and hyphens.
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
+	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
+	ProviderSettings *ProviderSettingsSpec       `json:"providerSettings"`
+	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
 	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
 	Tags []*TagSpec `json:"tags,omitempty"`
-	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
+}
 
-	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
+// ServerlessToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
+func (s *ServerlessSpec) ServerlessToAtlas() (*mongodbatlas.Cluster, error) {
+	result := &mongodbatlas.Cluster{}
+	err := compat.JSONCopy(result, s)
+	return result, err
 }
 
 // BiConnector specifies BI Connector for Atlas configuration on this deployment.
@@ -232,11 +238,13 @@ type BiConnector struct {
 // TagSpec holds a key-value pair for resource tagging on this deployment.
 type TagSpec struct {
 	// +kubebuilder:validation:MaxLength:=255
-	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+-]*$
-	Key string `json:"key,omitempty"`
+	// +kubebuilder:validation:MinLength:=1
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+	Key string `json:"key"`
 	// +kubebuilder:validation:MaxLength:=255
-	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+-]*$
-	Value string `json:"value,omitempty"`
+	// +kubebuilder:validation:MinLength:=1
+	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+	Value string `json:"value"`
 }
 
 // ConnectionStrings configuration for applications use to connect to this deployment.

@@ -24,6 +24,10 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
+		atlasDeployment, err = serverlessSpec.ServerlessToAtlas()
+		if err != nil {
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		}
 		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
 		atlasDeployment, _, err = ctx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
 			Name: serverlessSpec.Name,
@@ -32,6 +36,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 				ProviderName:        string(serverlessSpec.ProviderSettings.ProviderName),
 				RegionName:          serverlessSpec.ProviderSettings.RegionName,
 			},
+			Tag: atlasDeployment.Tags,
 		})
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())

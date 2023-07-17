@@ -88,8 +88,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	log.Infow(fmt.Sprintf("--->>> DEBUG --->>>  Tags: %v >>>>>", deployment.Spec.DeploymentSpec.Tags))
-
 	if shouldSkip := customresource.ReconciliationShouldBeSkipped(deployment); shouldSkip {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasDeployment reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", deployment.Spec)
 		if !deployment.GetDeletionTimestamp().IsZero() {
@@ -191,6 +189,12 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			return result.ReconcileResult(), nil
 		}
 		deployment.Spec.DeploymentSpec = nil
+	}
+
+	if err := uniqueKey(&deployment.Spec); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		log.Errorw("failed to validate tags", "error", err)
+		return result.ReconcileResult(), nil
 	}
 
 	handleDeployment := r.selectDeploymentHandler(deployment)
@@ -478,3 +482,23 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 }
 
 type deploymentHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
+
+// Parse through tags and verfiy that all keys are unique. Return error otherwise.
+func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
+	store := make(map[string]string)
+	var arrTags []*mdbv1.TagSpec
+
+	if deploymentSpec.AdvancedDeploymentSpec != nil {
+		arrTags = deploymentSpec.AdvancedDeploymentSpec.Tags
+	} else {
+		arrTags = deploymentSpec.ServerlessSpec.Tags
+	}
+	for _, currTag := range arrTags {
+		if store[currTag.Key] == "" {
+			store[currTag.Key] = currTag.Value
+		} else {
+			return errors.New("Duplicate keys found in tags. This is forbidden.")
+		}
+	}
+	return nil
+}
