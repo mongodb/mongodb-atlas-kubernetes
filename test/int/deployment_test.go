@@ -585,7 +585,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState()
 			})
 
-			// ***
 			By("Updating the Deployment tags", func() {
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
 				performUpdate(20 * time.Minute)
@@ -602,13 +601,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					Expect(c.Tags).NotTo(Equal(createdDeployment.Spec.DeploymentSpec.Tags))
 				})
-				// TODO: revert back
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
 				performUpdate(20 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
-			// ***
 
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(true)
