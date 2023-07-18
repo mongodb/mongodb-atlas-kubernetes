@@ -585,6 +585,31 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState()
 			})
 
+			// ***
+			By("Updating the Deployment tags", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					Expect(c.Tags).To(Equal(createdDeployment.Spec.DeploymentSpec.Tags))
+				})
+			})
+
+			By("Updating the Deployment tags with a duplicate key", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					Expect(c.Tags).NotTo(Equal(createdDeployment.Spec.DeploymentSpec.Tags))
+				})
+				// TODO: revert back
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState()
+			})
+			// ***
+
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(true)
 				performUpdate(20 * time.Minute)
@@ -1025,6 +1050,27 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				performCreate(createdDeployment, 30*time.Minute)
 
 				doServerlessDeploymentStatusChecks()
+			})
+
+			By("Updating the Instance tags", func() {
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doServerlessDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Name)
+				Expect(atlasDeployment.Tags).To(Equal(createdDeployment.Spec.DeploymentSpec.Tags))
+			})
+
+			By("Updating the Deployment tags with a duplicate key", func() {
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
+				performUpdate(20 * time.Minute)
+				doServerlessDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Name)
+				Expect(atlasDeployment.Tags).NotTo(Equal(createdDeployment.Spec.DeploymentSpec.Tags))
+
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState()
 			})
 		})
 	})
