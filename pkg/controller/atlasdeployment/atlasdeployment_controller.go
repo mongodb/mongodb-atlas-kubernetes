@@ -497,7 +497,7 @@ func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 		if store[currTag.Key] == "" {
 			store[currTag.Key] = currTag.Value
 		} else {
-			return errors.New("Duplicate keys found in tags. This is forbidden.")
+			return errors.New("Duplicate keys found in tags. This is forbidden")
 		}
 	}
 	return nil
