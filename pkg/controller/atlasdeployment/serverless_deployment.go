@@ -45,6 +45,17 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
+		atlasDeployment, err := serverlessSpec.ServerlessToAtlas()
+		if err != nil {
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		}
+		atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
+			ServerlessBackupOptions: atlasDeployment.ServerlessBackupOptions,
+			Tag:                     atlasDeployment.Tags,
+		})
+		if err != nil {
+			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+		}
 		result := ensureServerlessPrivateEndpoints(ctx, project.ID(), serverlessSpec, atlasDeployment.Name)
 		return atlasDeployment, result
 	case status.StateCREATING:
