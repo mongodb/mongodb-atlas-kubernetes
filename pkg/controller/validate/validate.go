@@ -13,8 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/hashicorp/go-multierror"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
@@ -36,31 +34,31 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 	var err error
 
 	if allAreNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDepploymentSpec or spec.serverlessSpec to be present, but none were"))
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDepploymentSpec or spec.serverlessSpec to be present, but none were"))
 	}
 
 	if moreThanOneIsNonNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = multierror.Append(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDepploymentSpec or spec.serverlessSpec, more than one were present"))
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDepploymentSpec or spec.serverlessSpec, more than one were present"))
 	}
 
 	if deploymentSpec.DeploymentSpec != nil {
 		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName == "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName != "SERVERLESS") {
-			err = multierror.Append(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
+			err = errors.Join(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
 		}
 		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
-			err = multierror.Append(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
+			err = errors.Join(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
 		}
 	}
 
 	if deploymentSpec.AdvancedDeploymentSpec != nil {
 		instanceSizeErr := instanceSizeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
 		if instanceSizeErr != nil {
-			err = multierror.Append(err, instanceSizeErr)
+			err = errors.Join(err, instanceSizeErr)
 		}
 
 		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
 		if autoscalingErr != nil {
-			err = multierror.Append(err, autoscalingErr)
+			err = errors.Join(err, autoscalingErr)
 		}
 	}
 
@@ -87,7 +85,7 @@ func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.Atla
 	var err error
 
 	if bSchedule.Spec.Export == nil && bSchedule.Spec.AutoExportEnabled {
-		err = multierror.Append(err, errors.New("you must specify export policy when auto export is enabled"))
+		err = errors.Join(err, errors.New("you must specify export policy when auto export is enabled"))
 	}
 
 	replicaSets := map[string]struct{}{}
@@ -99,26 +97,26 @@ func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.Atla
 
 	for position, copySetting := range bSchedule.Spec.CopySettings {
 		if copySetting.RegionName == nil {
-			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must set a region name", position))
+			err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must set a region name", position))
 		}
 
 		if copySetting.ReplicationSpecID == nil {
-			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must set a valid ReplicationSpecID", position))
+			err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must set a valid ReplicationSpecID", position))
 		} else if _, ok := replicaSets[*copySetting.ReplicationSpecID]; !ok {
-			err = multierror.Append(err, fmt.Errorf("copy setting at position %d: referenced ReplicationSpecID is invalid", position))
+			err = errors.Join(err, fmt.Errorf("copy setting at position %d: referenced ReplicationSpecID is invalid", position))
 		}
 
 		if copySetting.ShouldCopyOplogs != nil && *copySetting.ShouldCopyOplogs {
 			if deployment.Spec.AdvancedDeploymentSpec != nil &&
 				(deployment.Spec.AdvancedDeploymentSpec.PitEnabled == nil ||
 					!*deployment.Spec.AdvancedDeploymentSpec.PitEnabled) {
-				err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
+				err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
 			}
 
 			if deployment.Spec.DeploymentSpec != nil &&
 				(deployment.Spec.DeploymentSpec.PitEnabled == nil ||
 					!*deployment.Spec.DeploymentSpec.PitEnabled) {
-				err = multierror.Append(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
+				err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
 			}
 		}
 	}
@@ -211,7 +209,7 @@ func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 
 	for _, customRole := range customRoles {
 		if _, ok := customRolesMap[customRole.Name]; ok {
-			err = multierror.Append(err, fmt.Errorf("the custom rone \"%s\" is duplicate. custom role name must be unique", customRole.Name))
+			err = errors.Join(err, fmt.Errorf("the custom rone \"%s\" is duplicate. custom role name must be unique", customRole.Name))
 		}
 
 		customRolesMap[customRole.Name] = struct{}{}
