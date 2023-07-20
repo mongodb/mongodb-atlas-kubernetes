@@ -63,7 +63,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.version }}
+          ref: v${{ matrix.version }}
           submodules: true
           fetch-depth: 0
       - name: "Set up QEMU"
@@ -94,23 +94,25 @@ jobs:
         shell: bash
         run: |
           go mod download
-      - name: Build and push operator to the DockerHub (daily-tag)
-        uses: docker/build-push-action@v5
+      - name: Build and push operator to Dockerhub & Quay (daily-tag)
+        uses: ./.github/actions/build-push-image
         with:
-          context: .
-          build-args: VERSION=${{ matrix.version }}
+          repository: ${{ env.IMAGE_REPOSITORY }}
+          version: ${{ steps.daily-tag.outputs.daily-tag }}
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: true
-      - name: Build and push operator to the DockerHub (release-tag)
-        uses: docker/build-push-action@v5
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          push_to_quay: true
+          quay_username: mongodb+mongodb_atlas_kubernetes
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Build and push operator to Dockerhub & Quay (release-tag)
+        uses: ./.github/actions/build-push-image
         with:
-          context: .
-          build-args: VERSION=${{ matrix.version }}
+          repository: ${{ env.IMAGE_REPOSITORY }}
+          version: ${{ matrix.version }}
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
-          tags: ${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: true
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          push_to_quay: true
+          quay_username: mongodb+mongodb_atlas_kubernetes
+          quay_password: ${{ secrets.QUAY_PASSWORD }}
