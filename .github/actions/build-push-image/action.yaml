@@ -99,6 +99,7 @@ runs:
         tags: ${{ inputs.repository }}:${{ inputs.version }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        sbom: true
         push: true
     - name: Login to quay.io registry
       if: ${{ inputs.push_to_quay == 'true' }}
@@ -118,4 +119,5 @@ runs:
         tags: quay.io/${{ inputs.repository }}:${{ inputs.version }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        sbom: true
         push: true
