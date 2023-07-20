@@ -264,7 +264,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	results = append(results, result)
 
-	if result = ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
