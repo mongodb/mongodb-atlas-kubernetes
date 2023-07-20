@@ -180,7 +180,7 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.ProjectCustomRolesReady, "failed to apply changes to custom roles: 1 error occurred:\n\t* server failed\n\n"),
+			workflow.Terminate(workflow.ProjectCustomRolesReady, "failed to apply changes to custom roles: server failed"),
 			syncCustomRolesStatus(ctx, desired, created, updated, deleted),
 		)
 
