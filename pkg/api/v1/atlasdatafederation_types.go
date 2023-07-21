@@ -228,3 +228,8 @@ func (c *AtlasDataFederation) WithPrivateEndpoint(endpointID, provider, endpoint
 	})
 	return c
 }
+
+func (c *AtlasDataFederation) WithAnnotations(annotations map[string]string) *AtlasDataFederation {
+	c.Annotations = annotations
+	return c
+}

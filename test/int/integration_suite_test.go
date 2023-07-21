@@ -256,13 +256,15 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdatafederation.AtlasDataFederationReconciler{
-		Client:           k8sManager.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		AtlasDomain:      atlasDomain,
-		EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
-		GlobalPredicates: globalPredicates,
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		AtlasDomain:                 atlasDomain,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
