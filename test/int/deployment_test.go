@@ -519,9 +519,55 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	FDescribe("Create/Update the cluster", func() {
+	Describe("Create/Update the cluster", func() {
+		It("Should fail, then be fixed (GCP)", func() {
+			createdDeployment = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("")
 
-		FIt("Should Succeed (AWS)", func() {
+			By(fmt.Sprintf("Trying to create the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				err := k8sClient.Create(context.Background(), createdDeployment)
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(MatchRegexp("is invalid: spec.deploymentSpec.name"))
+			})
+
+			By("Creating the fixed deployment", func() {
+				createdDeployment.Spec.DeploymentSpec.Name = "fixed-deployment"
+				performCreate(createdDeployment, 30*time.Minute)
+
+				doDeploymentStatusChecks()
+				checkAtlasState()
+			})
+		})
+
+		It("Should Success (AWS) with enabled autoscaling", func() {
+			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
+				DiskGBEnabled: boolptr(true),
+			}
+
+			By(fmt.Sprintf("Creating the Deployment %s with autoscaling", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				performCreate(createdDeployment, 30*time.Minute)
+
+				doDeploymentStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Decreasing the Deployment disk size should not take effect", func() {
+				// prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(14)
+				performUpdate(30 * time.Minute)
+
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
+
+					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+				})
+			})
+		})
+
+		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
@@ -533,7 +579,25 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState()
 			})
 
-			// will keep trying to deploy and run into erro. maybe we need to add some Eventually statment??
+			By("Updating the Deployment labels", func() {
+				createdDeployment.Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Updating the Deployment tags", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
+						Expect(reflect.DeepEqual(c.Tags[i].Key, tag.Key)).To(BeTrue())
+						Expect(reflect.DeepEqual(c.Tags[i].Value, tag.Value)).To(BeTrue())
+					}
+				})
+			})
+
 			By("Updating the Deployment tags with a duplicate key", func() {
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
 				Eventually(func(g Gomega) {
@@ -548,7 +612,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					)
 				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
 				lastGeneration++
-
+				// Removing tags for next tests
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{}
 				performUpdate(20 * time.Minute)
 			})
@@ -1004,24 +1068,25 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Key, tag.Key)).To(BeTrue())
 					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Value, tag.Value)).To(BeTrue())
 				}
-				//Expect(reflect.DeepEqual(atlasDeployment.Tags, createdDeployment.Spec.ServerlessSpec.Tags)).To(BeTrue())
 			})
 
 			By("Updating the Deployment tags with a duplicate key", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(
+						k8sClient,
+						createdDeployment,
+						status.
+							FalseCondition(status.DeploymentReadyType),
+					)
+				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
+				lastGeneration++
+				// Removing tags for next tests
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
 				performUpdate(20 * time.Minute)
-				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Name)
-				for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Key, tag.Key)).To(BeFalse())
-					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Value, tag.Value)).To(BeFalse())
-				}
-				//Expect(reflect.DeepEqual(atlasDeployment.Tags, createdDeployment.Spec.ServerlessSpec.Tags)).To(BeFalse())
-
-				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
-				performUpdate(20 * time.Minute)
-				doDeploymentStatusChecks()
-				checkAtlasState()
 			})
 		})
 	})
