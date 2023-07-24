@@ -151,7 +151,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -160,7 +160,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if !owner {
 		result = workflow.Terminate(
 			workflow.AtlasDeletionProtection,
-			"unable to reconcile project: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
+			"unable to reconcile project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
 		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
 		log.Error(result.GetMessage())
@@ -168,25 +168,21 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
-	if err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	var projectID string
-	if projectID, result = r.ensureProjectExists(workflowCtx, project); !result.IsOk() {
+	projectID, isNewProject, result := r.ensureProjectExists(workflowCtx, project)
+	if !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if result := r.ensureDeletionFinalizer(ctx, workflowCtx, atlasClient, project); !result.IsOk() {
+	if result = r.ensureDeletionFinalizer(ctx, workflowCtx, atlasClient, project); !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
+	}
+
+	if isNewProject {
+		return result.WithRetry(workflow.DefaultRetry).ReconcileResult(), nil
 	}
 
 	var authModes authmode.AuthModes
@@ -201,12 +197,21 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	results := r.ensureProjectResources(workflowCtx, projectID, project, ctx)
+	results := r.ensureProjectResources(ctx, workflowCtx, project)
 	for i := range results {
 		if !results[i].IsOk() {
 			logIfWarning(workflowCtx, result)
 			return results[i].ReconcileResult(), nil
 		}
+	}
+
+	err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
 	}
 
 	workflowCtx.SetConditionTrue(status.ReadyType)
@@ -230,6 +235,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, wo
 			log.Infow("RESOURCE PROTECTED", r.ObjectDeletionProtection, customresource.IsResourceProtected(project, r.ObjectDeletionProtection))
 			if customresource.IsResourceProtected(project, r.ObjectDeletionProtection) {
 				log.Info("Not removing Atlas database user from Atlas as per configuration")
+				result = workflow.OK()
 			} else {
 				if result = DeleteAllPrivateEndpoints(workflowCtx, project.ID()); !result.IsOk() {
 					setCondition(workflowCtx, status.PrivateEndpointReadyType, result)
@@ -258,64 +264,64 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, wo
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject, context context.Context) (results []workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject) (results []workflow.Result) {
 	var result workflow.Result
-	if result = ensureIPAccessList(ctx, projectID, project); result.IsOk() {
+	if result = ensureIPAccessList(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensurePrivateEndpoint(ctx, projectID, project); result.IsOk() {
+	if result = ensurePrivateEndpoint(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureProviderAccessStatus(context, ctx, project, projectID); result.IsOk() {
+	if result = ensureProviderAccessStatus(ctx, workflowCtx, project, project.ID()); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureNetworkPeers(ctx, projectID, project); result.IsOk() {
+	if result = ensureNetworkPeers(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureAlertConfigurations(ctx, project, projectID); result.IsOk() {
+	if result = r.ensureAlertConfigurations(workflowCtx, project, project.ID()); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureIntegration(ctx, projectID, project); result.IsOk() {
+	if result = r.ensureIntegration(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(ctx, projectID, project); result.IsOk() {
+	if result = ensureMaintenanceWindow(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureAuditing(ctx, projectID, project); result.IsOk() {
+	if result = ensureAuditing(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureProjectSettings(ctx, projectID, project); result.IsOk() {
+	if result = ensureProjectSettings(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureCustomRoles(ctx, projectID, project); result.IsOk() {
+	if result = ensureCustomRoles(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(ctx, projectID, project); result.IsOk() {
+	if result = r.ensureAssignedTeams(workflowCtx, project.ID(), project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)
