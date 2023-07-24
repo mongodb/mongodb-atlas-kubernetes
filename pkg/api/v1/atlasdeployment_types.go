@@ -119,7 +119,7 @@ type DeploymentSpec struct {
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 
-	// Custom resource for categorizing deployments.
+	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
 	Tags []*TagSpec `json:"tags,omitempty"`
@@ -173,7 +173,7 @@ type AdvancedDeploymentSpec struct {
 	PitEnabled       *bool                      `json:"pitEnabled,omitempty"`
 	ReplicationSpecs []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
 	RootCertType     string                     `json:"rootCertType,omitempty"`
-	// Custom resource for categorizing deployments.
+	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
 	Tags                 []*TagSpec `json:"tags,omitempty"`
