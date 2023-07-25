@@ -6,34 +6,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-type IPAccessListClient struct {
+type ipAccessListClient struct {
 	ListFunc func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error)
 }
 
-func (c *IPAccessListClient) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+func (c *ipAccessListClient) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 	return c.ListFunc(projectID)
 }
 
-func (c *IPAccessListClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.ProjectIPAccessList, *mongodbatlas.Response, error) {
+func (c *ipAccessListClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.ProjectIPAccessList, *mongodbatlas.Response, error) {
 	return nil, nil, nil
 }
 
-func (c *IPAccessListClient) Create(_ context.Context, _ string, _ []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+func (c *ipAccessListClient) Create(_ context.Context, _ string, _ []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 	return nil, nil, nil
 }
 
-func (c *IPAccessListClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
+func (c *ipAccessListClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
 	return nil, nil
 }
 
@@ -102,7 +101,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -118,7 +117,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{TotalCount: 0}, nil, nil
 				},
@@ -134,7 +133,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -169,7 +168,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -208,7 +207,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -249,7 +248,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 func TestEnsureIPAccessList(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -267,7 +266,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &IPAccessListClient{
+			ProjectIPAccessList: &ipAccessListClient{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
