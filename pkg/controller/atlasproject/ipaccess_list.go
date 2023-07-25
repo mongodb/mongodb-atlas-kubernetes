@@ -48,7 +48,7 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 func ensureIPAccessList(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
 	canReconcile, err := canIPAccessListReconcile(ctx, workflowCtx.Client, subobjectProtect, akoProject)
 	if err != nil {
-		result := workflow.Terminate(workflow.Internal, "the operator could not validate ownership for deletion protection")
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
 
 		return result

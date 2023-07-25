@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
@@ -22,7 +23,7 @@ import (
 func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
 	canReconcile, err := canPrivateEndpointReconcile(workflowCtx.Client, protected, project)
 	if err != nil {
-		result := workflow.Terminate(workflow.Internal, "the operator could not validate ownership for deletion protection")
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
 
 		return result

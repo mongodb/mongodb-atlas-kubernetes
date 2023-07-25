@@ -261,7 +261,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		}
 		result := ensureIPAccessList(context.TODO(), workflowCtx, akoProject, true)
 
-		require.Equal(t, workflow.Terminate(workflow.Internal, "the operator could not validate ownership for deletion protection"), result)
+		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
