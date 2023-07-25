@@ -150,7 +150,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient))
 	if err != nil {
-		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
+		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
@@ -160,7 +160,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if !owner {
 		result = workflow.Terminate(
 			workflow.AtlasDeletionProtection,
-			"unable to reconcile project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+			"unable to reconcile Project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
 		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
 		log.Error(result.GetMessage())
@@ -182,6 +182,15 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if isNewProject {
+		err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
+		if err != nil {
+			result = workflow.Terminate(workflow.Internal, err.Error())
+			workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+			log.Error(result.GetMessage())
+
+			return result.ReconcileResult(), nil
+		}
+
 		return result.WithRetry(workflow.DefaultRetry).ReconcileResult(), nil
 	}
 
@@ -276,7 +285,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 	results = append(results, result)
 
-	if result = ensureProviderAccessStatus(ctx, workflowCtx, project, project.ID()); result.IsOk() {
+	if result = ensureProviderAccessStatus(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
 	}
 	results = append(results, result)
@@ -375,13 +384,17 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client) custom
 			return false, nil
 		}
 
-		_, _, err := atlasClient.Projects.GetOneProject(ctx, project.ID())
+		atlasProject, _, err := atlasClient.Projects.GetOneProject(ctx, project.ID())
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
 				return false, nil
 			}
 
+			return false, err
+		}
+
+		if project.Spec.Name == atlasProject.Name {
 			return false, err
 		}
 
