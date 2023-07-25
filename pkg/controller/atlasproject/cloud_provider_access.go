@@ -2,7 +2,11 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -12,7 +16,25 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Context, project *v1.AtlasProject, groupID string) workflow.Result {
+func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canCloudProviderAccessReconcile(ctx, customContext.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		customContext.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Cloud Provider Access due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		customContext.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
+
+		return result
+	}
+
 	roleStatuses := project.Status.DeepCopy().CloudProviderAccessRoles
 	roleSpecs := project.Spec.DeepCopy().CloudProviderAccessRoles
 
@@ -21,7 +43,7 @@ func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Con
 		return workflow.OK()
 	}
 
-	result, condition := syncProviderAccessStatus(ctx, customContext, roleSpecs, roleStatuses, groupID)
+	result, condition := syncProviderAccessStatus(ctx, customContext, roleSpecs, roleStatuses, project.ID())
 	if result != workflow.OK() {
 		customContext.SetConditionFromResult(condition, result)
 		return result
@@ -246,4 +268,61 @@ func sortAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProvide
 		}
 	}
 	return diff, nil
+}
+
+func canCloudProviderAccessReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	list, _, err := atlasClient.CloudProviderAccess.ListRoles(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if len(list.AWSIAMRoles) == 0 {
+		return true, nil
+	}
+
+	atlasList := make([]CloudProviderAccessIdentifiable, len(list.AWSIAMRoles))
+	for i, r := range list.AWSIAMRoles {
+		atlasList[i] = CloudProviderAccessIdentifiable{
+			ProviderName:      r.ProviderName,
+			IamAssumedRoleArn: r.IAMAssumedRoleARN,
+		}
+	}
+
+	akoLastList := make([]CloudProviderAccessIdentifiable, len(latestConfig.CloudProviderAccessRoles))
+	for i, v := range latestConfig.CloudProviderAccessRoles {
+		akoLastList[i] = CloudProviderAccessIdentifiable(v)
+	}
+
+	diff := set.Difference(atlasList, akoLastList)
+
+	if len(diff) == 0 {
+		return true, nil
+	}
+
+	akoCurrentList := make([]CloudProviderAccessIdentifiable, len(akoProject.Spec.CloudProviderAccessRoles))
+	for i, v := range akoProject.Spec.CloudProviderAccessRoles {
+		akoCurrentList[i] = CloudProviderAccessIdentifiable(v)
+	}
+
+	diff = set.Difference(akoCurrentList, atlasList)
+
+	return len(diff) == 0, nil
+}
+
+type CloudProviderAccessIdentifiable v1.CloudProviderAccessRole
+
+func (cpa CloudProviderAccessIdentifiable) Identifier() interface{} {
+	return fmt.Sprintf("%s.%s", cpa.ProviderName, cpa.IamAssumedRoleArn)
 }
