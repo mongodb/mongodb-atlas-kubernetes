@@ -14,6 +14,9 @@ inputs:
   repository:
     description: The name of repository to build image
     required: true
+  ref:
+    description: The branch, tag or SHA to checkout.
+    required: false
   file:
     description: Name of the dockerfile relative to context
     required: false
@@ -49,6 +52,7 @@ runs:
       uses: actions/checkout@v3.5.3
       if: ${{ inputs.forked == false }}
       with:
+        ref: ${{ inputs.ref }}
         submodules: true
         fetch-depth: 0
     - name: Check out code for forked PR

@@ -60,6 +60,7 @@ jobs:
       - name: Rebuild ${{matrix.version}}
         run: |
           echo "Building ${{matrix.version}} version"
+<<<<<<< HEAD
       - name: Check out code
         uses: actions/checkout@v4
         with:
@@ -94,12 +95,15 @@ jobs:
         shell: bash
         run: |
           go mod download
+=======
+>>>>>>> 7e39dae (Make build-push-image action take git ref)
       - name: Build and push operator to Dockerhub & Quay (daily-tag)
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
           version: ${{ steps.daily-tag.outputs.daily-tag }}
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          ref: v${{ matrix.version }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           push_to_quay: true
