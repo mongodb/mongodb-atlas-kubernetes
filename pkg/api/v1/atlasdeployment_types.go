@@ -219,7 +219,7 @@ type ServerlessSpec struct {
 	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
-	Tags []*TagSpec `json:"tags,omitempty"`
+	Tags []*TagSpec `json:"tags"`
 }
 
 // ServerlessToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
