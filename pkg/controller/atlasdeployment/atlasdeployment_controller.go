@@ -191,8 +191,9 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		deployment.Spec.DeploymentSpec = nil
 	}
 
-	if result, err := uniqueKey(&deployment.Spec); !result.IsOk() {
+	if err := uniqueKey(&deployment.Spec); err != nil {
 		log.Errorw("failed to validate tags", "error", err)
+		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -484,7 +485,7 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 type deploymentHandlerFunc func(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
 
 // Parse through tags and verfiy that all keys are unique. Return error on duplicate key.
-func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) (workflow.Result, error) {
+func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 	store := make(map[string]string)
 	var arrTags []*mdbv1.TagSpec
 
@@ -498,8 +499,8 @@ func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) (workflow.Result, erro
 			store[currTag.Key] = currTag.Value
 		} else {
 			err := errors.New("duplicate keys found in tags, this is forbidden")
-			return workflow.Terminate(workflow.Internal, err.Error()), err
+			return err
 		}
 	}
-	return workflow.OK(), nil
+	return nil
 }

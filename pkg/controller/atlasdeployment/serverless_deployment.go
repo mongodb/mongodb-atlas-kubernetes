@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
@@ -45,19 +46,30 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
-		atlasDeployment, err := serverlessSpec.ServerlessToAtlas()
+		convertedDeployment, err := serverlessSpec.ServerlessToAtlas()
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
-		atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
-			ServerlessBackupOptions: atlasDeployment.ServerlessBackupOptions,
-			Tag:                     atlasDeployment.Tags,
-		})
-		if err != nil {
-			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+		fmt.Println("TAGS >>> operator:", convertedDeployment.Tags, " \n atlas", atlasDeployment.Tags)
+		if convertedDeployment.Tags == nil {
+			convertedDeployment.Tags = []*mongodbatlas.Tag{}
+		}
+		if (reflect.DeepEqual(convertedDeployment.Tags, atlasDeployment.Tags)) != true /* TODO : add || if backupOptions aren't equal */ {
+
+			fmt.Println(reflect.DeepEqual(convertedDeployment.Tags, atlasDeployment.Tags))
+
+			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
+				ServerlessBackupOptions: convertedDeployment.ServerlessBackupOptions,
+				Tag:                     convertedDeployment.Tags,
+			})
+			if err != nil {
+				return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+			}
+			return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 		}
 		result := ensureServerlessPrivateEndpoints(ctx, project.ID(), serverlessSpec, atlasDeployment.Name)
 		return atlasDeployment, result
+
 	case status.StateCREATING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 

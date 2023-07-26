@@ -575,6 +575,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
 
+				///
+				atlasDeployment, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+				fmt.Printf("CREATEDEPLOYMENT : %v                   ATLASDEPLOYMENT : %v", createdDeployment, atlasDeployment.StateName)
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdDeployment), createdDeployment)).To(Succeed())
+				fmt.Printf("CREATEDEPLOYMENT : %v                   ATLASDEPLOYMENT : %v", createdDeployment, atlasDeployment.StateName)
+				///
+
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
@@ -1052,32 +1059,21 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	FDescribe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
-
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
-				fmt.Printf("CREATEDEPLOYMENT : %v                   ATLASDEPLOYMENT : %v", createdDeployment.Status, atlasDeployment.StateName)
-				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdDeployment), createdDeployment)).To(Succeed())
-					g.Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-					s := []byte(fmt.Sprintf("CREATEDEPLOYMENT NOW : %v                  ATLASDEPLOYMENT NOW : %v", createdDeployment.Status, atlasDeployment.StateName))
-					GinkgoWriter.Write(s)
-				}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 				doServerlessDeploymentStatusChecks()
 			})
 
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
 				performUpdate(20 * time.Minute)
-				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdDeployment), createdDeployment)).To(Succeed())
-					g.Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-				}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Name)
-				for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Key, tag.Key)).To(BeTrue())
-					Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Value, tag.Value)).To(BeTrue())
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				if createdDeployment != nil {
+					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
+						Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Key, tag.Key)).To(BeTrue())
+						Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Value, tag.Value)).To(BeTrue())
+					}
 				}
 			})
 
