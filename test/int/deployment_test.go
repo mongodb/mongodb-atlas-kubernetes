@@ -575,13 +575,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
 
-				///
-				atlasDeployment, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
-				fmt.Printf("CREATEDEPLOYMENT : %v                   ATLASDEPLOYMENT : %v", createdDeployment, atlasDeployment.StateName)
-				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdDeployment), createdDeployment)).To(Succeed())
-				fmt.Printf("CREATEDEPLOYMENT : %v                   ATLASDEPLOYMENT : %v", createdDeployment, atlasDeployment.StateName)
-				///
-
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
