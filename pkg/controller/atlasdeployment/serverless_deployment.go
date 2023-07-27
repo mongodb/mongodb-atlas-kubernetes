@@ -51,8 +51,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 		if convertedDeployment.Tags == nil {
-			p := &[]*mongodbatlas.Tag{}
-			convertedDeployment.Tags = p
+			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
 		}
 		if !reflect.DeepEqual(convertedDeployment.Tags, atlasDeployment.Tags) {
 			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
