@@ -44,18 +44,13 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 		}
 	}
 
-	// dep, _ := json.Marshal(atlasDeployment)
-	// fmt.Println("DEBUG >>>>>> atlasdepl >> ", string(dep))
-
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
 		convertedDeployment, err := serverlessSpec.ServerlessToAtlas()
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
-		fmt.Println("TAGS >>> operator:", convertedDeployment.Tags, " \n atlas", atlasDeployment.Tags)
 		if convertedDeployment.Tags == nil {
-			// fmt.Println("Converting nil tags to empty array")
 			p := &[]*mongodbatlas.Tag{}
 			convertedDeployment.Tags = p
 		}

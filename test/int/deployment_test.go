@@ -1084,7 +1084,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					)
 				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
 				lastGeneration++
-				// Removing tags for next tests
+				// Removing tags
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
 				performUpdate(20 * time.Minute)
 			})
