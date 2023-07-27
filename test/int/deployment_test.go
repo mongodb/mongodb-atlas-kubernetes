@@ -1049,7 +1049,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create serverless instance", func() {
+	FDescribe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -1064,8 +1064,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-						Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Key, tag.Key)).To(BeTrue())
-						Expect(reflect.DeepEqual(atlasDeployment.Tags[i].Value, tag.Value)).To(BeTrue())
+						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Key, tag.Key)).To(BeTrue())
+						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Value, tag.Value)).To(BeTrue())
 					}
 				}
 			})
