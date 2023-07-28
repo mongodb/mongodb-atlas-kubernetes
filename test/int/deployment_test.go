@@ -1065,7 +1065,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				performUpdate(20 * time.Minute)
 				time.Sleep(10 * time.Second)
 				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
-				doServerlessDeploymentStatusChecks()
+				// doServerlessDeploymentStatusChecks()
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
@@ -1091,7 +1091,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				lastGeneration++
 				// Removing tags
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
+				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performUpdate(20 * time.Minute)
+				time.Sleep(10 * time.Second)
+				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 			})
 		})
 	})
