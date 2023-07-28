@@ -1059,9 +1059,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
-				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration)
+				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performUpdate(20 * time.Minute)
-				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration)
+				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
