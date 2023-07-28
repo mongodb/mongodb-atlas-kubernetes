@@ -99,17 +99,20 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return workflow.OK().ReconcileResult(), nil
 	}
 
+	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
+	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
+
 	if project.ConnectionSecretObjectKey() != nil {
 		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
 		// the projects once that secret is changed
-		r.EnsureResourcesAreWatched(req.NamespacedName, "Secret", log, *project.ConnectionSecretObjectKey())
+		ctx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *project.ConnectionSecretObjectKey()})
 	}
-	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
-
-	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	// This update will make sure the status is always updated in case of any errors or successful result
-	defer statushandler.Update(ctx, r.Client, r.EventRecorder, project)
+	defer func() {
+		statushandler.Update(ctx, r.Client, r.EventRecorder, project)
+		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, ctx.ListResourcesToWatch()...)
+	}()
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, project, r.Log)
 	if !resourceVersionIsValid.IsOk() {

@@ -2,9 +2,8 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
@@ -240,7 +239,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 		if ok {
 			if stat.Status == status.CustomRoleStatusFailed {
 				statuses = append(statuses, stat)
-				err = multierror.Append(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf(stat.Error))
 			}
 
 			continue
@@ -250,7 +249,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 			statuses = append(statuses, stat)
 
 			if stat.Status == status.CustomRoleStatusFailed {
-				err = multierror.Append(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf(stat.Error))
 			}
 
 			continue
@@ -260,7 +259,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 			statuses = append(statuses, stat)
 
 			if stat.Status == status.CustomRoleStatusFailed {
-				err = multierror.Append(err, fmt.Errorf(stat.Error))
+				err = errors.Join(err, fmt.Errorf(stat.Error))
 			}
 
 			continue

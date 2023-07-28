@@ -66,6 +66,17 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# Track changes to sources to avoid repeating operations on sourced when soruces did not change
+TMPDIR ?= /tmp
+TIMESTAMPS_DIR := $(TMPDIR)/mongodb-atlas-kubernetes
+GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*')
+
+# Defaults for make run
+OPERATOR_POD_NAME = mongodb-atlas-operator
+OPERATOR_NAMESPACE = mongodb-atlas-system
+ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
+ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -105,14 +116,20 @@ e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-n
 e2e-openshift-upgrade:
 	cd scripts && ./openshift-upgrade-test.sh
 
-.PHONY: manager
-manager: generate fmt vet ## Build manager binary
+bin/manager: $(GO_SOURCES)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	@touch $@
+
+.PHONY: manager
+manager: generate fmt vet bin/manager ## Build manager binary
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
-	go run ./cmd/manager/main.go
+	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
+	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
+	go run ./cmd/manager/main.go --atlas-domain=$(ATLAS_DOMAIN) \
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs from a cluster
@@ -125,36 +142,49 @@ uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 .PHONY: deploy
 deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	@./scripts/deploy.sh
+ 
+$(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
+	@./scripts/split_roles_yaml.sh
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
-manifests: controller-gen ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
-	@./scripts/split_roles_yaml.sh
+manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
 
 .PHONY: lint
 lint:
 	golangci-lint run
 
-.PHONY: fmt
-fmt: ## Run go fmt against code
+$(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	go fmt ./...
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	find . -name "*.go" -not -path "./vendor/*" -exec goimports -l -w "{}" \;
+	find . -name "*.go" -not -path "./vendor/*" -exec goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w "{}" \;
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
+
+.PHONY: fmt
+fmt: $(TIMESTAMPS_DIR)/fmt ## Run go fmt against code
 
 fix-lint:
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
 	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./pkg
 	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./test
+	golangci-lint run --fix
+
+$(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
+	go vet ./...
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: vet
-vet: ## Run go vet against code
-	go vet ./...
+vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
+
+$(TIMESTAMPS_DIR)/generate: ${GO_SOURCES}
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: generate
-generate: controller-gen ## Generate code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
+generate: fmt controller-gen $(TIMESTAMPS_DIR)/generate ## Generate code
 
 .PHONY: controller-gen
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen

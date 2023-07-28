@@ -33,7 +33,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	projectID string,
 	deployment *mdbv1.AtlasDeployment,
 	isEnabled bool,
-	requestNamespacedName client.ObjectKey,
 ) error {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
@@ -52,7 +51,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 
 	resourcesToWatch := []watch.WatchedObject{}
 	defer func() {
-		r.EnsureMultiplesResourcesAreWatched(requestNamespacedName, r.Log, resourcesToWatch...)
+		service.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.WatchedResources)
 	}()
 
