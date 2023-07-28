@@ -14,7 +14,9 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/fixtest"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
@@ -50,9 +52,16 @@ func CreateProject(testData *model.TestDataProvider) {
 		testData.Project.Namespace = testData.Resources.Namespace
 	}
 	By(fmt.Sprintf("Deploy Project %s", testData.Project.GetName()), func() {
+		aClient := atlas.GetClientOrFail()
 		err := testData.K8SClient.Create(testData.Context, testData.Project)
 		Expect(err).ShouldNot(HaveOccurred(), "Project %s was not created", testData.Project.GetName())
 		Eventually(func(g Gomega) {
+			// We reported Atlas creating duplicates of a project with the same name
+			// See https://jira.mongodb.org/browse/CLOUDP-187749
+			// this fix in our tests allows them to automatically fix this issue
+			// and thus avoid a flaky failure when this duplicates happens
+			g.Expect(fixtest.EnsureNoDuplicates(aClient.Client, fixtest.ZapLoggerFrom(GinkgoWriter), testData.Project.Spec.Name)).ToNot(HaveOccurred())
+
 			condition, _ := k8s.GetProjectStatusCondition(
 				testData.Context,
 				testData.K8SClient,
