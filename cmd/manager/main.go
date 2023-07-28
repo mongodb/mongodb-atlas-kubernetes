@@ -56,8 +56,11 @@ import (
 const (
 	objectDeletionProtectionFlag       = "object-deletion-protection"
 	subobjectDeletionProtectionFlag    = "subobject-deletion-protection"
-	objectDeletionProtectionDefault    = true
-	subobjectDeletionProtectionDefault = true
+	objectDeletionProtectionDefault    = false
+	subobjectDeletionProtectionDefault = false
+
+	objectDeletionProtectionEnvVar    = "UNSUPPORTED_OBJECT_DELETION_PROTECTION"
+	subobjectDeletionProtectionEnvVar = "UNSUPPORTED_SUBOBJECT_DELETION_PROTECTION"
 )
 
 var (
@@ -237,10 +240,6 @@ func parseConfiguration() Config {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal")
 	flag.StringVar(&config.LogEncoder, "log-encoder", "json", "Log encoder. Available values: json | console")
-	flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, true, "Defines the operator will not delete Atlas resource "+
-		"when a Custom Resource is deleted")
-	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, true, "Defines that the operator will not overwrite "+
-		"(and consequently delete) subresources that were not previously created by the operator")
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
 
@@ -264,7 +263,7 @@ func parseConfiguration() Config {
 		config.Namespace = watchedNamespace
 	}
 
-	configureDeletionProtectionFlags(&config)
+	configureDeletionProtection(&config)
 
 	return config
 }
@@ -319,45 +318,34 @@ func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 	return cfg.Build()
 }
 
-func configureDeletionProtectionFlags(config *Config) {
+func configureDeletionProtection(config *Config) {
 	if config == nil {
 		return
 	}
+	config.ObjectDeletionProtection = objectDeletionProtectionDefault
+	config.SubObjectDeletionProtection = subobjectDeletionProtectionDefault
 
-	objectDeletionSet := false
-	subObjectDeletionSet := false
+	// TODO: replace with the CLI flags at feature completion
+	enableDeletionProtectionFromEnvVars(config, version.Version)
+}
 
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == objectDeletionProtectionFlag {
-			objectDeletionSet = true
+func enableDeletionProtectionFromEnvVars(config *Config, v string) {
+	if version.IsRelease(v) {
+		if isOn(os.Getenv(objectDeletionProtectionEnvVar)) ||
+			isOn(os.Getenv(subobjectDeletionProtectionEnvVar)) {
+			log.Printf("Deletion Protection feature is not available yet in production releases")
 		}
-
-		if f.Name == subobjectDeletionProtectionFlag {
-			subObjectDeletionSet = true
-		}
-	})
-
-	if !objectDeletionSet {
-		objDeletion := strings.ToLower(os.Getenv("OBJECT_DELETION_PROTECTION"))
-		switch objDeletion {
-		case "true":
-			config.ObjectDeletionProtection = true
-		case "false":
-			config.ObjectDeletionProtection = false
-		default:
-			config.ObjectDeletionProtection = objectDeletionProtectionDefault
-		}
+		return
 	}
 
-	if !subObjectDeletionSet {
-		objDeletion := strings.ToLower(os.Getenv("SUBOBJECT_DELETION_PROTECTION"))
-		switch objDeletion {
-		case "true":
-			config.SubObjectDeletionProtection = true
-		case "false":
-			config.SubObjectDeletionProtection = false
-		default:
-			config.SubObjectDeletionProtection = subobjectDeletionProtectionDefault
-		}
+	if isOn(os.Getenv(objectDeletionProtectionEnvVar)) {
+		config.ObjectDeletionProtection = true
 	}
+	if isOn(os.Getenv(subobjectDeletionProtectionEnvVar)) {
+		config.SubObjectDeletionProtection = true
+	}
+}
+
+func isOn(value string) bool {
+	return strings.ToLower(value) == "on"
 }
