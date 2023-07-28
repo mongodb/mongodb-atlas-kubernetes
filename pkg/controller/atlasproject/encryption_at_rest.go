@@ -51,36 +51,58 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	}
 
 	if encRest.AwsKms.Enabled != nil || *encRest.AwsKms.Enabled || encRest.AwsKms.SecretRef.Name != "" {
-		fieldData, watchObj, err := readSecretData(kubeClient, encRest.AwsKms.SecretRef, parentNs, "AccessKeyID", "SecretAccessKey", "CustomerMasterKeyID", "Region", "RoleID")
+		watchObj, err := readAndFillAWSSecret(kubeClient, parentNs, &encRest.AwsKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
 		}
-
-		fillStructFields(fieldData, &encRest.AwsKms)
 	}
 
 	if encRest.GoogleCloudKms.Enabled != nil || *encRest.GoogleCloudKms.Enabled || encRest.GoogleCloudKms.SecretRef.Name != "" {
-		fieldData, watchObj, err := readSecretData(kubeClient, encRest.AwsKms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
+		watchObj, err := readAndFillGoogleSecret(kubeClient, parentNs, &encRest.GoogleCloudKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
 		}
-
-		fillStructFields(fieldData, &encRest.GoogleCloudKms)
 	}
 
 	if encRest.AzureKeyVault.Enabled != nil || *encRest.AzureKeyVault.Enabled || encRest.AzureKeyVault.SecretRef.Name != "" {
-		fieldData, watchObj, err := readSecretData(kubeClient, encRest.AwsKms.SecretRef, parentNs, "ClientID", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier")
+		watchObj, err := readAndFillAzureSecret(kubeClient, parentNs, &encRest.AzureKeyVault)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
 		}
-
-		fillStructFields(fieldData, &encRest.AzureKeyVault)
 	}
 
 	return nil
+}
+
+func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "AccessKeyID", "SecretAccessKey", "CustomerMasterKeyID", "Region", "RoleID")
+	if err != nil {
+		return watchObj, err
+	}
+
+	fillStructFields(fieldData, awsKms)
+	return watchObj, nil
+}
+
+func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *mdbv1.GoogleCloudKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
+	if err != nil {
+		return watchObj, err
+	}
+	fillStructFields(fieldData, gkms)
+	return watchObj, err
+}
+
+func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "ClientID", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier")
+	if err != nil {
+		return watchObj, err
+	}
+	fillStructFields(fieldData, azureVault)
+	return watchObj, err
 }
 
 // Fills public fields for the "ptrStruct" using field names from "data" map K -> V string/string. "ptrStruct" must be a pointer to a struct
