@@ -78,7 +78,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 }
 
 func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "AccessKeyID", "SecretAccessKey", "CustomerMasterKeyID", "Region", "RoleID")
+	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "Region", "RoleID")
 	if err != nil {
 		return watchObj, err
 	}

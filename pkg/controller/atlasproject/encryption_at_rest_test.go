@@ -43,8 +43,6 @@ func TestFillStructFields(t *testing.T) {
 func TestReadEncryptionAtRestSecrets(t *testing.T) {
 	t.Run("AWS with correct secret data", func(t *testing.T) {
 		secretData := map[string][]byte{
-			"AccessKeyID":         []byte("testKeyID"),
-			"SecretAccessKey":     []byte("testSecretAccesssKey"),
 			"CustomerMasterKeyID": []byte("testCustomerMasterKeyID"),
 			"Region":              []byte("testRegion"),
 			"RoleID":              []byte("testRoleID"),
@@ -79,8 +77,6 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["AccessKeyID"]), encRest.AwsKms.AccessKeyID)
-		assert.Equal(t, string(secretData["SecretAccessKey"]), encRest.AwsKms.SecretAccessKey)
 		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID)
 		assert.Equal(t, string(secretData["Region"]), encRest.AwsKms.Region)
 		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID)
@@ -88,8 +84,6 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 	t.Run("AWS with correct secret data (fallback namespace)", func(t *testing.T) {
 		secretData := map[string][]byte{
-			"AccessKeyID":         []byte("testKeyID"),
-			"SecretAccessKey":     []byte("testSecretAccesssKey"),
 			"CustomerMasterKeyID": []byte("testCustomerMasterKeyID"),
 			"Region":              []byte("testRegion"),
 			"RoleID":              []byte("testRoleID"),
@@ -123,8 +117,6 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test-fallback-ns")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["AccessKeyID"]), encRest.AwsKms.AccessKeyID)
-		assert.Equal(t, string(secretData["SecretAccessKey"]), encRest.AwsKms.SecretAccessKey)
 		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID)
 		assert.Equal(t, string(secretData["Region"]), encRest.AwsKms.Region)
 		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID)
