@@ -153,25 +153,23 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	doServerlessDeploymentStatusChecks := func() {
 		By("Checking observed Serverless state", func() {
-			Eventually(func(g Gomega) {
-				atlasDeployment, _, err := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
-				g.Expect(err).ToNot(HaveOccurred())
+			atlasDeployment, _, err := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+			Expect(err).ToNot(HaveOccurred())
 
-				g.Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-				g.Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.Standard))
-				g.Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
-				g.Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
-				g.Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
-				g.Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
-				g.Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
-					status.TrueCondition(status.DeploymentReadyType),
-					status.TrueCondition(status.ReadyType),
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ResourceVersionStatus),
-				)))
-				g.Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
-				g.Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
-			}).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
+			Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.Standard))
+			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
+			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
+			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
+			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
+			Expect(createdDeployment.Status.Conditions).To(ConsistOf(testutil.MatchConditions(
+				status.TrueCondition(status.DeploymentReadyType),
+				status.TrueCondition(status.ReadyType),
+				status.TrueCondition(status.ValidationSucceeded),
+				status.TrueCondition(status.ResourceVersionStatus),
+			)))
+			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(createdDeployment.Generation))
+			Expect(createdDeployment.Status.ObservedGeneration).To(Equal(lastGeneration + 1))
 		})
 	}
 
