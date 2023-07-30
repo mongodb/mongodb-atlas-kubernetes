@@ -50,7 +50,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 		return nil
 	}
 
-	if encRest.AwsKms.Enabled != nil || *encRest.AwsKms.Enabled || encRest.AwsKms.SecretRef.Name != "" {
+	if encRest.AwsKms.Enabled != nil && *encRest.AwsKms.Enabled && encRest.AwsKms.SecretRef.Name != "" {
 		watchObj, err := readAndFillAWSSecret(kubeClient, parentNs, &encRest.AwsKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
@@ -58,7 +58,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 		}
 	}
 
-	if encRest.GoogleCloudKms.Enabled != nil || *encRest.GoogleCloudKms.Enabled || encRest.GoogleCloudKms.SecretRef.Name != "" {
+	if encRest.GoogleCloudKms.Enabled != nil && *encRest.GoogleCloudKms.Enabled && encRest.GoogleCloudKms.SecretRef.Name != "" {
 		watchObj, err := readAndFillGoogleSecret(kubeClient, parentNs, &encRest.GoogleCloudKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
@@ -66,7 +66,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 		}
 	}
 
-	if encRest.AzureKeyVault.Enabled != nil || *encRest.AzureKeyVault.Enabled || encRest.AzureKeyVault.SecretRef.Name != "" {
+	if encRest.AzureKeyVault.Enabled != nil && *encRest.AzureKeyVault.Enabled && encRest.AzureKeyVault.SecretRef.Name != "" {
 		watchObj, err := readAndFillAzureSecret(kubeClient, parentNs, &encRest.AzureKeyVault)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
@@ -149,7 +149,7 @@ func readSecretData(kubeClient client.Client, res common.ResourceRefNamespaced, 
 	}
 
 	if len(missingFields) != 0 {
-		return result, obj, fmt.Errorf("the following fields are either missing or their values are empty: %s", strings.Join(missingFields, ","))
+		return result, obj, fmt.Errorf("the following fields are either missing or their values are empty: %s", strings.Join(missingFields, ", "))
 	}
 
 	return result, obj, nil
