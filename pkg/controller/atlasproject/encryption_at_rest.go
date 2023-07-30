@@ -120,7 +120,7 @@ func fillStructFields(data map[string]string, ptrStruct any) {
 	}
 }
 
-// Return all requiested field from a secret
+// Return all requested field from a secret
 func readSecretData(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldNames ...string) (map[string]string, *watch.WatchedObject, error) {
 	secret := &v1.Secret{}
 	var ns string
