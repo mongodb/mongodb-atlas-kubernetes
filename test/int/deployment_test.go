@@ -571,7 +571,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		FIt("Should Succeed (AWS)", func() {
+		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
@@ -600,28 +600,21 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						Expect(reflect.DeepEqual(c.Tags[i].Value, tag.Value)).To(BeTrue())
 					}
 				})
-				current, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
-				GinkgoWriter.Println("ATLAS DEPL TAGS >>> ", current.Tags)
 			})
 
-			// By("Updating the Deployment tags with a duplicate key", func() {
-			// 	createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
-			// 	Eventually(func(g Gomega) {
-			// 		g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-			// 	}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
-			// 	Eventually(func() bool {
-			// 		return testutil.CheckCondition(
-			// 			k8sClient,
-			// 			createdDeployment,
-			// 			status.
-			// 				FalseCondition(status.DeploymentReadyType),
-			// 		)
-			// 	}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
-			// 	lastGeneration++
-			// 	// Removing tags for next tests
-			// 	createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{}
-			// 	performUpdate(20 * time.Minute)
-			// })
+			By("Updating the Deployment tags with a duplicate key", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}, {Key: "int-test", Value: "false"}}
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.FalseCondition(status.DeploymentReadyType))
+				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
+				lastGeneration++
+				// Removing tags for next tests
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{}
+				performUpdate(20 * time.Minute)
+			})
 
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(true)
@@ -1066,25 +1059,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
-				at, _ := json.MarshalIndent(createdDeployment.Spec.ServerlessSpec.Tags, "", " ")
-				GinkgoWriter.Println("ATLAS TAGS BEFORE UPDATE: ", string(at))
 				performUpdate(20 * time.Minute)
-
-				j, _ := json.MarshalIndent(createdDeployment, "", " ")
-				GinkgoWriter.Println("OPERATOR STATE >>>", string(j))
-
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
-				j, _ = json.MarshalIndent(atlasDeployment, "", " ")
-				GinkgoWriter.Println("ATLAS STATE >>>", string(j))
-
 				doServerlessDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
 						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Key, tag.Key)).To(BeTrue())
 						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Value, tag.Value)).To(BeTrue())
 					}
 				}
-				performUpdate(20 * time.Minute)
 			})
 
 			By("Updating the Deployment tags with a duplicate key", func() {
@@ -1093,20 +1076,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 				Eventually(func() bool {
-					return testutil.CheckCondition(
-						k8sClient,
-						createdDeployment,
-						status.
-							FalseCondition(status.DeploymentReadyType),
-					)
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.FalseCondition(status.DeploymentReadyType))
 				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
 				lastGeneration++
 				// Removing tags
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
-				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performUpdate(20 * time.Minute)
-				time.Sleep(10 * time.Second)
-				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 			})
 		})
 	})
