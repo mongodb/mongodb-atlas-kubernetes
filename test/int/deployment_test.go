@@ -571,7 +571,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		It("Should Succeed (AWS)", func() {
+		FIt("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
@@ -585,7 +585,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Deployment labels", func() {
 				createdDeployment.Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "int-test", Value: "true"}}
-				performUpdate(20 * time.Minute)
+
+				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
+				GinkgoWriter.Println(">>>", string(j))
+				lastGeneration++
+				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
+
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
@@ -1062,13 +1070,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	FDescribe("Create serverless instance", func() {
+	Describe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				GinkgoWriter.Println("LASTGENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performCreate(createdDeployment, 30*time.Minute)
-				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
 			})
 
