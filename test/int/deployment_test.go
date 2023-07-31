@@ -588,7 +588,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				GinkgoWriter.Println("updating done")
+				atlasDeployment, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
 				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
 				GinkgoWriter.Println(">>>", string(j))
 				lastGeneration++
