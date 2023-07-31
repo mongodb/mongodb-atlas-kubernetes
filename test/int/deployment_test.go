@@ -1074,6 +1074,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	FDescribe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
+			createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
 				doServerlessDeploymentStatusChecks()
