@@ -158,6 +158,37 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		require.True(t, result)
 	})
 
+	t.Run("should return true when access was created but not authorized yet", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CloudProviderAccess: &cloudProviderAccessClient{
+				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
+					return &mongodbatlas.CloudProviderAccessRoles{
+						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+							{
+								ProviderName: "AWS",
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+					{
+						ProviderName:      "AWS",
+						IamAssumedRoleArn: "arn1",
+					},
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
 	t.Run("should return false when unable to reconcile Cloud Provider Access", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &cloudProviderAccessClient{

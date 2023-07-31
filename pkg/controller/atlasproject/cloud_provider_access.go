@@ -288,16 +288,20 @@ func canCloudProviderAccessReconcile(ctx context.Context, atlasClient mongodbatl
 		return false, err
 	}
 
-	if len(list.AWSIAMRoles) == 0 {
-		return true, nil
+	atlasList := make([]CloudProviderAccessIdentifiable, 0, len(list.AWSIAMRoles))
+	for _, r := range list.AWSIAMRoles {
+		if r.IAMAssumedRoleARN != "" {
+			atlasList = append(atlasList,
+				CloudProviderAccessIdentifiable{
+					ProviderName:      r.ProviderName,
+					IamAssumedRoleArn: r.IAMAssumedRoleARN,
+				},
+			)
+		}
 	}
 
-	atlasList := make([]CloudProviderAccessIdentifiable, len(list.AWSIAMRoles))
-	for i, r := range list.AWSIAMRoles {
-		atlasList[i] = CloudProviderAccessIdentifiable{
-			ProviderName:      r.ProviderName,
-			IamAssumedRoleArn: r.IAMAssumedRoleARN,
-		}
+	if len(atlasList) == 0 {
+		return true, nil
 	}
 
 	akoLastList := make([]CloudProviderAccessIdentifiable, len(latestConfig.CloudProviderAccessRoles))

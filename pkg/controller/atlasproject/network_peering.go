@@ -623,7 +623,7 @@ func canNetworkPeeringReconcile(ctx context.Context, atlasClient mongodbatlas.Cl
 		return false, err
 	}
 
-	if len(containers) > 0 && (!areContainersEqual(latestConfig.NetworkPeers, containers) || !areContainersEqual(akoProject.Spec.NetworkPeers, containers)) {
+	if len(containers) > 0 && !areContainersEqual(latestConfig.NetworkPeers, containers) && !areContainersEqual(akoProject.Spec.NetworkPeers, containers) {
 		return false, nil
 	}
 
@@ -636,7 +636,7 @@ func canNetworkPeeringReconcile(ctx context.Context, atlasClient mongodbatlas.Cl
 		return true, nil
 	}
 
-	if !arePeersEqual(latestConfig.NetworkPeers, peers) || !arePeersEqual(akoProject.Spec.NetworkPeers, peers) {
+	if !arePeersEqual(latestConfig.NetworkPeers, peers) && !arePeersEqual(akoProject.Spec.NetworkPeers, peers) {
 		return false, nil
 	}
 
