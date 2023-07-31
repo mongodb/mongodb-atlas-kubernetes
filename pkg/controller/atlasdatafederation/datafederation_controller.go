@@ -129,15 +129,6 @@ func (r *AtlasDataFederationReconciler) Reconcile(contextInt context.Context, re
 		return result.ReconcileResult(), nil
 	}
 
-	err = customresource.ApplyLastConfigApplied(contextInt, project, r.Client)
-	if err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
 	if result = r.ensureDataFederation(ctx, project, dataFederation); !result.IsOk() {
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
@@ -188,6 +179,15 @@ func (r *AtlasDataFederationReconciler) Reconcile(contextInt context.Context, re
 		} else {
 			return result.ReconcileResult(), nil
 		}
+	}
+
+	err = customresource.ApplyLastConfigApplied(contextInt, project, r.Client)
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
 	}
 
 	ctx.SetConditionTrue(status.ReadyType)
@@ -271,11 +271,7 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projec
 			return false, errors.New("failed to match resource type as AtlasDataFederation")
 		}
 
-		if dataFederation.Spec.Name == "" {
-			return false, nil
-		}
-
-		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, dataFederation.Spec.Project.Name, dataFederation.Name)
+		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, projectID, dataFederation.Name)
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {

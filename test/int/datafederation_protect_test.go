@@ -121,6 +121,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 				_, _, err := atlasClient.DataFederation.Create(context.TODO(), testProject.ID(), df)
 				Expect(err).To(BeNil())
+				Eventually(func(g Gomega) {
+					atlasDataFederation, _, err := atlasClient.DataFederation.Get(context.TODO(), testProject.ID(), testDataFederationName)
+					g.Expect(err).To(BeNil())
+					g.Expect(atlasDataFederation).ToNot(BeNil())
+				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 
 			By("Creating a data federation instance in the cluster", func() {
@@ -129,7 +134,6 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 				Eventually(func() bool {
 					return testutil.CheckCondition(k8sClient, testDataFederation, status.TrueCondition(status.ReadyType))
-					// TODO: Modify timeouts
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
