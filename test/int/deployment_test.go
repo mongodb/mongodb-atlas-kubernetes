@@ -571,7 +571,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		It("Should Succeed (AWS)", func() {
+		FIt("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
@@ -1071,7 +1071,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	FDescribe("Create serverless instance", func() {
+	Describe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
