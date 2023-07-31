@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -13,13 +14,14 @@ func DeleteAllServerless(ctx context.Context, client mongodbatlas.ServerlessInst
 	if err != nil {
 		return fmt.Errorf("error getting serverless: %s", err)
 	}
+	var allErr error
 	for _, s := range serverless {
 		log.Printf("Deleting serverless %s", s.Name)
 		if _, err = client.Delete(ctx, projectID, s.Name); err != nil {
-			return fmt.Errorf("error deleting serverless: %s", err)
+			allErr = errors.Join(allErr, fmt.Errorf("error deleting serverless: %s", err))
 		}
 	}
-	return nil
+	return allErr
 }
 
 func GetAllServerless(ctx context.Context, client mongodbatlas.ServerlessInstancesService, projectID string) ([]*mongodbatlas.Cluster, error) {

@@ -54,12 +54,15 @@ func DeleteProjects(ctx context.Context, client mongodbatlas.Client, projectList
 			log.Printf("error deleting DataFederation: %s", err)
 		}
 		err = deployment.DeleteAllAdvancedClusters(ctx, client.AdvancedClusters, project.ID)
+		if err != nil {
+			log.Printf("error deleting advanced clusters: %s", err)
+		}
 		_, err = client.Projects.Delete(context.Background(), project.ID)
 		if err != nil {
 			ok = false
 			log.Printf("error deleting project: %s", err)
 		} else {
-			log.Printf("Succesfully delete")
+			log.Printf("Project successufully deleted")
 		}
 	}
 	return ok

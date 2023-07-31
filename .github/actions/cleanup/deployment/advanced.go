@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -21,11 +22,12 @@ func DeleteAllAdvancedClusters(ctx context.Context, client mongodbatlas.Advanced
 	if err != nil {
 		return fmt.Errorf("error getting advanced clusters: %w", err)
 	}
+	var allErr error
 	for _, cluster := range advancedClusters {
 		log.Printf("Deleting advanced cluster %s", cluster.Name)
 		if _, err = client.Delete(ctx, projectID, cluster.Name); err != nil {
-			return fmt.Errorf("error deleting advanced cluster: %w", err)
+			allErr = errors.Join(allErr, fmt.Errorf("error deleting advanced cluster: %w", err))
 		}
 	}
-	return nil
+	return allErr
 }
