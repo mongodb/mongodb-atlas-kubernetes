@@ -154,7 +154,8 @@ jobs:
             "custom-roles",
             "teams",
             "backup-config",
-            "data-federation"
+            "data-federation",
+            "deletion-protection"
           ]
     steps:
       - name: Get repo files from cache
