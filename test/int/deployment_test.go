@@ -571,7 +571,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 
-		FIt("Should Succeed (AWS)", func() {
+		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
@@ -1071,7 +1071,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create serverless instance", func() {
+	FDescribe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -1082,15 +1082,17 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
 				GinkgoWriter.Println("LASTGENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
-				//performUpdate(20 * time.Minute)
-				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				performUpdate(20 * time.Minute)
+
+				j, _ := json.MarshalIndent(createdDeployment, "", " ")
+				GinkgoWriter.Println("OPERATOR STATE >>>", string(j))
+
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
-				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
-				GinkgoWriter.Println(">>>", string(j))
-				lastGeneration++
+				j, _ = json.MarshalIndent(atlasDeployment, "", " ")
+				GinkgoWriter.Println("ATLAS STATE >>>", string(j))
+
 				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
-				//atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
 						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Key, tag.Key)).To(BeTrue())
