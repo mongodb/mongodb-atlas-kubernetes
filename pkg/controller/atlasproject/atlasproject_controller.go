@@ -181,7 +181,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	if isNewProject {
+	if project.ID() == "" {
 		err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, err.Error())
@@ -190,7 +190,9 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 			return result.ReconcileResult(), nil
 		}
+	}
 
+	if isNewProject {
 		return result.WithRetry(workflow.DefaultRetry).ReconcileResult(), nil
 	}
 
@@ -274,6 +276,11 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, wo
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
 func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject) (results []workflow.Result) {
+	for k, v := range project.Annotations {
+		workflowCtx.Log.Debugf(k)
+		workflowCtx.Log.Debugf(v)
+	}
+
 	var result workflow.Result
 	if result = ensureIPAccessList(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
