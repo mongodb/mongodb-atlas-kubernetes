@@ -42,7 +42,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			[]func(*model.TestDataProvider){},
 		)
 
-		actions.CreateNamespaceAndSecrets(testData)
+		configureManager(testData)
 	})
 
 	It("Reconcile Atlas Project when deletion protection is enabled", func() {
