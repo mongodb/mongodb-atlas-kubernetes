@@ -1080,6 +1080,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
 				GinkgoWriter.Println(">>>", string(j))
+				lastGeneration++
 				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
 				//atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
