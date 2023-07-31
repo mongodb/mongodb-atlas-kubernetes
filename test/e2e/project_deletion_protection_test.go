@@ -27,7 +27,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var projectID, networkPeerID, awsRoleARN, awsAccountID, AwsVpcID string
 	ctx := context.Background()
