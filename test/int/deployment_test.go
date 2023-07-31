@@ -1075,10 +1075,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
 				GinkgoWriter.Println("LASTGENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
-				performUpdate(20 * time.Minute)
+				//performUpdate(20 * time.Minute)
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
+				GinkgoWriter.Println(">>>", string(j))
 				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				//atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
 						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Key, tag.Key)).To(BeTrue())
