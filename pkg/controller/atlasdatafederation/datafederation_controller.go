@@ -109,9 +109,9 @@ func (r *AtlasDataFederationReconciler) Reconcile(contextInt context.Context, re
 	}
 	ctx.Client = atlasClient
 
-	owner, err := customresource.IsOwner(dataFederation, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(contextInt, atlasClient))
+	owner, err := customresource.IsOwner(dataFederation, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(contextInt, atlasClient, project.ID(), log))
 	if err != nil {
-		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
+		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
 
@@ -121,7 +121,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(contextInt context.Context, re
 	if !owner {
 		result = workflow.Terminate(
 			workflow.AtlasDeletionProtection,
-			"unable to reconcile data federation: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
+			"unable to reconcile DataFederation: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
 		)
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
@@ -206,7 +206,7 @@ func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx contex
 	}
 
 	if err != nil {
-		log.Errorw("Can not delete Atlas data federation", "error", err)
+		log.Errorw("Can not delete Atlas DataFederation", "error", err)
 		return err
 	}
 
@@ -264,7 +264,7 @@ func (r *AtlasDataFederationReconciler) Delete(e event.DeleteEvent) error {
 	return nil
 }
 
-func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client) customresource.AtlasChecker {
+func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
 		dataFederation, ok := resource.(*mdbv1.AtlasDataFederation)
 		if !ok {
@@ -275,7 +275,7 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client) custom
 			return false, nil
 		}
 
-		_, _, err := atlasClient.DataFederation.Get(ctx, "groupID", dataFederation.Name)
+		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, dataFederation.Spec.Project.Name, dataFederation.Name)
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
@@ -283,6 +283,11 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client) custom
 			}
 			return false, err
 		}
-		return true, nil
+
+		isSame, err := dataFederationMatchesSpec(log, atlasDataFederation, dataFederation)
+		if err != nil {
+			return true, nil
+		}
+		return !isSame, nil
 	}
 }
