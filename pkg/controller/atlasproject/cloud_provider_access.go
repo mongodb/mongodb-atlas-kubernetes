@@ -70,9 +70,9 @@ func syncProviderAccessStatus(ctx context.Context, customContext *workflow.Conte
 func tryToAuthorize(ctx context.Context, access mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger, statusMap map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, groupID string) {
 	for spec, roleStatus := range statusMap {
 		if roleStatus.Status == status.StatusCreated {
-			request := mongodbatlas.CloudProviderAuthorizationRequest{
+			request := mongodbatlas.CloudProviderAccessRoleRequest{
 				ProviderName:      spec.ProviderName,
-				IAMAssumedRoleARN: spec.IamAssumedRoleArn,
+				IAMAssumedRoleARN: &spec.IamAssumedRoleArn,
 			}
 			role, _, err := access.AuthorizeRole(ctx, groupID, roleStatus.RoleID, &request)
 			if err != nil {
