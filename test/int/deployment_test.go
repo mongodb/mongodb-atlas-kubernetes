@@ -244,7 +244,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 
 		j, _ := json.MarshalIndent(createdDeployment, "", " ")
-		GinkgoWriter.Println(">>>", j)
+		GinkgoWriter.Println(">>>", string(j))
 
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
