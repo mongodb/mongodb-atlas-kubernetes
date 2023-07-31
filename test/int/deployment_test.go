@@ -585,37 +585,21 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Deployment labels", func() {
 				createdDeployment.Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "int-test", Value: "true"}}
-
-				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
-				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-				GinkgoWriter.Println("updating done")
-				atlasDeployment, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
-				j, _ := json.MarshalIndent(atlasDeployment, "", " ")
-				GinkgoWriter.Println(">>>", string(j))
-				lastGeneration++
-				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
-
+				performUpdate(20 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
 
 			By("Updating the Deployment tags", func() {
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
-				GinkgoWriter.Println("GENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performUpdate(20 * time.Minute)
-				GinkgoWriter.Println("GENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
-				if (lastGeneration + 1) != createdDeployment.Status.ObservedGeneration {
-					lastGeneration--
-					GinkgoWriter.Println("SKIPPING doDeploymnetStatusChecK!!!!")
-				} else {
-					doDeploymentStatusChecks()
-					checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
-						for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
-							Expect(reflect.DeepEqual(c.Tags[i].Key, tag.Key)).To(BeTrue())
-							Expect(reflect.DeepEqual(c.Tags[i].Value, tag.Value)).To(BeTrue())
-						}
-					})
-				}
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
+						Expect(reflect.DeepEqual(c.Tags[i].Key, tag.Key)).To(BeTrue())
+						Expect(reflect.DeepEqual(c.Tags[i].Value, tag.Value)).To(BeTrue())
+					}
+				})
 				current, _, _ := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
 				GinkgoWriter.Println("ATLAS DEPL TAGS >>> ", current.Tags)
 			})
