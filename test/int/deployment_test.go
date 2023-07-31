@@ -1081,7 +1081,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Updating the Instance tags", func() {
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "int-test", Value: "true"}}
-				GinkgoWriter.Println("LASTGENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
+				at, _ := json.MarshalIndent(createdDeployment.Spec.ServerlessSpec.Tags, "", " ")
+				GinkgoWriter.Println("ATLAS TAGS BEFORE UPDATE: ", string(at))
 				performUpdate(20 * time.Minute)
 
 				j, _ := json.MarshalIndent(createdDeployment, "", " ")
@@ -1091,7 +1092,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				j, _ = json.MarshalIndent(atlasDeployment, "", " ")
 				GinkgoWriter.Println("ATLAS STATE >>>", string(j))
 
-				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
 				doServerlessDeploymentStatusChecks()
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
@@ -1099,10 +1099,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Value, tag.Value)).To(BeTrue())
 					}
 				}
-				GinkgoWriter.Println("LASTGENERATION BEFORE ", lastGeneration, "OBSERVED BEFORE ", createdDeployment.Status.ObservedGeneration)
 				performUpdate(20 * time.Minute)
-				GinkgoWriter.Println("LASTGENERATION AFTER ", lastGeneration, "OBSERVED AFTER ", createdDeployment.Status.ObservedGeneration)
-
 			})
 
 			By("Updating the Deployment tags with a duplicate key", func() {
