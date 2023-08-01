@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -26,17 +27,18 @@ func deleteGCPVPCBySubstr(gcpProjectID, nameSubstr string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to list networks: %s", err)
 	}
+	var allErr error
 	for _, network := range networks.Items {
 		if strings.HasPrefix(network.Name, nameSubstr) {
 			log.Printf("deleting network %s", network.Name)
 			_, err = networkService.Delete(gcpProjectID, network.Name).Do()
 			if err != nil {
-				log.Printf(fmt.Sprintf("failed to delete network %s: %s", network.Name, err))
+				allErr = errors.Join(allErr, fmt.Errorf("failed to delete network %s: %s", network.Name, err))
 				ok = false
 			}
 		}
 	}
-	return ok, nil
+	return ok, allErr
 }
 
 func setGCPCredentials() error {

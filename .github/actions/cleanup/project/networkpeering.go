@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -20,15 +21,17 @@ func DeleteAllNetworkPeers(ctx context.Context, peerService mongodbatlas.PeersSe
 		return fmt.Errorf("error getting network peers: %w", err)
 	}
 
+	var allErr error
 	for _, peer := range peerList {
 		_, err = peerService.Delete(ctx, projectID, peer.ID)
 		log.Printf("Deleting network peer %s", peer.ID)
 		if err != nil {
-			return fmt.Errorf("error deleting network peer: %w", err)
+			allErr = errors.Join(allErr, fmt.Errorf("error deleting network peer: %w", err))
+			continue
 		}
 		log.Printf("Deleted network peer %s", peer.ID)
 	}
-	return nil
+	return allErr
 }
 
 func GetAllNetworkPeers(ctx context.Context, peerService mongodbatlas.PeersService, projectID string) ([]mongodbatlas.Peer, error) {
