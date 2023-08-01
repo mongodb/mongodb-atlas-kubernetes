@@ -168,7 +168,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	projectID, isNewProject, result := r.ensureProjectExists(workflowCtx, project)
+	projectID, result := r.ensureProjectExists(workflowCtx, project)
 	if !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
@@ -190,9 +190,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 			return result.ReconcileResult(), nil
 		}
-	}
 
-	if isNewProject {
 		return result.WithRetry(workflow.DefaultRetry).ReconcileResult(), nil
 	}
 
