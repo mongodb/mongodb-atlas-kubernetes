@@ -17,29 +17,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
-func TestFillStructFields(t *testing.T) {
-	myStruct := struct {
-		StrPublic      string
-		strPrivate     string
-		WrongFieldType int32
-	}{
-		StrPublic:      "",
-		strPrivate:     "",
-		WrongFieldType: 0,
-	}
-
-	data := map[string]string{
-		"StrPublic":  "test-str",
-		"strPrivate": "test",
-	}
-
-	fillStructFields(data, &myStruct)
-
-	assert.Equal(t, data["StrPublic"], myStruct.StrPublic)
-	assert.Equal(t, "", myStruct.strPrivate)
-	assert.Equal(t, int32(0), myStruct.WrongFieldType)
-}
-
 func TestReadEncryptionAtRestSecrets(t *testing.T) {
 	t.Run("AWS with correct secret data", func(t *testing.T) {
 		secretData := map[string][]byte{

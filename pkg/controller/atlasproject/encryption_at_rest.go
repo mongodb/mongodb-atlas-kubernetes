@@ -83,7 +83,10 @@ func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdb
 		return watchObj, err
 	}
 
-	fillStructFields(fieldData, awsKms)
+	awsKms.CustomerMasterKeyID = fieldData["CustomerMasterKeyID"]
+	awsKms.Region = fieldData["Region"]
+	awsKms.RoleID = fieldData["RoleID"]
+
 	return watchObj, nil
 }
 
@@ -92,8 +95,11 @@ func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *md
 	if err != nil {
 		return watchObj, err
 	}
-	fillStructFields(fieldData, gkms)
-	return watchObj, err
+
+	gkms.ServiceAccountKey = fieldData["ServiceAccountKey"]
+	gkms.KeyVersionResourceID = fieldData["KeyVersionResourceID"]
+
+	return watchObj, nil
 }
 
 func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
@@ -101,23 +107,15 @@ func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVaul
 	if err != nil {
 		return watchObj, err
 	}
-	fillStructFields(fieldData, azureVault)
-	return watchObj, err
-}
 
-// Fills public fields for the "ptrStruct" using field names from "data" map K -> V string/string. "ptrStruct" must be a pointer to a struct
-func fillStructFields(data map[string]string, ptrStruct any) {
-	ptr := reflect.ValueOf(ptrStruct).Elem()
-	if ptr.Kind() != reflect.Struct {
-		return
-	}
+	azureVault.ClientID = fieldData["ClientID"]
+	azureVault.AzureEnvironment = fieldData["AzureEnvironment"]
+	azureVault.SubscriptionID = fieldData["SubscriptionID"]
+	azureVault.ResourceGroupName = fieldData["ResourceGroupName"]
+	azureVault.KeyVaultName = fieldData["KeyVaultName"]
+	azureVault.KeyIdentifier = fieldData["KeyIdentifier"]
 
-	for k, v := range data {
-		field := ptr.FieldByName(k)
-		if field.IsValid() && field.CanSet() && field.Type() == reflect.TypeOf(v) {
-			field.Set(reflect.ValueOf(v))
-		}
-	}
+	return watchObj, nil
 }
 
 // Return all requested field from a secret
