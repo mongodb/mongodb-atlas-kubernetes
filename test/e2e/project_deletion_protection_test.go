@@ -6,6 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -27,8 +31,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
+	var managerStop context.CancelFunc
 	var projectID, networkPeerID, awsRoleARN, awsAccountID, AwsVpcID string
 	ctx := context.Background()
 
@@ -37,12 +42,27 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		testData = model.DataProvider(
 			"project-deletion-protection",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			model.NewEmptyAtlasKeyType().CreateAsGlobalLevelKey(),
 			30005,
 			[]func(*model.TestDataProvider){},
 		)
 
-		configureManager(testData)
+		actions.CreateNamespaceAndSecrets(testData)
+
+		managerStart, err := k8s.RunManager(
+			k8s.WithGlobalKey(client.ObjectKey{Namespace: testData.Resources.Namespace, Name: config.DefaultOperatorGlobalKey}),
+			k8s.WithNamespaces(testData.Resources.Namespace),
+			k8s.WithObjectDeletionProtection(true),
+			k8s.WithSubObjectDeletionProtection(true),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		cancelCtx, cancel := context.WithCancel(ctx)
+		managerStop = cancel
+		go func() {
+			err := managerStart(cancelCtx)
+			Expect(err).ToNot(HaveOccurred())
+		}()
 	})
 
 	It("Reconcile Atlas Project when deletion protection is enabled", func() {
@@ -57,7 +77,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				&mongodbatlas.CreateProjectOptions{},
 			)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasProject).ToNot(BeNil())
 
 			projectID = atlasProject.ID
@@ -74,13 +94,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					},
 				},
 			)
-
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Cloud Provider Access to the project", func() {
 			assumedRoleArn, err := cloudaccess.CreateAWSIAMRole(projectName)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			awsRoleARN = assumedRoleArn
 
 			cloudProvider, _, err := atlasClient.Client.CloudProviderAccess.CreateRole(
@@ -90,7 +109,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					ProviderName: "AWS",
 				},
 			)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(cloudaccess.AddAtlasStatementToAWSIAMRole(cloudProvider.AtlasAWSAccountARN, cloudProvider.AtlasAssumedRoleExternalID, projectName)).
 				To(Succeed())
@@ -105,26 +124,26 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						IAMAssumedRoleARN: assumedRoleArn,
 					},
 				)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 15).Should(Succeed())
 		})
 
 		By("Adding Network peering to the project", func() {
 			aws, err := cloud.NewAWSAction(GinkgoT())
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			awsAccountID, err = aws.GetAccountID()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			AwsVpcID, err = aws.InitNetwork(projectName, "10.0.0.0/24", "eu-west-2", map[string]string{"subnet-1": "10.0.0.0/24"}, true)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			c, _, err := atlasClient.Client.Containers.Create(ctx, projectID, &mongodbatlas.Container{
 				ProviderName:   "AWS",
 				RegionName:     "EU_WEST_2",
 				AtlasCIDRBlock: "192.168.224.0/21",
 			})
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
 
 			p, _, err := atlasClient.Client.Peers.Create(ctx, projectID, &mongodbatlas.Peer{
@@ -135,12 +154,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				RouteTableCIDRBlock: "10.0.0.0/24",
 				VpcID:               AwsVpcID,
 			})
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(p).ToNot(BeNil())
 
 			Eventually(func(g Gomega) {
 				p, _, err = atlasClient.Client.Peers.Get(ctx, projectID, p.ID)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(p).ToNot(BeNil())
 				g.Expect(p.StatusName).To(Equal("PENDING_ACCEPTANCE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
@@ -149,7 +168,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			Eventually(func(g Gomega) {
 				pCheck, _, err := atlasClient.Client.Peers.Get(ctx, projectID, p.ID)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(pCheck).ToNot(BeNil())
 				g.Expect(pCheck.StatusName).To(Equal("AVAILABLE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
@@ -309,14 +328,18 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 	})
 
 	AfterEach(func() {
+		By("Stopping the operator", func() {
+			managerStop()
+		})
+
 		By("Deleting Network Peering", func() {
 			if networkPeerID != "" {
 				_, err := atlasClient.Client.Peers.Delete(ctx, projectID, networkPeerID)
-				Expect(err).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
 					_, _, err := atlasClient.Client.Peers.Get(ctx, projectID, networkPeerID)
-					g.Expect(err).ToNot(BeNil())
+					g.Expect(err).To(HaveOccurred())
 				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 			}
 		})
@@ -324,7 +347,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		By("Deleting Project", func() {
 			Eventually(func(g Gomega) {
 				_, err := atlasClient.Client.Projects.Delete(ctx, projectID)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 

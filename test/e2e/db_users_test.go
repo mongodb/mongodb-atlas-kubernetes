@@ -2,8 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
-	"path"
 	"strings"
 	"time"
 
@@ -81,14 +79,12 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
 			k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)
-			logPath := path.Join("output", fmt.Sprintf("dbusers-operator-global-%s", testData.Resources.Namespace))
 
-			mgr, err := k8s.RunOperator(&k8s.Config{
+			mgr, err := k8s.BuildManager(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
-				LogDir: logPath,
 			})
 			Expect(err).NotTo(HaveOccurred())
 

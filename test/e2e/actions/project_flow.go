@@ -3,7 +3,6 @@ package actions
 import (
 	"context"
 	"fmt"
-	"path"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -40,8 +39,7 @@ func ProjectCreationFlow(userData *model.TestDataProvider) {
 
 func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Manager {
 	CreateNamespaceAndSecrets(userData)
-	logPath := path.Join("output", userData.Resources.Namespace)
-	mgr, err := k8s.RunOperator(&k8s.Config{
+	mgr, err := k8s.BuildManager(&k8s.Config{
 		Namespace: userData.Resources.Namespace,
 		WatchedNamespaces: map[string]bool{
 			userData.Resources.Namespace: true,
@@ -50,7 +48,6 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 			Namespace: userData.Resources.Namespace,
 			Name:      config.DefaultOperatorGlobalKey,
 		},
-		LogDir: logPath,
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return mgr

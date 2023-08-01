@@ -28,14 +28,13 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 		for _, ns := range watchNamespace {
 			watchNamespaceMap[ns] = true
 		}
-		mgr, err := k8s.RunOperator(&k8s.Config{
+		mgr, err := k8s.BuildManager(&k8s.Config{
 			Namespace: config.DefaultOperatorNS,
 			GlobalAPISecret: client.ObjectKey{
 				Namespace: config.DefaultOperatorNS,
 				Name:      config.DefaultOperatorGlobalKey,
 			},
 			WatchedNamespaces: watchNamespaceMap,
-			LogDir:            "logs",
 		})
 		Expect(err).Should(Succeed())
 		ctx := context.Background()

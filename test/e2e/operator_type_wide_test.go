@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"path"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -75,13 +74,12 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 			actions.CreateNamespaceAndSecrets(NimnulData)
 			k8s.CreateNamespace(ctx, k8sClient, config.DefaultOperatorNS)
 			k8s.CreateDefaultSecret(ctx, k8sClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
-			logPath := path.Join("output", fmt.Sprintf("deployments-wide-operator-%s-%s", NortonData.Resources.Namespace, NimnulData.Resources.Namespace))
-			mgr, err := k8s.RunOperator(&k8s.Config{
+
+			mgr, err := k8s.BuildManager(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
-				LogDir: logPath,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			go func(ctx context.Context) context.Context {
