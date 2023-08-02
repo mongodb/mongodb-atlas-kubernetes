@@ -38,7 +38,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 	)
 
 	BeforeEach(func() {
-		prepareControllers()
+		prepareControllers(false)
 
 		manualDeletion = false
 
