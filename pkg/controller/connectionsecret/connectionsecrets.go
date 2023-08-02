@@ -2,7 +2,6 @@ package connectionsecret
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
