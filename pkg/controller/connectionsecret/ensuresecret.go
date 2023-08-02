@@ -19,12 +19,13 @@ const (
 	TypeLabelKey           = "atlas.mongodb.com/type"
 	CredLabelVal           = "credentials"
 
-	standardKey    string = "connectionStringStandard"
-	standardKeySrv string = "connectionStringStandardSrv"
-	privateKey     string = "connectionStringPrivate"
-	privateKeySrv  string = "connectionStringPrivateSrv"
-	userNameKey    string = "username"
-	passwordKey    string = "password"
+	standardKey     string = "connectionStringStandard"
+	standardKeySrv  string = "connectionStringStandardSrv"
+	privateKey      string = "connectionStringPrivate"
+	privateKeySrv   string = "connectionStringPrivateSrv"
+	privateShardKey string = "connectionStringPrivateShard"
+	userNameKey     string = "username"
+	passwordKey     string = "password"
 )
 
 type ConnectionData struct {
@@ -36,8 +37,9 @@ type ConnectionData struct {
 }
 
 type PrivateLinkConnURLs struct {
-	PvtConnURL    string
-	PvtSrvConnURL string
+	PvtConnURL      string
+	PvtSrvConnURL   string
+	PvtShardConnURL string
 }
 
 // Ensure creates or updates the connection Secret for the specific cluster and db user. Returns the name of the Secret
@@ -77,6 +79,9 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 		if data.PrivateConnURLs[idx].PvtSrvConnURL, err = AddCredentialsToConnectionURL(privateConn.PvtSrvConnURL, data.DBUserName, data.Password); err != nil {
 			return err
 		}
+		if data.PrivateConnURLs[idx].PvtShardConnURL, err = AddCredentialsToConnectionURL(privateConn.PvtShardConnURL, data.DBUserName, data.Password); err != nil {
+			return err
+		}
 	}
 
 	secret.Labels = map[string]string{
@@ -98,6 +103,7 @@ func fillSecret(secret *corev1.Secret, projectID string, clusterName string, dat
 		suffix := getSuffix(idx)
 		secret.Data[privateKey+suffix] = []byte(privateConn.PvtConnURL)
 		secret.Data[privateKeySrv+suffix] = []byte(privateConn.PvtSrvConnURL)
+		secret.Data[privateShardKey+suffix] = []byte(privateConn.PvtShardConnURL)
 	}
 
 	return nil
