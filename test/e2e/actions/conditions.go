@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -16,22 +17,22 @@ import (
 func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) {
 	Eventually(allConditionsAreTrueFunc(userData, conditionTypes...)).
 		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
-		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'", conditionTypes))
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v are not all 'True'\n%s",
+			conditionTypes, dumpProjectConditions(userData)))
 }
 
 // CheckProjectConditionsNotSet wait for Ready condition to become true and checks that input conditions are unset
 func CheckProjectConditionsNotSet(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) {
 	Eventually(conditionsAreUnset(userData, conditionTypes...)).
 		WithTimeout(15*time.Minute).WithPolling(20*time.Second).
-		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset. project status: %v",
-			conditionTypes, userData.Project.Status.Conditions))
+		Should(BeTrue(), fmt.Sprintf("Status conditions %v should be unset. project status: %v\n%s",
+			conditionTypes, userData.Project.Status.Conditions, dumpProjectConditions(userData)))
 }
 
 func allConditionsAreTrueFunc(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) func(g types.Gomega) bool {
 	return func(g Gomega) bool {
 		conditions, err := kube.GetAllProjectConditions(userData)
 		g.Expect(err).ShouldNot(HaveOccurred())
-
 		for _, conditionType := range conditionTypes {
 			foundTrue := false
 			for _, condition := range conditions {
@@ -77,4 +78,22 @@ func conditionsAreUnset(userData *model.TestDataProvider, unsetConditionTypes ..
 
 		return true
 	}
+}
+
+func dumpProjectConditions(userData *model.TestDataProvider) string {
+	conditions, err := kube.GetAllProjectConditions(userData)
+	if err != nil {
+		return fmt.Sprintf("failed to get all projetc conditions: %s", err.Error())
+	}
+	var buf strings.Builder
+	for _, condition := range conditions {
+		fmt.Fprintf(&buf, "Condition %s status=%q reason=%q msg=%q %v\n",
+			condition.Type,
+			condition.Status,
+			condition.Reason,
+			condition.Message,
+			condition.LastTransitionTime,
+		)
+	}
+	return buf.String()
 }
