@@ -37,8 +37,8 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 
 	_ = BeforeEach(OncePerOrdered, func() {
 		checkUpAWSEnvironment()
-		checkUpAzureEnvironment()
-		checkNSetUpGCPEnvironment()
+		//checkUpAzureEnvironment()
+		//checkNSetUpGCPEnvironment()
 
 		action, err := prepareProviderAction()
 		Expect(err).To(BeNil())

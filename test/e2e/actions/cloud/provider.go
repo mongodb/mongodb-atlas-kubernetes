@@ -1,6 +1,9 @@
 package cloud
 
 import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"path"
 	"time"
 
@@ -19,10 +22,10 @@ const (
 	ResourceGroupName = "svet-test"
 	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
 	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
-	Subnet1CIDR       = "10.0.0.0/25"
-	Subnet2CIDR       = "10.0.0.128/25"
+	Subnet1CIDRBase   = "10.%d.%d.0/25"
+	Subnet2CIDRBase   = "10.%d.%d.128/25"
 	vpcName           = "atlas-operator-e2e-test-vpc"
-	vpcCIDR           = "10.0.0.0/24"
+	vpcCIDRBase       = "10.%d.%d.0/24"
 )
 
 type Provider interface {
@@ -331,27 +334,56 @@ func NewProviderAction(t core.GinkgoTInterface, aws *AwsAction, gcp *GCPAction, 
 }
 
 func getAWSConfigDefaults() *AWSConfig {
+	a, b := randomBytes()
+	vpcCIDR := buildCIDR(vpcCIDRBase, a, b)
+	subnet1CIDR := buildCIDR(Subnet1CIDRBase, a, b)
+	subnet2CIDR := buildCIDR(Subnet2CIDRBase, a, b)
 	return &AWSConfig{
 		Region:  AWSRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
-		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
+		Subnets: map[string]string{Subnet1Name: subnet1CIDR, Subnet2Name: subnet2CIDR},
 	}
 }
 
 func getGCPConfigDefaults() *GCPConfig {
+	a, b := randomBytes()
+	subnet1CIDR := buildCIDR(Subnet1CIDRBase, a, b)
+	subnet2CIDR := buildCIDR(Subnet2CIDRBase, a, b)
 	return &GCPConfig{
 		Region:  GCPRegion,
 		VPC:     vpcName,
-		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
+		Subnets: map[string]string{Subnet1Name: subnet1CIDR, Subnet2Name: subnet2CIDR},
 	}
 }
 
 func getAzureConfigDefaults() *AzureConfig {
+	a, b := randomBytes()
+	vpcCIDR := buildCIDR(vpcCIDRBase, a, b)
+	subnet1CIDR := buildCIDR(Subnet1CIDRBase, a, b)
+	subnet2CIDR := buildCIDR(Subnet2CIDRBase, a, b)
 	return &AzureConfig{
 		Region:  AzureRegion,
 		VPC:     vpcName,
 		CIDR:    vpcCIDR,
-		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
+		Subnets: map[string]string{Subnet1Name: subnet1CIDR, Subnet2Name: subnet2CIDR},
 	}
+}
+
+func buildCIDR(base string, a, b int) string {
+	return fmt.Sprintf(base, a, b)
+}
+
+func randomBytes() (int, int) {
+	return randIntn(255), randIntn(255)
+}
+
+func randIntn(max int) int {
+	var randMax big.Int
+	randMax.SetInt64((int64)(max))
+	i, err := rand.Int(rand.Reader, &randMax)
+	if err != nil {
+		panic(err)
+	}
+	return int(i.Int64())
 }
