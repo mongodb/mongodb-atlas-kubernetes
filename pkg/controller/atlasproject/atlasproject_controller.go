@@ -300,7 +300,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 	results = append(results, result)
 
-	if result = r.ensureAlertConfigurations(workflowCtx, project, project.ID()); result.IsOk() {
+	if result = r.ensureAlertConfigurations(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
 	}
 	results = append(results, result)
