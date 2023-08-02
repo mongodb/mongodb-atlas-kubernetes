@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"reflect"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
@@ -53,7 +52,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 		if convertedDeployment.Tags == nil {
 			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
 		}
-		if !reflect.DeepEqual(convertedDeployment.Tags, atlasDeployment.Tags) {
+		if !isEqual(atlasDeployment, convertedDeployment) {
 			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
 				// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
 				Tag: convertedDeployment.Tags,
@@ -77,4 +76,17 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 	default:
 		return atlasDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", atlasDeployment.StateName))
 	}
+}
+
+func isEqual(a *mongodbatlas.Cluster, c *mongodbatlas.Cluster) bool {
+	// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
+	if len(*a.Tags) == len(*c.Tags) {
+		for i, aTags := range *a.Tags {
+			if aTags.Key != (*c.Tags)[i].Key || aTags.Value != (*c.Tags)[i].Value {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

@@ -2,11 +2,9 @@ package int
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -242,10 +240,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 	performUpdate := func(timeout time.Duration) {
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-
-		j, _ := json.MarshalIndent(createdDeployment, "", " ")
-		GinkgoWriter.Println(">>>", string(j))
-
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
@@ -596,8 +590,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
-						Expect(reflect.DeepEqual(c.Tags[i].Key, tag.Key)).To(BeTrue())
-						Expect(reflect.DeepEqual(c.Tags[i].Value, tag.Value)).To(BeTrue())
+						Expect(c.Tags[i].Key == tag.Key).To(BeTrue())
+						Expect(c.Tags[i].Value == tag.Value).To(BeTrue())
 					}
 				})
 			})
@@ -1064,8 +1058,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Key, tag.Key)).To(BeTrue())
-						Expect(reflect.DeepEqual((*atlasDeployment.Tags)[i].Value, tag.Value)).To(BeTrue())
+						Expect((*atlasDeployment.Tags)[i].Key == tag.Key).To(BeTrue())
+						Expect((*atlasDeployment.Tags)[i].Value == tag.Value).To(BeTrue())
 					}
 				}
 			})
