@@ -271,7 +271,7 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projec
 			return false, errors.New("failed to match resource type as AtlasDataFederation")
 		}
 
-		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, projectID, dataFederation.Name)
+		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, projectID, dataFederation.Spec.Name)
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {

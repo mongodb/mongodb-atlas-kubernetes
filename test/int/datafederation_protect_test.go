@@ -50,19 +50,18 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			testProject = mdbv1.DefaultProject(testNamespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().
 					WithCIDR("0.0.0.0/0"))
-			Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 			Eventually(func() bool {
 				return testutil.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
 			}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 		})
 
-		if !manualDeletion {
-			By("Setting up DataFederation struct", func() {
-				testDataFederation = &mdbv1.AtlasDataFederation{}
-				testDataFederationName = fmt.Sprintf(dataFederationBaseName, testNamespace.Name)
-			})
-		}
+		By("Setting up DataFederation struct", func() {
+			testDataFederation = &mdbv1.AtlasDataFederation{}
+			testDataFederationName = fmt.Sprintf(dataFederationBaseName, testNamespace.Name)
+		})
+
 	})
 
 	AfterEach(func() {
@@ -81,10 +80,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			Eventually(checkAtlasProjectRemoved(testProject.Status.ID), 60, interval).Should(BeTrue())
 		})
 
-		By("Removing Atlas DataFederation "+testDataFederationName, func() {
-			_, err := atlasClient.DataFederation.Delete(context.TODO(), testProject.ID(), testDataFederation.Spec.Name)
-			Expect(err).To(BeNil())
-		})
+		if !manualDeletion {
+			By("Removing Atlas DataFederation "+testDataFederationName, func() {
+				_, err := atlasClient.DataFederation.Delete(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+				Expect(err).To(BeNil())
+			})
+		}
 	})
 
 	Describe("Operator is running with deletion protection enabled", func() {
@@ -102,11 +103,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 			// nolint:dupl
 			By("Deleting a data federation instance in cluster doesn't delete it from Atlas", func() {
-				Expect(k8sClient.Delete(context.TODO(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.TODO(), testProject.ID(), testDataFederation.Spec.Name)
+					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -119,10 +120,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 					Name: testDataFederationName,
 				}
 
-				_, _, err := atlasClient.DataFederation.Create(context.TODO(), testProject.ID(), df)
+				_, _, err := atlasClient.DataFederation.Create(context.Background(), testProject.ID(), df)
 				Expect(err).To(BeNil())
 				Eventually(func(g Gomega) {
-					atlasDataFederation, _, err := atlasClient.DataFederation.Get(context.TODO(), testProject.ID(), testDataFederationName)
+					atlasDataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederationName)
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasDataFederation).ToNot(BeNil())
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -139,11 +140,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 			// nolint:dupl
 			By("Deleting a data federation instance in the cluster does not delete it in Atlas", func() {
-				Expect(k8sClient.Delete(context.TODO(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.TODO(), testProject.ID(), testDataFederation.Spec.Name)
+					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -163,11 +164,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			})
 
 			By("Deleting annotated data federation instance in cluster should delete it from  Atlas", func() {
-				Expect(k8sClient.Delete(context.TODO(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(context.Background(), testDataFederation, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.TODO(), testProject.ID(), testDataFederation.Spec.Name)
+					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
+					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(dataFederation).To(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
