@@ -367,5 +367,5 @@ func canAlertConfigurationReconcile(ctx context.Context, atlasClient mongodbatla
 
 	diff = sortAlertConfigs(logger, project.Spec.AlertConfigurations, list)
 
-	return len(diff.Create) == 0 || len(diff.Delete) == 0, nil
+	return len(diff.Create) == 0 && len(diff.Delete) == 0, nil
 }
