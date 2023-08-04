@@ -52,7 +52,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 		if convertedDeployment.Tags == nil {
 			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
 		}
-		if !isEqual(atlasDeployment, convertedDeployment) {
+		if !isTagsEqual(*(atlasDeployment.Tags), *(convertedDeployment.Tags)) {
 			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
 				// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
 				Tag: convertedDeployment.Tags,
@@ -78,11 +78,10 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 	}
 }
 
-func isEqual(a *mongodbatlas.Cluster, c *mongodbatlas.Cluster) bool {
-	// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
-	if len(*a.Tags) == len(*c.Tags) {
-		for i, aTags := range *a.Tags {
-			if aTags.Key != (*c.Tags)[i].Key || aTags.Value != (*c.Tags)[i].Value {
+func isTagsEqual(a []*mongodbatlas.Tag, c []*mongodbatlas.Tag) bool {
+	if len(a) == len(c) {
+		for i, aTags := range a {
+			if aTags.Key != (c)[i].Key || aTags.Value != (c)[i].Value {
 				return false
 			}
 		}
