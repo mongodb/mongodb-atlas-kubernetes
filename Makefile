@@ -184,7 +184,7 @@ $(TIMESTAMPS_DIR)/generate: ${GO_SOURCES}
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: generate
-generate: fmt controller-gen $(TIMESTAMPS_DIR)/generate ## Generate code
+generate: controller-gen $(TIMESTAMPS_DIR)/generate fmt ## Generate code
 
 .PHONY: controller-gen
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
