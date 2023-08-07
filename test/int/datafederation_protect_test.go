@@ -69,23 +69,24 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			Expect(k8sClient.Delete(context.Background(), &connectionSecret)).To(Succeed())
 		})
 
-		By("Stopping the operator", func() {
-			stopManager()
-			err := k8sClient.Delete(context.Background(), testNamespace)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		By("Removing Atlas Project "+testProject.Status.ID, func() {
-			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(testProject.Status.ID), 60, interval).Should(BeTrue())
-		})
-
 		if !manualDeletion {
 			By("Removing Atlas DataFederation "+testDataFederationName, func() {
 				_, err := atlasClient.DataFederation.Delete(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
 				Expect(err).To(BeNil())
 			})
 		}
+
+		By("Removing Atlas Project "+testProject.Status.ID, func() {
+			_, err := atlasClient.Projects.Delete(context.Background(), testProject.ID())
+			Expect(err).To(BeNil())
+		})
+
+		By("Stopping the operator", func() {
+			stopManager()
+			err := k8sClient.Delete(context.Background(), testNamespace)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 	})
 
 	Describe("Operator is running with deletion protection enabled", func() {
@@ -126,6 +127,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 					atlasDataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederationName)
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasDataFederation).ToNot(BeNil())
+					g.Expect(atlasDataFederation.State).Should(Equal("ACTIVE"))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 
