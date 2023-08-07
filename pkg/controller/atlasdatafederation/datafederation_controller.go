@@ -274,7 +274,7 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projec
 		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, projectID, dataFederation.Spec.Name)
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
+			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.DataFederationTenantNotFound || apiError.ErrorCode == atlas.ResourceNotFound) {
 				return false, nil
 			}
 			return false, err
