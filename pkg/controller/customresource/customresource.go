@@ -135,3 +135,13 @@ func ReconciliationShouldBeSkipped(resource mdbv1.AtlasCustomResource) bool {
 	}
 	return false
 }
+
+// SetAnnotation sets an annotation in resource while respecting the rest of annotations.
+func SetAnnotation(resource mdbv1.AtlasCustomResource, key, value string) {
+	annot := resource.GetAnnotations()
+	if annot == nil {
+		annot = map[string]string{}
+	}
+	annot[key] = value
+	resource.SetAnnotations(annot)
+}
