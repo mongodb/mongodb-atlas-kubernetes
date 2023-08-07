@@ -1,3 +1,5 @@
+//go:build e2e
+
 // different ways to deploy operator
 package deploy
 

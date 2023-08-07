@@ -1,3 +1,5 @@
+//go:build e2e
+
 // `actions` additional functions which accept testDataProvider struct and could be used as additional acctions in the tests since they all typical
 
 package actions

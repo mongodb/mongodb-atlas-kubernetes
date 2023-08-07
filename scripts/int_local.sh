@@ -16,4 +16,4 @@ export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
 
-ginkgo --label-filter="${label}" --timeout 80m -v ./test/int -coverprofile cover.out
+ginkgo -tags 'int'  --label-filter="${label}" --timeout 80m -v ./test/int -coverprofile cover.out

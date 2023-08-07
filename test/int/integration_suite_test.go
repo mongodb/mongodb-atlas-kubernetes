@@ -1,3 +1,5 @@
+//go:build int
+
 /*
 Copyright 2020 MongoDB.
 

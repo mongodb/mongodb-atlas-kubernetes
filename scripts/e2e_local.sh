@@ -40,4 +40,4 @@ export MCLI_PUBLIC_API_KEY="${public_key}"
 export MCLI_PRIVATE_API_KEY="${private_key}"
 export MCLI_ORG_ID="${org_id}"
 export IMAGE_URL="${image}" #for helm chart
-ginkgo --label-filter="${focus_key}" --timeout 120m -v test/e2e/
+ginkgo -tags 'e2e' --label-filter="${focus_key}" --timeout 120m -v test/e2e/

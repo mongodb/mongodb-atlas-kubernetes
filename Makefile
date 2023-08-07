@@ -92,7 +92,7 @@ all: manager ## Build all binaries
 
 .PHONY: unit-test
 unit-test:
-	go test -race -cover ./pkg/...
+	go test -race -cover ./...
 
 .PHONY: int-test
 int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
