@@ -43,7 +43,7 @@ const (
 	KeyName           = "encryption-at-rest-test-key"
 )
 
-var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
+var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -86,8 +86,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			v1.EncryptionAtRest{
 				AwsKms: v1.AwsKms{
 					Enabled: toptr.MakePtr(true),
-					// CustomerMasterKeyID: "",
-					Region: "US_EAST_1",
+					Region:  "US_EAST_1",
 				},
 			},
 			[]cloudaccess.Role{
@@ -154,7 +153,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
 		}
 
-		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, true)
+		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(&encAtRest)
 		fillKMSforGCP(&encAtRest)
 
@@ -189,7 +188,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 }
 
-func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string, withRoleID bool) {
+func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
 	if (encAtRest.AwsKms == v1.AwsKms{}) {
 		return
 	}
@@ -202,10 +201,6 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleA
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
 
 	encAtRest.AwsKms.CustomerMasterKeyID = CustomerMasterKeyID
-
-	if withRoleID {
-		encAtRest.AwsKms.RoleID = assumedRoleArn
-	}
 }
 
 func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
@@ -264,7 +259,7 @@ func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) 
 	return true, nil
 }
 
-var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
+var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -350,7 +345,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
-			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, false)
+			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 			fillVaultforAzure(&encAtRest)
 			fillKMSforGCP(&encAtRest)
 
@@ -452,7 +447,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 
 			encAtRest.AwsKms.Region = string(secret.Data["Region"])
 
-			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, false)
+			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
