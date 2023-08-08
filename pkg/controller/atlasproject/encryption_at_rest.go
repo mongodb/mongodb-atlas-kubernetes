@@ -103,14 +103,16 @@ func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *md
 }
 
 func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "ClientID", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier")
+	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "ClientID", "Secret", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier", "TenantID")
 	if err != nil {
 		return watchObj, err
 	}
 
 	azureVault.ClientID = fieldData["ClientID"]
+	azureVault.Secret = fieldData["Secret"]
 	azureVault.AzureEnvironment = fieldData["AzureEnvironment"]
 	azureVault.SubscriptionID = fieldData["SubscriptionID"]
+	azureVault.TenantID = fieldData["TenantID"]
 	azureVault.ResourceGroupName = fieldData["ResourceGroupName"]
 	azureVault.KeyVaultName = fieldData["KeyVaultName"]
 	azureVault.KeyIdentifier = fieldData["KeyIdentifier"]
