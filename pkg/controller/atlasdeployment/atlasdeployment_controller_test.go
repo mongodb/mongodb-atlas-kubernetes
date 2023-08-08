@@ -9,7 +9,6 @@ import (
 )
 
 func TestUniqueKey(t *testing.T) {
-	//var deploymentSpec *mdbv1.AtlasDeploymentSpec
 	t.Run("Test duplicates in Advanced Deployment", func(t *testing.T) {
 		deploymentSpec := &mdbv1.AtlasDeploymentSpec{
 			AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
