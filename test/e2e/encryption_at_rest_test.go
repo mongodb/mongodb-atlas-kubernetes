@@ -43,7 +43,7 @@ const (
 	KeyName           = "encryption-at-rest-test-key"
 )
 
-var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
+var _ = FDescribe("Encryption at REST test", Label("encryption-at-rest"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {

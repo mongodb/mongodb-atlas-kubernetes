@@ -1,12 +1,14 @@
 package k8s
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"time"
+
+	"go.uber.org/zap/zaptest"
+
+	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -46,7 +48,13 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
-	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder, path.Join(config.LogDir, "operator.log"))
+	//logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder, path.Join(config.LogDir, "operator.log"))
+	logger := zaptest.NewLogger(
+		GinkgoT(),
+		zaptest.WrapOptions(
+			zap.ErrorOutput(zapcore.Lock(zapcore.AddSync(GinkgoWriter))),
+		),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize custom zap logger: %w", err)
 	}
@@ -205,6 +213,7 @@ func mergeConfiguration(initCfg *Config) *Config {
 	return config
 }
 
+/*
 func initCustomZapLogger(level, encoding, logFileName string) (*zap.Logger, error) {
 	lv := zap.AtomicLevel{}
 	err := lv.UnmarshalText([]byte(strings.ToLower(level)))
@@ -233,3 +242,4 @@ func initCustomZapLogger(level, encoding, logFileName string) (*zap.Logger, erro
 	}
 	return cfg.Build()
 }
+*/
