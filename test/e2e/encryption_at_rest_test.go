@@ -77,6 +77,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 
 			if roles != nil {
 				cloudAccessRolesFlow(test, roles)
+				encAtRest.AwsKms.RoleID = test.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
 			}
 
 			encryptionAtRestFlow(test, encAtRest)
