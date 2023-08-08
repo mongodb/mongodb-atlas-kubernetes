@@ -2,6 +2,7 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -198,7 +199,15 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 		return err
 	}
 
-	if _, _, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
+	if er, resp, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
+		if resp != nil {
+			jd, _ := json.MarshalIndent(resp, "", " ")
+			fmt.Println("DEBUG >>>> ", string(jd))
+		}
+		if er != nil {
+			jd, _ := json.MarshalIndent(resp, "", " ")
+			fmt.Println("DEBUG >>>> ", string(jd))
+		}
 		return err
 	}
 
