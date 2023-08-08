@@ -14,10 +14,14 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
@@ -298,6 +302,121 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 			}
 			Expect(roleARNToSet).NotTo(BeEmpty())
 			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
+			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
+		})
+	})
+
+	It("Should be able to create Encryption at REST on AWS with data from the Secret", func() {
+
+		testData = model.DataProvider(
+			"encryption-at-rest-aws",
+			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			40000,
+			[]func(*model.TestDataProvider){},
+		).WithProject(data.DefaultProject())
+
+		roles := []cloudaccess.Role{
+			{
+				Name: utils.RandomName(awsRoleNameBase),
+				AccessRole: v1.CloudProviderAccessRole{
+					ProviderName: "AWS",
+				},
+			},
+		}
+
+		userData := testData
+		encAtRest := v1.EncryptionAtRest{
+			AwsKms: v1.AwsKms{
+				Enabled: toptr.MakePtr(true),
+				Valid:   toptr.MakePtr(true),
+			},
+		}
+
+		By("Creating a project", func() {
+			actions.ProjectCreationFlow(testData)
+		})
+
+		var projectID string
+		By("Getting a project ID by name from Atlas", func() {
+			Eventually(func(g Gomega) error {
+				projectData, _, err := atlasClient.Client.Projects.GetOneProjectByName(userData.Context, userData.Project.Spec.Name)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(projectData).NotTo(BeNil())
+				ginkgo.GinkgoLogr.Info("Project ID", projectData.ID)
+				projectID = projectData.ID
+				return nil
+			}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		})
+
+		var atlasRoles *mongodbatlas.CloudProviderAccessRoles
+		By("Add cloud access role (AWS only)", func() {
+			cloudAccessRolesFlow(userData, roles)
+		})
+
+		By("Fetching project CPAs", func() {
+			var err error
+			atlasRoles, _, err = atlasClient.Client.CloudProviderAccess.ListRoles(userData.Context, projectID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atlasRoles).NotTo(BeNil())
+			Expect(len(atlasRoles.AWSIAMRoles)).NotTo(BeZero())
+		})
+
+		secret := &corev1.Secret{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "aws-secret",
+				Namespace: userData.Resources.Namespace,
+				Labels: map[string]string{
+					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+				},
+			},
+			Data: map[string][]byte{
+				"Region": []byte("US_EAST_1"),
+			},
+		}
+
+		By("Create KMS with AWS RoleID", func() {
+			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+
+			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
+			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
+
+			encAtRest.AwsKms.Region = string(secret.Data["Region"])
+
+			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+
+			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
+				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
+			userData.Project.Spec.EncryptionAtRest = &encAtRest
+
+			var roleARNToSet string
+			for _, r := range atlasRoles.AWSIAMRoles {
+				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
+					roleARNToSet = r.IAMAssumedRoleARN
+					break
+				}
+			}
+
+			Expect(roleARNToSet).NotTo(BeEmpty())
+
+			secret.Data["RoleID"] = []byte(roleARNToSet)
+			secret.Data["CustomerMasterKeyID"] = []byte(encAtRest.AwsKms.CustomerMasterKeyID)
+			userData.Project.Spec.EncryptionAtRest.AwsKms.CustomerMasterKeyID = ""
+			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
+			userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef = common.ResourceRefNamespaced{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			}
+
+			By("Creating a secret for AWS KMS", func() {
+				Expect(userData.K8SClient.Create(userData.Context, secret)).To(Succeed())
+			})
+
 			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
 		})

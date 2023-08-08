@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -13,13 +14,14 @@ func DeleteAllDeployments(ctx context.Context, client mongodbatlas.ClustersServi
 	if err != nil {
 		return fmt.Errorf("error getting deployments: %s", err)
 	}
+	var allErr error
 	for _, deployment := range deployments {
 		log.Printf("Deleting deployment %s", deployment.Name)
 		if _, err = client.Delete(ctx, projectID, deployment.Name); err != nil {
-			return fmt.Errorf("error deleting deployment: %s", err)
+			allErr = errors.Join(allErr, fmt.Errorf("error deleting deployment: %s", err))
 		}
 	}
-	return nil
+	return allErr
 }
 
 func GetAllDeployments(ctx context.Context, client mongodbatlas.ClustersService, projectID string) ([]mongodbatlas.Cluster, error) {

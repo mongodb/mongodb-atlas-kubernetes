@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/validate"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -31,8 +33,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -51,12 +51,14 @@ import (
 type AtlasProjectReconciler struct {
 	Client client.Client
 	watch.ResourceWatcher
-	Log              *zap.SugaredLogger
-	Scheme           *runtime.Scheme
-	AtlasDomain      string
-	GlobalAPISecret  client.ObjectKey
-	GlobalPredicates []predicate.Predicate
-	EventRecorder    record.EventRecorder
+	Log                         *zap.SugaredLogger
+	Scheme                      *runtime.Scheme
+	AtlasDomain                 string
+	GlobalAPISecret             client.ObjectKey
+	GlobalPredicates            []predicate.Predicate
+	EventRecorder               record.EventRecorder
+	ObjectDeletionProtection    bool
+	SubObjectDeletionProtection bool
 }
 
 // Dev note: duplicate the permissions in both sections below to generate both Role and ClusterRoles
@@ -76,8 +78,7 @@ type AtlasProjectReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasteams,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasteams/status,verbs=get;update;patch
 
-func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = context
+func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
@@ -86,10 +87,10 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return result.ReconcileResult(), nil
 	}
 
-	if shouldSkip := customresource.ReconciliationShouldBeSkipped(project); shouldSkip {
+	if customresource.ReconciliationShouldBeSkipped(project) {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
 		if !project.GetDeletionTimestamp().IsZero() {
-			err := r.removeDeletionFinalizer(context, project)
+			err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer)
 			if err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to remove finalizer", "error", err)
@@ -99,22 +100,22 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	ctx := customresource.MarkReconciliationStarted(r.Client, project, log)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, project, log)
 	log.Infow("-> Starting AtlasProject reconciliation", "spec", project.Spec)
 
 	if project.ConnectionSecretObjectKey() != nil {
 		// Note, that we are not watching the global connection secret - seems there is no point in reconciling all
 		// the projects once that secret is changed
-		ctx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *project.ConnectionSecretObjectKey()})
+		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *project.ConnectionSecretObjectKey()})
 	}
 
 	// This update will make sure the status is always updated in case of any errors or successful result
 	defer func() {
-		statushandler.Update(ctx, r.Client, r.EventRecorder, project)
-		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, ctx.ListResourcesToWatch()...)
+		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, project)
+		r.EnsureMultiplesResourcesAreWatched(req.NamespacedName, log, workflowCtx.ListResourcesToWatch()...)
 	}()
 
-	resourceVersionIsValid := customresource.ValidateResourceVersion(ctx, project, r.Log)
+	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, project, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("project validation result: %v", resourceVersionIsValid)
 		return resourceVersionIsValid.ReconcileResult(), nil
@@ -122,102 +123,132 @@ func (r *AtlasProjectReconciler) Reconcile(context context.Context, req ctrl.Req
 
 	if err := validate.Project(project); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(ctx, status.ValidationSucceeded, result)
+		setCondition(workflowCtx, status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.SetConditionTrue(status.ValidationSucceeded)
+	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		setCondition(ctx, status.ProjectReadyType, result)
-		if errRm := r.removeDeletionFinalizer(context, project); errRm != nil {
+		setCondition(workflowCtx, status.ProjectReadyType, result)
+		if errRm := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer); errRm != nil {
 			result = workflow.Terminate(workflow.Internal, errRm.Error())
 			return result.ReconcileResult(), nil
 		}
 		return result.ReconcileResult(), nil
 	}
-	ctx.Connection = connection
+	workflowCtx.Connection = connection
 
 	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(ctx, status.DeploymentReadyType, result)
+		setCondition(workflowCtx, status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.Client = atlasClient
+	workflowCtx.Client = atlasClient
+
+	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient))
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
+	}
+
+	if !owner {
+		result = workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile project: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
+		)
+		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
+	}
+
+	err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result.ReconcileResult(), nil
+	}
 
 	var projectID string
-	if projectID, result = r.ensureProjectExists(ctx, project); !result.IsOk() {
-		setCondition(ctx, status.ProjectReadyType, result)
+	if projectID, result = r.ensureProjectExists(workflowCtx, project); !result.IsOk() {
+		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
-	ctx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
+	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if result := r.ensureDeletionFinalizer(ctx, atlasClient, projectID, project, context); !result.IsOk() {
-		setCondition(ctx, status.ProjectReadyType, result)
+	if result := r.ensureDeletionFinalizer(ctx, workflowCtx, atlasClient, project); !result.IsOk() {
+		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	var authModes authmode.AuthModes
-	if authModes, result = r.ensureX509(ctx, projectID, project); !result.IsOk() {
-		setCondition(ctx, status.ProjectReadyType, result)
+	if authModes, result = r.ensureX509(workflowCtx, projectID, project); !result.IsOk() {
+		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	authModes.AddAuthMode(authmode.Scram) // add the default auth method
-	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
+	workflowCtx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
-	ctx.SetConditionTrue(status.ProjectReadyType)
+	workflowCtx.SetConditionTrue(status.ProjectReadyType)
 	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
 
-	results := r.ensureProjectResources(ctx, projectID, project, context)
+	results := r.ensureProjectResources(workflowCtx, projectID, project, ctx)
 	for i := range results {
 		if !results[i].IsOk() {
-			logIfWarning(ctx, result)
+			logIfWarning(workflowCtx, result)
 			return results[i].ReconcileResult(), nil
 		}
 	}
 
-	ctx.SetConditionTrue(status.ReadyType)
+	workflowCtx.SetConditionTrue(status.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx *workflow.Context, atlasClient mongodbatlas.Client, projectID string, project *mdbv1.AtlasProject, context context.Context) (result workflow.Result) {
-	log := ctx.Log
+func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, workflowCtx *workflow.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (result workflow.Result) {
+	log := workflowCtx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
 			log.Debugw("Add deletion finalizer", "name", customresource.FinalizerLabel)
-			if err := r.addDeletionFinalizer(context, project); err != nil {
-				return workflow.Terminate(workflow.Internal, err.Error())
+			if err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.SetFinalizer); err != nil {
+				return workflow.Terminate(workflow.AtlasFinalizerNotSet, err.Error())
 			}
 		}
 	}
 
 	if !project.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
-			if customresource.ResourceShouldBeLeftInAtlas(project) {
-				log.Infof("Not removing the Atlas Project from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+			log.Infow("RESOURCE PROTECTED", r.ObjectDeletionProtection, customresource.IsResourceProtected(project, r.ObjectDeletionProtection))
+			if customresource.IsResourceProtected(project, r.ObjectDeletionProtection) {
+				log.Info("Not removing Atlas database user from Atlas as per configuration")
 			} else {
-				if result = DeleteAllPrivateEndpoints(ctx, projectID); !result.IsOk() {
-					setCondition(ctx, status.PrivateEndpointReadyType, result)
+				if result = DeleteAllPrivateEndpoints(workflowCtx, project.ID()); !result.IsOk() {
+					setCondition(workflowCtx, status.PrivateEndpointReadyType, result)
 					return result
 				}
-				if result = DeleteAllNetworkPeers(context, projectID, ctx.Client.Peers, ctx.Log); !result.IsOk() {
-					setCondition(ctx, status.NetworkPeerReadyType, result)
+				if result = DeleteAllNetworkPeers(ctx, project.ID(), workflowCtx.Client.Peers, workflowCtx.Log); !result.IsOk() {
+					setCondition(workflowCtx, status.NetworkPeerReadyType, result)
 					return result
 				}
 
-				if err := r.deleteAtlasProject(context, atlasClient, project); err != nil {
+				if err := r.deleteAtlasProject(ctx, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					setCondition(ctx, status.DeploymentReadyType, result)
+					setCondition(workflowCtx, status.DeploymentReadyType, result)
 					return result
 				}
 			}
 
-			if err := r.removeDeletionFinalizer(context, project); err != nil {
-				return workflow.Terminate(workflow.Internal, err.Error())
+			if err := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer); err != nil {
+				return workflow.Terminate(workflow.AtlasFinalizerNotRemoved, err.Error())
 			}
 		}
 		return result
@@ -264,7 +295,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx *workflow.Context, p
 	}
 	results = append(results, result)
 
-	if result = ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(ctx, projectID, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
@@ -307,53 +338,12 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 }
 
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	c, err := controller.New("AtlasProject", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
-
-	// Watch for changes to primary resource AtlasProject & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasProject{}}, &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
-	if err != nil {
-		return err
-	}
-
-	// Watch for Connection Secrets
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources))
-	if err != nil {
-		return err
-	}
-
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasTeam{}}, watch.NewAtlasTeamHandler(r.WatchedResources))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *AtlasProjectReconciler) addDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
-	err := r.Client.Get(ctx, kube.ObjectKeyFromObject(p), p)
-	if err != nil {
-		return fmt.Errorf("failed to get project before adding deletion finalizer: %w", err)
-	}
-	customresource.SetFinalizer(p, customresource.FinalizerLabel)
-	if err := r.Client.Update(ctx, p); err != nil {
-		return fmt.Errorf("failed to add deletion finalizer for %s: %w", p.Name, err)
-	}
-	return nil
-}
-
-func (r *AtlasProjectReconciler) removeDeletionFinalizer(ctx context.Context, p *mdbv1.AtlasProject) error {
-	err := r.Client.Get(ctx, kube.ObjectKeyFromObject(p), p)
-	if err != nil {
-		return fmt.Errorf("failed to get project before removing deletion finalizer: %w", err)
-	}
-	customresource.UnsetFinalizer(p, customresource.FinalizerLabel)
-	if err = r.Client.Update(ctx, p); err != nil {
-		return fmt.Errorf("failed to remove deletion finalizer from %s: %w", p.Name, err)
-	}
-	return nil
+	return ctrl.NewControllerManagedBy(mgr).
+		Named("AtlasProject").
+		For(&mdbv1.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
+		Watches(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources)).
+		Watches(&source.Kind{Type: &mdbv1.AtlasTeam{}}, watch.NewAtlasTeamHandler(r.WatchedResources)).
+		Complete(r)
 }
 
 // setCondition sets the condition from the result and logs the warnings
@@ -365,5 +355,30 @@ func setCondition(ctx *workflow.Context, condition status.ConditionType, result 
 func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
+	}
+}
+
+func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client) customresource.AtlasChecker {
+	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+		project, ok := resource.(*mdbv1.AtlasProject)
+		if !ok {
+			return false, errors.New("failed to match resource type as AtlasProject")
+		}
+
+		if project.ID() == "" {
+			return false, nil
+		}
+
+		_, _, err := atlasClient.Projects.GetOneProject(ctx, project.ID())
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
+				return false, nil
+			}
+
+			return false, err
+		}
+
+		return true, nil
 	}
 }

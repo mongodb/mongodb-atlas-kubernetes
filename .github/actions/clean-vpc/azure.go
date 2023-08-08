@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -23,16 +24,17 @@ func deleteAzureVPCBySubstr(ctx context.Context, subID, resourceGroupName, subst
 	if err != nil {
 		return false, fmt.Errorf("error fetching vnets: %v", err)
 	}
+	var allErr error
 	for _, vnet := range vnets.Values() {
 		if vnet.Name != nil && strings.HasPrefix(*vnet.Name, substr) {
 			log.Printf("deleting vnet %s", *vnet.Name)
 			_, err = vnetClient.Delete(ctx, resourceGroupName, *vnet.Name)
 			if err != nil {
-				log.Printf("error deleting vnet: %v", err)
+				allErr = errors.Join(allErr, fmt.Errorf("error deleting vnet: %v", err))
 				ok = false
 			}
 		}
 	}
 
-	return ok, nil
+	return ok, allErr
 }

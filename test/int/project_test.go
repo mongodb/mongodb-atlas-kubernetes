@@ -42,7 +42,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	)
 
 	BeforeEach(func() {
-		prepareControllers()
+		prepareControllers(false)
 
 		createdProject = &mdbv1.AtlasProject{}
 

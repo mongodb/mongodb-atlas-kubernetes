@@ -226,8 +226,8 @@ func (p *AtlasProject) WithLabels(labels map[string]string) *AtlasProject {
 	return p
 }
 
-func (p *AtlasProject) WithAnnotations(labels map[string]string) *AtlasProject {
-	p.Labels = labels
+func (p *AtlasProject) WithAnnotations(annotations map[string]string) *AtlasProject {
+	p.Annotations = annotations
 	return p
 }
 

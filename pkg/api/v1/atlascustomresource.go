@@ -18,7 +18,6 @@ type AtlasCustomResource interface {
 }
 
 var _ AtlasCustomResource = &AtlasProject{}
-
 var _ AtlasCustomResource = &AtlasDeployment{}
-
+var _ AtlasCustomResource = &AtlasDatabaseUser{}
 var _ AtlasCustomResource = &AtlasDataFederation{}
