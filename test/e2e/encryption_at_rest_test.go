@@ -43,7 +43,7 @@ const (
 	KeyName           = "encryption-at-rest-test-key"
 )
 
-var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), Ordered, func() {
+var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -74,7 +74,12 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), Ordered
 		func(test *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			encryptionAtRestFlow(test, encAtRest, roles)
+
+			if roles != nil {
+				cloudAccessRolesFlow(test, roles)
+			}
+
+			encryptionAtRestFlow(test, encAtRest)
 		},
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
 			model.DataProvider(
@@ -137,13 +142,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), Ordered
 	)
 })
 
-func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
-	By("Add cloud access role (AWS only)", func() {
-		if roles != nil {
-			cloudAccessRolesFlow(userData, roles)
-		}
-	})
-
+func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest) {
 	By("Create KMS", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
