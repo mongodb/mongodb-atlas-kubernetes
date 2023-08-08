@@ -200,6 +200,7 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 	}
 
 	if er, resp, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
+		fmt.Printf("FAILED TO PATCH ENC REST >>>> %v\r\n", err)
 		if resp != nil {
 			jd, _ := json.MarshalIndent(resp, "", " ")
 			fmt.Println("DEBUG >>>> ", string(jd))

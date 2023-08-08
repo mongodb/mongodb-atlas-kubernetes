@@ -459,10 +459,12 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			var roleARNToSet string
 			for _, r := range atlasRoles.AWSIAMRoles {
 				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
+					GinkgoWriter.Println("FOUND ROLE ID >>>> ", r.IAMAssumedRoleARN, r.RoleID)
 					roleARNToSet = r.IAMAssumedRoleARN
 					break
 				}
 			}
+			GinkgoWriter.Println(" NO ROLE ID FOUND >>>> ")
 
 			Expect(roleARNToSet).NotTo(BeEmpty())
 
