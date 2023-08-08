@@ -43,7 +43,7 @@ const (
 	KeyName           = "encryption-at-rest-test-key"
 )
 
-var _ = FDescribe("Encryption at REST test", Label("encryption-at-rest"), func() {
+var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -154,7 +154,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
 		}
 
-		fillKMSforAWS(&encAtRest, aRole)
+		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, true)
 		fillVaultforAzure(&encAtRest)
 		fillKMSforGCP(&encAtRest)
 
@@ -189,7 +189,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 }
 
-func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, awsCloudAccess status.CloudProviderAccessRole) {
+func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string, withRoleID bool) {
 	if (encAtRest.AwsKms == v1.AwsKms{}) {
 		return
 	}
@@ -197,12 +197,15 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, awsCloudAccess status.CloudPr
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
 	awsAction, err := cloud.NewAWSAction(GinkgoT())
 	Expect(err).ToNot(HaveOccurred())
-	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, awsCloudAccess.AtlasAWSAccountArn, awsCloudAccess.IamAssumedRoleArn)
+	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
 
 	encAtRest.AwsKms.CustomerMasterKeyID = CustomerMasterKeyID
-	encAtRest.AwsKms.RoleID = awsCloudAccess.RoleID
+
+	if withRoleID {
+		encAtRest.AwsKms.RoleID = assumedRoleArn
+	}
 }
 
 func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
@@ -347,13 +350,23 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
-			fillKMSforAWS(&encAtRest, aRole)
+			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, false)
 			fillVaultforAzure(&encAtRest)
 			fillKMSforGCP(&encAtRest)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 			userData.Project.Spec.EncryptionAtRest = &encAtRest
+
+			var roleARNToSet string
+			for _, r := range atlasRoles.AWSIAMRoles {
+				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
+					roleARNToSet = r.IAMAssumedRoleARN
+					break
+				}
+			}
+			Expect(roleARNToSet).NotTo(BeEmpty())
+			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
 			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
 		})
@@ -439,15 +452,26 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 
 			encAtRest.AwsKms.Region = string(secret.Data["Region"])
 
-			fillKMSforAWS(&encAtRest, aRole)
+			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn, false)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 			userData.Project.Spec.EncryptionAtRest = &encAtRest
 
-			secret.Data["RoleID"] = []byte(aRole.RoleID)
+			var roleARNToSet string
+			for _, r := range atlasRoles.AWSIAMRoles {
+				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
+					roleARNToSet = r.IAMAssumedRoleARN
+					break
+				}
+			}
+
+			Expect(roleARNToSet).NotTo(BeEmpty())
+
+			secret.Data["RoleID"] = []byte(roleARNToSet)
 			secret.Data["CustomerMasterKeyID"] = []byte(encAtRest.AwsKms.CustomerMasterKeyID)
 			userData.Project.Spec.EncryptionAtRest.AwsKms.CustomerMasterKeyID = ""
+			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
 			userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef = common.ResourceRefNamespaced{
 				Name:      secret.Name,
 				Namespace: secret.Namespace,
