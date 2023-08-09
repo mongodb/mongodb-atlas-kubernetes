@@ -35,10 +35,9 @@ github.com/prometheus/common,https://github.com/prometheus/common/blob/v0.37.0/L
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg,https://github.com/prometheus/common/blob/v0.37.0/internal/bitbucket.org/ww/goautoneg/README.txt,BSD-3-Clause
 github.com/prometheus/procfs,https://github.com/prometheus/procfs/blob/v0.8.0/LICENSE,Apache-2.0
 github.com/spf13/pflag,https://github.com/spf13/pflag/blob/v1.0.5/LICENSE,BSD-3-Clause
-go.mongodb.org/atlas/mongodbatlas,https://github.com/mongodb/go-client-mongodb-atlas/blob/v0.31.0/LICENSE,Apache-2.0
-go.uber.org/atomic,https://github.com/uber-go/atomic/blob/v1.9.0/LICENSE.txt,MIT
-go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.7.0/LICENSE.txt,MIT
-go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.24.0/LICENSE.txt,MIT
+go.mongodb.org/atlas/mongodbatlas,https://github.com/mongodb/go-client-mongodb-atlas/blob/v0.32.0/LICENSE,Apache-2.0
+go.uber.org/multierr,https://github.com/uber-go/multierr/blob/v1.10.0/LICENSE.txt,MIT
+go.uber.org/zap,https://github.com/uber-go/zap/blob/v1.25.0/LICENSE.txt,MIT
 golang.org/x/exp,https://cs.opensource.google/go/x/exp/+/2e198f4a:LICENSE,BSD-3-Clause
 golang.org/x/net,https://cs.opensource.google/go/x/net/+/v0.12.0:LICENSE,BSD-3-Clause
 golang.org/x/oauth2,https://cs.opensource.google/go/x/oauth2/+/v0.10.0:LICENSE,BSD-3-Clause
