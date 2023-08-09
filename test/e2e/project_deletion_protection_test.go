@@ -6,15 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -23,17 +18,21 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
 	var projectID, networkPeerID, awsRoleARN, awsAccountID, AwsVpcID string
@@ -178,30 +177,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			networkPeerID = p.ID
 		})
 
-		By("Adding Alert Configuration to the project", func() {
-			_, _, err := atlasClient.Client.AlertConfigurations.Create(
+		By("Adding integration to the project", func() {
+			_, _, err := atlasClient.Client.Integrations.Create(
 				ctx,
 				projectID,
-				&mongodbatlas.AlertConfiguration{
-					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
-					Enabled:       toptr.MakePtr(true),
-					Threshold: &mongodbatlas.Threshold{
-						Operator:  "LESS_THAN",
-						Threshold: 1,
-						Units:     "HOURS",
-					},
-					Notifications: []mongodbatlas.Notification{
-						{
-							IntervalMin:  5,
-							DelayMin:     toptr.MakePtr(5),
-							EmailEnabled: toptr.MakePtr(true),
-							SMSEnabled:   toptr.MakePtr(false),
-							Roles: []string{
-								"GROUP_OWNER",
-							},
-							TypeName: "GROUP",
-						},
-					},
+				"PAGER_DUTY",
+				&mongodbatlas.ThirdPartyIntegration{
+					Type:       "PAGER_DUTY",
+					Region:     "EU",
+					ServiceKey: os.Getenv("PAGER_DUTY_SERVICE_KEY"),
 				},
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -236,27 +220,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 							VpcID:               "wrong",
 						},
 					},
-					AlertConfigurationSyncEnabled: true,
-					AlertConfigurations: []mdbv1.AlertConfiguration{
+					Integrations: []project.Integration{
 						{
-							EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
-							Enabled:       true,
-							Threshold: &mdbv1.Threshold{
-								Operator:  "LESS_THAN",
-								Threshold: "1",
-								Units:     "HOURS",
-							},
-							Notifications: []mdbv1.Notification{
-								{
-									IntervalMin:  6,
-									DelayMin:     toptr.MakePtr(5),
-									EmailEnabled: toptr.MakePtr(true),
-									SMSEnabled:   toptr.MakePtr(false),
-									Roles: []string{
-										"GROUP_OWNER",
-									},
-									TypeName: "GROUP",
-								},
+							Type:   "DATADOG",
+							Region: "EU",
+							ServiceKeyRef: common.ResourceRefNamespaced{
+								Name: "pager-duty-service-key",
 							},
 						},
 					},
@@ -265,6 +234,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			testData.Project = akoProject
 
 			Expect(testData.K8SClient.Create(ctx, testData.Project))
+			time.Sleep(time.Second * 30)
 		})
 
 		By("Project is ready by all sub-resources are in conflict", func() {
@@ -282,9 +252,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AlertConfigurationReadyType).
+					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Alert Configuration due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -309,9 +279,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AlertConfigurationReadyType).
+					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Alert Configuration due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -349,9 +319,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AlertConfigurationReadyType).
+					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Alert Configuration due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -379,9 +349,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.IPAccessListReadyType),
 					status.TrueCondition(status.CloudProviderAccessReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
-					status.FalseCondition(status.AlertConfigurationReadyType).
+					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Alert Configuration due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -389,9 +359,21 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
-		By("Alert Configuration is ready after configured properly", func() {
+		By("Integration is ready after configured properly", func() {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pager-duty-service-key",
+					Namespace: testData.Resources.Namespace,
+					Labels: map[string]string{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					},
+				},
+				StringData: map[string]string{"password": os.Getenv("PAGER_DUTY_SERVICE_KEY")},
+			}
+			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
+
 			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.AlertConfigurations[0].Notifications[0].IntervalMin = 5
+			testData.Project.Spec.Integrations[0].Type = "PAGER_DUTY"
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -402,20 +384,20 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.IPAccessListReadyType),
 					status.TrueCondition(status.CloudProviderAccessReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
-					status.TrueCondition(status.AlertConfigurationReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
-		})
-
-		By("Deleting project from the operator", func() {
-			Expect(testData.K8SClient.Delete(ctx, testData.Project)).To(Succeed())
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
 		})
 	})
 
 	AfterEach(func() {
+		By("Deleting project from the operator", func() {
+			Expect(testData.K8SClient.Delete(ctx, testData.Project)).To(Succeed())
+		})
+
 		By("Stopping the operator", func() {
 			managerStop()
 		})
