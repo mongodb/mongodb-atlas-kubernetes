@@ -211,8 +211,10 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 	t.Run("Azure with correct secret data", func(t *testing.T) {
 		secretData := map[string][]byte{
 			"ClientID":          []byte("testClientID"),
+			"Secret":            []byte("testClientSecret"),
 			"AzureEnvironment":  []byte("testAzureEnvironment"),
 			"SubscriptionID":    []byte("testSubscriptionID"),
+			"TenantID":          []byte("testTenantID"),
 			"ResourceGroupName": []byte("testResourceGroupName"),
 			"KeyVaultName":      []byte("testKeyVaultName"),
 			"KeyIdentifier":     []byte("testKeyIdentifier"),
@@ -226,7 +228,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gcp-secret",
+					Name:      "azure-secret",
 					Namespace: "test",
 				},
 			},
@@ -238,7 +240,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 			AzureKeyVault: mdbv1.AzureKeyVault{
 				Enabled: toptr.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
-					Name: "gcp-secret",
+					Name: "azure-secret",
 				},
 			},
 		}
@@ -247,8 +249,10 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		assert.Nil(t, err)
 
 		assert.Equal(t, string(secretData["ClientID"]), encRest.AzureKeyVault.ClientID)
+		assert.Equal(t, string(secretData["Secret"]), encRest.AzureKeyVault.Secret)
 		assert.Equal(t, string(secretData["AzureEnvironment"]), encRest.AzureKeyVault.AzureEnvironment)
 		assert.Equal(t, string(secretData["SubscriptionID"]), encRest.AzureKeyVault.SubscriptionID)
+		assert.Equal(t, string(secretData["TenantID"]), encRest.AzureKeyVault.TenantID)
 		assert.Equal(t, string(secretData["ResourceGroupName"]), encRest.AzureKeyVault.ResourceGroupName)
 		assert.Equal(t, string(secretData["KeyVaultName"]), encRest.AzureKeyVault.KeyVaultName)
 		assert.Equal(t, string(secretData["KeyIdentifier"]), encRest.AzureKeyVault.KeyIdentifier)

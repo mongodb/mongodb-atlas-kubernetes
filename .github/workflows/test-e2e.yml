@@ -223,11 +223,11 @@ jobs:
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_KMS_KEY_ID: ${{ secrets.AWS_KMS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID_NEW_TEST }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET_NEW_TEST }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED_NEW_TEST }}
           DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
         run: |
           helm version
