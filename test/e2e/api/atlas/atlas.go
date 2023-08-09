@@ -166,12 +166,12 @@ func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) 
 	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }
 
-func (a *Atlas) GetIntegrationbyType(projectId, iType string) (*mongodbatlas.ThirdPartyIntegration, error) {
-	integraion, _, err := a.Client.Integrations.Get(context.Background(), projectId, iType)
+func (a *Atlas) GetIntegrationByType(projectId, iType string) (*mongodbatlas.ThirdPartyIntegration, error) {
+	integration, _, err := a.Client.Integrations.Get(context.Background(), projectId, iType)
 	if err != nil {
 		return nil, err
 	}
-	return integraion, nil
+	return integration, nil
 }
 
 func (a *Atlas) GetUserByName(database, projectID, username string) (*mongodbatlas.DatabaseUser, error) {
@@ -190,7 +190,7 @@ func (a *Atlas) DeleteGlobalKey(key mongodbatlas.APIKey) error {
 	return nil
 }
 
-func (a *Atlas) GetEncryptioAtRest(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
+func (a *Atlas) GetEncryptionAtRest(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
 	encryptionAtRest, _, err := a.Client.EncryptionsAtRest.Get(context.Background(), projectID)
 	if err != nil {
 		return nil, err
