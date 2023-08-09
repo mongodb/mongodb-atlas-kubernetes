@@ -56,7 +56,7 @@ func (c *CloudProviderAccessRole) FailedToAuthorise(errorMessage string) {
 	c.ErrorMessage = errorMessage
 }
 
-func (c *CloudProviderAccessRole) Update(role mongodbatlas.AWSIAMRole, isEmptyArn bool) {
+func (c *CloudProviderAccessRole) Update(role mongodbatlas.CloudProviderAccessRole, isEmptyArn bool) {
 	c.RoleID = role.RoleID
 	c.AtlasAssumedRoleExternalID = role.AtlasAssumedRoleExternalID
 	c.AtlasAWSAccountArn = role.AtlasAWSAccountARN

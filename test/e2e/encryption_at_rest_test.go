@@ -239,7 +239,7 @@ func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
 
 func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) {
 	atlasClient := atlas.GetClientOrFail()
-	encryptionAtRest, err := atlasClient.GetEncryptioAtRest(projectID)
+	encryptionAtRest, err := atlasClient.GetEncryptionAtRest(projectID)
 	if err != nil {
 		return false, err
 	}
