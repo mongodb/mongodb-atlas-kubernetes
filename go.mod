@@ -24,7 +24,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/atlas v0.31.0
+	go.mongodb.org/atlas v0.32.0
 	go.mongodb.org/mongo-driver v1.12.1
 	go.uber.org/zap v1.25.0
 	golang.org/x/sync v0.3.0
@@ -42,7 +42,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect

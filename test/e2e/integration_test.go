@@ -59,7 +59,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 func integrationCycle(data *model.TestDataProvider, key string) {
 	integrationType := "DATADOG"
 
-	By("Deploy User Resouces", func() {
+	By("Deploy User Resources", func() {
 		projectStatus := GetProjectIntegrationStatus(data)
 		Expect(projectStatus).Should(BeEmpty())
 	})
@@ -94,7 +94,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 
 		Expect(err).ShouldNot(HaveOccurred())
 
-		dog, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
+		dog, err := atlasClient.GetIntegrationByType(data.Project.ID(), integrationType)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(strings.HasSuffix(key, removeStarsFromString(dog.APIKey))).Should(BeTrue())
 	})
@@ -108,7 +108,7 @@ func integrationCycle(data *model.TestDataProvider, key string) {
 	})
 
 	By("Delete integration check", func() {
-		integration, err := atlasClient.GetIntegrationbyType(data.Project.ID(), integrationType)
+		integration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integrationType)
 		Expect(err).Should(HaveOccurred())
 		Expect(integration).To(BeNil())
 

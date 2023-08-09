@@ -70,9 +70,9 @@ func syncProviderAccessStatus(ctx context.Context, customContext *workflow.Conte
 func tryToAuthorize(ctx context.Context, access mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger, statusMap map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, groupID string) {
 	for spec, roleStatus := range statusMap {
 		if roleStatus.Status == status.StatusCreated {
-			request := mongodbatlas.CloudProviderAuthorizationRequest{
+			request := mongodbatlas.CloudProviderAccessRoleRequest{
 				ProviderName:      spec.ProviderName,
-				IAMAssumedRoleARN: spec.IamAssumedRoleArn,
+				IAMAssumedRoleARN: &spec.IamAssumedRoleArn,
 			}
 			role, _, err := access.AuthorizeRole(ctx, groupID, roleStatus.RoleID, &request)
 			if err != nil {
@@ -109,7 +109,7 @@ func ensureCloudProviderAccessStatus(statusMap map[v1.CloudProviderAccessRole]st
 	return workflow.OK(), status.CloudProviderAccessReadyType
 }
 
-func updateAccessRoles(toUpdate []mongodbatlas.AWSIAMRole, specToStatus map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole) {
+func updateAccessRoles(toUpdate []mongodbatlas.CloudProviderAccessRole, specToStatus map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole) {
 	for _, role := range toUpdate {
 		for spec, roleStatus := range specToStatus {
 			if role.RoleID == roleStatus.RoleID {
@@ -212,7 +212,7 @@ func checkStatuses(specs []v1.CloudProviderAccessRole, statuses []status.CloudPr
 
 type accessRoleDiff struct {
 	toCreate []v1.CloudProviderAccessRole
-	toUpdate []mongodbatlas.AWSIAMRole
+	toUpdate []mongodbatlas.CloudProviderAccessRole
 	toDelete map[string]string // roleId -> providerName
 }
 
