@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/api/googleapi"
@@ -17,6 +18,9 @@ import (
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
+
+	kms "cloud.google.com/go/kms/apiv1"
+	"cloud.google.com/go/kms/apiv1/kmspb"
 )
 
 type GCPAction struct {
@@ -24,10 +28,11 @@ type GCPAction struct {
 	projectID string
 	network   *gcpNetwork
 
-	networkClient     *compute.NetworksClient
-	subnetClient      *compute.SubnetworksClient
-	addressClient     *compute.AddressesClient
-	forwardRuleClient *compute.ForwardingRulesClient
+	networkClient       *compute.NetworksClient
+	subnetClient        *compute.SubnetworksClient
+	addressClient       *compute.AddressesClient
+	forwardRuleClient   *compute.ForwardingRulesClient
+	keyManagementClient *kms.KeyManagementClient
 }
 
 type gcpNetwork struct {
@@ -40,6 +45,7 @@ const (
 	GoogleProjectID     = "atlasoperator" // Google Cloud Project ID
 	googleConnectPrefix = "ao"            // Private Service Connect Endpoint Prefix
 	gcpSubnetIPMask     = "10.0.0.%d"
+	googleKeyName       = "projects/atlasoperator/locations/global/keyRings/atlas-operator-test-key-ring/cryptoKeys/encryption-at-rest-test-key"
 )
 
 func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string, cleanup bool) (string, error) {
@@ -459,6 +465,54 @@ func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName stri
 	return nil
 }
 
+func (a *GCPAction) CreateKMS() (string, error) {
+	a.t.Helper()
+
+	ctx := context.Background()
+
+	result, err := a.keyManagementClient.CreateCryptoKeyVersion(ctx, &kmspb.CreateCryptoKeyVersionRequest{
+		Parent: googleKeyName,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	a.t.Cleanup(func() {
+		err = a.deleteKMS(ctx, result.Name)
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	ver := strings.Split(result.Name, "/")
+	keyVersion := ver[len(ver)-1]
+
+	_, err = a.keyManagementClient.UpdateCryptoKeyPrimaryVersion(ctx, &kmspb.UpdateCryptoKeyPrimaryVersionRequest{
+		Name:               googleKeyName,
+		CryptoKeyVersionId: keyVersion,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return result.Name, nil
+}
+
+func (a *GCPAction) deleteKMS(ctx context.Context, keyName string) error {
+	a.t.Helper()
+
+	req := &kmspb.DestroyCryptoKeyVersionRequest{
+		Name: keyName,
+	}
+
+	_, err := a.keyManagementClient.DestroyCryptoKeyVersion(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error) {
 	t.Helper()
 
@@ -484,13 +538,19 @@ func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error)
 		return nil, err
 	}
 
+	keyManagementClient, err := kms.NewKeyManagementClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &GCPAction{
 		t:         t,
 		projectID: projectID,
 
-		networkClient:     networkClient,
-		subnetClient:      subnetClient,
-		addressClient:     addressClient,
-		forwardRuleClient: forwardRuleClient,
+		networkClient:       networkClient,
+		subnetClient:        subnetClient,
+		addressClient:       addressClient,
+		forwardRuleClient:   forwardRuleClient,
+		keyManagementClient: keyManagementClient,
 	}, nil
 }

@@ -35,11 +35,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
+const (
+	AzureClientID     = "AZURE_CLIENT_ID"
+	KeyVaultName      = "ako-kms-test"
+	AzureClientSecret = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
+	AzureEnvironment  = "AZURE"
+	KeyName           = "encryption-at-rest-test-key"
+)
+
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
 		checkUpAWSEnvironment()
+		checkUpAzureEnvironment()
+		checkNSetUpGCPEnvironment()
 	})
 
 	_ = AfterEach(func() {
@@ -64,7 +74,13 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 		func(test *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			encryptionAtRestFlow(test, encAtRest, roles)
+
+			if roles != nil {
+				cloudAccessRolesFlow(test, roles)
+				encAtRest.AwsKms.RoleID = test.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
+			}
+
+			encryptionAtRestFlow(test, encAtRest)
 		},
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("encryption-at-rest-aws"),
 			model.DataProvider(
@@ -76,9 +92,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			v1.EncryptionAtRest{
 				AwsKms: v1.AwsKms{
 					Enabled: toptr.MakePtr(true),
-					// CustomerMasterKeyID: "",
-					Region: "US_EAST_1",
-					Valid:  toptr.MakePtr(true),
+					Region:  "US_EAST_1",
 				},
 			},
 			[]cloudaccess.Role{
@@ -90,20 +104,54 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				},
 			},
 		),
+		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("encryption-at-rest-azure"),
+			model.DataProvider(
+				"encryption-at-rest-azure",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			v1.EncryptionAtRest{
+				AzureKeyVault: v1.AzureKeyVault{
+					AzureEnvironment:  AzureEnvironment,
+					ClientID:          os.Getenv(AzureClientID),
+					Enabled:           toptr.MakePtr(true),
+					KeyVaultName:      KeyVaultName,
+					ResourceGroupName: cloud.ResourceGroupName,
+					Secret:            os.Getenv(AzureClientSecret),
+					TenantID:          os.Getenv(DirectoryID),
+					SubscriptionID:    os.Getenv(SubscriptionID),
+				},
+			},
+			nil,
+		),
+		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("encryption-at-rest-gcp"),
+			model.DataProvider(
+				"encryption-at-rest-gcp",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			v1.EncryptionAtRest{
+				GoogleCloudKms: v1.GoogleCloudKms{
+					Enabled:           toptr.MakePtr(true),
+					ServiceAccountKey: os.Getenv("GCP_SA_CRED"),
+				},
+			},
+			nil,
+		),
 	)
 })
 
-func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
-	By("Add cloud access role (AWS only)", func() {
-		cloudAccessRolesFlow(userData, roles)
-	})
-
+func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest) {
 	By("Create KMS", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-		Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
-		aRole := userData.Project.Status.CloudProviderAccessRoles[0]
+		var aRole status.CloudProviderAccessRole
+		if len(userData.Project.Status.CloudProviderAccessRoles) > 0 {
+			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
+		}
 
 		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(&encAtRest)
@@ -146,7 +194,8 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleA
 	}
 
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-	awsAction := cloud.NewAwsAction()
+	awsAction, err := cloud.NewAWSAction(GinkgoT())
+	Expect(err).ToNot(HaveOccurred())
 	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
@@ -159,7 +208,13 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	// todo: fill in
+	azAction, err := cloud.NewAzureAction(GinkgoT(), os.Getenv(SubscriptionID), cloud.ResourceGroupName)
+	Expect(err).ToNot(HaveOccurred())
+
+	keyID, err := azAction.CreateKeyVault(KeyName)
+	Expect(err).ToNot(HaveOccurred())
+
+	encAtRest.AzureKeyVault.KeyIdentifier = keyID
 }
 
 func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
@@ -167,7 +222,13 @@ func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
 		return
 	}
 
-	// todo: fill in
+	gcpAction, err := cloud.NewGCPAction(GinkgoT(), cloud.GoogleProjectID)
+	Expect(err).ToNot(HaveOccurred())
+
+	keyID, err := gcpAction.CreateKMS()
+	Expect(err).ToNot(HaveOccurred())
+
+	encAtRest.GoogleCloudKms.KeyVersionResourceID = keyID
 }
 
 func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
@@ -198,7 +259,7 @@ func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) 
 	return true, nil
 }
 
-var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
+var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -245,7 +306,6 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 			AwsKms: v1.AwsKms{
 				Enabled: toptr.MakePtr(true),
 				Region:  "US_EAST_1",
-				Valid:   toptr.MakePtr(true),
 			},
 		}
 
@@ -329,7 +389,6 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), func() {
 		encAtRest := v1.EncryptionAtRest{
 			AwsKms: v1.AwsKms{
 				Enabled: toptr.MakePtr(true),
-				Valid:   toptr.MakePtr(true),
 			},
 		}
 

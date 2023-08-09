@@ -94,5 +94,6 @@ func (az AzureKeyVault) ToAtlas() mongodbatlas.AzureKeyVault {
 		KeyVaultName:      az.KeyVaultName,
 		KeyIdentifier:     az.KeyIdentifier,
 		TenantID:          az.TenantID,
+		Secret:            az.Secret,
 	}
 }
