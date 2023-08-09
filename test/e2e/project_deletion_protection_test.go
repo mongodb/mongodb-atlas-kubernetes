@@ -40,6 +40,8 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 
 	BeforeEach(func() {
 		checkUpAWSEnvironment()
+		Expect(os.Getenv("PAGER_DUTY_SERVICE_KEY")).
+			ShouldNot(BeEmpty(), "Please, setup PAGER_DUTY_SERVICE_KEY environment variable for test integration with Pager Duty")
 
 		testData = model.DataProvider(
 			"project-deletion-protection",
