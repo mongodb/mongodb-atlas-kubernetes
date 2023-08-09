@@ -576,4 +576,4 @@ spec:
   provider:
     name: MongoDB, Inc
   version: 1.8.1
-  replaces: mongodb-atlas-kubernetes.v1.8.0
+  replaces: mongodb-atlas-kubernetes.v1.8.1
