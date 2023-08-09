@@ -460,7 +460,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			for _, r := range atlasRoles.AWSIAMRoles {
 				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
 					GinkgoWriter.Println("FOUND ROLE ID >>>> ", r.IAMAssumedRoleARN, r.RoleID)
-					roleARNToSet = r.IAMAssumedRoleARN
+					roleARNToSet = r.RoleID
 					break
 				}
 			}
