@@ -10,8 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -19,25 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureAlertConfigurations(ctx context.Context, service *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canAlertConfigurationReconcile(ctx, service.Client, protected, project, service.Log)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		service.SetConditionFromResult(status.AlertConfigurationReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Alert Configuration due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		service.SetConditionFromResult(status.AlertConfigurationReadyType, result)
-
-		return result
-	}
-
+func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
 	service.Log.Debug("starting alert configurations processing")
 	defer service.Log.Debug("finished alert configurations processing")
 
@@ -336,36 +316,4 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec md
 	}
 
 	return true
-}
-
-func canAlertConfigurationReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, project *mdbv1.AtlasProject, logger *zap.SugaredLogger) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &mdbv1.AtlasProjectSpec{}
-	latestConfigString, ok := project.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	list, _, err := atlasClient.AlertConfigurations.List(ctx, project.ID(), &mongodbatlas.ListOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	if len(list) == 0 {
-		return true, nil
-	}
-
-	diff := sortAlertConfigs(logger, latestConfig.AlertConfigurations, list)
-	if len(diff.Create) == 0 && len(diff.Delete) == 0 {
-		return true, nil
-	}
-
-	diff = sortAlertConfigs(logger, project.Spec.AlertConfigurations, list)
-
-	return len(diff.Create) == 0 && len(diff.Delete) == 0, nil
 }
