@@ -17,6 +17,7 @@ limitations under the License.
 package int
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,6 +38,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -74,11 +76,18 @@ func init() {
 }
 
 func TestAPIs(t *testing.T) {
+	if !helper.Enabled("AKO_INT_TEST") {
+		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
+	}
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Project Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
+	if !helper.Enabled("AKO_INT_TEST") {
+		fmt.Println("Skipping int BeforeSuite, AKO_INT_TEST is not set")
+		return
+	}
 	done := make(chan interface{})
 	go func() {
 		logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
