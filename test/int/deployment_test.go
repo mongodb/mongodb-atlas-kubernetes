@@ -1291,8 +1291,26 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 	}
 }
 
+func checkAtlasServerlessInstanceRemoved(projectID string, deploymentName string) func() bool {
+	return func() bool {
+		_, r, err := atlasClient.ServerlessInstances.Get(context.Background(), projectID, deploymentName)
+		if err != nil {
+			if r != nil && r.StatusCode == http.StatusNotFound {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
 func deleteAtlasDeployment(projectID string, deploymentName string) error {
 	_, err := atlasClient.AdvancedClusters.Delete(context.Background(), projectID, deploymentName, nil)
+	return err
+}
+
+func deleteServerlessInstance(projectID string, deploymentName string) error {
+	_, err := atlasClient.ServerlessInstances.Delete(context.Background(), projectID, deploymentName)
 	return err
 }
 

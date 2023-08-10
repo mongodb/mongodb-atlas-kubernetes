@@ -31,6 +31,7 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 			testData = test
 			mainCycle(test)
 		},
+		// TODO: fix test for deletion protection on, as it would fail to re-take the cluster after deletion
 		Entry("Simple configuration with keep resource policy annotation on deployment", Label("ns-crd"),
 			model.DataProvider(
 				"operator-ns-crd",

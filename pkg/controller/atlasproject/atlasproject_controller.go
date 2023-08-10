@@ -241,7 +241,6 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, wo
 
 	if !project.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
-			log.Infow("RESOURCE PROTECTED", r.ObjectDeletionProtection, customresource.IsResourceProtected(project, r.ObjectDeletionProtection))
 			if customresource.IsResourceProtected(project, r.ObjectDeletionProtection) {
 				log.Info("Not removing Atlas database user from Atlas as per configuration")
 				result = workflow.OK()
