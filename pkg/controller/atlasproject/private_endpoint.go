@@ -2,8 +2,12 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"golang.org/x/exp/slices"
 
@@ -16,50 +20,68 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-func ensurePrivateEndpoint(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canPrivateEndpointReconcile(workflowCtx.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Private Endpoint(s) due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
+
+		return result
+	}
+
 	specPEs := project.Spec.DeepCopy().PrivateEndpoints
 
-	atlasPEs, err := getAllPrivateEndpoints(ctx.Client, projectID)
+	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Client, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	result, conditionType := syncPrivateEndpointsWithAtlas(ctx, projectID, specPEs, atlasPEs)
+	result, conditionType := syncPrivateEndpointsWithAtlas(workflowCtx, project.ID(), specPEs, atlasPEs)
 	if !result.IsOk() {
 		if conditionType == status.PrivateEndpointServiceReadyType {
-			ctx.UnsetCondition(status.PrivateEndpointReadyType)
+			workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
 		}
-		ctx.SetConditionFromResult(conditionType, result)
+		workflowCtx.SetConditionFromResult(conditionType, result)
 		return result
 	}
 
 	if len(specPEs) == 0 && len(atlasPEs) == 0 {
-		ctx.UnsetCondition(status.PrivateEndpointServiceReadyType)
-		ctx.UnsetCondition(status.PrivateEndpointReadyType)
+		workflowCtx.UnsetCondition(status.PrivateEndpointServiceReadyType)
+		workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
 		return workflow.OK()
 	}
 
-	serviceStatus := getStatusForServices(ctx, atlasPEs)
+	serviceStatus := getStatusForServices(workflowCtx, atlasPEs)
 	if !serviceStatus.IsOk() {
-		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
+		workflowCtx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
 		return serviceStatus
 	}
 
 	unconfiguredAmount := countNotConfiguredEndpoints(specPEs)
 	if unconfiguredAmount != 0 {
 		serviceStatus = serviceStatus.WithMessage("Interface Private Endpoint awaits configuration")
-		ctx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
+		workflowCtx.SetConditionFromResult(status.PrivateEndpointServiceReadyType, serviceStatus)
 
 		if len(specPEs) == unconfiguredAmount {
-			ctx.UnsetCondition(status.PrivateEndpointReadyType)
+			workflowCtx.UnsetCondition(status.PrivateEndpointReadyType)
 			return serviceStatus
 		} else {
 			return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Not All Interface Private Endpoint are fully configured")
 		}
 	}
 
-	interfaceStatus := getStatusForInterfaces(ctx, projectID, specPEs, atlasPEs)
-	ctx.SetConditionFromResult(status.PrivateEndpointReadyType, interfaceStatus)
+	interfaceStatus := getStatusForInterfaces(workflowCtx, project.ID(), specPEs, atlasPEs)
+	workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, interfaceStatus)
 
 	return interfaceStatus
 }
@@ -526,4 +548,37 @@ func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasP
 type intersectionPair struct {
 	spec  mdbv1.PrivateEndpoint
 	atlas atlasPE
+}
+
+func canPrivateEndpointReconcile(atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	list, err := getAllPrivateEndpoints(atlasClient, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if len(list) == 0 {
+		return true, nil
+	}
+
+	diff, _ := getUniqueDifference(list, latestConfig.PrivateEndpoints)
+
+	if len(diff) == 0 {
+		return true, nil
+	}
+
+	diff, _ = getUniqueDifference(list, akoProject.Spec.PrivateEndpoints)
+
+	return len(diff) == 0, nil
 }

@@ -129,7 +129,7 @@ run: generate fmt vet manifests ## Run against the configured Kubernetes cluster
 	OPERATOR_POD_NAME=$(OPERATOR_POD_NAME) \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
 	go run ./cmd/manager/main.go --atlas-domain=$(ATLAS_DOMAIN) \
-	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME)
+	--global-api-secret-name=$(ATLAS_KEY_SECRET_NAME) --log-level=debug
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs from a cluster

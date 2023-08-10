@@ -6,17 +6,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
+
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+
+	"go.mongodb.org/atlas/mongodbatlas"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
@@ -46,8 +47,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 
 			By("Creating a project in the cluster", func() {
 				testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
-					WithConnectionSecret(connectionSecret.Name).
-					WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+					WithConnectionSecret(connectionSecret.Name)
 				Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
@@ -122,8 +122,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			By("Creating a project in the cluster", func() {
 				testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
 					WithAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete}).
-					WithConnectionSecret(connectionSecret.Name).
-					WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+					WithConnectionSecret(connectionSecret.Name)
 				Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {

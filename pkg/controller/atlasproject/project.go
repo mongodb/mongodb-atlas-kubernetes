@@ -38,5 +38,6 @@ func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, proj
 		ctx.Log.Error("Project or its project ID are empty")
 		return "", workflow.Terminate(workflow.Internal, "")
 	}
+
 	return p.ID, workflow.OK()
 }
