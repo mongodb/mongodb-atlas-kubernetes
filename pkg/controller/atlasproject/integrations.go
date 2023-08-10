@@ -2,10 +2,13 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -17,19 +20,37 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-func (r *AtlasProjectReconciler) ensureIntegration(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	result := r.createOrDeleteIntegrations(ctx, projectID, project)
-	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.IntegrationReadyType, result)
+func (r *AtlasProjectReconciler) ensureIntegration(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canIntegrationsReconcile(ctx, workflowCtx.Client, protected, akoProject)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+
 		return result
 	}
 
-	if len(project.Spec.Integrations) == 0 {
-		ctx.UnsetCondition(status.IntegrationReadyType)
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+
+		return result
+	}
+
+	result := r.createOrDeleteIntegrations(workflowCtx, akoProject.ID(), akoProject)
+	if !result.IsOk() {
+		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+		return result
+	}
+
+	if len(akoProject.Spec.Integrations) == 0 {
+		workflowCtx.UnsetCondition(status.IntegrationReadyType)
 		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.IntegrationReadyType)
+	workflowCtx.SetConditionTrue(status.IntegrationReadyType)
 	return workflow.OK()
 }
 
@@ -238,4 +259,38 @@ func isPrometheusType(typeName string) bool {
 func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
 	api := fmt.Sprintf("https://%s/prometheus/v1.0", baseURL.Host)
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
+}
+
+func canIntegrationsReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	list, _, err := atlasClient.Integrations.List(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if list.TotalCount == 0 {
+		return true, nil
+	}
+
+	atlasIntegrations := toAliasThirdPartyIntegration(list.Results)
+	diff := set.Difference(atlasIntegrations, latestConfig.Integrations)
+
+	if len(diff) == 0 {
+		return true, nil
+	}
+
+	diff = set.Difference(akoProject.Spec.Integrations, atlasIntegrations)
+
+	return len(diff) == 0, nil
 }

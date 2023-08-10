@@ -58,6 +58,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 		By("Creating a deployment", func() {
 			testDeployment = mdbv1.DefaultAWSDeployment(testNamespace.Name, projectName).Lightweight()
+			customresource.SetAnnotation( // this test deployment must be deleted
+				testDeployment,
+				customresource.ResourcePolicyAnnotation,
+				customresource.ResourcePolicyDelete,
+			)
 			Expect(k8sClient.Create(context.TODO(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {

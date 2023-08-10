@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject, groupID string) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
 	service.Log.Debug("starting alert configurations processing")
 	defer service.Log.Debug("finished alert configurations processing")
 
@@ -35,7 +35,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
-		result := syncAlertConfigurations(ctx, service, groupID, specToSync)
+		result := syncAlertConfigurations(ctx, service, project.ID(), specToSync)
 		if !result.IsOk() {
 			service.SetConditionFromResult(alertConfigurationCondition, result)
 			return result

@@ -17,6 +17,13 @@ const (
 	// Error indicates that the cluster doesn't exist
 	ClusterNotFound = "CLUSTER_NOT_FOUND"
 
+	// ServerlessClusterNotFound indicates that the serverless cluster doesn't exist
+	ServerlessInstanceNotFound = "SERVERLESS_INSTANCE_NOT_FOUND"
+
+	// ServerlessClusterFromClusterAPI indicates that we are trying to access
+	// a serverless instance from the cluster API, which is not allowed
+	ServerlessInstanceFromClusterAPI = "CANNOT_USE_SERVERLESS_INSTANCE_IN_CLUSTER_API"
+
 	// Resource not found
 	ResourceNotFound = "RESOURCE_NOT_FOUND"
 )

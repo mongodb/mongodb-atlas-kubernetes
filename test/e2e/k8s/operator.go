@@ -1,12 +1,13 @@
 package k8s
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"path"
+	"context"
 	"strings"
 	"time"
+
+	"go.uber.org/zap/zaptest"
+
+	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -33,7 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 )
 
-func RunOperator(initCfg *Config) (manager.Manager, error) {
+func BuildManager(initCfg *Config) (manager.Manager, error) {
 	scheme := runtime.NewScheme()
 	setupLog := ctrl.Log.WithName("setup")
 
@@ -42,14 +43,13 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 
 	ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.StacktraceLevel(zap.ErrorLevel))
 	config := mergeConfiguration(initCfg)
-	err := os.MkdirAll(config.LogDir, os.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create log directory: %w", err)
-	}
-	logger, err := initCustomZapLogger(config.LogLevel, config.LogEncoder, path.Join(config.LogDir, "operator.log"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize custom zap logger: %w", err)
-	}
+
+	logger := zaptest.NewLogger(
+		GinkgoT(),
+		zaptest.WrapOptions(
+			zap.ErrorOutput(zapcore.Lock(zapcore.AddSync(GinkgoWriter))),
+		),
+	)
 
 	logger.Info("starting with configuration", zap.Any("config", config))
 
@@ -117,28 +117,32 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             config.GlobalAPISecret,
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		return nil, err
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		GlobalAPISecret:             config.GlobalAPISecret,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		return nil, err
@@ -156,16 +160,15 @@ func RunOperator(initCfg *Config) (manager.Manager, error) {
 }
 
 type Config struct {
-	AtlasDomain          string
-	EnableLeaderElection bool
-	MetricsAddr          string
-	Namespace            string
-	WatchedNamespaces    map[string]bool
-	ProbeAddr            string
-	GlobalAPISecret      client.ObjectKey
-	LogLevel             string
-	LogEncoder           string
-	LogDir               string
+	AtlasDomain                 string
+	EnableLeaderElection        bool
+	MetricsAddr                 string
+	Namespace                   string
+	WatchedNamespaces           map[string]bool
+	ProbeAddr                   string
+	GlobalAPISecret             client.ObjectKey
+	ObjectDeletionProtection    bool
+	SubObjectDeletionProtection bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -181,12 +184,6 @@ func mergeConfiguration(initCfg *Config) *Config {
 	if config.ProbeAddr == "" {
 		// random port
 		config.ProbeAddr = ":0"
-	}
-	if config.LogLevel == "" {
-		config.LogLevel = "debug"
-	}
-	if config.LogEncoder == "" {
-		config.LogEncoder = "json"
 	}
 
 	watchedNamespace := ""
@@ -205,31 +202,71 @@ func mergeConfiguration(initCfg *Config) *Config {
 	return config
 }
 
-func initCustomZapLogger(level, encoding, logFileName string) (*zap.Logger, error) {
-	lv := zap.AtomicLevel{}
-	err := lv.UnmarshalText([]byte(strings.ToLower(level)))
+type ManagerStart func(ctx context.Context) error
+type ManagerConfig func(config *Config)
+
+func managerDefaults() *Config {
+	return &Config{
+		AtlasDomain:                 "https://cloud-qa.mongodb.com/",
+		EnableLeaderElection:        false,
+		MetricsAddr:                 ":8080",
+		Namespace:                   "mongodb-atlas-system",
+		WatchedNamespaces:           map[string]bool{},
+		ProbeAddr:                   ":8081",
+		GlobalAPISecret:             client.ObjectKey{},
+		ObjectDeletionProtection:    false,
+		SubObjectDeletionProtection: false,
+	}
+}
+
+func WithNamespaces(namespaces ...string) ManagerConfig {
+	return func(config *Config) {
+		for _, namespace := range namespaces {
+			config.WatchedNamespaces[namespace] = true
+		}
+
+		if len(namespaces) == 1 {
+			config.Namespace = namespaces[0]
+		}
+	}
+}
+
+func WithObjectDeletionProtection(flag bool) ManagerConfig {
+	return func(config *Config) {
+		config.ObjectDeletionProtection = flag
+	}
+}
+
+func WithSubObjectDeletionProtection(flag bool) ManagerConfig {
+	return func(config *Config) {
+		config.SubObjectDeletionProtection = flag
+	}
+}
+
+func WithGlobalKey(key client.ObjectKey) ManagerConfig {
+	return func(config *Config) {
+		config.GlobalAPISecret = key
+	}
+}
+
+func RunManager(withConfigs ...ManagerConfig) (ManagerStart, error) {
+	managerConfig := managerDefaults()
+
+	for _, withConfig := range withConfigs {
+		withConfig(managerConfig)
+	}
+
+	mgr, err := BuildManager(managerConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	enc := strings.ToLower(encoding)
-	if enc != "json" && enc != "console" {
-		return nil, errors.New("'encoding' parameter can only by either 'json' or 'console'")
-	}
+	return func(ctx context.Context) error {
+		err = mgr.Start(ctx)
+		if err != nil {
+			return err
+		}
 
-	cfg := zap.Config{
-		Level:             lv,
-		OutputPaths:       []string{logFileName},
-		DisableCaller:     false,
-		DisableStacktrace: false,
-		Encoding:          enc,
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey:  "msg",
-			LevelKey:    "level",
-			EncodeLevel: zapcore.CapitalLevelEncoder,
-			TimeKey:     "time",
-			EncodeTime:  zapcore.ISO8601TimeEncoder,
-		},
-	}
-	return cfg.Build()
+		return nil
+	}, nil
 }

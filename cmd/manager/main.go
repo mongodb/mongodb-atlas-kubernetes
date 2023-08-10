@@ -54,8 +54,6 @@ import (
 )
 
 const (
-	objectDeletionProtectionFlag       = "object-deletion-protection"
-	subobjectDeletionProtectionFlag    = "subobject-deletion-protection"
 	objectDeletionProtectionDefault    = false
 	subobjectDeletionProtectionDefault = false
 
@@ -136,14 +134,16 @@ func main() {
 	}
 
 	if err = (&atlasdeployment.AtlasDeploymentReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		GlobalAPISecret:  config.GlobalAPISecret,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasDeployment"),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		GlobalAPISecret:             config.GlobalAPISecret,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDeployment")
 		os.Exit(1)

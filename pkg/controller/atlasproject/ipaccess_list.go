@@ -2,11 +2,14 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -42,19 +45,37 @@ func (i atlasProjectIPAccessList) Identifier() interface{} {
 // ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	result := syncIPAccessListWithAtlas(ctx, projectID, project)
-	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.IPAccessListReadyType, result)
+func ensureIPAccessList(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+	canReconcile, err := canIPAccessListReconcile(ctx, workflowCtx.Client, subobjectProtect, akoProject)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+
 		return result
 	}
 
-	if len(project.Spec.ProjectIPAccessList) == 0 {
-		ctx.UnsetCondition(status.IPAccessListReadyType)
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+		return result
+	}
+
+	result := syncIPAccessListWithAtlas(workflowCtx, akoProject.ID(), akoProject)
+	if !result.IsOk() {
+		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		return result
+	}
+
+	if len(akoProject.Spec.ProjectIPAccessList) == 0 {
+		workflowCtx.UnsetCondition(status.IPAccessListReadyType)
 		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.IPAccessListReadyType)
+	workflowCtx.SetConditionTrue(status.IPAccessListReadyType)
 	return result
 }
 
@@ -244,4 +265,42 @@ func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IP
 		active = append(active, list)
 	}
 	return active, expired
+}
+
+func canIPAccessListReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	list, _, err := atlasClient.ProjectIPAccessList.List(ctx, akoProject.ID(), &mongodbatlas.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if list.TotalCount == 0 {
+		return true, nil
+	}
+
+	atlasAccessLists := make([]atlasProjectIPAccessList, len(list.Results))
+	for i, r := range list.Results {
+		atlasAccessLists[i] = atlasProjectIPAccessList(r)
+	}
+
+	diff := set.Difference(atlasAccessLists, latestConfig.ProjectIPAccessList)
+
+	if len(diff) == 0 {
+		return true, nil
+	}
+
+	diff = set.Difference(akoProject.Spec.ProjectIPAccessList, atlasAccessLists)
+
+	return len(diff) == 0, nil
 }
