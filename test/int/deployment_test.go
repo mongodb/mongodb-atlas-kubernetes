@@ -61,7 +61,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	)
 
 	BeforeEach(func() {
-		prepareControllers()
+		prepareControllers(false)
 
 		createdDeployment = &mdbv1.AtlasDeployment{}
 
@@ -719,7 +719,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 	Describe("Create DBUser before deployment & check secrets", func() {
 		It("Should Succeed", func() {
 			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret), func() {
-				passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
+				passwordSecret := buildPasswordSecret(namespace.Name, UserPasswordSecret, DBUserPassword)
 				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 			})
 
@@ -744,7 +744,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					return testutil.CheckCondition(k8sClient, createdDBUserFakeScope, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserInvalidSpec)))
 				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 			})
-			checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+			checkNumberOfConnectionSecrets(k8sClient, *createdProject, namespace.Name, 0)
 
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -756,7 +756,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Checking connection Secrets", func() {
 				Expect(tryConnect(createdProject.ID(), *createdDeployment, *createdDBUser)).To(Succeed())
-				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 1)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, namespace.Name, 1)
 				validateSecret(k8sClient, *createdProject, *createdDeployment, *createdDBUser)
 			})
 		})
@@ -776,7 +776,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				checkAtlasState()
 			})
 
-			passwordSecret := buildPasswordSecret(UserPasswordSecret, DBUserPassword)
+			passwordSecret := buildPasswordSecret(namespace.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 			createdDBUser := mdbv1.DefaultDBUser(namespace.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
@@ -796,7 +796,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				secretNames := []string{kube.NormalizeIdentifier(fmt.Sprintf("%s-%s-%s", createdProject.Spec.Name, createdDeployment.GetDeploymentName(), createdDBUser.Spec.Username))}
 				createdDeployment = nil // prevent cleanup from failing due to deployment already deleted
 				Eventually(checkSecretsDontExist(namespace.Name, secretNames), 50, interval).Should(BeTrue())
-				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, namespace.Name, 0)
 			})
 		})
 	})
@@ -813,7 +813,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
 				time.Sleep(5 * time.Minute)
 				Expect(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName())()).Should(BeFalse())
-				checkNumberOfConnectionSecrets(k8sClient, *createdProject, 0)
+				checkNumberOfConnectionSecrets(k8sClient, *createdProject, namespace.Name, 0)
 			})
 		})
 	})

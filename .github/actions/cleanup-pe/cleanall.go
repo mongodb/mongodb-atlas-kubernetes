@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -25,6 +26,7 @@ func cleanAllAWSPE(region string, subnets []string) error {
 
 	svc := ec2.New(awsSession)
 
+	var allErr error
 	for _, subnet := range subnets {
 		subnetInput := &ec2.DescribeSubnetsInput{
 			Filters: []*ec2.Filter{{
@@ -61,7 +63,8 @@ func cleanAllAWSPE(region string, subnets []string) error {
 
 		err = deleteAWSPEsByID(svc, endpointIDs)
 		if err != nil {
-			return err
+			allErr = errors.Join(allErr, err)
+			continue
 		}
 
 		log.Printf("deleted %d AWS PEs in region %s", len(endpointIDs), region)
@@ -132,6 +135,7 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 
 	networkURL := formNetworkURL(vpc, projectID)
 
+	var allErr error
 	for _, subnet := range subnets {
 		subnetURL := formSubnetURL(region, subnet, projectID)
 
@@ -147,7 +151,8 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 			if forwardRule.Network == networkURL {
 				_, err = computeService.ForwardingRules.Delete(projectID, region, forwardRule.Name).Do()
 				if err != nil {
-					return fmt.Errorf("error while deleting forwarding rule: %v", err)
+					allErr = errors.Join(allErr, fmt.Errorf("error while deleting forwarding rule: %v", err))
+					continue
 				}
 
 				counter++
@@ -160,11 +165,11 @@ func cleanAllGCPPE(ctx context.Context, projectID, vpc, region string, subnets [
 		time.Sleep(time.Second * 20) // need to wait for GCP to delete the forwarding rule
 		err = deleteGCPAddressBySubnet(computeService, projectID, region, subnetURL)
 		if err != nil {
-			return fmt.Errorf("error while deleting GCP address: %v", err)
+			allErr = errors.Join(allErr, fmt.Errorf("error while deleting GCP address: %v", err))
 		}
 	}
 
-	return nil
+	return allErr
 }
 
 func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subnetURL string) error {
@@ -175,11 +180,13 @@ func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subne
 	}
 
 	counter := 0
+	var allErr error
 	for _, address := range addressList.Items {
 		if address.Subnetwork == subnetURL {
 			_, err = service.Addresses.Delete(projectID, region, address.Name).Do()
 			if err != nil {
-				return fmt.Errorf("error while deleting address: %v", err)
+				allErr = errors.Join(allErr, fmt.Errorf("error while deleting address: %v", err))
+				continue
 			}
 			counter++
 			log.Printf("successfully deleted GCP address: %s. subnet: %s", address.Name, address.Subnetwork)
@@ -187,7 +194,7 @@ func deleteGCPAddressBySubnet(service *compute.Service, projectID, region, subne
 	}
 
 	log.Printf("deleted %d GCP addresses", counter)
-	return nil
+	return allErr
 }
 
 func formNetworkURL(network, projectID string) string {

@@ -2294,6 +2294,20 @@ spec:
                         type: string
                       secretAccessKey:
                         type: string
+                      secretRef:
+                        description: A reference to as Secret containing the AccessKeyID,
+                          SecretAccessKey, CustomerMasterKey and RoleID fields
+                        properties:
+                          name:
+                            description: Name is the name of the Kubernetes Resource
+                            type: string
+                          namespace:
+                            description: Namespace is the namespace of the Kubernetes
+                              Resource
+                            type: string
+                        required:
+                        - name
+                        type: object
                       valid:
                         type: boolean
                     type: object
@@ -2316,6 +2330,20 @@ spec:
                         type: string
                       secret:
                         type: string
+                      secretRef:
+                        description: A reference to as Secret containing the SubscriptionID,
+                          KeyVaultName, KeyIdentifier, Secret fields
+                        properties:
+                          name:
+                            description: Name is the name of the Kubernetes Resource
+                            type: string
+                          namespace:
+                            description: Namespace is the namespace of the Kubernetes
+                              Resource
+                            type: string
+                        required:
+                        - name
+                        type: object
                       subscriptionID:
                         type: string
                       tenantID:
@@ -2329,6 +2357,20 @@ spec:
                         type: boolean
                       keyVersionResourceID:
                         type: string
+                      secretRef:
+                        description: A reference to as Secret containing the ServiceAccountKey,
+                          KeyVersionResourceID fields
+                        properties:
+                          name:
+                            description: Name is the name of the Kubernetes Resource
+                            type: string
+                          namespace:
+                            description: Namespace is the namespace of the Kubernetes
+                              Resource
+                            type: string
+                        required:
+                        - name
+                        type: object
                       serviceAccountKey:
                         type: string
                     type: object
@@ -3759,7 +3801,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:1.8.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.8.1
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

@@ -188,8 +188,9 @@ func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *C
 
 	for _, pe := range connStrings.PrivateEndpoint {
 		data.PrivateConnURLs = append(data.PrivateConnURLs, PrivateLinkConnURLs{
-			PvtConnURL:    pe.ConnectionString,
-			PvtSrvConnURL: pe.SRVConnectionString,
+			PvtConnURL:      pe.ConnectionString,
+			PvtSrvConnURL:   pe.SRVConnectionString,
+			PvtShardConnURL: pe.SRVShardOptimizedConnectionString,
 		})
 	}
 }

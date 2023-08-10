@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -58,22 +59,23 @@ func CleanAllPE() error {
 	gcpRegion := "europe-west1"
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 
+	var allErr error
 	err := cleanAllAzurePE(ctx, groupNameAzure, subscriptionID, []string{subnet1Name, subnet2Name})
 	if err != nil {
-		return fmt.Errorf("error while cleaning all azure pe: %v", err)
+		allErr = errors.Join(allErr, fmt.Errorf("error while cleaning all azure pe: %v", err))
 	}
 
 	for _, awsRegion := range awsRegions {
 		errClean := cleanAllAWSPE(awsRegion, []string{subnet1Name, subnet2Name})
 		if errClean != nil {
-			return fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean)
+			allErr = errors.Join(allErr, fmt.Errorf("error cleaning all aws PE. region %s. error: %v", awsRegion, errClean))
 		}
 	}
 
 	err = cleanAllGCPPE(ctx, googleProjectID, gcpVPCName, gcpRegion, []string{subnet1Name, subnet2Name})
 	if err != nil {
-		return fmt.Errorf("error while cleaning all gcp pe: %v", err)
+		allErr = errors.Join(allErr, fmt.Errorf("error while cleaning all gcp pe: %v", err))
 	}
 
-	return nil
+	return allErr
 }

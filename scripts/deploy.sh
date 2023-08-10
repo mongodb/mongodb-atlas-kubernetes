@@ -9,7 +9,7 @@ if [[ -z "${REGISTRY:-}" ]]; then
 fi
 
 image="${REGISTRY}/mongodb-atlas-kubernetes-operator"
-docker build -t "${image}" .
+docker build --rm -t "${image}" .
 docker push "${image}"
 
 #Prepare CRDs

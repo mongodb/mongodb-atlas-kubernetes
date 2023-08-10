@@ -25,8 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
-
 	"go.uber.org/zap/zapcore"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -52,7 +50,17 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
-	// +kubebuilder:scaffold:imports
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+)
+
+const (
+	objectDeletionProtectionFlag       = "object-deletion-protection"
+	subobjectDeletionProtectionFlag    = "subobject-deletion-protection"
+	objectDeletionProtectionDefault    = false
+	subobjectDeletionProtectionDefault = false
+
+	objectDeletionProtectionEnvVar    = "UNSUPPORTED_OBJECT_DELETION_PROTECTION"
+	subobjectDeletionProtectionEnvVar = "UNSUPPORTED_SUBOBJECT_DELETION_PROTECTION"
 )
 
 var (
@@ -62,9 +70,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
-	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -144,28 +150,32 @@ func main() {
 	}
 
 	if err = (&atlasproject.AtlasProjectReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasProject"),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalAPISecret:             config.GlobalAPISecret,
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalAPISecret:  config.GlobalAPISecret,
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		GlobalAPISecret:             config.GlobalAPISecret,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
@@ -203,15 +213,17 @@ func main() {
 }
 
 type Config struct {
-	AtlasDomain          string
-	EnableLeaderElection bool
-	MetricsAddr          string
-	Namespace            string
-	WatchedNamespaces    map[string]bool
-	ProbeAddr            string
-	GlobalAPISecret      client.ObjectKey
-	LogLevel             string
-	LogEncoder           string
+	AtlasDomain                 string
+	EnableLeaderElection        bool
+	MetricsAddr                 string
+	Namespace                   string
+	WatchedNamespaces           map[string]bool
+	ProbeAddr                   string
+	GlobalAPISecret             client.ObjectKey
+	LogLevel                    string
+	LogEncoder                  string
+	ObjectDeletionProtection    bool
+	SubObjectDeletionProtection bool
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -250,6 +262,8 @@ func parseConfiguration() Config {
 	if len(config.WatchedNamespaces) == 1 {
 		config.Namespace = watchedNamespace
 	}
+
+	configureDeletionProtection(&config)
 
 	return config
 }
@@ -302,4 +316,36 @@ func initCustomZapLogger(level, encoding string) (*zap.Logger, error) {
 		},
 	}
 	return cfg.Build()
+}
+
+func configureDeletionProtection(config *Config) {
+	if config == nil {
+		return
+	}
+	config.ObjectDeletionProtection = objectDeletionProtectionDefault
+	config.SubObjectDeletionProtection = subobjectDeletionProtectionDefault
+
+	// TODO: replace with the CLI flags at feature completion
+	enableDeletionProtectionFromEnvVars(config, version.Version)
+}
+
+func enableDeletionProtectionFromEnvVars(config *Config, v string) {
+	if version.IsRelease(v) {
+		if isOn(os.Getenv(objectDeletionProtectionEnvVar)) ||
+			isOn(os.Getenv(subobjectDeletionProtectionEnvVar)) {
+			log.Printf("Deletion Protection feature is not available yet in production releases")
+		}
+		return
+	}
+
+	if isOn(os.Getenv(objectDeletionProtectionEnvVar)) {
+		config.ObjectDeletionProtection = true
+	}
+	if isOn(os.Getenv(subobjectDeletionProtectionEnvVar)) {
+		config.SubObjectDeletionProtection = true
+	}
+}
+
+func isOn(value string) bool {
+	return strings.ToLower(value) == "on"
 }

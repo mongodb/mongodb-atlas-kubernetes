@@ -10,6 +10,9 @@ const (
 	Internal                      ConditionReason = "InternalError"
 	AtlasResourceVersionMismatch  ConditionReason = "AtlasResourceVersionMismatch"
 	AtlasResourceVersionIsInvalid ConditionReason = "AtlasResourceVersionIsInvalid"
+	AtlasFinalizerNotSet          ConditionReason = "AtlasFinalizerNotSet"
+	AtlasFinalizerNotRemoved      ConditionReason = "AtlasFinalizerNotRemoved"
+	AtlasDeletionProtection       ConditionReason = "AtlasDeletionProtection"
 )
 
 // Atlas Project reasons
@@ -57,7 +60,9 @@ const (
 const (
 	DatabaseUserNotCreatedInAtlas           ConditionReason = "DatabaseUserNotCreatedInAtlas"
 	DatabaseUserNotUpdatedInAtlas           ConditionReason = "DatabaseUserNotUpdatedInAtlas"
+	DatabaseUserNotDeletedInAtlas           ConditionReason = "DatabaseUserNotDeletedInAtlas"
 	DatabaseUserConnectionSecretsNotCreated ConditionReason = "DatabaseUserConnectionSecretsNotCreated"
+	DatabaseUserConnectionSecretsNotDeleted ConditionReason = "DatabaseUserConnectionSecretsNotDeleted"
 	DatabaseUserStaleConnectionSecrets      ConditionReason = "DatabaseUserStaleConnectionSecrets"
 	DatabaseUserDeploymentAppliedChanges    ConditionReason = "DeploymentAppliedDatabaseUsersChanges"
 	DatabaseUserInvalidSpec                 ConditionReason = "DatabaseUserInvalidSpec"

@@ -5,9 +5,15 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
+
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
@@ -18,7 +24,12 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+	if err := readEncryptionAtRestSecrets(r.Client, ctx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
+		ctx.UnsetCondition(status.EncryptionAtRestReadyType)
+		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
+	}
+
 	result := createOrDeleteEncryptionAtRests(ctx, projectID, project)
 	if !result.IsOk() {
 		ctx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
@@ -32,6 +43,114 @@ func ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *md
 
 	ctx.SetConditionTrue(status.EncryptionAtRestReadyType)
 	return workflow.OK()
+}
+
+func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Context, encRest *mdbv1.EncryptionAtRest, parentNs string) error {
+	if encRest == nil {
+		return nil
+	}
+
+	if encRest.AwsKms.Enabled != nil && *encRest.AwsKms.Enabled && encRest.AwsKms.SecretRef.Name != "" {
+		watchObj, err := readAndFillAWSSecret(kubeClient, parentNs, &encRest.AwsKms)
+		service.AddResourcesToWatch(*watchObj)
+		if err != nil {
+			return err
+		}
+	}
+
+	if encRest.GoogleCloudKms.Enabled != nil && *encRest.GoogleCloudKms.Enabled && encRest.GoogleCloudKms.SecretRef.Name != "" {
+		watchObj, err := readAndFillGoogleSecret(kubeClient, parentNs, &encRest.GoogleCloudKms)
+		service.AddResourcesToWatch(*watchObj)
+		if err != nil {
+			return err
+		}
+	}
+
+	if encRest.AzureKeyVault.Enabled != nil && *encRest.AzureKeyVault.Enabled && encRest.AzureKeyVault.SecretRef.Name != "" {
+		watchObj, err := readAndFillAzureSecret(kubeClient, parentNs, &encRest.AzureKeyVault)
+		service.AddResourcesToWatch(*watchObj)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "Region", "RoleID")
+	if err != nil {
+		return watchObj, err
+	}
+
+	awsKms.CustomerMasterKeyID = fieldData["CustomerMasterKeyID"]
+	awsKms.Region = fieldData["Region"]
+	awsKms.RoleID = fieldData["RoleID"]
+
+	return watchObj, nil
+}
+
+func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *mdbv1.GoogleCloudKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
+	if err != nil {
+		return watchObj, err
+	}
+
+	gkms.ServiceAccountKey = fieldData["ServiceAccountKey"]
+	gkms.KeyVersionResourceID = fieldData["KeyVersionResourceID"]
+
+	return watchObj, nil
+}
+
+func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "ClientID", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier")
+	if err != nil {
+		return watchObj, err
+	}
+
+	azureVault.ClientID = fieldData["ClientID"]
+	azureVault.AzureEnvironment = fieldData["AzureEnvironment"]
+	azureVault.SubscriptionID = fieldData["SubscriptionID"]
+	azureVault.ResourceGroupName = fieldData["ResourceGroupName"]
+	azureVault.KeyVaultName = fieldData["KeyVaultName"]
+	azureVault.KeyIdentifier = fieldData["KeyIdentifier"]
+
+	return watchObj, nil
+}
+
+// Return all requested field from a secret
+func readSecretData(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldNames ...string) (map[string]string, *watch.WatchedObject, error) {
+	secret := &v1.Secret{}
+	var ns string
+	if res.Namespace == "" {
+		ns = parentNamespace
+	} else {
+		ns = res.Namespace
+	}
+
+	result := map[string]string{}
+
+	secretObj := client.ObjectKey{Name: res.Name, Namespace: ns}
+	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: secretObj}
+
+	if err := kubeClient.Get(context.Background(), secretObj, secret); err != nil {
+		return result, obj, err
+	}
+
+	missingFields := []string{}
+	for i := range fieldNames {
+		val, exists := secret.Data[fieldNames[i]]
+		if !exists || len(val) == 0 {
+			missingFields = append(missingFields, fieldNames[i])
+		}
+		result[fieldNames[i]] = string(val)
+	}
+
+	if len(missingFields) != 0 {
+		return result, obj, fmt.Errorf("the following fields are either missing or their values are empty: %s", strings.Join(missingFields, ", "))
+	}
+
+	return result, obj, nil
 }
 
 func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
@@ -202,7 +321,7 @@ func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
 		return
 	}
 
-	result = mongodbatlas.AwsKms(project.Spec.EncryptionAtRest.AwsKms)
+	result = project.Spec.EncryptionAtRest.AwsKms.ToAtlas()
 
 	if (result == mongodbatlas.AwsKms{}) {
 		result.Enabled = toptr.MakePtr(false)
@@ -223,7 +342,7 @@ func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKey
 		return
 	}
 
-	result = mongodbatlas.AzureKeyVault(project.Spec.EncryptionAtRest.AzureKeyVault)
+	result = project.Spec.EncryptionAtRest.AzureKeyVault.ToAtlas()
 
 	if (result == mongodbatlas.AzureKeyVault{}) {
 		result.Enabled = toptr.MakePtr(false)
@@ -237,7 +356,7 @@ func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleC
 		return
 	}
 
-	result = mongodbatlas.GoogleCloudKms(project.Spec.EncryptionAtRest.GoogleCloudKms)
+	result = project.Spec.EncryptionAtRest.GoogleCloudKms.ToAtlas()
 
 	if (result == mongodbatlas.GoogleCloudKms{}) {
 		result.Enabled = toptr.MakePtr(false)

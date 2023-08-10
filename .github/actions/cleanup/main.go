@@ -32,6 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Println("Total projects selected for deletion: ", len(projectList))
 	ctx := context.Background()
 	ok := project.DeleteProjects(ctx, client, projectList)
 	if !ok {
