@@ -22,15 +22,15 @@ func (c *cloudProviderAccessClient) ListRoles(_ context.Context, projectID strin
 	return c.ListRolesFunc(projectID)
 }
 
-func (c *cloudProviderAccessClient) GetRole(_ context.Context, _ string, _ string) (*mongodbatlas.AWSIAMRole, *mongodbatlas.Response, error) {
+func (c *cloudProviderAccessClient) GetRole(_ context.Context, _ string, _ string) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 	return nil, nil, nil
 }
 
-func (c *cloudProviderAccessClient) CreateRole(_ context.Context, _ string, _ *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.AWSIAMRole, *mongodbatlas.Response, error) {
+func (c *cloudProviderAccessClient) CreateRole(_ context.Context, _ string, _ *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 	return nil, nil, nil
 }
 
-func (c *cloudProviderAccessClient) AuthorizeRole(_ context.Context, _ string, _ string, _ *mongodbatlas.CloudProviderAuthorizationRequest) (*mongodbatlas.AWSIAMRole, *mongodbatlas.Response, error) {
+func (c *cloudProviderAccessClient) AuthorizeRole(_ context.Context, _ string, _ string, _ *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 	return nil, nil, nil
 }
 func (c *cloudProviderAccessClient) DeauthorizeRole(_ context.Context, _ *mongodbatlas.CloudProviderDeauthorizationRequest) (*mongodbatlas.Response, error) {
@@ -73,7 +73,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{},
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{},
 					}, nil, nil
 				},
 			},
@@ -91,7 +91,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
 							{
 								ProviderName:      "AWS",
 								IAMAssumedRoleARN: "arn1",
@@ -123,7 +123,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
 							{
 								ProviderName:      "AWS",
 								IAMAssumedRoleARN: "arn1",
@@ -163,7 +163,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
 							{
 								ProviderName: "AWS",
 							},
@@ -194,7 +194,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
 							{
 								ProviderName:      "AWS",
 								IAMAssumedRoleARN: "arn1",
@@ -254,7 +254,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			CloudProviderAccess: &cloudProviderAccessClient{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
-						AWSIAMRoles: []mongodbatlas.AWSIAMRole{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
 							{
 								ProviderName:      "AWS",
 								IAMAssumedRoleARN: "arn1",
