@@ -60,43 +60,6 @@ jobs:
       - name: Rebuild ${{matrix.version}}
         run: |
           echo "Building ${{matrix.version}} version"
-<<<<<<< HEAD
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ matrix.version }}
-          submodules: true
-          fetch-depth: 0
-      - name: "Set up QEMU"
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
-      - name: Login to docker registry
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-      - name: Setup cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
-      - name: Download go build dependencies
-        shell: bash
-        run: |
-          go mod download
-=======
->>>>>>> 7e39dae (Make build-push-image action take git ref)
       - name: Build and push operator to Dockerhub & Quay (daily-tag)
         uses: ./.github/actions/build-push-image
         with:
@@ -106,9 +69,9 @@ jobs:
           ref: v${{ matrix.version }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: true
-          quay_username: mongodb+mongodb_atlas_kubernetes
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          # push_to_quay: true
+          # quay_username: mongodb+mongodb_atlas_kubernetes
+          # quay_password: ${{ secrets.QUAY_PASSWORD }}
       - name: Build and push operator to Dockerhub & Quay (release-tag)
         uses: ./.github/actions/build-push-image
         with:
@@ -117,6 +80,6 @@ jobs:
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: true
-          quay_username: mongodb+mongodb_atlas_kubernetes
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
+          # push_to_quay: true
+          # quay_username: mongodb+mongodb_atlas_kubernetes
+          # quay_password: ${{ secrets.QUAY_PASSWORD }}
