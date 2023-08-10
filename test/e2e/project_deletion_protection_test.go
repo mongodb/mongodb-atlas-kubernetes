@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
@@ -122,9 +123,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					ctx,
 					projectID,
 					cloudProvider.RoleID,
-					&mongodbatlas.CloudProviderAuthorizationRequest{
+					&mongodbatlas.CloudProviderAccessRoleRequest{
 						ProviderName:      "AWS",
-						IAMAssumedRoleARN: assumedRoleArn,
+						IAMAssumedRoleARN: toptr.MakePtr(assumedRoleArn),
 					},
 				)
 				g.Expect(err).ToNot(HaveOccurred())
