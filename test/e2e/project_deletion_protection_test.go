@@ -194,6 +194,34 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		By("Adding Maintenance Window to the project", func() {
+			_, err := atlasClient.Client.MaintenanceWindows.Update(ctx, projectID, &mongodbatlas.MaintenanceWindow{
+				DayOfWeek: 7,
+				HourOfDay: toptr.MakePtr(20),
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Adding Auditing to the project", func() {
+			_, _, err := atlasClient.Client.Auditing.Configure(ctx, projectID, &mongodbatlas.Auditing{
+				AuditFilter: `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+				Enabled:     toptr.MakePtr(true),
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Adding Settings to the Project", func() {
+			_, _, err := atlasClient.Client.Projects.UpdateProjectSettings(ctx, projectID, &mongodbatlas.ProjectSettings{
+				IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
+				IsDataExplorerEnabled:                       toptr.MakePtr(true),
+				IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
+				IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
+				IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
+				IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		By("Creating a project to be managed by the operator", func() {
 			akoProject := &mdbv1.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -232,6 +260,23 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 							},
 						},
 					},
+					MaintenanceWindow: project.MaintenanceWindow{
+						DayOfWeek: 1,
+						HourOfDay: 20,
+					},
+					Auditing: &mdbv1.Auditing{
+						AuditAuthorizationSuccess: false,
+						AuditFilter:               `{"$or":[{"users":[]},{"$and":[{"users":{"$elemMatch":{"$or":[{"db":"admin"}]}}},{"atype":{"$in":["authenticate","dropDatabase","createUser","dropUser","dropAllUsersFromDatabase","dropAllRolesFromDatabase","shutdown"]}}]}]}`,
+						Enabled:                   true,
+					},
+					Settings: &mdbv1.ProjectSettings{
+						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
+						IsDataExplorerEnabled:                       toptr.MakePtr(false),
+						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+					},
 				},
 			}
 			testData.Project = akoProject
@@ -258,6 +303,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.MaintenanceWindowReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -285,6 +339,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.MaintenanceWindowReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -325,6 +388,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.MaintenanceWindowReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -355,6 +427,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.MaintenanceWindowReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -383,11 +464,98 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				expectedConditions := testutil.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.FalseCondition(status.MaintenanceWindowReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+				)
+
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Maintenance Window is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.MaintenanceWindow.DayOfWeek = 7
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				expectedConditions := testutil.MatchConditions(
+					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ProjectReadyType),
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.FalseCondition(status.AuditingReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+				)
+
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Auditing is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.Auditing.AuditFilter = `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				expectedConditions := testutil.MatchConditions(
+					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ProjectReadyType),
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.TrueCondition(status.AuditingReadyType),
+					status.FalseCondition(status.ProjectSettingsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+				)
+
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Maintenance Window is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.Settings.IsDataExplorerEnabled = toptr.MakePtr(true)
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				expectedConditions := testutil.MatchConditions(
+					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
 					status.TrueCondition(status.CloudProviderAccessReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.TrueCondition(status.AuditingReadyType),
+					status.TrueCondition(status.ProjectSettingsReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())

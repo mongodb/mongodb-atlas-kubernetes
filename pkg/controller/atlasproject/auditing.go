@@ -2,7 +2,13 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
+
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -12,19 +18,37 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
-func ensureAuditing(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
-	result := createOrDeleteAuditing(ctx, projectID, project)
+func ensureAuditing(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canAuditingReconcile(ctx, workflowCtx.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
+
+		return result
+	}
+
+	result := createOrDeleteAuditing(workflowCtx, project.ID(), project)
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.AuditingReadyType, result)
+		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
 		return result
 	}
 
 	if isAuditingEmpty(project.Spec.Auditing) {
-		ctx.UnsetCondition(status.AuditingReadyType)
+		workflowCtx.UnsetCondition(status.AuditingReadyType)
 		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.AuditingReadyType)
+	workflowCtx.SetConditionTrue(status.AuditingReadyType)
 	return workflow.OK()
 }
 
@@ -65,6 +89,7 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 
 	specAsAtlas := spec.ToAtlas()
 	removeConfigurationType(atlas)
+	fmt.Println("AUDIT DIFF:", cmp.Diff(atlas, specAsAtlas))
 	return reflect.DeepEqual(atlas, specAsAtlas)
 }
 
@@ -84,4 +109,30 @@ func fetchAuditing(ctx *workflow.Context, projectID string) (*mongodbatlas.Audit
 func patchAuditing(ctx *workflow.Context, projectID string, auditing *mongodbatlas.Auditing) error {
 	_, _, err := ctx.Client.Auditing.Configure(context.Background(), projectID, auditing)
 	return err
+}
+
+func canAuditingReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	auditing, _, err := atlasClient.Auditing.Get(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if isAuditingEmpty(auditing) {
+		return true, nil
+	}
+
+	return auditingInSync(auditing, latestConfig.Auditing) ||
+		auditingInSync(auditing, akoProject.Spec.Auditing), nil
 }
