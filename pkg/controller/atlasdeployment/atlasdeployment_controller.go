@@ -181,8 +181,9 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 
 	if err := uniqueKey(&deployment.Spec); err != nil {
-		result := workflow.Terminate(workflow.Internal, err.Error())
 		log.Errorw("failed to validate tags", "error", err)
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
