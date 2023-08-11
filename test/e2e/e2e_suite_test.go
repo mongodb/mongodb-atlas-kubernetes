@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
 )
 
 const (
@@ -27,11 +29,18 @@ var (
 )
 
 func TestE2e(t *testing.T) {
+	if !helper.Enabled("AKO_E2E_TEST") {
+		t.Skip("Skipping e2e tests, AKO_E2E_TEST is not set")
+	}
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "E2E Suite")
 }
 
 var _ = BeforeSuite(func() {
+	if !helper.Enabled("AKO_E2E_TEST") {
+		fmt.Println("Skipping e2e BeforeSuite, AKO_E2E_TEST is not set")
+		return
+	}
 	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultEventuallyPollingInterval(PollingInterval)
