@@ -222,13 +222,6 @@ type ServerlessSpec struct {
 	Tags []*TagSpec `json:"tags,omitempty"`
 }
 
-// ServerlessToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
-func (s *ServerlessSpec) ServerlessToAtlas() (*mongodbatlas.Cluster, error) {
-	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, s)
-	return result, err
-}
-
 // ToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
 func (s *ServerlessSpec) ToAtlas() (*mongodbatlas.Cluster, error) {
 	result := &mongodbatlas.Cluster{}

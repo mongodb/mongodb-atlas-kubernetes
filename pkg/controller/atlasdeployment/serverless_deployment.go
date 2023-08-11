@@ -24,7 +24,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
-		atlasDeployment, err = serverlessSpec.ServerlessToAtlas()
+		atlasDeployment, err = serverlessSpec.ToAtlas()
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -45,7 +45,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
-		convertedDeployment, err := serverlessSpec.ServerlessToAtlas()
+		convertedDeployment, err := serverlessSpec.ToAtlas()
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
