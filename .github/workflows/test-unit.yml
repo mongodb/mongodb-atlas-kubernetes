@@ -1,12 +1,12 @@
 name: Unit Tests.
 
 on:
-  workflow_call:
-    inputs:
-      forked:
-        type: boolean
-        required: false
-        default: false
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+  workflow_dispatch:
 
 jobs:
   unit-test:

@@ -19,13 +19,6 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run"
 
-  unit-tests-forked:
-    needs: allowed-forked
-    uses: ./.github/workflows/test-unit.yml
-    secrets: inherit
-    with:
-      forked: true
-
   e2e-tests-forked:
     needs: allowed-forked
     uses: ./.github/workflows/test-e2e.yml
