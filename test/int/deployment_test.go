@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
@@ -46,14 +47,14 @@ const (
 	PublicAPIKey            = "publicApiKey"
 )
 
-var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
-	const (
-		interval      = PollingInterval
-		intervalShort = time.Second * 2
-	)
+const (
+	interval      = PollingInterval
+	intervalShort = time.Second * 2
+)
 
+var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-non-backups"), func() {
 	var (
-		connectionSecret  corev1.Secret
+		connectionSecret  *corev1.Secret
 		createdProject    *mdbv1.AtlasProject
 		createdDeployment *mdbv1.AtlasDeployment
 		lastGeneration    int64
@@ -68,29 +69,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		lastGeneration = 0
 		manualDeletion = false
 
-		connectionSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      ConnectionSecretName,
-				Namespace: namespace.Name,
-				Labels: map[string]string{
-					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
-				},
-			},
-			StringData: map[string]string{OrgID: connection.OrgID, PublicAPIKey: connection.PublicKey, PrivateAPIKey: connection.PrivateKey},
-		}
-		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
-		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
-
-		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
-		if DeploymentDevMode {
-			// While developing tests we need to reuse the same project
-			createdProject.Spec.Name = "dev-test atlas-project"
-		}
-		By("Creating the project " + createdProject.Name)
-		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
-		Eventually(func() bool {
-			return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
-		}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+		connectionSecret = createConnectionSecret()
+		createdProject = createProject(connectionSecret)
 	})
 
 	AfterEach(func() {
@@ -99,7 +79,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		}
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
-				// We need to remove the deployment in Atlas manually to let project get removed
+				// We need to remove the deployment in Atlas to let project get removed
 				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName(), nil)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
@@ -108,19 +88,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		}
 		if createdProject != nil && createdProject.Status.ID != "" {
 			if createdDeployment != nil {
-				By("Removing Atlas Deployment " + createdDeployment.Name)
-				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
-				deploymentName := createdDeployment.GetDeploymentName()
-				if customresource.ResourceShouldBeLeftInAtlas(createdDeployment) || customresource.ReconciliationShouldBeSkipped(createdDeployment) {
-					By("Removing Atlas Deployment " + createdDeployment.Name + " from Atlas manually")
-					Expect(deleteAtlasDeployment(createdProject.Status.ID, deploymentName)).To(Succeed())
-				}
-				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, deploymentName), 600, interval).Should(BeTrue())
+				deleteDeploymentFromKubernetes(createdProject, createdDeployment)
 			}
 
-			By("Removing Atlas Project " + createdProject.Status.ID)
-			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
-			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 60, interval).Should(BeTrue())
+			deleteProjectFromKubernetes(createdProject)
 		}
 		removeControllersAndNamespace()
 	})
@@ -265,7 +236,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 			By("Filling token secret with invalid data", func() {
 				secret := &corev1.Secret{}
-				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(&connectionSecret), secret)).To(Succeed())
+				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(connectionSecret), secret)).To(Succeed())
 				secret.StringData = map[string]string{
 					OrgID: "fake", PrivateAPIKey: "fake", PublicAPIKey: "fake",
 				}
@@ -865,7 +836,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				lastGeneration++
 			})
 
-			By(fmt.Sprintf("Update Instance Size Margins with AutoScaling for Deployemnt %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+			By(fmt.Sprintf("Update Instance Size Margins with AutoScaling for Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 				regionConfig.AutoScaling.Compute.MinInstanceSize = "M20"
 				regionConfig.ElectableSpecs.InstanceSize = "M20"
@@ -1028,10 +999,32 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 			})
 		})
 	})
+})
 
-	Describe("Create default deployment with backups enabled", func() {
-		It("Should succeed", func() {
-			backupPolicyDefault := &mdbv1.AtlasBackupPolicy{
+var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "deployment-backups"), func() {
+	var (
+		connectionSecret  *corev1.Secret
+		createdProject    *mdbv1.AtlasProject
+		createdDeployment *mdbv1.AtlasDeployment
+
+		backupPolicyDefault   *mdbv1.AtlasBackupPolicy
+		backupScheduleDefault *mdbv1.AtlasBackupSchedule
+	)
+
+	BeforeAll(func() {
+		prepareControllers(false)
+		connectionSecret = createConnectionSecret()
+		createdProject = createProject(connectionSecret)
+	})
+
+	AfterAll(func() {
+		deleteProjectFromKubernetes(createdProject)
+		removeControllersAndNamespace()
+	})
+
+	Describe("Create default deployment with backups enabled", Label("basic-backups"), func() {
+		BeforeEach(func() {
+			backupPolicyDefault = &mdbv1.AtlasBackupPolicy{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "policy-1",
 					Namespace: namespace.Name,
@@ -1049,7 +1042,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Status: status.BackupPolicyStatus{},
 			}
 
-			backupScheduleDefault := &mdbv1.AtlasBackupSchedule{
+			backupScheduleDefault = &mdbv1.AtlasBackupSchedule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "schedule-1",
 					Namespace: namespace.Name,
@@ -1074,7 +1067,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 				Name:      backupScheduleDefault.Name,
 				Namespace: backupScheduleDefault.Namespace,
 			})
+		})
 
+		AfterEach(func() {
+			deleteDeploymentFromKubernetes(createdProject, createdDeployment)
+			deleteBackupDefsFromKubernetes(backupScheduleDefault, backupPolicyDefault)
+		})
+
+		It("Should succeed", func() {
+			fmt.Println("hey!")
 			By(fmt.Sprintf("Creating deployment with backups enabled: %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
@@ -1121,8 +1122,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 		})
 	})
 
-	Describe("Create deployment with backups enabled and snapshot distribution", func() {
-		It("Should succeed", func() {
+	Describe("Create deployment with backups enabled and snapshot distribution", Label("snapshot-distribution"), func() {
+		BeforeEach(func() {
 			By("Creating deployment with backups enabled", func() {
 				createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 				createdDeployment.Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
@@ -1151,7 +1152,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 
 				replicaSetID := createdDeployment.Status.ReplicaSets[0].ID
 
-				backupPolicyDefault := &mdbv1.AtlasBackupPolicy{
+				backupPolicyDefault = &mdbv1.AtlasBackupPolicy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "policy-1",
 						Namespace: namespace.Name,
@@ -1168,7 +1169,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					},
 					Status: status.BackupPolicyStatus{},
 				}
-				backupScheduleDefault := &mdbv1.AtlasBackupSchedule{
+				backupScheduleDefault = &mdbv1.AtlasBackupSchedule{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      bScheduleName,
 						Namespace: namespace.Name,
@@ -1202,28 +1203,36 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment"), func() {
 					Namespace: namespace.Name,
 				}
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).NotTo(HaveOccurred())
-
-				Eventually(func(g Gomega) {
-					atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
-					g.Expect(err).Should(BeNil())
-					g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
-					g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
-
-					atlasBSchedule, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
-					g.Expect(err).Should(BeNil())
-					g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
-					g.Expect(atlasBSchedule.CopySettings[0]).
-						Should(Equal(
-							mongodbatlas.CopySetting{
-								CloudProvider:     toptr.MakePtr("AWS"),
-								RegionName:        toptr.MakePtr("US_WEST_1"),
-								ReplicationSpecID: toptr.MakePtr(replicaSetID),
-								ShouldCopyOplogs:  toptr.MakePtr(false),
-								Frequencies:       []string{"MONTHLY"},
-							},
-						))
-				}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Not(HaveOccurred()))
 			})
+		})
+
+		AfterEach(func() {
+			deleteDeploymentFromKubernetes(createdProject, createdDeployment)
+			deleteBackupDefsFromKubernetes(backupScheduleDefault, backupPolicyDefault)
+		})
+
+		It("Should succeed", func() {
+			replicaSetID := createdDeployment.Status.ReplicaSets[0].ID
+			Eventually(func(g Gomega) {
+				atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+				g.Expect(err).Should(BeNil())
+				g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
+				g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
+
+				atlasBSchedule, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+				g.Expect(err).Should(BeNil())
+				g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
+				g.Expect(atlasBSchedule.CopySettings[0]).
+					Should(Equal(
+						mongodbatlas.CopySetting{
+							CloudProvider:     toptr.MakePtr("AWS"),
+							RegionName:        toptr.MakePtr("US_WEST_1"),
+							ReplicationSpecID: toptr.MakePtr(replicaSetID),
+							ShouldCopyOplogs:  toptr.MakePtr(false),
+							Frequencies:       []string{"MONTHLY"},
+						},
+					))
+			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Not(HaveOccurred()))
 		})
 	})
 })
@@ -1328,4 +1337,76 @@ func float64ptr(f float64) *float64 {
 
 func boolptr(b bool) *bool {
 	return &b
+}
+
+func createConnectionSecret() *corev1.Secret {
+	connectionSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ConnectionSecretName,
+			Namespace: namespace.Name,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
+		},
+		StringData: map[string]string{OrgID: connection.OrgID, PublicAPIKey: connection.PublicKey, PrivateAPIKey: connection.PrivateKey},
+	}
+	By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)), func() {
+		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
+	})
+	return &connectionSecret
+}
+
+func createProject(connectionSecret *corev1.Secret) *mdbv1.AtlasProject {
+	createdProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(
+		project.NewIPAccessList().WithCIDR("0.0.0.0/0"),
+	)
+	By("Creating the project "+createdProject.Name, func() {
+		if DeploymentDevMode {
+			// While developing tests we need to reuse the same project
+			createdProject.Spec.Name = "dev-test atlas-project"
+		}
+		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
+		Eventually(func() bool {
+			return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+		}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
+	})
+	return createdProject
+}
+
+func deleteBackupDefsFromKubernetes(schedule *mdbv1.AtlasBackupSchedule, policy *mdbv1.AtlasBackupPolicy) {
+	By("Deleting the schedule and policy in Kubernetes (should have no finalizers by now)", func() {
+		Expect(k8sClient.Delete(context.Background(), schedule)).NotTo(HaveOccurred())
+		Expect(k8sClient.Delete(context.Background(), policy)).NotTo(HaveOccurred())
+
+		policyRef := kube.ObjectKey(policy.Namespace, policy.Name)
+		Eventually(func() bool {
+			p := &mdbv1.AtlasBackupPolicy{}
+			return k8serrors.IsNotFound(k8sClient.Get(context.Background(), policyRef, p))
+		}).WithTimeout(30 * time.Second).WithPolling(PollingInterval).Should(BeTrue())
+
+		scheduleRef := kube.ObjectKey(schedule.Namespace, schedule.Name)
+		Eventually(func() bool {
+			s := &mdbv1.AtlasBackupSchedule{}
+			return k8serrors.IsNotFound(k8sClient.Get(context.Background(), scheduleRef, s))
+		}).WithTimeout(30 * time.Second).WithPolling(PollingInterval).Should(BeTrue())
+	})
+}
+
+func deleteDeploymentFromKubernetes(project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) {
+	By(fmt.Sprintf("Removing Atlas Deployment %q", deployment.Name), func() {
+		Expect(k8sClient.Delete(context.Background(), deployment)).To(Succeed())
+		deploymentName := deployment.GetDeploymentName()
+		if customresource.ResourceShouldBeLeftInAtlas(deployment) || customresource.ReconciliationShouldBeSkipped(deployment) {
+			By("Removing Atlas Deployment " + deployment.Name + " from Atlas manually")
+			Expect(deleteAtlasDeployment(project.Status.ID, deploymentName)).To(Succeed())
+		}
+		Eventually(checkAtlasDeploymentRemoved(project.Status.ID, deploymentName), 600, interval).Should(BeTrue())
+	})
+}
+
+func deleteProjectFromKubernetes(project *mdbv1.AtlasProject) {
+	By(fmt.Sprintf("Removing Atlas Project %s", project.Status.ID), func() {
+		Expect(k8sClient.Delete(context.Background(), project)).To(Succeed())
+		Eventually(checkAtlasProjectRemoved(project.Status.ID), 60, interval).Should(BeTrue())
+	})
 }
