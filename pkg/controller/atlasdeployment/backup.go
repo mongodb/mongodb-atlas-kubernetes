@@ -16,11 +16,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
-
-	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -60,7 +59,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return err
 	}
 
-	bPolicy, err := r.ensureBackupPolicy(ctx, service, *bSchedule.Spec.PolicyRef.GetObject(bSchedule.Namespace), &resourcesToWatch)
+	bPolicy, err := r.ensureBackupPolicy(ctx, service, bSchedule, &resourcesToWatch)
 	if err != nil {
 		return err
 	}
@@ -78,7 +77,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	bSchedule := &mdbv1.AtlasBackupSchedule{}
 	err := r.Client.Get(ctx, *backupScheduleRef, bSchedule)
 	if err != nil {
-		return nil, fmt.Errorf("%v backupschedule resource is not found. e: %w", *backupScheduleRef, err)
+		return nil, fmt.Errorf("%v AtlasBackupSchedule resource is not found. e: %w", *backupScheduleRef, err)
 	}
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(service, bSchedule, r.Log)
@@ -126,13 +125,14 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 	ctx context.Context,
 	service *workflow.Context,
-	bPolicyRef types.NamespacedName,
+	bSchedule *mdbv1.AtlasBackupSchedule,
 	resourcesToWatch *[]watch.WatchedObject,
 ) (*mdbv1.AtlasBackupPolicy, error) {
+	bPolicyRef := *bSchedule.Spec.PolicyRef.GetObject(bSchedule.Namespace)
 	bPolicy := &mdbv1.AtlasBackupPolicy{}
 	err := r.Client.Get(ctx, bPolicyRef, bPolicy)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get backuppolicy resource %s. e: %w", bPolicyRef.String(), err)
+		return nil, fmt.Errorf("unable to get AtlasBackupPolicy resource %s. e: %w", bPolicyRef.String(), err)
 	}
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(service, bPolicy, r.Log)
@@ -142,7 +142,8 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 		return nil, errors.New(errText)
 	}
 
-	bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicySetScheduleID(bPolicyRef.String()))
+	scheduleRef := kube.ObjectKeyFromObject(bSchedule).String()
+	bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicySetScheduleID(scheduleRef))
 
 	if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
 		r.Log.Errorw("failed to update BackupPolicy status", "error", err)
@@ -251,13 +252,13 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	}
 
 	if equal {
-		r.Log.Debug("backupschedules are equal, nothing to change")
+		r.Log.Debug("backup schedules are equal, nothing to change")
 		return nil
 	}
 
 	r.Log.Debugf("applying backup configuration: %v", *bSchedule)
 	if _, _, err := service.Client.CloudProviderSnapshotBackupPolicies.Update(ctx, projectID, clusterName, apiScheduleReq); err != nil {
-		return fmt.Errorf("unable to create backupschedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err)
+		return fmt.Errorf("unable to create backup schedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err)
 	}
 	r.Log.Infof("successfully updated backup configuration for deployment %v", clusterName)
 	return nil
@@ -313,9 +314,11 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 
 				backupSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(clusterName))
 
+				lastScheduleRef := false
 				if len(backupSchedule.Status.DeploymentIDs) == 0 &&
 					customresource.HaveFinalizer(&backupSchedule, customresource.FinalizerLabel) {
 					customresource.UnsetFinalizer(&backupSchedule, customresource.FinalizerLabel)
+					lastScheduleRef = true
 				}
 
 				if err = r.Client.Update(ctx, &backupSchedule); err != nil {
@@ -323,7 +326,7 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 					return err
 				}
 
-				if backupSchedule.DeletionTimestamp.IsZero() {
+				if !lastScheduleRef {
 					continue
 				}
 
@@ -334,7 +337,8 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 					return fmt.Errorf("failed to retrieve list of backup schedules: %w", err)
 				}
 
-				bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(bPolicyRef.String()))
+				scheduleRef := kube.ObjectKeyFromObject(&backupSchedule).String()
+				bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
 
 				if len(bPolicy.Status.BackupScheduleIDs) == 0 &&
 					customresource.HaveFinalizer(bPolicy, customresource.FinalizerLabel) {
