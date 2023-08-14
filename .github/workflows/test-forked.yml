@@ -11,6 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    with:
+      forked: false
+  
+  unit-tests:
+    uses: ./.github/workflows/test-unit.yml
+    with:
+      forked: false
+
   allowed-forked:
     name: Allowed action
     runs-on: ubuntu-latest
@@ -19,9 +29,9 @@ jobs:
       - name: allowed message
         run: echo "Allowed to run"
 
-  unit-tests-forked:
+  int-tests:
     needs: allowed-forked
-    uses: ./.github/workflows/test-unit.yml
+    uses: ./.github/workflows/integration-test.yml
     secrets: inherit
     with:
       forked: true

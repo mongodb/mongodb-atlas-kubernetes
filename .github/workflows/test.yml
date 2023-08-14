@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - 'docs/**'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches:
       - '**'
     paths-ignore:
@@ -18,13 +19,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    with:
+      forked: false
+  
+  unit-tests:
+    uses: ./.github/workflows/test-unit.yml
+    with:
+      forked: false
+
   allowed:
+    needs:
+      - unit-tests
+      - lint
     name: Allowed
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.ref == 'refs/heads/main' ||
-      (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+      github.event.pull_request.draft == false &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        github.ref == 'refs/heads/main' ||
+        (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+      )
     steps:
       - name: allowed message
         run: echo "Allowed to run"
@@ -50,9 +67,9 @@ jobs:
         run: |
           gh pr comment ${{ github.event.pull_request.number }} -R mongodb/mongodb-atlas-kubernetes -b "https://app.codecov.io/github/mongodb/mongodb-atlas-kubernetes/commit/${{ github.event.pull_request.head.sha }}"
 
-  unit-tests:
+  int-tests:
     needs: allowed
-    uses: ./.github/workflows/test-unit.yml
+    uses: ./.github/workflows/integration-test.yml
     secrets: inherit
     with:
       forked: false
