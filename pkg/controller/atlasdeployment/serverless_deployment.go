@@ -81,7 +81,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 func isTagsEqual(a []*mongodbatlas.Tag, c []*mongodbatlas.Tag) bool {
 	if len(a) == len(c) {
 		for i, aTags := range a {
-			if aTags.Key != (c)[i].Key || aTags.Value != (c)[i].Value {
+			if aTags.Key != c[i].Key || aTags.Value != c[i].Value {
 				return false
 			}
 		}
