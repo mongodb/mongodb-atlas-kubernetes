@@ -314,7 +314,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 	results = append(results, result)
 
-	if result = r.ensureEncryptionAtRest(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)

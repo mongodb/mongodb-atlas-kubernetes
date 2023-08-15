@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/go-cmp/cmp"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -89,7 +87,7 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 
 	specAsAtlas := spec.ToAtlas()
 	removeConfigurationType(atlas)
-	fmt.Println("AUDIT DIFF:", cmp.Diff(atlas, specAsAtlas))
+
 	return reflect.DeepEqual(atlas, specAsAtlas)
 }
 
