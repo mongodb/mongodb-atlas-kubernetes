@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -73,6 +74,9 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 			resources := make([]v1.Resource, 0, len(atlasAction.Resources))
 
 			for _, atlasResource := range atlasAction.Resources {
+				if atlasResource.Cluster == nil {
+					atlasResource.Cluster = toptr.MakePtr(false)
+				}
 				resources = append(resources, v1.Resource{
 					Cluster:    atlasResource.Cluster,
 					Database:   atlasResource.DB,
