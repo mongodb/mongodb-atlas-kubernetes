@@ -1,9 +1,5 @@
 package status
 
-import (
-	"go.mongodb.org/atlas/mongodbatlas"
-)
-
 type CloudProviderAccessRole struct {
 	AtlasAWSAccountArn         string         `json:"atlasAWSAccountArn,omitempty"`
 	AtlasAssumedRoleExternalID string         `json:"atlasAssumedRoleExternalId"`
@@ -23,6 +19,14 @@ type FeatureUsage struct {
 }
 
 const (
+	CloudProviderAccessStatusNew                 = "NEW"
+	CloudProviderAccessStatusCreated             = "CREATED"
+	CloudProviderAccessStatusAuthorized          = "AUTHORIZED"
+	CloudProviderAccessStatusDeAuthorize         = "DEAUTHORIZE"
+	CloudProviderAccessStatusFailedToCreate      = "FAILED_TO_CREATE"
+	CloudProviderAccessStatusFailedToAuthorize   = "FAILED_TO_AUTHORIZE"
+	CloudProviderAccessStatusFailedToDeAuthorize = "FAILED_TO_DEAUTHORIZE"
+
 	StatusFailed   = "FAILED"
 	StatusCreated  = "CREATED"
 	StatusReady    = "READY"
@@ -30,62 +34,9 @@ const (
 )
 
 func NewCloudProviderAccessRole(providerName, assumedRoleArn string) CloudProviderAccessRole {
-	if assumedRoleArn == "" {
-		return CloudProviderAccessRole{
-			ProviderName: providerName,
-			Status:       StatusEmptyARN,
-		}
-	}
 	return CloudProviderAccessRole{
 		ProviderName:      providerName,
 		IamAssumedRoleArn: assumedRoleArn,
-		Status:            StatusCreated,
-	}
-}
-
-func (c *CloudProviderAccessRole) IsEmptyARN() bool {
-	return c.Status == StatusEmptyARN
-}
-
-func (c *CloudProviderAccessRole) Failed(errorMessage string) {
-	c.Status = StatusFailed
-	c.ErrorMessage = errorMessage
-}
-
-func (c *CloudProviderAccessRole) FailedToAuthorise(errorMessage string) {
-	c.ErrorMessage = errorMessage
-}
-
-func (c *CloudProviderAccessRole) Update(role mongodbatlas.CloudProviderAccessRole, isEmptyArn bool) {
-	c.RoleID = role.RoleID
-	c.AtlasAssumedRoleExternalID = role.AtlasAssumedRoleExternalID
-	c.AtlasAWSAccountArn = role.AtlasAWSAccountARN
-	c.AuthorizedDate = role.AuthorizedDate
-	c.CreatedDate = role.CreatedDate
-	for _, featureUsage := range role.FeatureUsages {
-		if featureUsage != nil {
-			featureUsageID, ok := featureUsage.FeatureID.(string)
-			if ok {
-				c.FeatureUsages = append(c.FeatureUsages, FeatureUsage{
-					FeatureType: featureUsage.FeatureType,
-					FeatureID:   featureUsageID,
-				})
-			}
-		}
-	}
-
-	if isEmptyArn {
-		c.Status = StatusEmptyARN
-	} else {
-		switch role.IAMAssumedRoleARN {
-		case "":
-			c.Status = StatusCreated
-		case c.IamAssumedRoleArn:
-			c.Status = StatusReady
-			c.ErrorMessage = ""
-		default:
-			c.Status = StatusFailed
-			c.ErrorMessage = "IAMAssumedRoleARN is different from the previous one"
-		}
+		Status:            CloudProviderAccessStatusNew,
 	}
 }

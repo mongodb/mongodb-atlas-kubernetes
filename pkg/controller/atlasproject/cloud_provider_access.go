@@ -3,24 +3,25 @@ package atlasproject
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canCloudProviderAccessReconcile(ctx, customContext.Client, protected, project)
+func ensureProviderAccessStatus(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canCloudProviderAccessReconcile(ctx, workflowCtx.Client, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		customContext.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
+		workflowCtx.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
 
 		return result
 	}
@@ -30,7 +31,7 @@ func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Con
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Cloud Provider Access due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		customContext.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
+		workflowCtx.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
 
 		return result
 	}
@@ -39,235 +40,268 @@ func ensureProviderAccessStatus(ctx context.Context, customContext *workflow.Con
 	roleSpecs := project.Spec.DeepCopy().CloudProviderAccessRoles
 
 	if len(roleSpecs) == 0 && len(roleStatuses) == 0 {
-		customContext.UnsetCondition(status.CloudProviderAccessReadyType)
+		workflowCtx.UnsetCondition(status.CloudProviderAccessReadyType)
 		return workflow.OK()
 	}
 
-	result, condition := syncProviderAccessStatus(ctx, customContext, roleSpecs, roleStatuses, project.ID())
-	if result != workflow.OK() {
-		customContext.SetConditionFromResult(condition, result)
+	allAuthorized, err := syncCloudProviderAccess(ctx, workflowCtx, project.ID(), project.Spec.CloudProviderAccessRoles)
+	if err != nil {
+		result := workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, err.Error())
+		workflowCtx.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
+
 		return result
 	}
-	customContext.SetConditionTrue(status.CloudProviderAccessReadyType)
-	return result
+
+	if !allAuthorized {
+		workflowCtx.SetConditionFalse(status.CloudProviderAccessReadyType)
+
+		return workflow.InProgress(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "not all entries are authorized")
+	}
+
+	workflowCtx.SetConditionTrue(status.CloudProviderAccessReadyType)
+	return workflow.OK()
 }
 
-func syncProviderAccessStatus(ctx context.Context, customContext *workflow.Context, specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole, groupID string) (workflow.Result, status.ConditionType) {
-	client := customContext.Client
-	logger := customContext.Log
-	specToStatusMap, haveDuplicate, cantMatch := checkStatuses(specs, statuses)
-	if haveDuplicate {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "some roles contains same ARN value"), status.CloudProviderAccessReadyType
-	}
-	if cantMatch {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "More than one new role"+
-			" with ARN may correspond to an existing empty role. Keep only one new role containing data from the status "+
-			"field and delete all other roles. You can add them again after authorization is complete."), status.CloudProviderAccessReadyType
-	}
-	defer func() {
-		SetNewStatuses(customContext, specToStatusMap)
-	}()
-
-	diff, err := sortAccessRoles(ctx, client.CloudProviderAccess, logger, specToStatusMap, groupID)
+func syncCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaSpecs []v1.CloudProviderAccessRole) (bool, error) {
+	atlasCPAs, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(ctx, projectID)
 	if err != nil {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, fmt.Sprintf("failed to sort access roles: %s", err)),
-			status.CloudProviderAccessReadyType
-	}
-	err = deleteAccessRoles(ctx, client.CloudProviderAccess, logger, diff.toDelete, groupID)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, fmt.Sprintf("failed to delete access roles: %s", err)),
-			status.CloudProviderAccessReadyType
-	}
-	err = createAccessRoles(ctx, client.CloudProviderAccess, logger, diff.toCreate, specToStatusMap, groupID)
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, fmt.Sprintf("failed to create access roles: %s", err)),
-			status.CloudProviderAccessReadyType
+		return false, fmt.Errorf("unable to fetch cloud provider access from Atlas: %w", err)
 	}
 
-	tryToAuthorize(ctx, client.CloudProviderAccess, logger, specToStatusMap, groupID)
-	updateAccessRoles(diff.toUpdate, specToStatusMap)
-	return ensureCloudProviderAccessStatus(specToStatusMap)
-}
+	AWSRoles := sortAtlasCPAsByRoleID(atlasCPAs.AWSIAMRoles)
+	cpaStatuses := enrichStatuses(initiateStatuses(cpaSpecs), AWSRoles)
+	cpaStatusesToUpdate := make([]status.CloudProviderAccessRole, 0, len(cpaStatuses))
+	withError := false
 
-func tryToAuthorize(ctx context.Context, access mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger, statusMap map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, groupID string) {
-	for spec, roleStatus := range statusMap {
-		if roleStatus.Status == status.StatusCreated {
-			request := mongodbatlas.CloudProviderAccessRoleRequest{
-				ProviderName:      spec.ProviderName,
-				IAMAssumedRoleARN: &spec.IamAssumedRoleArn,
+	for _, cpaStatus := range cpaStatuses {
+		switch cpaStatus.Status {
+		case status.CloudProviderAccessStatusNew, status.CloudProviderAccessStatusFailedToCreate:
+			createCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
+			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
+		case status.CloudProviderAccessStatusCreated, status.CloudProviderAccessStatusFailedToAuthorize:
+			if cpaStatus.IamAssumedRoleArn != "" {
+				authorizeCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
 			}
-			role, _, err := access.AuthorizeRole(ctx, groupID, roleStatus.RoleID, &request)
-			if err != nil {
-				roleStatus.FailedToAuthorise(fmt.Sprintf("cant authorize role. %s", err))
-				logger.Errorw("cant authorize role", "role", roleStatus.RoleID, "error", err)
-				statusMap[spec] = roleStatus
+			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
+		case status.CloudProviderAccessStatusDeAuthorize, status.CloudProviderAccessStatusFailedToDeAuthorize:
+			deleteCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
+		case status.CloudProviderAccessStatusAuthorized:
+			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
+		}
+
+		if cpaStatus.ErrorMessage != "" {
+			withError = true
+		}
+	}
+
+	workflowCtx.EnsureStatusOption(status.AtlasProjectCloudAccessRolesOption(cpaStatusesToUpdate))
+
+	if withError {
+		return false, errors.New("not all items were synchronized successfully")
+	}
+
+	for _, capStatus := range cpaStatusesToUpdate {
+		if capStatus.Status != status.CloudProviderAccessStatusAuthorized {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func initiateStatuses(cpaSpecs []v1.CloudProviderAccessRole) []*status.CloudProviderAccessRole {
+	cpaStatuses := make([]*status.CloudProviderAccessRole, 0, len(cpaSpecs))
+
+	for _, cpaSpec := range cpaSpecs {
+		newStatus := status.NewCloudProviderAccessRole(cpaSpec.ProviderName, cpaSpec.IamAssumedRoleArn)
+		cpaStatuses = append(cpaStatuses, &newStatus)
+	}
+
+	return cpaStatuses
+}
+
+func enrichStatuses(cpaStatuses []*status.CloudProviderAccessRole, atlasCPAs []mongodbatlas.CloudProviderAccessRole) []*status.CloudProviderAccessRole {
+	// find configured matches: containing IAM Assumed Role ARN
+	for _, cpaStatus := range cpaStatuses {
+		for _, atlasCPA := range atlasCPAs {
+			cpa := atlasCPA
+
+			if isMatch(cpaStatus, &cpa) {
+				copyCloudProviderAccessData(cpaStatus, &cpa)
+
 				continue
 			}
-			roleStatus.Update(*role, roleStatus.IsEmptyARN())
-			statusMap[spec] = roleStatus
 		}
 	}
-}
 
-func SetNewStatuses(customContext *workflow.Context, specToStatus map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole) {
-	newRoleStatuses := make([]status.CloudProviderAccessRole, 0, len(specToStatus))
-	for _, roleStatus := range specToStatus {
-		newRoleStatuses = append(newRoleStatuses, roleStatus)
-	}
-	customContext.EnsureStatusOption(status.AtlasProjectCloudAccessRolesOption(newRoleStatuses))
-}
+	// Separate created but not authorized entries: when having empty IAM Assumed Role ARN
+	noMatch := make([]*mongodbatlas.CloudProviderAccessRole, 0, len(cpaStatuses))
+	for _, atlasCPA := range atlasCPAs {
+		cpa := atlasCPA
 
-func ensureCloudProviderAccessStatus(statusMap map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole) (workflow.Result, status.ConditionType) {
-	ok := true
-	for _, roleStatus := range statusMap {
-		if roleStatus.Status != status.StatusReady {
-			ok = false
+		if cpa.IAMAssumedRoleARN == "" {
+			noMatch = append(noMatch, &cpa)
 		}
 	}
-	if !ok {
-		return workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "not all roles are ready"),
-			status.CloudProviderAccessReadyType
-	}
-	return workflow.OK(), status.CloudProviderAccessReadyType
-}
 
-func updateAccessRoles(toUpdate []mongodbatlas.CloudProviderAccessRole, specToStatus map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole) {
-	for _, role := range toUpdate {
-		for spec, roleStatus := range specToStatus {
-			if role.RoleID == roleStatus.RoleID {
-				roleStatus.Update(role, roleStatus.IsEmptyARN())
-				specToStatus[spec] = roleStatus
-			}
-		}
-	}
-}
-
-func createAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger,
-	toCreate []v1.CloudProviderAccessRole, specToStatus map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, groupID string) error {
-	for _, spec := range toCreate {
-		role, _, err := accessClient.CreateRole(ctx, groupID, &mongodbatlas.CloudProviderAccessRoleRequest{
-			ProviderName: spec.ProviderName,
-		})
-		if err != nil {
-			logger.Error("failed to create access role", zap.Error(err))
-			roleStatus, ok := specToStatus[spec]
-			if !ok {
-				logger.Error("failed to find status for access role")
-			}
-			roleStatus.Failed(err.Error())
-			specToStatus[spec] = roleStatus
-			return err
-		}
-		roleStatus, ok := specToStatus[spec]
-		if !ok {
-			logger.Error("failed to find status for access role")
-			roleStatus.Failed("failed to find status for access role")
-			specToStatus[spec] = roleStatus
+	// find not configured matches: when having empty IAM Assumed Role ARN
+	for _, cpaStatus := range cpaStatuses {
+		if cpaStatus.IamAssumedRoleArn != "" && cpaStatus.RoleID != "" {
 			continue
 		}
-		roleStatus.Update(*role, roleStatus.IsEmptyARN())
-		specToStatus[spec] = roleStatus
-	}
-	return nil
-}
 
-func deleteAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger, toDelete map[string]string, groupID string) error {
-	for roleID, providerName := range toDelete {
-		request := mongodbatlas.CloudProviderDeauthorizationRequest{
-			ProviderName: providerName,
-			GroupID:      groupID,
-			RoleID:       roleID,
+		if len(noMatch) == 0 {
+			break
 		}
-		_, err := accessClient.DeauthorizeRole(ctx, &request)
-		if err != nil {
-			logger.Error("failed to deauthorize role", zap.Error(err))
-			return err
+
+		copyCloudProviderAccessData(cpaStatus, noMatch[0])
+		noMatch = noMatch[1:]
+	}
+
+	cpaKey := "%s.%s"
+	cpaStatusesMap := map[string]*status.CloudProviderAccessRole{}
+	for _, cpaStatus := range cpaStatuses {
+		if cpaStatus.IamAssumedRoleArn != "" {
+			cpaStatusesMap[fmt.Sprintf(cpaKey, cpaStatus.ProviderName, cpaStatus.IamAssumedRoleArn)] = cpaStatus
 		}
 	}
-	return nil
-}
 
-func checkStatuses(specs []v1.CloudProviderAccessRole, statuses []status.CloudProviderAccessRole) (map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, bool, bool) {
-	result := make(map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole)
-	existStatusWithEmptyARN := false
-	emptyRoleIsAssign := false
-	var emptyArnRoleStatus status.CloudProviderAccessRole
-	for _, spec := range specs {
-		isCreated := false
-		for _, existedStatus := range statuses {
-			if spec.ProviderName == existedStatus.ProviderName && spec.IamAssumedRoleArn == existedStatus.IamAssumedRoleArn {
-				isCreated = true
-				if _, ok := result[spec]; !ok {
-					result[spec] = existedStatus
-				} else {
-					return nil, true, false
-				}
-				break
-			}
-			if existedStatus.IsEmptyARN() {
-				existStatusWithEmptyARN = true
-				emptyArnRoleStatus = existedStatus
-			}
+	// find removals: configured roles matches that are not on spec
+	for _, atlasCPA := range atlasCPAs {
+		cpa := atlasCPA
+
+		if cpa.IAMAssumedRoleARN == "" {
+			continue
 		}
-		if !isCreated {
-			if emptyRoleIsAssign {
-				return nil, false, true
-			}
-			if existStatusWithEmptyARN {
-				emptyRoleIsAssign = true
-				if spec.IamAssumedRoleArn != "" {
-					emptyArnRoleStatus.Status = status.StatusCreated
-					emptyArnRoleStatus.IamAssumedRoleArn = spec.IamAssumedRoleArn
-					result[spec] = emptyArnRoleStatus
-				} else {
-					result[spec] = emptyArnRoleStatus
-				}
-			} else {
-				newStatus := status.NewCloudProviderAccessRole(spec.ProviderName, spec.IamAssumedRoleArn)
-				result[spec] = newStatus
-				statuses = append(statuses, newStatus)
-			}
+
+		if _, ok := cpaStatusesMap[fmt.Sprintf(cpaKey, cpa.ProviderName, cpa.IAMAssumedRoleARN)]; !ok {
+			deleteStatus := status.NewCloudProviderAccessRole(cpa.ProviderName, cpa.IAMAssumedRoleARN)
+			copyCloudProviderAccessData(&deleteStatus, &cpa)
+			deleteStatus.Status = status.CloudProviderAccessStatusDeAuthorize
+			cpaStatuses = append(cpaStatuses, &deleteStatus)
 		}
 	}
-	return result, false, false
+
+	for _, cpa := range noMatch {
+		deleteStatus := status.NewCloudProviderAccessRole(cpa.ProviderName, cpa.IAMAssumedRoleARN)
+		copyCloudProviderAccessData(&deleteStatus, cpa)
+		deleteStatus.Status = status.CloudProviderAccessStatusDeAuthorize
+		cpaStatuses = append(cpaStatuses, &deleteStatus)
+	}
+
+	return cpaStatuses
 }
 
-type accessRoleDiff struct {
-	toCreate []v1.CloudProviderAccessRole
-	toUpdate []mongodbatlas.CloudProviderAccessRole
-	toDelete map[string]string // roleId -> providerName
+func sortAtlasCPAsByRoleID(atlasCPAs []mongodbatlas.CloudProviderAccessRole) []mongodbatlas.CloudProviderAccessRole {
+	fmt.Println(atlasCPAs)
+	sort.Slice(atlasCPAs, func(i, j int) bool {
+		return atlasCPAs[i].RoleID < atlasCPAs[j].RoleID
+	})
+	fmt.Println(atlasCPAs)
+	return atlasCPAs
 }
 
-func sortAccessRoles(ctx context.Context, accessClient mongodbatlas.CloudProviderAccessService, logger *zap.SugaredLogger, expectedRoles map[v1.CloudProviderAccessRole]status.CloudProviderAccessRole, groupID string) (accessRoleDiff, error) {
-	roleList, _, err := accessClient.ListRoles(ctx, groupID)
+func isMatch(cpaSpec *status.CloudProviderAccessRole, atlasCPA *mongodbatlas.CloudProviderAccessRole) bool {
+	return atlasCPA.IAMAssumedRoleARN != "" && cpaSpec.IamAssumedRoleArn != "" &&
+		atlasCPA.ProviderName == cpaSpec.ProviderName &&
+		atlasCPA.IAMAssumedRoleARN == cpaSpec.IamAssumedRoleArn
+}
+
+func copyCloudProviderAccessData(cpaStatus *status.CloudProviderAccessRole, atlasCPA *mongodbatlas.CloudProviderAccessRole) {
+	cpaStatus.AtlasAWSAccountArn = atlasCPA.AtlasAWSAccountARN
+	cpaStatus.AtlasAssumedRoleExternalID = atlasCPA.AtlasAssumedRoleExternalID
+	cpaStatus.RoleID = atlasCPA.RoleID
+	cpaStatus.CreatedDate = atlasCPA.CreatedDate
+	cpaStatus.AuthorizedDate = atlasCPA.AuthorizedDate
+	cpaStatus.Status = status.CloudProviderAccessStatusCreated
+
+	if atlasCPA.AuthorizedDate != "" {
+		cpaStatus.Status = status.CloudProviderAccessStatusAuthorized
+	}
+
+	if len(atlasCPA.FeatureUsages) > 0 {
+		cpaStatus.FeatureUsages = make([]status.FeatureUsage, 0, len(atlasCPA.FeatureUsages))
+
+		for _, feature := range atlasCPA.FeatureUsages {
+			if feature == nil {
+				continue
+			}
+
+			id := ""
+
+			if feature.FeatureID != nil {
+				id = feature.FeatureID.(string)
+			}
+
+			cpaStatus.FeatureUsages = append(
+				cpaStatus.FeatureUsages,
+				status.FeatureUsage{
+					FeatureID:   id,
+					FeatureType: feature.FeatureType,
+				},
+			)
+		}
+	}
+}
+
+func createCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
+	cpa, _, err := workflowCtx.Client.CloudProviderAccess.CreateRole(
+		ctx,
+		projectID,
+		&mongodbatlas.CloudProviderAccessRoleRequest{
+			ProviderName: cpaStatus.ProviderName,
+		},
+	)
 	if err != nil {
-		logger.Error("failed to list access roles", zap.Error(err))
-		return accessRoleDiff{}, err
-	}
-	logger.Debugf("found %d access roles", len(roleList.AWSIAMRoles))
-	existedRoles := roleList.AWSIAMRoles
-	diff := accessRoleDiff{}
-	diff.toDelete = make(map[string]string)
-	for _, existedRole := range existedRoles {
-		toDelete := true
-		for _, status := range expectedRoles {
-			if status.RoleID == existedRole.RoleID {
-				toDelete = false
-				diff.toUpdate = append(diff.toUpdate, existedRole)
-				break
-			}
-		}
-		if toDelete {
-			diff.toDelete[existedRole.RoleID] = existedRole.ProviderName
-		}
+		workflowCtx.Log.Errorf("failed to start new cloud provider access: %s", err)
+		cpaStatus.Status = status.CloudProviderAccessStatusFailedToCreate
+		cpaStatus.ErrorMessage = err.Error()
+
+		return cpaStatus
 	}
 
-	for spec, existedStatus := range expectedRoles {
-		if existedStatus.RoleID == "" {
-			diff.toCreate = append(diff.toCreate, spec)
-		}
+	copyCloudProviderAccessData(cpaStatus, cpa)
+
+	return cpaStatus
+}
+
+func authorizeCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
+	cpa, _, err := workflowCtx.Client.CloudProviderAccess.AuthorizeRole(
+		ctx,
+		projectID,
+		cpaStatus.RoleID,
+		&mongodbatlas.CloudProviderAccessRoleRequest{
+			ProviderName:      cpaStatus.ProviderName,
+			IAMAssumedRoleARN: &cpaStatus.IamAssumedRoleArn,
+		},
+	)
+	if err != nil {
+		workflowCtx.Log.Errorf(fmt.Sprintf("failed to authorize cloud provider access: %s", err))
+		cpaStatus.Status = status.CloudProviderAccessStatusFailedToAuthorize
+		cpaStatus.ErrorMessage = err.Error()
+
+		return cpaStatus
 	}
-	return diff, nil
+
+	copyCloudProviderAccessData(cpaStatus, cpa)
+
+	return cpaStatus
+}
+
+func deleteCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) {
+	_, err := workflowCtx.Client.CloudProviderAccess.DeauthorizeRole(
+		ctx,
+		&mongodbatlas.CloudProviderDeauthorizationRequest{
+			ProviderName: cpaStatus.ProviderName,
+			GroupID:      projectID,
+			RoleID:       cpaStatus.RoleID,
+		},
+	)
+	if err != nil {
+		workflowCtx.Log.Errorf(fmt.Sprintf("failed to delete cloud provider access: %s", err))
+		cpaStatus.Status = status.CloudProviderAccessStatusFailedToDeAuthorize
+		cpaStatus.ErrorMessage = err.Error()
+	}
 }
 
 func canCloudProviderAccessReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
