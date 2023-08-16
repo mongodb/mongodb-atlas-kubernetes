@@ -3,17 +3,15 @@ package atlasproject
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
-
-	"go.uber.org/zap/zaptest"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap/zaptest"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
