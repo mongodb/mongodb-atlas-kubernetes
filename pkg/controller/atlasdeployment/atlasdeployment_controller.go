@@ -225,19 +225,19 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
 ) workflow.Result {
-	advancedDeployment := deployment
+	dply := deployment
 	if deployment.IsLegacyDeployment() {
-		advancedDeployment = deployment.DeepCopy()
-		if err := ConvertLegacyDeployment(&advancedDeployment.Spec); err != nil {
+		dply = deployment.DeepCopy()
+		if err := ConvertLegacyDeployment(&dply.Spec); err != nil {
 			result := workflow.Terminate(workflow.Internal, err.Error())
 			log.Errorw("failed to temporary convert legacy deployment", "error", err)
 			return result
 		}
-		advancedDeployment.Spec.DeploymentSpec = nil
+		dply.Spec.DeploymentSpec = nil
 	}
 
 	owner, err := customresource.IsOwner(
-		advancedDeployment,
+		dply,
 		r.ObjectDeletionProtection,
 		customresource.IsResourceManagedByOperator,
 		managedByAtlas(context, workflowCtx.Client, project.ID(), log),
@@ -288,11 +288,6 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 
 	if !deployment.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
-			if err := r.cleanupBindings(context, deployment); err != nil {
-				result := workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("failed to cleanup deployment bindings (backups)", "error", err)
-				return true, result
-			}
 			isProtected := customresource.IsResourceProtected(deployment, r.ObjectDeletionProtection)
 			if isProtected {
 				log.Info("Not removing Atlas deployment from Atlas as per configuration")
@@ -318,12 +313,6 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 		return true, prevResult
 	}
 	return false, workflow.OK()
-}
-
-func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment *mdbv1.AtlasDeployment) error {
-	r.Log.Debug("Cleaning up deployment bindings (backup)")
-
-	return r.garbageCollectBackupResource(context, deployment.GetDeploymentName())
 }
 
 func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, deploymentType string) {

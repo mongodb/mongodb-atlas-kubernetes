@@ -18,7 +18,6 @@ package atlasdeployment
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"regexp"
 	"testing"
@@ -32,18 +31,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 const (
@@ -416,143 +411,6 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 	}
 }
 
-func TestCleanupBindings(t *testing.T) {
-	t.Run("without backup references, nothing happens on cleanup", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		d := &v1.AtlasDeployment{} // dummy deployment
-
-		// test cleanup
-		assert.NoError(t, r.cleanupBindings(context.Background(), d))
-	})
-
-	t.Run("with unreferenced backups, still nothing happens on cleanup", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		dn := testDeploymentName("") // deployment, schedule, policy (NOT connected)
-		deployment := &v1.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
-		}
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		policy := testBackupPolicy()
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-
-		// test cleanup
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &v1.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.Equal(t, []string{customresource.FinalizerLabel}, endPolicy.Finalizers)
-		endSchedule := &v1.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.Equal(t, []string{customresource.FinalizerLabel}, endSchedule.Finalizers)
-	})
-
-	t.Run("last deployment's referenced backups finalizers are cleaned up", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		policy := testBackupPolicy() // deployment -> schedule -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		schedule.Status.DeploymentIDs = []string{deployment.Spec.AdvancedDeploymentSpec.Name}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-
-		// test ensureBackupPolicy and cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &v1.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.Empty(t, endPolicy.Finalizers, "policy should end up with no finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
-	})
-
-	t.Run("referenced backups finalizers are NOT cleaned up if reachable by other deployment", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		policy := testBackupPolicy() // deployment + deployment2 -> schedule -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		deployment2 := testDeployment("2", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment2))
-		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.AdvancedDeploymentSpec.Name,
-			deployment2.Spec.AdvancedDeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-
-		// test cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &v1.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
-		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
-		assert.NotEmpty(t, endSchedule.Finalizers, "schedule should keep the finalizer")
-	})
-
-	t.Run("policy finalizer stays if still referenced", func(t *testing.T) {
-		r := &AtlasDeploymentReconciler{
-			Log:    testLog(t),
-			Client: testK8sClient(),
-		}
-		policy := testBackupPolicy() // deployment -> schedule + schedule2 -> policy
-		require.NoError(t, r.Client.Create(context.Background(), policy))
-		schedule := testBackupSchedule("", policy)
-		schedule2 := testBackupSchedule("2", policy)
-		deployment := testDeployment("", schedule)
-		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		deployment2 := testDeployment("2", schedule2)
-		require.NoError(t, r.Client.Create(context.Background(), deployment2))
-		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.AdvancedDeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule))
-		schedule2.Status.DeploymentIDs = []string{
-			deployment2.Spec.AdvancedDeploymentSpec.Name,
-		}
-		require.NoError(t, r.Client.Create(context.Background(), schedule2))
-		policy.Status.BackupScheduleIDs = []string{
-			fmt.Sprintf("%s/%s", schedule.Namespace, schedule.Name),
-			fmt.Sprintf("%s/%s", schedule2.Namespace, schedule2.Name),
-		}
-
-		// test cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
-		require.NoError(t, err)
-		_, err = r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule2, &[]watch.WatchedObject{})
-		require.NoError(t, err)
-		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
-
-		endPolicy := &v1.AtlasBackupPolicy{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(policy.Namespace, policy.Name), endPolicy))
-		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
-		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(schedule.Namespace, schedule.Name), endSchedule))
-		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
-	})
-}
-
 func differentAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
 	project := testProject(ns)
 	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
@@ -619,11 +477,8 @@ func newTestDeploymentEnv(t *testing.T,
 
 func testK8sClient() client.Client {
 	sch := runtime.NewScheme()
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDeployment{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupSchedule{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupScheduleList{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupPolicy{})
 	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
+	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDeployment{})
 	return fake.NewClientBuilder().WithScheme(sch).Build()
 }
 
@@ -679,60 +534,4 @@ func intoServerlessAtlasCluster(serverlessSpec *v1.ServerlessSpec) *mongodbatlas
 		log.Fatalf("failed to convert serverless deployment to atlas: %v", err)
 	}
 	return ac
-}
-
-func testDeploymentName(suffix string) types.NamespacedName {
-	return types.NamespacedName{
-		Name:      fmt.Sprintf("test-deployment%s", suffix),
-		Namespace: "test-namespace",
-	}
-}
-
-func testDeployment(suffix string, schedule *v1.AtlasBackupSchedule) *v1.AtlasDeployment {
-	dn := testDeploymentName(suffix)
-	return &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
-		Spec: v1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
-				Name: fmt.Sprintf("atlas-%s", dn.Name),
-			},
-			BackupScheduleRef: common.ResourceRefNamespaced{
-				Name:      schedule.Name,
-				Namespace: schedule.Namespace,
-			},
-		},
-	}
-}
-
-func testBackupSchedule(suffix string, policy *v1.AtlasBackupPolicy) *v1.AtlasBackupSchedule {
-	return &v1.AtlasBackupSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
-		Spec: v1.AtlasBackupScheduleSpec{
-			PolicyRef: common.ResourceRefNamespaced{Name: policy.Name, Namespace: policy.Namespace},
-		},
-	}
-}
-
-func testBackupPolicy() *v1.AtlasBackupPolicy {
-	return &v1.AtlasBackupPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-backup-policy",
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
-		Spec: v1.AtlasBackupPolicySpec{
-			Items: []v1.AtlasBackupPolicyItem{
-				{
-					FrequencyType:     "weekly",
-					FrequencyInterval: 1,
-					RetentionUnit:     "days",
-					RetentionValue:    7,
-				},
-			},
-		},
-	}
 }
