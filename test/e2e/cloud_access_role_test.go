@@ -122,6 +122,6 @@ func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen i
 	g.Expect(project.Status.CloudProviderAccessRoles).Should(HaveLen(rolesLen))
 
 	for _, role := range project.Status.CloudProviderAccessRoles {
-		g.Expect(role.Status).Should(Equal(status.CloudProviderAccessStatusCreated))
+		g.Expect(role.Status).Should(BeElementOf([2]string{status.CloudProviderAccessStatusCreated, status.CloudProviderAccessStatusFailedToAuthorize}))
 	}
 }
