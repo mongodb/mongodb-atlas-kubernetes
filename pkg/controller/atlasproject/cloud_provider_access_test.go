@@ -3,6 +3,7 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"go.uber.org/zap/zaptest"
@@ -11,7 +12,6 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
-	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
@@ -57,8 +57,8 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 		result, err := syncCloudProviderAccess(context.TODO(), workflowCtx, "projectID", []mdbv1.CloudProviderAccessRole{})
-		require.EqualError(t, err, "unable to fetch cloud provider access from Atlas: service unavailable")
-		require.False(t, result)
+		assert.EqualError(t, err, "unable to fetch cloud provider access from Atlas: service unavailable")
+		assert.False(t, result)
 	})
 
 	t.Run("should synchronize all operations without reach ready status", func(t *testing.T) {
@@ -134,8 +134,8 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 		}
 
 		result, err := syncCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpas)
-		require.NoError(t, err)
-		require.False(t, result)
+		assert.NoError(t, err)
+		assert.False(t, result)
 	})
 
 	t.Run("should synchronize all operations and reach ready status", func(t *testing.T) {
@@ -188,8 +188,8 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 		}
 
 		result, err := syncCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpas)
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should synchronize operations with errors", func(t *testing.T) {
@@ -240,8 +240,8 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 		}
 
 		result, err := syncCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpas)
-		require.EqualError(t, err, "not all items were synchronized successfully")
-		require.False(t, result)
+		assert.EqualError(t, err, "not all items were synchronized successfully")
+		assert.False(t, result)
 	})
 }
 
@@ -268,7 +268,7 @@ func TestInitiateStatus(t *testing.T) {
 			},
 		}
 
-		require.Equal(t, expected, initiateStatuses(spec))
+		assert.Equal(t, expected, initiateStatuses(spec))
 	})
 }
 
@@ -296,7 +296,7 @@ func TestEnrichStatuses(t *testing.T) {
 				Status:       status.CloudProviderAccessStatusNew,
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, []mongodbatlas.CloudProviderAccessRole{}))
+		assert.Equal(t, expected, enrichStatuses(statuses, []mongodbatlas.CloudProviderAccessRole{}))
 	})
 
 	t.Run("one new and one authorized statuses", func(t *testing.T) {
@@ -339,7 +339,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-1",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("one new, one created and one authorized statuses", func(t *testing.T) {
@@ -405,7 +405,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-2",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("one new, one created, one authorized, and one authorized to remove statuses", func(t *testing.T) {
@@ -491,7 +491,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-2",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("one created with empty ARN, one created, and one authorized statuses", func(t *testing.T) {
@@ -569,7 +569,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-2",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("one created with empty ARN, one created, one authorized, and one to be removed statuses", func(t *testing.T) {
@@ -663,7 +663,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-4",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("match two status with empty ARN and two existing on Atlas", func(t *testing.T) {
@@ -711,7 +711,7 @@ func TestEnrichStatuses(t *testing.T) {
 				RoleID:                     "role-2",
 			},
 		}
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 
 	t.Run("match two status with empty ARN and update them with ARN", func(t *testing.T) {
@@ -764,7 +764,7 @@ func TestEnrichStatuses(t *testing.T) {
 			},
 		}
 
-		require.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
+		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
 	})
 }
 
@@ -802,7 +802,7 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 
-		require.Equal(t, expected, createCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
+		assert.Equal(t, expected, createCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
 	})
 
 	t.Run("should fail to create cloud provider access", func(t *testing.T) {
@@ -829,7 +829,7 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 
-		require.Equal(t, expected, createCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
+		assert.Equal(t, expected, createCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
 	})
 }
 
@@ -873,7 +873,7 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 
-		require.Equal(t, expected, authorizeCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
+		assert.Equal(t, expected, authorizeCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
 	})
 
 	t.Run("should fail to authorize cloud provider access", func(t *testing.T) {
@@ -908,7 +908,7 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 
-		require.Equal(t, expected, authorizeCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
+		assert.Equal(t, expected, authorizeCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa))
 	})
 }
 
@@ -937,7 +937,7 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 		}
 
 		deleteCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa)
-		require.Empty(t, cpa.ErrorMessage)
+		assert.Empty(t, cpa.ErrorMessage)
 	})
 
 	t.Run("should fail to delete cloud provider access", func(t *testing.T) {
@@ -963,23 +963,23 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 		}
 
 		deleteCloudProviderAccess(context.TODO(), workflowCtx, "projectID", cpa)
-		require.Equal(t, "service unavailable", cpa.ErrorMessage)
+		assert.Equal(t, "service unavailable", cpa.ErrorMessage)
 	})
 }
 
 func TestCanCloudProviderAccessReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		result, err := canCloudProviderAccessReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
-		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
-		require.False(t, result)
+		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
+		assert.False(t, result)
 	})
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
@@ -994,8 +994,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.EqualError(t, err, "failed to retrieve data")
-		require.False(t, result)
+		assert.EqualError(t, err, "failed to retrieve data")
+		assert.False(t, result)
 	})
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
@@ -1012,8 +1012,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
@@ -1044,8 +1044,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
@@ -1084,8 +1084,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should return true when access was created but not authorized yet", func(t *testing.T) {
@@ -1115,8 +1115,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.NoError(t, err)
-		require.True(t, result)
+		assert.NoError(t, err)
+		assert.True(t, result)
 	})
 
 	t.Run("should return false when unable to reconcile Cloud Provider Access", func(t *testing.T) {
@@ -1155,8 +1155,8 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		result, err := canCloudProviderAccessReconcile(context.TODO(), atlasClient, true, akoProject)
 
-		require.NoError(t, err)
-		require.False(t, result)
+		assert.NoError(t, err)
+		assert.False(t, result)
 	})
 }
 
@@ -1176,7 +1176,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 		}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, true)
 
-		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
+		assert.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
@@ -1218,7 +1218,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 		}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, true)
 
-		require.Equal(
+		assert.Equal(
 			t,
 			workflow.Terminate(
 				workflow.AtlasDeletionProtection,
@@ -1232,7 +1232,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		workflowCtx := &workflow.Context{}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, false)
-		require.Equal(
+		assert.Equal(
 			t,
 			workflow.OK(),
 			result,
@@ -1265,7 +1265,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, false)
-		require.Equal(
+		assert.Equal(
 			t,
 			workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "unable to fetch cloud provider access from Atlas: failed to retrieve data"),
 			result,
@@ -1348,7 +1348,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, false)
-		require.Equal(
+		assert.Equal(
 			t,
 			workflow.InProgress(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "not all entries are authorized"),
 			result,
@@ -1408,7 +1408,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client: atlasClient,
 		}
 		result := ensureProviderAccessStatus(context.TODO(), workflowCtx, akoProject, false)
-		require.Equal(
+		assert.Equal(
 			t,
 			workflow.OK(),
 			result,
