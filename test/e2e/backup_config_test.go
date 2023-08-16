@@ -31,7 +31,7 @@ const (
 	bucketName            = "cloud-backup-snapshot"
 )
 
-var _ = Describe("Deployment Backup Configuration", Label("backup-config"), func() {
+var _ = FDescribe("Deployment Backup Configuration", Label("backup-config"), func() {
 	var testData *model.TestDataProvider
 
 	AfterEach(func() {

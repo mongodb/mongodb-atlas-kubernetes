@@ -18,7 +18,7 @@ import (
 
 const awsRoleNameBase = "atlas-operator-test-aws-role"
 
-var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
+var _ = FDescribe("UserLogin", Label("cloud-access-role"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -97,13 +97,16 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 	})
 
 	By("Establish connection between Atlas and cloud roles", func() {
-		Eventually(func(g Gomega) bool {
-			return EnsureAllRolesCreated(g, *userData, len(roles))
-		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(BeTrue(), "Cloud access roles are not created")
+		Eventually(func(g Gomega) {
+			EnsureAllRolesCreated(g, *userData, len(roles))
+		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Succeed(), "Cloud access roles are not created")
+
 		project := &v1.AtlasProject{}
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
+
 		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
 		Expect(err).ShouldNot(HaveOccurred())
+
 		actions.WaitForConditionsToBecomeTrue(userData, status.CloudProviderAccessReadyType, status.ReadyType)
 	})
 
@@ -113,17 +116,12 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 	})
 }
 
-func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen int) bool {
+func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen int) {
 	project := &v1.AtlasProject{}
 	g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, project)).Should(Succeed())
+	g.Expect(project.Status.CloudProviderAccessRoles).Should(HaveLen(rolesLen))
 
-	if len(project.Status.CloudProviderAccessRoles) != rolesLen {
-		return false
-	}
 	for _, role := range project.Status.CloudProviderAccessRoles {
-		if role.Status != status.StatusCreated {
-			return false
-		}
+		g.Expect(role.Status).Should(Equal(status.CloudProviderAccessStatusCreated))
 	}
-	return true
 }

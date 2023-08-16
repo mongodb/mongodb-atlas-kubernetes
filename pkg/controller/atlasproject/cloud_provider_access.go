@@ -193,11 +193,10 @@ func enrichStatuses(cpaStatuses []*status.CloudProviderAccessRole, atlasCPAs []m
 }
 
 func sortAtlasCPAsByRoleID(atlasCPAs []mongodbatlas.CloudProviderAccessRole) []mongodbatlas.CloudProviderAccessRole {
-	fmt.Println(atlasCPAs)
 	sort.Slice(atlasCPAs, func(i, j int) bool {
 		return atlasCPAs[i].RoleID < atlasCPAs[j].RoleID
 	})
-	fmt.Println(atlasCPAs)
+
 	return atlasCPAs
 }
 
