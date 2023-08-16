@@ -3,7 +3,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes
 go 1.20
 
 require (
-	cloud.google.com/go/kms v1.15.0
+	cloud.google.com/go/kms v1.15.1
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
