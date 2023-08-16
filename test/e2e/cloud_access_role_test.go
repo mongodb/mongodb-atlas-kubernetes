@@ -18,7 +18,7 @@ import (
 
 const awsRoleNameBase = "atlas-operator-test-aws-role"
 
-var _ = FDescribe("UserLogin", Label("cloud-access-role"), func() {
+var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
