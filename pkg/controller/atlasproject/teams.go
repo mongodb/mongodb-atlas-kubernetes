@@ -2,6 +2,16 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -25,10 +35,28 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canAssignedTeamsReconcile(ctx, workflowCtx.Client, r.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
+
+		return result
+	}
+
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 	defer func() {
-		ctx.AddResourcesToWatch(resourcesToWatch...)
+		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
 	}()
 
@@ -37,7 +65,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 		assignedTeam := entry
 
 		if assignedTeam.TeamRef.Name == "" {
-			ctx.Log.Warnf("missing team name. skiping assignement for entry %v", assignedTeam)
+			workflowCtx.Log.Warnf("missing team name. skiping assignement for entry %v", assignedTeam)
 
 			continue
 		}
@@ -47,13 +75,13 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 		}
 
 		team := &v1.AtlasTeam{}
-		teamReconciler := r.teamReconcile(team, ctx.Connection)
+		teamReconciler := r.teamReconcile(team, workflowCtx.Connection)
 		_, err := teamReconciler(
 			context.Background(),
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
 		)
 		if err != nil {
-			ctx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(""), err.Error())
+			workflowCtx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(""), err.Error())
 			continue
 		}
 
@@ -65,17 +93,17 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx *workflow.Context, proj
 		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
 
-	err := r.syncAssignedTeams(ctx, projectID, project, teamsToAssign)
+	err = r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
 	if err != nil {
-		ctx.SetConditionFalse(status.ProjectTeamsReadyType)
+		workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
 		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
 	}
 
-	ctx.SetConditionTrue(status.ProjectTeamsReadyType)
+	workflowCtx.SetConditionTrue(status.ProjectTeamsReadyType)
 
 	if len(project.Spec.Teams) == 0 {
-		ctx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(nil))
-		ctx.UnsetCondition(status.ProjectTeamsReadyType)
+		workflowCtx.EnsureStatusOption(status.AtlasProjectSetTeamsOption(nil))
+		workflowCtx.UnsetCondition(status.ProjectTeamsReadyType)
 	}
 
 	return workflow.OK()
@@ -242,4 +270,86 @@ func hasTeamRolesChanged(current []string, desired []v1.TeamRole) bool {
 	}
 
 	return len(desiredMap) != 0
+}
+
+type assignedTeamInfo struct {
+	ID    string
+	Roles []string
+}
+
+func canAssignedTeamsReconcile(ctx context.Context, atlasClient mongodbatlas.Client, k8sClient client.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	atlasAssignedTeams, _, err := atlasClient.Projects.GetProjectTeamsAssigned(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if atlasAssignedTeams == nil || atlasAssignedTeams.TotalCount == 0 {
+		return true, nil
+	}
+
+	atlasAssignedTeamsInfo := make([]assignedTeamInfo, 0, atlasAssignedTeams.TotalCount)
+	for _, atlasAssignedTeam := range atlasAssignedTeams.Results {
+		if atlasAssignedTeam != nil {
+			atlasAssignedTeamsInfo = append(
+				atlasAssignedTeamsInfo,
+				assignedTeamInfo{
+					ID:    atlasAssignedTeam.TeamID,
+					Roles: atlasAssignedTeam.RoleNames,
+				},
+			)
+		}
+	}
+
+	lastAssignedTeamsInfo, err := collectTeams(ctx, k8sClient, latestConfig, akoProject.Namespace)
+	if err != nil {
+		return false, err
+	}
+
+	if cmp.Diff(atlasAssignedTeamsInfo, lastAssignedTeamsInfo, cmpopts.EquateEmpty()) == "" {
+		return true, nil
+	}
+
+	currentAssignedTeamsInfo, err := collectTeams(ctx, k8sClient, &akoProject.Spec, akoProject.Namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return cmp.Diff(atlasAssignedTeamsInfo, currentAssignedTeamsInfo, cmpopts.EquateEmpty()) == "", nil
+}
+
+func collectTeams(ctx context.Context, k8sClient client.Client, projectSpec *v1.AtlasProjectSpec, projectNamespace string) ([]assignedTeamInfo, error) {
+	teams := make([]assignedTeamInfo, 0, len(projectSpec.Teams))
+
+	for _, assignedTeam := range projectSpec.Teams {
+		team := &v1.AtlasTeam{}
+		err := k8sClient.Get(ctx, *assignedTeam.TeamRef.GetObject(projectNamespace), team)
+		if err != nil {
+			if !apiErrors.IsNotFound(err) {
+				return nil, err
+			}
+		}
+
+		info := assignedTeamInfo{
+			ID: team.Status.ID,
+		}
+		for _, role := range assignedTeam.Roles {
+			info.Roles = append(info.Roles, string(role))
+		}
+
+		teams = append(teams, info)
+	}
+
+	return teams, nil
 }

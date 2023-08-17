@@ -334,7 +334,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = r.ensureAssignedTeams(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)

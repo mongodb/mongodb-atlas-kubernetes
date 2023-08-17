@@ -18,7 +18,8 @@ import (
 )
 
 type projectClient struct {
-	GetProjectSettingsFunc func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error)
+	GetProjectSettingsFunc      func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error)
+	GetProjectTeamsAssignedFunc func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error)
 }
 
 func (c *projectClient) GetAllProjects(_ context.Context, _ *mongodbatlas.ListOptions) (*mongodbatlas.Projects, *mongodbatlas.Response, error) {
@@ -45,8 +46,8 @@ func (c *projectClient) Delete(_ context.Context, _ string) (*mongodbatlas.Respo
 	return nil, nil
 }
 
-func (c *projectClient) GetProjectTeamsAssigned(_ context.Context, _ string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-	return nil, nil, nil
+func (c *projectClient) GetProjectTeamsAssigned(_ context.Context, projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
+	return c.GetProjectTeamsAssignedFunc(projectID)
 }
 
 func (c *projectClient) AddTeamsToProject(_ context.Context, _ string, _ []*mongodbatlas.ProjectTeam) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {

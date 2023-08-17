@@ -36,7 +36,9 @@ import (
 var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
-	var projectID, networkPeerID, awsRoleARN, awsAccountID, AwsVpcID, customerMasterKeyID, atlasAccountARN, atlasRoleID string
+	var projectID, networkPeerID, atlasAccountARN, atlasRoleID, teamID string
+	var awsRoleARN, awsAccountID, AwsVpcID, customerMasterKeyID string
+	var usernames []string
 	ctx := context.Background()
 
 	BeforeEach(func() {
@@ -267,7 +269,55 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		By("Adding Assign team to the project", func() {
+			users, _, err := atlasClient.Client.AtlasUsers.List(ctx, os.Getenv("MCLI_ORG_ID"), &mongodbatlas.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(users).ToNot(BeEmpty())
+
+			usernames = make([]string, 0, len(users))
+			for _, user := range users {
+				usernames = append(usernames, user.Username)
+			}
+
+			team := &mongodbatlas.Team{
+				Name:      fmt.Sprintf("%s-team", projectName),
+				Usernames: usernames,
+			}
+
+			team, _, err = atlasClient.Client.Teams.Create(ctx, os.Getenv("MCLI_ORG_ID"), team)
+			Expect(err).ToNot(HaveOccurred())
+			teamID = team.ID
+
+			_, _, err = atlasClient.Client.Projects.AddTeamsToProject(
+				ctx,
+				projectID,
+				[]*mongodbatlas.ProjectTeam{
+					{
+						TeamID:    team.ID,
+						RoleNames: []string{"GROUP_OWNER"},
+					},
+				},
+			)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		By("Creating a project to be managed by the operator", func() {
+			akoTeam := &mdbv1.AtlasTeam{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("%s-team", projectName),
+					Namespace: testData.Resources.Namespace,
+				},
+				Spec: mdbv1.TeamSpec{
+					Name:      fmt.Sprintf("%s-team", projectName),
+					Usernames: make([]mdbv1.TeamUser, 0, len(usernames)),
+				},
+			}
+			for _, username := range usernames {
+				akoTeam.Spec.Usernames = append(akoTeam.Spec.Usernames, mdbv1.TeamUser(username))
+			}
+			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
+			Expect(testData.K8SClient.Create(ctx, testData.Teams[0]))
+
 			akoProject := &mdbv1.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      projectName,
@@ -348,6 +398,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 							},
 						},
 					},
+					Teams: []mdbv1.Team{
+						{
+							TeamRef: common.ResourceRefNamespaced{},
+							Roles:   []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+						},
+					},
 				},
 			}
 			testData.Project = akoProject
@@ -389,6 +445,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -431,6 +490,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -486,6 +548,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -531,6 +596,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -579,6 +647,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -613,6 +684,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -645,6 +719,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -675,6 +752,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -703,6 +783,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -719,6 +802,35 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				expectedConditions := testutil.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.TrueCondition(status.AuditingReadyType),
+					status.TrueCondition(status.ProjectSettingsReadyType),
+					status.TrueCondition(status.EncryptionAtRestReadyType),
+					status.TrueCondition(status.ProjectCustomRolesReadyType),
+					status.FalseCondition(status.ProjectTeamsReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+				)
+
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Assigned Teams is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.Teams[0].Roles[0] = "GROUP_OWNER"
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				expectedConditions := testutil.MatchConditions(
+					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
 					status.TrueCondition(status.CloudProviderAccessReadyType),
@@ -729,6 +841,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectSettingsReadyType),
 					status.TrueCondition(status.EncryptionAtRestReadyType),
 					status.TrueCondition(status.ProjectCustomRolesReadyType),
+					status.FalseCondition(status.ProjectTeamsReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -739,11 +852,25 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 	AfterEach(func() {
 		By("Deleting project from the operator", func() {
+			Expect(testData.K8SClient.Delete(ctx, testData.Teams[0])).To(Succeed())
 			Expect(testData.K8SClient.Delete(ctx, testData.Project)).To(Succeed())
+			time.Sleep(time.Second * 30)
 		})
 
 		By("Stopping the operator", func() {
 			managerStop()
+		})
+
+		By("Deleting Team", func() {
+			if teamID != "" {
+				_, err := atlasClient.Client.Teams.RemoveTeamFromOrganization(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
+				Expect(err).ToNot(HaveOccurred())
+
+				Eventually(func(g Gomega) {
+					_, _, err := atlasClient.Client.Teams.Get(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
+					g.Expect(err).To(HaveOccurred())
+				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
+			}
 		})
 
 		By("Deleting Network Peering", func() {
