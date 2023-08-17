@@ -2,7 +2,7 @@ name: Test Forked
 
 on:
   pull_request_target:
-    types: [labeled, opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [labeled]
     paths-ignore:
       - 'docs/**'
 
@@ -29,9 +29,7 @@ jobs:
       - lint
       - unit-tests
       - paths-filter
-    if: |
-      github.event.pull_request.draft == false &&
-      needs.paths-filter.outputs.production-code-changed == 'true'
+    if: needs.paths-filter.outputs.production-code-changed == 'true'
     uses: ./.github/workflows/cloud-tests-forked.yml
     secrets: inherit
     with:
