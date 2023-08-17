@@ -33,7 +33,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
 	var projectID, networkPeerID, awsRoleARN, awsAccountID, AwsVpcID, customerMasterKeyID, atlasAccountARN, atlasRoleID string
@@ -213,7 +213,7 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Adding Settings to the Project", func() {
+		By("Adding Settings to the project", func() {
 			_, _, err := atlasClient.Client.Projects.UpdateProjectSettings(ctx, projectID, &mongodbatlas.ProjectSettings{
 				IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
 				IsDataExplorerEnabled:                       toptr.MakePtr(true),
@@ -225,7 +225,7 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Adding AWS Encryption At Rest", func() {
+		By("Adding AWS Encryption At Rest to the project", func() {
 			awsAction, err := cloud.NewAWSAction(GinkgoT())
 			Expect(err).ToNot(HaveOccurred())
 			customerMasterKeyID, err = awsAction.CreateKMS(config.AWSRegionUS, atlasAccountARN, awsRoleARN)
@@ -240,6 +240,30 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					RoleID:              atlasRoleID,
 				},
 			})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Adding Custom Roles to the project", func() {
+			_, _, err := atlasClient.Client.CustomDBRoles.Create(
+				ctx,
+				projectID,
+				&mongodbatlas.CustomDBRole{
+					RoleName:       "testRole",
+					InheritedRoles: nil,
+					Actions: []mongodbatlas.Action{
+						{
+							Action: "INSERT",
+							Resources: []mongodbatlas.Resource{
+								{
+									Cluster:    toptr.MakePtr(false),
+									DB:         toptr.MakePtr("testDB"),
+									Collection: toptr.MakePtr("testCollection"),
+								},
+							},
+						},
+					},
+				},
+			)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -306,6 +330,24 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 							RoleID:              atlasRoleID,
 						},
 					},
+					CustomRoles: []mdbv1.CustomRole{
+						{
+							Name:           "testRole",
+							InheritedRoles: nil,
+							Actions: []mdbv1.Action{
+								{
+									Name: "INSERT",
+									Resources: []mdbv1.Resource{
+										{
+											Cluster:    toptr.MakePtr(false),
+											Database:   toptr.MakePtr("testD"),
+											Collection: toptr.MakePtr("testCollection"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			}
 			testData.Project = akoProject
@@ -344,6 +386,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -383,6 +428,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -435,6 +483,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -477,6 +528,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -522,6 +576,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -553,6 +610,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -582,6 +642,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -609,6 +672,9 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.FalseCondition(status.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -625,6 +691,34 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 				expectedConditions := testutil.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.TrueCondition(status.AuditingReadyType),
+					status.TrueCondition(status.ProjectSettingsReadyType),
+					status.TrueCondition(status.EncryptionAtRestReadyType),
+					status.FalseCondition(status.ProjectCustomRolesReadyType).
+						WithReason(string(workflow.AtlasDeletionProtection)).
+						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+				)
+
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Custom Roles is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			testData.Project.Spec.CustomRoles[0].Actions[0].Resources[0].Database = toptr.MakePtr("testDB")
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				expectedConditions := testutil.MatchConditions(
+					status.TrueCondition(status.ValidationSucceeded),
+					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
 					status.TrueCondition(status.CloudProviderAccessReadyType),
@@ -634,6 +728,7 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 					status.TrueCondition(status.AuditingReadyType),
 					status.TrueCondition(status.ProjectSettingsReadyType),
 					status.TrueCondition(status.EncryptionAtRestReadyType),
+					status.TrueCondition(status.ProjectCustomRolesReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
