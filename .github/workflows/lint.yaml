@@ -3,12 +3,12 @@
 name: Lint
 
 on:
-  pull_request:
-    branches:
-      - '**'
-    paths-ignore:
-      - 'docs/**'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   lint:

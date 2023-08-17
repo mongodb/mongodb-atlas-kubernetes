@@ -1,17 +1,12 @@
 name: Integration tests non-forked
 
 on:
-  push:
-    branches:
-      - 'main'
-    paths-ignore:
-      - 'docs/**'
-  pull_request:
-    branches:
-      - '**'
-    paths-ignore:
-      - 'docs/**'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: int-test-${{ github.head_ref || github.ref_name }}
