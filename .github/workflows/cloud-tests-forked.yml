@@ -9,7 +9,7 @@ on:
           default: false
 
 concurrency:
-    group: cloud-tests-forked
+    group: cloud-tests-forked-${{ github.actor || github.triggering_actor }}
     cancel-in-progress: true
 
 jobs:
