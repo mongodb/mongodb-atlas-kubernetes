@@ -301,7 +301,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
 				g.Expect(testData.Project.Status.CloudProviderAccessRoles).ToNot(HaveLen(0))
-				g.Expect(testData.Project.Status.CloudProviderAccessRoles[0].Status).To(Equal("CREATED"))
+				g.Expect(testData.Project.Status.CloudProviderAccessRoles[0].Status).To(Equal("AUTHORIZED"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Expect(

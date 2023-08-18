@@ -81,7 +81,7 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 
 			g.Expect(testData.Project.Status.CloudProviderAccessRoles).ShouldNot(BeEmpty())
 
-			return testData.Project.Status.CloudProviderAccessRoles[0].Status == status.StatusEmptyARN
+			return testData.Project.Status.CloudProviderAccessRoles[0].Status == status.CloudProviderAccessStatusCreated
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 
 		roleArn, err := testData.AWSResourcesGenerator.CreateIAMRole(atlasIAMRoleName, func() helper.IAMPolicy {

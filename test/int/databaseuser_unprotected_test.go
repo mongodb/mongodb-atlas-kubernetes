@@ -808,6 +808,9 @@ func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.Da
 	if user.X509Type == "" {
 		user.X509Type = "NONE"
 	}
+	if user.OIDCAuthType == "" {
+		user.OIDCAuthType = "NONE"
+	}
 	if user.DeleteAfterDate != "" {
 		user.DeleteAfterDate = timeutil.FormatISO8601(timeutil.MustParseISO8601(user.DeleteAfterDate))
 	}
