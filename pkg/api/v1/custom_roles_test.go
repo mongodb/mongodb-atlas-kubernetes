@@ -56,7 +56,6 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Name: "testName3",
 						Resources: []Resource{
 							{
-								Cluster:    toptr.MakePtr(false),
 								Database:   toptr.MakePtr(""),
 								Collection: toptr.MakePtr(""),
 							},
