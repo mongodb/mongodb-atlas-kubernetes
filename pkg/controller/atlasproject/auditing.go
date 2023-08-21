@@ -90,6 +90,13 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 		specAsAtlas = spec.ToAtlas()
 	}
 
+	if isAuditingEmpty(atlas) {
+		atlas = &mongodbatlas.Auditing{
+			AuditAuthorizationSuccess: toptr.MakePtr(false),
+			Enabled:                   toptr.MakePtr(false),
+		}
+	}
+
 	removeConfigurationType(atlas)
 
 	return reflect.DeepEqual(atlas, specAsAtlas)
