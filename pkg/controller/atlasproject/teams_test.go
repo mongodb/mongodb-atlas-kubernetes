@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/zap/zaptest"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
@@ -233,10 +235,14 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
 			Client: atlasClient,
+			Log:    logger,
 		}
-		reconciler := &AtlasProjectReconciler{}
+		reconciler := &AtlasProjectReconciler{
+			Log: logger,
+		}
 		result := reconciler.ensureAssignedTeams(context.TODO(), workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
@@ -299,11 +305,14 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
+		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
 			Client: atlasClient,
+			Log:    logger,
 		}
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
+			Log:    logger,
 		}
 		result := reconciler.ensureAssignedTeams(context.TODO(), workflowCtx, akoProject, true)
 

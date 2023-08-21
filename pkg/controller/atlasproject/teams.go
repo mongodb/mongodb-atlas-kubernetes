@@ -5,28 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
-	controllerruntime "sigs.k8s.io/controller-runtime"
-
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
 )
 
 type TeamDataContainer struct {
@@ -36,24 +32,6 @@ type TeamDataContainer struct {
 }
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canAssignedTeamsReconcile(ctx, workflowCtx.Client, r.Client, protected, project)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
-
-		return result
-	}
-
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
@@ -91,6 +69,24 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workfl
 		)
 
 		teamsToAssign[team.Status.ID] = &assignedTeam
+	}
+
+	canReconcile, err := canAssignedTeamsReconcile(ctx, workflowCtx.Client, r.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
+
+		return result
 	}
 
 	err = r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
