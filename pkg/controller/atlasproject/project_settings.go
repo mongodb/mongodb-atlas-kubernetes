@@ -147,16 +147,20 @@ func canProjectSettingsReconcile(ctx context.Context, atlasClient mongodbatlas.C
 }
 
 func areSettingsEqual(operator *v1.ProjectSettings, atlas *mongodbatlas.ProjectSettings) bool {
-	if (operator == nil) != (atlas == nil) {
-		return false
+	if operator == nil && atlas == nil {
+		return true
+	}
+
+	if operator == nil {
+		operator = &v1.ProjectSettings{}
 	}
 
 	if operator.IsCollectDatabaseSpecificsStatisticsEnabled == nil {
-		operator.IsCollectDatabaseSpecificsStatisticsEnabled = toptr.MakePtr(false)
+		operator.IsCollectDatabaseSpecificsStatisticsEnabled = toptr.MakePtr(true)
 	}
 
 	if operator.IsDataExplorerEnabled == nil {
-		operator.IsDataExplorerEnabled = toptr.MakePtr(false)
+		operator.IsDataExplorerEnabled = toptr.MakePtr(true)
 	}
 
 	if operator.IsExtendedStorageSizesEnabled == nil {
@@ -164,15 +168,15 @@ func areSettingsEqual(operator *v1.ProjectSettings, atlas *mongodbatlas.ProjectS
 	}
 
 	if operator.IsPerformanceAdvisorEnabled == nil {
-		operator.IsPerformanceAdvisorEnabled = toptr.MakePtr(false)
+		operator.IsPerformanceAdvisorEnabled = toptr.MakePtr(true)
 	}
 
 	if operator.IsRealtimePerformancePanelEnabled == nil {
-		operator.IsRealtimePerformancePanelEnabled = toptr.MakePtr(false)
+		operator.IsRealtimePerformancePanelEnabled = toptr.MakePtr(true)
 	}
 
 	if operator.IsSchemaAdvisorEnabled == nil {
-		operator.IsSchemaAdvisorEnabled = toptr.MakePtr(false)
+		operator.IsSchemaAdvisorEnabled = toptr.MakePtr(true)
 	}
 
 	return *operator.IsCollectDatabaseSpecificsStatisticsEnabled == *atlas.IsCollectDatabaseSpecificsStatisticsEnabled &&
