@@ -74,8 +74,8 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 			resources := make([]v1.Resource, 0, len(atlasAction.Resources))
 
 			for _, atlasResource := range atlasAction.Resources {
-				if atlasResource.Cluster == nil {
-					atlasResource.Cluster = toptr.MakePtr(false)
+				if atlasResource.Cluster == toptr.MakePtr(false) {
+					atlasResource.Cluster = nil
 				}
 				resources = append(resources, v1.Resource{
 					Cluster:    atlasResource.Cluster,

@@ -47,8 +47,8 @@ func (in *CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
 		resources := make([]mongodbatlas.Resource, 0, len(action.Resources))
 
 		for _, resource := range action.Resources {
-			if resource.Cluster == nil {
-				resource.Cluster = toptr.MakePtr(false)
+			if resource.Cluster == toptr.MakePtr(false) {
+				resource.Cluster = nil
 			}
 			resources = append(resources, mongodbatlas.Resource{
 				Collection: resource.Collection,
