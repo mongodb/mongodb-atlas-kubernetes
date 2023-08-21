@@ -27,18 +27,7 @@ ENV TARGET_OS=${TARGETOS}
 
 RUN make manager
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2
-
-RUN microdnf install -y yum &&\
-  yum -y update &&\
-  yum -y upgrade &&\
-  yum clean all &&\
-  dnf remove python3-pip -y &&\
-  microdnf clean all
-
-#FROM registry.access.redhat.com/ubi8/ubi
-#
-#RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
 LABEL name="MongoDB Atlas Operator" \
   maintainer="support@mongodb.com" \
