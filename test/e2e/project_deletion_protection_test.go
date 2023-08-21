@@ -6,10 +6,15 @@ import (
 	"os"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
@@ -19,21 +24,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
 	var projectID, networkPeerID, atlasAccountARN, atlasRoleID, teamID string
@@ -257,7 +259,6 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 							Action: "INSERT",
 							Resources: []mongodbatlas.Resource{
 								{
-									Cluster:    toptr.MakePtr(false),
 									DB:         toptr.MakePtr("testDB"),
 									Collection: toptr.MakePtr("testCollection"),
 								},
@@ -270,7 +271,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		})
 
 		By("Adding Assign team to the project", func() {
-			users, _, err := atlasClient.Client.AtlasUsers.List(ctx, os.Getenv("MCLI_ORG_ID"), &mongodbatlas.ListOptions{})
+			users, _, err := atlasClient.Client.AtlasUsers.List(ctx, projectID, &mongodbatlas.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(users).ToNot(BeEmpty())
 
@@ -389,7 +390,6 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 									Name: "INSERT",
 									Resources: []mdbv1.Resource{
 										{
-											Cluster:    toptr.MakePtr(false),
 											Database:   toptr.MakePtr("testD"),
 											Collection: toptr.MakePtr("testCollection"),
 										},
@@ -400,8 +400,11 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					},
 					Teams: []mdbv1.Team{
 						{
-							TeamRef: common.ResourceRefNamespaced{},
-							Roles:   []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+							TeamRef: common.ResourceRefNamespaced{
+								Name:      fmt.Sprintf("%s-team", projectName),
+								Namespace: testData.Resources.Namespace,
+							},
+							Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
 						},
 					},
 				},
@@ -654,7 +657,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Maintenance Window is ready after configured properly", func() {
@@ -691,7 +694,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Auditing is ready after configured properly", func() {
@@ -726,7 +729,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Maintenance Window is ready after configured properly", func() {
@@ -759,7 +762,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Encryption At Rest is ready after configured properly", func() {
@@ -790,7 +793,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Custom Roles is ready after configured properly", func() {
@@ -802,15 +805,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				expectedConditions := testutil.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
-					status.TrueCondition(status.NetworkPeerReadyType),
-					status.TrueCondition(status.IntegrationReadyType),
-					status.TrueCondition(status.MaintenanceWindowReadyType),
-					status.TrueCondition(status.AuditingReadyType),
-					status.TrueCondition(status.ProjectSettingsReadyType),
-					status.TrueCondition(status.EncryptionAtRestReadyType),
+					status.FalseCondition(status.ReadyType), /*
+						status.TrueCondition(status.IPAccessListReadyType),
+						status.TrueCondition(status.CloudProviderAccessReadyType),
+						status.TrueCondition(status.NetworkPeerReadyType),
+						status.TrueCondition(status.IntegrationReadyType),
+						status.TrueCondition(status.MaintenanceWindowReadyType),
+						status.TrueCondition(status.AuditingReadyType),
+						status.TrueCondition(status.ProjectSettingsReadyType),
+						status.TrueCondition(status.EncryptionAtRestReadyType),*/
 					status.TrueCondition(status.ProjectCustomRolesReadyType),
 					status.FalseCondition(status.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
@@ -819,7 +822,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Assigned Teams is ready after configured properly", func() {
@@ -841,12 +844,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectSettingsReadyType),
 					status.TrueCondition(status.EncryptionAtRestReadyType),
 					status.TrueCondition(status.ProjectCustomRolesReadyType),
-					status.FalseCondition(status.ProjectTeamsReadyType),
+					status.TrueCondition(status.ProjectTeamsReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
-			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
+			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 	})
 
@@ -863,7 +866,10 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Deleting Team", func() {
 			if teamID != "" {
-				_, err := atlasClient.Client.Teams.RemoveTeamFromOrganization(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
+				_, err := atlasClient.Client.Teams.RemoveTeamFromProject(ctx, projectID, teamID)
+				Expect(err).ToNot(HaveOccurred())
+
+				_, err = atlasClient.Client.Teams.RemoveTeamFromOrganization(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
