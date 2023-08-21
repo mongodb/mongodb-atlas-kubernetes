@@ -21,6 +21,7 @@ jobs:
               production-code-changed:
                 - 'cmd/**/!(*_test.go)'
                 - 'pkg/**/!(*_test.go)'
+                - 'Dockerfile'
         # run only if 'production-code' files were changed
         - name: production code changed
           if: steps.filter.outputs.production-code-changed == 'true'
