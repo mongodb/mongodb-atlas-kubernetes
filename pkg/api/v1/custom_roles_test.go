@@ -76,12 +76,12 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Action: "testName",
 						Resources: []mongodbatlas.Resource{
 							{
-								Cluster:    toptr.MakePtr(false),
+								Cluster:    nil,
 								DB:         toptr.MakePtr("testDB"),
 								Collection: toptr.MakePtr("testCollection"),
 							},
 							{
-								Cluster:    toptr.MakePtr(false),
+								Cluster:    nil,
 								DB:         toptr.MakePtr("testDB2"),
 								Collection: toptr.MakePtr("testCollection2"),
 							},
@@ -99,7 +99,7 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Action: "testName3",
 						Resources: []mongodbatlas.Resource{
 							{
-								Cluster:    toptr.MakePtr(false),
+								Cluster:    nil,
 								DB:         toptr.MakePtr(""),
 								Collection: toptr.MakePtr(""),
 							},
