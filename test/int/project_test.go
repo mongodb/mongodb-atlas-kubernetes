@@ -54,6 +54,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			By("Removing Atlas Project " + createdProject.Status.ID)
+			Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdProject), createdProject)).To(Succeed())
 			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
 			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
 		}
