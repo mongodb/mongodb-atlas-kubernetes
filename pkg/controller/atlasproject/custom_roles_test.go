@@ -319,7 +319,6 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											Cluster:    toptr.MakePtr(false),
 											DB:         toptr.MakePtr("testDB"),
 											Collection: toptr.MakePtr("testCollection"),
 										},
@@ -342,7 +341,6 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Cluster:    toptr.MakePtr(false),
 										Database:   toptr.MakePtr("testDB"),
 										Collection: toptr.MakePtr("testCollection"),
 									},
@@ -353,7 +351,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
 		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
 
 		assert.NoError(t, err)
@@ -373,7 +371,6 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											Cluster:    toptr.MakePtr(false),
 											DB:         toptr.MakePtr("testDB"),
 											Collection: toptr.MakePtr("testCollection"),
 										},
@@ -396,7 +393,6 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Cluster:    toptr.MakePtr(false),
 										Database:   toptr.MakePtr("testDB"),
 										Collection: toptr.MakePtr("testCollection"),
 									},
@@ -407,7 +403,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
 		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
 
 		assert.NoError(t, err)

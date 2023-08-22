@@ -98,9 +98,6 @@ func mapToOperator(atlasCustomRoles *[]mongodbatlas.CustomDBRole) []v1.CustomRol
 			resources := make([]v1.Resource, 0, len(atlasAction.Resources))
 
 			for _, atlasResource := range atlasAction.Resources {
-				if atlasResource.Cluster != nil && !*atlasResource.Cluster {
-					atlasResource.Cluster = nil
-				}
 				resources = append(resources, v1.Resource{
 					Cluster:    atlasResource.Cluster,
 					Database:   atlasResource.DB,
