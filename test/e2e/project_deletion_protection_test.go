@@ -35,7 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
 	var projectID, networkPeerID, atlasAccountARN, atlasRoleID, teamID string
@@ -805,15 +805,15 @@ var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-prot
 				expectedConditions := testutil.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType), /*
-						status.TrueCondition(status.IPAccessListReadyType),
-						status.TrueCondition(status.CloudProviderAccessReadyType),
-						status.TrueCondition(status.NetworkPeerReadyType),
-						status.TrueCondition(status.IntegrationReadyType),
-						status.TrueCondition(status.MaintenanceWindowReadyType),
-						status.TrueCondition(status.AuditingReadyType),
-						status.TrueCondition(status.ProjectSettingsReadyType),
-						status.TrueCondition(status.EncryptionAtRestReadyType),*/
+					status.FalseCondition(status.ReadyType),
+					status.TrueCondition(status.IPAccessListReadyType),
+					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.NetworkPeerReadyType),
+					status.TrueCondition(status.IntegrationReadyType),
+					status.TrueCondition(status.MaintenanceWindowReadyType),
+					status.TrueCondition(status.AuditingReadyType),
+					status.TrueCondition(status.ProjectSettingsReadyType),
+					status.TrueCondition(status.EncryptionAtRestReadyType),
 					status.TrueCondition(status.ProjectCustomRolesReadyType),
 					status.FalseCondition(status.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
