@@ -35,7 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
 )
 
-var _ = Describe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
+var _ = FDescribe("Project Deletion Protection", Label("project", "deletion-protection"), func() {
 	var testData *model.TestDataProvider
 	var managerStop context.CancelFunc
 	var projectID, networkPeerID, atlasAccountARN, atlasRoleID, teamID string
@@ -302,7 +302,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Creating a project to be managed by the operator", func() {
+		By("Creating a project and team to be managed by the operator", func() {
 			akoTeam := &mdbv1.AtlasTeam{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-team", projectName),
@@ -310,11 +310,8 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 				Spec: mdbv1.TeamSpec{
 					Name:      fmt.Sprintf("%s-team", projectName),
-					Usernames: make([]mdbv1.TeamUser, 0, len(usernames)),
+					Usernames: []mdbv1.TeamUser{"user1@mongodb.com"},
 				},
-			}
-			for _, username := range usernames {
-				akoTeam.Spec.Usernames = append(akoTeam.Spec.Usernames, mdbv1.TeamUser(username))
 			}
 			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
 			Expect(testData.K8SClient.Create(ctx, testData.Teams[0]))
@@ -823,6 +820,20 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
+		})
+
+		By("Team is ready after configured properly", func() {
+			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
+			testData.Teams[0].Spec.Usernames = make([]mdbv1.TeamUser, 0, len(usernames))
+			for _, username := range usernames {
+				testData.Teams[0].Spec.Usernames = append(testData.Teams[0].Spec.Usernames, mdbv1.TeamUser(username))
+			}
+			Expect(testData.K8SClient.Update(context.TODO(), testData.Teams[0])).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
+				g.Expect(testData.Teams[0].Status.Conditions).To(ContainElements(testutil.MatchCondition(status.TrueCondition(status.ReadyType))))
+			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Assigned Teams is ready after configured properly", func() {

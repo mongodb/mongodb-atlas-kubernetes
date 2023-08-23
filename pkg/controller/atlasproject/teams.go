@@ -168,7 +168,8 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 	if len(teamsToAssign) > 0 {
 		ctx.Log.Debug("assigning teams to project")
 		projectTeams := make([]*mongodbatlas.ProjectTeam, 0, len(teamsToAssign))
-		for teamID, assignedTeam := range teamsToAssign {
+		for teamID := range teamsToAssign {
+			assignedTeam := teamsToAssign[teamID]
 			projectTeams = append(projectTeams, assignedTeam.ToAtlas(teamID))
 			currentProjectsStatus[teamID] = status.ProjectTeamStatus{
 				ID:      teamID,
