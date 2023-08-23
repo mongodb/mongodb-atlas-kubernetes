@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// nolint:dupl
 var _ = Describe("AtlasDeployment Deletion Protected",
 	Ordered,
 	Label("AtlasDeployment", "deletion-protection", "deployment-deletion-protected"), func() {

@@ -21,3 +21,5 @@ var _ AtlasCustomResource = &AtlasProject{}
 var _ AtlasCustomResource = &AtlasDeployment{}
 var _ AtlasCustomResource = &AtlasDatabaseUser{}
 var _ AtlasCustomResource = &AtlasDataFederation{}
+var _ AtlasCustomResource = &AtlasBackupSchedule{}
+var _ AtlasCustomResource = &AtlasBackupPolicy{}
