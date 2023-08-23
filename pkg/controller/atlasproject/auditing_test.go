@@ -1,20 +1,244 @@
 package atlasproject
 
 import (
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/stretchr/testify/require"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-func Test_auditingInSync(t *testing.T) {
+type auditingClient struct {
+	GetFunc func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error)
+}
+
+func (c *auditingClient) Get(_ context.Context, projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+	return c.GetFunc(projectID)
+}
+func (c *auditingClient) Configure(_ context.Context, _ string, _ *mongodbatlas.Auditing) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+	return nil, nil, nil
+}
+
+func TestCanAuditingReconcile(t *testing.T) {
+	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
+		result, err := canAuditingReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
+		result, err := canAuditingReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
+		require.False(t, result)
+	})
+
+	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.EqualError(t, err, "failed to retrieve data")
+		require.False(t, result)
+	})
+
+	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return nil, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return &mongodbatlas.Auditing{
+						Enabled:                   toptr.MakePtr(true),
+						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+						AuditAuthorizationSuccess: toptr.MakePtr(false),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				Auditing: &mdbv1.Auditing{
+					Enabled:                   true,
+					AuditFilter:               `{"atype":"authenticate","param":{"db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+					AuditAuthorizationSuccess: false,
+				},
+			},
+		}
+		akoProject.WithAnnotations(
+			map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":false}}`,
+			},
+		)
+		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return &mongodbatlas.Auditing{
+						Enabled:                   toptr.MakePtr(true),
+						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+						AuditAuthorizationSuccess: toptr.MakePtr(false),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				Auditing: &mdbv1.Auditing{
+					Enabled:                   true,
+					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+					AuditAuthorizationSuccess: false,
+				},
+			},
+		}
+		akoProject.WithAnnotations(
+			map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
+			},
+		)
+		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return false when unable to reconcile Auditing", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return &mongodbatlas.Auditing{
+						Enabled:                   toptr.MakePtr(true),
+						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+						AuditAuthorizationSuccess: toptr.MakePtr(false),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				Auditing: &mdbv1.Auditing{
+					Enabled:                   true,
+					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+					AuditAuthorizationSuccess: true,
+				},
+			},
+		}
+		akoProject.WithAnnotations(
+			map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
+			},
+		)
+		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.False(t, result)
+	})
+}
+
+func TestEnsureAuditing(t *testing.T) {
+	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureAuditing(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
+	})
+
+	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			Auditing: &auditingClient{
+				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
+					return &mongodbatlas.Auditing{
+						Enabled:                   toptr.MakePtr(true),
+						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+						AuditAuthorizationSuccess: toptr.MakePtr(false),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				Auditing: &mdbv1.Auditing{
+					Enabled:                   true,
+					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+					AuditAuthorizationSuccess: true,
+				},
+			},
+		}
+		akoProject.WithAnnotations(
+			map[string]string{
+				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
+			},
+		)
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureAuditing(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(
+			t,
+			workflow.Terminate(
+				workflow.AtlasDeletionProtection,
+				"unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+			),
+			result,
+		)
+	})
+}
+
+func TestAuditingInSync(t *testing.T) {
 	type args struct {
 		atlas *mongodbatlas.Auditing
-		spec  *v1.Auditing
+		spec  *mdbv1.Auditing
 	}
 	tests := []struct {
 		name string
@@ -33,7 +257,7 @@ func Test_auditingInSync(t *testing.T) {
 			name: "Atlas Auditing is empty and Operator doesn't",
 			args: args{
 				atlas: nil,
-				spec:  &v1.Auditing{Enabled: true},
+				spec:  &mdbv1.Auditing{Enabled: true},
 			},
 			want: false,
 		},
@@ -54,7 +278,7 @@ func Test_auditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   toptr.MakePtr(true),
 				},
-				spec: &v1.Auditing{
+				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: true,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -71,7 +295,7 @@ func Test_auditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   toptr.MakePtr(true),
 				},
-				spec: &v1.Auditing{
+				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               `{"atype":"authenticate","param":{"db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -88,7 +312,7 @@ func Test_auditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   toptr.MakePtr(true),
 				},
-				spec: &v1.Auditing{
+				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -105,7 +329,7 @@ func Test_auditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   toptr.MakePtr(true),
 				},
-				spec: &v1.Auditing{
+				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               "{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}\n",
 					Enabled:                   true,

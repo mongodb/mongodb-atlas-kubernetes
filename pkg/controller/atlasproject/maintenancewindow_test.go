@@ -1,12 +1,49 @@
 package atlasproject
 
 import (
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+
+	"github.com/stretchr/testify/require"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 )
+
+type maintenanceWindowClient struct {
+	GetFunc func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error)
+}
+
+func (c *maintenanceWindowClient) Get(_ context.Context, projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+	return c.GetFunc(projectID)
+}
+
+func (c *maintenanceWindowClient) Update(_ context.Context, _ string, _ *mongodbatlas.MaintenanceWindow) (*mongodbatlas.Response, error) {
+	return nil, nil
+}
+
+func (c *maintenanceWindowClient) Defer(_ context.Context, _ string) (*mongodbatlas.Response, error) {
+	return nil, nil
+}
+
+func (c *maintenanceWindowClient) AutoDefer(_ context.Context, _ string) (*mongodbatlas.Response, error) {
+	return nil, nil
+}
+
+func (c *maintenanceWindowClient) Reset(_ context.Context, _ string) (*mongodbatlas.Response, error) {
+	return nil, nil
+}
 
 func TestValidateMaintenanceWindow(t *testing.T) {
 	testCases := []struct {
@@ -120,4 +157,189 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCanMaintenanceWindowReconcile(t *testing.T) {
+	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
+		result, err := canMaintenanceWindowReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
+		require.False(t, result)
+	})
+
+	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.EqualError(t, err, "failed to retrieve data")
+		require.False(t, result)
+	})
+
+	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return &mongodbatlas.MaintenanceWindow{}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return &mongodbatlas.MaintenanceWindow{
+						DayOfWeek: 1,
+						HourOfDay: toptr.MakePtr(1),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				MaintenanceWindow: project.MaintenanceWindow{
+					DayOfWeek: 7,
+					HourOfDay: 20,
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":1}}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return &mongodbatlas.MaintenanceWindow{
+						DayOfWeek: 1,
+						HourOfDay: toptr.MakePtr(1),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				MaintenanceWindow: project.MaintenanceWindow{
+					DayOfWeek: 1,
+					HourOfDay: 1,
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":7,\"hourOfDay\":20}}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.True(t, result)
+	})
+
+	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return &mongodbatlas.MaintenanceWindow{
+						DayOfWeek: 1,
+						HourOfDay: toptr.MakePtr(1),
+						StartASAP: toptr.MakePtr(true),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				MaintenanceWindow: project.MaintenanceWindow{
+					DayOfWeek: 7,
+					HourOfDay: 20,
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":1}}"})
+		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		require.NoError(t, err)
+		require.False(t, result)
+	})
+}
+
+func TestEnsureMaintenanceWindow(t *testing.T) {
+	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureMaintenanceWindow(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
+	})
+
+	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			MaintenanceWindows: &maintenanceWindowClient{
+				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
+					return &mongodbatlas.MaintenanceWindow{
+						DayOfWeek:            1,
+						HourOfDay:            toptr.MakePtr(1),
+						StartASAP:            toptr.MakePtr(true),
+						AutoDeferOnceEnabled: toptr.MakePtr(true),
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				MaintenanceWindow: project.MaintenanceWindow{
+					DayOfWeek: 1,
+					HourOfDay: 1,
+					StartASAP: true,
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":20,\"startASAP\":true,\"autoDefer\":true}}"})
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureMaintenanceWindow(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(
+			t,
+			workflow.Terminate(
+				workflow.AtlasDeletionProtection,
+				"unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+			),
+			result,
+		)
+	})
 }

@@ -2,10 +2,13 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,24 +27,42 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	if err := readEncryptionAtRestSecrets(r.Client, ctx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
-		ctx.UnsetCondition(status.EncryptionAtRestReadyType)
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
+		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
 	}
 
-	result := createOrDeleteEncryptionAtRests(ctx, projectID, project)
+	canReconcile, err := canEncryptionAtRestReconcile(ctx, workflowCtx.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+
+		return result
+	}
+
+	result := createOrDeleteEncryptionAtRests(workflowCtx, project.ID(), project)
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
 		return result
 	}
 
 	if IsEncryptionSpecEmpty(project.Spec.EncryptionAtRest) {
-		ctx.UnsetCondition(status.EncryptionAtRestReadyType)
+		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
 		return workflow.OK()
 	}
 
-	ctx.SetConditionTrue(status.EncryptionAtRestReadyType)
+	workflowCtx.SetConditionTrue(status.EncryptionAtRestReadyType)
 	return workflow.OK()
 }
 
@@ -375,4 +396,71 @@ func selectRole(accessRoles []status.CloudProviderAccessRole, providerName strin
 	}
 
 	return
+}
+
+func canEncryptionAtRestReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	ear, _, err := atlasClient.EncryptionsAtRest.Get(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if IsEncryptionAtlasEmpty(ear) {
+		return true, nil
+	}
+
+	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear) ||
+		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear), nil
+}
+
+func areEaRConfigEqual(operator mdbv1.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest) bool {
+	return areAWSConfigEqual(operator.AwsKms, atlas.AwsKms) &&
+		areGCPConfigEqual(operator.GoogleCloudKms, atlas.GoogleCloudKms) &&
+		areAzureConfigEqual(operator.AzureKeyVault, atlas.AzureKeyVault)
+}
+
+func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms) bool {
+	if operator.Enabled == nil {
+		operator.Enabled = toptr.MakePtr(false)
+	}
+
+	return *operator.Enabled == *atlas.Enabled &&
+		operator.Region == atlas.Region &&
+		operator.CustomerMasterKeyID == atlas.CustomerMasterKeyID &&
+		operator.AccessKeyID == atlas.AccessKeyID
+}
+
+func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms) bool {
+	if operator.Enabled == nil {
+		operator.Enabled = toptr.MakePtr(false)
+	}
+
+	return *operator.Enabled == *atlas.Enabled &&
+		operator.KeyVersionResourceID == atlas.KeyVersionResourceID
+}
+
+func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault) bool {
+	if operator.Enabled == nil {
+		operator.Enabled = toptr.MakePtr(false)
+	}
+
+	return *operator.Enabled == *atlas.Enabled &&
+		operator.AzureEnvironment == atlas.AzureEnvironment &&
+		operator.ClientID == atlas.ClientID &&
+		operator.KeyIdentifier == atlas.KeyIdentifier &&
+		operator.KeyVaultName == atlas.KeyVaultName &&
+		operator.ResourceGroupName == atlas.ResourceGroupName &&
+		operator.SubscriptionID == atlas.SubscriptionID &&
+		operator.TenantID == atlas.TenantID
 }

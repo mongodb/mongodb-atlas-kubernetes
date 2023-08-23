@@ -2,42 +2,63 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.mongodb.org/atlas/mongodbatlas"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureCustomRoles(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
-	currentCustomRoles, err := fetchCustomRoles(ctx, projectID)
+func ensureCustomRoles(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canCustomRolesReconcile(ctx, workflowCtx.Client, protected, project)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+
+		return result
+	}
+
+	currentCustomRoles, err := fetchCustomRoles(workflowCtx, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
 
 	ops := calculateChanges(currentCustomRoles, project.Spec.CustomRoles)
 
-	deleteStatus := deleteCustomRoles(ctx, projectID, ops.Delete)
-	updateStatus := updateCustomRoles(ctx, projectID, ops.Update)
-	createStatus := createCustomRoles(ctx, projectID, ops.Create)
+	deleteStatus := deleteCustomRoles(workflowCtx, project.ID(), ops.Delete)
+	updateStatus := updateCustomRoles(workflowCtx, project.ID(), ops.Update)
+	createStatus := createCustomRoles(workflowCtx, project.ID(), ops.Create)
 
-	result := syncCustomRolesStatus(ctx, project.Spec.CustomRoles, createStatus, updateStatus, deleteStatus)
+	result := syncCustomRolesStatus(workflowCtx, project.Spec.CustomRoles, createStatus, updateStatus, deleteStatus)
 
 	if !result.IsOk() {
-		ctx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
 
 		return result
 	}
 
-	ctx.SetConditionTrue(status.ProjectCustomRolesReadyType)
+	workflowCtx.SetConditionTrue(status.ProjectCustomRolesReadyType)
 
 	if len(project.Spec.CustomRoles) == 0 {
-		ctx.UnsetCondition(status.ProjectCustomRolesReadyType)
+		workflowCtx.UnsetCondition(status.ProjectCustomRolesReadyType)
 	}
 
 	return result
@@ -55,9 +76,13 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 
 	ctx.Log.Debugw("Got Custom Roles", "NumItems", len(*data))
 
-	customRoles := make([]v1.CustomRole, 0, len(*data))
+	return mapToOperator(data), nil
+}
 
-	for _, atlasCustomRole := range *data {
+func mapToOperator(atlasCustomRoles *[]mongodbatlas.CustomDBRole) []v1.CustomRole {
+	customRoles := make([]v1.CustomRole, 0, len(*atlasCustomRoles))
+
+	for _, atlasCustomRole := range *atlasCustomRoles {
 		inheritedRoles := make([]v1.Role, 0, len(atlasCustomRole.InheritedRoles))
 
 		for _, atlasInheritedRole := range atlasCustomRole.InheritedRoles {
@@ -73,9 +98,6 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 			resources := make([]v1.Resource, 0, len(atlasAction.Resources))
 
 			for _, atlasResource := range atlasAction.Resources {
-				if atlasResource.Cluster != nil && !*atlasResource.Cluster {
-					atlasResource.Cluster = nil
-				}
 				resources = append(resources, v1.Resource{
 					Cluster:    atlasResource.Cluster,
 					Database:   atlasResource.DB,
@@ -96,7 +118,7 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 		})
 	}
 
-	return customRoles, nil
+	return customRoles
 }
 
 func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[string]v1.CustomRole) map[string]status.CustomRole {
@@ -281,4 +303,35 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 	}
 
 	return workflow.OK()
+}
+
+func canCustomRolesReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	atlasData, _, err := atlasClient.CustomDBRoles.List(ctx, akoProject.ID(), nil)
+	if err != nil {
+		return false, err
+	}
+
+	if atlasData == nil || len(*atlasData) == 0 {
+		return true, nil
+	}
+
+	atlasCustomRoles := mapToOperator(atlasData)
+
+	if cmp.Diff(latestConfig.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()) == "" {
+		return true, nil
+	}
+
+	return cmp.Diff(akoProject.Spec.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()) == "", nil
 }
