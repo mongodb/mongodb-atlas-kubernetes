@@ -182,14 +182,16 @@ func main() {
 	}
 
 	if err = (&atlasdatafederation.AtlasDataFederationReconciler{
-		Client:           mgr.GetClient(),
-		Log:              logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		Scheme:           mgr.GetScheme(),
-		AtlasDomain:      config.AtlasDomain,
-		GlobalAPISecret:  config.GlobalAPISecret,
-		ResourceWatcher:  watch.NewResourceWatcher(),
-		GlobalPredicates: globalPredicates,
-		EventRecorder:    mgr.GetEventRecorderFor("AtlasDataFederation"),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		GlobalAPISecret:             config.GlobalAPISecret,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasDataFederation"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
 		os.Exit(1)

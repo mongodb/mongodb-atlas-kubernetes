@@ -3,12 +3,12 @@
 name: Lint
 
 on:
-  pull_request:
-    branches:
-      - '**'
-    paths-ignore:
-      - 'docs/**'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   lint:
@@ -23,7 +23,7 @@ jobs:
           go-version-file: "${{ github.workspace }}/go.mod"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.6.0
+        uses: golangci/golangci-lint-action@v3.7.0
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.53.3

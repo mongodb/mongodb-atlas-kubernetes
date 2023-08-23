@@ -29,6 +29,8 @@ ifndef TARGET_OS
 TARGET_OS := $(shell go env GOOS)
 endif
 
+GO_UNIT_TEST_FOLDERS=$(shell go list ./... |grep -v 'test/int\|test/e2e')
+
 # DEFAULT_CHANNEL defines the default channel used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g DEFAULT_CHANNEL = "stable")
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
@@ -92,7 +94,7 @@ all: manager ## Build all binaries
 
 .PHONY: unit-test
 unit-test:
-	go test -race -cover ./pkg/...
+	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
 
 .PHONY: int-test
 int-test: ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
@@ -158,9 +160,8 @@ lint:
 	golangci-lint run
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
-	go fmt ./...
-	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	find . -name "*.go" -not -path "./vendor/*" -exec goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w "{}" \;
+	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w \$$(GO_SOURCES)"
+	@goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w $(GO_SOURCES)
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: fmt

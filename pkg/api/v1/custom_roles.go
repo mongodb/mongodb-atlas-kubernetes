@@ -1,6 +1,8 @@
 package v1
 
-import "go.mongodb.org/atlas/mongodbatlas"
+import (
+	"go.mongodb.org/atlas/mongodbatlas"
+)
 
 type CustomRole struct {
 	// Human-readable label that identifies the role. This name must be unique for this custom role in this project.
@@ -43,6 +45,9 @@ func (in *CustomRole) ToAtlas() *mongodbatlas.CustomDBRole {
 		resources := make([]mongodbatlas.Resource, 0, len(action.Resources))
 
 		for _, resource := range action.Resources {
+			if resource.Cluster != nil && !*resource.Cluster {
+				resource.Cluster = nil
+			}
 			resources = append(resources, mongodbatlas.Resource{
 				Collection: resource.Collection,
 				DB:         resource.Database,

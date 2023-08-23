@@ -2,9 +2,15 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 
 	"go.mongodb.org/atlas/mongodbatlas"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
@@ -15,26 +21,44 @@ import (
 // ensureMaintenanceWindow ensures that the state of the Atlas Maintenance Window matches the
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
-func ensureMaintenanceWindow(ctx *workflow.Context, projectID string, atlasProject *mdbv1.AtlasProject) workflow.Result {
+func ensureMaintenanceWindow(ctx context.Context, workflowCtx *workflow.Context, atlasProject *mdbv1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canMaintenanceWindowReconcile(ctx, workflowCtx.Client, protected, atlasProject)
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+		return result
+	}
+
+	if !canReconcile {
+		result := workflow.Terminate(
+			workflow.AtlasDeletionProtection,
+			"unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+		)
+		workflowCtx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
+
+		return result
+	}
+
 	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
-		if condition, found := ctx.GetCondition(status.MaintenanceWindowReadyType); found {
-			ctx.Log.Debugw("Window is empty, deleting in Atlas")
-			if result := deleteInAtlas(ctx.Client, projectID); !result.IsOk() {
-				ctx.SetConditionFromResult(condition.Type, result)
+		if condition, found := workflowCtx.GetCondition(status.MaintenanceWindowReadyType); found {
+			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
+			if result := deleteInAtlas(workflowCtx.Client, atlasProject.ID()); !result.IsOk() {
+				workflowCtx.SetConditionFromResult(condition.Type, result)
 				return result
 			}
-			ctx.UnsetCondition(condition.Type)
+			workflowCtx.UnsetCondition(condition.Type)
 		}
 
 		return workflow.OK()
 	}
 
-	if result := syncAtlasWithSpec(ctx, projectID, atlasProject.Spec.MaintenanceWindow); !result.IsOk() {
-		ctx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
+	if result := syncAtlasWithSpec(workflowCtx, atlasProject.ID(), atlasProject.Spec.MaintenanceWindow); !result.IsOk() {
+		workflowCtx.SetConditionFromResult(status.MaintenanceWindowReadyType, result)
 		return result
 	}
 
-	ctx.SetConditionTrue(status.MaintenanceWindowReadyType)
+	workflowCtx.SetConditionTrue(status.MaintenanceWindowReadyType)
 	return workflow.OK()
 }
 
@@ -168,4 +192,66 @@ func toggleAutoDeferInAtlas(client mongodbatlas.Client, projectID string) workfl
 		return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err.Error())
 	}
 	return workflow.OK()
+}
+
+func canMaintenanceWindowReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+	if !protected {
+		return true, nil
+	}
+
+	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
+	if ok {
+		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
+			return false, err
+		}
+	}
+
+	mWindow, _, err := atlasClient.MaintenanceWindows.Get(ctx, akoProject.ID())
+	if err != nil {
+		return false, err
+	}
+
+	if isAtlasMaintenanceWindowEmpty(mWindow) {
+		return true, nil
+	}
+
+	return isMaintenanceWindowConfigEqual(latestConfig.MaintenanceWindow, *mWindow) ||
+		isMaintenanceWindowConfigEqual(akoProject.Spec.MaintenanceWindow, *mWindow), nil
+}
+
+func isMaintenanceWindowConfigEqual(akoMWindow project.MaintenanceWindow, atlasMWindow mongodbatlas.MaintenanceWindow) bool {
+	if atlasMWindow.HourOfDay == nil {
+		atlasMWindow.HourOfDay = toptr.MakePtr(0)
+	}
+
+	if atlasMWindow.StartASAP == nil {
+		atlasMWindow.StartASAP = toptr.MakePtr(false)
+	}
+
+	if atlasMWindow.AutoDeferOnceEnabled == nil {
+		atlasMWindow.AutoDeferOnceEnabled = toptr.MakePtr(false)
+	}
+
+	if akoMWindow.DayOfWeek != atlasMWindow.DayOfWeek {
+		return false
+	}
+
+	if akoMWindow.HourOfDay != *atlasMWindow.HourOfDay {
+		return false
+	}
+
+	if akoMWindow.StartASAP != *atlasMWindow.StartASAP {
+		return false
+	}
+
+	if akoMWindow.AutoDefer != *atlasMWindow.AutoDeferOnceEnabled {
+		return false
+	}
+
+	return true
+}
+
+func isAtlasMaintenanceWindowEmpty(mWindow *mongodbatlas.MaintenanceWindow) bool {
+	return mWindow.DayOfWeek == 0 && mWindow.HourOfDay == nil && mWindow.StartASAP == nil && mWindow.AutoDeferOnceEnabled == nil
 }

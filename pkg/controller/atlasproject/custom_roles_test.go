@@ -1,7 +1,17 @@
 package atlasproject
 
 import (
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -9,17 +19,41 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 )
 
+type customRolesClient struct {
+	ListFunc func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error)
+}
+
+func (c *customRolesClient) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+	return c.ListFunc(projectID)
+}
+
+func (c *customRolesClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+	return nil, nil, nil
+}
+
+func (c *customRolesClient) Create(_ context.Context, _ string, _ *mongodbatlas.CustomDBRole) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+	return nil, nil, nil
+}
+
+func (c *customRolesClient) Update(_ context.Context, _ string, _ string, _ *mongodbatlas.CustomDBRole) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+	return nil, nil, nil
+}
+
+func (c *customRolesClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
+	return nil, nil
+}
+
 func TestCalculateChanges(t *testing.T) {
-	desired := []v1.CustomRole{
+	desired := []mdbv1.CustomRole{
 		{
 			Name: "cr-1",
 		},
 		{
 			Name: "cr-3",
-			InheritedRoles: []v1.Role{
+			InheritedRoles: []mdbv1.Role{
 				{
 					Name:     "admin",
 					Database: "test",
@@ -30,7 +64,7 @@ func TestCalculateChanges(t *testing.T) {
 			Name: "cr-4",
 		},
 	}
-	current := []v1.CustomRole{
+	current := []mdbv1.CustomRole{
 		{
 			Name: "cr-1",
 		},
@@ -45,15 +79,15 @@ func TestCalculateChanges(t *testing.T) {
 	assert.Equal(
 		t,
 		CustomRolesOperations{
-			Create: map[string]v1.CustomRole{
+			Create: map[string]mdbv1.CustomRole{
 				"cr-4": {
 					Name: "cr-4",
 				},
 			},
-			Update: map[string]v1.CustomRole{
+			Update: map[string]mdbv1.CustomRole{
 				"cr-3": {
 					Name: "cr-3",
-					InheritedRoles: []v1.Role{
+					InheritedRoles: []mdbv1.Role{
 						{
 							Name:     "admin",
 							Database: "test",
@@ -61,7 +95,7 @@ func TestCalculateChanges(t *testing.T) {
 					},
 				},
 			},
-			Delete: map[string]v1.CustomRole{
+			Delete: map[string]mdbv1.CustomRole{
 				"cr-2": {
 					Name: "cr-2",
 				},
@@ -73,13 +107,13 @@ func TestCalculateChanges(t *testing.T) {
 
 func TestSyncCustomRolesStatus(t *testing.T) {
 	t.Run("sync status when all operations were done successfully", func(t *testing.T) {
-		desired := []v1.CustomRole{
+		desired := []mdbv1.CustomRole{
 			{
 				Name: "cr-1",
 			},
 			{
 				Name: "cr-3",
-				InheritedRoles: []v1.Role{
+				InheritedRoles: []mdbv1.Role{
 					{
 						Name:     "admin",
 						Database: "test",
@@ -140,13 +174,13 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 	})
 
 	t.Run("sync status when a operation fails", func(t *testing.T) {
-		desired := []v1.CustomRole{
+		desired := []mdbv1.CustomRole{
 			{
 				Name: "cr-1",
 			},
 			{
 				Name: "cr-3",
-				InheritedRoles: []v1.Role{
+				InheritedRoles: []mdbv1.Role{
 					{
 						Name:     "admin",
 						Database: "test",
@@ -205,6 +239,311 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 				},
 			},
 			projectStatus.CustomRoles,
+		)
+	})
+}
+
+func TestCanCustomRolesReconcile(t *testing.T) {
+	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
+		result, err := canCustomRolesReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
+		result, err := canCustomRolesReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
+		assert.False(t, result)
+	})
+
+	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.EqualError(t, err, "failed to retrieve data")
+		assert.False(t, result)
+	})
+
+	t.Run("should return true when return nil from Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return nil, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("should return true when return empty list from Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return &[]mongodbatlas.CustomDBRole{}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return &[]mongodbatlas.CustomDBRole{
+						{
+							RoleName:       "testRole1",
+							InheritedRoles: nil,
+							Actions: []mongodbatlas.Action{
+								{
+									Action: "INSERT",
+									Resources: []mongodbatlas.Resource{
+										{
+											DB:         toptr.MakePtr("testDB"),
+											Collection: toptr.MakePtr("testCollection"),
+										},
+									},
+								},
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CustomRoles: []mdbv1.CustomRole{
+					{
+						Name:           "testRole",
+						InheritedRoles: nil,
+						Actions: []mdbv1.Action{
+							{
+								Name: "INSERT",
+								Resources: []mdbv1.Resource{
+									{
+										Database:   toptr.MakePtr("testDB"),
+										Collection: toptr.MakePtr("testCollection"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return &[]mongodbatlas.CustomDBRole{
+						{
+							RoleName:       "testRole",
+							InheritedRoles: nil,
+							Actions: []mongodbatlas.Action{
+								{
+									Action: "INSERT",
+									Resources: []mongodbatlas.Resource{
+										{
+											DB:         toptr.MakePtr("testDB"),
+											Collection: toptr.MakePtr("testCollection"),
+										},
+									},
+								},
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CustomRoles: []mdbv1.CustomRole{
+					{
+						Name:           "testRole",
+						InheritedRoles: nil,
+						Actions: []mdbv1.Action{
+							{
+								Name: "INSERT",
+								Resources: []mdbv1.Resource{
+									{
+										Database:   toptr.MakePtr("testDB"),
+										Collection: toptr.MakePtr("testCollection"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("should return false when unable to reconcile custom roles", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return &[]mongodbatlas.CustomDBRole{
+						{
+							RoleName:       "testRole",
+							InheritedRoles: nil,
+							Actions: []mongodbatlas.Action{
+								{
+									Action: "INSERT",
+									Resources: []mongodbatlas.Resource{
+										{
+											Cluster:    toptr.MakePtr(false),
+											DB:         toptr.MakePtr("testDB"),
+											Collection: toptr.MakePtr("testCollection"),
+										},
+									},
+								},
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CustomRoles: []mdbv1.CustomRole{
+					{
+						Name:           "testRole2",
+						InheritedRoles: nil,
+						Actions: []mdbv1.Action{
+							{
+								Name: "INSERT",
+								Resources: []mdbv1.Resource{
+									{
+										Cluster:    toptr.MakePtr(false),
+										Database:   toptr.MakePtr("testDB"),
+										Collection: toptr.MakePtr("testCollection"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
+		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+}
+
+func TestEnsureCustomRoles(t *testing.T) {
+	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed to retrieve data")
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureCustomRoles(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
+	})
+
+	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CustomDBRoles: &customRolesClient{
+				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
+					return &[]mongodbatlas.CustomDBRole{
+						{
+							RoleName:       "testRole",
+							InheritedRoles: nil,
+							Actions: []mongodbatlas.Action{
+								{
+									Action: "INSERT",
+									Resources: []mongodbatlas.Resource{
+										{
+											Cluster:    toptr.MakePtr(false),
+											DB:         toptr.MakePtr("testDB"),
+											Collection: toptr.MakePtr("testCollection"),
+										},
+									},
+								},
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CustomRoles: []mdbv1.CustomRole{
+					{
+						Name:           "testRole2",
+						InheritedRoles: nil,
+						Actions: []mdbv1.Action{
+							{
+								Name: "INSERT",
+								Resources: []mdbv1.Resource{
+									{
+										Cluster:    toptr.MakePtr(false),
+										Database:   toptr.MakePtr("testDB"),
+										Collection: toptr.MakePtr("testCollection"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureCustomRoles(context.TODO(), workflowCtx, akoProject, true)
+
+		require.Equal(
+			t,
+			workflow.Terminate(
+				workflow.AtlasDeletionProtection,
+				"unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+			),
+			result,
 		)
 	})
 }

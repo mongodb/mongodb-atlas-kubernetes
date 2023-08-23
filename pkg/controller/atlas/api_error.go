@@ -26,4 +26,7 @@ const (
 
 	// Resource not found
 	ResourceNotFound = "RESOURCE_NOT_FOUND"
+
+	// Instance for the passed {groupId, tenantName} pair does not exist
+	DataFederationTenantNotFound = "DATA_FEDERATION_TENANT_NOT_FOUND_FOR_NAME"
 )

@@ -309,32 +309,32 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = ensureMaintenanceWindow(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureEncryptionAtRest(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = r.ensureEncryptionAtRest(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureAuditing(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = ensureAuditing(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureProjectSettings(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = ensureProjectSettings(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = ensureCustomRoles(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = ensureCustomRoles(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
 	}
 	results = append(results, result)
 
-	if result = r.ensureAssignedTeams(workflowCtx, project.ID(), project); result.IsOk() {
+	if result = r.ensureAssignedTeams(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)
