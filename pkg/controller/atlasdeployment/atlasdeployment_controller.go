@@ -180,6 +180,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		deployment.Spec.DeploymentSpec = nil
 	}
 
+	if err := uniqueKey(&deployment.Spec); err != nil {
+		log.Errorw("failed to validate tags", "error", err)
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	handleDeployment := r.selectDeploymentHandler(deployment)
 	if result, _ := handleDeployment(workflowCtx, project, deployment, req); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -192,7 +199,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 			return result.ReconcileResult(), nil
 		}
 	}
-
 	return workflow.OK().ReconcileResult(), nil
 }
 
@@ -679,4 +685,24 @@ func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatl
 	}
 
 	return d == "", nil
+}
+
+// Parse through tags and verfiy that all keys are unique. Return error otherwise.
+func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
+	store := make(map[string]string)
+	var arrTags []*mdbv1.TagSpec
+
+	if deploymentSpec.AdvancedDeploymentSpec != nil {
+		arrTags = deploymentSpec.AdvancedDeploymentSpec.Tags
+	} else {
+		arrTags = deploymentSpec.ServerlessSpec.Tags
+	}
+	for _, currTag := range arrTags {
+		if store[currTag.Key] == "" {
+			store[currTag.Key] = currTag.Value
+		} else {
+			return errors.New("duplicate keys found in tags, this is forbidden")
+		}
+	}
+	return nil
 }

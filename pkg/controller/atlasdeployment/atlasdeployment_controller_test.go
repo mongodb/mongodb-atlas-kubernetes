@@ -736,3 +736,42 @@ func testBackupPolicy() *v1.AtlasBackupPolicy {
 		},
 	}
 }
+
+func TestUniqueKey(t *testing.T) {
+	t.Run("Test duplicates in Advanced Deployment", func(t *testing.T) {
+		deploymentSpec := &v1.AtlasDeploymentSpec{
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "foo", Value: "false"}},
+			},
+		}
+		err := uniqueKey(deploymentSpec)
+		assert.Error(t, err)
+	})
+	t.Run("Test no duplicates in Advanced Deployment", func(t *testing.T) {
+		deploymentSpec := &v1.AtlasDeploymentSpec{
+			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foobar", Value: "false"}},
+			},
+		}
+		err := uniqueKey(deploymentSpec)
+		assert.NoError(t, err)
+	})
+	t.Run("Test duplicates in Serverless Instance", func(t *testing.T) {
+		deploymentSpec := &v1.AtlasDeploymentSpec{
+			ServerlessSpec: &v1.ServerlessSpec{
+				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foo", Value: "false"}},
+			},
+		}
+		err := uniqueKey(deploymentSpec)
+		assert.Error(t, err)
+	})
+	t.Run("Test no duplicates in Serverless Instance", func(t *testing.T) {
+		deploymentSpec := &v1.AtlasDeploymentSpec{
+			ServerlessSpec: &v1.ServerlessSpec{
+				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}},
+			},
+		}
+		err := uniqueKey(deploymentSpec)
+		assert.NoError(t, err)
+	})
+}

@@ -24,6 +24,10 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
 
+		atlasDeployment, err = serverlessSpec.ToAtlas()
+		if err != nil {
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		}
 		ctx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
 		atlasDeployment, _, err = ctx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
 			Name: serverlessSpec.Name,
@@ -32,6 +36,7 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 				ProviderName:        string(serverlessSpec.ProviderSettings.ProviderName),
 				RegionName:          serverlessSpec.ProviderSettings.RegionName,
 			},
+			Tag: atlasDeployment.Tags,
 		})
 		if err != nil {
 			return atlasDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
@@ -40,8 +45,26 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 
 	switch atlasDeployment.StateName {
 	case status.StateIDLE:
+		convertedDeployment, err := serverlessSpec.ToAtlas()
+		if err != nil {
+			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
+		}
+		if convertedDeployment.Tags == nil {
+			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
+		}
+		if !isTagsEqual(*(atlasDeployment.Tags), *(convertedDeployment.Tags)) {
+			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
+				// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
+				Tag: convertedDeployment.Tags,
+			})
+			if err != nil {
+				return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
+			}
+			return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
+		}
 		result := ensureServerlessPrivateEndpoints(ctx, project.ID(), serverlessSpec, atlasDeployment.Name)
 		return atlasDeployment, result
+
 	case status.StateCREATING:
 		return atlasDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
 
@@ -53,4 +76,16 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 	default:
 		return atlasDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", atlasDeployment.StateName))
 	}
+}
+
+func isTagsEqual(a []*mongodbatlas.Tag, c []*mongodbatlas.Tag) bool {
+	if len(a) == len(c) {
+		for i, aTags := range a {
+			if aTags.Key != c[i].Key || aTags.Value != c[i].Value {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

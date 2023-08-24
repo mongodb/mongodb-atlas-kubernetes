@@ -211,7 +211,6 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	performUpdate := func(timeout time.Duration) {
 		Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
-
 		Eventually(func(g Gomega) bool {
 			return testutil.CheckCondition(k8sClient, createdDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
@@ -554,6 +553,44 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				performUpdate(20 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
+			})
+
+			By("Updating the Deployment tags", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
+						Expect(c.Tags[i].Key == tag.Key).To(BeTrue())
+						Expect(c.Tags[i].Value == tag.Value).To(BeTrue())
+					}
+				})
+			})
+
+			By("Updating the order of Deployment tags", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-2", Value: "value-2"}, {Key: "test-1", Value: "value-1"}}
+				performUpdate(20 * time.Minute)
+				doDeploymentStatusChecks()
+				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
+						Expect(c.Tags[i].Key == tag.Key).To(BeTrue())
+						Expect(c.Tags[i].Value == tag.Value).To(BeTrue())
+					}
+				})
+			})
+
+			By("Updating the Deployment tags with a duplicate key and removing all tags", func() {
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.FalseCondition(status.DeploymentReadyType))
+				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
+				lastGeneration++
+				// Removing tags for next tests
+				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{}
+				performUpdate(20 * time.Minute)
 			})
 
 			By("Updating the Deployment backups settings", func() {
@@ -991,11 +1028,50 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	Describe("Create serverless instance", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.NewDefaultAWSServerlessInstance(namespace.Name, createdProject.Name)
-
+			createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
 			By(fmt.Sprintf("Creating the Serverless Instance %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 30*time.Minute)
-
 				doServerlessDeploymentStatusChecks()
+			})
+
+			By("Updating the Instance tags", func() {
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
+				performUpdate(20 * time.Minute)
+				doServerlessDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				if createdDeployment != nil {
+					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
+						Expect((*atlasDeployment.Tags)[i].Key == tag.Key).To(BeTrue())
+						Expect((*atlasDeployment.Tags)[i].Value == tag.Value).To(BeTrue())
+					}
+				}
+			})
+
+			By("Updating the order of Instance tags", func() {
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "test-2", Value: "value-2"}, {Key: "test-1", Value: "value-1"}}
+				performUpdate(20 * time.Minute)
+				doServerlessDeploymentStatusChecks()
+				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				if createdDeployment != nil {
+					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
+						Expect((*atlasDeployment.Tags)[i].Key == tag.Key).To(BeTrue())
+						Expect((*atlasDeployment.Tags)[i].Value == tag.Value).To(BeTrue())
+					}
+				}
+			})
+
+			By("Updating the Instance tags with a duplicate key and removing all tags", func() {
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-1", Value: "value-2"}}
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				Eventually(func() bool {
+					return testutil.CheckCondition(k8sClient, createdDeployment, status.FalseCondition(status.DeploymentReadyType))
+				}).WithTimeout(DeploymentUpdateTimeout).Should(BeTrue())
+				lastGeneration++
+				// Removing tags
+				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{}
+				performUpdate(20 * time.Minute)
 			})
 		})
 	})
