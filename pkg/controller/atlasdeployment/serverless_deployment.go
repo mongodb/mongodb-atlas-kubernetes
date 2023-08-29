@@ -54,8 +54,11 @@ func ensureServerlessInstanceState(ctx *workflow.Context, project *mdbv1.AtlasPr
 		}
 		if !isTagsEqual(*(atlasDeployment.Tags), *(convertedDeployment.Tags)) {
 			atlasDeployment, _, err = ctx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
-				// TODO: include ServerlessBackupOptions and TerminationProtectionEnabled
 				Tag: convertedDeployment.Tags,
+				ServerlessBackupOptions: &mongodbatlas.ServerlessBackupOptions{
+					ServerlessContinuousBackupEnabled: &serverlessSpec.BackupOptions.ServerlessContinuousBackupEnabled,
+				},
+				TerminationProtectionEnabled: &serverlessSpec.TerminationProtectionEnabled,
 			})
 			if err != nil {
 				return atlasDeployment, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
