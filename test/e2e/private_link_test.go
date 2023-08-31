@@ -148,11 +148,11 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	)
 })
 
-func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
+func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requestedPE []privateEndpoint) {
 	By("Create Private Link and the rest users resources", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
-		for _, pe := range requstedPE {
+		for _, pe := range requestedPE {
 			userData.Project.Spec.PrivateEndpoints = append(userData.Project.Spec.PrivateEndpoints,
 				v1.PrivateEndpoint{
 					Provider: pe.provider,

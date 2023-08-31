@@ -87,6 +87,10 @@ func (r Result) IsWarning() bool {
 	return r.warning
 }
 
+func (r Result) IsInProgress() bool {
+	return r.terminated && !r.warning
+}
+
 func (r Result) GetMessage() string {
 	return r.message
 }

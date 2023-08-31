@@ -91,7 +91,7 @@ func TestDeploymentManaged(t *testing.T) {
 				},
 			}
 			project := testProject(fakeNamespace)
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
 			te := newTestDeploymentEnv(t, tc.protected, atlasClient, testK8sClient(), project, deployment)
 			if tc.managedTag {
 				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
@@ -132,7 +132,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 					},
 				},
 			}
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
 			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
@@ -144,6 +144,27 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLegacyIsManagedInAtlasMustFail(t *testing.T) {
+	t.Run("Legacy deployment must fail to check if it is managed in Atlas", func(t *testing.T) {
+		protected := true
+		project := testProject(fakeNamespace)
+		inAtlas := differentAdvancedDeployment(fakeNamespace)
+		atlasClient := mongodbatlas.Client{
+			AdvancedClusters: &advancedClustersClientMock{
+				GetFn: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+					return inAtlas, nil, nil
+				},
+			},
+		}
+		deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+		te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
+
+		result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
+
+		assert.Regexp(t, regexp.MustCompile("ownership check expected a converted deployment"), result.GetMessage())
+	})
 }
 
 func TestProtectedServerlessManagedInAtlas(t *testing.T) {

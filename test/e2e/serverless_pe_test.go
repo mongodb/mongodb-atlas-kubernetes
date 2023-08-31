@@ -60,7 +60,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest1", "AWS", "US_EAST_1")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-1", "AWS", "US_EAST_1")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
@@ -73,7 +73,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-2", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
@@ -86,7 +86,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spetest3", "AZURE", "US_EAST_2")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-3", "AZURE", "US_EAST_2")),
 			[]v1.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
@@ -95,6 +95,32 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 					Name:                     newRandomName("pe"),
 					CloudProviderEndpointID:  "invalid",
 					PrivateEndpointIPAddress: "invalid",
+				},
+			},
+		),
+		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE (protected)", Label("spe-aws-4-protected"),
+			model.DataProvider(
+				"spe-aws-1-protected",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test4-protected", "AWS", "US_EAST_1")).WithSubObjectDeletionProtection(true),
+			[]v1.ServerlessPrivateEndpoint{
+				{
+					Name: newRandomName("pe"),
+				},
+			},
+		),
+		Entry("Test[spe-azure-1]: Serverless deployment with one Azure PE (protected)", Label("spe-azure-5-protected"),
+			model.DataProvider(
+				"spe-azure-1-protected",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-5-protected", "AZURE", "US_EAST_2")).WithSubObjectDeletionProtection(true),
+			[]v1.ServerlessPrivateEndpoint{
+				{
+					Name: newRandomName("pe"),
 				},
 			},
 		),
