@@ -220,6 +220,13 @@ type ServerlessSpec struct {
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
 	Tags []*TagSpec `json:"tags,omitempty"`
+
+	// Serverless Backup Options
+	BackupOptions ServerlessBackupOptions `json:"backupOptions,omitempty"`
+
+	// TerminationProtectionEnabled flag
+	// +kubebuilder:default:=false
+	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
 }
 
 // ToAtlas converts the ServerlessSpec to native Atlas client Cluster format.
@@ -245,6 +252,12 @@ type TagSpec struct {
 	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
 	Value string `json:"value"`
+}
+
+type ServerlessBackupOptions struct {
+	// ServerlessContinuousBackupEnabled
+	// +kubebuilder:default:=true
+	ServerlessContinuousBackupEnabled bool `json:"serverlessContinuousBackupEnabled,omitempty"`
 }
 
 // ConnectionStrings configuration for applications use to connect to this deployment.

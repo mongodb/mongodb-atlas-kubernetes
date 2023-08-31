@@ -687,7 +687,7 @@ func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatl
 	return d == "", nil
 }
 
-// Parse through tags and verfiy that all keys are unique. Return error otherwise.
+// Parse through tags and verify that all keys are unique. Return error otherwise.
 func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 	store := make(map[string]string)
 	var arrTags []*mdbv1.TagSpec

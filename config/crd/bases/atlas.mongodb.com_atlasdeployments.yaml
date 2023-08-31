@@ -665,6 +665,14 @@ spec:
               serverlessSpec:
                 description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
+                  backupOptions:
+                    description: Serverless Backup Options
+                    properties:
+                      serverlessContinuousBackupEnabled:
+                        default: true
+                        description: ServerlessContinuousBackupEnabled
+                        type: boolean
+                    type: object
                   name:
                     description: Name of the serverless deployment as it appears in
                       Atlas. After Atlas creates the deployment, you can't change
@@ -813,6 +821,10 @@ spec:
                       type: object
                     maxItems: 50
                     type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: TerminationProtectionEnabled flag
+                    type: boolean
                 required:
                 - name
                 - providerSettings
