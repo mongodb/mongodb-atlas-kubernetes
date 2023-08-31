@@ -242,7 +242,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(ctx context.Context, wo
 	if !project.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
 			if customresource.IsResourceProtected(project, r.ObjectDeletionProtection) {
-				log.Info("Not removing Atlas database user from Atlas as per configuration")
+				log.Info("Not removing Project from Atlas as per configuration")
 				result = workflow.OK()
 			} else {
 				if result = DeleteAllPrivateEndpoints(workflowCtx, project.ID()); !result.IsOk() {

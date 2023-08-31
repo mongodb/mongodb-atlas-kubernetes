@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
@@ -34,7 +36,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		if shouldSkip := customresource.ReconciliationShouldBeSkipped(team); shouldSkip {
+		if customresource.ReconciliationShouldBeSkipped(team) {
 			log.Infow(fmt.Sprintf("-> Skipping AtlasTeam reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", team.Spec)
 			return workflow.OK().ReconcileResult(), nil
 		}
@@ -54,6 +56,26 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		}
 
 		log.Infow("-> Starting AtlasTeam reconciliation", "spec", team.Spec)
+
+		owner, err := customresource.IsOwner(team, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(ctx, teamCtx.Client, connection.OrgID))
+		if err != nil {
+			result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
+			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			log.Error(result.GetMessage())
+
+			return result.ReconcileResult(), nil
+		}
+
+		if !owner {
+			result = workflow.Terminate(
+				workflow.AtlasDeletionProtection,
+				"unable to reconcile Team due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+			)
+			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			log.Error(result.GetMessage())
+
+			return result.ReconcileResult(), nil
+		}
 
 		teamID, result := ensureTeamState(ctx, teamCtx, team)
 		if !result.IsOk() {
@@ -92,8 +114,9 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		if !team.GetDeletionTimestamp().IsZero() {
 			if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
 				log.Warnf("team %s is assigned to a project. Remove it from all projects before delete", team.Name)
-			} else if customresource.ResourceShouldBeLeftInAtlas(team) {
-				log.Infof("Not removing the Atlas Team from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+			} else if customresource.IsResourceProtected(team, r.ObjectDeletionProtection) {
+				log.Info("Not removing Team from Atlas as per configuration")
+				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
 				_, err := teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx, teamCtx.Connection.OrgID, team.Status.ID)
@@ -103,6 +126,15 @@ func (r *AtlasProjectReconciler) teamReconcile(
 					return workflow.Terminate(workflow.TeamDoesNotExist, err.Error()).ReconcileResult(), nil
 				}
 			}
+		}
+
+		err = customresource.ApplyLastConfigApplied(ctx, team, r.Client)
+		if err != nil {
+			result = workflow.Terminate(workflow.Internal, err.Error())
+			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			log.Error(result.GetMessage())
+
+			return result.ReconcileResult(), nil
 		}
 
 		teamCtx.SetConditionTrue(status.ReadyType)
@@ -294,4 +326,38 @@ func renameTeam(ctx context.Context, workflowCtx *workflow.Context, atlasTeam *m
 	}
 
 	return atlasTeam, nil
+}
+
+func teamsManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, orgID string) customresource.AtlasChecker {
+	return func(resource v1.AtlasCustomResource) (bool, error) {
+		team, ok := resource.(*v1.AtlasTeam)
+		if !ok {
+			return false, errors.New("failed to match resource type as AtlasTeams")
+		}
+
+		if team.Status.ID == "" {
+			return false, nil
+		}
+
+		atlasTeam, _, err := atlasClient.Teams.Get(ctx, orgID, team.Status.ID)
+		if err != nil {
+			var apiError *mongodbatlas.ErrorResponse
+			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
+				return false, nil
+			}
+
+			return false, err
+		}
+
+		if team.Spec.Name != atlasTeam.Name || len(atlasTeam.Usernames) == 0 {
+			return false, err
+		}
+
+		usernames := make([]string, 0, len(team.Spec.Usernames))
+		for _, username := range team.Spec.Usernames {
+			usernames = append(usernames, string(username))
+		}
+
+		return cmp.Diff(usernames, atlasTeam.Usernames) != "", nil
+	}
 }

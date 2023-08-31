@@ -233,23 +233,10 @@ func isMaintenanceWindowConfigEqual(akoMWindow project.MaintenanceWindow, atlasM
 		atlasMWindow.AutoDeferOnceEnabled = toptr.MakePtr(false)
 	}
 
-	if akoMWindow.DayOfWeek != atlasMWindow.DayOfWeek {
-		return false
-	}
-
-	if akoMWindow.HourOfDay != *atlasMWindow.HourOfDay {
-		return false
-	}
-
-	if akoMWindow.StartASAP != *atlasMWindow.StartASAP {
-		return false
-	}
-
-	if akoMWindow.AutoDefer != *atlasMWindow.AutoDeferOnceEnabled {
-		return false
-	}
-
-	return true
+	return akoMWindow.DayOfWeek == atlasMWindow.DayOfWeek &&
+		akoMWindow.HourOfDay == *atlasMWindow.HourOfDay &&
+		akoMWindow.StartASAP == *atlasMWindow.StartASAP &&
+		akoMWindow.AutoDefer == *atlasMWindow.AutoDeferOnceEnabled
 }
 
 func isAtlasMaintenanceWindowEmpty(mWindow *mongodbatlas.MaintenanceWindow) bool {
