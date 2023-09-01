@@ -166,7 +166,7 @@ func mainCycle(testData *model.TestDataProvider) {
 		Expect(err).NotTo(HaveOccurred())
 	}(ctx)
 
-	By("Deploy User Resouces", func() {
+	By("Deploy User Resources", func() {
 		deploy.CreateProject(testData)
 		deploy.CreateInitialDeployments(testData)
 		deploy.CreateUsers(testData)

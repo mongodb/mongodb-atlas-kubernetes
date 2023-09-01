@@ -153,7 +153,19 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	// Allow users to specify M0/M2/M5 deployments without providing TENANT for Normal and Serverless deployments
 	r.verifyNonTenantCase(deployment)
 
-	if result := r.checkDeploymentIsManaged(workflowCtx, context, log, project, deployment); !result.IsOk() {
+	// convertedDeployment is either serverless or advanced, deployment must be kept unchanged
+	// convertedDeployment is always a separate copy, to avoid changes on it to go back to k8s
+	convertedDeployment := deployment.DeepCopy()
+	if deployment.IsLegacyDeployment() {
+		if err := ConvertLegacyDeployment(&convertedDeployment.Spec); err != nil {
+			result = workflow.Terminate(workflow.Internal, err.Error())
+			log.Errorw("failed to convert legacy deployment", "error", err)
+			return result.ReconcileResult(), nil
+		}
+		convertedDeployment.Spec.DeploymentSpec = nil
+	}
+
+	if result := r.checkDeploymentIsManaged(workflowCtx, context, log, project, convertedDeployment); !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
@@ -162,44 +174,46 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	err = customresource.ApplyLastConfigApplied(context, deployment, r.Client)
-	if err != nil {
-		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	if deployment.IsLegacyDeployment() {
-		if err := ConvertLegacyDeployment(&deployment.Spec); err != nil {
-			result = workflow.Terminate(workflow.Internal, err.Error())
-			log.Errorw("failed to convert legacy deployment", "error", err)
-			return result.ReconcileResult(), nil
-		}
-		deployment.Spec.DeploymentSpec = nil
-	}
-
-	if err := uniqueKey(&deployment.Spec); err != nil {
+	if err := uniqueKey(&convertedDeployment.Spec); err != nil {
 		log.Errorw("failed to validate tags", "error", err)
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	handleDeployment := r.selectDeploymentHandler(deployment)
-	if result, _ := handleDeployment(workflowCtx, project, deployment, req); !result.IsOk() {
+	handleDeployment := r.selectDeploymentHandler(convertedDeployment)
+	if result, _ := handleDeployment(context, workflowCtx, project, convertedDeployment, req); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
+		return r.registerConfigAndReturn(workflowCtx, context, log, deployment, result), nil
 	}
 
-	if !deployment.IsServerless() {
-		if result := r.handleAdvancedOptions(workflowCtx, project, deployment); !result.IsOk() {
+	if !convertedDeployment.IsServerless() {
+		if result := r.handleAdvancedOptions(workflowCtx, project, convertedDeployment); !result.IsOk() {
 			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-			return result.ReconcileResult(), nil
+			return r.registerConfigAndReturn(workflowCtx, context, log, deployment, result), nil
 		}
 	}
-	return workflow.OK().ReconcileResult(), nil
+
+	return r.registerConfigAndReturn(workflowCtx, context, log, deployment, workflow.OK()), nil
+}
+
+func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
+	workflowCtx *workflow.Context,
+	context context.Context,
+	log *zap.SugaredLogger,
+	deployment *mdbv1.AtlasDeployment, // this must be the original non converted deployment
+	result workflow.Result) ctrl.Result {
+	if result.IsOk() || result.IsInProgress() {
+		err := customresource.ApplyLastConfigApplied(context, deployment, r.Client)
+		if err != nil {
+			alternateResult := workflow.Terminate(workflow.Internal, err.Error())
+			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, alternateResult)
+			log.Error(result.GetMessage())
+
+			return result.ReconcileResult()
+		}
+	}
+	return result.ReconcileResult()
 }
 
 func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *mdbv1.AtlasDeployment) {
@@ -231,19 +245,16 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
 ) workflow.Result {
-	advancedDeployment := deployment
 	if deployment.IsLegacyDeployment() {
-		advancedDeployment = deployment.DeepCopy()
-		if err := ConvertLegacyDeployment(&advancedDeployment.Spec); err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
-			log.Errorw("failed to temporary convert legacy deployment", "error", err)
-			return result
-		}
-		advancedDeployment.Spec.DeploymentSpec = nil
+		result := workflow.Terminate(workflow.Internal, "ownership check expected a converted deployment, not a legacy one")
+		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		log.Error(result.GetMessage())
+
+		return result
 	}
 
 	owner, err := customresource.IsOwner(
-		advancedDeployment,
+		deployment,
 		r.ObjectDeletionProtection,
 		customresource.IsResourceManagedByOperator,
 		managedByAtlas(context, workflowCtx.Client, project.ID(), log),
@@ -277,7 +288,7 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 	log *zap.SugaredLogger,
 	prevResult workflow.Result,
 	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	deployment *mdbv1.AtlasDeployment, // this must be the original non converted deployment
 ) (bool, workflow.Result) {
 	if deployment.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
@@ -358,7 +369,7 @@ func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.At
 }
 
 // handleAdvancedDeployment ensures the state of the deployment using the Advanced Deployment API
-func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureAdvancedDeploymentState(workflowCtx, project, deployment)
 	if c != nil && c.StateName != "" {
 		workflowCtx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(c.StateName))
@@ -387,7 +398,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(workflowCtx *workfl
 	}
 
 	if err := r.ensureBackupScheduleAndPolicy(
-		context.Background(),
+		ctx,
 		workflowCtx, project.ID(),
 		deployment,
 		backupEnabled,
@@ -411,8 +422,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(workflowCtx *workfl
 }
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
-func (r *AtlasDeploymentReconciler) handleServerlessInstance(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
-	c, result := ensureServerlessInstanceState(workflowCtx, project, deployment.Spec.ServerlessSpec)
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
+	c, result := r.ensureServerlessInstanceState(ctx, workflowCtx, project, deployment)
 	return r.ensureConnectionSecretsAndSetStatusOptions(workflowCtx, project, deployment, result, c)
 }
 
@@ -579,7 +590,7 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 	return nil
 }
 
-type deploymentHandlerFunc func(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
+type deploymentHandlerFunc func(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
 
 type atlasClusterType int
 

@@ -48,6 +48,8 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 			Namespace: userData.Resources.Namespace,
 			Name:      config.DefaultOperatorGlobalKey,
 		},
+		ObjectDeletionProtection:    userData.ObjectDeletionProtection,
+		SubObjectDeletionProtection: userData.SubObjectDeletionProtection,
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return mgr
