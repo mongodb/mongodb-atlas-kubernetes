@@ -16,7 +16,6 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 type AwsAction struct {
@@ -48,12 +47,12 @@ type statement struct {
 	Resource  string    `json:"Resource"`
 }
 
-func (a *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (key string, err error) {
+func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn string) (string, error) {
 	a.t.Helper()
 
-	kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(config.AWSRegionUS))
+	kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(region))
 
-	keyId, adminARNs, err := getKeyIDAndAdminARNs()
+	adminARNs, err := getAdminARNs()
 	if err != nil {
 		return "", err
 	}
@@ -63,39 +62,53 @@ func (a *AwsAction) CreateKMS(region, atlasAccountArn, assumedRoleArn string) (k
 		return "", err
 	}
 
-	policyInput := &kms.PutKeyPolicyInput{
-		KeyId:      &keyId,
-		PolicyName: aws_sdk.String("default"),
-		Policy:     aws_sdk.String(policyString),
-	}
+	key, err := kmsClient.CreateKey(&kms.CreateKeyInput{
+		Description: aws.String("Key for E2E test"),
+		KeySpec:     aws.String("SYMMETRIC_DEFAULT"),
+		KeyUsage:    aws.String("ENCRYPT_DECRYPT"),
+		MultiRegion: aws.Bool(false),
+		Origin:      aws.String("AWS_KMS"),
+		Policy:      aws.String(policyString),
+	})
 
-	_, err = kmsClient.PutKeyPolicy(policyInput)
 	if err != nil {
 		return "", err
 	}
 
-	return keyId, nil
+	_, err = kmsClient.CreateAlias(&kms.CreateAliasInput{
+		AliasName:   aws.String("alias/" + strings.ToLower(strings.ReplaceAll(alias, " ", "-"))),
+		TargetKeyId: key.KeyMetadata.KeyId,
+	})
+
+	if err != nil {
+		a.t.Log(fmt.Sprintf("failed to create alias to key %s(%s): %s", alias, *key.KeyMetadata.KeyId, err))
+	}
+
+	a.t.Cleanup(func() {
+		_, err = kmsClient.ScheduleKeyDeletion(&kms.ScheduleKeyDeletionInput{
+			KeyId:               key.KeyMetadata.KeyId,
+			PendingWindowInDays: aws.Int64(7), // this is the minimum possible and can be up to 24h longer than value set
+		})
+		if err != nil {
+			a.t.Error(err)
+		}
+	})
+
+	return *key.KeyMetadata.KeyId, nil
 }
 
-func getKeyIDAndAdminARNs() (keyID string, adminARNs []string, err error) {
-	keyID = os.Getenv("AWS_KMS_KEY_ID")
-	if keyID == "" {
-		err = errors.New("AWS_KMS_KEY_ID secret is empty")
-		return
-	}
+func getAdminARNs() ([]string, error) {
 	adminArnString := os.Getenv("AWS_ACCOUNT_ARN_LIST")
 	if adminArnString == "" {
-		err = errors.New("AWS_ACCOUNT_ARN_LIST secret is empty")
-		return
+		return nil, errors.New("AWS_ACCOUNT_ARN_LIST secret is empty")
 	}
 
-	adminARNs = strings.Split(adminArnString, ",")
+	adminARNs := strings.Split(adminArnString, ",")
 	if len(adminARNs) == 0 {
-		err = errors.New("AWS_ACCOUNT_ARN_LIST wasn't parsed properly, please separate accounts via a comma")
-		return
+		return nil, errors.New("AWS_ACCOUNT_ARN_LIST wasn't parsed properly, please separate accounts via a comma")
 	}
 
-	return keyID, adminARNs, nil
+	return adminARNs, nil
 }
 
 func rolePolicyString(atlasAccountARN, assumedRoleARN string, adminARNs []string) (string, error) {
