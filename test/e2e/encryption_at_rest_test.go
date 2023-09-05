@@ -153,7 +153,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
 		}
 
-		fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+		fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(&encAtRest)
 		fillKMSforGCP(&encAtRest)
 
@@ -188,7 +188,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 }
 
-func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
+func fillKMSforAWS(alias string, encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
 	if (encAtRest.AwsKms == v1.AwsKms{}) {
 		return
 	}
@@ -196,7 +196,7 @@ func fillKMSforAWS(encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleA
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
 	awsAction, err := cloud.NewAWSAction(GinkgoT())
 	Expect(err).ToNot(HaveOccurred())
-	CustomerMasterKeyID, err := awsAction.CreateKMS(config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
+	CustomerMasterKeyID, err := awsAction.CreateKMS(alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
 
@@ -345,7 +345,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
-			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+			fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 			fillVaultforAzure(&encAtRest)
 			fillKMSforGCP(&encAtRest)
 
@@ -447,7 +447,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 
 			encAtRest.AwsKms.Region = string(secret.Data["Region"])
 
-			fillKMSforAWS(&encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+			fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())

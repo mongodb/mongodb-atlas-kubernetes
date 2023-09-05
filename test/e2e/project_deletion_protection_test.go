@@ -232,7 +232,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		By("Adding AWS Encryption At Rest to the project", func() {
 			awsAction, err := cloud.NewAWSAction(GinkgoT())
 			Expect(err).ToNot(HaveOccurred())
-			customerMasterKeyID, err = awsAction.CreateKMS(config.AWSRegionUS, atlasAccountARN, awsRoleARN)
+			customerMasterKeyID, err = awsAction.CreateKMS(fmt.Sprintf("%s-kms", projectName), "eu-west-2", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, _, err = atlasClient.Client.EncryptionsAtRest.Create(ctx, &mongodbatlas.EncryptionAtRest{
@@ -240,7 +240,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				AwsKms: mongodbatlas.AwsKms{
 					Enabled:             toptr.MakePtr(true),
 					CustomerMasterKeyID: customerMasterKeyID,
-					Region:              "US_EAST_1",
+					Region:              "EU_WEST_2",
 					RoleID:              atlasRoleID,
 				},
 			})
@@ -764,7 +764,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Encryption At Rest is ready after configured properly", func() {
 			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.EncryptionAtRest.AwsKms.Region = "US_EAST_1"
+			testData.Project.Spec.EncryptionAtRest.AwsKms.Region = "EU_WEST_2"
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {

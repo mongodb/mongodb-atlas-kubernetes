@@ -297,6 +297,8 @@ func balanceAsymmetricalFields(atlas *mongodbatlas.EncryptionAtRest, spec *mongo
 	if isNotNilAndFalse(atlas.GoogleCloudKms.Enabled) {
 		spec.GoogleCloudKms.Enabled = toptr.MakePtr(false)
 	}
+
+	spec.Valid = atlas.Valid
 }
 
 func IsEncryptionSpecEmpty(spec *mdbv1.EncryptionAtRest) bool {
