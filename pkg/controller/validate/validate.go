@@ -6,9 +6,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strings"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -66,6 +72,10 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 }
 
 func Project(project *mdbv1.AtlasProject) error {
+	if err := projectIPAccessList(project.Spec.ProjectIPAccessList); err != nil {
+		return err
+	}
+
 	if err := projectCustomRoles(project.Spec.CustomRoles); err != nil {
 		return err
 	}
@@ -199,6 +209,61 @@ func autoscalingForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicat
 	return nil
 }
 
+func projectIPAccessList(ipAccessList []project.IPAccessList) error {
+	if len(ipAccessList) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, item := range ipAccessList {
+		if item.IPAddress == "" && item.CIDRBlock == "" && item.AwsSecurityGroup == "" {
+			err = errors.Join(err, errors.New("invalid config! one of option must be configured"))
+		}
+
+		if item.CIDRBlock != "" {
+			if item.AwsSecurityGroup != "" || item.IPAddress != "" {
+				err = errors.Join(err, errors.New("don't set ipAddress or awsSecurityGroup when configuring cidrBlock"))
+			}
+
+			_, _, cidrErr := net.ParseCIDR(item.CIDRBlock)
+			if cidrErr != nil {
+				err = errors.Join(err, fmt.Errorf("invalid cidrBlock: %s", item.CIDRBlock))
+			}
+		}
+
+		if item.IPAddress != "" {
+			if item.AwsSecurityGroup != "" || item.CIDRBlock != "" {
+				err = errors.Join(err, errors.New("don't set cidrBlock or awsSecurityGroup when configuring ipAddress"))
+			}
+
+			ip := net.ParseIP(item.IPAddress)
+			if ip == nil {
+				err = errors.Join(err, fmt.Errorf("invalid ipAddress: %s", item.IPAddress))
+			}
+		}
+
+		if item.AwsSecurityGroup != "" {
+			if item.IPAddress != "" || item.CIDRBlock != "" {
+				err = errors.Join(err, errors.New("don't set cidrBlock or ipAddress when configuring awsSecurityGroup"))
+			}
+
+			reg := regexp.MustCompile("^([0-9]*/)?sg-([0-9]*)")
+			if !reg.MatchString(item.AwsSecurityGroup) {
+				err = errors.Join(err, fmt.Errorf("invalid awsSecurityGroup: %s", item.AwsSecurityGroup))
+			}
+		}
+
+		if item.DeleteAfterDate != "" {
+			_, delErr := timeutil.ParseISO8601(item.DeleteAfterDate)
+			if delErr != nil {
+				err = errors.Join(err, fmt.Errorf("invalid deleteAfterDate: %s. value should follow ISO8601 format", item.DeleteAfterDate))
+			}
+		}
+	}
+
+	return err
+}
+
 func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 	if len(customRoles) == 0 {
 		return nil
@@ -209,7 +274,7 @@ func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 
 	for _, customRole := range customRoles {
 		if _, ok := customRolesMap[customRole.Name]; ok {
-			err = errors.Join(err, fmt.Errorf("the custom rone \"%s\" is duplicate. custom role name must be unique", customRole.Name))
+			err = errors.Join(err, fmt.Errorf("the custom role \"%s\" is duplicate. custom role name must be unique", customRole.Name))
 		}
 
 		customRolesMap[customRole.Name] = struct{}{}

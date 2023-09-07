@@ -279,7 +279,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(ctx context.Context, wor
 	}
 
 	var result workflow.Result
-	if result = ensureIPAccessList(ctx, workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureIPAccessList(ctx, workflowCtx, atlas.CustomIPAccessListStatus(&workflowCtx.Client), project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	}
 	results = append(results, result)

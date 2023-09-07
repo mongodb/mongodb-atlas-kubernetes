@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -17,7 +19,9 @@ import (
 )
 
 type ipAccessListClient struct {
-	ListFunc func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error)
+	ListFunc   func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error)
+	CreateFunc func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error)
+	DeleteFunc func(projectID, entry string) (*mongodbatlas.Response, error)
 }
 
 func (c *ipAccessListClient) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
@@ -28,39 +32,12 @@ func (c *ipAccessListClient) Get(_ context.Context, _ string, _ string) (*mongod
 	return nil, nil, nil
 }
 
-func (c *ipAccessListClient) Create(_ context.Context, _ string, _ []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-	return nil, nil, nil
+func (c *ipAccessListClient) Create(_ context.Context, projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+	return c.CreateFunc(projectID, ipAccessLists)
 }
 
-func (c *ipAccessListClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func TestValidateSingleIPAccessList(t *testing.T) {
-	testCases := []struct {
-		in                 project.IPAccessList
-		errorExpectedRegex string
-	}{
-		// Date
-		{in: project.IPAccessList{DeleteAfterDate: "incorrect", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
-		{in: project.IPAccessList{DeleteAfterDate: "2020/01/02T15:04:05-0700", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
-		{in: project.IPAccessList{DeleteAfterDate: "2020-01-02T15:04:05-07000", IPAddress: "192.158.0.0"}, errorExpectedRegex: "cannot parse"},
-		{in: project.IPAccessList{DeleteAfterDate: "2020-11-02T20:04:05-0700", IPAddress: "192.158.0.0"}},
-		{in: project.IPAccessList{DeleteAfterDate: "2020-11-02T20:04:05+03", IPAddress: "192.158.0.0"}},
-		{in: project.IPAccessList{DeleteAfterDate: "2011-01-02T15:04:05", IPAddress: "192.158.0.0"}},
-	}
-
-	for _, testCase := range testCases {
-		t.Run("", func(t *testing.T) {
-			err := validateSingleIPAccessList(testCase.in)
-			if testCase.errorExpectedRegex != "" {
-				assert.Error(t, err)
-				assert.Regexp(t, testCase.errorExpectedRegex, err.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+func (c *ipAccessListClient) Delete(_ context.Context, projectID, entry string) (*mongodbatlas.Response, error) {
+	return c.DeleteFunc(projectID, entry)
 }
 
 func TestFilterActiveIPAccessLists(t *testing.T) {
@@ -259,7 +236,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client: atlasClient,
 		}
-		result := ensureIPAccessList(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureIPAccessList(context.TODO(), workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -300,7 +277,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client: atlasClient,
 		}
-		result := ensureIPAccessList(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureIPAccessList(context.TODO(), workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
 		require.Equal(
 			t,
@@ -310,5 +287,137 @@ func TestEnsureIPAccessList(t *testing.T) {
 			),
 			result,
 		)
+	})
+
+	t.Run("should reconcile successfully", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			ProjectIPAccessList: &ipAccessListClient{
+				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+					return &mongodbatlas.ProjectIPAccessLists{
+						Results: []mongodbatlas.ProjectIPAccessList{
+							{
+								GroupID:   "123456",
+								CIDRBlock: "192.168.0.10/32",
+							},
+						},
+						TotalCount: 1,
+					}, nil, nil
+				},
+				CreateFunc: func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+					return &mongodbatlas.ProjectIPAccessLists{
+						Results: []mongodbatlas.ProjectIPAccessList{
+							{
+								CIDRBlock: "192.168.0.0/24",
+							},
+						},
+						TotalCount: 1,
+					}, nil, nil
+				},
+				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
+					return nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				ProjectIPAccessList: []project.IPAccessList{
+					{
+						CIDRBlock: "192.168.0.0/24",
+					},
+					{
+						CIDRBlock:       "10.0.0.0/24",
+						DeleteAfterDate: "2022-12-25T14:30:15",
+					},
+				},
+			},
+		}
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+		result := ensureIPAccessList(
+			context.TODO(),
+			workflowCtx,
+			func(ctx context.Context, projectID, entryValue string) (string, error) {
+				return "ACTIVE", nil
+			},
+			akoProject,
+			false,
+		)
+
+		assert.Equal(t, workflow.OK(), result)
+	})
+}
+
+func TestSyncIPAccessList(t *testing.T) {
+	t.Run("should fail to perform deletion", func(t *testing.T) {
+		current := []project.IPAccessList{
+			{
+				IPAddress: "10.0.0.1",
+			},
+		}
+		desired := []project.IPAccessList{
+			{
+				CIDRBlock: "10.0.0.0/24",
+			},
+		}
+		atlasClient := mongodbatlas.Client{
+			ProjectIPAccessList: &ipAccessListClient{
+				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
+					return nil, errors.New("failed")
+				},
+			},
+		}
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+
+		assert.ErrorContains(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired), "failed")
+	})
+
+	t.Run("should fail to perform creation", func(t *testing.T) {
+		current := []project.IPAccessList{
+			{
+				IPAddress: "10.0.0.1",
+			},
+		}
+		desired := []project.IPAccessList{
+			{
+				CIDRBlock: "10.0.0.0/24",
+			},
+		}
+		atlasClient := mongodbatlas.Client{
+			ProjectIPAccessList: &ipAccessListClient{
+				CreateFunc: func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
+					return nil, nil, errors.New("failed")
+				},
+				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
+					return nil, nil
+				},
+			},
+		}
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+
+		assert.ErrorContains(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired), "failed")
+	})
+
+	t.Run("should succeed when there are no changes", func(t *testing.T) {
+		current := []project.IPAccessList{
+			{
+				IPAddress: "10.0.0.1",
+			},
+		}
+		desired := []project.IPAccessList{
+			{
+				IPAddress: "10.0.0.1",
+			},
+		}
+		atlasClient := mongodbatlas.Client{}
+		workflowCtx := &workflow.Context{
+			Client: atlasClient,
+		}
+
+		assert.NoError(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired))
 	})
 }

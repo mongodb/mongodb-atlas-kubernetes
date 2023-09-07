@@ -4,52 +4,37 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
 )
 
-// atlasProjectIPAccessList is a synonym of Atlas object as we need to implement 'Identifier' (and we cannot modify
-// their object)
-type atlasProjectIPAccessList mongodbatlas.ProjectIPAccessList
-
-func (i atlasProjectIPAccessList) Identifier() interface{} {
-	// hack: Atlas adds the CIDRBlock in case IPAddress is specified in the response.
-	// This doesn't conform to the "update" contract (one field per List) and doesn't allow to "merge" lists.
-	// So we ignore the CIDRblock in this case.
-	// Note, this used to have "&& strings.HasPrefix(i.CIDRBlock, i.IPAddress" check as well but according to the example:
-	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/#example-body the IP may
-	// be not a prefix of CIDR!
-	if i.CIDRBlock != "" && i.IPAddress != "" {
-		return i.AwsSecurityGroup + i.IPAddress
-	}
-	if strings.Contains(i.CIDRBlock, "/32") {
-		return strings.Replace(i.CIDRBlock, "/32", "", 1) + i.AwsSecurityGroup + i.IPAddress // if CIDRBlock is /32, then it's an IP address
-	}
-	return i.CIDRBlock + i.AwsSecurityGroup + i.IPAddress
-}
+const ipAccessStatusPending = "PENDING"
+const ipAccessStatusFailed = "FAILED"
 
 // ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
-	canReconcile, err := canIPAccessListReconcile(ctx, workflowCtx.Client, subobjectProtect, akoProject)
+func ensureIPAccessList(ctx context.Context, service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+	canReconcile, err := canIPAccessListReconcile(ctx, service.Client, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		service.SetConditionFromResult(status.IPAccessListReadyType, result)
 
 		return result
 	}
@@ -59,194 +44,166 @@ func ensureIPAccessList(ctx context.Context, workflowCtx *workflow.Context, akoP
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+		service.SetConditionFromResult(status.IPAccessListReadyType, result)
 
 		return result
 	}
 
-	result := syncIPAccessListWithAtlas(workflowCtx, akoProject.ID(), akoProject)
-	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
+	desiredList, expiredList := filterActiveIPAccessLists(akoProject.Spec.ProjectIPAccessList)
+	service.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredList))
+
+	list, _, err := service.Client.ProjectIPAccessList.List(ctx, akoProject.ID(), &mongodbatlas.ListOptions{})
+	if err != nil {
+		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("failed to retrieve IP Access list: %s", err))
+		service.SetConditionFromResult(status.IPAccessListReadyType, result)
+
 		return result
 	}
+
+	currentList := mapToOperatorSpec(list.Results)
+	if cmp.Diff(currentList, akoProject.Spec.ProjectIPAccessList, cmpopts.EquateEmpty()) != "" {
+		err = syncIPAccessList(ctx, service, akoProject.ID(), currentList, desiredList)
+		if err != nil {
+			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to sync desired state with Atlas: %s", err))
+			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+			return result
+		}
+	}
+
+	for _, ipAccessList := range desiredList {
+		ipAccessStatus, err := statusFunc(ctx, akoProject.ID(), mapToEntryValue(ipAccessList, true))
+		if err != nil {
+			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to check status in Atlas: %s", err))
+			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+			return result
+		}
+
+		if ipAccessStatus == ipAccessStatusFailed {
+			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("configuration of %s failed in Atlas", mapToEntryValue(ipAccessList, false)))
+			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+			return result
+		}
+
+		if ipAccessStatus == ipAccessStatusPending {
+			result := workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("waiting Atlas to configure entry %s", mapToEntryValue(ipAccessList, false)))
+			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+
+			return result
+		}
+	}
+
+	service.SetConditionTrue(status.IPAccessListReadyType)
 
 	if len(akoProject.Spec.ProjectIPAccessList) == 0 {
-		workflowCtx.UnsetCondition(status.IPAccessListReadyType)
-		return workflow.OK()
-	}
-
-	workflowCtx.SetConditionTrue(status.IPAccessListReadyType)
-	return result
-}
-
-func syncIPAccessListWithAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
-	if err := validateIPAccessLists(project.Spec.ProjectIPAccessList); err != nil {
-		return workflow.Terminate(workflow.ProjectIPAccessInvalid, err.Error())
-	}
-	active, expired := filterActiveIPAccessLists(project.Spec.ProjectIPAccessList)
-
-	if result := createOrDeleteInAtlas(ctx.Client, projectID, active, ctx.Log); !result.IsOk() {
-		return result
-	}
-	ctx.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expired))
-
-	allReady, result := allIPAccessListsAreReady(context.Background(), ctx, projectID)
-	if !result.IsOk() {
-		return result
-	}
-
-	if !allReady {
-		return workflow.InProgress(workflow.ProjectIPAccessListNotActive, "IP Access List not ready")
+		service.UnsetCondition(status.IPAccessListReadyType)
 	}
 
 	return workflow.OK()
 }
 
-// allIPAccessListsAreReady returns true if all ipAccessLists are in the ACTIVE state.
-func allIPAccessListsAreReady(context context.Context, ctx *workflow.Context, projectID string) (bool, workflow.Result) {
-	atlasAccess, _, err := ctx.Client.ProjectIPAccessList.List(context, projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return false, workflow.Terminate(workflow.Internal, err.Error())
+func mapToOperatorSpec(projectIPAccessList []mongodbatlas.ProjectIPAccessList) []project.IPAccessList {
+	ipAccessList := make([]project.IPAccessList, 0, len(projectIPAccessList))
+
+	for _, projectIPAccess := range projectIPAccessList {
+		ipAccessList = append(
+			ipAccessList,
+			project.IPAccessList{
+				AwsSecurityGroup: projectIPAccess.AwsSecurityGroup,
+				CIDRBlock:        projectIPAccess.CIDRBlock,
+				Comment:          projectIPAccess.Comment,
+				DeleteAfterDate:  projectIPAccess.DeleteAfterDate,
+				IPAddress:        projectIPAccess.IPAddress,
+			},
+		)
 	}
-	for _, ipAccessList := range atlasAccess.Results {
-		ipStatus, err := GetIPAccessListStatus(ctx.Client, ipAccessList)
-		if err != nil {
-			return false, workflow.Terminate(workflow.Internal, err.Error())
-		}
-		if ipStatus.Status != string(IPAccessListActive) {
-			ctx.Log.Infof("IP Access List %v is not active", ipAccessList)
-			return false, workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("%s IP Access List is not yet active, current state: %s", getAccessListEntry(ipAccessList), ipStatus.Status))
-		}
-	}
-	return true, workflow.OK()
+
+	return ipAccessList
 }
 
-func validateIPAccessLists(ipAccessList []project.IPAccessList) error {
-	for _, list := range ipAccessList {
-		if err := validateSingleIPAccessList(list); err != nil {
+func syncIPAccessList(ctx context.Context, service *workflow.Context, projectID string, current, desired []project.IPAccessList) error {
+	currentMap := map[string]project.IPAccessList{}
+	for _, item := range current {
+		currentMap[genIPAccessListKey(item)] = item
+	}
+
+	desiredMap := map[string]project.IPAccessList{}
+	for _, item := range desired {
+		desiredMap[genIPAccessListKey(item)] = item
+	}
+
+	for key, ipAccessList := range currentMap {
+		if _, ok := desiredMap[key]; ok {
+			continue
+		}
+
+		_, err := service.Client.ProjectIPAccessList.Delete(ctx, projectID, mapToEntryValue(ipAccessList, false))
+		if err != nil {
 			return err
 		}
 	}
-	return nil
-}
 
-// validateSingleIPAccessList performs validation of the IP access list. Note, that we intentionally don't validate
-// IP addresses or CIDR blocks - this will be done by Atlas. But we need to validate the timestamp as we use it to filter
-// active and expired ip access lists.
-func validateSingleIPAccessList(list project.IPAccessList) error {
-	if list.DeleteAfterDate != "" {
-		_, err := timeutil.ParseISO8601(list.DeleteAfterDate)
-		if err != nil {
-			return err
+	toCreate := make([]*mongodbatlas.ProjectIPAccessList, 0, len(desired))
+	for key, ipAccessList := range desiredMap {
+		if _, ok := currentMap[key]; !ok {
+			toCreate = append(
+				toCreate,
+				&mongodbatlas.ProjectIPAccessList{
+					AwsSecurityGroup: ipAccessList.AwsSecurityGroup,
+					CIDRBlock:        ipAccessList.CIDRBlock,
+					Comment:          ipAccessList.Comment,
+					DeleteAfterDate:  ipAccessList.DeleteAfterDate,
+					GroupID:          projectID,
+					IPAddress:        ipAccessList.IPAddress,
+				},
+			)
 		}
 	}
-	if strings.Contains(list.IPAddress, "/") {
-		return fmt.Errorf("ipAddress %s cannot contain a / character", list.IPAddress)
+
+	if len(toCreate) == 0 {
+		return nil
 	}
-	if !strings.Contains(list.CIDRBlock, "/") && list.CIDRBlock != "" {
-		return fmt.Errorf("cidrBlock %s must contain a / character", list.CIDRBlock)
-	}
-	return nil
+
+	_, _, err := service.Client.ProjectIPAccessList.Create(ctx, projectID, toCreate)
+
+	return err
 }
 
-func createOrDeleteInAtlas(client mongodbatlas.Client, projectID string, operatorIPAccessLists []project.IPAccessList, log *zap.SugaredLogger) workflow.Result {
-	atlasAccess, _, err := client.ProjectIPAccessList.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
-	}
-	// Making a new slice with synonyms as Atlas IP Access list to enable usage of 'Identifiable'
-	atlasAccessLists := make([]atlasProjectIPAccessList, len(atlasAccess.Results))
-	for i, r := range atlasAccess.Results {
-		atlasAccessLists[i] = atlasProjectIPAccessList(r)
-	}
+func mapToEntryValue(ipAccessList project.IPAccessList, escape bool) string {
+	entry := ""
 
-	accessListsToDelete := set.Difference(atlasAccessLists, operatorIPAccessLists)
-
-	if err := deleteIPAccessFromAtlas(client, projectID, accessListsToDelete, log); err != nil {
-		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
-	}
-
-	if result := createIPAccessListsInAtlas(client, projectID, operatorIPAccessLists); !result.IsOk() {
-		return result
-	}
-	return workflow.OK()
-}
-
-// operatorToAtlasIPAccessList converts the ipAccessList specified in the project CR to the format
-// expected by the Atlas API.
-func operatorToAtlasIPAccessList(ipAccessLists []project.IPAccessList) ([]*mongodbatlas.ProjectIPAccessList, workflow.Result) {
-	operatorAccessLists := make([]*mongodbatlas.ProjectIPAccessList, len(ipAccessLists))
-	for i, list := range ipAccessLists {
-		atlasFormat, err := list.ToAtlas()
-		if err != nil {
-			return nil, workflow.Terminate(workflow.Internal, err.Error())
+	switch {
+	case ipAccessList.CIDRBlock != "":
+		entry = ipAccessList.CIDRBlock
+		quads := strings.Split(ipAccessList.CIDRBlock, "/")
+		if quads[1] == "32" {
+			entry = quads[0]
 		}
-		operatorAccessLists[i] = atlasFormat
+	case ipAccessList.IPAddress != "":
+		ip := strings.Split(ipAccessList.IPAddress, "/")
+
+		entry = ip[0]
+	case ipAccessList.AwsSecurityGroup != "":
+		entry = ipAccessList.AwsSecurityGroup
 	}
-	return operatorAccessLists, workflow.OK()
+
+	if escape {
+		return url.QueryEscape(entry)
+	}
+
+	return entry
 }
 
-func createIPAccessListsInAtlas(client mongodbatlas.Client, projectID string, ipAccessLists []project.IPAccessList) workflow.Result {
-	operatorAccessLists, status := operatorToAtlasIPAccessList(ipAccessLists)
-	if !status.IsOk() {
-		return status
+func genIPAccessListKey(ipAccessList project.IPAccessList) string {
+	entry := mapToEntryValue(ipAccessList, false)
+
+	if ipAccessList.DeleteAfterDate != "" {
+		entry += "." + ipAccessList.DeleteAfterDate
 	}
 
-	if _, _, err := client.ProjectIPAccessList.Create(context.Background(), projectID, operatorAccessLists); err != nil {
-		return workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, err.Error())
-	}
-	return workflow.OK()
-}
-
-func deleteIPAccessFromAtlas(client mongodbatlas.Client, projectID string, listsToRemove []set.Identifiable, log *zap.SugaredLogger) error {
-	for _, l := range listsToRemove {
-		if _, err := client.ProjectIPAccessList.Delete(context.Background(), projectID, l.Identifier().(string)); err != nil {
-			return err
-		}
-		log.Debugw("Removed IPAccessList from Atlas as it's not specified in current AtlasProject", "id", l.Identifier())
-	}
-	return nil
-}
-
-type IPAccessListStatusType string
-
-const (
-	IPAccessListActive  IPAccessListStatusType = "ACTIVE"
-	IPAccessListFailed  IPAccessListStatusType = "FAILED"
-	IPAccessListPending IPAccessListStatusType = "PENDING"
-)
-
-type IPAccessListStatus struct {
-	Status string `json:"STATUS"`
-}
-
-// getAccessListEntry returns the identifier for the accessList. It should be exactly one of IPAddress, CIDRBlock
-// or AwsSecurityGroup. This function assumes that the accessList is already validated and has only one of these
-// fields populated.
-func getAccessListEntry(accessList mongodbatlas.ProjectIPAccessList) string {
-	if accessList.IPAddress != "" {
-		return url.QueryEscape(accessList.IPAddress)
-	}
-	if accessList.CIDRBlock != "" {
-		return url.QueryEscape(accessList.CIDRBlock)
-	}
-	return url.QueryEscape(accessList.AwsSecurityGroup)
-}
-
-// GetIPAccessListStatus returns the status of an individual project ip access list. The documentation can be found
-// here https://docs.atlas.mongodb.com/reference/api/ip-access-list/get-one-access-list-entry-status/
-func GetIPAccessListStatus(client mongodbatlas.Client, accessList mongodbatlas.ProjectIPAccessList) (IPAccessListStatus, error) {
-	urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/accessList/%s/status", accessList.GroupID, getAccessListEntry(accessList))
-	req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
-	if err != nil {
-		return IPAccessListStatus{}, err
-	}
-	ipAccessListStatus := IPAccessListStatus{}
-	_, err = client.Do(context.Background(), req, &ipAccessListStatus)
-	if err != nil {
-		return IPAccessListStatus{}, err
-	}
-	return ipAccessListStatus, nil
+	return entry
 }
 
 func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IPAccessList, []project.IPAccessList) {
@@ -289,18 +246,10 @@ func canIPAccessListReconcile(ctx context.Context, atlasClient mongodbatlas.Clie
 		return true, nil
 	}
 
-	atlasAccessLists := make([]atlasProjectIPAccessList, len(list.Results))
-	for i, r := range list.Results {
-		atlasAccessLists[i] = atlasProjectIPAccessList(r)
-	}
-
-	diff := set.Difference(atlasAccessLists, latestConfig.ProjectIPAccessList)
-
-	if len(diff) == 0 {
+	atlasAccessLists := mapToOperatorSpec(list.Results)
+	if cmp.Equal(atlasAccessLists, latestConfig.ProjectIPAccessList, cmpopts.EquateEmpty()) {
 		return true, nil
 	}
 
-	diff = set.Difference(akoProject.Spec.ProjectIPAccessList, atlasAccessLists)
-
-	return len(diff) == 0, nil
+	return cmp.Equal(akoProject.Spec.ProjectIPAccessList, atlasAccessLists, cmpopts.EquateEmpty()), nil
 }
