@@ -5,47 +5,21 @@ import (
 	"errors"
 	"testing"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-type cloudProviderAccessClient struct {
-	ListRolesFunc       func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error)
-	CreateRoleFunc      func(projectID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error)
-	AuthorizeRoleFunc   func(projectID, roleID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error)
-	DeauthorizeRoleFunc func(cpa *mongodbatlas.CloudProviderDeauthorizationRequest) (*mongodbatlas.Response, error)
-}
-
-func (c *cloudProviderAccessClient) ListRoles(_ context.Context, projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
-	return c.ListRolesFunc(projectID)
-}
-
-func (c *cloudProviderAccessClient) GetRole(_ context.Context, _ string, _ string) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *cloudProviderAccessClient) CreateRole(_ context.Context, projectID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
-	return c.CreateRoleFunc(projectID, cpa)
-}
-
-func (c *cloudProviderAccessClient) AuthorizeRole(_ context.Context, projectID string, roleID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
-	return c.AuthorizeRoleFunc(projectID, roleID, cpa)
-}
-func (c *cloudProviderAccessClient) DeauthorizeRole(_ context.Context, cpa *mongodbatlas.CloudProviderDeauthorizationRequest) (*mongodbatlas.Response, error) {
-	return c.DeauthorizeRoleFunc(cpa)
-}
-
 func TestSyncCloudProviderAccess(t *testing.T) {
 	t.Run("should fail when atlas is unavailable", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, errors.New("service unavailable")
 				},
@@ -101,7 +75,7 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: atlasCPAs,
@@ -167,7 +141,7 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: atlasCPAs,
@@ -221,7 +195,7 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: atlasCPAs,
@@ -784,7 +758,7 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 			Status:            status.CloudProviderAccessStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				CreateRoleFunc: func(projectID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRole{
 						AtlasAWSAccountARN:         "atlas-account-arn-1",
@@ -816,7 +790,7 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 			Status:            status.CloudProviderAccessStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				CreateRoleFunc: func(projectID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, errors.New("service unavailable")
 				},
@@ -854,7 +828,7 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 			Status:                     status.CloudProviderAccessStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				AuthorizeRoleFunc: func(projectID, roleID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRole{
 						AtlasAWSAccountARN:         "atlas-account-arn-1",
@@ -895,7 +869,7 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 			Status:                     status.CloudProviderAccessStatusCreated,
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				AuthorizeRoleFunc: func(projectID, roleID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, errors.New("service unavailable")
 				},
@@ -924,7 +898,7 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 			ErrorMessage:               "",
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				DeauthorizeRoleFunc: func(cpa *mongodbatlas.CloudProviderDeauthorizationRequest) (*mongodbatlas.Response, error) {
 					return &mongodbatlas.Response{}, nil
 				},
@@ -949,7 +923,7 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 			ErrorMessage:               "",
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				DeauthorizeRoleFunc: func(cpa *mongodbatlas.CloudProviderDeauthorizationRequest) (*mongodbatlas.Response, error) {
 					return &mongodbatlas.Response{}, errors.New("service unavailable")
 				},
@@ -982,7 +956,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -998,7 +972,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{},
@@ -1016,7 +990,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
@@ -1048,7 +1022,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
@@ -1088,7 +1062,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return true when access was created but not authorized yet", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
@@ -1119,7 +1093,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Cloud Provider Access", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
@@ -1161,7 +1135,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 func TestEnsureCloudProviderAccess(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -1179,7 +1153,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
@@ -1253,7 +1227,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -1316,7 +1290,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: atlasCPAs,
@@ -1388,7 +1362,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			CloudProviderAccess: &cloudProviderAccessClient{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderAccessRoles{
 						AWSIAMRoles: atlasCPAs,
