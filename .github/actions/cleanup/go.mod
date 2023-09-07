@@ -1,6 +1,6 @@
 module actions/cleanup
 
-go 1.20
+go 1.21
 
 require (
 	github.com/mongodb-forks/digest v1.0.4
