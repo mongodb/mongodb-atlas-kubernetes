@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
@@ -533,5 +535,103 @@ func TestEncryptionAtRestValidation(t *testing.T) {
 		enc := testEncryptionAtRest(true)
 		enc.GoogleCloudKms.ServiceAccountKey = withProperUrls(`"token_uri": "http//badurl.example"`)
 		assert.ErrorContains(t, encryptionAtRest(enc), "invalid URL address")
+	})
+}
+
+func TestProjectIpAccessList(t *testing.T) {
+	t.Run("should return no error for empty list", func(t *testing.T) {
+		assert.NoError(t, projectIPAccessList([]project.IPAccessList{}))
+	})
+
+	t.Run("should return error when multiple ways were configured", func(t *testing.T) {
+		data := map[string]struct {
+			ipAccessList []project.IPAccessList
+			err          string
+		}{
+			"for CIDRBlock with IPAddress": {
+				ipAccessList: []project.IPAccessList{
+					{
+						IPAddress: "10.0.0.1",
+						CIDRBlock: "10.0.0.0/24",
+					},
+				},
+				err: "don't set ipAddress or awsSecurityGroup when configuring cidrBlock",
+			},
+			"for CIDRBlock with awsSecurityGroup": {
+				ipAccessList: []project.IPAccessList{
+					{
+						AwsSecurityGroup: "sg-0129d834cbf03bc6d",
+						CIDRBlock:        "10.0.0.0/24",
+					},
+				},
+				err: "don't set ipAddress or awsSecurityGroup when configuring cidrBlock",
+			},
+			"for IPAddress with awsSecurityGroup": {
+				ipAccessList: []project.IPAccessList{
+					{
+						AwsSecurityGroup: "sg-0129d834cbf03bc6d",
+						IPAddress:        "10.0.0.1",
+					},
+				},
+				err: "don't set cidrBlock or awsSecurityGroup when configuring ipAddress",
+			},
+		}
+
+		for desc, item := range data {
+			t.Run(desc, func(t *testing.T) {
+				assert.ErrorContains(t, projectIPAccessList(item.ipAccessList), item.err)
+			})
+		}
+	})
+
+	t.Run("should return error when configuration is invalid", func(t *testing.T) {
+		data := map[string]struct {
+			ipAccessList []project.IPAccessList
+			err          string
+		}{
+			"for empty config": {
+				ipAccessList: []project.IPAccessList{{}},
+				err:          "invalid config! one of option must be configured",
+			},
+			"for CIDRBlock": {
+				ipAccessList: []project.IPAccessList{
+					{
+						CIDRBlock: "10.0.0.0",
+					},
+				},
+				err: "invalid cidrBlock: 10.0.0.0",
+			},
+			"for IPAddress": {
+				ipAccessList: []project.IPAccessList{
+					{
+						IPAddress: "10.0.0.350",
+					},
+				},
+				err: "invalid ipAddress: 10.0.0.350",
+			},
+			"for awsSecurityGroup": {
+				ipAccessList: []project.IPAccessList{
+					{
+						AwsSecurityGroup: "invalid0129d834cbf03bc6d",
+					},
+				},
+				err: "invalid awsSecurityGroup: invalid0129d834cbf03bc6d",
+			},
+			"for DeleteAfterDate": {
+				ipAccessList: []project.IPAccessList{
+					{
+						IPAddress:       "10.0.0.10",
+						DeleteAfterDate: "2020-01-02T15:04:05-07000",
+					},
+				},
+				err: "invalid deleteAfterDate: 2020-01-02T15:04:05-07000. value should follow ISO8601 format",
+			},
+		}
+
+		for desc, item := range data {
+			t.Run(desc, func(t *testing.T) {
+				assert.ErrorContains(t, projectIPAccessList(item.ipAccessList), item.err)
+			})
+		}
 	})
 }
