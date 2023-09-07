@@ -78,10 +78,19 @@ const (
 	DataFederationUpdating          ConditionReason = "DataFederationUpdating"
 )
 
+// Atlas Teams reasons
 const (
 	TeamNotCreatedInAtlas ConditionReason = "TeamNotCreatedInAtlas"
 	TeamNotUpdatedInAtlas ConditionReason = "TeamNotUpdatedInAtlas"
 	TeamInvalidSpec       ConditionReason = "TeamInvalidSpec"
 	TeamUsersNotReady     ConditionReason = "TeamUsersNotReady"
 	TeamDoesNotExist      ConditionReason = "TeamDoesNotExist"
+)
+
+// Atlas Federated Auth reasons
+const (
+	FederatedAuthNotAvailable     ConditionReason = "FederatedAuthNotAvailable"
+	FederatedAuthIsNotEnabledInCR ConditionReason = "FederatedAuthNotEnabledInCR"
+	FederatedAuthOrgNotConnected  ConditionReason = "FederatedAuthOrgIsNotConnected"
+	FederatedAuthUsersConflict    ConditionReason = "FederatedAuthUsersConflict"
 )

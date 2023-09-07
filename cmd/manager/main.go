@@ -46,6 +46,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/watch"
@@ -196,6 +197,22 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
 		os.Exit(1)
 	}
+
+	if err = (&atlasfederatedauth.AtlasFederatedAuthReconciler{
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasFederatedAuth"),
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasFederatedAuth")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {

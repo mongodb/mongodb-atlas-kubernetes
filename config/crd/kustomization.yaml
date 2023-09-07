@@ -9,27 +9,6 @@ resources:
   - bases/atlas.mongodb.com_atlasbackuppolicies.yaml
   - bases/atlas.mongodb.com_atlasbackupschedules.yaml
   - bases/atlas.mongodb.com_atlasteams.yaml
-# +kubebuilder:scaffold:crdkustomizeresource
-
-patchesStrategicMerge:
-# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
-# patches here are for enabling the conversion webhook for each CRD
-#- patches/webhook_in_atlasclusters.yaml
-#- patches/webhook_in_atlasprojects.yaml
-#- patches/webhook_in_atlasbackuppolicies.yaml
-#- patches/webhook_in_atlasbackupschedules.yaml
-#- patches/webhook_in_atlasteams.yaml
-# +kubebuilder:scaffold:crdkustomizewebhookpatch
-
-# [CERTMANAGER] To enable webhook, uncomment all the sections with [CERTMANAGER] prefix.
-# patches here are for enabling the CA injection for each CRD
-#- patches/cainjection_in_atlasclusters.yaml
-#- patches/cainjection_in_atlasprojects.yaml
-#- patches/cainjection_in_atlasbackuppolicies.yaml
-#- patches/cainjection_in_atlasbackupschedules.yaml
-#- patches/cainjection_in_atlasteams.yaml
-# +kubebuilder:scaffold:crdkustomizecainjectionpatch
-
-# the following config is for teaching kustomize how to do kustomization for CRDs.
+  - bases/atlas.mongodb.com_atlasfederatedauths.yaml
 configurations:
   - kustomizeconfig.yaml

@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatafederation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -273,6 +274,18 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		ResourceWatcher:             watch.NewResourceWatcher(),
 		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    deletionProtection,
+		SubObjectDeletionProtection: deletionProtection,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&atlasfederatedauth.AtlasFederatedAuthReconciler{
+		Client:                      k8sManager.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
+		AtlasDomain:                 atlasDomain,
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
