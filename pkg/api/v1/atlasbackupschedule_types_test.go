@@ -10,30 +10,45 @@ import (
 )
 
 func Test_BackupScheduleToAtlas(t *testing.T) {
-	testData := []struct {
-		name        string
-		inSchedule  *AtlasBackupSchedule
-		inPolicy    *AtlasBackupPolicy
-		clusterName string
-		output      *mongodbatlas.CloudProviderSnapshotBackupPolicy
-		shouldFail  bool
-	}{
-		{
-			name: "Correct data",
-			inSchedule: &AtlasBackupSchedule{
-				Spec: AtlasBackupScheduleSpec{
-					AutoExportEnabled:                 true,
-					ReferenceHourOfDay:                10,
-					ReferenceMinuteOfHour:             10,
-					RestoreWindowDays:                 7,
-					UpdateSnapshots:                   false,
-					UseOrgAndGroupNamesInExportPrefix: false,
+	t.Run("Can convert BackupSchedule to Atlas", func(t *testing.T) {
+		inSchedule := &AtlasBackupSchedule{
+			Spec: AtlasBackupScheduleSpec{
+				AutoExportEnabled:                 true,
+				ReferenceHourOfDay:                10,
+				ReferenceMinuteOfHour:             10,
+				RestoreWindowDays:                 7,
+				UpdateSnapshots:                   false,
+				UseOrgAndGroupNamesInExportPrefix: false,
+			},
+		}
+		inPolicy := &AtlasBackupPolicy{
+			Spec: AtlasBackupPolicySpec{
+				Items: []AtlasBackupPolicyItem{
+					{
+						FrequencyType:     "hourly",
+						FrequencyInterval: 10,
+						RetentionUnit:     "weeks",
+						RetentionValue:    1,
+					},
 				},
 			},
-			inPolicy: &AtlasBackupPolicy{
-				Spec: AtlasBackupPolicySpec{
-					Items: []AtlasBackupPolicyItem{
+		}
+		clusterName := "testCluster"
+		output := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+			ClusterID:                         "test-id",
+			ClusterName:                       "testCluster",
+			AutoExportEnabled:                 toptr.MakePtr(true),
+			ReferenceHourOfDay:                toptr.MakePtr[int64](10),
+			ReferenceMinuteOfHour:             toptr.MakePtr[int64](10),
+			RestoreWindowDays:                 toptr.MakePtr[int64](7),
+			UpdateSnapshots:                   toptr.MakePtr(false),
+			UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
+			Policies: []mongodbatlas.Policy{
+				{
+					ID: "",
+					PolicyItems: []mongodbatlas.PolicyItem{
 						{
+							ID:                "",
 							FrequencyType:     "hourly",
 							FrequencyInterval: 10,
 							RetentionUnit:     "weeks",
@@ -42,40 +57,12 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 					},
 				},
 			},
-			clusterName: "testCluster",
-			output: &mongodbatlas.CloudProviderSnapshotBackupPolicy{
-				ClusterID:                         "test-id",
-				ClusterName:                       "testCluster",
-				AutoExportEnabled:                 toptr.MakePtr(true),
-				ReferenceHourOfDay:                toptr.MakePtr[int64](10),
-				ReferenceMinuteOfHour:             toptr.MakePtr[int64](10),
-				RestoreWindowDays:                 toptr.MakePtr[int64](7),
-				UpdateSnapshots:                   toptr.MakePtr(false),
-				UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
-				Policies: []mongodbatlas.Policy{
-					{
-						ID: "",
-						PolicyItems: []mongodbatlas.PolicyItem{
-							{
-								ID:                "",
-								FrequencyType:     "hourly",
-								FrequencyInterval: 10,
-								RetentionUnit:     "weeks",
-								RetentionValue:    1,
-							},
-						},
-					},
-				},
-				CopySettings: []mongodbatlas.CopySetting{},
-			},
-			shouldFail: false,
-		},
-	}
+			CopySettings: []mongodbatlas.CopySetting{},
+		}
 
-	for _, tt := range testData {
-		result := tt.inSchedule.ToAtlas(tt.output.ClusterID, tt.clusterName, tt.inPolicy)
-		if diff := deep.Equal(result, tt.output); diff != nil {
+		result := inSchedule.ToAtlas(output.ClusterID, clusterName, inPolicy)
+		if diff := deep.Equal(result, output); diff != nil {
 			t.Error(diff)
 		}
-	}
+	})
 }

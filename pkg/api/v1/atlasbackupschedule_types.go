@@ -113,6 +113,7 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName string, policy *At
 
 	result := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 		ClusterName:                       clusterName,
+		ClusterID:                         clusterID,
 		ReferenceHourOfDay:                &in.Spec.ReferenceHourOfDay,
 		ReferenceMinuteOfHour:             &in.Spec.ReferenceMinuteOfHour,
 		RestoreWindowDays:                 &in.Spec.RestoreWindowDays,
@@ -140,7 +141,6 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName string, policy *At
 		})
 	}
 
-	result.ClusterID = clusterID
 	return result
 }
 

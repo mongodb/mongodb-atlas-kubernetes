@@ -29,7 +29,7 @@ import (
 
 var errArgIsNotBackupSchedule = errors.New("failed to match resource type as AtlasBackupSchedule")
 
-const BackupProtected = "unable to reconcile AtlasBackupSchedule: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled"
+const BackupProtected = "unable to reconcile AtlasBackupSchedule due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"
 
 func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	ctx context.Context,
