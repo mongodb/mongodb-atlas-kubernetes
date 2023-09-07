@@ -33,7 +33,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -49,7 +49,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -65,7 +65,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -110,7 +110,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -156,7 +156,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Project Settings", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -204,7 +204,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 func TestEnsureProjectSettings(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -222,7 +222,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),

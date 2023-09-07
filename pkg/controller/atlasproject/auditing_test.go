@@ -5,30 +5,16 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
 	"github.com/stretchr/testify/assert"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type auditingClient struct {
-	GetFunc func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error)
-}
-
-func (c *auditingClient) Get(_ context.Context, projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
-	return c.GetFunc(projectID)
-}
-func (c *auditingClient) Configure(_ context.Context, _ string, _ *mongodbatlas.Auditing) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
 
 func TestCanAuditingReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
@@ -47,7 +33,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -63,7 +49,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 
 	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -79,7 +65,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
 						Enabled:                   toptr.MakePtr(true),
@@ -111,7 +97,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
 						Enabled:                   toptr.MakePtr(true),
@@ -143,7 +129,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Auditing", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
 						Enabled:                   toptr.MakePtr(true),
@@ -177,7 +163,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 func TestEnsureAuditing(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -195,7 +181,7 @@ func TestEnsureAuditing(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Auditing: &auditingClient{
+			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
 						Enabled:                   toptr.MakePtr(true),

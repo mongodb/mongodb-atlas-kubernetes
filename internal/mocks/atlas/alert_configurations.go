@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-type MockAlertConfigurationsMock struct {
+type AlertConfigurationsMock struct {
 	CreateFunc     func(projectID string, alertConfig *mongodbatlas.AlertConfiguration) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error)
 	CreateRequests map[string]*mongodbatlas.AlertConfiguration
 
@@ -33,7 +33,7 @@ type MockAlertConfigurationsMock struct {
 	DeleteRequests map[string]struct{}
 }
 
-func (c *MockAlertConfigurationsMock) Create(_ context.Context, projectID string, alertConfig *mongodbatlas.AlertConfiguration) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) Create(_ context.Context, projectID string, alertConfig *mongodbatlas.AlertConfiguration) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.CreateRequests == nil {
 		c.CreateRequests = map[string]*mongodbatlas.AlertConfiguration{}
 	}
@@ -42,7 +42,7 @@ func (c *MockAlertConfigurationsMock) Create(_ context.Context, projectID string
 
 	return c.CreateFunc(projectID, alertConfig)
 }
-func (c *MockAlertConfigurationsMock) EnableAnAlertConfig(_ context.Context, projectID string, alertConfigID string, enabled *bool) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) EnableAnAlertConfig(_ context.Context, projectID string, alertConfigID string, enabled *bool) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.EnableAnAlertConfigRequests == nil {
 		c.EnableAnAlertConfigRequests = map[string]*bool{}
 	}
@@ -51,7 +51,7 @@ func (c *MockAlertConfigurationsMock) EnableAnAlertConfig(_ context.Context, pro
 
 	return c.EnableAnAlertConfigFunc(projectID, alertConfigID, enabled)
 }
-func (c *MockAlertConfigurationsMock) GetAnAlertConfig(_ context.Context, projectID string, alertConfigID string) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) GetAnAlertConfig(_ context.Context, projectID string, alertConfigID string) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.GetAnAlertConfigRequests == nil {
 		c.GetAnAlertConfigRequests = map[string]struct{}{}
 	}
@@ -60,7 +60,7 @@ func (c *MockAlertConfigurationsMock) GetAnAlertConfig(_ context.Context, projec
 
 	return c.GetAnAlertConfigFunc(projectID, alertConfigID)
 }
-func (c *MockAlertConfigurationsMock) GetOpenAlertsConfig(_ context.Context, projectID string, alertConfigID string) ([]mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) GetOpenAlertsConfig(_ context.Context, projectID string, alertConfigID string) ([]mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.GetOpenAlertsConfigRequests == nil {
 		c.GetOpenAlertsConfigRequests = map[string]struct{}{}
 	}
@@ -69,7 +69,7 @@ func (c *MockAlertConfigurationsMock) GetOpenAlertsConfig(_ context.Context, pro
 
 	return c.GetOpenAlertsConfigFunc(projectID, alertConfigID)
 }
-func (c *MockAlertConfigurationsMock) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) ([]mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) ([]mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.ListRequests == nil {
 		c.ListRequests = map[string]struct{}{}
 	}
@@ -78,12 +78,12 @@ func (c *MockAlertConfigurationsMock) List(_ context.Context, projectID string, 
 
 	return c.ListFunc(projectID)
 }
-func (c *MockAlertConfigurationsMock) ListMatcherFields(_ context.Context) ([]string, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) ListMatcherFields(_ context.Context) ([]string, *mongodbatlas.Response, error) {
 	c.ListMatcherFieldsCalls++
 
 	return c.ListMatcherFieldsFunc()
 }
-func (c *MockAlertConfigurationsMock) Update(_ context.Context, projectID string, alertConfigID string, alertConfig *mongodbatlas.AlertConfiguration) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) Update(_ context.Context, projectID string, alertConfigID string, alertConfig *mongodbatlas.AlertConfiguration) (*mongodbatlas.AlertConfiguration, *mongodbatlas.Response, error) {
 	if c.UpdateRequests == nil {
 		c.UpdateRequests = map[string]*mongodbatlas.AlertConfiguration{}
 	}
@@ -92,7 +92,7 @@ func (c *MockAlertConfigurationsMock) Update(_ context.Context, projectID string
 
 	return c.UpdateFunc(projectID, alertConfigID, alertConfig)
 }
-func (c *MockAlertConfigurationsMock) Delete(_ context.Context, projectID string, alertConfigID string) (*mongodbatlas.Response, error) {
+func (c *AlertConfigurationsMock) Delete(_ context.Context, projectID string, alertConfigID string) (*mongodbatlas.Response, error) {
 	if c.DeleteRequests == nil {
 		c.DeleteRequests = map[string]struct{}{}
 	}

@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-type MockProjectsClient struct {
+type ProjectsClientMock struct {
 	GetAllProjectsFunc  func() (*mongodbatlas.Projects, *mongodbatlas.Response, error)
 	GetAllProjectsCalls int
 
@@ -60,13 +60,13 @@ type MockProjectsClient struct {
 	UpdateProjectSettingsRequests map[string]*mongodbatlas.ProjectSettings
 }
 
-func (c *MockProjectsClient) GetAllProjects(_ context.Context, _ *mongodbatlas.ListOptions) (*mongodbatlas.Projects, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) GetAllProjects(_ context.Context, _ *mongodbatlas.ListOptions) (*mongodbatlas.Projects, *mongodbatlas.Response, error) {
 	c.GetAllProjectsCalls++
 
 	return c.GetAllProjectsFunc()
 }
 
-func (c *MockProjectsClient) GetOneProject(_ context.Context, projectID string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) GetOneProject(_ context.Context, projectID string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
 	if c.GetOneProjectRequests == nil {
 		c.GetOneProjectRequests = map[string]struct{}{}
 	}
@@ -76,7 +76,7 @@ func (c *MockProjectsClient) GetOneProject(_ context.Context, projectID string) 
 	return c.GetOneProjectFunc(projectID)
 }
 
-func (c *MockProjectsClient) GetOneProjectByName(_ context.Context, projectName string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) GetOneProjectByName(_ context.Context, projectName string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
 	if c.GetOneProjectByNameRequests == nil {
 		c.GetOneProjectByNameRequests = map[string]struct{}{}
 	}
@@ -86,7 +86,7 @@ func (c *MockProjectsClient) GetOneProjectByName(_ context.Context, projectName 
 	return c.GetOneProjectFunc(projectName)
 }
 
-func (c *MockProjectsClient) Create(_ context.Context, project *mongodbatlas.Project, _ *mongodbatlas.CreateProjectOptions) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) Create(_ context.Context, project *mongodbatlas.Project, _ *mongodbatlas.CreateProjectOptions) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
 	if c.CreateRequests == nil {
 		c.CreateRequests = []*mongodbatlas.Project{}
 	}
@@ -96,7 +96,7 @@ func (c *MockProjectsClient) Create(_ context.Context, project *mongodbatlas.Pro
 	return c.CreateFunc(project)
 }
 
-func (c *MockProjectsClient) Update(_ context.Context, projectID string, project *mongodbatlas.ProjectUpdateRequest) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) Update(_ context.Context, projectID string, project *mongodbatlas.ProjectUpdateRequest) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
 	if c.UpdateRequests == nil {
 		c.UpdateRequests = map[string]*mongodbatlas.ProjectUpdateRequest{}
 	}
@@ -106,7 +106,7 @@ func (c *MockProjectsClient) Update(_ context.Context, projectID string, project
 	return c.UpdateFunc(projectID, project)
 }
 
-func (c *MockProjectsClient) Delete(_ context.Context, projectID string) (*mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) Delete(_ context.Context, projectID string) (*mongodbatlas.Response, error) {
 	if c.DeleteRequests == nil {
 		c.DeleteRequests = map[string]struct{}{}
 	}
@@ -116,7 +116,7 @@ func (c *MockProjectsClient) Delete(_ context.Context, projectID string) (*mongo
 	return c.DeleteFunc(projectID)
 }
 
-func (c *MockProjectsClient) GetProjectTeamsAssigned(_ context.Context, projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) GetProjectTeamsAssigned(_ context.Context, projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 	if c.GetProjectTeamsAssignedRequests == nil {
 		c.GetProjectTeamsAssignedRequests = map[string]struct{}{}
 	}
@@ -126,7 +126,7 @@ func (c *MockProjectsClient) GetProjectTeamsAssigned(_ context.Context, projectI
 	return c.GetProjectTeamsAssignedFunc(projectID)
 }
 
-func (c *MockProjectsClient) AddTeamsToProject(_ context.Context, projectID string, teams []*mongodbatlas.ProjectTeam) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) AddTeamsToProject(_ context.Context, projectID string, teams []*mongodbatlas.ProjectTeam) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 	if c.AddTeamsToProjectRequests == nil {
 		c.AddTeamsToProjectRequests = map[string][]*mongodbatlas.ProjectTeam{}
 	}
@@ -136,7 +136,7 @@ func (c *MockProjectsClient) AddTeamsToProject(_ context.Context, projectID stri
 	return c.AddTeamsToProjectFunc(projectID, teams)
 }
 
-func (c *MockProjectsClient) RemoveUserFromProject(_ context.Context, projectID string, userID string) (*mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) RemoveUserFromProject(_ context.Context, projectID string, userID string) (*mongodbatlas.Response, error) {
 	if c.RemoveUserFromProjectRequests == nil {
 		c.RemoveUserFromProjectRequests = map[string]struct{}{}
 	}
@@ -146,7 +146,7 @@ func (c *MockProjectsClient) RemoveUserFromProject(_ context.Context, projectID 
 	return c.RemoveUserFromProjectFunc(projectID, userID)
 }
 
-func (c *MockProjectsClient) Invitations(_ context.Context, projectID string, invitation *mongodbatlas.InvitationOptions) ([]*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) Invitations(_ context.Context, projectID string, invitation *mongodbatlas.InvitationOptions) ([]*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
 	if c.InvitationsRequests == nil {
 		c.InvitationsRequests = map[string]*mongodbatlas.InvitationOptions{}
 	}
@@ -156,7 +156,7 @@ func (c *MockProjectsClient) Invitations(_ context.Context, projectID string, in
 	return c.InvitationsFunc(projectID, invitation)
 }
 
-func (c *MockProjectsClient) Invitation(_ context.Context, projectID string, invitationID string) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) Invitation(_ context.Context, projectID string, invitationID string) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
 	if c.InvitationRequests == nil {
 		c.InvitationRequests = map[string]struct{}{}
 	}
@@ -166,7 +166,7 @@ func (c *MockProjectsClient) Invitation(_ context.Context, projectID string, inv
 	return c.InvitationFunc(projectID, invitationID)
 }
 
-func (c *MockProjectsClient) InviteUser(_ context.Context, projectID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) InviteUser(_ context.Context, projectID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
 	if c.InviteUserRequests == nil {
 		c.InviteUserRequests = map[string]*mongodbatlas.Invitation{}
 	}
@@ -176,7 +176,7 @@ func (c *MockProjectsClient) InviteUser(_ context.Context, projectID string, inv
 	return c.InviteUserFunc(projectID, invitation)
 }
 
-func (c *MockProjectsClient) UpdateInvitation(_ context.Context, projectID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) UpdateInvitation(_ context.Context, projectID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
 	if c.UpdateInvitationRequests == nil {
 		c.UpdateInvitationRequests = map[string]*mongodbatlas.Invitation{}
 	}
@@ -186,7 +186,7 @@ func (c *MockProjectsClient) UpdateInvitation(_ context.Context, projectID strin
 	return c.UpdateInvitationFunc(projectID, invitation)
 }
 
-func (c *MockProjectsClient) UpdateInvitationByID(_ context.Context, projectID string, invitationID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) UpdateInvitationByID(_ context.Context, projectID string, invitationID string, invitation *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
 	if c.UpdateInvitationByIDRequests == nil {
 		c.UpdateInvitationByIDRequests = map[string]*mongodbatlas.Invitation{}
 	}
@@ -196,7 +196,7 @@ func (c *MockProjectsClient) UpdateInvitationByID(_ context.Context, projectID s
 	return c.UpdateInvitationByIDFunc(projectID, invitationID, invitation)
 }
 
-func (c *MockProjectsClient) DeleteInvitation(_ context.Context, projectID string, invitationID string) (*mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) DeleteInvitation(_ context.Context, projectID string, invitationID string) (*mongodbatlas.Response, error) {
 	if c.DeleteInvitationRequests == nil {
 		c.DeleteInvitationRequests = map[string]struct{}{}
 	}
@@ -206,7 +206,7 @@ func (c *MockProjectsClient) DeleteInvitation(_ context.Context, projectID strin
 	return c.DeleteInvitationFunc(projectID, invitationID)
 }
 
-func (c *MockProjectsClient) GetProjectSettings(_ context.Context, projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) GetProjectSettings(_ context.Context, projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 	if c.GetProjectSettingsRequests == nil {
 		c.GetProjectSettingsRequests = map[string]struct{}{}
 	}
@@ -216,7 +216,7 @@ func (c *MockProjectsClient) GetProjectSettings(_ context.Context, projectID str
 	return c.GetProjectSettingsFunc(projectID)
 }
 
-func (c *MockProjectsClient) UpdateProjectSettings(_ context.Context, projectID string, settings *mongodbatlas.ProjectSettings) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
+func (c *ProjectsClientMock) UpdateProjectSettings(_ context.Context, projectID string, settings *mongodbatlas.ProjectSettings) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 	if c.UpdateProjectSettingsRequests == nil {
 		c.UpdateProjectSettingsRequests = map[string]*mongodbatlas.ProjectSettings{}
 	}

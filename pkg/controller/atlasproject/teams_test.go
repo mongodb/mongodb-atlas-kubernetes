@@ -65,7 +65,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -81,7 +81,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when return nil from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -97,7 +97,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when return empty list from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{TotalCount: 0}, nil, nil
 				},
@@ -113,7 +113,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -149,7 +149,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -185,7 +185,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile assigned teams", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -223,7 +223,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 func TestEnsureAssignedTeams(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -273,7 +273,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Build()
 
 		atlasClient := mongodbatlas.Client{
-			Projects: &atlas.MockProjectsClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
