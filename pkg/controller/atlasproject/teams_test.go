@@ -5,24 +5,20 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/zap/zaptest"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap/zaptest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 func TestCanAssignedTeamsReconcile(t *testing.T) {
@@ -69,7 +65,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -85,7 +81,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when return nil from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -101,7 +97,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when return empty list from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{TotalCount: 0}, nil, nil
 				},
@@ -117,7 +113,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -153,7 +149,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -189,7 +185,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile assigned teams", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
@@ -227,7 +223,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 func TestEnsureAssignedTeams(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -277,7 +273,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Build()
 
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.MockProjectsClient{
 				GetProjectTeamsAssignedFunc: func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
 					return &mongodbatlas.TeamsAssigned{
 						Results: []*mongodbatlas.Result{
