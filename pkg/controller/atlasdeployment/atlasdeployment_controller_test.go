@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -79,8 +80,8 @@ func TestDeploymentManaged(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					GetFn: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ClusterNotFound}
 					},
 				},
@@ -126,8 +127,8 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			protected := true
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					GetFn: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return tc.inAtlas, nil, nil
 					},
 				},
@@ -152,8 +153,8 @@ func TestLegacyIsManagedInAtlasMustFail(t *testing.T) {
 		project := testProject(fakeNamespace)
 		inAtlas := differentAdvancedDeployment(fakeNamespace)
 		atlasClient := mongodbatlas.Client{
-			AdvancedClusters: &advancedClustersClientMock{
-				GetFn: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+			AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+				GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 					return inAtlas, nil, nil
 				},
 			},
@@ -189,8 +190,8 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 			protected := true
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					GetFn: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
+				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceFromClusterAPI}
 					},
 				},
@@ -283,30 +284,29 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 	testCases := []struct {
 		title         string
 		protected     bool
-		expectRemoval bool
+		expectRemoval int
 	}{
 		{
 			title:         "Deployment with protection ON and no annotations is kept",
 			protected:     true,
-			expectRemoval: false,
+			expectRemoval: 0,
 		},
 		{
 			title:         "Deployment with protection OFF and no annotations is removed",
 			protected:     false,
-			expectRemoval: true,
+			expectRemoval: 1,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			project := testProject(fakeNamespace)
-			called := false
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					DeleteFn: func(groupID string, clusterName string, options *mongodbatlas.DeleteAdvanceClusterOptions) (*mongodbatlas.Response, error) {
-						called = true
-						return nil, nil
-					},
+			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+					return nil, nil
 				},
+			}
+			project := testProject(fakeNamespace)
+			atlasClient := mongodbatlas.Client{
+				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
@@ -326,7 +326,7 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 
 			require.True(t, deletionRequest)
 			require.True(t, result.IsOk())
-			assert.Equal(t, tc.expectRemoval, called)
+			assert.Len(t, advancedClusterClient.DeleteRequests, tc.expectRemoval)
 		})
 	}
 }
@@ -347,15 +347,14 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			project := testProject(fakeNamespace)
-			called := false
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					DeleteFn: func(groupID string, clusterName string, options *mongodbatlas.DeleteAdvanceClusterOptions) (*mongodbatlas.Response, error) {
-						called = true
-						return nil, nil
-					},
+			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+					return nil, nil
 				},
+			}
+			project := testProject(fakeNamespace)
+			atlasClient := mongodbatlas.Client{
+				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
@@ -379,7 +378,7 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 
 			require.True(t, deletionRequest)
 			require.True(t, result.IsOk())
-			assert.Equal(t, false, called)
+			assert.Len(t, advancedClusterClient.DeleteRequests, 0)
 		})
 	}
 }
@@ -400,15 +399,14 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			project := testProject(fakeNamespace)
-			called := false
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &advancedClustersClientMock{
-					DeleteFn: func(groupID string, clusterName string, options *mongodbatlas.DeleteAdvanceClusterOptions) (*mongodbatlas.Response, error) {
-						called = true
-						return nil, nil
-					},
+			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
+					return nil, nil
 				},
+			}
+			project := testProject(fakeNamespace)
+			atlasClient := mongodbatlas.Client{
+				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
@@ -432,7 +430,7 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 
 			require.True(t, deletionRequest)
 			require.True(t, result.IsOk())
-			assert.Equal(t, true, called)
+			assert.Len(t, advancedClusterClient.DeleteRequests, 1)
 		})
 	}
 }
