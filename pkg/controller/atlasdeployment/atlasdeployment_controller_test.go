@@ -85,8 +85,8 @@ func TestDeploymentManaged(t *testing.T) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ClusterNotFound}
 					},
 				},
-				ServerlessInstances: &serverlessClientMock{
-					GetFn: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+				ServerlessInstances: &atlas_mock.ServerlessInstancesClientMock{
+					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceNotFound}
 					},
 				},
@@ -195,8 +195,8 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceFromClusterAPI}
 					},
 				},
-				ServerlessInstances: &serverlessClientMock{
-					GetFn: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
+				ServerlessInstances: &atlas_mock.ServerlessInstancesClientMock{
+					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 						return tc.inAtlas, nil, nil
 					},
 				},
