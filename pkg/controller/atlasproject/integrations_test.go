@@ -5,41 +5,16 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
-
-	"github.com/stretchr/testify/require"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
 )
-
-type integrationsClient struct {
-	ListFunc func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error)
-}
-
-func (c *integrationsClient) Create(_ context.Context, _ string, _ string, _ *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *integrationsClient) Replace(_ context.Context, _ string, _ string, _ *mongodbatlas.ThirdPartyIntegration) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *integrationsClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *integrationsClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.ThirdPartyIntegration, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *integrationsClient) List(_ context.Context, projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
-	return c.ListFunc(projectID)
-}
 
 func TestToAlias(t *testing.T) {
 	sample := []*mongodbatlas.ThirdPartyIntegration{{
@@ -90,7 +65,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Integrations: &integrationsClient{
+			Integrations: &atlas.ThirdPartyIntegrationsClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -106,7 +81,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Integrations: &integrationsClient{
+			Integrations: &atlas.ThirdPartyIntegrationsClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ThirdPartyIntegrations{TotalCount: 0}, nil, nil
 				},
@@ -122,7 +97,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Integrations: &integrationsClient{
+			Integrations: &atlas.ThirdPartyIntegrationsClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ThirdPartyIntegrations{
 						Results: []*mongodbatlas.ThirdPartyIntegration{
@@ -164,7 +139,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Integrations: &integrationsClient{
+			Integrations: &atlas.ThirdPartyIntegrationsClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ThirdPartyIntegrations{
 						Results: []*mongodbatlas.ThirdPartyIntegration{
@@ -206,7 +181,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Integrations", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Integrations: &integrationsClient{
+			Integrations: &atlas.ThirdPartyIntegrationsClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ThirdPartyIntegrations, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ThirdPartyIntegrations{
 						Results: []*mongodbatlas.ThirdPartyIntegration{
