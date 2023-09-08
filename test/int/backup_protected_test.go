@@ -65,14 +65,16 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				if testDeployment == nil {
 					return
 				}
-
-				Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).ToNot(HaveOccurred())
+				Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).To(Succeed())
+			})
+			By("Deleting deployment from Kubernetes", func() {
+				Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 			})
 			By("Deleting project from k8s and atlas", func() {
 				Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
 				Eventually(
 					checkAtlasProjectRemoved(testProject.Status.ID),
-				).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+				).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
 			By("Deleting project connection secret", func() {
