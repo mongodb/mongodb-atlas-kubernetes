@@ -5,46 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type customRolesClient struct {
-	ListFunc func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error)
-}
-
-func (c *customRolesClient) List(_ context.Context, projectID string, _ *mongodbatlas.ListOptions) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-	return c.ListFunc(projectID)
-}
-
-func (c *customRolesClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *customRolesClient) Create(_ context.Context, _ string, _ *mongodbatlas.CustomDBRole) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *customRolesClient) Update(_ context.Context, _ string, _ string, _ *mongodbatlas.CustomDBRole) (*mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *customRolesClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestCalculateChanges(t *testing.T) {
 	desired := []mdbv1.CustomRole{
@@ -260,7 +232,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -276,7 +248,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return true when return nil from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -292,7 +264,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return true when return empty list from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return &[]mongodbatlas.CustomDBRole{}, nil, nil
 				},
@@ -308,7 +280,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return &[]mongodbatlas.CustomDBRole{
 						{
@@ -360,7 +332,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return &[]mongodbatlas.CustomDBRole{
 						{
@@ -412,7 +384,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile custom roles", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return &[]mongodbatlas.CustomDBRole{
 						{
@@ -468,7 +440,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 func TestEnsureCustomRoles(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -486,7 +458,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			CustomDBRoles: &customRolesClient{
+			CustomDBRoles: &atlas.CustomRolesClientMock{
 				ListFunc: func(projectID string) (*[]mongodbatlas.CustomDBRole, *mongodbatlas.Response, error) {
 					return &[]mongodbatlas.CustomDBRole{
 						{
