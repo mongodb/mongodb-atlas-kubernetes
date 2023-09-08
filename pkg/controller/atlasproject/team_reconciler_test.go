@@ -5,63 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-
+	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 )
-
-type teamsClient struct {
-	GetFunc func() (*mongodbatlas.Team, *mongodbatlas.Response, error)
-}
-
-func (c *teamsClient) List(_ context.Context, _ string, _ *mongodbatlas.ListOptions) ([]mongodbatlas.Team, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-	return c.GetFunc()
-}
-
-func (c *teamsClient) GetOneTeamByName(_ context.Context, _ string, _ string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) GetTeamUsersAssigned(_ context.Context, _ string, _ string) ([]mongodbatlas.AtlasUser, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) Create(_ context.Context, _ string, _ *mongodbatlas.Team) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) Rename(_ context.Context, _ string, _ string, _ string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) UpdateTeamRoles(_ context.Context, _ string, _ string, _ *mongodbatlas.TeamUpdateRoles) ([]mongodbatlas.TeamRoles, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) AddUsersToTeam(_ context.Context, _ string, _ string, _ []string) ([]mongodbatlas.AtlasUser, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *teamsClient) RemoveUserToTeam(_ context.Context, _ string, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *teamsClient) RemoveTeamFromOrganization(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *teamsClient) RemoveTeamFromProject(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return error when passing wrong resource", func(t *testing.T) {
@@ -80,8 +31,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource was not found in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &teamsClient{
-				GetFunc: func() (*mongodbatlas.Team, *mongodbatlas.Response, error) {
+			Teams: &atlas_mock.TeamsClientMock{
+				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound}
 				},
 			},
@@ -99,8 +50,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return error when failed to fetch the team from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &teamsClient{
-				GetFunc: func() (*mongodbatlas.Team, *mongodbatlas.Response, error) {
+			Teams: &atlas_mock.TeamsClientMock{
+				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, errors.New("unavailable")
 				},
 			},
@@ -118,8 +69,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource are equal", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &teamsClient{
-				GetFunc: func() (*mongodbatlas.Team, *mongodbatlas.Response, error) {
+			Teams: &atlas_mock.TeamsClientMock{
+				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Team{
 						ID:        "team-id-1",
 						Name:      "My Team",
@@ -145,8 +96,8 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return true when resource are different", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &teamsClient{
-				GetFunc: func() (*mongodbatlas.Team, *mongodbatlas.Response, error) {
+			Teams: &atlas_mock.TeamsClientMock{
+				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Team{
 						ID:        "team-id-1",
 						Name:      "My Team",
