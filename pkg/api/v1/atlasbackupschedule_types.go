@@ -9,6 +9,9 @@ a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 package v1
 
 import (
+	"strings"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -94,6 +97,51 @@ type AtlasBackupSchedule struct {
 	Spec AtlasBackupScheduleSpec `json:"spec,omitempty"`
 
 	Status status.BackupScheduleStatus `json:"status,omitempty"`
+}
+
+func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName string, policy *AtlasBackupPolicy) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
+	atlasPolicy := mongodbatlas.Policy{}
+
+	for _, bpItem := range policy.Spec.Items {
+		atlasPolicy.PolicyItems = append(atlasPolicy.PolicyItems, mongodbatlas.PolicyItem{
+			FrequencyInterval: bpItem.FrequencyInterval,
+			FrequencyType:     strings.ToLower(bpItem.FrequencyType),
+			RetentionValue:    bpItem.RetentionValue,
+			RetentionUnit:     strings.ToLower(bpItem.RetentionUnit),
+		})
+	}
+
+	result := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+		ClusterName:                       clusterName,
+		ClusterID:                         clusterID,
+		ReferenceHourOfDay:                &in.Spec.ReferenceHourOfDay,
+		ReferenceMinuteOfHour:             &in.Spec.ReferenceMinuteOfHour,
+		RestoreWindowDays:                 &in.Spec.RestoreWindowDays,
+		UpdateSnapshots:                   &in.Spec.UpdateSnapshots,
+		Policies:                          []mongodbatlas.Policy{atlasPolicy},
+		AutoExportEnabled:                 &in.Spec.AutoExportEnabled,
+		UseOrgAndGroupNamesInExportPrefix: &in.Spec.UseOrgAndGroupNamesInExportPrefix,
+		CopySettings:                      make([]mongodbatlas.CopySetting, 0, len(in.Spec.CopySettings)),
+	}
+
+	if in.Spec.Export != nil {
+		result.Export = &mongodbatlas.Export{
+			ExportBucketID: in.Spec.Export.ExportBucketID,
+			FrequencyType:  in.Spec.Export.FrequencyType,
+		}
+	}
+
+	for _, copySetting := range in.Spec.CopySettings {
+		result.CopySettings = append(result.CopySettings, mongodbatlas.CopySetting{
+			CloudProvider:     copySetting.CloudProvider,
+			RegionName:        copySetting.RegionName,
+			ReplicationSpecID: copySetting.ReplicationSpecID,
+			ShouldCopyOplogs:  copySetting.ShouldCopyOplogs,
+			Frequencies:       copySetting.Frequencies,
+		})
+	}
+
+	return result
 }
 
 func (in *AtlasBackupSchedule) GetStatus() status.Status {
