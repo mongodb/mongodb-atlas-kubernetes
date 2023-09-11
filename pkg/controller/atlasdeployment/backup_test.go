@@ -8,28 +8,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type backupsClient struct {
-	GetFunc func() (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error)
-}
-
-func (bs *backupsClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-	return bs.GetFunc()
-}
-
-func (bs *backupsClient) Update(_ context.Context, _ string, _ string, _ *mongodbatlas.CloudProviderSnapshotBackupPolicy) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (bs *backupsClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
-	panic("not implemented") // TODO: Implement
-}
 
 const (
 	projectID   = "testProjectID"
@@ -47,8 +32,8 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false if backupschedule is not in atlas", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
-			CloudProviderSnapshotBackupPolicies: &backupsClient{
-				GetFunc: func() (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
+			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
+				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound}
 				},
 			},
@@ -60,8 +45,8 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 
 	t.Run("should return true if resources are not equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
-			CloudProviderSnapshotBackupPolicies: &backupsClient{
-				GetFunc: func() (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
+			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
+				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 							ClusterID:             clusterID,
 							ClusterName:           clusterName,
@@ -115,8 +100,8 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false if resources are equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
-			CloudProviderSnapshotBackupPolicies: &backupsClient{
-				GetFunc: func() (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
+			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
+				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
 					return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 							ClusterID:             clusterID,
 							ClusterName:           clusterName,
