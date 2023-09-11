@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -9,51 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
-
-type privateEndpointClient struct {
-	ListFunc func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error)
-}
-
-func (c *privateEndpointClient) Create(_ context.Context, _ string, _ *mongodbatlas.PrivateEndpointConnection) (*mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *privateEndpointClient) Get(_ context.Context, _ string, _ string, _ string) (*mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *privateEndpointClient) List(_ context.Context, projectID string, providerName string, _ *mongodbatlas.ListOptions) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-	return c.ListFunc(projectID, providerName)
-}
-
-func (c *privateEndpointClient) Delete(_ context.Context, _ string, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *privateEndpointClient) AddOnePrivateEndpoint(_ context.Context, _ string, _ string, _ string, _ *mongodbatlas.InterfaceEndpointConnection) (*mongodbatlas.InterfaceEndpointConnection, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *privateEndpointClient) GetOnePrivateEndpoint(_ context.Context, _ string, _ string, _ string, _ string) (*mongodbatlas.InterfaceEndpointConnection, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *privateEndpointClient) DeleteOnePrivateEndpoint(_ context.Context, _ string, _ string, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *privateEndpointClient) UpdateRegionalizedPrivateEndpointSetting(_ context.Context, _ string, _ bool) (*mongodbatlas.RegionalizedPrivateEndpointSetting, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *privateEndpointClient) GetRegionalizedPrivateEndpointSetting(_ context.Context, _ string) (*mongodbatlas.RegionalizedPrivateEndpointSetting, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
 
 func TestGetEndpointsNotInAtlas(t *testing.T) {
 	const region1 = "SOME_REGION"
@@ -140,7 +100,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -156,7 +116,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
 				},
@@ -172,7 +132,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					if providerName == "AWS" {
 						return []mongodbatlas.PrivateEndpointConnection{
@@ -212,7 +172,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					if providerName == "AWS" {
 						return []mongodbatlas.PrivateEndpointConnection{
@@ -257,7 +217,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile private endpoints", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					if providerName == "AWS" {
 						return []mongodbatlas.PrivateEndpointConnection{
@@ -304,7 +264,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 func TestEnsurePrivateEndpoint(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -322,7 +282,7 @@ func TestEnsurePrivateEndpoint(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &privateEndpointClient{
+			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
 				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
 					if providerName == "AWS" {
 						return []mongodbatlas.PrivateEndpointConnection{

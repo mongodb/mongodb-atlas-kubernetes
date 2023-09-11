@@ -5,68 +5,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
-
-type containerClient struct {
-	ListFunc func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error)
-}
-
-func (c *containerClient) List(_ context.Context, projectID string, _ *mongodbatlas.ContainersListOptions) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
-	return c.ListFunc(projectID)
-}
-
-func (c *containerClient) ListAll(_ context.Context, _ string, _ *mongodbatlas.ListOptions) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *containerClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.Container, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *containerClient) Create(_ context.Context, _ string, _ *mongodbatlas.Container) (*mongodbatlas.Container, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *containerClient) Update(_ context.Context, _ string, _ string, _ *mongodbatlas.Container) (*mongodbatlas.Container, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *containerClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-type peersClient struct {
-	ListFunc func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error)
-}
-
-func (c *peersClient) List(_ context.Context, projectID string, _ *mongodbatlas.ContainersListOptions) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
-	return c.ListFunc(projectID)
-}
-
-func (c *peersClient) Get(_ context.Context, _ string, _ string) (*mongodbatlas.Peer, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *peersClient) Create(_ context.Context, _ string, _ *mongodbatlas.Peer) (*mongodbatlas.Peer, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *peersClient) Update(_ context.Context, _ string, _ string, _ *mongodbatlas.Peer) (*mongodbatlas.Peer, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *peersClient) Delete(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
@@ -85,7 +32,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch container data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Containers: &containerClient{
+			Containers: &atlas.ContainerClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -101,12 +48,12 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch peers data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Containers: &containerClient{
+			Containers: &atlas.ContainerClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 					return []mongodbatlas.Container{}, nil, nil
 				},
 			},
-			Peers: &peersClient{
+			Peers: &atlas.NetworkPeeringClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -122,12 +69,12 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no container items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Containers: &containerClient{
+			Containers: &atlas.ContainerClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 					return []mongodbatlas.Container{}, nil, nil
 				},
 			},
-			Peers: &peersClient{
+			Peers: &atlas.NetworkPeeringClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 					return []mongodbatlas.Peer{}, nil, nil
 				},
@@ -144,7 +91,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		t.Run("should return true for AWS configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -155,7 +102,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -196,7 +143,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return true for GCP configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -206,7 +153,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -245,7 +192,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return true for Azure configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -256,7 +203,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -301,7 +248,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return false when unable to reconcile due to containers config mismatch", func(t *testing.T) {
 		t.Run("should return false for AWS configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -312,7 +259,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -353,7 +300,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return false for GCP configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -363,7 +310,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -402,7 +349,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return false for Azure configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -413,7 +360,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -458,7 +405,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return false when unable to reconcile due to peering config mismatch", func(t *testing.T) {
 		t.Run("should return false for AWS configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -469,7 +416,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -510,7 +457,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return false for GCP configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -520,7 +467,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -558,7 +505,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 
 		t.Run("should return false for Azure configuration", func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				Containers: &containerClient{
+				Containers: &atlas.ContainerClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Container{
 							{
@@ -569,7 +516,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 						}, nil, nil
 					},
 				},
-				Peers: &peersClient{
+				Peers: &atlas.NetworkPeeringClientMock{
 					ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 						return []mongodbatlas.Peer{
 							{
@@ -615,7 +562,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 func TestEnsureNetworkPeers(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Containers: &containerClient{
+			Containers: &atlas.ContainerClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -633,7 +580,7 @@ func TestEnsureNetworkPeers(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Containers: &containerClient{
+			Containers: &atlas.ContainerClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Container, *mongodbatlas.Response, error) {
 					return []mongodbatlas.Container{
 						{
@@ -644,7 +591,7 @@ func TestEnsureNetworkPeers(t *testing.T) {
 					}, nil, nil
 				},
 			},
-			Peers: &peersClient{
+			Peers: &atlas.NetworkPeeringClientMock{
 				ListFunc: func(projectID string) ([]mongodbatlas.Peer, *mongodbatlas.Response, error) {
 					return []mongodbatlas.Peer{
 						{

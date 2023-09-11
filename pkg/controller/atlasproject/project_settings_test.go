@@ -5,90 +5,16 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
-	"github.com/stretchr/testify/assert"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type projectClient struct {
-	GetProjectSettingsFunc      func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error)
-	GetProjectTeamsAssignedFunc func(projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error)
-}
-
-func (c *projectClient) GetAllProjects(_ context.Context, _ *mongodbatlas.ListOptions) (*mongodbatlas.Projects, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) GetOneProject(_ context.Context, _ string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) GetOneProjectByName(_ context.Context, _ string) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) Create(_ context.Context, _ *mongodbatlas.Project, _ *mongodbatlas.CreateProjectOptions) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) Update(_ context.Context, _ string, _ *mongodbatlas.ProjectUpdateRequest) (*mongodbatlas.Project, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) Delete(_ context.Context, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *projectClient) GetProjectTeamsAssigned(_ context.Context, projectID string) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-	return c.GetProjectTeamsAssignedFunc(projectID)
-}
-
-func (c *projectClient) AddTeamsToProject(_ context.Context, _ string, _ []*mongodbatlas.ProjectTeam) (*mongodbatlas.TeamsAssigned, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) RemoveUserFromProject(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *projectClient) Invitations(_ context.Context, _ string, _ *mongodbatlas.InvitationOptions) ([]*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) Invitation(_ context.Context, _ string, _ string) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) InviteUser(_ context.Context, _ string, _ *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) UpdateInvitation(_ context.Context, _ string, _ *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) UpdateInvitationByID(_ context.Context, _ string, _ string, _ *mongodbatlas.Invitation) (*mongodbatlas.Invitation, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *projectClient) DeleteInvitation(_ context.Context, _ string, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *projectClient) GetProjectSettings(_ context.Context, projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
-	return c.GetProjectSettingsFunc(projectID)
-}
-
-func (c *projectClient) UpdateProjectSettings(_ context.Context, _ string, _ *mongodbatlas.ProjectSettings) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
 
 func TestProjectSettingsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
@@ -107,7 +33,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -123,7 +49,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, nil
 				},
@@ -139,7 +65,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -184,7 +110,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -230,7 +156,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Project Settings", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
@@ -278,7 +204,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 func TestEnsureProjectSettings(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -296,7 +222,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Projects: &projectClient{
+			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),

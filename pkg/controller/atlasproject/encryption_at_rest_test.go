@@ -5,38 +5,21 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	v1 "k8s.io/api/core/v1"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type encryptionAtRestClient struct {
-	GetFunc func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error)
-}
-
-func (c *encryptionAtRestClient) Create(_ context.Context, _ *mongodbatlas.EncryptionAtRest) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-	return nil, nil, nil
-}
-
-func (c *encryptionAtRestClient) Get(_ context.Context, projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
-	return c.GetFunc(projectID)
-}
-func (c *encryptionAtRestClient) Delete(_ context.Context, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestCanEncryptionAtRestReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
@@ -55,7 +38,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -71,7 +54,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 
 	t.Run("should return true when all providers are disabled in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
@@ -97,7 +80,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
@@ -143,7 +126,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
@@ -189,7 +172,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile Encryption at Rest", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
@@ -237,7 +220,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 func TestEnsureEncryptionAtRest(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -258,7 +241,7 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			EncryptionsAtRest: &encryptionAtRestClient{
+			EncryptionsAtRest: &atlas.EncryptionAtRestClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{

@@ -5,45 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
-
-type maintenanceWindowClient struct {
-	GetFunc func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error)
-}
-
-func (c *maintenanceWindowClient) Get(_ context.Context, projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
-	return c.GetFunc(projectID)
-}
-
-func (c *maintenanceWindowClient) Update(_ context.Context, _ string, _ *mongodbatlas.MaintenanceWindow) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *maintenanceWindowClient) Defer(_ context.Context, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *maintenanceWindowClient) AutoDefer(_ context.Context, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
-
-func (c *maintenanceWindowClient) Reset(_ context.Context, _ string) (*mongodbatlas.Response, error) {
-	return nil, nil
-}
 
 func TestValidateMaintenanceWindow(t *testing.T) {
 	testCases := []struct {
@@ -176,7 +148,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -192,7 +164,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 
 	t.Run("should return true when configuration is empty in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{}, nil, nil
 				},
@@ -208,7 +180,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
@@ -234,7 +206,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
@@ -260,7 +232,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
@@ -289,7 +261,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 func TestEnsureMaintenanceWindow(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -307,7 +279,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			MaintenanceWindows: &maintenanceWindowClient{
+			MaintenanceWindows: &atlas.MaintenanceWindowClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek:            1,
