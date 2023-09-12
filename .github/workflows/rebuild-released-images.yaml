@@ -85,7 +85,7 @@ jobs:
         run: |
           go mod download
       - name: Build and push operator to the DockerHub (daily-tag)
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           build-args: VERSION=${{ matrix.version }}
@@ -95,7 +95,7 @@ jobs:
           cache-to: type=gha,mode=max
           push: true
       - name: Build and push operator to the DockerHub (release-tag)
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           build-args: VERSION=${{ matrix.version }}
