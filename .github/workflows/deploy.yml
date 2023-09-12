@@ -35,7 +35,7 @@ jobs:
         TAGS="${REPOSITORY}:${TAG}"
         echo "tags=$TAGS" >> $GITHUB_OUTPUT
     - name: Push Atlas Operator to Registry
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         push: true
