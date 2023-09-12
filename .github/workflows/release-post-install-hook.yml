@@ -48,7 +48,7 @@ jobs:
           exit 1
 
       - name: Login to Quay registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.QUAY_RELEASE_REGISTRY }}
           username: ${{ env.QUAY_ROBOT_NAME }}
