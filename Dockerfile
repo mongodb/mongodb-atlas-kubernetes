@@ -14,6 +14,7 @@ RUN go install golang.org/x/tools/cmd/goimports@latest
 COPY cmd/manager/main.go cmd/manager/main.go
 COPY .git/ .git/
 COPY pkg/ pkg/
+COPY internal/ internal/
 COPY Makefile Makefile
 COPY config/ config/
 COPY hack/ hack/
