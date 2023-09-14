@@ -46,6 +46,7 @@ LABEL name="MongoDB Atlas Operator" \
 WORKDIR /
 COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 USER 1001:0
 ENTRYPOINT ["/manager"]
