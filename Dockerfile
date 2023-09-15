@@ -14,6 +14,7 @@ RUN go install golang.org/x/tools/cmd/goimports@latest
 COPY cmd/manager/main.go cmd/manager/main.go
 COPY .git/ .git/
 COPY pkg/ pkg/
+COPY internal/ internal/
 COPY Makefile Makefile
 COPY config/ config/
 COPY hack/ hack/
@@ -27,18 +28,7 @@ ENV TARGET_OS=${TARGETOS}
 
 RUN make manager
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2
-
-RUN microdnf install -y yum &&\
-  yum -y update &&\
-  yum -y upgrade &&\
-  yum clean all &&\
-  dnf remove python3-pip -y &&\
-  microdnf clean all
-
-#FROM registry.access.redhat.com/ubi8/ubi
-#
-#RUN dnf -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
 LABEL name="MongoDB Atlas Operator" \
   maintainer="support@mongodb.com" \
@@ -56,6 +46,7 @@ LABEL name="MongoDB Atlas Operator" \
 WORKDIR /
 COPY --from=builder /workspace/bin/manager .
 COPY hack/licenses licenses
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 
 USER 1001:0
 ENTRYPOINT ["/manager"]
