@@ -57,7 +57,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: "Set up QEMU"
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
       - name: "Set up Docker Buildx"
