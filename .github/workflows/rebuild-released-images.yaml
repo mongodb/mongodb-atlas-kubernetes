@@ -61,7 +61,7 @@ jobs:
         with:
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
       - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
       - name: Login to docker registry
