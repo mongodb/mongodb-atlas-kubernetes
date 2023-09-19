@@ -43,6 +43,7 @@ jobs:
           echo date=${DATE} >> $GITHUB_OUTPUT
   
   build-and-publish-image:
+    name: Build and publish image
     runs-on: ubuntu-latest
     env:
       IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }} 
@@ -60,6 +61,12 @@ jobs:
       - name: Rebuild ${{matrix.version}}
         run: |
           echo "Building ${{matrix.version}} version"
+      - name : Checkout actions
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/actions/build-push-image/action.yaml
+          sparse-checkout-cone-mode: false
       - name: Build and push operator to Dockerhub & Quay (daily-tag)
         uses: ./.github/actions/build-push-image
         with:
@@ -78,6 +85,7 @@ jobs:
           repository: ${{ env.IMAGE_REPOSITORY }}
           version: ${{ matrix.version }}
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          ref: v${{ matrix.version }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
           # push_to_quay: true

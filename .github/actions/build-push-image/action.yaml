@@ -49,15 +49,15 @@ runs:
   using: "composite"
   steps:
     - name: Check out code
-      uses: actions/checkout@v3.5.3
-      if: ${{ inputs.forked == false }}
+      uses: actions/checkout@v4
+      if: ${{ inputs.forked == 'false' }}
       with:
         ref: ${{ inputs.ref }}
         submodules: true
         fetch-depth: 0
     - name: Check out code for forked PR
-      uses: actions/checkout@v3.5.3
-      if: ${{ inputs.forked == true }}
+      uses: actions/checkout@v4
+      if: ${{ inputs.forked == 'true' }}
       with:
         ref: ${{github.event.pull_request.head.sha}}
         repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -76,6 +76,10 @@ runs:
       with:
         username: ${{ inputs.docker_username }}
         password: ${{ inputs.docker_password }}
+    - name: test
+      shell: bash
+      run : |
+        ls ${{ github.workspace }}
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
