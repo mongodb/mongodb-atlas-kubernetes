@@ -15,8 +15,6 @@ import (
 
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 )
 
 var globalAtlas *Atlas
@@ -43,7 +41,7 @@ func AClient() (Atlas, error) {
 		return A, err
 	}
 	A.Client = mongodbatlas.NewClient(tc)
-	u, _ := url.Parse(config.AtlasHost)
+	u, _ := url.Parse(os.Getenv("MCLI_OPS_MANAGER_URL"))
 	A.Client.BaseURL = u
 	return A, nil
 }

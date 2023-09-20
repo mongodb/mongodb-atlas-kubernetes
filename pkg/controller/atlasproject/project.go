@@ -24,6 +24,7 @@ func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, proj
 				OrgID:                     ctx.Connection.OrgID,
 				Name:                      project.Spec.Name,
 				WithDefaultAlertsSettings: &project.Spec.WithDefaultAlertsSettings,
+				RegionUsageRestrictions:   project.Spec.RegionUsageRestrictions,
 			}
 			if p, _, err = ctx.Client.Projects.Create(context.Background(), p, &mongodbatlas.CreateProjectOptions{}); err != nil {
 				return "", workflow.Terminate(workflow.ProjectNotCreatedInAtlas, err.Error())

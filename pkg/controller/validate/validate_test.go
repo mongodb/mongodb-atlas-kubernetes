@@ -25,11 +25,11 @@ func TestClusterValidation(t *testing.T) {
 	t.Run("Invalid cluster specs", func(t *testing.T) {
 		t.Run("Multiple specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: &mdbv1.DeploymentSpec{}}
-			assert.Error(t, DeploymentSpec(spec))
+			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("No specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: nil}
-			assert.Error(t, DeploymentSpec(spec))
+			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Instance size not empty when serverless", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
@@ -38,7 +38,7 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName:     "SERVERLESS",
 				},
 			}}
-			assert.Error(t, DeploymentSpec(spec))
+			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Instance size unset when not serverless", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
@@ -47,7 +47,7 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName:     "AWS",
 				},
 			}}
-			assert.Error(t, DeploymentSpec(spec))
+			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("different instance sizes for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in the same region", func(t *testing.T) {
@@ -66,7 +66,7 @@ func TestClusterValidation(t *testing.T) {
 						},
 					},
 				}
-				assert.Error(t, DeploymentSpec(spec))
+				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different instance size in different regions", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
@@ -89,7 +89,7 @@ func TestClusterValidation(t *testing.T) {
 						},
 					},
 				}
-				assert.Error(t, DeploymentSpec(spec))
+				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different instance size in different replications", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
@@ -116,7 +116,7 @@ func TestClusterValidation(t *testing.T) {
 						},
 					},
 				}
-				assert.Error(t, DeploymentSpec(spec))
+				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 		})
 		t.Run("different autoscaling for advanced deployment", func(t *testing.T) {
@@ -149,7 +149,7 @@ func TestClusterValidation(t *testing.T) {
 						},
 					},
 				}
-				assert.Error(t, DeploymentSpec(spec))
+				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different autoscaling in different replications", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
@@ -184,20 +184,20 @@ func TestClusterValidation(t *testing.T) {
 						},
 					},
 				}
-				assert.Error(t, DeploymentSpec(spec))
+				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 		})
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: nil}
-			assert.NoError(t, DeploymentSpec(spec))
-			assert.Nil(t, DeploymentSpec(spec))
+			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
+			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Regular cluster specs specified", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{}}
-			assert.NoError(t, DeploymentSpec(spec))
-			assert.Nil(t, DeploymentSpec(spec))
+			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
+			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 
 		t.Run("Serverless Cluster", func(t *testing.T) {
@@ -206,8 +206,8 @@ func TestClusterValidation(t *testing.T) {
 					ProviderName: "SERVERLESS",
 				},
 			}}
-			assert.NoError(t, DeploymentSpec(spec))
-			assert.Nil(t, DeploymentSpec(spec))
+			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
+			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Advanced cluster with replication config", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{
@@ -250,19 +250,89 @@ func TestClusterValidation(t *testing.T) {
 					},
 				},
 			}
-			assert.NoError(t, DeploymentSpec(spec))
-			assert.Nil(t, DeploymentSpec(spec))
+			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
+			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 	})
 }
 
+func TestDeploymentForGov(t *testing.T) {
+	t.Run("should fail when deployment is configured to non-gov region", func(t *testing.T) {
+		deploy := mdbv1.AtlasDeploymentSpec{
+			DeploymentSpec: &mdbv1.DeploymentSpec{
+				ProviderSettings: &mdbv1.ProviderSettingsSpec{
+					RegionName: "EU_EAST_1",
+				},
+			},
+		}
+
+		assert.ErrorContains(t, deploymentForGov(&deploy, "GOV_REGIONS_ONLY"), "deployment in atlas for government support a restricted set of regions: EU_EAST_1 is not part of AWS for government regions")
+	})
+
+	t.Run("should fail when advanced deployment is configured to non-gov region", func(t *testing.T) {
+		deploy := mdbv1.AtlasDeploymentSpec{
+			AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							{
+								RegionName: "EU_EAST_1",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, deploymentForGov(&deploy, "COMMERCIAL_FEDRAMP_REGIONS_ONLY"), "advanced deployment in atlas for government support a restricted set of regions: EU_EAST_1 is not part of AWS FedRAMP regions")
+	})
+}
+
 func TestProjectValidation(t *testing.T) {
+	t.Run("should fail when commercial Atlas sets region restriction field to GOV_REGIONS_ONLY", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, false), "regionUsageRestriction can be used only with Atlas for government")
+	})
+
+	t.Run("should fail when commercial Atlas sets region restriction field to COMMERCIAL_FEDRAMP_REGIONS_ONLY", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "COMMERCIAL_FEDRAMP_REGIONS_ONLY",
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, false), "regionUsageRestriction can be used only with Atlas for government")
+	})
+
+	t.Run("should not fail if commercial Atlas sets region restriction field to empty", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{},
+		}
+
+		assert.NoError(t, Project(akoProject, false))
+	})
+
+	t.Run("should not fail if commercial Atlas sets region restriction field to NONE", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "NONE",
+			},
+		}
+
+		assert.NoError(t, Project(akoProject, false))
+	})
+
 	t.Run("custom roles spec", func(t *testing.T) {
 		t.Run("empty custom roles spec", func(t *testing.T) {
 			spec := &mdbv1.AtlasProject{
 				Spec: mdbv1.AtlasProjectSpec{},
 			}
-			assert.NoError(t, Project(spec))
+			assert.NoError(t, Project(spec, false))
 		})
 		t.Run("valid custom roles spec", func(t *testing.T) {
 			spec := &mdbv1.AtlasProject{
@@ -280,7 +350,7 @@ func TestProjectValidation(t *testing.T) {
 					},
 				},
 			}
-			assert.NoError(t, Project(spec))
+			assert.NoError(t, Project(spec, false))
 		})
 		t.Run("invalid custom roles spec", func(t *testing.T) {
 			spec := &mdbv1.AtlasProject{
@@ -304,8 +374,158 @@ func TestProjectValidation(t *testing.T) {
 					},
 				},
 			}
-			assert.Error(t, Project(spec))
+			assert.Error(t, Project(spec, false))
 		})
+	})
+}
+
+func TestProjectForGov(t *testing.T) {
+	t.Run("should fail if there's non AWS network peering config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				NetworkPeers: []mdbv1.NetworkPeer{
+					{
+						ProviderName:        "GCP",
+						AccepterRegionName:  "europe-west-1",
+						RouteTableCIDRBlock: "192.168.0.0/16",
+						AtlasCIDRBlock:      "10.8.0.0/18",
+						NetworkName:         "my-gcp-peer",
+						GCPProjectID:        "my-gcp-project",
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "atlas for government only supports AWS provider. one or more network peers are not set to AWS")
+	})
+
+	t.Run("should fail if there's no gov region in network peering config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				NetworkPeers: []mdbv1.NetworkPeer{
+					{
+						ProviderName:        "AWS",
+						AccepterRegionName:  "us-east-1",
+						ContainerRegion:     "us-east-1",
+						RouteTableCIDRBlock: "192.168.0.0/16",
+						AtlasCIDRBlock:      "10.8.0.0/22",
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "network peering in atlas for government support a restricted set of regions: us-east-1 is not part of AWS for government regions")
+	})
+
+	t.Run("should fail if there's a GCP encryption at rest config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				EncryptionAtRest: &mdbv1.EncryptionAtRest{
+					GoogleCloudKms: mdbv1.GoogleCloudKms{
+						Enabled: toptr.MakePtr(true),
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "atlas for government only supports AWS provider. disable encryption at rest for Google Cloud")
+	})
+
+	t.Run("should fail if there's a Azure encryption at rest config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				EncryptionAtRest: &mdbv1.EncryptionAtRest{
+					AzureKeyVault: mdbv1.AzureKeyVault{
+						Enabled: toptr.MakePtr(true),
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "atlas for government only supports AWS provider. disable encryption at rest for Azure")
+	})
+
+	t.Run("should fail if there's a AWS encryption at rest config with wrong region", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				EncryptionAtRest: &mdbv1.EncryptionAtRest{
+					AwsKms: mdbv1.AwsKms{
+						Enabled: toptr.MakePtr(true),
+						Region:  "us-east-1",
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "encryption at rest in atlas for government support a restricted set of regions: us-east-1 is not part of AWS for government regions")
+	})
+
+	t.Run("should fail if there's non AWS private endpoint config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+					{
+						Provider: "GCP",
+						Region:   "europe-west-1",
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "atlas for government only supports AWS provider. one or more private endpoints are not set to AWS")
+	})
+
+	t.Run("should fail if there's no gov region in private endpoint config", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "COMMERCIAL_FEDRAMP_REGIONS_ONLY",
+				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+					{
+						Provider: "AWS",
+						Region:   "eu-east-1",
+					},
+				},
+			},
+		}
+
+		assert.ErrorContains(t, Project(akoProject, true), "private endpoint in atlas for government support a restricted set of regions: eu-east-1 is not part of AWS FedRAMP regions")
+	})
+
+	t.Run("should succeed if resources are properly configured", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
+				NetworkPeers: []mdbv1.NetworkPeer{
+					{
+						ProviderName:        "AWS",
+						AccepterRegionName:  "us-gov-east-1",
+						ContainerRegion:     "us-gov-east-1",
+						RouteTableCIDRBlock: "192.168.0.0/16",
+						AtlasCIDRBlock:      "10.8.0.0/22",
+					},
+				},
+				EncryptionAtRest: &mdbv1.EncryptionAtRest{
+					AwsKms: mdbv1.AwsKms{
+						Enabled: toptr.MakePtr(true),
+						Region:  "us-gov-east-1",
+					},
+				},
+				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+					{
+						Provider: "AWS",
+						Region:   "us-gov-east-1",
+					},
+				},
+			},
+		}
+
+		assert.NoError(t, Project(akoProject, true))
 	})
 }
 

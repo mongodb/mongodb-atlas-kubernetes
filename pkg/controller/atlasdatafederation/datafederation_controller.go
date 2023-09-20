@@ -84,6 +84,13 @@ func (r *AtlasDataFederationReconciler) Reconcile(contextInt context.Context, re
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
+	if !customresource.IsResourceSupportedInDomain(dataFederation, r.AtlasDomain) {
+		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDataFederation is not supported by Atlas for government").
+			WithoutRetry()
+		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	project := &mdbv1.AtlasProject{}
 	if result := r.readProjectResource(contextInt, dataFederation, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)

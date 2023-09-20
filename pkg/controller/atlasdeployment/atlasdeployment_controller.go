@@ -120,15 +120,22 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	if err := validate.DeploymentSpec(deployment.Spec); err != nil {
+	project := &mdbv1.AtlasProject{}
+	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
+		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
+	if err := validate.DeploymentSpec(&deployment.Spec, customresource.IsGov(r.AtlasDomain), project.Spec.RegionUsageRestrictions); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
-	project := &mdbv1.AtlasProject{}
-	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
+	if !customresource.IsResourceSupportedInDomain(deployment, r.AtlasDomain) {
+		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDeployment is not supported by Atlas for government").
+			WithoutRetry()
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}

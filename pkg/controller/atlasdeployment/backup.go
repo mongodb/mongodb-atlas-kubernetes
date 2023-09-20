@@ -131,6 +131,10 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		return nil, err
 	}
 
+	if !customresource.IsResourceSupportedInDomain(bSchedule, r.AtlasDomain) {
+		return nil, errors.New("the AtlasBackupSchedule is not supported by Atlas for government")
+	}
+
 	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(deployment.GetDeploymentName()))
 
 	if err = r.Client.Status().Update(ctx, bSchedule); err != nil {
@@ -180,6 +184,10 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 		errText := fmt.Sprintf("backup policy validation result: %v", resourceVersionIsValid)
 		r.Log.Debug(errText)
 		return nil, errors.New(errText)
+	}
+
+	if !customresource.IsResourceSupportedInDomain(bPolicy, r.AtlasDomain) {
+		return nil, errors.New("the AtlasBackupPolicy is not supported by Atlas for government")
 	}
 
 	scheduleRef := kube.ObjectKeyFromObject(bSchedule).String()

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdatafederation"
+
 	"go.uber.org/zap/zaptest"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -150,6 +152,22 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		return nil, err
 	}
 
+	if err = (&atlasdatafederation.AtlasDataFederationReconciler{
+		ResourceWatcher:             watch.NewResourceWatcher(),
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		AtlasDomain:                 config.AtlasDomain,
+		GlobalAPISecret:             config.GlobalAPISecret,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasDataFederation"),
+		GlobalPredicates:            globalPredicates,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
+		return nil, err
+	}
+
 	if err = mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		return nil, err
@@ -211,13 +229,19 @@ func managerDefaults() *Config {
 	return &Config{
 		AtlasDomain:                 "https://cloud-qa.mongodb.com/",
 		EnableLeaderElection:        false,
-		MetricsAddr:                 ":8080",
+		MetricsAddr:                 "0",
 		Namespace:                   "mongodb-atlas-system",
 		WatchedNamespaces:           map[string]bool{},
-		ProbeAddr:                   ":8081",
+		ProbeAddr:                   "0",
 		GlobalAPISecret:             client.ObjectKey{},
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
+	}
+}
+
+func WithAtlasDomain(domain string) ManagerConfig {
+	return func(config *Config) {
+		config.AtlasDomain = domain
 	}
 }
 

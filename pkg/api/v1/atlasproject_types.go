@@ -46,6 +46,14 @@ type AtlasProjectSpec struct {
 	// Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
 	Name string `json:"name"`
 
+	// RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.
+	// This parameter should not be used with commercial Atlas.
+	// In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
+	// +kubebuilder:validation:Enum=NONE;GOV_REGIONS_ONLY;COMMERCIAL_FEDRAMP_REGIONS_ONLY
+	// +kubebuilder:default:=NONE
+	// +optional
+	RegionUsageRestrictions string `json:"regionUsageRestrictions,omitempty"`
+
 	// ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
 	// Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
 	// +optional

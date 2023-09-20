@@ -210,7 +210,9 @@ func GetAllServerless(ctx *workflow.Context, projectID string) ([]*mongodbatlas.
 func IsCloudGovDomain(ctx *workflow.Context) bool {
 	domains := []string{
 		"cloudgov.mongodb.com",
+		"cloud.mongodbgov.com",
 		"cloud-dev.mongodbgov.com",
+		"cloud-qa.mongodbgov.com",
 	}
 
 	for _, domain := range domains {
