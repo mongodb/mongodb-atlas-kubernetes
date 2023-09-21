@@ -112,7 +112,7 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.spec.ToAtlas()
-			if reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, tt.want) {
 				g, _ := json.MarshalIndent(got, "", " ")
 				w, _ := json.MarshalIndent(tt.want, "", " ")
 				fmt.Println("GOT", string(g))
