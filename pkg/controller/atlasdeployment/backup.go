@@ -294,7 +294,9 @@ func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) 
 	s.Links = nil
 	s.NextSnapshot = ""
 	if len(s.Policies) > 0 && len(s.Policies[0].PolicyItems) > 0 {
-		s.Policies[0].PolicyItems[0].ID = ""
+		for i := range s.Policies[0].PolicyItems {
+			s.Policies[0].PolicyItems[i].ID = ""
+		}
 	}
 	s.UpdateSnapshots = nil
 }
