@@ -1,0 +1,3 @@
+# prepare a .env file with contents such as these
+DOCKER_REGISTRY=localhost:5000
+
