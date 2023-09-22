@@ -1,7 +1,13 @@
 package validate
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
@@ -445,29 +451,28 @@ func TestBackupScheduleValidation(t *testing.T) {
 	})
 }
 
-// this key was removed immediately after download, so don't bother
-const sampleSAKey = `{
+const sampleSAKeyFmt = `{
 	"type": "service_account",
 	"project_id": "some-project",
 	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",
-	"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCviL4+Bnn759sV\nNrtyexwHtR/5JYzwivupqOMdz1zuscqKfJOo6RXzq7Em3saoxLpHwwJzPq+HX1D+\ndaE0fB2hO0Mfjkcgmro0jBbLnRJgFCx7NwkyDfj8z6i4zx2CxZLiwdqo3Q3hEMNy\n5oZs52tFlTkOALCxa76Aq4eUIblupyhlhETQB1fb4D9+U57b4eeeFRyccwR7Cg0x\nfZUE1udV7YwKphLS8dCbLoqAQ3jmaxv+Qjo8e5Mj5oaMxzRAdOO1VtG9GaLU96Rc\nKGS75w+E/eR3Pm7b2dFo3jba2jvgm3U++EJi5/0zL/TQnOMwNHASPUsYQAhZezB5\nh5/MDwmjAgMBAAECggEAIOccZer33Zipz9GpFD3wVJ+GZUC9KO+cWcJ/A/z1Ggb4\nhLnyQbSjOUAjHjqe+U6a7k2m/WwwIctjlrb85yYmtayymc0lFv75zVS/Bx6jrZ/K\ncLQxxJCq7dSM90tXaEZZkKiusH1zFw9522VLqEk+qdXdUnsdo7wjAuJkMQebRxq8\n1lp3UGqAraBXLRrYUnQwBRezSYh93nZ+u+etjRCBjMYoy06PGDrJG05/FFNgQy1y\nGkBVKnmf9WNyDuX1ePyoXCAvRkwUW5ixTNGoGrRwbwleaFTvYPBlPM+TyCw4rdnU\nzRVNpoCqkf6S9tXjHKmGgwkyMqmYMCOk/5xCSb2p4QKBgQD14xcXIf9lnyHJCllU\nQdUIAmIp9/91Rdjpf/y98LCNrD/cyTvVr0+xSnN9ksBEGwvTIaaBcvdCMNBG8sI9\nsnO8W8GG1Bs80D3XIbJFaGmTmOngvrfie3tbP77wfcPgn659Q0I1+bNZGNVX+WEM\nn+f7rfGPa8Br/zHpQf2gaGWHAwKBgQC2wOrInJ+ndpqU49JVaT6YtQj0OKeLhSpc\n0N5DdW0jjD0WrnhOsLUMPC5V8R5fo4tFPfXVIfE2k8J5xxgopJzGLlHmhxq0ltmF\nbSoM2uHKf0UiRFmVTwZmzDwn+Ym/H9J/6L7Gd86u8kmWfJYFa3OzqJTvw7e+k4kD\nITb/NlEg4QKBgQCfW4AZg/Ur/Ug+LTDbxJa2TCUmog20CYKdQk+hIh6qktoI03qt\n8KKrel8DIVruSMEPIp3xA3twMIarlKWCqucLSkRQh6LndOa/SJ1rElJqUA4zlCdE\n51Z5OwUag8exCoxhrnd4183+jnOmQn89WV1V5dPKacEZvRix3gzsKvyx1QKBgFsH\nlOsAOPYtOapYIHiyx59A7YjYf3wbhJJe55cqcoZ2YCdgGET59/R0NZBRXhO9Xq3K\nwxy6n2/UAdauuPXlqMF+aQUu3rp9OTQgwAVPMZCv/DupWAXrKwEhUgWHYnl03GEi\nCYTKQIUb4lO3EvL4JtWiby1Oi8O9sU2ByectoxOBAoGASm9BXSN8Ru+dP5/E55mb\nd//aQlxlIvROhWSnotGzhyQ6DVk2fRRZQAuTEFVEprBX87gckdzb5cdaomziO9be\nhmtv1ValgmOCnta2AYw1blvfGK7B5FEpFckMniLjWap08aironIImj6ligLWDqc0\nNbdyAvc6N/5qG8gu4f8C2Q4=\n-----END PRIVATE KEY-----\n",
+	"private_key": "%s",
 	"client_email": "619108922856-compute@developer.gserviceaccount.com",
 	"client_id": "117865750705662546099",
 	"auth_uri": "https://accounts.google.com/o/oauth2/auth",
 	"token_uri": "https://oauth2.googleapis.com/token",
 	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com",
+	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-computedeveloper.gserviceaccount.com",
 	"universe_domain": "googleapis.com"
 }`
 
-const sampleSAKeyOneLine = `{	"type": "service_account",	"project_id": "some-project",	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",	"private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCviL4+Bnn759sV\\nNrtyexwHtR/5JYzwivupqOMdz1zuscqKfJOo6RXzq7Em3saoxLpHwwJzPq+HX1D+\\ndaE0fB2hO0Mfjkcgmro0jBbLnRJgFCx7NwkyDfj8z6i4zx2CxZLiwdqo3Q3hEMNy\\n5oZs52tFlTkOALCxa76Aq4eUIblupyhlhETQB1fb4D9+U57b4eeeFRyccwR7Cg0x\\nfZUE1udV7YwKphLS8dCbLoqAQ3jmaxv+Qjo8e5Mj5oaMxzRAdOO1VtG9GaLU96Rc\\nKGS75w+E/eR3Pm7b2dFo3jba2jvgm3U++EJi5/0zL/TQnOMwNHASPUsYQAhZezB5\\nh5/MDwmjAgMBAAECggEAIOccZer33Zipz9GpFD3wVJ+GZUC9KO+cWcJ/A/z1Ggb4\\nhLnyQbSjOUAjHjqe+U6a7k2m/WwwIctjlrb85yYmtayymc0lFv75zVS/Bx6jrZ/K\\ncLQxxJCq7dSM90tXaEZZkKiusH1zFw9522VLqEk+qdXdUnsdo7wjAuJkMQebRxq8\\n1lp3UGqAraBXLRrYUnQwBRezSYh93nZ+u+etjRCBjMYoy06PGDrJG05/FFNgQy1y\\nGkBVKnmf9WNyDuX1ePyoXCAvRkwUW5ixTNGoGrRwbwleaFTvYPBlPM+TyCw4rdnU\\nzRVNpoCqkf6S9tXjHKmGgwkyMqmYMCOk/5xCSb2p4QKBgQD14xcXIf9lnyHJCllU\\nQdUIAmIp9/91Rdjpf/y98LCNrD/cyTvVr0+xSnN9ksBEGwvTIaaBcvdCMNBG8sI9\\nsnO8W8GG1Bs80D3XIbJFaGmTmOngvrfie3tbP77wfcPgn659Q0I1+bNZGNVX+WEM\\nn+f7rfGPa8Br/zHpQf2gaGWHAwKBgQC2wOrInJ+ndpqU49JVaT6YtQj0OKeLhSpc\\n0N5DdW0jjD0WrnhOsLUMPC5V8R5fo4tFPfXVIfE2k8J5xxgopJzGLlHmhxq0ltmF\\nbSoM2uHKf0UiRFmVTwZmzDwn+Ym/H9J/6L7Gd86u8kmWfJYFa3OzqJTvw7e+k4kD\\nITb/NlEg4QKBgQCfW4AZg/Ur/Ug+LTDbxJa2TCUmog20CYKdQk+hIh6qktoI03qt\\n8KKrel8DIVruSMEPIp3xA3twMIarlKWCqucLSkRQh6LndOa/SJ1rElJqUA4zlCdE\\n51Z5OwUag8exCoxhrnd4183+jnOmQn89WV1V5dPKacEZvRix3gzsKvyx1QKBgFsH\\nlOsAOPYtOapYIHiyx59A7YjYf3wbhJJe55cqcoZ2YCdgGET59/R0NZBRXhO9Xq3K\\nwxy6n2/UAdauuPXlqMF+aQUu3rp9OTQgwAVPMZCv/DupWAXrKwEhUgWHYnl03GEi\\nCYTKQIUb4lO3EvL4JtWiby1Oi8O9sU2ByectoxOBAoGASm9BXSN8Ru+dP5/E55mb\\nd//aQlxlIvROhWSnotGzhyQ6DVk2fRRZQAuTEFVEprBX87gckdzb5cdaomziO9be\\nhmtv1ValgmOCnta2AYw1blvfGK7B5FEpFckMniLjWap08aironIImj6ligLWDqc0\\nNbdyAvc6N/5qG8gu4f8C2Q4=\\n-----END PRIVATE KEY-----\\n",	"client_email": "619108922856-compute@developer.gserviceaccount.com",	"client_id": "117865750705662546099",	"auth_uri": "https://accounts.google.com/o/oauth2/auth",	"token_uri": "https://oauth2.googleapis.com/token",	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com",	"universe_domain": "googleapis.com"}`
+const sampleSAKeyOneLineFmt = `{	"type": "service_account",	"project_id": "some-project",	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",	"private_key": "%s",	"client_email": "619108922856-compute@developer.gserviceaccount.com",	"client_id": "117865750705662546099",	"auth_uri": "https://accounts.google.com/o/oauth2/auth",	"token_uri": "https://oauth2.googleapis.com/token",	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-computedeveloper.gserviceaccount.com",	"universe_domain": "googleapis.com"}`
 
 func testEncryptionAtRest(enabled bool) *mdbv1.EncryptionAtRest {
 	flag := enabled
 	return &mdbv1.EncryptionAtRest{
 		GoogleCloudKms: mdbv1.GoogleCloudKms{
 			Enabled:           &flag,
-			ServiceAccountKey: sampleSAKey,
+			ServiceAccountKey: sampleSAKey(),
 		},
 	}
 }
@@ -497,13 +502,14 @@ func TestEncryptionAtRestValidation(t *testing.T) {
 
 	t.Run("google service account key validation succeeds for a good key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKey
+		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKey()
+		fmt.Printf("g key=%q", enc.GoogleCloudKms.ServiceAccountKey)
 		assert.NoError(t, encryptionAtRest(enc))
 	})
 
 	t.Run("google service account key validation succeeds for a good key in a single line", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKeyOneLine
+		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKeyOneLine()
 		assert.NoError(t, encryptionAtRest(enc))
 	})
 
@@ -634,4 +640,35 @@ func TestProjectIpAccessList(t *testing.T) {
 			})
 		}
 	})
+}
+
+func newPrivateKeyPEM() string {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	pemPrivateKey := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+
+	return string(pemPrivateKey)
+}
+
+func sampleSAKey() string {
+	return fmt.Sprintf(sampleSAKeyFmt, wrappedKey())
+}
+
+func sampleSAKeyOneLine() string {
+	return fmt.Sprintf(sampleSAKeyOneLineFmt, wrapKey(wrappedKey()))
+}
+
+func wrapKey(s string) string {
+	return strings.ReplaceAll(s, "\n", "\\n")
+}
+
+func wrappedKey() string {
+	return wrapKey(newPrivateKeyPEM())
 }
