@@ -16,7 +16,7 @@ pre-commit install # from the root of the project
 3. Install Kind ([instructions](https://kind.sigs.k8s.io/docs/user/quick-start/#installation))
 4. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
 5. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
-6. Copy the default Github Actions environment for local run: `cp .env.sample .env`
+6. Copy the default Github Actions environment for local run: `cp dotenv.sample .env`
 7. Update the .actrc - specify your Atlas connectivity data (orgId, keys)
 8. Build and deploy the Operator into the K8s cluster: `make deploy`
 9. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are
