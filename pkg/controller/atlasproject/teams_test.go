@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/internal/mocks/atlas"
@@ -320,5 +321,60 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			),
 			result,
 		)
+	})
+}
+
+func TestUpdateTeamState(t *testing.T) {
+	t.Run("should not duplicate projects listed", func(t *testing.T) {
+		logger := zaptest.NewLogger(t).Sugar()
+		workflowCtx := &workflow.Context{
+			Log: logger,
+		}
+		testScheme := runtime.NewScheme()
+		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasProject{})
+		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasTeam{})
+		project := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				Name: "projectName",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "projectID",
+			},
+		}
+		team := &mdbv1.AtlasTeam{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testTeam",
+				Namespace: "testNS",
+			},
+			Status: status.TeamStatus{
+				ID: "testTeamStaatus",
+				Projects: []status.TeamProject{
+					{
+						ID:   project.Status.ID,
+						Name: project.Spec.Name,
+					},
+				},
+			},
+		}
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(team).
+			Build()
+		reconciler := &AtlasProjectReconciler{
+			Client: k8sClient,
+			Log:    logger,
+		}
+		teamRef := &common.ResourceRefNamespaced{
+			Name:      team.Name,
+			Namespace: "testNS",
+		}
+		// check we have exactly 1 project in status
+		assert.Equal(t, 1, len(team.Status.Projects))
+
+		// "reconcile" the team state and check we still have 1 project in status
+		err := reconciler.updateTeamState(workflowCtx, project, teamRef, false)
+		assert.NoError(t, err)
+		k8sClient.Get(context.TODO(), types.NamespacedName{Name: team.ObjectMeta.Name, Namespace: team.ObjectMeta.Namespace}, team)
+		assert.Equal(t, 1, len(team.Status.Projects))
 	})
 }
