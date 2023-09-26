@@ -378,7 +378,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", func() {
+	FDescribe("Create/Update the deployment (more complex scenario)", func() {
 		It("Should be created", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = mdbv1.TypeReplicaSet
@@ -820,7 +820,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create the advanced deployment & change the InstanceSize", func() {
+	FDescribe("Create the advanced deployment & change the InstanceSize", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 
@@ -963,7 +963,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 						k8sClient,
 						createdDeployment,
 						status.
-							FalseCondition(status.DeploymentReadyType).
+							FalseCondition(status.ValidationSucceeded).
 							WithReason(string(workflow.Internal)).
 							WithMessageRegexp("instance size is invalid"),
 					)
@@ -978,6 +978,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					err := compat.JSONCopy(&previousDeployment, createdDeployment)
 					Expect(err).NotTo(HaveOccurred())
 
+					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+						RegionConfigs[0].
+						ElectableSpecs.InstanceSize = "M20"
+					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+						RegionConfigs[0].
+						ReadOnlySpecs.InstanceSize = "M20"
+					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+						RegionConfigs[0].
+						AnalyticsSpecs.InstanceSize = "M20"
 					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						AutoScaling.

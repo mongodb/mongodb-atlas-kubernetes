@@ -78,11 +78,6 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	err := handleAutoscaling(ctx, deployment.Spec.AdvancedDeploymentSpec, atlasDeploymentAsAtlas)
-	if err != nil {
-		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
-	}
-
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
@@ -105,7 +100,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	cleanupTheSpec(ctx, &specDeployment)
+	syncRegionConfiguration(&specDeployment, atlasDeploymentAsAtlas)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -118,122 +113,6 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	}
 
 	return nil, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
-}
-
-func cleanupTheSpec(ctx *workflow.Context, specMerged *mdbv1.AdvancedDeploymentSpec) {
-	specMerged.MongoDBVersion = ""
-
-	globalInstanceSize := ""
-	for i, replicationSpec := range specMerged.ReplicationSpecs {
-		autoScalingMissing := false
-		applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
-			if config.AutoScaling == nil {
-				autoScalingMissing = true
-			}
-		})
-
-		if autoScalingMissing {
-			ctx.Log.Debug("Not all RegionConfigs have AutoScaling set after object merge, removing it everywhere")
-			applyToEach(replicationSpec.RegionConfigs, func(config *mdbv1.AdvancedRegionConfig) {
-				config.AutoScaling = nil
-			})
-		}
-
-		for k := range replicationSpec.RegionConfigs {
-			regionConfig := specMerged.ReplicationSpecs[i].RegionConfigs[k]
-
-			specs := []*mdbv1.Specs{
-				regionConfig.AnalyticsSpecs,
-				regionConfig.ElectableSpecs,
-				regionConfig.ReadOnlySpecs,
-			}
-
-			applyToEach(specs, func(spec *mdbv1.Specs) {
-				if globalInstanceSize == "" && spec.NodeCount != nil && *spec.NodeCount != 0 {
-					globalInstanceSize = spec.InstanceSize
-				}
-			})
-
-			applyToEach(specs, func(spec *mdbv1.Specs) {
-				if spec.NodeCount == nil || *spec.NodeCount == 0 {
-					spec.InstanceSize = globalInstanceSize
-				}
-			})
-
-			if !autoScalingMissing && regionConfig.AutoScaling.Compute != nil && (regionConfig.AutoScaling.Compute.Enabled == nil || !*regionConfig.AutoScaling.Compute.Enabled) {
-				regionConfig.AutoScaling.Compute.MinInstanceSize = ""
-				regionConfig.AutoScaling.Compute.MaxInstanceSize = ""
-			}
-		}
-	}
-}
-
-func applyToEach[T any](items []*T, f func(spec *T)) {
-	for _, item := range items {
-		if item != nil {
-			f(item)
-		}
-	}
-}
-
-// This will prevent from setting diskSizeGB if at least one region config has enabled disk size autoscaling
-// It will also prevent from setting ANY of (electable | analytics | readonly) specs
-//
-//	if region config has enabled compute autoscaling
-func handleAutoscaling(ctx *workflow.Context, desiredDeployment *mdbv1.AdvancedDeploymentSpec, currentDeployment *mongodbatlas.AdvancedCluster) error {
-	isDiskAutoScaled := false
-	syncInstanceSize := func(s *mdbv1.Specs, as *mdbv1.AdvancedAutoScalingSpec) error {
-		if s != nil {
-			size, err := normalizeInstanceSize(ctx, s.InstanceSize, as)
-			if err != nil {
-				return err
-			}
-
-			if isInstanceSizeTheSame(currentDeployment, size) {
-				size = ""
-			}
-
-			s.InstanceSize = size
-		}
-
-		return nil
-	}
-	for _, repSpec := range desiredDeployment.ReplicationSpecs {
-		for _, regConfig := range repSpec.RegionConfigs {
-			if regConfig.AutoScaling != nil {
-				if regConfig.AutoScaling.DiskGB != nil &&
-					regConfig.AutoScaling.DiskGB.Enabled != nil &&
-					*regConfig.AutoScaling.DiskGB.Enabled {
-					isDiskAutoScaled = true
-				}
-
-				if regConfig.AutoScaling.Compute != nil &&
-					regConfig.AutoScaling.Compute.Enabled != nil &&
-					*regConfig.AutoScaling.Compute.Enabled {
-					err := syncInstanceSize(regConfig.ElectableSpecs, regConfig.AutoScaling)
-					if err != nil {
-						return err
-					}
-
-					err = syncInstanceSize(regConfig.AnalyticsSpecs, regConfig.AutoScaling)
-					if err != nil {
-						return err
-					}
-
-					err = syncInstanceSize(regConfig.ReadOnlySpecs, regConfig.AutoScaling)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-
-	if isDiskAutoScaled {
-		desiredDeployment.DiskSizeGB = nil
-	}
-
-	return nil
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
@@ -260,11 +139,15 @@ func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluste
 		for k, v := range replicationSpec.RegionConfigs {
 			// the response does not return backing provider names in some situations.
 			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
-			if v.BackingProviderName == "" {
+			if v.BackingProviderName == "" && k < len(mergedDeployment.ReplicationSpecs[i].RegionConfigs) {
 				mergedDeployment.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
 			}
 		}
 	}
+
+	atlasDeployment.MongoDBVersion = ""
+	mergedDeployment.MongoDBVersion = ""
+
 	return
 }
 
@@ -329,15 +212,21 @@ func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.
 
 		for configIdx, regionConfig := range replicationSpec.RegionConfigs {
 			if regionConfig.AnalyticsSpecs == nil || regionConfig.AnalyticsSpecs.NodeCount == nil || *regionConfig.AnalyticsSpecs.NodeCount == 0 {
-				regionConfig.AnalyticsSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].AnalyticsSpecs
+				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
+					regionConfig.AnalyticsSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].AnalyticsSpecs
+				}
 			}
 
 			if regionConfig.ElectableSpecs == nil || regionConfig.ElectableSpecs.NodeCount == nil || *regionConfig.ElectableSpecs.NodeCount == 0 {
-				regionConfig.ElectableSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ElectableSpecs
+				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
+					regionConfig.ElectableSpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ElectableSpecs
+				}
 			}
 
 			if regionConfig.ReadOnlySpecs == nil || regionConfig.ReadOnlySpecs.NodeCount == nil || *regionConfig.ReadOnlySpecs.NodeCount == 0 {
-				regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
+				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
+					regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
+				}
 			}
 		}
 	}
@@ -359,39 +248,6 @@ func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]stri
 	}
 
 	return deploymentNames, nil
-}
-
-func normalizeInstanceSize(ctx *workflow.Context, currentInstanceSize string, autoscaling *mdbv1.AdvancedAutoScalingSpec) (string, error) {
-	currentSize, err := NewFromInstanceSizeName(currentInstanceSize)
-	if err != nil {
-		return "", err
-	}
-
-	minSize, err := NewFromInstanceSizeName(autoscaling.Compute.MinInstanceSize)
-	if err != nil {
-		return "", err
-	}
-
-	maxSize, err := NewFromInstanceSizeName(autoscaling.Compute.MaxInstanceSize)
-	if err != nil {
-		return "", err
-	}
-
-	if CompareInstanceSizes(currentSize, minSize) == -1 {
-		ctx.Log.Warnf("The instance size is below the minimum autoscaling configuration. Setting it to %s. Consider update your CRD", autoscaling.Compute.MinInstanceSize)
-		return autoscaling.Compute.MinInstanceSize, nil
-	}
-
-	if CompareInstanceSizes(currentSize, maxSize) == 1 {
-		ctx.Log.Warnf("The instance size is above the maximum autoscaling configuration. Setting it to %s. Consider update your CRD", autoscaling.Compute.MaxInstanceSize)
-		return autoscaling.Compute.MaxInstanceSize, nil
-	}
-
-	return currentInstanceSize, nil
-}
-
-func isInstanceSizeTheSame(currentDeployment *mongodbatlas.AdvancedCluster, desiredInstanceSize string) bool {
-	return desiredInstanceSize == currentDeployment.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
 }
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {

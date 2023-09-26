@@ -3,9 +3,13 @@ package atlasdeployment
 import (
 	"errors"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
+
+const deploymentProviderTenant provider.ProviderName = "TENANT"
 
 func ConvertLegacyDeployment(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 	legacy := deploymentSpec.DeploymentSpec
@@ -81,7 +85,7 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 					InstanceSize:  legacy.ProviderSettings.InstanceSizeName,
 					NodeCount:     convertLegacyInt64(legacyRegionConfig.ReadOnlyNodes),
 				},
-				AutoScaling:         convertLegacyAutoScaling(legacy.AutoScaling, legacy.ProviderSettings.AutoScaling),
+				AutoScaling:         convertLegacyAutoScaling(legacy.ProviderSettings.ProviderName, legacy.AutoScaling, legacy.ProviderSettings.AutoScaling),
 				BackingProviderName: legacy.ProviderSettings.BackingProviderName,
 				Priority:            convertLegacyInt64(legacyRegionConfig.Priority),
 				ProviderName:        string(legacy.ProviderSettings.ProviderName),
@@ -97,23 +101,35 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 	return result, nil
 }
 
-func convertLegacyAutoScaling(legacyRoot, legacyPS *mdbv1.AutoScalingSpec) *mdbv1.AdvancedAutoScalingSpec {
-	if legacyRoot == nil || legacyPS == nil {
+func convertLegacyAutoScaling(provider provider.ProviderName, legacyRoot, legacyPS *mdbv1.AutoScalingSpec) *mdbv1.AdvancedAutoScalingSpec {
+	if provider == deploymentProviderTenant {
 		return nil
 	}
 
 	autoScaling := &mdbv1.AdvancedAutoScalingSpec{
 		DiskGB: &mdbv1.DiskGB{
-			Enabled: legacyRoot.DiskGBEnabled,
+			Enabled: toptr.MakePtr(false),
+		},
+		Compute: &mdbv1.ComputeSpec{
+			Enabled:          toptr.MakePtr(false),
+			ScaleDownEnabled: toptr.MakePtr(false),
 		},
 	}
 
-	if legacyRoot.Compute != nil && legacyRoot.Compute.Enabled != nil {
-		autoScaling.Compute = &mdbv1.ComputeSpec{
-			Enabled:          legacyRoot.Compute.Enabled,
-			ScaleDownEnabled: legacyRoot.Compute.ScaleDownEnabled,
-			MinInstanceSize:  emptyIfDisabled(legacyPS.Compute.MinInstanceSize, legacyRoot.Compute.Enabled),
-			MaxInstanceSize:  emptyIfDisabled(legacyPS.Compute.MaxInstanceSize, legacyRoot.Compute.Enabled),
+	if legacyRoot != nil {
+		autoScaling.DiskGB.Enabled = legacyRoot.DiskGBEnabled
+	}
+
+	if legacyRoot != nil && legacyRoot.Compute != nil && legacyRoot.Compute.Enabled != nil {
+		autoScaling.Compute.Enabled = legacyRoot.Compute.Enabled
+
+		if legacyRoot.Compute.ScaleDownEnabled != nil {
+			autoScaling.Compute.ScaleDownEnabled = legacyRoot.Compute.ScaleDownEnabled
+		}
+
+		if legacyPS != nil && legacyPS.Compute != nil {
+			autoScaling.Compute.MinInstanceSize = emptyIfDisabled(legacyPS.Compute.MinInstanceSize, legacyRoot.Compute.Enabled)
+			autoScaling.Compute.MaxInstanceSize = emptyIfDisabled(legacyPS.Compute.MaxInstanceSize, legacyRoot.Compute.Enabled)
 		}
 	}
 

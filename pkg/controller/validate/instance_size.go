@@ -1,4 +1,4 @@
-package atlasdeployment
+package validate
 
 import (
 	"errors"
@@ -11,6 +11,14 @@ type InstanceSize struct {
 	Family string
 	Size   int
 	IsNVME bool
+}
+
+func (i *InstanceSize) String() string {
+	if i.IsNVME {
+		return fmt.Sprintf("%s%d_NVME", i.Family, i.Size)
+	}
+
+	return fmt.Sprintf("%s%d", i.Family, i.Size)
 }
 
 func CompareInstanceSizes(is1 InstanceSize, is2 InstanceSize) int {
