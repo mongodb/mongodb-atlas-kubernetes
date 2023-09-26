@@ -184,3 +184,149 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		assert.False(t, result)
 	})
 }
+
+func Test_backupSchedulesAreEqual(t *testing.T) {
+	examplePolicy := mongodbatlas.CloudProviderSnapshotBackupPolicy{
+		ClusterID:             "testID",
+		ClusterName:           "testName",
+		ReferenceHourOfDay:    toptr.MakePtr[int64](12),
+		ReferenceMinuteOfHour: toptr.MakePtr[int64](59),
+		RestoreWindowDays:     toptr.MakePtr[int64](4),
+		UpdateSnapshots:       toptr.MakePtr[bool](false),
+		NextSnapshot:          "test123",
+		Policies: []mongodbatlas.Policy{
+			{
+				ID: "testID",
+				PolicyItems: []mongodbatlas.PolicyItem{
+					{
+						ID:                "testID1",
+						FrequencyInterval: 10,
+						FrequencyType:     "testFreq1",
+						RetentionUnit:     "testRet1",
+						RetentionValue:    21,
+					},
+					{
+						ID:                "testID2",
+						FrequencyInterval: 20,
+						FrequencyType:     "testFreq2",
+						RetentionUnit:     "testRet2",
+						RetentionValue:    450,
+					},
+				},
+			},
+		},
+		AutoExportEnabled: toptr.MakePtr[bool](true),
+		Export: &mongodbatlas.Export{
+			ExportBucketID: "testID",
+			FrequencyType:  "testFreq",
+		},
+		UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr[bool](false),
+		Links: []*mongodbatlas.Link{
+			{
+				Rel:  "abc",
+				Href: "xyz",
+			},
+		},
+		CopySettings: []mongodbatlas.CopySetting{
+			{
+				CloudProvider:     toptr.MakePtr[string]("testString"),
+				RegionName:        toptr.MakePtr[string]("testString"),
+				ReplicationSpecID: toptr.MakePtr[string]("testString"),
+				ShouldCopyOplogs:  toptr.MakePtr[bool](true),
+				Frequencies:       []string{"testString"},
+			},
+		},
+		DeleteCopiedBackups: []mongodbatlas.DeleteCopiedBackup{
+			{
+				CloudProvider:     toptr.MakePtr[string]("testString"),
+				RegionName:        toptr.MakePtr[string]("testString"),
+				ReplicationSpecID: toptr.MakePtr[string]("testString"),
+			},
+		},
+	}
+
+	t.Run("should return true when backups are both empty", func(t *testing.T) {
+		res, err := backupSchedulesAreEqual(&mongodbatlas.CloudProviderSnapshotBackupPolicy{}, &mongodbatlas.CloudProviderSnapshotBackupPolicy{})
+		assert.NoError(t, err)
+		assert.True(t, res)
+	})
+	t.Run("should return true when backups are identical", func(t *testing.T) {
+		res, err := backupSchedulesAreEqual(&examplePolicy, &examplePolicy)
+		assert.NoError(t, err)
+		assert.True(t, res)
+	})
+	t.Run("should return true when backups are identical after normalization", func(t *testing.T) {
+		firstPolicy := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+			ClusterID: clusterID,
+			Links: []*mongodbatlas.Link{
+				{
+					Href: "policy1",
+					Rel:  "policy1",
+				},
+			},
+			NextSnapshot: "policy1 NextSnapshot",
+			Policies: []mongodbatlas.Policy{
+				{
+					ID: "policy ID",
+					PolicyItems: []mongodbatlas.PolicyItem{
+						{
+							ID:                "policy1 item 1 id",
+							FrequencyInterval: 1,
+							FrequencyType:     "testFreq1",
+							RetentionUnit:     "testRet1",
+							RetentionValue:    1,
+						},
+						{
+							ID:                "policy 1 item 2 id",
+							FrequencyInterval: 2,
+							FrequencyType:     "testFreq2",
+							RetentionUnit:     "testRet2",
+							RetentionValue:    2,
+						},
+					},
+				},
+			},
+		}
+		secondPolicy := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+			ClusterID: clusterID,
+			Links: []*mongodbatlas.Link{
+				{
+					Href: "policy2",
+					Rel:  "policy2",
+				},
+			},
+			NextSnapshot: "policy2 NextSnapshot",
+			Policies: []mongodbatlas.Policy{
+				{
+					ID: "policy ID",
+					PolicyItems: []mongodbatlas.PolicyItem{
+						{
+							ID:                "policy2 item 1 id",
+							FrequencyInterval: 1,
+							FrequencyType:     "testFreq1",
+							RetentionUnit:     "testRet1",
+							RetentionValue:    1,
+						},
+						{
+							ID:                "policy 2 item 2 id",
+							FrequencyInterval: 2,
+							FrequencyType:     "testFreq2",
+							RetentionUnit:     "testRet2",
+							RetentionValue:    2,
+						},
+					},
+				},
+			},
+		}
+		res, err := backupSchedulesAreEqual(firstPolicy, secondPolicy)
+		assert.NoError(t, err)
+		assert.True(t, res)
+	})
+	t.Run("should return false when backups differ", func(t *testing.T) {
+		changedPolicy := examplePolicy
+		changedPolicy.ClusterName = "different name"
+		res, err := backupSchedulesAreEqual(&examplePolicy, &changedPolicy)
+		assert.NoError(t, err)
+		assert.False(t, res)
+	})
+}
