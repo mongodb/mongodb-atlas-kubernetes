@@ -217,7 +217,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	}
 
 	for _, projectStat := range team.Status.Projects {
-		if projectStat.ID == project.Status.ID && isRemoval {
+		if projectStat.ID == project.Status.ID {
 			continue
 		}
 
