@@ -1,0 +1,31 @@
+# atlas External Secret CRD specifies a reference to the Atlas account 
+# credentials to be fetched from the Vault for the atlas system namespace
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: atlas
+  namespace: mongodb-atlas-system
+spec:
+  refreshInterval: "15s"
+  secretStoreRef:
+    name: vault-store # defined at vault-system.yaml
+    kind: SecretStore
+  target:
+    name: mongodb-atlas-operator-api-key
+    template:
+      metadata:
+        labels:
+          atlas.mongodb.com/type: credentials
+  data:
+  - secretKey: orgId
+    remoteRef:
+      key: secret/data/kube01/external-secrets/atlas-account
+      property: orgId
+  - secretKey: publicApiKey
+    remoteRef:
+      key: secret/data/kube01/external-secrets/atlas-account
+      property: publicApiKey
+  - secretKey: privateApiKey
+    remoteRef:
+      key: secret/data/kube01/external-secrets/atlas-account
+      property: privateApiKey

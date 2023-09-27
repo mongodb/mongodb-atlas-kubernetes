@@ -1,0 +1,42 @@
+# atlas Secret Provider Class CRD specifies a CSI Vault access 
+# and the Atlas account credentials to be fetched for the atlas system namespace
+#
+# Example parameters:
+# - This is the config for cluster "kube01" out of possibly many others.
+# - Hashicorp Vault:                              https://vault.internal.io
+# - Vault Kubernetes Auth mount point for kube01: k8s-kube01
+# - Service Account mapped to the Vault Role:     {name: default, ns: mongodb-atlas-system}
+# - Vault Role mapped to the Service Account:     k8s-kube01-default
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: atlas
+  namespace: mongodb-atlas-system
+spec:
+  provider: vault
+  secretObjects:
+  - data:
+    - key: orgId
+      objectName: atlas-org
+    - key: publicApiKey
+      objectName: atlas-pub-key
+    - key: privateApiKey
+      objectName: atlas-secret-key
+    secretName: mongodb-atlas-operator-api-key
+    type: Opaque
+    labels:
+      atlas.mongodb.com/type: credentials
+  parameters:
+    vaultAddress: https://vault.internal.io
+    vaultKubernetesMountPath: k8s-kube01
+    roleName: k8s-kube01-role
+    objects: |
+      - objectName: atlas-org
+        secretPath: secret/data/kube01/secrets-store/atlas-account
+        secretKey: orgId
+      - objectName: atlas-pub-key
+        secretPath: secret/data/kube01/secrets-store/atlas-account
+        secretKey: publicApiKey
+      - objectName: atlas-secret-key
+        secretPath: secret/data/kube01/secrets-store/atlas-account
+        secretKey: privateApiKey
