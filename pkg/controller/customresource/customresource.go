@@ -2,6 +2,8 @@ package customresource
 
 import (
 	"context"
+	"net/url"
+	"strings"
 
 	"fmt"
 
@@ -24,11 +26,11 @@ const (
 	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
 	ResourceVersion                = "app.kubernetes.io/version"
 	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
-
-	ResourcePolicyKeep       = "keep"
-	ResourcePolicyDelete     = "delete"
-	ReconciliationPolicySkip = "skip"
-	ResourceVersionAllow     = "allow"
+	ResourcePolicyKeep             = "keep"
+	ResourcePolicyDelete           = "delete"
+	ReconciliationPolicySkip       = "skip"
+	ResourceVersionAllow           = "allow"
+	govAtlasDomain                 = "mongodbgov.com"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
@@ -144,4 +146,32 @@ func SetAnnotation(resource mdbv1.AtlasCustomResource, key, value string) {
 	}
 	annot[key] = value
 	resource.SetAnnotations(annot)
+}
+
+func IsGov(domain string) bool {
+	domainURL, err := url.Parse(domain)
+	if err != nil {
+		return false
+	}
+
+	return strings.HasSuffix(domainURL.Hostname(), govAtlasDomain)
+}
+
+func IsResourceSupportedInDomain(resource mdbv1.AtlasCustomResource, domain string) bool {
+	if !IsGov(domain) {
+		return true
+	}
+
+	switch atlasResource := resource.(type) {
+	case *mdbv1.AtlasProject, *mdbv1.AtlasTeam, *mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, *mdbv1.AtlasDatabaseUser:
+		return true
+	case *mdbv1.AtlasDataFederation:
+		return false
+	case *mdbv1.AtlasDeployment:
+		if atlasResource.Spec.ServerlessSpec == nil {
+			return true
+		}
+	}
+
+	return false
 }

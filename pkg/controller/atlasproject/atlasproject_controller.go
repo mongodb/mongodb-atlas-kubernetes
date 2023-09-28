@@ -121,12 +121,19 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	if err := validate.Project(project); err != nil {
+	if err := validate.Project(project, customresource.IsGov(r.AtlasDomain)); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		setCondition(workflowCtx, status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
+
+	if !customresource.IsResourceSupportedInDomain(project, r.AtlasDomain) {
+		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasProject is not supported by Atlas for government").
+			WithoutRetry()
+		setCondition(workflowCtx, status.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
 
 	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
 	if err != nil {

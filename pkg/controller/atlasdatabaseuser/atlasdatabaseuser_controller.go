@@ -106,6 +106,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
+	if !customresource.IsResourceSupportedInDomain(databaseUser, r.AtlasDomain) {
+		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDatabaseUser is not supported by Atlas for government").
+			WithoutRetry()
+		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+
 	project := &mdbv1.AtlasProject{}
 	if result = r.readProjectResource(databaseUser, project); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)

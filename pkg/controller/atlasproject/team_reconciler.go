@@ -57,6 +57,13 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		log.Infow("-> Starting AtlasTeam reconciliation", "spec", team.Spec)
 
+		if !customresource.IsResourceSupportedInDomain(team, r.AtlasDomain) {
+			result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasTeam is not supported by Atlas for government").
+				WithoutRetry()
+			setCondition(teamCtx, status.ReadyType, result)
+			return result.ReconcileResult(), nil
+		}
+
 		owner, err := customresource.IsOwner(team, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(ctx, teamCtx.Client, connection.OrgID))
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))

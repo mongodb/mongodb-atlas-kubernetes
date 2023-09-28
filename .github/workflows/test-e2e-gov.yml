@@ -1,0 +1,70 @@
+name: E2E Gov tests
+
+on:
+  pull_request:
+   types:
+      - closed
+  workflow_call:
+
+jobs:
+  e2e-gov:
+    name: E2E Gov tests
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Create k8s Kind Cluster
+        if: ${{ !env.ACT }}
+        uses: helm/kind-action@v1.8.0
+        with:
+          version: v0.20.0
+          config: test/e2e/config/kind.yaml
+          cluster_name: "atlas-gov-e2e-test"
+          wait: 180s
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+      - name: Install dependencies
+        run: |
+          go install golang.org/x/tools/cmd/goimports@latest
+          
+          wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.7/kustomize_v4.5.7_linux_amd64.tar.gz -O kustomize.tar.gz -q
+          tar xvf kustomize.tar.gz
+          chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
+      - name: Install CRDs
+        run: make install
+      - name: Run e2e test
+        env:
+          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_GOV_PUBLIC_KEY }}
+          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_GOV_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ secrets.ATLAS_GOV_ORG_ID}}
+          MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodbgov.com/"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+          PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
+        run: |
+          go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
+          go install github.com/onsi/gomega/...
+          
+          cd test/e2e
+          ginkgo labels
+          echo 'Running: AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10  --flake-attempts=1 --randomize-all --cover --v --trace --show-nodes-events --output-interceptor-mode=none' && \
+          AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/pkg/...
+      - name: Upload operator logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs
+          path: test/e2e/output/**
+      - name: Upload test results to codecov.io
+        if: ${{ success() }}
+        uses: codecov/codecov-action@v3
+        with:
+          files: test/e2e/coverprofile.out
+          name: ${{ matrix.test }}
+          verbose: true

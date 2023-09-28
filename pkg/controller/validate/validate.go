@@ -36,7 +36,7 @@ type googleServiceAccountKey struct {
 	UniverseDomain          string `json:"universe_domain"`
 }
 
-func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
+func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
 	var err error
 
 	if allAreNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
@@ -45,6 +45,12 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 
 	if moreThanOneIsNonNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
 		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDepploymentSpec or spec.serverlessSpec, more than one were present"))
+	}
+
+	if isGov {
+		if govErr := deploymentForGov(deploymentSpec, regionUsageRestrictions); govErr != nil {
+			err = errors.Join(err, govErr)
+		}
 	}
 
 	if deploymentSpec.DeploymentSpec != nil {
@@ -71,7 +77,41 @@ func DeploymentSpec(deploymentSpec mdbv1.AtlasDeploymentSpec) error {
 	return err
 }
 
-func Project(project *mdbv1.AtlasProject) error {
+func deploymentForGov(deployment *mdbv1.AtlasDeploymentSpec, regionUsageRestrictions string) error {
+	var err error
+
+	if deployment.DeploymentSpec != nil {
+		regionErr := validCloudGovRegion(regionUsageRestrictions, deployment.DeploymentSpec.ProviderSettings.RegionName)
+		if regionErr != nil {
+			err = errors.Join(err, fmt.Errorf("deployment in atlas for government support a restricted set of regions: %w", regionErr))
+		}
+	}
+
+	if deployment.AdvancedDeploymentSpec != nil {
+		for _, replication := range deployment.AdvancedDeploymentSpec.ReplicationSpecs {
+			for _, region := range replication.RegionConfigs {
+				regionErr := validCloudGovRegion(regionUsageRestrictions, region.RegionName)
+				if regionErr != nil {
+					err = errors.Join(err, fmt.Errorf("advanced deployment in atlas for government support a restricted set of regions: %w", regionErr))
+				}
+			}
+		}
+	}
+
+	return err
+}
+
+func Project(project *mdbv1.AtlasProject, isGov bool) error {
+	if !isGov && project.Spec.RegionUsageRestrictions != "" && project.Spec.RegionUsageRestrictions != "NONE" {
+		return errors.New("regionUsageRestriction can be used only with Atlas for government")
+	}
+
+	if isGov {
+		if err := projectForGov(project); err != nil {
+			return err
+		}
+	}
+
 	if err := projectIPAccessList(project.Spec.ProjectIPAccessList); err != nil {
 		return err
 	}
@@ -82,6 +122,87 @@ func Project(project *mdbv1.AtlasProject) error {
 
 	if err := encryptionAtRest(project.Spec.EncryptionAtRest); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func projectForGov(project *mdbv1.AtlasProject) error {
+	var err error
+
+	if len(project.Spec.NetworkPeers) > 0 {
+		for _, peer := range project.Spec.NetworkPeers {
+			if peer.ProviderName != "AWS" {
+				err = errors.Join(err, errors.New("atlas for government only supports AWS provider. one or more network peers are not set to AWS"))
+			}
+
+			regionErr := validCloudGovRegion(project.Spec.RegionUsageRestrictions, peer.AccepterRegionName)
+			if regionErr != nil {
+				err = errors.Join(err, fmt.Errorf("network peering in atlas for government support a restricted set of regions: %w", regionErr))
+			}
+		}
+	}
+
+	if project.Spec.EncryptionAtRest != nil {
+		if project.Spec.EncryptionAtRest.AzureKeyVault.Enabled != nil && *project.Spec.EncryptionAtRest.AzureKeyVault.Enabled {
+			err = errors.Join(err, errors.New("atlas for government only supports AWS provider. disable encryption at rest for Azure"))
+		}
+
+		if project.Spec.EncryptionAtRest.GoogleCloudKms.Enabled != nil && *project.Spec.EncryptionAtRest.GoogleCloudKms.Enabled {
+			err = errors.Join(err, errors.New("atlas for government only supports AWS provider. disable encryption at rest for Google Cloud"))
+		}
+
+		if project.Spec.EncryptionAtRest.AwsKms.Enabled != nil && *project.Spec.EncryptionAtRest.AwsKms.Enabled {
+			regionErr := validCloudGovRegion(project.Spec.RegionUsageRestrictions, project.Spec.EncryptionAtRest.AwsKms.Region)
+			if regionErr != nil {
+				err = errors.Join(err, fmt.Errorf("encryption at rest in atlas for government support a restricted set of regions: %w", regionErr))
+			}
+		}
+	}
+
+	if len(project.Spec.PrivateEndpoints) > 0 {
+		for _, pe := range project.Spec.PrivateEndpoints {
+			if pe.Provider != "AWS" {
+				err = errors.Join(err, errors.New("atlas for government only supports AWS provider. one or more private endpoints are not set to AWS"))
+			}
+
+			regionErr := validCloudGovRegion(project.Spec.RegionUsageRestrictions, pe.Region)
+			if regionErr != nil {
+				err = errors.Join(err, fmt.Errorf("private endpoint in atlas for government support a restricted set of regions: %w", regionErr))
+			}
+		}
+	}
+
+	return err
+}
+
+func validCloudGovRegion(restriction, region string) error {
+	fedRampRegions := map[string]struct{}{
+		"US_EAST_1": {},
+		"US_EAST_2": {},
+		"US_WEST_1": {},
+		"US_WEST_2": {},
+		"us-east-1": {},
+		"us-east-2": {},
+		"us-west-1": {},
+		"us-west-2": {},
+	}
+	govRegions := map[string]struct{}{
+		"US_GOV_EAST_1": {},
+		"US_GOV_WEST_1": {},
+		"us-gov-east-1": {},
+		"us-gov-west-1": {},
+	}
+
+	switch restriction {
+	case "GOV_REGIONS_ONLY":
+		if _, ok := govRegions[region]; !ok {
+			return fmt.Errorf("%s is not part of AWS for government regions", region)
+		}
+	default:
+		if _, ok := fedRampRegions[region]; !ok {
+			return fmt.Errorf("%s is not part of AWS FedRAMP regions", region)
+		}
 	}
 
 	return nil
