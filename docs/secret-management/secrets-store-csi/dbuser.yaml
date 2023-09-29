@@ -1,0 +1,32 @@
+# vault Secret Provider Class CRD specifies a CSI Vault access 
+# and secrets to be fetched to the default namespace
+#
+# Example parameters:
+# - This is the config for cluster "kube01" out of possibly many others.
+# - Hashicorp Vault:                              https://vault.internal.io
+# - Vault Kubernetes Auth mount point for kube01: k8s-kube01
+# - Service Account mapped to the Vault Role:     {name: default, ns: default}
+# - Vault Role mapped to the Service Account:     k8s-kube01-default
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: dbuser
+  namespace: default
+spec:
+  provider: vault
+  secretObjects:
+  - data:
+    - key: password
+      objectName: dbuser
+    secretName: dbuser-password
+    type: Opaque
+    labels:
+      atlas.mongodb.com/type: credentials
+  parameters:
+    vaultAddress: https://vault.internal.io
+    vaultKubernetesMountPath: k8s-kube01
+    roleName: k8s-kube01-role
+    objects: |
+      - objectName: "dbuser"
+        secretPath: "secret/data/kube01/secrets-store/db-user"
+        secretKey: "password"

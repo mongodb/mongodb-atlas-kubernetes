@@ -1,0 +1,20 @@
+# ako-patch adds a container to the AKO pod to fetch the Atlas credentials
+# using the Secret Store CSI driver's "atlas" Secret Provider Class
+spec:
+  template:
+    spec:
+      containers:
+      - name: system-secret-placeholder
+        image: mongodb/atlas
+        command: ["sleep", "infinity"]
+        volumeMounts:
+        - name: secrets-store-mount
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+      volumes:
+        - name: secrets-store-mount
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: atlas # defined at atlas.yaml

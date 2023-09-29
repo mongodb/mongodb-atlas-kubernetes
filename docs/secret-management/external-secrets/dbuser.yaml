@@ -1,0 +1,23 @@
+# dbuser External Secret CRD specifies a reference to the db user password
+# to be fetched from the Vault for the default namespace
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: dbuser
+  namespace: default
+spec:
+  refreshInterval: "15s"
+  secretStoreRef:
+    name: vault-store # defined at vault-default.yaml
+    kind: SecretStore
+  target:
+    name: dbuser-password
+    template:
+      metadata:
+        labels:
+          atlas.mongodb.com/type: credentials
+  data:
+  - secretKey: password
+    remoteRef:
+      key: secret/data/kube01/external-secrets/db-user
+      property: password

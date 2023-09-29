@@ -1,0 +1,31 @@
+# vault-store Secrets Store CRD specifies a Vault access to be used
+# to fetch secrets for the atlas system namespace
+#
+# Example parameters:
+# - This is the config for cluster "kube01" out of possibly many others.
+# - Hashicorp Vault:                          https://vault.internal.io
+# - Vault OIDC Auth mount point for kube01:   jwt-kube01
+# - Service Account mapped to the Vault Role: {name: default, ns: mongodb-atlas-system}
+# - Vault Role mapped to the Service Account: jwt-kube01-system
+# - OIDC audience "aud" at the JWT token:     vault
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vault-store
+  namespace: mongodb-atlas-system
+spec:
+  provider:
+    vault:
+      server: "https://vault.internal.io"
+      path: "secret"
+      version: "v2"
+      auth:
+        jwt:
+          path: "jwt-kube01"
+          role: "jwt-kube01-system"
+          kubernetesServiceAccountToken:
+            expirationSeconds: 600
+            serviceAccountRef:
+              name: "default"
+              audiences:
+              - vault

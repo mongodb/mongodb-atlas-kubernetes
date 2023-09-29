@@ -1,0 +1,23 @@
+# secret-placeholder is a sentinel pod used just to ensure the CSI driver will
+# fetch the dbuser credentials and sync them as a Kubernetes Cluster for the
+# Atlas Database User CRD to use it and produce a connection string from it
+kind: Pod
+apiVersion: v1
+metadata:
+  name: secret-placeholder
+spec:
+  containers:
+  - image: mongodb/atlas
+    command: ["sleep", "infinity"]
+    name: secret-placeholder
+    volumeMounts:
+    - name: secrets-store-mount
+      mountPath: "/mnt/secrets-store"
+      readOnly: true
+  volumes:
+    - name: secrets-store-mount
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: dbuser # defined at dbuser.yaml
