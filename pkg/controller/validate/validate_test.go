@@ -862,6 +862,90 @@ func TestProjectIpAccessList(t *testing.T) {
 	})
 }
 
+func TestProjectAlertConfigs(t *testing.T) {
+	t.Run("should not fail on duplications when alert config is disabled", func(t *testing.T) {
+		prj := mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				AlertConfigurations: []mdbv1.AlertConfiguration{
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+				},
+				AlertConfigurationSyncEnabled: false,
+			},
+		}
+		assert.NoError(t, Project(&prj, false /*isGov*/))
+	})
+
+	t.Run("should fail on duplications when alert config is enabled", func(t *testing.T) {
+		prj := mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				AlertConfigurations: []mdbv1.AlertConfiguration{
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+				},
+				AlertConfigurationSyncEnabled: true,
+			},
+		}
+		assert.ErrorContains(t, Project(&prj, false /*isGov*/),
+			"alert config at position 1 is a duplicate of alert config at position 0")
+	})
+
+	t.Run("should fail on first duplication in when alert config is enabled", func(t *testing.T) {
+		prj := mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				AlertConfigurations: []mdbv1.AlertConfiguration{
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+					sampleAlertConfig("JOINED_GROUP"),
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+					sampleAlertConfig("JOINED_GROUP"),
+				},
+				AlertConfigurationSyncEnabled: true,
+			},
+		}
+		assert.ErrorContains(t, Project(&prj, false /*isGov*/),
+			"alert config at position 2 is a duplicate of alert config at position 0")
+	})
+
+	t.Run("should succeed on absence of duplications in when alert config is enabled", func(t *testing.T) {
+		prj := mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				AlertConfigurations: []mdbv1.AlertConfiguration{
+					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+					sampleAlertConfig("JOINED_GROUP"),
+					sampleAlertConfig("invented_event_3"),
+					sampleAlertConfig("invented_event_4"),
+				},
+				AlertConfigurationSyncEnabled: true,
+			},
+		}
+		assert.NoError(t, Project(&prj, false /*isGov*/))
+	})
+}
+
+func sampleAlertConfig(typeName string) mdbv1.AlertConfiguration {
+	return mdbv1.AlertConfiguration{
+		EventTypeName: typeName,
+		Enabled:       true,
+		Threshold: &mdbv1.Threshold{
+			Operator:  "LESS_THAN",
+			Threshold: "1",
+			Units:     "HOURS",
+		},
+		Notifications: []mdbv1.Notification{
+			{
+				IntervalMin:  5,
+				DelayMin:     toptr.MakePtr(5),
+				EmailEnabled: toptr.MakePtr(true),
+				SMSEnabled:   toptr.MakePtr(false),
+				Roles: []string{
+					"GROUP_OWNER",
+				},
+				TypeName: "GROUP",
+			},
+		},
+	}
+}
+
 func newPrivateKeyPEM() string {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {

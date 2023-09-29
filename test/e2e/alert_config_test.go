@@ -78,7 +78,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 					Enabled:       true,
 					Threshold: &v1.Threshold{
 						Operator:  "LESS_THAN",
-						Threshold: "1",
+						Threshold: "2", // make it a different alert config
 						Units:     "HOURS",
 					},
 					Notifications: []v1.Notification{

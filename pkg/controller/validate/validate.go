@@ -40,11 +40,11 @@ func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regio
 	var err error
 
 	if allAreNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDepploymentSpec or spec.serverlessSpec to be present, but none were"))
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDeploymentSpec or spec.serverlessSpec to be present, but none were"))
 	}
 
 	if moreThanOneIsNonNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDepploymentSpec or spec.serverlessSpec, more than one were present"))
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDeploymentSpec or spec.serverlessSpec, more than one were present"))
 	}
 
 	if isGov {
@@ -122,6 +122,12 @@ func Project(project *mdbv1.AtlasProject, isGov bool) error {
 
 	if err := encryptionAtRest(project.Spec.EncryptionAtRest); err != nil {
 		return err
+	}
+
+	if project.Spec.AlertConfigurationSyncEnabled {
+		if err := alertConfigs(project.Spec.AlertConfigurations); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -457,4 +463,18 @@ func assertParsePrivateKey(key []byte) error {
 		_, err = x509.ParsePKCS8PrivateKey(key)
 	}
 	return err
+}
+
+func alertConfigs(alertConfigs []mdbv1.AlertConfiguration) error {
+	seenConfigs := []mdbv1.AlertConfiguration{}
+	for j, cfg := range alertConfigs {
+		for i, seenCfg := range seenConfigs {
+			if reflect.DeepEqual(seenCfg, cfg) {
+				return fmt.Errorf("alert config at position %d is a duplicate of "+
+					"alert config at position %d: %v", j, i, cfg)
+			}
+		}
+		seenConfigs = append(seenConfigs, cfg)
+	}
+	return nil
 }
