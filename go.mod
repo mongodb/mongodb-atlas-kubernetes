@@ -21,7 +21,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/mongodb-forks/digest v1.0.5
 	github.com/onsi/ginkgo/v2 v2.12.1
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.4
