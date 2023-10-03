@@ -20,8 +20,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/set"
 )
 
-func (r *AtlasProjectReconciler) ensureIntegration(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canIntegrationsReconcile(ctx, workflowCtx.Client, protected, akoProject)
+func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canIntegrationsReconcile(workflowCtx, protected, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
@@ -61,9 +61,9 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 	}
 	integrationsInAtlasAlias := toAliasThirdPartyIntegration(integrationsInAtlas.Results)
 
-	indentificatorsForDelete := set.Difference(integrationsInAtlasAlias, project.Spec.Integrations)
-	ctx.Log.Debugf("indentificatorsForDelete: %v", indentificatorsForDelete)
-	if err := deleteIntegrationsFromAtlas(ctx, projectID, indentificatorsForDelete); err != nil {
+	identifiersForDelete := set.Difference(integrationsInAtlasAlias, project.Spec.Integrations)
+	ctx.Log.Debugf("identifiersForDelete: %v", identifiersForDelete)
+	if err := deleteIntegrationsFromAtlas(ctx, projectID, identifiersForDelete); err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err.Error())
 	}
 
@@ -73,9 +73,9 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 		return result
 	}
 
-	indentificatorsForCreate := set.Difference(project.Spec.Integrations, integrationsInAtlasAlias)
-	ctx.Log.Debugf("indentificatorsForCreate: %v", indentificatorsForCreate)
-	if result := r.createIntegrationsInAtlas(ctx, projectID, indentificatorsForCreate, project.Namespace); !result.IsOk() {
+	identifiersForCreate := set.Difference(project.Spec.Integrations, integrationsInAtlasAlias)
+	ctx.Log.Debugf("identifiersForCreate: %v", identifiersForCreate)
+	if result := r.createIntegrationsInAtlas(ctx, projectID, identifiersForCreate, project.Namespace); !result.IsOk() {
 		return result
 	}
 
@@ -261,7 +261,7 @@ func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }
 
-func canIntegrationsReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canIntegrationsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -274,7 +274,7 @@ func canIntegrationsReconcile(ctx context.Context, atlasClient mongodbatlas.Clie
 		}
 	}
 
-	list, _, err := atlasClient.Integrations.List(ctx, akoProject.ID())
+	list, _, err := workflowCtx.Client.Integrations.List(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

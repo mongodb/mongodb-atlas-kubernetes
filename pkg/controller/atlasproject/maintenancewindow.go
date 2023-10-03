@@ -21,8 +21,8 @@ import (
 // ensureMaintenanceWindow ensures that the state of the Atlas Maintenance Window matches the
 // state of the Maintenance Window specified in the project CR. If a Maintenance Window exists
 // in Atlas but is not specified in the CR, it is deleted.
-func ensureMaintenanceWindow(ctx context.Context, workflowCtx *workflow.Context, atlasProject *mdbv1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canMaintenanceWindowReconcile(ctx, workflowCtx.Client, protected, atlasProject)
+func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *mdbv1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canMaintenanceWindowReconcile(workflowCtx, protected, atlasProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.IPAccessListReadyType, result)
@@ -77,7 +77,7 @@ func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec proje
 	if daysOrHoursAreDifferent(windowInAtlas, windowSpec) {
 		ctx.Log.Debugw("Creating or updating window")
 		// We set startASAP to false because the operator takes care of calling the API a second time if both
-		// startASAP and the new maintenance timeslots are defined
+		// startASAP and the new maintenance time-slots are defined
 		if result := createOrUpdateInAtlas(ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
 			return result
 		}
@@ -194,7 +194,7 @@ func toggleAutoDeferInAtlas(client mongodbatlas.Client, projectID string) workfl
 	return workflow.OK()
 }
 
-func canMaintenanceWindowReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canMaintenanceWindowReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -207,7 +207,7 @@ func canMaintenanceWindowReconcile(ctx context.Context, atlasClient mongodbatlas
 		}
 	}
 
-	mWindow, _, err := atlasClient.MaintenanceWindows.Get(ctx, akoProject.ID())
+	mWindow, _, err := workflowCtx.Client.MaintenanceWindows.Get(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

@@ -17,8 +17,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureCustomRoles(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canCustomRolesReconcile(ctx, workflowCtx.Client, protected, project)
+func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canCustomRolesReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
@@ -305,7 +305,7 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 	return workflow.OK()
 }
 
-func canCustomRolesReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canCustomRolesReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -318,7 +318,7 @@ func canCustomRolesReconcile(ctx context.Context, atlasClient mongodbatlas.Clien
 		}
 	}
 
-	atlasData, _, err := atlasClient.CustomDBRoles.List(ctx, akoProject.ID(), nil)
+	atlasData, _, err := workflowCtx.Client.CustomDBRoles.List(workflowCtx.Context, akoProject.ID(), nil)
 	if err != nil {
 		return false, err
 	}

@@ -212,9 +212,10 @@ func TestEnsureIPAccessList(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureIPAccessList(context.TODO(), workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
+		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -253,9 +254,10 @@ func TestEnsureIPAccessList(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureIPAccessList(context.TODO(), workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
+		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
 		require.Equal(
 			t,
@@ -310,10 +312,10 @@ func TestEnsureIPAccessList(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 		result := ensureIPAccessList(
-			context.TODO(),
 			workflowCtx,
 			func(ctx context.Context, projectID, entryValue string) (string, error) {
 				return "ACTIVE", nil
@@ -346,10 +348,11 @@ func TestSyncIPAccessList(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 
-		assert.ErrorContains(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired), "failed")
+		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
 	})
 
 	t.Run("should fail to perform creation", func(t *testing.T) {
@@ -374,10 +377,11 @@ func TestSyncIPAccessList(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 
-		assert.ErrorContains(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired), "failed")
+		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
 	})
 
 	t.Run("should succeed when there are no changes", func(t *testing.T) {
@@ -393,9 +397,10 @@ func TestSyncIPAccessList(t *testing.T) {
 		}
 		atlasClient := mongodbatlas.Client{}
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 
-		assert.NoError(t, syncIPAccessList(context.TODO(), workflowCtx, "projectID", current, desired))
+		assert.NoError(t, syncIPAccessList(workflowCtx, "projectID", current, desired))
 	})
 }

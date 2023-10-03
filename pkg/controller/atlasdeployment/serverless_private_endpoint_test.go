@@ -24,7 +24,6 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 	t.Run("when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		protected := false
 		result, err := canServerlessPrivateEndpointsReconcile(
-			context.TODO(),
 			&workflow.Context{},
 			protected,
 			"fake-project-id-wont-be-checked",
@@ -45,9 +44,9 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 		}
 		deployment := sampleServerlessDeployment()
 		protected := true
-		workflowCtx := workflow.Context{Client: client}
+		workflowCtx := workflow.Context{Client: client, Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.True(t, result)
@@ -65,9 +64,9 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 		}
 		deployment := sampleAnnotatedServerlessDeployment(endpointsFrom(endpointsConfig))
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.True(t, result)
@@ -85,9 +84,9 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 		}
 		deployment := sampleAnnotatedServerlessDeployment(reverse(endpointsFrom(endpointsConfig)))
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.True(t, result)
@@ -107,9 +106,9 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 		// remove all PEs in the current desired setup
 		deployment.Spec.ServerlessSpec.PrivateEndpoints = []v1.ServerlessPrivateEndpoint{}
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.True(t, result)
@@ -131,9 +130,9 @@ func TestCannotReconcileServerlessPrivateEndpoints(t *testing.T) {
 		endpoints[0].Name = "non-matching-fake-name"
 		deployment := sampleAnnotatedServerlessDeployment(endpoints)
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.False(t, result)
@@ -154,9 +153,9 @@ func TestCannotReconcileServerlessPrivateEndpoints(t *testing.T) {
 			customresource.AnnotationLastAppliedConfiguration: "{}",
 		}
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.False(t, result)
@@ -175,9 +174,9 @@ func TestCannotReconcileServerlessPrivateEndpoints(t *testing.T) {
 		deployment := sampleServerlessDeployment()
 		deployment.Annotations = map[string]string{}
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.NoError(t, err)
 		assert.False(t, result)
@@ -193,9 +192,9 @@ func TestCanReconcileServerlessPrivateEndpointsFail(t *testing.T) {
 			customresource.AnnotationLastAppliedConfiguration: "{",
 		}
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.False(t, result)
 		var aJSONError *json.SyntaxError
@@ -214,9 +213,9 @@ func TestCanReconcileServerlessPrivateEndpointsFail(t *testing.T) {
 		}
 		deployment := sampleServerlessDeployment()
 		protected := true
-		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t)}
+		workflowCtx := workflow.Context{Client: client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(ctx, &workflowCtx, protected, fakeProjectID, deployment)
+		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, protected, fakeProjectID, deployment)
 
 		require.False(t, result)
 		assert.ErrorIs(t, err, fakeError)

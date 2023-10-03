@@ -25,7 +25,6 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
 		alertConfigurationCondition := status.AlertConfigurationReadyType
-		ctx := context.Background()
 		if len(specToSync) == 0 {
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
@@ -35,7 +34,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 			service.SetConditionFalseMsg(alertConfigurationCondition, err.Error())
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
-		result := syncAlertConfigurations(ctx, service, project.ID(), specToSync)
+		result := syncAlertConfigurations(service, project.ID(), specToSync)
 		if !result.IsOk() {
 			service.SetConditionFromResult(alertConfigurationCondition, result)
 			return result
@@ -136,9 +135,9 @@ func readNotificationSecret(kubeClient client.Client, res common.ResourceRefName
 	return string(val), obj, nil
 }
 
-func syncAlertConfigurations(context context.Context, service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
+func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
 	logger := service.Log
-	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(context, groupID, nil)
+	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(service.Context, groupID, nil)
 	if err != nil {
 		logger.Errorf("failed to list alert configurations: %v", err)
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err))
@@ -147,7 +146,7 @@ func syncAlertConfigurations(context context.Context, service *workflow.Context,
 	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
 	logger.Debugf("to create %v, to create statuses %v, to delete %v", len(diff.Create), len(diff.CreateStatus), len(diff.Delete))
 
-	newStatuses := createAlertConfigs(context, service, groupID, diff.Create)
+	newStatuses := createAlertConfigs(service, groupID, diff.Create)
 
 	for _, existedAlertConfig := range diff.CreateStatus {
 		newStatuses = append(newStatuses, status.ParseAlertConfiguration(existedAlertConfig))
@@ -155,7 +154,7 @@ func syncAlertConfigurations(context context.Context, service *workflow.Context,
 
 	service.EnsureStatusOption(status.AtlasProjectSetAlertConfigOption(&newStatuses))
 
-	err = deleteAlertConfigs(context, service, groupID, diff.Delete)
+	err = deleteAlertConfigs(service, groupID, diff.Delete)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to delete alert configurations: %v", err))
 	}
@@ -173,10 +172,10 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 	return workflow.OK()
 }
 
-func deleteAlertConfigs(context context.Context, ctx *workflow.Context, groupID string, alertConfigIDs []string) error {
-	logger := ctx.Log
+func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConfigIDs []string) error {
+	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
-		_, err := ctx.Client.AlertConfigurations.Delete(context, groupID, alertConfigID)
+		_, err := workflowCtx.Client.AlertConfigurations.Delete(workflowCtx.Context, groupID, alertConfigID)
 		if err != nil {
 			logger.Errorf("failed to delete alert configuration: %v", err)
 			return err
@@ -186,8 +185,8 @@ func deleteAlertConfigs(context context.Context, ctx *workflow.Context, groupID 
 	return nil
 }
 
-func createAlertConfigs(context context.Context, ctx *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) []status.AlertConfiguration {
-	logger := ctx.Log
+func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) []status.AlertConfiguration {
+	logger := workflowCtx.Log
 	var result []status.AlertConfiguration
 	for _, alert := range alertSpec {
 		atlasAlert, err := alert.ToAtlas()
@@ -202,7 +201,7 @@ func createAlertConfigs(context context.Context, ctx *workflow.Context, groupID 
 			continue
 		}
 
-		alertConfiguration, _, err := ctx.Client.AlertConfigurations.Create(context, groupID, atlasAlert)
+		alertConfiguration, _, err := workflowCtx.Client.AlertConfigurations.Create(workflowCtx.Context, groupID, atlasAlert)
 		if err != nil {
 			logger.Errorf("failed to create alert configuration: %v", err)
 			result = append(result, status.NewIncorrectAlertConfigStatus(fmt.Sprintf("failed to create atlas alert configuration: %v", err), atlasAlert))

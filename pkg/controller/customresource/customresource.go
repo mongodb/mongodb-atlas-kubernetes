@@ -78,10 +78,10 @@ func ValidateResourceVersion(ctx *workflow.Context, resource mdbv1.AtlasCustomRe
 
 // MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
 // Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
-func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger) *workflow.Context {
+func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger, context context.Context) *workflow.Context {
 	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
 
-	ctx := workflow.NewContext(log, updatedConditions)
+	ctx := workflow.NewContext(log, updatedConditions, context)
 	statushandler.Update(ctx, client, nil, resource)
 
 	return ctx

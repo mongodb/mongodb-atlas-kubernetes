@@ -107,7 +107,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log, context)
 	log.Infow("-> Starting AtlasDeployment reconciliation", "spec", deployment.Spec, "status", deployment.Status)
 	defer func() {
 		statushandler.Update(workflowCtx, r.Client, r.EventRecorder, deployment)
@@ -171,11 +171,11 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		convertedDeployment.Spec.DeploymentSpec = nil
 	}
 
-	if result := r.checkDeploymentIsManaged(workflowCtx, context, log, project, convertedDeployment); !result.IsOk() {
+	if result := r.checkDeploymentIsManaged(workflowCtx, log, project, convertedDeployment); !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
-	deletionRequest, result := r.handleDeletion(workflowCtx, context, log, prevResult, project, deployment)
+	deletionRequest, result := r.handleDeletion(workflowCtx, log, prevResult, project, deployment)
 	if deletionRequest {
 		return result.ReconcileResult(), nil
 	}
@@ -188,29 +188,28 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 
 	handleDeployment := r.selectDeploymentHandler(convertedDeployment)
-	if result, _ := handleDeployment(context, workflowCtx, project, convertedDeployment, req); !result.IsOk() {
+	if result, _ := handleDeployment(workflowCtx, project, convertedDeployment, req); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-		return r.registerConfigAndReturn(workflowCtx, context, log, deployment, result), nil
+		return r.registerConfigAndReturn(workflowCtx, log, deployment, result), nil
 	}
 
 	if !convertedDeployment.IsServerless() {
 		if result := r.handleAdvancedOptions(workflowCtx, project, convertedDeployment); !result.IsOk() {
 			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-			return r.registerConfigAndReturn(workflowCtx, context, log, deployment, result), nil
+			return r.registerConfigAndReturn(workflowCtx, log, deployment, result), nil
 		}
 	}
 
-	return r.registerConfigAndReturn(workflowCtx, context, log, deployment, workflow.OK()), nil
+	return r.registerConfigAndReturn(workflowCtx, log, deployment, workflow.OK()), nil
 }
 
 func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 	workflowCtx *workflow.Context,
-	context context.Context,
 	log *zap.SugaredLogger,
 	deployment *mdbv1.AtlasDeployment, // this must be the original non converted deployment
 	result workflow.Result) ctrl.Result {
 	if result.IsOk() || result.IsInProgress() {
-		err := customresource.ApplyLastConfigApplied(context, deployment, r.Client)
+		err := customresource.ApplyLastConfigApplied(workflowCtx.Context, deployment, r.Client)
 		if err != nil {
 			alternateResult := workflow.Terminate(workflow.Internal, err.Error())
 			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, alternateResult)
@@ -246,7 +245,6 @@ func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *mdbv1.AtlasD
 
 func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	workflowCtx *workflow.Context,
-	context context.Context,
 	log *zap.SugaredLogger,
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
@@ -263,7 +261,7 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 		deployment,
 		r.ObjectDeletionProtection,
 		customresource.IsResourceManagedByOperator,
-		managedByAtlas(context, workflowCtx.Client, project.ID(), log),
+		managedByAtlas(workflowCtx, project.ID(), log),
 	)
 
 	if err != nil {
@@ -290,7 +288,6 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 
 func (r *AtlasDeploymentReconciler) handleDeletion(
 	workflowCtx *workflow.Context,
-	context context.Context,
 	log *zap.SugaredLogger,
 	prevResult workflow.Result,
 	project *mdbv1.AtlasProject,
@@ -298,12 +295,12 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 ) (bool, workflow.Result) {
 	if deployment.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
-			err := r.Client.Get(context, kube.ObjectKeyFromObject(deployment), deployment)
+			err := r.Client.Get(workflowCtx.Context, kube.ObjectKeyFromObject(deployment), deployment)
 			if err != nil {
 				return true, workflow.Terminate(workflow.Internal, err.Error())
 			}
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
-			if err = r.Client.Update(context, deployment); err != nil {
+			if err = r.Client.Update(workflowCtx.Context, deployment); err != nil {
 				return true, workflow.Terminate(workflow.Internal, err.Error())
 			}
 		}
@@ -311,7 +308,7 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 
 	if !deployment.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
-			if err := r.cleanupBindings(context, deployment); err != nil {
+			if err := r.cleanupBindings(workflowCtx.Context, deployment); err != nil {
 				result := workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("failed to cleanup deployment bindings (backups)", "error", err)
 				return true, result
@@ -323,7 +320,7 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 				if customresource.ResourceShouldBeLeftInAtlas(deployment) {
 					log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 				} else {
-					if err := r.deleteDeploymentFromAtlas(workflowCtx, context, log, project, deployment); err != nil {
+					if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
 						log.Errorf("failed to remove deployment from Atlas: %s", err)
 						result := workflow.Terminate(workflow.Internal, err.Error())
 						workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -331,7 +328,7 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 					}
 				}
 			}
-			err := customresource.ManageFinalizer(context, r.Client, deployment, customresource.UnsetFinalizer)
+			err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, deployment, customresource.UnsetFinalizer)
 			if err != nil {
 				result := workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("failed to remove finalizer", "error", err)
@@ -375,7 +372,11 @@ func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.At
 }
 
 // handleAdvancedDeployment ensures the state of the deployment using the Advanced Deployment API
-func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
+	workflowCtx *workflow.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment,
+	req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureAdvancedDeploymentState(workflowCtx, project, deployment)
 	if c != nil && c.StateName != "" {
 		workflowCtx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(c.StateName))
@@ -404,7 +405,6 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx context.Context
 	}
 
 	if err := r.ensureBackupScheduleAndPolicy(
-		ctx,
 		workflowCtx, project.ID(),
 		deployment,
 		backupEnabled,
@@ -428,14 +428,23 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx context.Context
 }
 
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
-func (r *AtlasDeploymentReconciler) handleServerlessInstance(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error) {
-	c, result := r.ensureServerlessInstanceState(ctx, workflowCtx, project, deployment)
+func (r *AtlasDeploymentReconciler) handleServerlessInstance(
+	workflowCtx *workflow.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment,
+	req reconcile.Request) (workflow.Result, error) {
+	c, result := r.ensureServerlessInstanceState(workflowCtx, project, deployment)
 	return r.ensureConnectionSecretsAndSetStatusOptions(workflowCtx, project, deployment, result, c)
 }
 
 // ensureConnectionSecretsAndSetStatusOptions creates the relevant connection secrets and sets
 // status options to the given context. This function can be used for regular deployments and serverless instances
-func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, result workflow.Result, d *mongodbatlas.Cluster) (workflow.Result, error) {
+func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(
+	ctx *workflow.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment,
+	result workflow.Result,
+	d *mongodbatlas.Cluster) (workflow.Result, error) {
 	if d != nil && d.StateName != "" {
 		ctx.EnsureStatusOption(status.AtlasDeploymentStateNameOption(d.StateName))
 	}
@@ -458,7 +467,10 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(c
 	return result, nil
 }
 
-func (r *AtlasDeploymentReconciler) handleAdvancedOptions(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) workflow.Result {
+func (r *AtlasDeploymentReconciler) handleAdvancedOptions(
+	ctx *workflow.Context,
+	project *mdbv1.AtlasProject,
+	deployment *mdbv1.AtlasDeployment) workflow.Result {
 	deploymentName := deployment.GetDeploymentName()
 	context := context.Background()
 	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context, project.Status.ID, deploymentName)
@@ -550,23 +562,22 @@ func (r *AtlasDeploymentReconciler) deleteConnectionStrings(
 
 func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 	workflowCtx *workflow.Context,
-	context context.Context,
 	log *zap.SugaredLogger,
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
 ) error {
 	log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment.Spec)
 
-	err := r.deleteConnectionStrings(context, log, project, deployment)
+	err := r.deleteConnectionStrings(workflowCtx.Context, log, project, deployment)
 	if err != nil {
 		return err
 	}
 
 	atlasClient := workflowCtx.Client
 	if deployment.IsServerless() {
-		_, err = atlasClient.ServerlessInstances.Delete(context, project.Status.ID, deployment.GetDeploymentName())
+		_, err = atlasClient.ServerlessInstances.Delete(workflowCtx.Context, project.Status.ID, deployment.GetDeploymentName())
 	} else {
-		_, err = atlasClient.AdvancedClusters.Delete(context, project.Status.ID, deployment.GetDeploymentName(), nil)
+		_, err = atlasClient.AdvancedClusters.Delete(workflowCtx.Context, project.Status.ID, deployment.GetDeploymentName(), nil)
 	}
 
 	var apiError *mongodbatlas.ErrorResponse
@@ -596,7 +607,7 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 	return nil
 }
 
-type deploymentHandlerFunc func(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
+type deploymentHandlerFunc func(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
 
 type atlasClusterType int
 
@@ -612,14 +623,14 @@ type atlasTypedCluster struct {
 	advanced    *mongodbatlas.AdvancedCluster
 }
 
-func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
+func managedByAtlas(workflowCtx *workflow.Context, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
 		deployment, ok := resource.(*mdbv1.AtlasDeployment)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDeployment")
 		}
 
-		typedAtlasCluster, err := findTypedAtlasCluster(ctx, atlasClient, projectID, deployment.GetDeploymentName())
+		typedAtlasCluster, err := findTypedAtlasCluster(workflowCtx, projectID, deployment.GetDeploymentName())
 		if typedAtlasCluster == nil || err != nil {
 			return false, err
 		}
@@ -633,8 +644,8 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projec
 	}
 }
 
-func findTypedAtlasCluster(ctx context.Context, atlasClient mongodbatlas.Client, projectID, deploymentName string) (*atlasTypedCluster, error) {
-	advancedCluster, _, err := atlasClient.AdvancedClusters.Get(ctx, projectID, deploymentName)
+func findTypedAtlasCluster(workflowCtx *workflow.Context, projectID, deploymentName string) (*atlasTypedCluster, error) {
+	advancedCluster, _, err := workflowCtx.Client.AdvancedClusters.Get(workflowCtx.Context, projectID, deploymentName)
 	if err == nil {
 		return &atlasTypedCluster{clusterType: Advanced, advanced: advancedCluster}, nil
 	}
@@ -645,7 +656,7 @@ func findTypedAtlasCluster(ctx context.Context, atlasClient mongodbatlas.Client,
 		return nil, err
 	}
 	// if not found, maybe it is a serverless instead
-	serverless, _, err := atlasClient.ServerlessInstances.Get(ctx, projectID, deploymentName)
+	serverless, _, err := workflowCtx.Client.ServerlessInstances.Get(workflowCtx.Context, projectID, deploymentName)
 	if err == nil {
 		return &atlasTypedCluster{clusterType: Serverless, serverless: serverless}, nil
 	}

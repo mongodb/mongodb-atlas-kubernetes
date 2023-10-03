@@ -23,7 +23,11 @@ import (
 
 func TestCanEncryptionAtRestReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canEncryptionAtRestReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -31,7 +35,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canEncryptionAtRestReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -46,7 +54,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canEncryptionAtRestReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -72,7 +84,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canEncryptionAtRestReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -118,7 +134,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-1","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
-		result, err := canEncryptionAtRestReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -164,7 +184,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
-		result, err := canEncryptionAtRestReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -210,7 +234,11 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
-		result, err := canEncryptionAtRestReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -229,12 +257,13 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 		reconciler := &AtlasProjectReconciler{
 			SubObjectDeletionProtection: true,
 		}
-		result := reconciler.ensureEncryptionAtRest(context.TODO(), workflowCtx, akoProject, true)
+		result := reconciler.ensureEncryptionAtRest(workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -280,12 +309,13 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
 		reconciler := &AtlasProjectReconciler{
 			SubObjectDeletionProtection: true,
 		}
-		result := reconciler.ensureEncryptionAtRest(context.TODO(), workflowCtx, akoProject, true)
+		result := reconciler.ensureEncryptionAtRest(workflowCtx, akoProject, true)
 
 		require.Equal(
 			t,
@@ -383,7 +413,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 	t.Run("AWS with missing fields", func(t *testing.T) {
 		secretData := map[string][]byte{
 			"AccessKeyID":         []byte("testKeyID"),
-			"SecretAccessKey":     []byte("testSecretAccesssKey"),
+			"SecretAccessKey":     []byte("testSecretAccessKey"),
 			"CustomerMasterKeyID": []byte("testCustomerMasterKeyID"),
 		}
 
@@ -674,7 +704,7 @@ func TestAtlasInSync(t *testing.T) {
 
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
-	assert.True(t, areInSync, "Realistic exampel. should be equal")
+	assert.True(t, areInSync, "Realistic example. should be equal")
 }
 
 func TestAreAzureConfigEqual(t *testing.T) {

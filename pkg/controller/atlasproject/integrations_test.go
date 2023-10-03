@@ -14,6 +14,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
 func TestToAlias(t *testing.T) {
@@ -50,7 +51,11 @@ func TestAreIntegrationsEqual(t *testing.T) {
 
 func TestCanIntegrationsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canIntegrationsReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -58,7 +63,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canIntegrationsReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -73,7 +82,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIntegrationsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -89,7 +102,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIntegrationsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -131,7 +148,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: "{\"integrations\":[{\"type\":\"DATADOG\",\"apiKeyRef\":{\"name\":\"datadog-secret\",\"namespace\":\"project-namespace\"},\"region\":\"US\"}]}",
 			},
 		)
-		result, err := canIntegrationsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -173,7 +194,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: "{\"integrations\":[{\"type\":\"DATADOG\",\"apiKeyRef\":{\"name\":\"datadog-secret\",\"namespace\":\"project-namespace\"},\"region\":\"US\"}]}",
 			},
 		)
-		result, err := canIntegrationsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -215,7 +240,11 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: "{\"integrations\":[{\"type\":\"PAGER_DUTY\",\"serviceKeyRef\":{\"name\":\"pager-duty-secret\",\"namespace\":\"project-namespace\"},\"region\":\"EU\"}]}",
 			},
 		)
-		result, err := canIntegrationsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)

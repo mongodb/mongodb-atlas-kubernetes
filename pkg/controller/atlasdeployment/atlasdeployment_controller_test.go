@@ -98,7 +98,7 @@ func TestDeploymentManaged(t *testing.T) {
 				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
 			}
 
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
+			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
 			assert.True(t, result.IsOk())
 		})
@@ -136,7 +136,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
 			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
 
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
+			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
 			if tc.expectedErr == "" {
 				assert.True(t, result.IsOk())
@@ -162,7 +162,7 @@ func TestLegacyIsManagedInAtlasMustFail(t *testing.T) {
 		deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 		te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
 
-		result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
+		result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
 		assert.Regexp(t, regexp.MustCompile("ownership check expected a converted deployment"), result.GetMessage())
 	})
@@ -204,7 +204,7 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 			deployment := v1.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
 			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
 
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.context, te.log, te.project, te.deployment)
+			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
 			if tc.expectedErr == "" {
 				assert.True(t, result.IsOk())
@@ -225,7 +225,6 @@ func TestFinalizerNotFound(t *testing.T) {
 
 	deletionRequest, result := te.reconciler.handleDeletion(
 		te.workflowCtx,
-		te.context,
 		te.log,
 		te.prevResult,
 		te.project,
@@ -265,7 +264,6 @@ func TestFinalizerGetsSet(t *testing.T) {
 
 			deletionRequest, _ := te.reconciler.handleDeletion(
 				te.workflowCtx,
-				te.context,
 				te.log,
 				te.prevResult,
 				te.project,
@@ -317,7 +315,6 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
-				te.context,
 				te.log,
 				te.prevResult,
 				te.project,
@@ -369,7 +366,6 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
-				te.context,
 				te.log,
 				te.prevResult,
 				te.project,
@@ -421,7 +417,6 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
-				te.context,
 				te.log,
 				te.prevResult,
 				te.project,
@@ -487,7 +482,7 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
 		// test ensureBackupPolicy and cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -518,7 +513,7 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
 		// test cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -557,9 +552,9 @@ func TestCleanupBindings(t *testing.T) {
 		}
 
 		// test cleanup
-		_, err := r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule, &[]watch.WatchedObject{})
+		_, err := r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule, &[]watch.WatchedObject{})
 		require.NoError(t, err)
-		_, err = r.ensureBackupPolicy(context.Background(), &workflow.Context{}, schedule2, &[]watch.WatchedObject{})
+		_, err = r.ensureBackupPolicy(&workflow.Context{Context: context.Background()}, schedule2, &[]watch.WatchedObject{})
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
@@ -603,7 +598,6 @@ func sameServerlessDeployment(ns string) *mongodbatlas.Cluster {
 type testDeploymentEnv struct {
 	reconciler  *AtlasDeploymentReconciler
 	workflowCtx *workflow.Context
-	context     context.Context
 	log         *zap.SugaredLogger
 	prevResult  workflow.Result
 	project     *v1.AtlasProject
@@ -623,12 +617,11 @@ func newTestDeploymentEnv(t *testing.T,
 	r := testDeploymentReconciler(log, k8sclient, protected)
 
 	prevResult := testPrevResult()
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log, context.Background())
 	workflowCtx.Client = atlasClient
 	return &testDeploymentEnv{
 		reconciler:  r,
 		workflowCtx: workflowCtx,
-		context:     context.Background(),
 		log:         r.Log.With("atlasdeployment", "test-namespace"),
 		prevResult:  prevResult,
 		deployment:  deployment,

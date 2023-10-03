@@ -17,7 +17,7 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
 	}
 
-	result := syncManagedNamespaces(context.Background(), service, groupID, deploymentName, managedNamespace)
+	result := syncManagedNamespaces(service, groupID, deploymentName, managedNamespace)
 	if !result.IsOk() {
 		service.SetConditionFromResult(status.ManagedNamespacesReadyType, result)
 		return result
@@ -32,21 +32,21 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 	return result
 }
 
-func syncManagedNamespaces(ctx context.Context, service *workflow.Context, groupID string, deploymentName string, managedNamespaces []mdbv1.ManagedNamespace) workflow.Result {
+func syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []mdbv1.ManagedNamespace) workflow.Result {
 	logger := service.Log
-	existingManagedNamespaces, _, err := GetGlobalDeploymentState(ctx, service.Client.GlobalClusters, groupID, deploymentName)
+	existingManagedNamespaces, _, err := GetGlobalDeploymentState(service.Context, service.Client.GlobalClusters, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to get managed namespaces: %v", err))
 	}
 	diff := sortManagedNamespaces(existingManagedNamespaces, managedNamespaces)
 	logger.Debugw("diff", "To create: %v", diff.ToCreate, "To delete: %v", diff.ToDelete, "To update status: %v", diff.ToUpdateStatus)
-	err = deleteManagedNamespaces(ctx, service.Client.GlobalClusters, groupID, deploymentName, diff.ToDelete)
+	err = deleteManagedNamespaces(service.Context, service.Client.GlobalClusters, groupID, deploymentName, diff.ToDelete)
 	if err != nil {
 		logger.Errorf("failed to delete managed namespaces: %v", err)
 		return workflow.Terminate(workflow.ManagedNamespacesReady, fmt.Sprintf("Failed to delete managed namespaces: %v", err))
 	}
-	nsStatuses := createManagedNamespaces(ctx, service.Client.GlobalClusters, groupID, deploymentName, diff.ToCreate)
+	nsStatuses := createManagedNamespaces(service.Context, service.Client.GlobalClusters, groupID, deploymentName, diff.ToCreate)
 	for _, ns := range diff.ToUpdateStatus {
 		nsStatuses = append(nsStatuses, status.NewCreatedManagedNamespaceStatus(ns))
 	}

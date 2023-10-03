@@ -31,13 +31,13 @@ const (
 	SPEStatusFailed     = "FAILED"     //stage 2
 )
 
-func ensureServerlessPrivateEndpoints(ctx context.Context, service *workflow.Context, groupID string, deployment *mdbv1.AtlasDeployment, deploymentName string, protected bool) workflow.Result {
+func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string, deployment *mdbv1.AtlasDeployment, deploymentName string, protected bool) workflow.Result {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
 		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
 	deploymentSpec := deployment.Spec.ServerlessSpec
 
-	canReconcile, err := canServerlessPrivateEndpointsReconcile(ctx, service, protected, groupID, deployment)
+	canReconcile, err := canServerlessPrivateEndpointsReconcile(service, protected, groupID, deployment)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		service.SetConditionFromResult(status.AlertConfigurationReadyType, result)
@@ -65,7 +65,7 @@ func ensureServerlessPrivateEndpoints(ctx context.Context, service *workflow.Con
 		}
 	}
 
-	result := syncServerlessPrivateEndpoints(context.Background(), service, groupID, deploymentName, providerName, deploymentSpec.PrivateEndpoints)
+	result := syncServerlessPrivateEndpoints(service, groupID, deploymentName, providerName, deploymentSpec.PrivateEndpoints)
 	if !result.IsOk() {
 		service.SetConditionFromResult(status.ServerlessPrivateEndpointReadyType, result)
 		return result
@@ -80,7 +80,7 @@ func ensureServerlessPrivateEndpoints(ctx context.Context, service *workflow.Con
 	return result
 }
 
-func canServerlessPrivateEndpointsReconcile(ctx context.Context, service *workflow.Context, protected bool, groupID string, deployment *mdbv1.AtlasDeployment) (bool, error) {
+func canServerlessPrivateEndpointsReconcile(service *workflow.Context, protected bool, groupID string, deployment *mdbv1.AtlasDeployment) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -94,7 +94,7 @@ func canServerlessPrivateEndpointsReconcile(ctx context.Context, service *workfl
 	}
 
 	atlasClient := service.Client
-	existingPE, err := getAllExistingServerlessPE(ctx, atlasClient.ServerlessPrivateEndpoints, groupID, deployment.Spec.ServerlessSpec.Name)
+	existingPE, err := getAllExistingServerlessPE(service.Context, atlasClient.ServerlessPrivateEndpoints, groupID, deployment.Spec.ServerlessSpec.Name)
 	if err != nil {
 		return false, err
 	}
@@ -163,24 +163,24 @@ func GetServerlessProvider(deploymentSpec *mdbv1.ServerlessSpec) provider.Provid
 	return provider.ProviderName(deploymentSpec.ProviderSettings.BackingProviderName)
 }
 
-func syncServerlessPrivateEndpoints(ctx context.Context, service *workflow.Context, groupID, deploymentName string, providerName provider.ProviderName, desiredPE []mdbv1.ServerlessPrivateEndpoint) workflow.Result {
+func syncServerlessPrivateEndpoints(service *workflow.Context, groupID, deploymentName string, providerName provider.ProviderName, desiredPE []mdbv1.ServerlessPrivateEndpoint) workflow.Result {
 	logger := service.Log
 	client := service.Client.ServerlessPrivateEndpoints
 	logger.Debugf("Syncing serverless private endpoints for deployment %s", deploymentName)
-	existingPE, err := getAllExistingServerlessPE(ctx, client, groupID, deploymentName)
+	existingPE, err := getAllExistingServerlessPE(service.Context, client, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, err.Error())
 	}
 	logger.Debugf("Existing serverless private endpoints: %v", existingPE)
 	diff := sortServerlessPE(logger, existingPE, desiredPE)
 	logger.Debugf("Serverless private endpoints diff: %v", diff)
-	speStatuses := createSPE(ctx, logger, client, groupID, deploymentName, diff.PEToCreate)
-	speStatuses = append(speStatuses, connectSPE(ctx, logger, client, groupID, deploymentName, providerName, diff.PEToConnect)...)
+	speStatuses := createSPE(service.Context, logger, client, groupID, deploymentName, diff.PEToCreate)
+	speStatuses = append(speStatuses, connectSPE(service.Context, logger, client, groupID, deploymentName, providerName, diff.PEToConnect)...)
 	speStatuses = append(speStatuses, getStatusFromReadySPE(diff.PEToUpdateStatus)...)
 	speStatuses = append(speStatuses, handleDuplicatePE(diff)...)
 	service.EnsureStatusOption(status.AtlasDeploymentSPEOption(speStatuses))
 	logger.Debugf("Serverless Private Endpoints statuses: %v", speStatuses)
-	errors := deleteSPE(ctx, client, groupID, deploymentName, diff.PEToDelete)
+	errors := deleteSPE(service.Context, client, groupID, deploymentName, diff.PEToDelete)
 	if len(errors) > 0 {
 		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, fmt.Sprintf("failed to delete serverless private endpoints: %v", errors))
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
+func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
 		return nil, workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
@@ -69,7 +69,7 @@ func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(ctx context.Co
 			}
 			return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 		}
-		result := ensureServerlessPrivateEndpoints(ctx, workflowCtx, project.ID(), deployment, atlasDeployment.Name, r.SubObjectDeletionProtection)
+		result := ensureServerlessPrivateEndpoints(workflowCtx, project.ID(), deployment, atlasDeployment.Name, r.SubObjectDeletionProtection)
 		return atlasDeployment, result
 
 	case status.StateCREATING:
