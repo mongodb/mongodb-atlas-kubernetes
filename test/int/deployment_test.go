@@ -378,7 +378,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	FDescribe("Create/Update the deployment (more complex scenario)", func() {
+	Describe("Create/Update the deployment (more complex scenario)", func() {
 		It("Should be created", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = mdbv1.TypeReplicaSet
@@ -820,7 +820,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	FDescribe("Create the advanced deployment & change the InstanceSize", func() {
+	Describe("Create the advanced deployment & change the InstanceSize", func() {
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 
