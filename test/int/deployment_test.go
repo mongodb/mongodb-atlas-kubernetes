@@ -48,8 +48,7 @@ const (
 )
 
 const (
-	interval      = PollingInterval
-	intervalShort = time.Second * 2
+	interval = PollingInterval
 )
 
 var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-non-backups"), func() {
@@ -468,6 +467,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					},
 					DiskGBEnabled: boolptr(false),
 				}
+				createdDeployment.Spec.DeploymentSpec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
+					Compute: &mdbv1.ComputeSpec{
+						MinInstanceSize: "",
+						MaxInstanceSize: "",
+					},
+				}
 
 				performUpdate(DeploymentUpdateTimeout)
 
@@ -835,6 +840,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M20"
+				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {
@@ -850,6 +857,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 				regionConfig.ElectableSpecs.InstanceSize = "M10"
+				regionConfig.ReadOnlySpecs.InstanceSize = "M10"
+				regionConfig.AnalyticsSpecs.InstanceSize = "M10"
 				regionConfig.AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
 						Enabled:          toptr.MakePtr(true),
@@ -877,6 +886,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 				regionConfig.AutoScaling.Compute.MinInstanceSize = "M20"
 				regionConfig.ElectableSpecs.InstanceSize = "M20"
+				regionConfig.ReadOnlySpecs.InstanceSize = "M20"
+				regionConfig.AnalyticsSpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {

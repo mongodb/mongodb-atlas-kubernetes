@@ -120,10 +120,13 @@ func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluste
 	if IsFreeTierAdvancedDeployment(&atlasDeploymentAsAtlas) {
 		atlasDeploymentAsAtlas.DiskSizeGB = nil
 	}
+
 	atlasDeployment, err = AdvancedDeploymentFromAtlas(atlasDeploymentAsAtlas)
 	if err != nil {
 		return
 	}
+
+	normalizeSpecs(specDeployment.ReplicationSpecs[0].RegionConfigs)
 
 	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
 
