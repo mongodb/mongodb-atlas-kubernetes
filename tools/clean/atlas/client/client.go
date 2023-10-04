@@ -1,4 +1,4 @@
-package atlasclient
+package client
 
 import (
 	"fmt"

@@ -25,7 +25,7 @@ func DeleteAllAdvancedClusters(ctx context.Context, client mongodbatlas.Advanced
 	var allErr error
 	for _, cluster := range advancedClusters {
 		log.Printf("Deleting advanced cluster %s", cluster.Name)
-		if _, err = client.Delete(ctx, projectID, cluster.Name); err != nil {
+		if _, err = client.Delete(ctx, projectID, cluster.Name, &mongodbatlas.DeleteAdvanceClusterOptions{}); err != nil {
 			allErr = errors.Join(allErr, fmt.Errorf("error deleting advanced cluster: %w", err))
 		}
 	}

@@ -63,7 +63,7 @@ jobs:
           sudo mkdir -p /usr/local/kubebuilder/bin && \
           sudo /bin/bash -c "source setup-envtest.sh && fetch_envtest_tools /usr/local/kubebuilder"
   
-          go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
+          GOWORK=off go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
           go install github.com/onsi/gomega/...
           
           cd ${{ matrix.path }}

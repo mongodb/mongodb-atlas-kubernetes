@@ -1,9 +1,8 @@
-package main
+package vpc
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 )
@@ -15,7 +14,7 @@ const (
 	azureVPCName      = "test-vnet"
 )
 
-func main() {
+func CleanVPCs() {
 	err := setGCPCredentials()
 	if err != nil {
 		log.Fatal(err)
@@ -43,9 +42,10 @@ func main() {
 		log.Println("Not all Azure VPC was deleted")
 	}
 	if allErr != nil {
-		fmt.Println("ERRORS: ", allErr)
+		log.Println("ERRORS: ", allErr)
 	}
 	if !azureOk || !gcpOk {
 		os.Exit(1)
 	}
+	log.Printf("VPC cleanups completed OK")
 }
