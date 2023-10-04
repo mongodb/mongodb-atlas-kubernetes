@@ -1,4 +1,4 @@
-package vpc
+package main
 
 import (
 	"context"

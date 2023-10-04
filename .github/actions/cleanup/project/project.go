@@ -1,7 +1,7 @@
 package project
 
 import (
-	"tools/clean/atlas/deployment"
+	"actions/cleanup/deployment"
 	"context"
 	"fmt"
 	"log"
@@ -62,7 +62,7 @@ func DeleteProjects(ctx context.Context, client mongodbatlas.Client, projectList
 			ok = false
 			log.Printf("error deleting project: %s", err)
 		} else {
-			log.Printf("Project successfully deleted")
+			log.Printf("Project successufully deleted")
 		}
 	}
 	return ok

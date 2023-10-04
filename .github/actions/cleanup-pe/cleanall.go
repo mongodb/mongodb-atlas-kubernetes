@@ -1,4 +1,4 @@
-package pe
+package main
 
 import (
 	"context"

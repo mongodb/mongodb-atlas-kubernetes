@@ -1,4 +1,4 @@
-package atlas
+package main
 
 import (
 	"fmt"

@@ -1,22 +1,22 @@
-package atlas
+package main
 
 import (
-	"tools/clean/atlas/project"
+	"actions/cleanup/atlasclient"
+	"actions/cleanup/project"
 	"context"
 	"log"
 	"os"
-	"tools/clean/atlas/client"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
-func CleanAtlas() {
+func main() {
 	config, err := NewConfig()
 	if err != nil {
 		log.Fatalf("error getting config: %s", err)
 	}
 
-	client, err := client.SetupClient(config.PublicKey, config.PrivateKey, config.ManagerUrl)
+	client, err := atlasclient.SetupClient(config.PublicKey, config.PrivateKey, config.ManagerUrl)
 	if err != nil {
 		log.Fatalf("error creating atlas client: %s", err)
 	}
@@ -39,5 +39,4 @@ func CleanAtlas() {
 		log.Printf("Not all project deleted. Please run cleaner again later")
 		os.Exit(1)
 	}
-	log.Printf("Atlas cleanups completed OK")
 }
