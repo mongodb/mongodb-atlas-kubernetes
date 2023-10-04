@@ -42,6 +42,3 @@ tmp/
 
 # ready to work samples
 deploy/
-
-# ignore tool binaries
-tools/clean/clean

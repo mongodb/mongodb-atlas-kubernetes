@@ -17,7 +17,7 @@ func DeleteAllDeployments(ctx context.Context, client mongodbatlas.ClustersServi
 	var allErr error
 	for _, deployment := range deployments {
 		log.Printf("Deleting deployment %s", deployment.Name)
-		if _, err = client.Delete(ctx, projectID, deployment.Name, &mongodbatlas.DeleteAdvanceClusterOptions{}); err != nil {
+		if _, err = client.Delete(ctx, projectID, deployment.Name); err != nil {
 			allErr = errors.Join(allErr, fmt.Errorf("error deleting deployment: %s", err))
 		}
 	}

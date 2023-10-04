@@ -1,4 +1,4 @@
-package pe
+package main
 
 import (
 	"context"
@@ -18,17 +18,16 @@ const (
 	resourceGroupName = "svet-test"
 )
 
-func CleanPEs() {
+func main() {
 	err := setGCPCredentials()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = cleanAllPE()
+	err = CleanAllPE()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("PE cleanups completed OK")
 }
 
 func setGCPCredentials() error {
@@ -50,7 +49,7 @@ func setGCPCredentials() error {
 	return nil
 }
 
-func cleanAllPE() error {
+func CleanAllPE() error {
 	ctx := context.Background()
 	groupNameAzure := resourceGroupName
 	awsRegions := []string{
