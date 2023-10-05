@@ -1,4 +1,4 @@
-package atlasdeployment
+package validate
 
 import (
 	"testing"

@@ -63,14 +63,19 @@ func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regio
 	}
 
 	if deploymentSpec.AdvancedDeploymentSpec != nil {
+		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		if autoscalingErr != nil {
+			err = errors.Join(err, autoscalingErr)
+		}
+
 		instanceSizeErr := instanceSizeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
 		if instanceSizeErr != nil {
 			err = errors.Join(err, instanceSizeErr)
 		}
 
-		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
-		if autoscalingErr != nil {
-			err = errors.Join(err, autoscalingErr)
+		instanceSizeRangeErr := instanceSizeRangeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		if instanceSizeRangeErr != nil {
+			err = errors.Join(err, instanceSizeRangeErr)
 		}
 	}
 
@@ -282,35 +287,115 @@ func moreThanOneIsNonNil(values ...interface{}) bool {
 }
 
 func instanceSizeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
-	var instanceSize string
-	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment ")
+	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment")
 
-	isInstanceSizeEqual := func(nodeInstanceType string) bool {
-		if instanceSize == "" {
-			instanceSize = nodeInstanceType
+	instanceSize := ""
+	firstNonEmptySize := func(region *mdbv1.AdvancedRegionConfig) string {
+		if instanceSize != "" {
+			return instanceSize
 		}
 
-		return nodeInstanceType == instanceSize
+		if region.ElectableSpecs != nil && region.ElectableSpecs.InstanceSize != "" {
+			return region.ElectableSpecs.InstanceSize
+		}
+
+		if region.ReadOnlySpecs != nil && region.ReadOnlySpecs.InstanceSize != "" {
+			return region.ReadOnlySpecs.InstanceSize
+		}
+
+		if region.AnalyticsSpecs != nil && region.AnalyticsSpecs.InstanceSize != "" {
+			return region.AnalyticsSpecs.InstanceSize
+		}
+
+		return ""
 	}
 
 	for _, replicationSpec := range replicationSpecs {
 		for _, regionSpec := range replicationSpec.RegionConfigs {
-			if instanceSize == "" {
-				instanceSize = regionSpec.ElectableSpecs.InstanceSize
-			}
+			instanceSize = firstNonEmptySize(regionSpec)
 
-			if regionSpec.ElectableSpecs != nil && !isInstanceSizeEqual(regionSpec.ElectableSpecs.InstanceSize) {
+			if regionSpec.ElectableSpecs != nil && regionSpec.ElectableSpecs.InstanceSize != instanceSize {
 				return err
 			}
 
-			if regionSpec.ReadOnlySpecs != nil && !isInstanceSizeEqual(regionSpec.ReadOnlySpecs.InstanceSize) {
+			if regionSpec.ReadOnlySpecs != nil && regionSpec.ReadOnlySpecs.InstanceSize != instanceSize {
 				return err
 			}
 
-			if regionSpec.AnalyticsSpecs != nil && !isInstanceSizeEqual(regionSpec.AnalyticsSpecs.InstanceSize) {
+			if regionSpec.AnalyticsSpecs != nil && regionSpec.AnalyticsSpecs.InstanceSize != instanceSize {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func instanceSizeRangeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
+	var err error
+	for _, replicationSpec := range replicationSpecs {
+		for _, regionSpec := range replicationSpec.RegionConfigs {
+			if regionSpec.AutoScaling == nil || regionSpec.AutoScaling.Compute == nil || regionSpec.AutoScaling.Compute.Enabled == nil || !*regionSpec.AutoScaling.Compute.Enabled {
+				continue
+			}
+
+			if regionSpec.ElectableSpecs != nil {
+				if rangeErr := advancedInstanceSizeInRange(
+					regionSpec.ElectableSpecs.InstanceSize,
+					regionSpec.AutoScaling.Compute.MinInstanceSize,
+					regionSpec.AutoScaling.Compute.MaxInstanceSize); rangeErr != nil {
+					err = errors.Join(err, rangeErr)
+					continue
+				}
+			}
+
+			if regionSpec.ReadOnlySpecs != nil {
+				if rangeErr := advancedInstanceSizeInRange(
+					regionSpec.ReadOnlySpecs.InstanceSize,
+					regionSpec.AutoScaling.Compute.MinInstanceSize,
+					regionSpec.AutoScaling.Compute.MaxInstanceSize); rangeErr != nil {
+					err = errors.Join(err, rangeErr)
+					continue
+				}
+			}
+
+			if regionSpec.AnalyticsSpecs != nil {
+				if rangeErr := advancedInstanceSizeInRange(
+					regionSpec.AnalyticsSpecs.InstanceSize,
+					regionSpec.AutoScaling.Compute.MinInstanceSize,
+					regionSpec.AutoScaling.Compute.MaxInstanceSize); rangeErr != nil {
+					err = errors.Join(err, rangeErr)
+					continue
+				}
+			}
+		}
+	}
+
+	return err
+}
+
+func advancedInstanceSizeInRange(currentInstanceSize, minInstanceSize, maxInstanceSize string) error {
+	minSize, err := NewFromInstanceSizeName(minInstanceSize)
+	if err != nil {
+		return err
+	}
+
+	maxSize, err := NewFromInstanceSizeName(maxInstanceSize)
+	if err != nil {
+		return err
+	}
+
+	currentSize, err := NewFromInstanceSizeName(currentInstanceSize)
+	if err != nil {
+		return err
+	}
+
+	if CompareInstanceSizes(currentSize, minSize) == -1 {
+		return errors.New("the instance size is below the minimum autoscaling configuration")
+	}
+
+	if CompareInstanceSizes(currentSize, maxSize) == 1 {
+		return errors.New("the instance size is above the maximum autoscaling configuration")
 	}
 
 	return nil
@@ -328,7 +413,7 @@ func autoscalingForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicat
 			}
 
 			if cmp.Diff(autoscaling, regionSpec.AutoScaling, cmpopts.EquateEmpty()) != "" {
-				return errors.New("autoscaling must be the same for all regions and across all replication specs for advanced deployment ")
+				return errors.New("autoscaling must be the same for all regions and across all replication specs for advanced deployment")
 			}
 		}
 	}

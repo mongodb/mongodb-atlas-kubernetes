@@ -976,3 +976,292 @@ func wrapKey(s string) string {
 func wrappedKey() string {
 	return wrapKey(newPrivateKeyPEM())
 }
+
+func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
+	t.Run("should succeed when instance size are the same for all node types", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(0),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+					},
+				},
+			},
+		}
+
+		assert.NoError(t, instanceSizeForAdvancedDeployment(replicationSpecs))
+	})
+
+	t.Run("should fail when instance size are different between node types", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(0),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M20",
+							NodeCount:    toptr.MakePtr(1),
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, instanceSizeForAdvancedDeployment(replicationSpecs), "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment")
+	})
+
+	t.Run("should fail when instance size are different across regions", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(0),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+					},
+					{
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M20",
+							NodeCount:    toptr.MakePtr(0),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M20",
+							NodeCount:    toptr.MakePtr(1),
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, instanceSizeForAdvancedDeployment(replicationSpecs), "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment")
+	})
+}
+
+func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
+	t.Run("should succeed when region has no autoscaling config", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+					},
+				},
+			},
+		}
+
+		assert.NoError(t, instanceSizeRangeForAdvancedDeployment(replicationSpecs))
+	})
+
+	t.Run("should succeed when instance size is with autoscaling range", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M30",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.NoError(t, instanceSizeRangeForAdvancedDeployment(replicationSpecs))
+	})
+
+	t.Run("should fail when instance size is below autoscaling range", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M20",
+								MaxInstanceSize:  "M40",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, instanceSizeRangeForAdvancedDeployment(replicationSpecs), "the instance size is below the minimum autoscaling configuration")
+	})
+
+	t.Run("should fail when instance size is above autoscaling range", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M40",
+							NodeCount:    toptr.MakePtr(3),
+						},
+						ReadOnlySpecs: &mdbv1.Specs{
+							InstanceSize: "M40",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AnalyticsSpecs: &mdbv1.Specs{
+							InstanceSize: "M40",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M30",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, instanceSizeRangeForAdvancedDeployment(replicationSpecs), "the instance size is above the maximum autoscaling configuration")
+	})
+}
+
+func TestAutoscalingForAdvancedDeployment(t *testing.T) {
+	t.Run("should fail when different compute autoscaling config are set", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M40",
+							},
+						},
+					},
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(false),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M40",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, autoscalingForAdvancedDeployment(replicationSpecs), "autoscaling must be the same for all regions and across all replication specs for advanced deployment")
+	})
+
+	t.Run("should fail when different disc autoscaling config are set", func(t *testing.T) {
+		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(false),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M40",
+							},
+						},
+					},
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M40",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		assert.EqualError(t, autoscalingForAdvancedDeployment(replicationSpecs), "autoscaling must be the same for all regions and across all replication specs for advanced deployment")
+	})
+}
