@@ -29,18 +29,20 @@ func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlas
 	}
 
 	// when editing a region, normalize change compute configuration
+	regionsHasChanged := false
 	if regionsConfigHasChanged(deploymentSpec.ReplicationSpecs[0].RegionConfigs, atlasCluster.ReplicationSpecs[0].RegionConfigs) {
+		regionsHasChanged = true
 		normalizeSpecs(deploymentSpec.ReplicationSpecs[0].RegionConfigs)
-
-		return
 	}
 
 	for _, regionSpec := range deploymentSpec.ReplicationSpecs[0].RegionConfigs {
 		// When compute auto-scaling is enabled, unset instance size to avoid override production workload
 		if isComputeAutoScalingEnabled(regionSpec.AutoScaling) {
-			regionSpec.ElectableSpecs.InstanceSize = ""
-			regionSpec.ReadOnlySpecs.InstanceSize = ""
-			regionSpec.AnalyticsSpecs.InstanceSize = ""
+			if !regionsHasChanged {
+				regionSpec.ElectableSpecs.InstanceSize = ""
+				regionSpec.ReadOnlySpecs.InstanceSize = ""
+				regionSpec.AnalyticsSpecs.InstanceSize = ""
+			}
 		} else {
 			if regionSpec.AutoScaling != nil {
 				regionSpec.AutoScaling.Compute = nil
