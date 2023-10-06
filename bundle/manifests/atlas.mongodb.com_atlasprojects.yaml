@@ -890,6 +890,17 @@ spec:
                       type: string
                   type: object
                 type: array
+              regionUsageRestrictions:
+                default: NONE
+                description: RegionUsageRestrictions designate the project's AWS region
+                  when using Atlas for Government. This parameter should not be used
+                  with commercial Atlas. In Atlas for Government, not setting this
+                  field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
+                enum:
+                - NONE
+                - GOV_REGIONS_ONLY
+                - COMMERCIAL_FEDRAMP_REGIONS_ONLY
+                type: string
               settings:
                 description: Settings allow to set Project Settings for the project
                 properties:
