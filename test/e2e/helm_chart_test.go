@@ -11,6 +11,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
@@ -18,8 +19,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
 )
 
-var _ = Describe("HELM charts", func() {
+var _ = Describe("HELM charts", Ordered, func() {
 	var data model.TestDataProvider
+
+	_ = BeforeAll(func() {
+		cli.Execute("kubectl", "delete", "-f", "../../deploy/crds").Wait().Out.Contents()
+	})
+
+	_ = AfterAll(func() {
+		cli.Execute("kubectl", "apply", "-f", "../../deploy/crds").Wait().Out.Contents()
+	})
 
 	_ = BeforeEach(func() {
 		imageURL := os.Getenv("IMAGE_URL")
@@ -101,7 +110,6 @@ var _ = Describe("HELM charts", func() {
 				}
 			})
 			deleteDeploymentAndOperator(&data)
-			helm.UninstallCRD(data.Resources)
 		},
 		Entry("Several actions with helm update", Label("helm-ns-flow"),
 			model.DataProviderWithResources(
@@ -307,5 +315,9 @@ func deleteDeploymentAndOperator(data *model.TestDataProvider) {
 
 	By("Delete HELM releases", func() {
 		helm.UninstallKubernetesOperator(data.Resources)
+	})
+
+	By("Uninstall HELM CRDs", func() {
+		helm.UninstallCRD(data.Resources)
 	})
 }
