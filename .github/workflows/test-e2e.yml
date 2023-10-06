@@ -203,7 +203,7 @@ jobs:
         run: |
           kubectl version
       - name: Install CRDs if needed
-        if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'bundle-test' ) }}
+        if: ${{ !( matrix.test == 'helm-update' || matrix.test == 'helm-wide' || matrix.test == 'helm-ns' || matrix.test == 'bundle-test' ) }}
         run: |
           kubectl apply -f deploy/crds
       - name: Run e2e test

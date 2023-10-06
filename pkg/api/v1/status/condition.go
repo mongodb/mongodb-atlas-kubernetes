@@ -69,6 +69,12 @@ const (
 	DataFederationPEReadyType ConditionType = "DataFederationPrivateEndpointsReady"
 )
 
+// Atlas Federated Auth condition types
+const (
+	FederatedAuthReadyType      ConditionType = "FederatedAuthReady"
+	FederatedAuthRolesReadyType ConditionType = "RolesReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"

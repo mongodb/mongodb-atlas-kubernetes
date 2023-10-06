@@ -1,0 +1,24 @@
+# permissions for end users to edit atlasfederatedauths.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlasfederatedauth-editor-role
+rules:
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasfederatedauths
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasfederatedauths/status
+  verbs:
+  - get

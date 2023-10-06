@@ -1,0 +1,6 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasFederatedAuth
+metadata:
+  name: atlasfederatedauth-sample
+spec:
+  # TODO(user): Add fields here

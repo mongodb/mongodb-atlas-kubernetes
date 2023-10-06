@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["AtlasProject", "AtlasDeployment", "AtlasDatabaseUser", "AtlasDataFederation"]
+        test: ["AtlasProject", "AtlasDeployment", "AtlasDatabaseUser", "AtlasDataFederation", "AtlasFederatedAuth"]
         path: [ "./test/int" ]
         nodes: [12]
         include:

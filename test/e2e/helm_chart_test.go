@@ -101,6 +101,7 @@ var _ = Describe("HELM charts", func() {
 				}
 			})
 			deleteDeploymentAndOperator(&data)
+			helm.UninstallCRD(data.Resources)
 		},
 		Entry("Several actions with helm update", Label("helm-ns-flow"),
 			model.DataProviderWithResources(

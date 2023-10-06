@@ -97,7 +97,7 @@ func InstallCRD(input model.UserInputs) {
 }
 
 func UninstallCRD(input model.UserInputs) {
-	Uninstall("mongodb-atlas-operator-crds", "default")
+	Uninstall("mongodb-atlas-operator-crds"+input.TestID, input.Namespace)
 }
 
 func InstallOperatorWideSubmodule(input model.UserInputs) {

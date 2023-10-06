@@ -163,7 +163,12 @@ func IsResourceSupportedInDomain(resource mdbv1.AtlasCustomResource, domain stri
 	}
 
 	switch atlasResource := resource.(type) {
-	case *mdbv1.AtlasProject, *mdbv1.AtlasTeam, *mdbv1.AtlasBackupSchedule, *mdbv1.AtlasBackupPolicy, *mdbv1.AtlasDatabaseUser:
+	case *mdbv1.AtlasProject,
+		*mdbv1.AtlasTeam,
+		*mdbv1.AtlasBackupSchedule,
+		*mdbv1.AtlasBackupPolicy,
+		*mdbv1.AtlasDatabaseUser,
+		*mdbv1.AtlasFederatedAuth:
 		return true
 	case *mdbv1.AtlasDataFederation:
 		return false
