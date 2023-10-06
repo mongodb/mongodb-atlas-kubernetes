@@ -311,7 +311,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:1.8.2
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
