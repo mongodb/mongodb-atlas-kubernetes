@@ -234,6 +234,28 @@ spec:
                     type: array
                   rootCertType:
                     type: string
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
                   versionReleaseSystem:
                     type: string
                 type: object
@@ -577,6 +599,28 @@ spec:
                           type: string
                       type: object
                     type: array
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
                 required:
                 - name
                 - providerSettings
@@ -624,6 +668,14 @@ spec:
               serverlessSpec:
                 description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
+                  backupOptions:
+                    description: Serverless Backup Options
+                    properties:
+                      serverlessContinuousBackupEnabled:
+                        default: true
+                        description: ServerlessContinuousBackupEnabled
+                        type: boolean
+                    type: object
                   name:
                     description: Name of the serverless deployment as it appears in
                       Atlas. After Atlas creates the deployment, you can't change
@@ -750,6 +802,32 @@ spec:
                     required:
                     - providerName
                     type: object
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: TerminationProtectionEnabled flag
+                    type: boolean
                 required:
                 - name
                 - providerSettings

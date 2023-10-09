@@ -127,12 +127,12 @@ metadata:
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.8.2
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v1.8.2
+  name: mongodb-atlas-kubernetes.v1.9.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -162,6 +162,11 @@ spec:
         displayName: Atlas Deployment
         kind: AtlasDeployment
         name: atlasdeployments.atlas.mongodb.com
+        version: v1
+      - description: AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
+        displayName: Atlas Federated Auth
+        kind: AtlasFederatedAuth
+        name: atlasfederatedauths.atlas.mongodb.com
         version: v1
       - description: AtlasProject is the Schema for the atlasprojects API
         displayName: Atlas Project
@@ -490,7 +495,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:1.8.2
+                    image: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -575,5 +580,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 1.8.2
-  replaces: mongodb-atlas-kubernetes.v1.8.1
+  version: 1.9.0
+  replaces: mongodb-atlas-kubernetes.v1.8.2

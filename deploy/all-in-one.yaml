@@ -1082,6 +1082,28 @@ spec:
                     type: array
                   rootCertType:
                     type: string
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
                   versionReleaseSystem:
                     type: string
                 type: object
@@ -1425,6 +1447,28 @@ spec:
                           type: string
                       type: object
                     type: array
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
                 required:
                 - name
                 - providerSettings
@@ -1472,6 +1516,14 @@ spec:
               serverlessSpec:
                 description: Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
                 properties:
+                  backupOptions:
+                    description: Serverless Backup Options
+                    properties:
+                      serverlessContinuousBackupEnabled:
+                        default: true
+                        description: ServerlessContinuousBackupEnabled
+                        type: boolean
+                    type: object
                   name:
                     description: Name of the serverless deployment as it appears in
                       Atlas. After Atlas creates the deployment, you can't change
@@ -1598,6 +1650,32 @@ spec:
                     required:
                     - providerName
                     type: object
+                  tags:
+                    description: Key-value pairs for resource tagging.
+                    items:
+                      description: TagSpec holds a key-value pair for resource tagging
+                        on this deployment.
+                      properties:
+                        key:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9 @_.+`;`-]*$
+                          type: string
+                        value:
+                          maxLength: 255
+                          minLength: 1
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9@_.+`;`-]*$
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    maxItems: 50
+                    type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: TerminationProtectionEnabled flag
+                    type: boolean
                 required:
                 - name
                 - providerSettings
@@ -1827,6 +1905,182 @@ spec:
                 description: 'StateName is the current state of the cluster. The possible
                   states are: IDLE, CREATING, UPDATING, DELETING, DELETED, REPAIRING'
                 type: string
+            required:
+            - conditions
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: atlasfederatedauths.atlas.mongodb.com
+spec:
+  group: atlas.mongodb.com
+  names:
+    kind: AtlasFederatedAuth
+    listKind: AtlasFederatedAuthList
+    plural: atlasfederatedauths
+    singular: atlasfederatedauth
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              connectionSecretRef:
+                description: Connection secret with API credentials for configuring
+                  the federation. These credentials must have OrganizationOwner permissions.
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
+              domainAllowList:
+                description: Approved domains that restrict users who can join the
+                  organization based on their email address.
+                items:
+                  type: string
+                type: array
+              domainRestrictionEnabled:
+                default: false
+                description: Prevent users in the federation from accessing organizations
+                  outside of the federation, and creating new organizations. This
+                  option applies to the entire federation. See more information at
+                  https://www.mongodb.com/docs/atlas/security/federation-advanced-options/#restrict-user-membership-to-the-federation
+                type: boolean
+              enabled:
+                default: false
+                type: boolean
+              postAuthRoleGrants:
+                description: Atlas roles that are granted to a user in this organization
+                  after authenticating.
+                items:
+                  type: string
+                type: array
+              roleMappings:
+                description: Map IDP groups to Atlas roles.
+                items:
+                  description: RoleMapping maps an external group from an identity
+                    provider to roles within Atlas.
+                  properties:
+                    externalGroupName:
+                      description: ExternalGroupName is the name of the IDP group
+                        to which this mapping applies.
+                      maxLength: 200
+                      minLength: 1
+                      type: string
+                    roleAssignments:
+                      description: RoleAssignments define the roles within projects
+                        that should be given to members of the group.
+                      items:
+                        properties:
+                          projectName:
+                            description: The Atlas project in the same org in which
+                              the role should be given.
+                            type: string
+                          role:
+                            description: The role in Atlas that should be given to
+                              group members.
+                            enum:
+                            - ORG_MEMBER
+                            - ORG_READ_ONLY
+                            - ORG_BILLING_ADMIN
+                            - ORG_GROUP_CREATOR
+                            - ORG_OWNER
+                            - ORG_BILLING_READ_ONLY
+                            - ORG_TEAM_MEMBERS_ADMIN
+                            - GROUP_AUTOMATION_ADMIN
+                            - GROUP_BACKUP_ADMIN
+                            - GROUP_MONITORING_ADMIN
+                            - GROUP_OWNER
+                            - GROUP_READ_ONLY
+                            - GROUP_USER_ADMIN
+                            - GROUP_BILLING_ADMIN
+                            - GROUP_DATA_ACCESS_ADMIN
+                            - GROUP_DATA_ACCESS_READ_ONLY
+                            - GROUP_DATA_ACCESS_READ_WRITE
+                            - GROUP_CHARTS_ADMIN
+                            - GROUP_CLUSTER_MANAGER
+                            - GROUP_SEARCH_INDEX_EDITOR
+                            type: string
+                        type: object
+                      type: array
+                  type: object
+                type: array
+              ssoDebugEnabled:
+                default: false
+                type: boolean
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Conditions is the list of statuses showing the current
+                  state of the Atlas Custom Resource
+                items:
+                  description: Condition describes the state of an Atlas Custom Resource
+                    at a certain point.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of Atlas Custom Resource condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration indicates the generation of the resource
+                  specification that the Atlas Operator is aware of. The Atlas Operator
+                  updates this field to the 'metadata.generation' as soon as it starts
+                  reconciliation of the resource.
+                format: int64
+                type: integer
             required:
             - conditions
             type: object
@@ -2728,6 +2982,17 @@ spec:
                       type: string
                   type: object
                 type: array
+              regionUsageRestrictions:
+                default: NONE
+                description: RegionUsageRestrictions designate the project's AWS region
+                  when using Atlas for Government. This parameter should not be used
+                  with commercial Atlas. In Atlas for Government, not setting this
+                  field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
+                enum:
+                - NONE
+                - GOV_REGIONS_ONLY
+                - COMMERCIAL_FEDRAMP_REGIONS_ONLY
+                type: string
               settings:
                 description: Settings allow to set Project Settings for the project
                 properties:
@@ -3801,7 +4066,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:1.8.2
+        image: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
