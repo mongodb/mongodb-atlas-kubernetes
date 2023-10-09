@@ -237,15 +237,13 @@ func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.Atla
 		}
 	}
 
+	if len(bSchedule.Spec.CopySettings) > 0 && len(deployment.Status.ReplicaSets) == 0 {
+		err = errors.Join(err, fmt.Errorf("deployment %s doesn't have replication status available", deployment.GetDeploymentName()))
+	}
+
 	for position, copySetting := range bSchedule.Spec.CopySettings {
 		if copySetting.RegionName == nil {
 			err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must set a region name", position))
-		}
-
-		if copySetting.ReplicationSpecID == nil {
-			err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must set a valid ReplicationSpecID", position))
-		} else if _, ok := replicaSets[*copySetting.ReplicationSpecID]; !ok {
-			err = errors.Join(err, fmt.Errorf("copy setting at position %d: referenced ReplicationSpecID is invalid", position))
 		}
 
 		if copySetting.ShouldCopyOplogs != nil && *copySetting.ShouldCopyOplogs {

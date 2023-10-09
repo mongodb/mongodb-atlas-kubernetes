@@ -78,8 +78,6 @@ type CopySetting struct {
 	CloudProvider *string `json:"cloudProvider,omitempty"`
 	// Target region to copy snapshots belonging to replicationSpecId to.
 	RegionName *string `json:"regionName,omitempty"`
-	// Unique identifier that identifies the replication object for a zone in a cluster.
-	ReplicationSpecID *string `json:"replicationSpecId,omitempty"`
 	// Flag that indicates whether to copy the oplogs to the target region.
 	ShouldCopyOplogs *bool `json:"shouldCopyOplogs,omitempty"`
 	// List that describes which types of snapshots to copy.
@@ -99,7 +97,7 @@ type AtlasBackupSchedule struct {
 	Status status.BackupScheduleStatus `json:"status,omitempty"`
 }
 
-func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName string, policy *AtlasBackupPolicy) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
+func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, replicaSetID string, policy *AtlasBackupPolicy) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
 	atlasPolicy := mongodbatlas.Policy{}
 
 	for _, bpItem := range policy.Spec.Items {
@@ -135,7 +133,7 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName string, policy *At
 		result.CopySettings = append(result.CopySettings, mongodbatlas.CopySetting{
 			CloudProvider:     copySetting.CloudProvider,
 			RegionName:        copySetting.RegionName,
-			ReplicationSpecID: copySetting.ReplicationSpecID,
+			ReplicationSpecID: &replicaSetID,
 			ShouldCopyOplogs:  copySetting.ShouldCopyOplogs,
 			Frequencies:       copySetting.Frequencies,
 		})

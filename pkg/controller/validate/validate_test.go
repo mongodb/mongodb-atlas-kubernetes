@@ -542,17 +542,39 @@ func TestBackupScheduleValidation(t *testing.T) {
 		assert.Error(t, BackupSchedule(bSchedule, deployment))
 	})
 
+	t.Run("copy setting is set but replica-set id is not available", func(t *testing.T) {
+		bSchedule := &mdbv1.AtlasBackupSchedule{
+			Spec: mdbv1.AtlasBackupScheduleSpec{
+				CopySettings: []mdbv1.CopySetting{
+					{
+						RegionName:       toptr.MakePtr("US_WEST_1"),
+						CloudProvider:    toptr.MakePtr("AWS"),
+						ShouldCopyOplogs: toptr.MakePtr(true),
+						Frequencies:      []string{"WEEKLY"},
+					},
+				},
+			},
+		}
+		deployment := &mdbv1.AtlasDeployment{
+			Spec: mdbv1.AtlasDeploymentSpec{
+				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					PitEnabled: toptr.MakePtr(true),
+				},
+			},
+		}
+		assert.Error(t, BackupSchedule(bSchedule, deployment))
+	})
+
 	t.Run("copy settings on advanced deployment", func(t *testing.T) {
 		t.Run("copy settings is valid", func(t *testing.T) {
 			bSchedule := &mdbv1.AtlasBackupSchedule{
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							RegionName:        toptr.MakePtr("US_WEST_1"),
-							ReplicationSpecID: toptr.MakePtr("123"),
-							CloudProvider:     toptr.MakePtr("AWS"),
-							ShouldCopyOplogs:  toptr.MakePtr(true),
-							Frequencies:       []string{"WEEKLY"},
+							RegionName:       toptr.MakePtr("US_WEST_1"),
+							CloudProvider:    toptr.MakePtr("AWS"),
+							ShouldCopyOplogs: toptr.MakePtr(true),
+							Frequencies:      []string{"WEEKLY"},
 						},
 					},
 				},
@@ -583,8 +605,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 							ShouldCopyOplogs: toptr.MakePtr(true),
 						},
 						{
-							RegionName:        toptr.MakePtr("US_WEST_1"),
-							ReplicationSpecID: toptr.MakePtr("123"),
+							RegionName: toptr.MakePtr("US_WEST_1"),
 						},
 					},
 				},
@@ -612,11 +633,10 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							RegionName:        toptr.MakePtr("US_WEST_1"),
-							ReplicationSpecID: toptr.MakePtr("123"),
-							CloudProvider:     toptr.MakePtr("AWS"),
-							ShouldCopyOplogs:  toptr.MakePtr(true),
-							Frequencies:       []string{"WEEKLY"},
+							RegionName:       toptr.MakePtr("US_WEST_1"),
+							CloudProvider:    toptr.MakePtr("AWS"),
+							ShouldCopyOplogs: toptr.MakePtr(true),
+							Frequencies:      []string{"WEEKLY"},
 						},
 					},
 				},
@@ -647,8 +667,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 							ShouldCopyOplogs: toptr.MakePtr(true),
 						},
 						{
-							RegionName:        toptr.MakePtr("US_WEST_1"),
-							ReplicationSpecID: toptr.MakePtr("123"),
+							RegionName: toptr.MakePtr("US_WEST_1"),
 						},
 					},
 				},

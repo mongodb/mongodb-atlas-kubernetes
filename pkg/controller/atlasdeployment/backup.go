@@ -67,11 +67,13 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		return err
 	}
 
-	return r.updateBackupScheduleAndPolicy(service.Context, service, projectID, deployment.GetDeploymentName(), bSchedule, bPolicy)
+	return r.updateBackupScheduleAndPolicy(service.Context, service, projectID, deployment, bSchedule, bPolicy)
 }
 
-func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID, clusterName string, policy *mdbv1.AtlasBackupPolicy) customresource.AtlasChecker {
+func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID string, deployment *mdbv1.AtlasDeployment, policy *mdbv1.AtlasBackupPolicy) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+		clusterName := deployment.GetDeploymentName()
+
 		backupSchedule, ok := resource.(*mdbv1.AtlasBackupSchedule)
 		if !ok {
 			return false, errArgIsNotBackupSchedule
@@ -87,7 +89,7 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 			return false, err
 		}
 
-		operatorBS := backupSchedule.ToAtlas(atlasBS.ClusterID, clusterName, policy)
+		operatorBS := backupSchedule.ToAtlas(atlasBS.ClusterID, clusterName, deployment.GetReplicationSetID(), policy)
 		if err != nil {
 			return false, err
 		}
@@ -223,10 +225,11 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	ctx context.Context,
 	service *workflow.Context,
 	projectID string,
-	clusterName string,
+	deployment *mdbv1.AtlasDeployment,
 	bSchedule *mdbv1.AtlasBackupSchedule,
 	bPolicy *mdbv1.AtlasBackupPolicy,
 ) error {
+	clusterName := deployment.GetDeploymentName()
 	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
 	if err != nil {
 		errMessage := "unable to get current backup configuration for project"
@@ -240,7 +243,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	r.Log.Debugf("successfully received backup configuration: %v", currentSchedule)
 
-	owner, err := customresource.IsOwner(bSchedule, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, backupScheduleManagedByAtlas(ctx, service.Client, projectID, clusterName, bPolicy))
+	owner, err := customresource.IsOwner(bSchedule, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, backupScheduleManagedByAtlas(ctx, service.Client, projectID, deployment, bPolicy))
 	if err != nil {
 		return err
 	}
@@ -250,7 +253,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	}
 	r.Log.Debugf("updating backup configuration for the atlas deployment: %v", clusterName)
 
-	apiScheduleReq := bSchedule.ToAtlas(currentSchedule.ClusterID, clusterName, bPolicy)
+	apiScheduleReq := bSchedule.ToAtlas(currentSchedule.ClusterID, clusterName, deployment.GetReplicationSetID(), bPolicy)
 
 	// There is only one policy, always
 	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
@@ -304,6 +307,12 @@ func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) 
 		}
 	}
 	s.UpdateSnapshots = nil
+
+	if len(s.CopySettings) > 0 {
+		for i := range s.CopySettings {
+			s.CopySettings[i].ReplicationSpecID = nil
+		}
+	}
 }
 
 func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Context, clusterName string) error {
@@ -324,6 +333,11 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 				}
 
 				backupSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(clusterName))
+
+				if err = r.Client.Status().Update(ctx, &backupSchedule); err != nil {
+					r.Log.Errorw("failed to update BackupSchedule status", "error", err)
+					return err
+				}
 
 				lastScheduleRef := false
 				if len(backupSchedule.Status.DeploymentIDs) == 0 &&
@@ -350,6 +364,11 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 
 				scheduleRef := kube.ObjectKeyFromObject(&backupSchedule).String()
 				bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
+
+				if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
+					r.Log.Errorw("failed to update BackupPolicy status", "error", err)
+					return err
+				}
 
 				if len(bPolicy.Status.BackupScheduleIDs) == 0 &&
 					customresource.HaveFinalizer(bPolicy, customresource.FinalizerLabel) {

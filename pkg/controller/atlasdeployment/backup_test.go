@@ -23,8 +23,16 @@ const (
 )
 
 func Test_backupScheduleManagedByAtlas(t *testing.T) {
+	deploment := &mdbv1.AtlasDeployment{
+		Spec: mdbv1.AtlasDeploymentSpec{
+			AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				Name: clusterName,
+			},
+		},
+	}
+
 	t.Run("should return err when wrong resource passed", func(t *testing.T) {
-		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{}, projectID, clusterName, &mdbv1.AtlasBackupPolicy{})
+		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{}, projectID, deploment, &mdbv1.AtlasBackupPolicy{})
 		result, err := validator(&mdbv1.AtlasDeployment{})
 		assert.EqualError(t, err, errArgIsNotBackupSchedule.Error())
 		assert.False(t, result)
@@ -37,7 +45,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 					return nil, &mongodbatlas.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound}
 				},
 			},
-		}, projectID, clusterName, &mdbv1.AtlasBackupPolicy{})
+		}, projectID, deploment, &mdbv1.AtlasBackupPolicy{})
 		result, err := validator(&mdbv1.AtlasBackupSchedule{})
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -87,7 +95,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 						&mongodbatlas.Response{}, nil
 				},
 			},
-		}, projectID, clusterName, &mdbv1.AtlasBackupPolicy{
+		}, projectID, deploment, &mdbv1.AtlasBackupPolicy{
 			TypeMeta:   metav1.TypeMeta{},
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec:       mdbv1.AtlasBackupPolicySpec{},
@@ -142,7 +150,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 						&mongodbatlas.Response{}, nil
 				},
 			},
-		}, projectID, clusterName, &mdbv1.AtlasBackupPolicy{
+		}, projectID, deploment, &mdbv1.AtlasBackupPolicy{
 			TypeMeta:   metav1.TypeMeta{},
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec: mdbv1.AtlasBackupPolicySpec{
@@ -170,11 +178,10 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 				UseOrgAndGroupNamesInExportPrefix: false,
 				CopySettings: []mdbv1.CopySetting{
 					{
-						CloudProvider:     toptr.MakePtr[string]("AWS"),
-						RegionName:        toptr.MakePtr[string]("us-east-1"),
-						ReplicationSpecID: toptr.MakePtr[string]("test-id"),
-						ShouldCopyOplogs:  toptr.MakePtr(false),
-						Frequencies:       []string{},
+						CloudProvider:    toptr.MakePtr[string]("AWS"),
+						RegionName:       toptr.MakePtr[string]("us-east-1"),
+						ShouldCopyOplogs: toptr.MakePtr(false),
+						Frequencies:      []string{},
 					},
 				},
 			},

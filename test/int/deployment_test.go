@@ -10,6 +10,7 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
@@ -1219,11 +1220,20 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 	})
 
 	Describe("Create deployment with backups enabled and snapshot distribution", Label("snapshot-distribution"), func() {
-		BeforeEach(func() {
+		var secondDeployment *mdbv1.AtlasDeployment
+		bScheduleName := "schedule-1"
+
+		AfterEach(func() {
+			deleteDeploymentFromKubernetes(createdProject, createdDeployment)
+			deleteDeploymentFromKubernetes(createdProject, secondDeployment)
+			deleteBackupDefsFromKubernetes(backupScheduleDefault, backupPolicyDefault)
+		})
+
+		It("Should succeed", func() {
 			By("Creating deployment with backups enabled", func() {
 				createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 				createdDeployment.Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
-				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
@@ -1231,23 +1241,10 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 					g.Expect(deployment.StateName).Should(Equal("IDLE"))
 					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
 					g.Expect(len(deployment.ReplicationSpecs)).ShouldNot(Equal(0))
-				}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Not(HaveOccurred()))
+				}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Succeed())
 			})
 
 			By("Adding BackupSchedule with Snapshot distribution", func() {
-				bScheduleName := "schedule-1"
-
-				Eventually(func(g Gomega) {
-					g.Expect(
-						k8sClient.Get(context.Background(), types.NamespacedName{Namespace: namespace.Name, Name: "test-deployment-advanced-k8s"}, createdDeployment),
-					).NotTo(HaveOccurred())
-
-					g.Expect(createdDeployment.Status.ReplicaSets).ToNot(BeEmpty())
-					g.Expect(createdDeployment.Status.ReplicaSets[0].ID).ToNot(BeEmpty())
-				}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
-
-				replicaSetID := createdDeployment.Status.ReplicaSets[0].ID
-
 				backupPolicyDefault = &mdbv1.AtlasBackupPolicy{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "policy-1",
@@ -1282,53 +1279,80 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						UpdateSnapshots:       false,
 						CopySettings: []mdbv1.CopySetting{
 							{
-								CloudProvider:     toptr.MakePtr("AWS"),
-								RegionName:        toptr.MakePtr("US_WEST_1"),
-								ReplicationSpecID: toptr.MakePtr(replicaSetID),
-								ShouldCopyOplogs:  toptr.MakePtr(false),
-								Frequencies:       []string{"MONTHLY"},
+								CloudProvider:    toptr.MakePtr("AWS"),
+								RegionName:       toptr.MakePtr("US_WEST_1"),
+								ShouldCopyOplogs: toptr.MakePtr(false),
+								Frequencies:      []string{"MONTHLY"},
 							},
 						},
 					},
 				}
-				Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).NotTo(HaveOccurred())
-				Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).NotTo(HaveOccurred())
+				Expect(k8sClient.Create(context.Background(), backupPolicyDefault)).Should(Succeed())
+				Expect(k8sClient.Create(context.Background(), backupScheduleDefault)).Should(Succeed())
 
+				Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(createdDeployment), createdDeployment)).Should(Succeed())
 				createdDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 					Name:      bScheduleName,
 					Namespace: namespace.Name,
 				}
-				Expect(k8sClient.Update(context.Background(), createdDeployment)).NotTo(HaveOccurred())
+				Expect(k8sClient.Update(context.Background(), createdDeployment)).Should(Succeed())
 			})
-		})
 
-		AfterEach(func() {
-			deleteDeploymentFromKubernetes(createdProject, createdDeployment)
-			deleteBackupDefsFromKubernetes(backupScheduleDefault, backupPolicyDefault)
-		})
-
-		It("Should succeed", func() {
-			replicaSetID := createdDeployment.Status.ReplicaSets[0].ID
-			Eventually(func(g Gomega) {
-				atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
-				g.Expect(err).Should(BeNil())
-				g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
-				g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
-
-				atlasBSchedule, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
-				g.Expect(err).Should(BeNil())
-				g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
-				g.Expect(atlasBSchedule.CopySettings[0]).
-					Should(Equal(
-						mongodbatlas.CopySetting{
-							CloudProvider:     toptr.MakePtr("AWS"),
-							RegionName:        toptr.MakePtr("US_WEST_1"),
-							ReplicationSpecID: toptr.MakePtr(replicaSetID),
-							ShouldCopyOplogs:  toptr.MakePtr(false),
-							Frequencies:       []string{"MONTHLY"},
+			By("Deployment is ready with backup and snapshot distribution configured", func() {
+				Eventually(func(g Gomega) {
+					validateDeploymentWithSnapshotDistribution(
+						g,
+						createdProject.ID(),
+						createdDeployment.GetDeploymentName(),
+						[]mongodbatlas.CopySetting{
+							{
+								CloudProvider:    toptr.MakePtr("AWS"),
+								RegionName:       toptr.MakePtr("US_WEST_1"),
+								ShouldCopyOplogs: toptr.MakePtr(false),
+								Frequencies:      []string{"MONTHLY"},
+							},
 						},
-					))
-			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Not(HaveOccurred()))
+					)
+				}).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			})
+
+			By("Creating a second deployment with backups enabled using same snapshot distribution configuration", func() {
+				secondDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
+				secondDeployment.WithName("deployment-advanced-k8s-2")
+				secondDeployment.Spec.AdvancedDeploymentSpec.Name = "deployment-advanced-2"
+				secondDeployment.Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+				secondDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
+					Name:      bScheduleName,
+					Namespace: namespace.Name,
+				}
+				Expect(k8sClient.Create(context.Background(), secondDeployment)).Should(Succeed())
+
+				Eventually(func(g Gomega) {
+					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), secondDeployment.Spec.AdvancedDeploymentSpec.Name)
+					g.Expect(err).Should(BeNil())
+					g.Expect(deployment.StateName).Should(Equal("IDLE"))
+					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
+					g.Expect(len(deployment.ReplicationSpecs)).ShouldNot(Equal(0))
+				}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Succeed())
+			})
+
+			By("The second Deployment is ready with backup and snapshot distribution configured", func() {
+				Eventually(func(g Gomega) {
+					validateDeploymentWithSnapshotDistribution(
+						g,
+						createdProject.ID(),
+						secondDeployment.GetDeploymentName(),
+						[]mongodbatlas.CopySetting{
+							{
+								CloudProvider:    toptr.MakePtr("AWS"),
+								RegionName:       toptr.MakePtr("US_WEST_1"),
+								ShouldCopyOplogs: toptr.MakePtr(false),
+								Frequencies:      []string{"MONTHLY"},
+							},
+						},
+					)
+				}).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			})
 		})
 	})
 })
@@ -1378,6 +1402,22 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		}
 	}
+}
+
+func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []mongodbatlas.CopySetting) {
+	atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
+	g.Expect(err).Should(BeNil())
+	g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
+	g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
+
+	for i := range copySettings {
+		copySettings[i].ReplicationSpecID = toptr.MakePtr(atlasCluster.ReplicationSpecs[0].ID)
+	}
+
+	atlasBSchedule, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), projectID, deploymentName)
+	g.Expect(err).Should(BeNil())
+	g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
+	g.Expect(atlasBSchedule.CopySettings).Should(Equal(copySettings))
 }
 
 // checkAtlasDeploymentRemoved returns true if the Atlas Deployment is removed from Atlas. Note the behavior: the deployment
