@@ -90,14 +90,11 @@ func RestartTestApplication(input model.UserInputs, user model.DBUser, port stri
 }
 
 func InstallCRD(input model.UserInputs) {
-	Install(
-		"mongodb-atlas-operator-crds"+input.TestID,
-		config.AtlasOperatorCRDHelmChartPath,
-	)
+	Install("mongodb-atlas-operator-crds"+input.TestID, config.AtlasOperatorCRDHelmChartPath)
 }
 
 func UninstallCRD(input model.UserInputs) {
-	Uninstall("mongodb-atlas-operator-crds"+input.TestID, input.Namespace)
+	Uninstall("mongodb-atlas-operator-crds"+input.TestID, "default")
 }
 
 func InstallOperatorWideSubmodule(input model.UserInputs) {
