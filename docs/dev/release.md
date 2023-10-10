@@ -15,7 +15,7 @@ The new job "Create Release" will be triggered and the following will be done:
 * Draft Release will be created with all commits since the previous release
 
 ## Edit the Release Notes and publish the release
-Follow the format of the previous release notes (two main sections: "Features" and "Bug Fixes"). Publish the release.
+Follow the format described in the release-notes-template.md file. Publish the release.
 
 ## Synchronize configuration changes with the Helm Charts
 
