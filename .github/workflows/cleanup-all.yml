@@ -40,6 +40,9 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
 
+      - name: Build & Test clean tool
+        run: (cd tools/clean && go build . && go test .)
+
       - name: Run cleanup VPC
         if: github.event_name == 'schedule' || github.event.inputs.cleanVPC == 'true'
         env:
@@ -48,7 +51,7 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-        run: (cd .github/actions/clean-vpc && go run .)
+        run: (cd tools/clean && ./clean vpc)
 
       - name: Run cleanup PE
         if: github.event_name == 'schedule' || github.event.inputs.cleanPE == 'true'
@@ -61,7 +64,7 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-        run: (cd .github/actions/cleanup-pe && go run .)
+        run: (cd tools/clean && ./clean pe)
 
       - name: Run atlas project cleaner
         if: always()
@@ -70,4 +73,4 @@ jobs:
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           CLEAN_ALL: ${{ github.event.inputs.clean }}
           MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
-        run: (cd .github/actions/cleanup && go run .)
+        run: (cd tools/clean && ./clean atlas)
