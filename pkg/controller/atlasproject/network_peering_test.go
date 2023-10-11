@@ -17,7 +17,11 @@ import (
 
 func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canNetworkPeeringReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canNetworkPeeringReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -25,7 +29,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canNetworkPeeringReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -40,7 +48,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -61,7 +73,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -82,7 +98,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"providerName\":\"AWS\",\"accepterRegionName\":\"eu-west-1\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -135,7 +155,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"eu-west-1\",\"awsAccountId\":\"123456\",\"providerName\":\"AWS\",\"routeTableCidrBlock\":\"10.8.0.0/22\",\"vpcId\":\"654321\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.True(t, result)
@@ -184,7 +208,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"europe-west-1\",\"providerName\":\"GCP\",\"gcpProjectId\":\"my-project\",\"networkName\":\"my-network\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.True(t, result)
@@ -238,7 +266,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"GERMANY_CENTRAL\",\"providerName\":\"AZURE\",\"atlasCidrBlock\":\"192.168.0.0/24\",\"azureSubscriptionId\":\"123\",\"azureDirectoryId\":\"456\",\"resourceGroupName\":\"my-rg\",\"vnetName\":\"my-vnet\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.True(t, result)
@@ -292,7 +324,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"eu-west-1\",\"awsAccountId\":\"123456\",\"providerName\":\"AWS\",\"routeTableCidrBlock\":\"10.8.0.0/22\",\"vpcId\":\"654321\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -341,7 +377,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"europe-west-1\",\"providerName\":\"GCP\",\"gcpProjectId\":\"my-project\",\"networkName\":\"my-network\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -395,7 +435,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"GERMANY_CENTRAL\",\"providerName\":\"AZURE\",\"atlasCidrBlock\":\"192.168.0.0/24\",\"azureSubscriptionId\":\"123\",\"azureDirectoryId\":\"456\",\"resourceGroupName\":\"my-rg\",\"vnetName\":\"my-vnet\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -449,7 +493,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"eu-west-1\",\"awsAccountId\":\"123456\",\"providerName\":\"AWS\",\"routeTableCidrBlock\":\"10.8.0.0/22\",\"vpcId\":\"654321\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -497,7 +545,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"europe-west-1\",\"providerName\":\"GCP\",\"gcpProjectId\":\"my-project\",\"networkName\":\"my-network\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -551,7 +603,11 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"accepterRegionName\":\"GERMANY_CENTRAL\",\"providerName\":\"AZURE\",\"atlasCidrBlock\":\"192.168.0.0/24\",\"azureSubscriptionId\":\"123\",\"azureDirectoryId\":\"456\",\"resourceGroupName\":\"my-rg\",\"vnetName\":\"my-vnet\"}]}",
 				},
 			)
-			result, err := canNetworkPeeringReconcile(context.TODO(), atlasClient, true, akoProject)
+			workflowCtx := &workflow.Context{
+				Client:  atlasClient,
+				Context: context.TODO(),
+			}
+			result, err := canNetworkPeeringReconcile(workflowCtx, true, akoProject)
 
 			require.NoError(t, err)
 			require.False(t, result)
@@ -571,9 +627,10 @@ func TestEnsureNetworkPeers(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureNetworkPeers(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureNetworkPeers(workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -625,9 +682,10 @@ func TestEnsureNetworkPeers(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureNetworkPeers(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureNetworkPeers(workflowCtx, akoProject, true)
 
 		require.Equal(
 			t,

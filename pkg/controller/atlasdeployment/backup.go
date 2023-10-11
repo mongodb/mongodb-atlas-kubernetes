@@ -32,7 +32,6 @@ var errArgIsNotBackupSchedule = errors.New("failed to match resource type as Atl
 const BackupProtected = "unable to reconcile AtlasBackupSchedule due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"
 
 func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
-	ctx context.Context,
 	service *workflow.Context,
 	projectID string,
 	deployment *mdbv1.AtlasDeployment,
@@ -41,7 +40,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	if deployment.Spec.BackupScheduleRef.Name == "" {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
-		err := r.garbageCollectBackupResource(ctx, deployment.GetDeploymentName())
+		err := r.garbageCollectBackupResource(service.Context, deployment.GetDeploymentName())
 		if err != nil {
 			return err
 		}
@@ -58,17 +57,17 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.WatchedResources)
 	}()
 
-	bSchedule, err := r.ensureBackupSchedule(ctx, service, deployment, &resourcesToWatch)
+	bSchedule, err := r.ensureBackupSchedule(service, deployment, &resourcesToWatch)
 	if err != nil {
 		return err
 	}
 
-	bPolicy, err := r.ensureBackupPolicy(ctx, service, bSchedule, &resourcesToWatch)
+	bPolicy, err := r.ensureBackupPolicy(service, bSchedule, &resourcesToWatch)
 	if err != nil {
 		return err
 	}
 
-	return r.updateBackupScheduleAndPolicy(ctx, service, projectID, deployment.GetDeploymentName(), bSchedule, bPolicy)
+	return r.updateBackupScheduleAndPolicy(service.Context, service, projectID, deployment.GetDeploymentName(), bSchedule, bPolicy)
 }
 
 func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID, clusterName string, policy *mdbv1.AtlasBackupPolicy) customresource.AtlasChecker {
@@ -108,14 +107,13 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 }
 
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
-	ctx context.Context,
 	service *workflow.Context,
 	deployment *mdbv1.AtlasDeployment,
 	resourcesToWatch *[]watch.WatchedObject,
 ) (*mdbv1.AtlasBackupSchedule, error) {
 	backupScheduleRef := deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace)
 	bSchedule := &mdbv1.AtlasBackupSchedule{}
-	err := r.Client.Get(ctx, *backupScheduleRef, bSchedule)
+	err := r.Client.Get(service.Context, *backupScheduleRef, bSchedule)
 	if err != nil {
 		return nil, fmt.Errorf("%v AtlasBackupSchedule resource is not found. e: %w", *backupScheduleRef, err)
 	}
@@ -137,7 +135,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 
 	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(deployment.GetDeploymentName()))
 
-	if err = r.Client.Status().Update(ctx, bSchedule); err != nil {
+	if err = r.Client.Status().Update(service.Context, bSchedule); err != nil {
 		r.Log.Errorw("failed to update BackupSchedule status", "error", err)
 		return nil, err
 	}
@@ -156,7 +154,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		r.Log.Warnf("backupSchedule %s is assigned to at least one deployment. Remove it from all deployment before delete", bSchedule.Name)
 	}
 
-	if err = r.Client.Update(ctx, bSchedule); err != nil {
+	if err = r.Client.Update(service.Context, bSchedule); err != nil {
 		r.Log.Errorw("failed to update BackupSchedule object", "error", err)
 		return nil, err
 	}
@@ -167,14 +165,13 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 }
 
 func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
-	ctx context.Context,
 	service *workflow.Context,
 	bSchedule *mdbv1.AtlasBackupSchedule,
 	resourcesToWatch *[]watch.WatchedObject,
 ) (*mdbv1.AtlasBackupPolicy, error) {
 	bPolicyRef := *bSchedule.Spec.PolicyRef.GetObject(bSchedule.Namespace)
 	bPolicy := &mdbv1.AtlasBackupPolicy{}
-	err := r.Client.Get(ctx, bPolicyRef, bPolicy)
+	err := r.Client.Get(service.Context, bPolicyRef, bPolicy)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get AtlasBackupPolicy resource %s. e: %w", bPolicyRef.String(), err)
 	}
@@ -193,7 +190,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 	scheduleRef := kube.ObjectKeyFromObject(bSchedule).String()
 	bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicySetScheduleID(scheduleRef))
 
-	if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
+	if err = r.Client.Status().Update(service.Context, bPolicy); err != nil {
 		r.Log.Errorw("failed to update BackupPolicy status", "error", err)
 		return nil, err
 	}
@@ -212,7 +209,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 		r.Log.Warnf("backupPolicy %s is assigned to at least one BackupSchedule. Remove it from all BackupSchedules before delete", bPolicy.Name)
 	}
 
-	if err = r.Client.Update(ctx, bPolicy); err != nil {
+	if err = r.Client.Update(service.Context, bPolicy); err != nil {
 		r.Log.Errorw("failed to update BackupPolicy object", "error", err)
 		return nil, err
 	}

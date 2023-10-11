@@ -1,6 +1,8 @@
 package workflow
 
 import (
+	"context"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -12,7 +14,7 @@ import (
 
 // Context is a container for some information that is needed on all levels of function calls during reconciliation.
 // It's mutable by design.
-// Note, that it's completely different from the Go Context
+// Note, that it's NOT a Go Context but can carry one
 type Context struct {
 	// Log is the root logger used in the reconciliation. Used just for convenience to avoid passing log to each
 	// method.
@@ -37,12 +39,16 @@ type Context struct {
 
 	// A list of sub-resources to add to a resource watcher after the Reconcile loop
 	resourcesToWatch []watch.WatchedObject
+
+	// Go context, when appropriate
+	Context context.Context
 }
 
-func NewContext(log *zap.SugaredLogger, conditions []status.Condition) *Context {
+func NewContext(log *zap.SugaredLogger, conditions []status.Condition, context context.Context) *Context {
 	return &Context{
-		status: NewStatus(conditions),
-		Log:    log,
+		status:  NewStatus(conditions),
+		Log:     log,
+		Context: context,
 	}
 }
 

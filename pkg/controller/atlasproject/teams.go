@@ -31,7 +31,7 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
@@ -43,7 +43,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workfl
 		assignedTeam := entry
 
 		if assignedTeam.TeamRef.Name == "" {
-			workflowCtx.Log.Warnf("missing team name. skiping assignement for entry %v", assignedTeam)
+			workflowCtx.Log.Warnf("missing team name. skipping assignment for entry %v", assignedTeam)
 
 			continue
 		}
@@ -71,7 +71,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(ctx context.Context, workfl
 		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
 
-	canReconcile, err := canAssignedTeamsReconcile(ctx, workflowCtx.Client, r.Client, protected, project)
+	canReconcile, err := canAssignedTeamsReconcile(workflowCtx, r.Client, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
@@ -225,7 +225,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	}
 
 	log := r.Log.With("atlasteam", teamRef)
-	teamCtx, err := createTeamContextFromParent(team, r.Client, ctx.Connection, r.AtlasDomain, log)
+	teamCtx, err := createTeamContextFromParent(ctx.Context, team, r.Client, ctx.Connection, r.AtlasDomain, log)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ type assignedTeamInfo struct {
 	Roles []string
 }
 
-func canAssignedTeamsReconcile(ctx context.Context, atlasClient mongodbatlas.Client, k8sClient client.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -287,7 +287,7 @@ func canAssignedTeamsReconcile(ctx context.Context, atlasClient mongodbatlas.Cli
 		}
 	}
 
-	atlasAssignedTeams, _, err := atlasClient.Projects.GetProjectTeamsAssigned(ctx, akoProject.ID())
+	atlasAssignedTeams, _, err := workflowCtx.Client.Projects.GetProjectTeamsAssigned(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}
@@ -309,7 +309,7 @@ func canAssignedTeamsReconcile(ctx context.Context, atlasClient mongodbatlas.Cli
 		}
 	}
 
-	lastAssignedTeamsInfo, err := collectTeams(ctx, k8sClient, latestConfig, akoProject.Namespace)
+	lastAssignedTeamsInfo, err := collectTeams(workflowCtx.Context, k8sClient, latestConfig, akoProject.Namespace)
 	if err != nil {
 		return false, err
 	}
@@ -318,7 +318,7 @@ func canAssignedTeamsReconcile(ctx context.Context, atlasClient mongodbatlas.Cli
 		return true, nil
 	}
 
-	currentAssignedTeamsInfo, err := collectTeams(ctx, k8sClient, &akoProject.Spec, akoProject.Namespace)
+	currentAssignedTeamsInfo, err := collectTeams(workflowCtx.Context, k8sClient, &akoProject.Spec, akoProject.Namespace)
 	if err != nil {
 		return false, err
 	}

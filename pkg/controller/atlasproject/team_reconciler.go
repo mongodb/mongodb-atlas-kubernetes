@@ -41,7 +41,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return workflow.OK().ReconcileResult(), nil
 		}
 
-		teamCtx, err := createTeamContextFromParent(team, r.Client, connection, r.AtlasDomain, log)
+		teamCtx, err := createTeamContextFromParent(ctx, team, r.Client, connection, r.AtlasDomain, log)
 		if err != nil {
 			teamCtx.SetConditionFalse(status.ReadyType)
 			return workflow.Terminate(workflow.Internal, err.Error()).ReconcileResult(), nil
@@ -64,7 +64,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		owner, err := customresource.IsOwner(team, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(ctx, teamCtx.Client, connection.OrgID))
+		owner, err := customresource.IsOwner(team, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(teamCtx, connection.OrgID))
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 			teamCtx.SetConditionFromResult(status.ReadyType, result)
@@ -84,7 +84,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			return result.ReconcileResult(), nil
 		}
 
-		teamID, result := ensureTeamState(ctx, teamCtx, team)
+		teamID, result := ensureTeamState(teamCtx, team)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(status.ReadyType, result)
 			if result.IsWarning() {
@@ -96,7 +96,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		teamCtx.EnsureStatusOption(status.AtlasTeamSetID(teamID))
 
-		result = ensureTeamUsersAreInSync(ctx, teamCtx, teamID, team)
+		result = ensureTeamUsersAreInSync(teamCtx, teamID, team)
 		if !result.IsOk() {
 			teamCtx.SetConditionFromResult(status.ReadyType, result)
 			return result.ReconcileResult(), nil
@@ -111,7 +111,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
 			}
 
-			if err = r.Client.Update(ctx, team); err != nil {
+			if err = r.Client.Update(teamCtx.Context, team); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to update finalizer", "error", err)
 				return result.ReconcileResult(), nil
@@ -126,7 +126,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				return workflow.OK().ReconcileResult(), nil
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, err := teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx, teamCtx.Connection.OrgID, team.Status.ID)
+				_, err := teamCtx.Client.Teams.RemoveTeamFromOrganization(teamCtx.Context, teamCtx.Connection.OrgID, team.Status.ID)
 				var apiError *mongodbatlas.ErrorResponse
 				if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
@@ -135,7 +135,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 			}
 		}
 
-		err = customresource.ApplyLastConfigApplied(ctx, team, r.Client)
+		err = customresource.ApplyLastConfigApplied(teamCtx.Context, team, r.Client)
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, err.Error())
 			teamCtx.SetConditionFromResult(status.ReadyType, result)
@@ -150,13 +150,14 @@ func (r *AtlasProjectReconciler) teamReconcile(
 }
 
 func createTeamContextFromParent(
+	ctx context.Context,
 	team *v1.AtlasTeam,
 	kubeClient client.Client,
 	atlasConnection atlas.Connection,
 	atlasDomain string,
 	logger *zap.SugaredLogger,
 ) (*workflow.Context, error) {
-	teamCtx := customresource.MarkReconciliationStarted(kubeClient, team, logger)
+	teamCtx := customresource.MarkReconciliationStarted(kubeClient, team, logger, ctx)
 	teamCtx.Connection = atlasConnection
 	atlasClient, err := atlas.Client(atlasDomain, atlasConnection, logger)
 	if err != nil {
@@ -167,17 +168,17 @@ func createTeamContextFromParent(
 	return teamCtx, nil
 }
 
-func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v1.AtlasTeam) (string, workflow.Result) {
+func ensureTeamState(workflowCtx *workflow.Context, team *v1.AtlasTeam) (string, workflow.Result) {
 	var atlasTeam *mongodbatlas.Team
 	var err error
 
 	if team.Status.ID != "" {
-		atlasTeam, err = fetchTeamByID(ctx, workflowCtx, team.Status.ID)
+		atlasTeam, err = fetchTeamByID(workflowCtx, team.Status.ID)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
 
-		atlasTeam, err = renameTeam(ctx, workflowCtx, atlasTeam, team.Spec.Name)
+		atlasTeam, err = renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 		}
@@ -185,7 +186,7 @@ func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v
 		return atlasTeam.ID, workflow.OK()
 	}
 
-	atlasTeam, err = fetchTeamByName(ctx, workflowCtx, team.Spec.Name)
+	atlasTeam, err = fetchTeamByName(workflowCtx, team.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 	}
@@ -196,13 +197,13 @@ func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v
 			return "", workflow.Terminate(workflow.TeamInvalidSpec, err.Error())
 		}
 
-		atlasTeam, err = createTeam(ctx, workflowCtx, atlasTeam)
+		atlasTeam, err = createTeam(workflowCtx, atlasTeam)
 		if err != nil {
 			return "", workflow.Terminate(workflow.TeamNotCreatedInAtlas, err.Error())
 		}
 	}
 
-	atlasTeam, err = renameTeam(ctx, workflowCtx, atlasTeam, team.Spec.Name)
+	atlasTeam, err = renameTeam(workflowCtx, atlasTeam, team.Spec.Name)
 	if err != nil {
 		return "", workflow.Terminate(workflow.TeamNotUpdatedInAtlas, err.Error())
 	}
@@ -210,8 +211,8 @@ func ensureTeamState(ctx context.Context, workflowCtx *workflow.Context, team *v
 	return atlasTeam.ID, workflow.OK()
 }
 
-func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context, teamID string, team *v1.AtlasTeam) workflow.Result {
-	atlasUsers, _, err := workflowCtx.Client.Teams.GetTeamUsersAssigned(ctx, workflowCtx.Connection.OrgID, teamID)
+func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *v1.AtlasTeam) workflow.Result {
+	atlasUsers, _, err := workflowCtx.Client.Teams.GetTeamUsersAssigned(workflowCtx.Context, workflowCtx.Connection.OrgID, teamID)
 	if err != nil {
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
 	}
@@ -226,7 +227,7 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 		atlasUsernamesMap[atlasUser.Username] = atlasUser
 	}
 
-	g, taskContext := errgroup.WithContext(ctx)
+	g, taskContext := errgroup.WithContext(workflowCtx.Context)
 
 	for i := range atlasUsers {
 		user := atlasUsers[i]
@@ -246,7 +247,7 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
 	}
 
-	g, taskContext = errgroup.WithContext(ctx)
+	g, taskContext = errgroup.WithContext(workflowCtx.Context)
 	toAdd := make([]string, 0, len(team.Spec.Usernames))
 	lock := sync.Mutex{}
 	for i := range team.Spec.Usernames {
@@ -279,7 +280,7 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 	}
 
 	workflowCtx.Log.Debugf("Adding users to team %s", teamID)
-	_, _, err = workflowCtx.Client.Teams.AddUsersToTeam(ctx, workflowCtx.Connection.OrgID, teamID, toAdd)
+	_, _, err = workflowCtx.Client.Teams.AddUsersToTeam(workflowCtx.Context, workflowCtx.Connection.OrgID, teamID, toAdd)
 	if err != nil {
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
 	}
@@ -287,9 +288,9 @@ func ensureTeamUsersAreInSync(ctx context.Context, workflowCtx *workflow.Context
 	return workflow.OK()
 }
 
-func fetchTeamByID(ctx context.Context, workflowCtx *workflow.Context, teamID string) (*mongodbatlas.Team, error) {
+func fetchTeamByID(workflowCtx *workflow.Context, teamID string) (*mongodbatlas.Team, error) {
 	workflowCtx.Log.Debugf("fetching team %s from atlas", teamID)
-	atlasTeam, _, err := workflowCtx.Client.Teams.Get(ctx, workflowCtx.Connection.OrgID, teamID)
+	atlasTeam, _, err := workflowCtx.Client.Teams.Get(workflowCtx.Context, workflowCtx.Connection.OrgID, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -297,9 +298,9 @@ func fetchTeamByID(ctx context.Context, workflowCtx *workflow.Context, teamID st
 	return atlasTeam, nil
 }
 
-func fetchTeamByName(ctx context.Context, workflowCtx *workflow.Context, teamName string) (*mongodbatlas.Team, error) {
+func fetchTeamByName(workflowCtx *workflow.Context, teamName string) (*mongodbatlas.Team, error) {
 	workflowCtx.Log.Debugf("fetching team named %s from atlas", teamName)
-	atlasTeam, resp, err := workflowCtx.Client.Teams.GetOneTeamByName(ctx, workflowCtx.Connection.OrgID, teamName)
+	atlasTeam, resp, err := workflowCtx.Client.Teams.GetOneTeamByName(workflowCtx.Context, workflowCtx.Connection.OrgID, teamName)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return nil, nil
@@ -311,9 +312,9 @@ func fetchTeamByName(ctx context.Context, workflowCtx *workflow.Context, teamNam
 	return atlasTeam, nil
 }
 
-func createTeam(ctx context.Context, workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team) (*mongodbatlas.Team, error) {
+func createTeam(workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team) (*mongodbatlas.Team, error) {
 	workflowCtx.Log.Debugf("create team named %s in atlas", atlasTeam.Name)
-	atlasTeam, _, err := workflowCtx.Client.Teams.Create(ctx, workflowCtx.Connection.OrgID, atlasTeam)
+	atlasTeam, _, err := workflowCtx.Client.Teams.Create(workflowCtx.Context, workflowCtx.Connection.OrgID, atlasTeam)
 	if err != nil {
 		return nil, err
 	}
@@ -321,13 +322,13 @@ func createTeam(ctx context.Context, workflowCtx *workflow.Context, atlasTeam *m
 	return atlasTeam, nil
 }
 
-func renameTeam(ctx context.Context, workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team, newName string) (*mongodbatlas.Team, error) {
+func renameTeam(workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team, newName string) (*mongodbatlas.Team, error) {
 	if atlasTeam.Name == newName {
 		return atlasTeam, nil
 	}
 
 	workflowCtx.Log.Debugf("updating name of team %s in atlas", atlasTeam.ID)
-	atlasTeam, _, err := workflowCtx.Client.Teams.Rename(ctx, workflowCtx.Connection.OrgID, atlasTeam.ID, newName)
+	atlasTeam, _, err := workflowCtx.Client.Teams.Rename(workflowCtx.Context, workflowCtx.Connection.OrgID, atlasTeam.ID, newName)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +336,7 @@ func renameTeam(ctx context.Context, workflowCtx *workflow.Context, atlasTeam *m
 	return atlasTeam, nil
 }
 
-func teamsManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, orgID string) customresource.AtlasChecker {
+func teamsManagedByAtlas(workflowCtx *workflow.Context, orgID string) customresource.AtlasChecker {
 	return func(resource v1.AtlasCustomResource) (bool, error) {
 		team, ok := resource.(*v1.AtlasTeam)
 		if !ok {
@@ -346,7 +347,7 @@ func teamsManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, o
 			return false, nil
 		}
 
-		atlasTeam, _, err := atlasClient.Teams.Get(ctx, orgID, team.Status.ID)
+		atlasTeam, _, err := workflowCtx.Client.Teams.Get(workflowCtx.Context, orgID, team.Status.ID)
 		if err != nil {
 			var apiError *mongodbatlas.ErrorResponse
 			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {

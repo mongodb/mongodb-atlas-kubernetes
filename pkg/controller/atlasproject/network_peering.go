@@ -32,8 +32,8 @@ type networkPeerDiff struct {
 	PeersToUpdate []mongodbatlas.Peer
 }
 
-func ensureNetworkPeers(ctx context.Context, workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
-	canReconcile, err := canNetworkPeeringReconcile(ctx, workflowCtx.Client, subobjectProtect, akoProject)
+func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+	canReconcile, err := canNetworkPeeringReconcile(workflowCtx, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.NetworkPeerReadyType, result)
@@ -54,8 +54,7 @@ func ensureNetworkPeers(ctx context.Context, workflowCtx *workflow.Context, akoP
 	networkPeerStatus := akoProject.Status.DeepCopy().NetworkPeers
 	networkPeerSpec := akoProject.Spec.DeepCopy().NetworkPeers
 
-	backgroundContext := context.Background()
-	result, condition := SyncNetworkPeer(backgroundContext, workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec)
+	result, condition := SyncNetworkPeer(workflowCtx, akoProject.ID(), networkPeerStatus, networkPeerSpec)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(condition, result)
 		return result
@@ -86,12 +85,12 @@ func failedPeerStatus(errMessage string, peer mdbv1.NetworkPeer) status.AtlasNet
 	}
 }
 
-func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []mdbv1.NetworkPeer) (workflow.Result, status.ConditionType) {
-	defer ctx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
-	logger := ctx.Log
-	mongoClient := ctx.Client
+func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []mdbv1.NetworkPeer) (workflow.Result, status.ConditionType) {
+	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
+	logger := workflowCtx.Log
+	mongoClient := workflowCtx.Client
 	logger.Debugf("syncing network peers for project %v", groupID)
-	list, err := GetAllExistedNetworkPeer(context, mongoClient.Peers, groupID)
+	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.Peers, groupID)
 	if err != nil {
 		logger.Errorf("failed to get all network peers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to get all network peers"),
@@ -108,7 +107,7 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 		len(diff.PeersToCreate), len(diff.PeersToUpdate), len(diff.PeersToDelete))
 
 	for _, peerToDelete := range diff.PeersToDelete {
-		errDelete := deletePeerByID(context, mongoClient.Peers, groupID, peerToDelete, logger)
+		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.Peers, groupID, peerToDelete, logger)
 		if errDelete != nil {
 			logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
 			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to delete network peer"),
@@ -116,14 +115,14 @@ func SyncNetworkPeer(context context.Context, ctx *workflow.Context, groupID str
 		}
 	}
 
-	peerStatuses = createNetworkPeers(context, mongoClient, groupID, diff.PeersToCreate, logger)
-	peerStatuses, err = UpdateStatuses(context, mongoClient.Containers, peerStatuses, diff.PeersToUpdate, groupID, logger)
+	peerStatuses = createNetworkPeers(workflowCtx.Context, mongoClient, groupID, diff.PeersToCreate, logger)
+	peerStatuses, err = UpdateStatuses(workflowCtx.Context, mongoClient.Containers, peerStatuses, diff.PeersToUpdate, groupID, logger)
 	if err != nil {
 		logger.Errorf("failed to update network peer statuses: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			"failed to update network peer statuses"), status.NetworkPeerReadyType
 	}
-	err = deleteUnusedContainers(context, mongoClient.Containers, groupID, getPeerIDs(peerStatuses))
+	err = deleteUnusedContainers(workflowCtx.Context, mongoClient.Containers, groupID, getPeerIDs(peerStatuses))
 	if err != nil {
 		logger.Errorf("failed to delete unused containers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
@@ -605,7 +604,7 @@ func deleteAllNetworkPeers(ctx context.Context, groupID string, service mongodba
 	return nil
 }
 
-func canNetworkPeeringReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -618,7 +617,7 @@ func canNetworkPeeringReconcile(ctx context.Context, atlasClient mongodbatlas.Cl
 		}
 	}
 
-	containers, _, err := atlasClient.Containers.List(ctx, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
+	containers, _, err := workflowCtx.Client.Containers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -627,7 +626,7 @@ func canNetworkPeeringReconcile(ctx context.Context, atlasClient mongodbatlas.Cl
 		return false, nil
 	}
 
-	peers, _, err := atlasClient.Peers.List(ctx, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
+	peers, _, err := workflowCtx.Client.Peers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
 	if err != nil {
 		return false, err
 	}

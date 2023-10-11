@@ -17,8 +17,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProjectSettings(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) (result workflow.Result) {
-	canReconcile, err := canProjectSettingsReconcile(ctx, workflowCtx.Client, protected, project)
+func ensureProjectSettings(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) (result workflow.Result) {
+	canReconcile, err := canProjectSettingsReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
@@ -120,7 +120,7 @@ func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
 	return true
 }
 
-func canProjectSettingsReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canProjectSettingsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -133,7 +133,7 @@ func canProjectSettingsReconcile(ctx context.Context, atlasClient mongodbatlas.C
 		}
 	}
 
-	settings, _, err := atlasClient.Projects.GetProjectSettings(ctx, akoProject.ID())
+	settings, _, err := workflowCtx.Client.Projects.GetProjectSettings(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

@@ -81,7 +81,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, databaseUser, log, ctx)
 	log.Infow("-> Starting AtlasDatabaseUser reconciliation", "spec", databaseUser.Spec, "status", databaseUser.Status)
 	if databaseUser.Spec.PasswordSecret != nil {
 		workflowCtx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: "Secret", Resource: *databaseUser.PasswordSecretObjectKey()})
@@ -93,7 +93,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, databaseUser, r.Log)
 	if !resourceVersionIsValid.IsOk() {
-		r.Log.Debugf("databaseuser validation result: %v", resourceVersionIsValid)
+		r.Log.Debugf("database user validation result: %v", resourceVersionIsValid)
 
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}

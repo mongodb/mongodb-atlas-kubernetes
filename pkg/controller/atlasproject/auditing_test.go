@@ -18,7 +18,7 @@ import (
 
 func TestCanAuditingReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canAuditingReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		result, err := canAuditingReconcile(testWorkFlowContext(mongodbatlas.Client{}), false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -26,7 +26,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canAuditingReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(mongodbatlas.Client{}), true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -41,7 +41,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -57,7 +57,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -89,7 +89,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":false}}`,
 			},
 		)
-		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -121,7 +121,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
 			},
 		)
-		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -153,7 +153,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
 			},
 		)
-		result, err := canAuditingReconcile(context.TODO(), atlasClient, true, akoProject)
+		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -171,10 +171,7 @@ func TestEnsureAuditing(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		workflowCtx := &workflow.Context{
-			Client: atlasClient,
-		}
-		result := ensureAuditing(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureAuditing(testWorkFlowContext(atlasClient), akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -205,10 +202,7 @@ func TestEnsureAuditing(t *testing.T) {
 				customresource.AnnotationLastAppliedConfiguration: `{"auditing":{"auditFilter":"{\"atype\":\"authenticate\",\"param\":{\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}","enabled":true,"auditAuthorizationSuccess":true}}`,
 			},
 		)
-		workflowCtx := &workflow.Context{
-			Client: atlasClient,
-		}
-		result := ensureAuditing(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureAuditing(testWorkFlowContext(atlasClient), akoProject, true)
 
 		require.Equal(
 			t,
@@ -329,4 +323,8 @@ func TestAuditingInSync(t *testing.T) {
 			assert.Equalf(t, tt.want, auditingInSync(tt.args.atlas, tt.args.spec), "auditingInSync(%v, %v)", tt.args.atlas, tt.args.spec)
 		})
 	}
+}
+
+func testWorkFlowContext(client mongodbatlas.Client) *workflow.Context {
+	return &workflow.Context{Client: client, Context: context.TODO()}
 }

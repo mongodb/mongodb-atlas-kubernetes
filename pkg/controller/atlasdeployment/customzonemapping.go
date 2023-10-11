@@ -12,7 +12,7 @@ import (
 )
 
 func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZoneMappings []mdbv1.CustomZoneMapping, deploymentName string) workflow.Result {
-	result := syncCustomZoneMapping(context.Background(), service, groupID, deploymentName, customZoneMappings)
+	result := syncCustomZoneMapping(service, groupID, deploymentName, customZoneMappings)
 	if !result.IsOk() {
 		service.SetConditionFromResult(status.CustomZoneMappingReadyType, result)
 		return result
@@ -28,19 +28,19 @@ func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZo
 	return result
 }
 
-func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, groupID string, deploymentName string, customZoneMappings []mdbv1.CustomZoneMapping) workflow.Result {
+func syncCustomZoneMapping(service *workflow.Context, groupID string, deploymentName string, customZoneMappings []mdbv1.CustomZoneMapping) workflow.Result {
 	logger := service.Log
 	err := verifyZoneMapping(customZoneMappings)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, err.Error())
 	}
-	_, existingZoneMapping, err := GetGlobalDeploymentState(ctx, service.Client.GlobalClusters, groupID, deploymentName)
+	_, existingZoneMapping, err := GetGlobalDeploymentState(service.Context, service.Client.GlobalClusters, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping state: %v", err))
 	}
 	logger.Debugf("Existing zone mapping: %v", existingZoneMapping)
 	var customZoneMappingStatus status.CustomZoneMapping
-	zoneMappingMap, err := getZoneMappingMap(ctx, service.Client, groupID, deploymentName)
+	zoneMappingMap, err := getZoneMappingMap(service.Context, service.Client, groupID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.CustomZoneMappingReady, fmt.Sprintf("Failed to get zone mapping map: %v", err))
 	}
@@ -48,7 +48,7 @@ func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, group
 	if shouldAdd, shouldDelete := compareZoneMappingStates(existingZoneMapping, customZoneMappings, zoneMappingMap); shouldDelete || shouldAdd {
 		skipAdd := false
 		if shouldDelete {
-			err = deleteZoneMapping(ctx, service.Client.GlobalClusters, groupID, deploymentName)
+			err = deleteZoneMapping(service.Context, service.Client.GlobalClusters, groupID, deploymentName)
 			if err != nil {
 				skipAdd = true
 				logger.Errorf("failed to sync zone mapping: %v", err)
@@ -58,7 +58,7 @@ func syncCustomZoneMapping(ctx context.Context, service *workflow.Context, group
 		}
 
 		if shouldAdd && !skipAdd {
-			zoneMapping, errRecreate := createZoneMapping(ctx, service.Client.GlobalClusters, groupID, deploymentName, customZoneMappings)
+			zoneMapping, errRecreate := createZoneMapping(service.Context, service.Client.GlobalClusters, groupID, deploymentName, customZoneMappings)
 			if errRecreate != nil {
 				logger.Errorf("failed to sync zone mapping: %v", errRecreate)
 				customZoneMappingStatus.ZoneMappingErrMessage = fmt.Sprintf("Failed to sync zone mapping: %v", errRecreate)

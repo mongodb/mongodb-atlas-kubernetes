@@ -27,13 +27,13 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(ctx context.Context, workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
 		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
 	}
 
-	canReconcile, err := canEncryptionAtRestReconcile(ctx, workflowCtx.Client, protected, project)
+	canReconcile, err := canEncryptionAtRestReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
@@ -400,7 +400,7 @@ func selectRole(accessRoles []status.CloudProviderAccessRole, providerName strin
 	return
 }
 
-func canEncryptionAtRestReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -413,7 +413,7 @@ func canEncryptionAtRestReconcile(ctx context.Context, atlasClient mongodbatlas.
 		}
 	}
 
-	ear, _, err := atlasClient.EncryptionsAtRest.Get(ctx, akoProject.ID())
+	ear, _, err := workflowCtx.Client.EncryptionsAtRest.Get(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

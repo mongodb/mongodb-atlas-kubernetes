@@ -18,7 +18,11 @@ import (
 
 func TestProjectSettingsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canProjectSettingsReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -26,7 +30,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canProjectSettingsReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -41,7 +49,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canProjectSettingsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -57,7 +69,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canProjectSettingsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -102,7 +118,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 }}`,
 			},
 		)
-		result, err := canProjectSettingsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -148,7 +168,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 }}`,
 			},
 		)
-		result, err := canProjectSettingsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -194,7 +218,11 @@ func TestProjectSettingsReconcile(t *testing.T) {
 }}`,
 			},
 		)
-		result, err := canProjectSettingsReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -213,9 +241,10 @@ func TestEnsureProjectSettings(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureProjectSettings(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureProjectSettings(workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -261,9 +290,10 @@ func TestEnsureProjectSettings(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureProjectSettings(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureProjectSettings(workflowCtx, akoProject, true)
 
 		require.Equal(
 			t,

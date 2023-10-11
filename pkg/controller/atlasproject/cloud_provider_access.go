@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,8 +16,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/workflow"
 )
 
-func ensureProviderAccessStatus(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canCloudProviderAccessReconcile(ctx, workflowCtx.Client, protected, project)
+func ensureProviderAccessStatus(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canCloudProviderAccessReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
@@ -44,7 +43,7 @@ func ensureProviderAccessStatus(ctx context.Context, workflowCtx *workflow.Conte
 		return workflow.OK()
 	}
 
-	allAuthorized, err := syncCloudProviderAccess(ctx, workflowCtx, project.ID(), project.Spec.CloudProviderAccessRoles)
+	allAuthorized, err := syncCloudProviderAccess(workflowCtx, project.ID(), project.Spec.CloudProviderAccessRoles)
 	if err != nil {
 		result := workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, err.Error())
 		workflowCtx.SetConditionFromResult(status.CloudProviderAccessReadyType, result)
@@ -62,8 +61,8 @@ func ensureProviderAccessStatus(ctx context.Context, workflowCtx *workflow.Conte
 	return workflow.OK()
 }
 
-func syncCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaSpecs []v1.CloudProviderAccessRole) (bool, error) {
-	atlasCPAs, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(ctx, projectID)
+func syncCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpaSpecs []v1.CloudProviderAccessRole) (bool, error) {
+	atlasCPAs, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(workflowCtx.Context, projectID)
 	if err != nil {
 		return false, fmt.Errorf("unable to fetch cloud provider access from Atlas: %w", err)
 	}
@@ -76,15 +75,15 @@ func syncCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context,
 	for _, cpaStatus := range cpaStatuses {
 		switch cpaStatus.Status {
 		case status.CloudProviderAccessStatusNew, status.CloudProviderAccessStatusFailedToCreate:
-			createCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
+			createCloudProviderAccess(workflowCtx, projectID, cpaStatus)
 			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
 		case status.CloudProviderAccessStatusCreated, status.CloudProviderAccessStatusFailedToAuthorize:
 			if cpaStatus.IamAssumedRoleArn != "" {
-				authorizeCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
+				authorizeCloudProviderAccess(workflowCtx, projectID, cpaStatus)
 			}
 			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
 		case status.CloudProviderAccessStatusDeAuthorize, status.CloudProviderAccessStatusFailedToDeAuthorize:
-			deleteCloudProviderAccess(ctx, workflowCtx, projectID, cpaStatus)
+			deleteCloudProviderAccess(workflowCtx, projectID, cpaStatus)
 		case status.CloudProviderAccessStatusAuthorized:
 			cpaStatusesToUpdate = append(cpaStatusesToUpdate, *cpaStatus)
 		}
@@ -243,9 +242,9 @@ func copyCloudProviderAccessData(cpaStatus *status.CloudProviderAccessRole, atla
 	}
 }
 
-func createCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
+func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
 	cpa, _, err := workflowCtx.Client.CloudProviderAccess.CreateRole(
-		ctx,
+		workflowCtx.Context,
 		projectID,
 		&mongodbatlas.CloudProviderAccessRoleRequest{
 			ProviderName: cpaStatus.ProviderName,
@@ -264,9 +263,9 @@ func createCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Contex
 	return cpaStatus
 }
 
-func authorizeCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
+func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) *status.CloudProviderAccessRole {
 	cpa, _, err := workflowCtx.Client.CloudProviderAccess.AuthorizeRole(
-		ctx,
+		workflowCtx.Context,
 		projectID,
 		cpaStatus.RoleID,
 		&mongodbatlas.CloudProviderAccessRoleRequest{
@@ -287,9 +286,9 @@ func authorizeCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Con
 	return cpaStatus
 }
 
-func deleteCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) {
+func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpaStatus *status.CloudProviderAccessRole) {
 	_, err := workflowCtx.Client.CloudProviderAccess.DeauthorizeRole(
-		ctx,
+		workflowCtx.Context,
 		&mongodbatlas.CloudProviderDeauthorizationRequest{
 			ProviderName: cpaStatus.ProviderName,
 			GroupID:      projectID,
@@ -303,7 +302,7 @@ func deleteCloudProviderAccess(ctx context.Context, workflowCtx *workflow.Contex
 	}
 }
 
-func canCloudProviderAccessReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canCloudProviderAccessReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -316,7 +315,7 @@ func canCloudProviderAccessReconcile(ctx context.Context, atlasClient mongodbatl
 		}
 	}
 
-	list, _, err := atlasClient.CloudProviderAccess.ListRoles(ctx, akoProject.ID())
+	list, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

@@ -114,7 +114,7 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 				Status: status.CustomRoleStatusOK,
 			},
 		}
-		ctx := workflow.NewContext(zap.S(), []status.Condition{})
+		ctx := workflow.NewContext(zap.S(), []status.Condition{}, nil)
 
 		assert.Equal(
 			t,
@@ -182,7 +182,7 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 				Status: status.CustomRoleStatusOK,
 			},
 		}
-		ctx := workflow.NewContext(zap.S(), []status.Condition{})
+		ctx := workflow.NewContext(zap.S(), []status.Condition{}, nil)
 
 		assert.Equal(
 			t,
@@ -217,7 +217,11 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 
 func TestCanCustomRolesReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canCustomRolesReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(&workflowCtx, false, &mdbv1.AtlasProject{})
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
@@ -225,7 +229,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canCustomRolesReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		assert.False(t, result)
 	})
@@ -240,7 +248,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.EqualError(t, err, "failed to retrieve data")
 		assert.False(t, result)
@@ -256,7 +268,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -272,7 +288,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -324,7 +344,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -376,7 +400,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -430,7 +458,11 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
-		result, err := canCustomRolesReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -449,9 +481,10 @@ func TestEnsureCustomRoles(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureCustomRoles(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureCustomRoles(workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -505,9 +538,10 @@ func TestEnsureCustomRoles(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureCustomRoles(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureCustomRoles(workflowCtx, akoProject, true)
 
 		require.Equal(
 			t,

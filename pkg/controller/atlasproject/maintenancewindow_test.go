@@ -133,7 +133,11 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 
 func TestCanMaintenanceWindowReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canMaintenanceWindowReconcile(context.TODO(), mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -141,7 +145,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), mongodbatlas.Client{}, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  mongodbatlas.Client{},
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -156,7 +164,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -172,7 +184,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -198,7 +214,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":1}}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -224,7 +244,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":7,\"hourOfDay\":20}}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -251,7 +275,11 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":1}}"})
-		result, err := canMaintenanceWindowReconcile(context.TODO(), atlasClient, true, akoProject)
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canMaintenanceWindowReconcile(workflowCtx, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -270,9 +298,10 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureMaintenanceWindow(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureMaintenanceWindow(workflowCtx, akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -301,9 +330,10 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"maintenanceWindow\":{\"dayOfWeek\":1,\"hourOfDay\":20,\"startASAP\":true,\"autoDefer\":true}}"})
 		workflowCtx := &workflow.Context{
-			Client: atlasClient,
+			Client:  atlasClient,
+			Context: context.TODO(),
 		}
-		result := ensureMaintenanceWindow(context.TODO(), workflowCtx, akoProject, true)
+		result := ensureMaintenanceWindow(workflowCtx, akoProject, true)
 
 		require.Equal(
 			t,

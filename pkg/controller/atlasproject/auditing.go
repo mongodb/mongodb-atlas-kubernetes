@@ -16,8 +16,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
-func ensureAuditing(ctx context.Context, workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canAuditingReconcile(ctx, workflowCtx.Client, protected, project)
+func ensureAuditing(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+	canReconcile, err := canAuditingReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
@@ -120,7 +120,7 @@ func patchAuditing(ctx *workflow.Context, projectID string, auditing *mongodbatl
 	return err
 }
 
-func canAuditingReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canAuditingReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -133,7 +133,7 @@ func canAuditingReconcile(ctx context.Context, atlasClient mongodbatlas.Client, 
 		}
 	}
 
-	auditing, _, err := atlasClient.Auditing.Get(ctx, akoProject.ID())
+	auditing, _, err := workflowCtx.Client.Auditing.Get(workflowCtx.Context, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

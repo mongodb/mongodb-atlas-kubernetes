@@ -30,8 +30,8 @@ const ipAccessStatusFailed = "FAILED"
 // ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(ctx context.Context, service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
-	canReconcile, err := canIPAccessListReconcile(ctx, service.Client, subobjectProtect, akoProject)
+func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+	canReconcile, err := canIPAccessListReconcile(service.Context, service.Client, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		service.SetConditionFromResult(status.IPAccessListReadyType, result)
@@ -52,7 +52,7 @@ func ensureIPAccessList(ctx context.Context, service *workflow.Context, statusFu
 	desiredList, expiredList := filterActiveIPAccessLists(akoProject.Spec.ProjectIPAccessList)
 	service.EnsureStatusOption(status.AtlasProjectExpiredIPAccessOption(expiredList))
 
-	list, _, err := service.Client.ProjectIPAccessList.List(ctx, akoProject.ID(), &mongodbatlas.ListOptions{})
+	list, _, err := service.Client.ProjectIPAccessList.List(service.Context, akoProject.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("failed to retrieve IP Access list: %s", err))
 		service.SetConditionFromResult(status.IPAccessListReadyType, result)
@@ -62,7 +62,7 @@ func ensureIPAccessList(ctx context.Context, service *workflow.Context, statusFu
 
 	currentList := mapToOperatorSpec(list.Results)
 	if cmp.Diff(currentList, akoProject.Spec.ProjectIPAccessList, cmpopts.EquateEmpty()) != "" {
-		err = syncIPAccessList(ctx, service, akoProject.ID(), currentList, desiredList)
+		err = syncIPAccessList(service, akoProject.ID(), currentList, desiredList)
 		if err != nil {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to sync desired state with Atlas: %s", err))
 			service.SetConditionFromResult(status.IPAccessListReadyType, result)
@@ -72,7 +72,7 @@ func ensureIPAccessList(ctx context.Context, service *workflow.Context, statusFu
 	}
 
 	for _, ipAccessList := range desiredList {
-		ipAccessStatus, err := statusFunc(ctx, akoProject.ID(), mapToEntryValue(ipAccessList, true))
+		ipAccessStatus, err := statusFunc(service.Context, akoProject.ID(), mapToEntryValue(ipAccessList, true))
 		if err != nil {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to check status in Atlas: %s", err))
 			service.SetConditionFromResult(status.IPAccessListReadyType, result)
@@ -123,7 +123,7 @@ func mapToOperatorSpec(projectIPAccessList []mongodbatlas.ProjectIPAccessList) [
 	return ipAccessList
 }
 
-func syncIPAccessList(ctx context.Context, service *workflow.Context, projectID string, current, desired []project.IPAccessList) error {
+func syncIPAccessList(service *workflow.Context, projectID string, current, desired []project.IPAccessList) error {
 	currentMap := map[string]project.IPAccessList{}
 	for _, item := range current {
 		currentMap[genIPAccessListKey(item)] = item
@@ -139,7 +139,7 @@ func syncIPAccessList(ctx context.Context, service *workflow.Context, projectID 
 			continue
 		}
 
-		_, err := service.Client.ProjectIPAccessList.Delete(ctx, projectID, mapToEntryValue(ipAccessList, false))
+		_, err := service.Client.ProjectIPAccessList.Delete(service.Context, projectID, mapToEntryValue(ipAccessList, false))
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func syncIPAccessList(ctx context.Context, service *workflow.Context, projectID 
 		return nil
 	}
 
-	_, _, err := service.Client.ProjectIPAccessList.Create(ctx, projectID, toCreate)
+	_, _, err := service.Client.ProjectIPAccessList.Create(service.Context, projectID, toCreate)
 
 	return err
 }
