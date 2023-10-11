@@ -160,17 +160,30 @@ jobs:
           ]
     steps:
       - name: Get repo files from cache
+        id: get-repo-files-from-cache
         uses: actions/cache@v3
         with:
           path: ./*
           key: ${{ github.sha }}
+      - name: Checkout if cache repo files missed
+        if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
       - name: Get all go dependencies
+        id: get-go-deps
         uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum') }}
+      - name: Get go dependencies if cache is missed
+        if: steps.get-go-deps.outputs.cache-hit != 'true'
+        run: |
+          cd cmd/manager
+          go get -d
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
