@@ -148,6 +148,9 @@ func SetAnnotation(resource mdbv1.AtlasCustomResource, key, value string) {
 	resource.SetAnnotations(annot)
 }
 
+// IsGov verify the given domain is Atlas for Government
+// Deprecated: This function was move to another package.
+// Start using github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas instead
 func IsGov(domain string) bool {
 	domainURL, err := url.Parse(domain)
 	if err != nil {
@@ -157,6 +160,9 @@ func IsGov(domain string) bool {
 	return strings.HasSuffix(domainURL.Hostname(), govAtlasDomain)
 }
 
+// IsResourceSupportedInDomain verify a resource/feature is supported in the environment of the given domain
+// Deprecated: This function was move to another package.
+// Start using github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas instead
 func IsResourceSupportedInDomain(resource mdbv1.AtlasCustomResource, domain string) bool {
 	if !IsGov(domain) {
 		return true

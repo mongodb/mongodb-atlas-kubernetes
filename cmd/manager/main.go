@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -135,15 +136,16 @@ func main() {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
+	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
+
 	if err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:                      mgr.GetScheme(),
-		AtlasDomain:                 config.AtlasDomain,
-		GlobalAPISecret:             config.GlobalAPISecret,
 		ResourceWatcher:             watch.NewResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
+		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
 		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {
