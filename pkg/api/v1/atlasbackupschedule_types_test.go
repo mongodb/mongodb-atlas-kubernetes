@@ -34,6 +34,7 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 			},
 		}
 		clusterName := "testCluster"
+		replicaSetID := "test-cluster-replica-set-id"
 		output := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 			ClusterID:                         "test-id",
 			ClusterName:                       "testCluster",
@@ -60,7 +61,7 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 			CopySettings: []mongodbatlas.CopySetting{},
 		}
 
-		result := inSchedule.ToAtlas(output.ClusterID, clusterName, inPolicy)
+		result := inSchedule.ToAtlas(output.ClusterID, clusterName, replicaSetID, inPolicy)
 		if diff := deep.Equal(result, output); diff != nil {
 			t.Error(diff)
 		}

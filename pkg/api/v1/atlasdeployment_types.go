@@ -617,6 +617,14 @@ func (c *AtlasDeployment) IsAdvancedDeployment() bool {
 	return c.Spec.AdvancedDeploymentSpec != nil
 }
 
+func (c *AtlasDeployment) GetReplicationSetID() string {
+	if len(c.Status.ReplicaSets) > 0 {
+		return c.Status.ReplicaSets[0].ID
+	}
+
+	return ""
+}
+
 // +kubebuilder:object:root=true
 
 // AtlasDeploymentList contains a list of AtlasDeployment

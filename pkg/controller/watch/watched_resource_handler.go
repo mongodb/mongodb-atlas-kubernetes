@@ -78,6 +78,10 @@ func shouldHandleUpdate(e event.UpdateEvent) bool {
 		return !reflect.DeepEqual(v.Data, e.ObjectNew.(*corev1.Secret).Data)
 	case *v1.AtlasTeam:
 		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasTeam).Spec)
+	case *v1.AtlasBackupSchedule:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasBackupSchedule).Spec)
+	case *v1.AtlasBackupPolicy:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasBackupPolicy).Spec)
 	}
 	return true
 }

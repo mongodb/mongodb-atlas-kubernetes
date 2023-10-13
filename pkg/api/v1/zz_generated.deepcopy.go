@@ -1282,11 +1282,6 @@ func (in *CopySetting) DeepCopyInto(out *CopySetting) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.ReplicationSpecID != nil {
-		in, out := &in.ReplicationSpecID, &out.ReplicationSpecID
-		*out = new(string)
-		**out = **in
-	}
 	if in.ShouldCopyOplogs != nil {
 		in, out := &in.ShouldCopyOplogs, &out.ShouldCopyOplogs
 		*out = new(bool)
