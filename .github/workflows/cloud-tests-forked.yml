@@ -9,7 +9,7 @@ on:
           default: false
 
 concurrency:
-    group: cloud-tests-forked-${{ github.actor || github.triggering_actor }}
+    group: cloud-tests-forked-${{ github.ref == 'refs/heads/main' && 'main' || github.actor || github.triggering_actor }}
     cancel-in-progress: true
 
 jobs:
