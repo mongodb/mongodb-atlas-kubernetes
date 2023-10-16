@@ -5,6 +5,16 @@ on:
   schedule:
     - cron: "0 1 * * 1-5"
     - cron: "0 3 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      image_repo:
+        type: choice
+        description: "Target image repository for built images"
+        default: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+        required: true
+        options:
+        - mongodb/mongodb-atlas-kubernetes-operator-prerelease
+        - mongodb/mongodb-atlas-kubernetes-operator
 
 jobs:
   read-versions:
@@ -35,7 +45,7 @@ jobs:
   build-and-publish-image:
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPOSITORY: mongodb/mongodb-atlas-kubernetes-operator
+      IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }} 
     needs:
       - read-versions
     strategy:
