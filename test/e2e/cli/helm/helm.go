@@ -104,6 +104,8 @@ func InstallOperatorWideSubmodule(input model.UserInputs) {
 		"atlas-operator-"+input.Project.GetProjectName(),
 		config.AtlasOperatorHelmChartPath,
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
+		"--set", "objectDeletionProtection=false",
+		"--set", "subobjectDeletionProtection=false",
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace", input.Namespace,
@@ -119,6 +121,8 @@ func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
 		"mongodb/mongodb-atlas-operator",
 		"--set", fmt.Sprintf("watchNamespaces={%s}", input.Namespace),
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
+		"--set", "objectDeletionProtection=false",
+		"--set", "subobjectDeletionProtection=false",
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)
@@ -138,6 +142,8 @@ func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--set", fmt.Sprintf("watchNamespaces={%s}", input.Namespace),
 		"--set", "mongodb-atlas-operator-crds.enabled=false",
+		"--set", "objectDeletionProtection=false",
+		"--set", "subobjectDeletionProtection=false",
 		"--namespace="+input.Namespace,
 		"--create-namespace",
 	)
@@ -187,6 +193,8 @@ func UpgradeOperatorChart(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
+		"--set", "objectDeletionProtection=false",
+		"--set", "subobjectDeletionProtection=false",
 		"-n", input.Namespace,
 		// "--wait", "--timeout", "5m", // TODO helm upgrade do not exit
 	)
