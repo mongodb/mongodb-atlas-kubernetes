@@ -118,10 +118,16 @@ e2e: run-kind ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-n
 e2e-openshift-upgrade:
 	cd scripts && ./openshift-upgrade-test.sh
 
-bin/manager: $(GO_SOURCES)
+bin/$(TARGET_OS)/$(TARGET_ARCH):
+	mkdir -p $@
+
+bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
 	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
 	@touch $@
+
+bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
+	cp bin/$(TARGET_OS)/$(TARGET_ARCH)/manager $@
 
 .PHONY: manager
 manager: generate fmt vet bin/manager ## Build manager binary
@@ -311,3 +317,16 @@ post-install-hook:
 .PHONY: x509-cert
 x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 	go run scripts/create_x509.go
+
+clean: ## Clean built binaries
+	rm -rf bin/*
+
+.PHONY: all-platforms
+all-platforms:
+	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64
+	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64
+
+.PHONY: all-platforms-docker
+all-platforms-docker: all-platforms
+	docker build --build-arg BINARY_PATH=bin/linux/amd64 -f fast.Dockerfile -t manager-amd64 .
+	docker build --build-arg BINARY_PATH=bin/linux/arm64 -f fast.Dockerfile -t manager-arm64 .
