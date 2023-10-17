@@ -260,9 +260,9 @@ func parseConfiguration() Config {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&config.LogLevel, "log-level", "info", "Log level. Available values: debug | info | warn | error | dpanic | panic | fatal")
 	flag.StringVar(&config.LogEncoder, "log-encoder", "json", "Log encoder. Available values: json | console")
-	flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "Defines the operator will not delete Atlas resource "+
+	flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "Defines if the operator deletes Atlas resource "+
 		"when a Custom Resource is deleted")
-	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "Defines that the operator will not overwrite "+
+	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "Defines if the operator overwrites "+
 		"(and consequently delete) subresources that were not previously created by the operator")
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
