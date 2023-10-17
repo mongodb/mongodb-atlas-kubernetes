@@ -17,7 +17,7 @@ require (
 	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-test/deep v1.1.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/mongodb-forks/digest v1.0.5
 	github.com/onsi/ginkgo/v2 v2.13.0
