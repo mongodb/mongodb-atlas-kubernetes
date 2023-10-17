@@ -25,7 +25,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/atlas v0.33.0
+	go.mongodb.org/atlas v0.34.0
 	go.mongodb.org/mongo-driver v1.12.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.4.0
