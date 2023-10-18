@@ -12,14 +12,36 @@ on:
       version:
         description: "Release version (Be sure `Release-branch` is successful):"
         required: true
-
+      image_repo:
+        type: choice
+        description: "Target image repository for built images"
+        default: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+        required: true
+        options:
+        - mongodb/mongodb-atlas-kubernetes-operator-prerelease
+        - mongodb/mongodb-atlas-kubernetes-operator
+      release_helm:
+        description: "Whether or not to trigger the Helm release as well. Skip by default for tests"
+        default: 'false'
+        required: true
+      certify:
+        description: "Whether or not to certify the OpenShift images. Skip by default for tests"
+        default: 'false'
+        required: true
+      release_to_github:
+        description: "Whether or not to create the GitHub release. Skip by default for tests"
+        default: 'false'
+        required: true
 jobs:
   create-release:
     name: Create Release
     if: ${{ (github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != '' }}
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPOSITORY: mongodb/mongodb-atlas-kubernetes-operator
+      IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
+      RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
+      CERTIFY: ${{ github.event.inputs.certify || 'true' }}
+      RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
     steps:
       - name: Free disk space
         run: | 
@@ -47,6 +69,7 @@ jobs:
           echo "tag=$tag" >> $GITHUB_OUTPUT
           echo "certified_version=$certified_version" >> $GITHUB_OUTPUT
       - name: Trigger helm post release workflow
+        if: ${{ env.RELEASE_HELM == 'true' }}
         # Please provide a token with write access to the repository into secrets.HELM_REPO_TOKEN
         run: |
           curl \
@@ -61,22 +84,17 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+      - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
+        run: |
+          git remote show origin
+          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
+          file: fast.Dockerfile
           version: ${{ steps.tag.outputs.version }}
-          platforms: linux/amd64,linux/arm64
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: true
-          quay_username: mongodb+mongodb_atlas_kubernetes
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Build and Push certified image
-        uses: ./.github/actions/build-push-image
-        with:
-          repository: ${{ env.IMAGE_REPOSITORY }}
-          version: ${{ steps.tag.outputs.certified_version }}
+          certified_version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
@@ -84,6 +102,7 @@ jobs:
           quay_username: mongodb+mongodb_atlas_kubernetes
           quay_password: ${{ secrets.QUAY_PASSWORD }}
       - name: Certify Openshift images
+        if: ${{ env.CERTIFY == 'true' }}
         uses: ./.github/actions/certify-openshift-images
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
@@ -96,6 +115,7 @@ jobs:
           set -x
           tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Create Release
+        if: ${{ env.RELEASE_TO_GITHUB == 'true' }}
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -107,6 +127,7 @@ jobs:
           draft: true
           prerelease: false
       - name: Upload Release Asset
+        if: ${{ env.RELEASE_TO_GITHUB == 'true' }}
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
