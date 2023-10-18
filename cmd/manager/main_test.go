@@ -1,89 +1,182 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
 )
 
-const (
-	nonReleaseVersion = "1.8.0-30-g81233c6-dirty"
-	releaseVersion    = "1.9.0-certified"
-)
+func Test_configureDeletionProtection(t *testing.T) {
+	t.Run("should do no action when config is nil", func(t *testing.T) {
+		var config *Config
+		configureDeletionProtection(config)
 
-func TestDeletionProtectionDisabledByDefault(t *testing.T) {
-	os.Unsetenv(objectDeletionProtectionEnvVar)
-	os.Unsetenv(subobjectDeletionProtectionEnvVar)
+		assert.Nil(t, config)
+	})
 
-	cfg := Config{
-		ObjectDeletionProtection:    objectDeletionProtectionDefault,
-		SubObjectDeletionProtection: subobjectDeletionProtectionDefault,
-	}
-	enableDeletionProtectionFromEnvVars(&cfg, version.DefaultVersion)
+	t.Run("should use default values when flags or env vars were not set", func(t *testing.T) {
+		config := Config{}
 
-	assert.Equal(t, false, cfg.ObjectDeletionProtection)
-	assert.Equal(t, false, cfg.SubObjectDeletionProtection)
-}
+		defer func(old []string) { os.Args = old }(os.Args)
 
-func TestDeletionProtectionIgnoredOnReleases(t *testing.T) {
-	version.Version = releaseVersion
-	os.Setenv(objectDeletionProtectionEnvVar, "On")
-	os.Setenv(subobjectDeletionProtectionEnvVar, "On")
+		os.Args = []string{"app"}
 
-	cfg := Config{
-		ObjectDeletionProtection:    objectDeletionProtectionDefault,
-		SubObjectDeletionProtection: subobjectDeletionProtectionDefault,
-	}
-	enableDeletionProtectionFromEnvVars(&cfg, releaseVersion)
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
 
-	assert.Equal(t, false, cfg.ObjectDeletionProtection)
-	assert.Equal(t, false, cfg.SubObjectDeletionProtection)
-}
+		configureDeletionProtection(&config)
 
-func TestDeletionProtectionEnabledAsEnvVars(t *testing.T) {
-	testCases := []struct {
-		title            string
-		objDelProtect    bool
-		subObjDelProtect bool
-	}{
-		{
-			"both env vars set on non release version enables both protections",
-			true,
-			true,
-		},
-		{
-			"obj env var set on non release version enables obj protection only",
-			true,
-			false,
-		},
-		{
-			"subobj env var set on non release version enables subobj protection only",
-			false,
-			true,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			os.Unsetenv(objectDeletionProtectionEnvVar)
-			os.Unsetenv(subobjectDeletionProtectionEnvVar)
-			if tc.objDelProtect {
-				os.Setenv(objectDeletionProtectionEnvVar, "On")
-			}
-			if tc.subObjDelProtect {
-				os.Setenv(subobjectDeletionProtectionEnvVar, "On")
-			}
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: true,
+			},
+			config,
+		)
+	})
 
-			cfg := Config{
-				ObjectDeletionProtection:    objectDeletionProtectionDefault,
-				SubObjectDeletionProtection: subobjectDeletionProtectionDefault,
-			}
-			enableDeletionProtectionFromEnvVars(&cfg, nonReleaseVersion)
+	t.Run("should do no action when flags where enabled", func(t *testing.T) {
+		config := Config{}
 
-			assert.Equal(t, tc.objDelProtect, cfg.ObjectDeletionProtection)
-			assert.Equal(t, tc.subObjDelProtect, cfg.SubObjectDeletionProtection)
-		})
-	}
+		defer func(old []string) { os.Args = old }(os.Args)
+
+		os.Args = []string{"app", "--object-deletion-protection", "-subobject-deletion-protection"}
+
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
+
+		configureDeletionProtection(&config)
+
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: true,
+			},
+			config,
+		)
+	})
+
+	t.Run("should do no action when flags where disabled", func(t *testing.T) {
+		config := Config{}
+
+		defer func(old []string) { os.Args = old }(os.Args)
+
+		os.Args = []string{"app", "--object-deletion-protection=false", "-subobject-deletion-protection=false"}
+
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
+
+		configureDeletionProtection(&config)
+
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    false,
+				SubObjectDeletionProtection: false,
+			},
+			config,
+		)
+	})
+
+	//nolint:dupl
+	t.Run("should use env vars when they are enabled and flags were not set", func(t *testing.T) {
+		config := Config{}
+
+		defer func(old []string) {
+			os.Args = old
+			assert.NoError(t, os.Unsetenv(objectDeletionProtectionEnvVar))
+			assert.NoError(t, os.Unsetenv(subobjectDeletionProtectionEnvVar))
+		}(os.Args)
+
+		os.Args = []string{"app"}
+		assert.NoError(t, os.Setenv(objectDeletionProtectionEnvVar, "true"))
+		assert.NoError(t, os.Setenv(subobjectDeletionProtectionEnvVar, "true"))
+
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
+
+		configureDeletionProtection(&config)
+
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: true,
+			},
+			config,
+		)
+	})
+
+	//nolint:dupl
+	t.Run("should use env vars when they are disabled and flags were not set", func(t *testing.T) {
+		config := Config{}
+
+		defer func(old []string) {
+			os.Args = old
+			assert.NoError(t, os.Unsetenv(objectDeletionProtectionEnvVar))
+			assert.NoError(t, os.Unsetenv(subobjectDeletionProtectionEnvVar))
+		}(os.Args)
+
+		os.Args = []string{"app"}
+		assert.NoError(t, os.Setenv(objectDeletionProtectionEnvVar, "false"))
+		assert.NoError(t, os.Setenv(subobjectDeletionProtectionEnvVar, "false"))
+
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
+
+		configureDeletionProtection(&config)
+
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    false,
+				SubObjectDeletionProtection: false,
+			},
+			config,
+		)
+	})
+
+	t.Run("should use flags have precedence over env variables", func(t *testing.T) {
+		config := Config{}
+
+		defer func(old []string) {
+			os.Args = old
+			assert.NoError(t, os.Unsetenv(objectDeletionProtectionEnvVar))
+			assert.NoError(t, os.Unsetenv(subobjectDeletionProtectionEnvVar))
+		}(os.Args)
+
+		os.Args = []string{"app", "--object-deletion-protection", "-subobject-deletion-protection"}
+		assert.NoError(t, os.Setenv(objectDeletionProtectionEnvVar, "false"))
+		assert.NoError(t, os.Setenv(subobjectDeletionProtectionEnvVar, "false"))
+
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+		flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "")
+		flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "")
+		flag.Parse()
+
+		configureDeletionProtection(&config)
+
+		assert.Equal(
+			t,
+			Config{
+				ObjectDeletionProtection:    true,
+				SubObjectDeletionProtection: true,
+			},
+			config,
+		)
+	})
 }
