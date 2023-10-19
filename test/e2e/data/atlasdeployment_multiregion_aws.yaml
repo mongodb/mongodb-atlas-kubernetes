@@ -9,20 +9,24 @@ spec:
     name: deployment-multiregion-aws
     providerBackupEnabled: true
     clusterType: REPLICASET
+    replicationSpecs:
+      - zoneName: US-Zone
+        numShards: 1
+        regionsConfig:
+          - regionName: US_EAST_1
+            providerName: AWS
+            backingProviderName: AWS
+            priority: 6
+            electableSpecs:
+              - instanceSize: M10
+                nodeCount: 1
+          - regionName: US_WEST_2
+            providerName: AWS
+            backingProviderName: AWS
+            priority: 7
+            electableSpecs:
+              - instanceSize: M10
+                nodeCount: 2
     providerSettings:
       instanceSizeName: M10
       providerName: AWS
-    replicationSpecs:
-      - numShards: 1
-        zoneName: US-Zone
-        regionsConfig:
-          US_EAST_1:
-            analyticsNodes: 0
-            electableNodes: 1
-            priority: 6
-            readOnlyNodes: 0
-          US_WEST_2:
-            analyticsNodes: 0
-            electableNodes: 2
-            priority: 7
-            readOnlyNodes: 0

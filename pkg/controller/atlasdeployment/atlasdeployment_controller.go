@@ -162,14 +162,6 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	// convertedDeployment is either serverless or advanced, deployment must be kept unchanged
 	// convertedDeployment is always a separate copy, to avoid changes on it to go back to k8s
 	convertedDeployment := deployment.DeepCopy()
-	if deployment.IsLegacyDeployment() {
-		if err := ConvertLegacyDeployment(&convertedDeployment.Spec); err != nil {
-			result = workflow.Terminate(workflow.Internal, err.Error())
-			log.Errorw("failed to convert legacy deployment", "error", err)
-			return result.ReconcileResult(), nil
-		}
-		convertedDeployment.Spec.DeploymentSpec = nil
-	}
 
 	if result := r.checkDeploymentIsManaged(workflowCtx, log, project, convertedDeployment); !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -224,13 +216,6 @@ func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *mdbv1.AtlasDeployment) {
 	var pSettings *mdbv1.ProviderSettingsSpec
 	var deploymentType string
-	if deployment.Spec.DeploymentSpec != nil {
-		if deployment.Spec.DeploymentSpec.ProviderSettings == nil {
-			return
-		}
-		pSettings = deployment.Spec.DeploymentSpec.ProviderSettings
-		deploymentType = "TENANT"
-	}
 
 	if deployment.Spec.ServerlessSpec != nil {
 		if deployment.Spec.ServerlessSpec.ProviderSettings == nil {
@@ -249,14 +234,6 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
 ) workflow.Result {
-	if deployment.IsLegacyDeployment() {
-		result := workflow.Terminate(workflow.Internal, "ownership check expected a converted deployment, not a legacy one")
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result
-	}
-
 	owner, err := customresource.IsOwner(
 		deployment,
 		r.ObjectDeletionProtection,
@@ -386,7 +363,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
 		return result, nil
 	}
 
-	replicaSetStatus := make([]status.ReplicaSet, 0, len(deployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs))
+	replicaSetStatus := make([]status.ReplicaSet, 0, len(deployment.Spec.DeploymentSpec.ReplicationSpecs))
 	for _, replicaSet := range c.ReplicationSpecs {
 		replicaSetStatus = append(
 			replicaSetStatus,
@@ -676,7 +653,7 @@ func deploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *atlasTypedCluster,
 	if atlasSpec.clusterType != Advanced {
 		return false, nil
 	}
-	return advancedDeploymentMatchesSpec(log, atlasSpec.advanced, deployment.Spec.AdvancedDeploymentSpec)
+	return advancedDeploymentMatchesSpec(log, atlasSpec.advanced, deployment.Spec.DeploymentSpec)
 }
 
 func serverlessDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.Cluster, operatorSpec *mdbv1.ServerlessSpec) (bool, error) {
@@ -720,8 +697,8 @@ func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
 	store := make(map[string]string)
 	var arrTags []*mdbv1.TagSpec
 
-	if deploymentSpec.AdvancedDeploymentSpec != nil {
-		arrTags = deploymentSpec.AdvancedDeploymentSpec.Tags
+	if deploymentSpec.DeploymentSpec != nil {
+		arrTags = deploymentSpec.DeploymentSpec.Tags
 	} else {
 		arrTags = deploymentSpec.ServerlessSpec.Tags
 	}

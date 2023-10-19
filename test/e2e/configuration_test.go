@@ -140,7 +140,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 					actions.DeleteFirstUser,
 				},
 			).WithProject(data.DefaultProject()).
-				WithInitialDeployments(data.CreateBasicFreeDeployment("basic-free-deployment")).
+				WithInitialDeployments(data.CreateFreeAdvancedDeployment("basic-free-deployment")).
 				WithUsers(data.BasicUser("user", "user1", data.WithSecretRef("dbuser-secret"), data.WithAdminRole())),
 		),
 		Entry("Free - Users can use M0, global", Label("ns-global-key-m0"),
@@ -152,7 +152,7 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("deploymen
 					actions.DeleteFirstUser,
 				},
 			).WithProject(data.DefaultProject()).
-				WithInitialDeployments(data.CreateBasicFreeDeployment("basic-free-deployment")).
+				WithInitialDeployments(data.CreateFreeAdvancedDeployment("basic-free-deployment")).
 				WithUsers(data.BasicUser("user", "user1", data.WithSecretRef("dbuser-secret"), data.WithAdminRole())),
 		),
 	)

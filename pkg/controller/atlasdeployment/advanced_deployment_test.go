@@ -24,7 +24,7 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 	t.Run("Test merging clusters removes backing provider name if empty", func(t *testing.T) {
 		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 
-		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.DeploymentSpec)
 		assert.NoError(t, err)
 		assert.Empty(t, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
@@ -35,11 +35,11 @@ func TestMergedAdvancedDeployment(t *testing.T) {
 		atlasRegionConfig.BackingProviderName = "AWS"
 
 		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
-		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M5"
-		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
-		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
+		advancedCluster.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M5"
+		advancedCluster.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = "TENANT"
+		advancedCluster.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = "AWS"
 
-		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		merged, _, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.DeploymentSpec)
 		assert.NoError(t, err)
 		assert.Equal(t, atlasRegionConfig.BackingProviderName, merged.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName)
 	})
@@ -53,11 +53,12 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 	t.Run("Test ", func(t *testing.T) {
 		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 
-		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.DeploymentSpec)
 		assert.NoError(t, err)
 
 		logger, _ := zap.NewProduction()
 		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), merged, atlas)
+		assert.Equalf(t, merged, atlas, "Deployments should be equal")
 		assert.True(t, areEqual, "Deployments should be equal")
 	})
 }
@@ -70,7 +71,7 @@ func makeDefaultAtlasSpec() *mongodbatlas.AdvancedCluster {
 			{
 				NumShards: 1,
 				ID:        "123",
-				ZoneName:  "Zone1",
+				ZoneName:  "Zone 1",
 				RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
 					{
 						ElectableSpecs: &mongodbatlas.Specs{

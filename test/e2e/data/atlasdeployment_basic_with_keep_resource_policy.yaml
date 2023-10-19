@@ -9,8 +9,13 @@ spec:
     name: my-project
   deploymentSpec:
     name: cluster-basic
-    providerSettings:
-      instanceSizeName: M2
-      providerName: TENANT
-      regionName: US_EAST_1
-      backingProviderName: AWS
+    replicationSpecs:
+      - zoneName: Zone 1
+        regionConfigs:
+          - electableSpecs:
+              instanceSize: M2
+              nodeCount: 1
+            providerName: TENANT
+            backingProviderName: "AWS"
+            regionName: US_EAST_1
+            priority: 7

@@ -40,7 +40,7 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				ClusterType: "GEOSHARDED",
 				Name:        name,
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
@@ -80,41 +80,6 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 	}
 }
 
-func CreateRegularGeoshardedDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name: name,
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName: InstanceSizeM30,
-					ProviderName:     "AWS",
-				},
-				ClusterType: "GEOSHARDED",
-				ReplicationSpecs: []v1.ReplicationSpec{
-					{
-						NumShards: toptr.MakePtr(int64(1)),
-						ZoneName:  "Zone 1",
-						RegionsConfig: map[string]v1.RegionsConfig{
-							"US_EAST_1": {
-								AnalyticsNodes: toptr.MakePtr(int64(0)),
-								ElectableNodes: toptr.MakePtr(int64(3)),
-								Priority:       toptr.MakePtr(int64(7)),
-								ReadOnlyNodes:  toptr.MakePtr(int64(0)),
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func CreateServerlessDeployment(name string, providerName string, regionName string) *v1.AtlasDeployment {
 	return &v1.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -145,13 +110,25 @@ func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name: "cluster-basics",
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName:    InstanceSizeM2,
-					ProviderName:        "TENANT",
-					RegionName:          "US_EAST_1",
-					BackingProviderName: "AWS",
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+				ClusterType: "REPLICASET",
+				Name:        "cluster-basics",
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						ZoneName: "test zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: "M2",
+									NodeCount:    toptr.MakePtr(1),
+								},
+								BackingProviderName: "AWS",
+								Priority:            toptr.MakePtr(7),
+								ProviderName:        "TENANT",
+								RegionName:          "US_EAST_1",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -167,13 +144,26 @@ func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name:                  "deployment-backup",
-				ProviderBackupEnabled: toptr.MakePtr(true),
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName: InstanceSizeM10,
-					ProviderName:     "AWS",
-					RegionName:       "US_EAST_1",
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+				ClusterType:   "REPLICASET",
+				Name:          "deployment-backup",
+				BackupEnabled: toptr.MakePtr(true),
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(3),
+								},
+								Priority:            toptr.MakePtr(7),
+								ProviderName:        "AWS",
+								BackingProviderName: "AWS",
+								RegionName:          "US_EAST_1",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -186,13 +176,25 @@ func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
 		Project: common.ResourceRefNamespaced{
 			Name: ProjectName,
 		},
-		DeploymentSpec: &v1.DeploymentSpec{
-			Name:                  "deployment-backup",
-			ProviderBackupEnabled: toptr.MakePtr(false),
-			ProviderSettings: &v1.ProviderSettingsSpec{
-				InstanceSizeName: InstanceSizeM20,
-				ProviderName:     "AWS",
-				RegionName:       "US_EAST_1",
+		DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			Name:          "deployment-backup",
+			BackupEnabled: toptr.MakePtr(false),
+			ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				{
+					ZoneName: "Zone 1",
+					RegionConfigs: []*v1.AdvancedRegionConfig{
+						{
+							ElectableSpecs: &v1.Specs{
+								InstanceSize: InstanceSizeM20,
+								NodeCount:    toptr.MakePtr(3),
+							},
+							Priority:            toptr.MakePtr(7),
+							ProviderName:        "AWS",
+							BackingProviderName: "AWS",
+							RegionName:          "US_EAST_1",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -233,54 +235,37 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name:                  "deployment-multiregion",
-				ProviderBackupEnabled: toptr.MakePtr(true),
-				ClusterType:           "REPLICASET",
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName: InstanceSizeM10,
-					ProviderName:     providerName,
-				},
-				ReplicationSpecs: []v1.ReplicationSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Name:          "deployment-multiregion",
+				BackupEnabled: toptr.MakePtr(true),
+				ClusterType:   "REPLICASET",
+				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
-						NumShards: toptr.MakePtr(int64(1)),
+						NumShards: 1,
 						ZoneName:  "US-Zone",
-						RegionsConfig: map[string]v1.RegionsConfig{
-							regions[0]: {
-								AnalyticsNodes: toptr.MakePtr(int64(0)),
-								ElectableNodes: toptr.MakePtr(int64(1)),
-								Priority:       toptr.MakePtr(int64(6)),
-								ReadOnlyNodes:  toptr.MakePtr(int64(0)),
+						RegionConfigs: []*v1.AdvancedRegionConfig{
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(2),
+								},
+								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
+								Priority:     toptr.MakePtr(7),
+								ProviderName: string(providerName),
+								RegionName:   regions[0],
 							},
-							regions[1]: {
-								AnalyticsNodes: toptr.MakePtr(int64(0)),
-								ElectableNodes: toptr.MakePtr(int64(2)),
-								Priority:       toptr.MakePtr(int64(7)),
-								ReadOnlyNodes:  toptr.MakePtr(int64(0)),
+							{
+								ElectableSpecs: &v1.Specs{
+									InstanceSize: InstanceSizeM10,
+									NodeCount:    toptr.MakePtr(1),
+								},
+								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
+								Priority:     toptr.MakePtr(6),
+								ProviderName: string(providerName),
+								RegionName:   regions[1],
 							},
 						},
 					},
-				},
-			},
-		}}
-}
-
-func CreateBasicFreeDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1.AtlasDeploymentSpec{
-			Project: common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
-			DeploymentSpec: &v1.DeploymentSpec{
-				Name: name,
-				ProviderSettings: &v1.ProviderSettingsSpec{
-					InstanceSizeName:    InstanceSizeM0,
-					ProviderName:        "TENANT",
-					RegionName:          "US_EAST_1",
-					BackingProviderName: "AWS",
 				},
 			},
 		},
@@ -296,19 +281,11 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
-				Name:          name,
-				BackupEnabled: toptr.MakePtr(false),
-				BiConnector: &v1.BiConnectorSpec{
-					Enabled:        toptr.MakePtr(false),
-					ReadPreference: "secondary",
-				},
-				ClusterType:              string(v1.TypeReplicaSet),
-				EncryptionAtRestProvider: "NONE",
-				PitEnabled:               toptr.MakePtr(false),
-				Paused:                   toptr.MakePtr(false),
-				RootCertType:             "ISRGROOTX1",
-				VersionReleaseSystem:     "LTS",
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+				Name:                 name,
+				ClusterType:          string(v1.TypeReplicaSet),
+				RootCertType:         "ISRGROOTX1",
+				VersionReleaseSystem: "LTS",
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
@@ -345,7 +322,7 @@ func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Name:          name,
 				BackupEnabled: toptr.MakePtr(false),
 				BiConnector: &v1.BiConnectorSpec{

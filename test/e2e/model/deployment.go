@@ -18,9 +18,6 @@ type AtlasDeployment struct {
 type DeploymentSpec v1.AtlasDeploymentSpec
 
 func (spec DeploymentSpec) GetDeploymentName() string {
-	if spec.AdvancedDeploymentSpec != nil {
-		return spec.AdvancedDeploymentSpec.Name
-	}
 	if spec.ServerlessSpec != nil {
 		return spec.ServerlessSpec.Name
 	}

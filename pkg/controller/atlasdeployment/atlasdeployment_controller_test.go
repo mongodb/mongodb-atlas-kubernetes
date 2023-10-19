@@ -92,7 +92,7 @@ func TestDeploymentManaged(t *testing.T) {
 				},
 			}
 			project := testProject(fakeNamespace)
-			deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
+			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			te := newTestDeploymentEnv(t, tc.protected, atlasClient, testK8sClient(), project, deployment)
 			if tc.managedTag {
 				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
@@ -133,7 +133,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 					},
 				},
 			}
-			deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
+			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
@@ -145,27 +145,6 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestLegacyIsManagedInAtlasMustFail(t *testing.T) {
-	t.Run("Legacy deployment must fail to check if it is managed in Atlas", func(t *testing.T) {
-		protected := true
-		project := testProject(fakeNamespace)
-		inAtlas := differentAdvancedDeployment(fakeNamespace)
-		atlasClient := mongodbatlas.Client{
-			AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
-				GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-					return inAtlas, nil, nil
-				},
-			},
-		}
-		deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-		te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
-
-		result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
-
-		assert.Regexp(t, regexp.MustCompile("ownership check expected a converted deployment"), result.GetMessage())
-	})
 }
 
 func TestProtectedServerlessManagedInAtlas(t *testing.T) {
@@ -478,7 +457,7 @@ func TestCleanupBindings(t *testing.T) {
 		schedule := testBackupSchedule("", policy)
 		deployment := testDeployment("", schedule)
 		require.NoError(t, r.Client.Create(context.Background(), deployment))
-		schedule.Status.DeploymentIDs = []string{deployment.Spec.AdvancedDeploymentSpec.Name}
+		schedule.Status.DeploymentIDs = []string{deployment.Spec.DeploymentSpec.Name}
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
 		// test ensureBackupPolicy and cleanup
@@ -507,8 +486,8 @@ func TestCleanupBindings(t *testing.T) {
 		deployment2 := testDeployment("2", schedule)
 		require.NoError(t, r.Client.Create(context.Background(), deployment2))
 		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.AdvancedDeploymentSpec.Name,
-			deployment2.Spec.AdvancedDeploymentSpec.Name,
+			deployment.Spec.DeploymentSpec.Name,
+			deployment2.Spec.DeploymentSpec.Name,
 		}
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 
@@ -539,11 +518,11 @@ func TestCleanupBindings(t *testing.T) {
 		deployment2 := testDeployment("2", schedule2)
 		require.NoError(t, r.Client.Create(context.Background(), deployment2))
 		schedule.Status.DeploymentIDs = []string{
-			deployment.Spec.AdvancedDeploymentSpec.Name,
+			deployment.Spec.DeploymentSpec.Name,
 		}
 		require.NoError(t, r.Client.Create(context.Background(), schedule))
 		schedule2.Status.DeploymentIDs = []string{
-			deployment2.Spec.AdvancedDeploymentSpec.Name,
+			deployment2.Spec.DeploymentSpec.Name,
 		}
 		require.NoError(t, r.Client.Create(context.Background(), schedule2))
 		policy.Status.BackupScheduleIDs = []string{
@@ -570,15 +549,15 @@ func TestCleanupBindings(t *testing.T) {
 func differentAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
 	project := testProject(ns)
 	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-	deployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M2"
-	advancedSpec := asAdvanced(deployment).Spec.AdvancedDeploymentSpec
+	deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M2"
+	advancedSpec := deployment.Spec.DeploymentSpec
 	return intoAdvancedAtlasCluster(advancedSpec)
 }
 
 func sameAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
 	project := testProject(ns)
-	deployment := asAdvanced(v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment))
-	advancedSpec := asAdvanced(deployment).Spec.AdvancedDeploymentSpec
+	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+	advancedSpec := deployment.Spec.DeploymentSpec
 	return intoAdvancedAtlasCluster(advancedSpec)
 }
 
@@ -669,13 +648,13 @@ func testProject(ns string) *v1.AtlasProject {
 	}
 }
 
-func asAdvanced(deployment *v1.AtlasDeployment) *v1.AtlasDeployment {
-	if err := ConvertLegacyDeployment(&deployment.Spec); err != nil {
-		log.Fatalf("failed to convert legacy deployment: %v", err)
-	}
-	deployment.Spec.DeploymentSpec = nil
-	return deployment
-}
+// func asAdvanced(deployment *v1.AtlasDeployment) *v1.AtlasDeployment {
+// 	if err := ConvertLegacyDeployment(&deployment.Spec); err != nil {
+// 		log.Fatalf("failed to convert legacy deployment: %v", err)
+// 	}
+// 	deployment.Spec.DeploymentSpec = nil
+// 	return deployment
+// }
 
 func intoAdvancedAtlasCluster(advancedSpec *v1.AdvancedDeploymentSpec) *mongodbatlas.AdvancedCluster {
 	ac, err := advancedSpec.ToAtlas()
@@ -705,7 +684,7 @@ func testDeployment(suffix string, schedule *v1.AtlasBackupSchedule) *v1.AtlasDe
 	return &v1.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
 		Spec: v1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Name: fmt.Sprintf("atlas-%s", dn.Name),
 			},
 			BackupScheduleRef: common.ResourceRefNamespaced{
@@ -752,7 +731,7 @@ func testBackupPolicy() *v1.AtlasBackupPolicy {
 func TestUniqueKey(t *testing.T) {
 	t.Run("Test duplicates in Advanced Deployment", func(t *testing.T) {
 		deploymentSpec := &v1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "foo", Value: "false"}},
 			},
 		}
@@ -761,7 +740,7 @@ func TestUniqueKey(t *testing.T) {
 	})
 	t.Run("Test no duplicates in Advanced Deployment", func(t *testing.T) {
 		deploymentSpec := &v1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foobar", Value: "false"}},
 			},
 		}

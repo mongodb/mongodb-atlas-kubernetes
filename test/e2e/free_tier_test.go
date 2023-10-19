@@ -45,7 +45,7 @@ var _ = Describe("Free tier", Label("free-tier"), func() {
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				40000,
 				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateBasicFreeDeployment("free-tier")),
+			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier")),
 		),
 		Entry("Test free tier advanced deployment",
 			model.DataProvider(

@@ -7,7 +7,14 @@ spec:
     name: my-project
   deploymentSpec:
     name: deployment-standard
-    providerSettings:
-      instanceSizeName: M10
-      providerName: AWS
-      regionName: US_EAST_1
+    replicationSpecs:
+      - zoneName: Zone 1
+        numShards: 1
+        regionConfigs:
+          - regionName: US_EAST_1
+            providerName: AWS
+            backingProviderName: AWS
+            priority: 7
+            electableSpecs:
+              instanceSize: M10
+              nodeCount: 1

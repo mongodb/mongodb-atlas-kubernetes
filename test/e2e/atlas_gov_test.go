@@ -419,7 +419,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						Name:      projectName,
 						Namespace: testData.Resources.Namespace,
 					},
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						Name:          clusterName,
 						BackupEnabled: toptr.MakePtr(true),
 						BiConnector: &mdbv1.BiConnectorSpec{

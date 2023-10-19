@@ -9,20 +9,21 @@ spec:
     name: deployment-multiregion-azure
     providerBackupEnabled: true
     clusterType: REPLICASET
-    providerSettings:
-      instanceSizeName: M20
-      providerName: AZURE
     replicationSpecs:
-      - numShards: 1
-        zoneName: Europe
+      - zoneName: Europe
+        numShards: 1
         regionsConfig:
-          NORWAY_EAST:
-            analyticsNodes: 0
-            electableNodes: 1
+          - regionName: NORWAY_EAST
+            providerName: AZURE
+            backingProviderName: AZURE
             priority: 6
-            readOnlyNodes: 0
-          GERMANY_NORTH:
-            analyticsNodes: 0
-            electableNodes: 2
+            electableSpecs:
+              instanceSize: M20
+              nodeCount: 1
+          - regionName: GERMANY_NORTH 
+            providerName: AZURE
+            backingProviderName: AZURE
             priority: 7
-            readOnlyNodes: 0
+            electableSpecs:
+              instanceSize: M20
+              nodeCount: 2

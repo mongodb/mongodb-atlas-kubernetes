@@ -146,7 +146,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 
 			By("Creating a deployment with backups enabled (default)", func() {
 				testDeployment = mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
-				testDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = toptr.MakePtr(true)
+				testDeployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
 				Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
 			})
 

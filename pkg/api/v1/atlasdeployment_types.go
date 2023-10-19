@@ -33,6 +33,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
 )
 
 func init() {
@@ -53,13 +54,9 @@ type AtlasDeploymentSpec struct {
 	// Project is a reference to AtlasProject resource the deployment belongs to
 	Project common.ResourceRefNamespaced `json:"projectRef"`
 
-	// Configuration for the normal (v1) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
+	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters/
 	// +optional
-	DeploymentSpec *DeploymentSpec `json:"deploymentSpec,omitempty"`
-
-	// Configuration for the advanced (v1.5) deployment API https://www.mongodb.com/docs/atlas/reference/api/clusters-advanced/
-	// +optional
-	AdvancedDeploymentSpec *AdvancedDeploymentSpec `json:"advancedDeploymentSpec,omitempty"`
+	DeploymentSpec *AdvancedDeploymentSpec `json:"deploymentSpec,omitempty"`
 
 	// Backup schedule for the AtlasDeployment
 	// +optional
@@ -74,23 +71,20 @@ type AtlasDeploymentSpec struct {
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
 }
 
-type DeploymentSpec struct {
-	// Collection of settings that configures auto-scaling information for the deployment.
-	// If you specify the autoScaling object, you must also specify the providerSettings.autoScaling object.
+type AdvancedDeploymentSpec struct {
+	// Applicable only for M10+ deployments.
+	// Flag that indicates if the deployment uses Cloud Backups for backups.
 	// +optional
-	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
-
+	BackupEnabled *bool `json:"backupEnabled,omitempty"`
 	// Configuration of BI Connector for Atlas on this deployment.
 	// The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only available for M10 and larger deployments.
 	// +optional
-	BIConnector *BiConnectorSpec `json:"biConnector,omitempty"`
-
+	BiConnector *BiConnectorSpec `json:"biConnector,omitempty"`
 	// Type of the deployment that you want to create.
 	// The parameter is required if replicationSpecs are set or if Global Deployments are deployed.
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
-	ClusterType DeploymentType `json:"clusterType,omitempty"`
-
+	ClusterType string `json:"clusterType,omitempty"`
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
 	// This value must be a positive integer.
@@ -98,79 +92,31 @@ type DeploymentSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4096
 	// +optional
-	DiskSizeGB *int `json:"diskSizeGB,omitempty"` // TODO: may cause issues due to mongodb/go-client-mongodb-atlas#140
-
+	DiskSizeGB *int `json:"diskSizeGB,omitempty"`
 	// Cloud service provider that offers Encryption at Rest.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;NONE
 	// +optional
 	EncryptionAtRestProvider string `json:"encryptionAtRestProvider,omitempty"`
-
 	// Collection of key-value pairs that tag and categorize the deployment.
 	// Each key and value has a maximum length of 255 characters.
 	// +optional
 	Labels []common.LabelSpec `json:"labels,omitempty"`
-
 	// Version of the deployment to deploy.
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
-
-	// Name of the deployment as it appears in Atlas.
-	// After Atlas creates the deployment, you can't change its name.
-	// Can only contain ASCII letters, numbers, and hyphens.
-	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
-	Name string `json:"name"`
-
-	// Key-value pairs for resource tagging.
-	// +kubebuilder:validation:MaxItems=50
-	// +optional
-	Tags []*TagSpec `json:"tags,omitempty"`
-
-	// Positive integer that specifies the number of shards to deploy for a sharded deployment.
-	// The parameter is required if replicationSpecs are configured
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=50
-	// +optional
-	NumShards *int `json:"numShards,omitempty"`
-
-	// Flag that indicates whether the deployment should be paused.
-	Paused *bool `json:"paused,omitempty"`
-
-	// Flag that indicates the deployment uses continuous cloud backups.
-	// +optional
-	PitEnabled *bool `json:"pitEnabled,omitempty"`
-
-	// Applicable only for M10+ deployments.
-	// Flag that indicates if the deployment uses Cloud Backups for backups.
-	// +optional
-	ProviderBackupEnabled *bool `json:"providerBackupEnabled,omitempty"`
-
-	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec `json:"providerSettings"`
-
-	// Configuration for deployment regions.
-	// +optional
-	ReplicationSpecs []ReplicationSpec `json:"replicationSpecs,omitempty"`
-	// +optional
-	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
-	// +optional
-	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
-}
-
-type AdvancedDeploymentSpec struct {
-	BackupEnabled            *bool              `json:"backupEnabled,omitempty"`
-	BiConnector              *BiConnectorSpec   `json:"biConnector,omitempty"`
-	ClusterType              string             `json:"clusterType,omitempty"`
-	DiskSizeGB               *int               `json:"diskSizeGB,omitempty"`
-	EncryptionAtRestProvider string             `json:"encryptionAtRestProvider,omitempty"`
-	Labels                   []common.LabelSpec `json:"labels,omitempty"`
-	MongoDBMajorVersion      string             `json:"mongoDBMajorVersion,omitempty"`
-	MongoDBVersion           string             `json:"mongoDBVersion,omitempty"`
+	MongoDBVersion      string `json:"mongoDBVersion,omitempty"`
 	// Name of the advanced deployment as it appears in Atlas.
 	// After Atlas creates the deployment, you can't change its name.
 	// Can only contain ASCII letters, numbers, and hyphens.
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
-	Name             string                     `json:"name,omitempty"`
-	Paused           *bool                      `json:"paused,omitempty"`
-	PitEnabled       *bool                      `json:"pitEnabled,omitempty"`
+	Name string `json:"name,omitempty"`
+	// Flag that indicates whether the deployment should be paused.
+	Paused *bool `json:"paused,omitempty"`
+	// Flag that indicates the deployment uses continuous cloud backups.
+	// +optional
+	PitEnabled *bool `json:"pitEnabled,omitempty"`
+	// Configuration for deployment regions.
+	// +optional
 	ReplicationSpecs []*AdvancedReplicationSpec `json:"replicationSpecs,omitempty"`
 	RootCertType     string                     `json:"rootCertType,omitempty"`
 	// Key-value pairs for resource tagging.
@@ -290,27 +236,58 @@ type EndpointSpec struct {
 }
 
 type AdvancedReplicationSpec struct {
-	NumShards     int                     `json:"numShards,omitempty"`
-	ZoneName      string                  `json:"zoneName,omitempty"`
+	// Positive integer that specifies the number of shards to deploy in each specified zone.
+	// If you set this value to 1 and clusterType is SHARDED, MongoDB Cloud deploys a single-shard sharded cluster.
+	// Don't create a sharded cluster with a single shard for production environments.
+	// Single-shard sharded clusters don't provide the same benefits as multi-shard configurations
+	NumShards int `json:"numShards,omitempty"`
+	// Human-readable label that identifies the zone in a Global Cluster.
+	ZoneName string `json:"zoneName,omitempty"`
+	// Hardware specifications for nodes set for a given region.
+	// Each regionConfigs object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region.
+	// Each regionConfigs object must have either an analyticsSpecs object, electableSpecs object, or readOnlySpecs object.
+	// Tenant clusters only require electableSpecs. Dedicated clusters can specify any of these specifications, but must have at least one electableSpecs object within a replicationSpec.
+	// Every hardware specification must use the same instanceSize.
 	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
 }
 
 type AdvancedRegionConfig struct {
-	AnalyticsSpecs      *Specs                   `json:"analyticsSpecs,omitempty"`
-	ElectableSpecs      *Specs                   `json:"electableSpecs,omitempty"`
-	ReadOnlySpecs       *Specs                   `json:"readOnlySpecs,omitempty"`
-	AutoScaling         *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
-	BackingProviderName string                   `json:"backingProviderName,omitempty"`
-	Priority            *int                     `json:"priority,omitempty"`
-	ProviderName        string                   `json:"providerName,omitempty"`
-	RegionName          string                   `json:"regionName,omitempty"`
+	AnalyticsSpecs *Specs                   `json:"analyticsSpecs,omitempty"`
+	ElectableSpecs *Specs                   `json:"electableSpecs,omitempty"`
+	ReadOnlySpecs  *Specs                   `json:"readOnlySpecs,omitempty"`
+	AutoScaling    *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
+	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
+	// This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
+	// Otherwise it should be equal to "providerName" value
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
+	BackingProviderName string `json:"backingProviderName,omitempty"`
+	// Precedence is given to this region when a primary election occurs.
+	// If your regionConfigs has only readOnlySpecs, analyticsSpecs, or both, set this value to 0.
+	// If you have multiple regionConfigs objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order.
+	// The highest priority is 7
+	Priority *int `json:"priority,omitempty"`
+	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT;SERVERLESS
+	ProviderName string `json:"providerName,omitempty"`
+	// Physical location of your MongoDB deployment.
+	// The region you choose can affect network latency for clients accessing your databases.
+	RegionName string `json:"regionName,omitempty"`
 }
 
 type Specs struct {
-	DiskIOPS      *int64 `json:"diskIOPS,omitempty"`
+	// Disk IOPS setting for AWS storage.
+	// Set only if you selected AWS as your cloud service provider.
+	// +optional
+	DiskIOPS *int64 `json:"diskIOPS,omitempty"`
+	// Disk IOPS setting for AWS storage.
+	// Set only if you selected AWS as your cloud service provider.
+	// +kubebuilder:validation:Enum=STANDARD;PROVISIONED
 	EbsVolumeType string `json:"ebsVolumeType,omitempty"`
-	InstanceSize  string `json:"instanceSize,omitempty"`
-	NodeCount     *int   `json:"nodeCount,omitempty"`
+	// Hardware specification for the instance sizes in this region.
+	// Each instance size has a default storage and memory capacity.
+	// The instance size you select applies to all the data-bearing hosts in your instance size
+	InstanceSize string `json:"instanceSize,omitempty"`
+	// Number of nodes of the given type for MongoDB Cloud to deploy to the region.
+	NodeCount *int `json:"nodeCount,omitempty"`
 }
 
 // AutoScalingSpec configures your deployment to automatically scale its storage
@@ -504,74 +481,13 @@ type ProviderSettingsSpec struct {
 	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
 }
 
-// ReplicationSpec represents a configuration for deployment regions
-type ReplicationSpec struct {
-	// Number of shards to deploy in each specified zone.
-	// The default value is 1.
-	NumShards *int64 `json:"numShards,omitempty"`
-
-	// Name for the zone in a Global Deployment.
-	// Don't provide this value if deploymentType is not GEOSHARDED.
-	// +optional
-	ZoneName string `json:"zoneName,omitempty"`
-
-	// Configuration for a region.
-	// Each regionsConfig object describes the region's priority in elections and the number and type of MongoDB nodes that Atlas deploys to the region.
-	// +optional
-	RegionsConfig map[string]RegionsConfig `json:"regionsConfig,omitempty"`
-}
-
-// RegionsConfig describes the region’s priority in elections and the number and type of MongoDB nodes Atlas deploys to the region.
-type RegionsConfig struct {
-	// The number of analytics nodes for Atlas to deploy to the region.
-	// Analytics nodes are useful for handling analytic data such as reporting queries from BI Connector for Atlas.
-	// Analytics nodes are read-only, and can never become the primary.
-	// If you do not specify this option, no analytics nodes are deployed to the region.
-	// +optional
-	AnalyticsNodes *int64 `json:"analyticsNodes,omitempty"`
-
-	// Number of electable nodes for Atlas to deploy to the region.
-	// Electable nodes can become the primary and can facilitate local reads.
-	// +optional
-	ElectableNodes *int64 `json:"electableNodes,omitempty"`
-
-	// Election priority of the region.
-	// For regions with only replicationSpecs[n].regionsConfig.<region>.readOnlyNodes, set this value to 0.
-	// +optional
-	Priority *int64 `json:"priority,omitempty"`
-
-	// Number of read-only nodes for Atlas to deploy to the region.
-	// Read-only nodes can never become the primary, but can facilitate local-reads.
-	// +optional
-	ReadOnlyNodes *int64 `json:"readOnlyNodes,omitempty"`
-}
-
-// Check compatibility with library type.
-var _ = RegionsConfig(mongodbatlas.RegionsConfig{})
-
-// LegacyDeployment converts the Spec to native Atlas client format.
-func (spec *AtlasDeploymentSpec) LegacyDeployment() (*mongodbatlas.Cluster, error) {
-	result := &mongodbatlas.Cluster{}
-	err := compat.JSONCopy(result, *spec.DeploymentSpec)
-
-	if result.AutoScaling != nil {
-		result.AutoScaling.AutoIndexingEnabled = nil
-	}
-
-	if result.ProviderSettings != nil && result.ProviderSettings.AutoScaling != nil {
-		result.ProviderSettings.AutoScaling.AutoIndexingEnabled = nil
-	}
-
-	return result, err
-}
-
 // Deployment converts the Spec to native Atlas client format.
 func (spec *AtlasDeploymentSpec) Deployment() (*mongodbatlas.AdvancedCluster, error) {
 	result := &mongodbatlas.AdvancedCluster{}
-	if spec.AdvancedDeploymentSpec == nil {
+	if spec.DeploymentSpec == nil {
 		return result, errors.New("AdvancedDeploymentSpec is empty")
 	}
-	err := compat.JSONCopy(result, *spec.AdvancedDeploymentSpec)
+	err := compat.JSONCopy(result, *spec.DeploymentSpec)
 	return result, err
 }
 
@@ -589,14 +505,11 @@ type AtlasDeployment struct {
 }
 
 func (c *AtlasDeployment) GetDeploymentName() string {
-	if c.IsLegacyDeployment() {
-		return c.Spec.DeploymentSpec.Name
-	}
 	if c.IsServerless() {
 		return c.Spec.ServerlessSpec.Name
 	}
 	if c.IsAdvancedDeployment() {
-		return c.Spec.AdvancedDeploymentSpec.Name
+		return c.Spec.DeploymentSpec.Name
 	}
 
 	return ""
@@ -607,14 +520,9 @@ func (c *AtlasDeployment) IsServerless() bool {
 	return c.Spec.ServerlessSpec != nil
 }
 
-// IsLegacyDeployment returns true if the AtlasDeployment is configured to be an legacy deployment.
-func (c *AtlasDeployment) IsLegacyDeployment() bool {
-	return c.Spec.DeploymentSpec != nil
-}
-
 // IsAdvancedDeployment returns true if the AtlasDeployment is configured to be an advanced deployment.
 func (c *AtlasDeployment) IsAdvancedDeployment() bool {
-	return c.Spec.AdvancedDeploymentSpec != nil
+	return c.Spec.DeploymentSpec != nil
 }
 
 func (c *AtlasDeployment) GetReplicationSetID() string {
@@ -629,8 +537,8 @@ func (c *AtlasDeployment) GetReplicationSetID() string {
 
 // AtlasDeploymentList contains a list of AtlasDeployment
 type AtlasDeploymentList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `                  json:",inline"`
+	metav1.ListMeta `                  json:"metadata,omitempty"`
 	Items           []AtlasDeployment `json:"items"`
 }
 
@@ -666,9 +574,26 @@ func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
 			Namespace: namespace,
 		},
 		Spec: AtlasDeploymentSpec{
-			DeploymentSpec: &DeploymentSpec{
-				Name:             nameInAtlas,
-				ProviderSettings: &ProviderSettingsSpec{InstanceSizeName: "M10"},
+			DeploymentSpec: &AdvancedDeploymentSpec{
+				ClusterType: "REPLICASET",
+				Name:        nameInAtlas,
+				ReplicationSpecs: []*AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*AdvancedRegionConfig{
+							{
+								Priority: toptr.MakePtr(7),
+								ElectableSpecs: &Specs{
+									InstanceSize: "M10",
+									NodeCount:    toptr.MakePtr(3),
+								},
+								ProviderName:        "AWS",
+								BackingProviderName: "AWS",
+								RegionName:          "US_EAST_1",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -693,37 +618,38 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 	}
 }
 
-func NewAwsAdvancedDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
-	return newAwsAdvancedDeployment(namespace, name, nameInAtlas, "M10", "AWS", "US_EAST_1", 3)
-}
+func addReplicaIfNotAdded(deployment *AtlasDeployment) {
+	if deployment == nil {
+		return
+	}
 
-func newAwsAdvancedDeployment(namespace, name, nameInAtlas, instanceSize, providerName, regionName string, nodeCount int) *AtlasDeployment {
-	priority := 7
-	return &AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &AdvancedDeploymentSpec{
-				Name:        nameInAtlas,
-				ClusterType: string(TypeReplicaSet),
-				ReplicationSpecs: []*AdvancedReplicationSpec{
-					{
-						RegionConfigs: []*AdvancedRegionConfig{
-							{
-								Priority: &priority,
-								ElectableSpecs: &Specs{
-									InstanceSize: instanceSize,
-									NodeCount:    &nodeCount,
-								},
-								ProviderName: providerName,
-								RegionName:   regionName,
-							},
-						},
-					}},
+	if deployment.Spec.DeploymentSpec == nil {
+		return
+	}
+
+	if len(deployment.Spec.DeploymentSpec.ReplicationSpecs) == 0 {
+		deployment.Spec.DeploymentSpec.ReplicationSpecs = append(deployment.Spec.DeploymentSpec.ReplicationSpecs, &AdvancedReplicationSpec{
+			NumShards: 1,
+			ZoneName:  "",
+			RegionConfigs: []*AdvancedRegionConfig{
+				{
+					ElectableSpecs:      &Specs{},
+					BackingProviderName: "",
+					Priority:            toptr.MakePtr(7),
+					ProviderName:        "",
+				},
 			},
-		},
+		})
+	}
+
+	if len(deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs) == 0 {
+		deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = append(deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs, &AdvancedRegionConfig{
+			ElectableSpecs:      &Specs{},
+			BackingProviderName: "",
+			Priority:            toptr.MakePtr(7),
+			ProviderName:        "",
+			RegionName:          "",
+		})
 	}
 }
 
@@ -743,18 +669,19 @@ func (c *AtlasDeployment) WithProjectName(projectName string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithProviderName(name provider.ProviderName) *AtlasDeployment {
-	c.Spec.DeploymentSpec.ProviderSettings.ProviderName = name
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName = string(name)
 	return c
 }
 
 func (c *AtlasDeployment) WithRegionName(name string) *AtlasDeployment {
-	c.Spec.DeploymentSpec.ProviderSettings.RegionName = name
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].RegionName = name
 	return c
 }
 
 func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasDeployment {
-	t := true
-	c.Spec.DeploymentSpec.ProviderBackupEnabled = &t
+	c.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
 	c.Spec.BackupScheduleRef = ref
 	return c
 }
@@ -765,25 +692,20 @@ func (c *AtlasDeployment) WithDiskSizeGB(size int) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
-	f := false
-	c.Spec.DeploymentSpec.AutoScaling = &AutoScalingSpec{
-		DiskGBEnabled: &f,
-		Compute: &ComputeSpec{
-			Enabled:          &f,
-			ScaleDownEnabled: &f,
-			MinInstanceSize:  "",
-			MaxInstanceSize:  "",
-		},
-	}
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = nil
 	return c
 }
 
 func (c *AtlasDeployment) WithInstanceSize(name string) *AtlasDeployment {
-	c.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = name
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = name
 	return c
 }
+
 func (c *AtlasDeployment) WithBackingProvider(name string) *AtlasDeployment {
-	c.Spec.DeploymentSpec.ProviderSettings.BackingProviderName = name
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].BackingProviderName = name
 	return c
 }
 
@@ -792,7 +714,7 @@ func (c *AtlasDeployment) WithBackingProvider(name string) *AtlasDeployment {
 func (c *AtlasDeployment) Lightweight() *AtlasDeployment {
 	c.WithInstanceSize("M2")
 	// M2 is restricted to some set of regions only - we need to ensure them
-	switch c.Spec.DeploymentSpec.ProviderSettings.ProviderName {
+	switch provider.ProviderName(c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName) {
 	case provider.ProviderAWS:
 		{
 			c.WithRegionName("US_EAST_1")
@@ -807,7 +729,7 @@ func (c *AtlasDeployment) Lightweight() *AtlasDeployment {
 		}
 	}
 	// Changing provider to tenant as this is shared now
-	c.WithBackingProvider(string(c.Spec.DeploymentSpec.ProviderSettings.ProviderName))
+	c.WithBackingProvider(c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ProviderName)
 	c.WithProviderName(provider.ProviderTenant)
 	return c
 }
@@ -816,6 +738,7 @@ func DefaultGCPDeployment(namespace, projectName string) *AtlasDeployment {
 	return NewDeployment(namespace, "test-deployment-gcp-k8s", "test-deployment-gcp").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderGCP).
+		WithBackingProvider(string(provider.ProviderGCP)).
 		WithRegionName("EASTERN_US")
 }
 
@@ -823,30 +746,39 @@ func DefaultAWSDeployment(namespace, projectName string) *AtlasDeployment {
 	return NewDeployment(namespace, "test-deployment-aws-k8s", "test-deployment-aws").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAWS).
-		WithRegionName("US_WEST_2")
+		WithBackingProvider(string(provider.ProviderAWS)).
+		WithRegionName("US_EAST_1")
 }
 
 func DefaultAzureDeployment(namespace, projectName string) *AtlasDeployment {
 	return NewDeployment(namespace, "test-deployment-azure-k8s", "test-deployment-azure").
 		WithProjectName(projectName).
 		WithProviderName(provider.ProviderAzure).
+		WithBackingProvider(string(provider.ProviderAzure)).
 		WithRegionName("EUROPE_NORTH")
 }
 
 func DefaultAwsAdvancedDeployment(namespace, projectName string) *AtlasDeployment {
-	return NewAwsAdvancedDeployment(namespace, "test-deployment-advanced-k8s", "test-deployment-advanced").WithProjectName(projectName)
+	return NewDeployment(
+		namespace,
+		"test-deployment-advanced-k8s",
+		"test-deployment-advanced",
+	).WithProjectName(projectName)
 }
 
 func NewDefaultAWSServerlessInstance(namespace, projectName string) *AtlasDeployment {
-	return newServerlessInstance(namespace, "test-serverless-instance-k8s", "test-serverless-instance", "AWS", "US_EAST_1").WithProjectName(projectName)
+	return newServerlessInstance(
+		namespace,
+		"test-serverless-instance-k8s",
+		"test-serverless-instance",
+		"AWS",
+		"US_EAST_1",
+	).WithProjectName(projectName)
 }
 
 func (c *AtlasDeployment) AtlasName() string {
 	if c.Spec.DeploymentSpec != nil {
 		return c.Spec.DeploymentSpec.Name
-	}
-	if c.Spec.AdvancedDeploymentSpec != nil {
-		return c.Spec.AdvancedDeploymentSpec.Name
 	}
 	if c.Spec.ServerlessSpec != nil {
 		return c.Spec.ServerlessSpec.Name

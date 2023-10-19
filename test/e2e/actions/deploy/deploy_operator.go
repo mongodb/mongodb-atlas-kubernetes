@@ -3,6 +3,7 @@ package deploy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -84,6 +85,9 @@ func CreateInitialDeployments(testData *model.TestDataProvider) {
 				deployment.Namespace = testData.Resources.Namespace
 				deployment.Spec.Project.Namespace = testData.Resources.Namespace
 			}
+			j, _ := json.MarshalIndent(deployment, "", " ")
+			fmt.Println("DEBUG INITIAL DEPLOYMENTS", string(j))
+			GinkgoWriter.Println("DEBUG INITIAL DEPLOYMENTS", string(j))
 			err := testData.K8SClient.Create(testData.Context, deployment)
 			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Deployment was not created: %v", deployment))
 			Eventually(kube.DeploymentReadyCondition(testData), time.Minute*60, time.Second*5).Should(Equal("True"), "Deployment was not created")
