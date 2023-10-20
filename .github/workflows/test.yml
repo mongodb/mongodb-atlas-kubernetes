@@ -7,7 +7,7 @@ on:
     paths-ignore:
       - 'docs/**'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
     branches:
       - '**'
     paths-ignore:
@@ -38,8 +38,9 @@ jobs:
       - unit-tests
       - paths-filter
     if: |
-      github.event.pull_request.draft == false &&
-      needs.paths-filter.outputs.production-code-changed == 'true'
+      contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
+      (github.event.pull_request.draft == false &&
+      needs.paths-filter.outputs.production-code-changed == 'true')
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
     with:
