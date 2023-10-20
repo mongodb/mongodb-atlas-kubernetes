@@ -17,11 +17,15 @@ jobs:
         - uses: dorny/paths-filter@v2
           id: filter
           with:
+            # production code also includes changes to e2e and int tests,
+            # note any other paths are covered by unit testing which run always
             filters: |
               production-code-changed:
                 - 'cmd/**/!(*_test.go)'
                 - 'pkg/**/!(*_test.go)'
                 - 'Dockerfile'
+                - 'test/e2e/**'
+                - 'test/int/**'
         # run only if 'production-code' files were changed
         - name: production code changed
           if: steps.filter.outputs.production-code-changed == 'true'
