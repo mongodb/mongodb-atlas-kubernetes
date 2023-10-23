@@ -22,7 +22,6 @@ require (
 	github.com/mongodb-forks/digest v1.0.5
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.28.0
-	github.com/pborman/uuid v1.2.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/atlas v0.34.0

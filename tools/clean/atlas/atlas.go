@@ -1,11 +1,11 @@
 package atlas
 
 import (
-	"tools/clean/atlas/project"
 	"context"
 	"log"
 	"os"
 	"tools/clean/atlas/client"
+	"tools/clean/atlas/project"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
