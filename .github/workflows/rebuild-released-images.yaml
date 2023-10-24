@@ -67,7 +67,7 @@ jobs:
           ref: "v${{ matrix.version }}"
           submodules: true
           fetch-depth: 0
-      - name: Upgrade build Makefile & Dockerfile
+      - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
         run: |
           git remote show origin
           git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile
