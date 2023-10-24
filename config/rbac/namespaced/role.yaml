@@ -183,3 +183,5 @@ rules:
   - atlasfederatedauths/status
   verbs:
   - get
+  - patch
+  - update
