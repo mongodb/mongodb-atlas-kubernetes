@@ -1,11 +1,11 @@
 package project
 
 import (
-	"tools/clean/atlas/deployment"
 	"context"
 	"fmt"
 	"log"
 	"time"
+	"tools/clean/atlas/deployment"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )

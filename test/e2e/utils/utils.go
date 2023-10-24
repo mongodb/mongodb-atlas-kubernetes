@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 	"github.com/sethvargo/go-password/password"
 	yaml "gopkg.in/yaml.v3"
 
@@ -28,12 +28,12 @@ func LoadUserProjectConfig(path string) *v1.AtlasProject {
 }
 
 func RandomName(base string) string {
-	randomSuffix := uuid.New()[0:6]
+	randomSuffix := uuid.New().String()[0:6]
 	return fmt.Sprintf("%s-%s", base, randomSuffix)
 }
 
 func UserSecretPassword() string {
-	return uuid.New()
+	return uuid.New().String()
 }
 
 func SaveToFile(path string, data []byte) error {
@@ -108,7 +108,7 @@ func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
 }
 
 func GenUniqID() string {
-	return uuid.NewRandom().String()
+	return uuid.New().String()
 }
 
 func GenID() string {
