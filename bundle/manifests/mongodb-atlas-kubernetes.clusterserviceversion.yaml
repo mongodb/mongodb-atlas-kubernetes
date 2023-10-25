@@ -127,12 +127,12 @@ metadata:
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:1.9.1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v1.9.0
+  name: mongodb-atlas-kubernetes.v1.9.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -454,6 +454,26 @@ spec:
                 - get
                 - patch
                 - update
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasfederatedauths
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - atlas.mongodb.com
+              resources:
+                - atlasfederatedauths/status
+              verbs:
+                - get
+                - patch
+                - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
         - name: mongodb-atlas-operator
@@ -495,7 +515,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:1.9.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:1.9.1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -580,5 +600,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 1.9.0
-  replaces: mongodb-atlas-kubernetes.v1.8.2
+  version: 1.9.1
+  replaces: mongodb-atlas-kubernetes.v1.9.0
