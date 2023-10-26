@@ -25,9 +25,11 @@ value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' \
   "${REPO}/${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 cd "${REPO}"
+git checkout -b origin main
+git pull --rebase upstream main
 git checkout -b "mongodb-atlas-kubernetes-operator-${VERSION}"
 git add "${REPO}/${VERSION}"
 git commit -m "operator mongodb-atlas-kubernetes (${VERSION})" --signoff
-git push -u origin "mongodb-atlas-operator-community-${VERSION}"
+git push -u origin "mongodb-atlas-kubernetes-operator-${VERSION}"
 cd -
 
