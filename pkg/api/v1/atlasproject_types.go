@@ -125,16 +125,6 @@ const hiddenField = "*** redacted ***"
 //nolint:errcheck
 func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
 	printable := p.DeepCopy()
-	// cleanup encryption at EncryptionAtRest
-	if printable.EncryptionAtRest != nil {
-		printable.EncryptionAtRest.AwsKms.AccessKeyID = hiddenField
-		printable.EncryptionAtRest.AwsKms.CustomerMasterKeyID = hiddenField
-		printable.EncryptionAtRest.AwsKms.SecretAccessKey = hiddenField
-		printable.EncryptionAtRest.AwsKms.RoleID = hiddenField
-		printable.EncryptionAtRest.AzureKeyVault.Secret = hiddenField
-		printable.EncryptionAtRest.GoogleCloudKms.ServiceAccountKey = hiddenField
-	}
-
 	// cleanup AlertConfigurations
 	for i := range printable.AlertConfigurations {
 		for j := range printable.AlertConfigurations[i].Notifications {
