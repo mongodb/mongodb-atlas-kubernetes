@@ -138,15 +138,7 @@ func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
 	// cleanup AlertConfigurations
 	for i := range printable.AlertConfigurations {
 		for j := range printable.AlertConfigurations[i].Notifications {
-			printable.AlertConfigurations[i].Notifications[j].APIToken = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].FlowdockAPIToken = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
 			printable.AlertConfigurations[i].Notifications[j].MobileNumber = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].OpsGenieAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].ServiceKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].VictorOpsAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].VictorOpsRoutingKey = hiddenField
 		}
 	}
 
