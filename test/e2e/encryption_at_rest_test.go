@@ -77,7 +77,6 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 
 			if roles != nil {
 				cloudAccessRolesFlow(test, roles)
-				encAtRest.AwsKms.RoleID = test.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
 			}
 
 			encryptionAtRestFlow(test, encAtRest)
@@ -116,11 +115,8 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 					AzureEnvironment:  AzureEnvironment,
 					ClientID:          os.Getenv(AzureClientID),
 					Enabled:           toptr.MakePtr(true),
-					KeyVaultName:      KeyVaultName,
 					ResourceGroupName: cloud.ResourceGroupName,
-					Secret:            os.Getenv(AzureClientSecret),
 					TenantID:          os.Getenv(DirectoryID),
-					SubscriptionID:    os.Getenv(SubscriptionID),
 				},
 			},
 			nil,
@@ -134,8 +130,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			).WithProject(data.DefaultProject()),
 			v1.EncryptionAtRest{
 				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: os.Getenv("GCP_SA_CRED"),
+					Enabled: toptr.MakePtr(true),
 				},
 			},
 			nil,
@@ -153,9 +148,9 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
 		}
 
-		fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
-		fillVaultforAzure(&encAtRest)
-		fillKMSforGCP(&encAtRest)
+		fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+		fillVaultforAzure(userData, &encAtRest)
+		fillKMSforGCP(userData, &encAtRest)
 
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
@@ -188,10 +183,12 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 }
 
-func fillKMSforAWS(alias string, encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
+func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
 	if (encAtRest.AwsKms == v1.AwsKms{}) {
 		return
 	}
+
+	alias := fmt.Sprintf("%s-kms", userData.Project.Spec.Name)
 
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
 	awsAction, err := cloud.NewAWSAction(GinkgoT())
@@ -199,11 +196,35 @@ func fillKMSforAWS(alias string, encAtRest *v1.EncryptionAtRest, atlasAccountArn
 	CustomerMasterKeyID, err := awsAction.CreateKMS(alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
+	RoleID := userData.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
 
-	encAtRest.AwsKms.CustomerMasterKeyID = CustomerMasterKeyID
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aws-secret",
+			Namespace: userData.Resources.Namespace,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
+		},
+		Data: map[string][]byte{
+			"CustomerMasterKeyID": []byte(CustomerMasterKeyID),
+			"RoleID":              []byte(RoleID),
+		},
+	}
+
+	Expect(userData.K8SClient.Create(context.Background(), secret)).To(Succeed())
+
+	encAtRest.AwsKms.SecretRef = common.ResourceRefNamespaced{
+		Name:      "aws-secret",
+		Namespace: userData.Resources.Namespace,
+	}
 }
 
-func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
+func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest) {
 	if (encAtRest.AzureKeyVault == v1.AzureKeyVault{}) {
 		return
 	}
@@ -214,10 +235,34 @@ func fillVaultforAzure(encAtRest *v1.EncryptionAtRest) {
 	keyID, err := azAction.CreateKeyVault(KeyName)
 	Expect(err).ToNot(HaveOccurred())
 
-	encAtRest.AzureKeyVault.KeyIdentifier = keyID
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "az-secret",
+			Namespace: userData.Resources.Namespace,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
+		},
+		Data: map[string][]byte{
+			"KeyIdentifier":  []byte(keyID),
+			"KeyVaultName":   []byte(KeyVaultName),
+			"Secret":         []byte(os.Getenv(AzureClientSecret)),
+			"SubscriptionID": []byte(os.Getenv(SubscriptionID)),
+		},
+	}
+	Expect(userData.K8SClient.Create(context.Background(), secret)).To(Succeed())
+
+	encAtRest.AzureKeyVault.SecretRef = common.ResourceRefNamespaced{
+		Name:      "az-secret",
+		Namespace: userData.Resources.Namespace,
+	}
 }
 
-func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
+func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest) {
 	if (encAtRest.GoogleCloudKms == v1.GoogleCloudKms{}) {
 		return
 	}
@@ -228,7 +273,29 @@ func fillKMSforGCP(encAtRest *v1.EncryptionAtRest) {
 	keyID, err := gcpAction.CreateKMS()
 	Expect(err).ToNot(HaveOccurred())
 
-	encAtRest.GoogleCloudKms.KeyVersionResourceID = keyID
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gcp-secret",
+			Namespace: userData.Resources.Namespace,
+			Labels: map[string]string{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			},
+		},
+		Data: map[string][]byte{
+			"ServiceAccountKey":    []byte(os.Getenv("GCP_SA_CRED")),
+			"KeyVersionResourceID": []byte(keyID),
+		},
+	}
+	Expect(userData.K8SClient.Create(context.Background(), secret)).To(Succeed())
+
+	encAtRest.GoogleCloudKms.SecretRef = common.ResourceRefNamespaced{
+		Name:      "gcp-secret",
+		Namespace: userData.Resources.Namespace,
+	}
 }
 
 func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
@@ -345,9 +412,9 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
-			fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
-			fillVaultforAzure(&encAtRest)
-			fillKMSforGCP(&encAtRest)
+			fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+			fillVaultforAzure(userData, &encAtRest)
+			fillKMSforGCP(userData, &encAtRest)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
@@ -361,122 +428,11 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 				}
 			}
 			Expect(roleARNToSet).NotTo(BeEmpty())
-			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
-			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
-		})
-	})
-
-	It("Should be able to create Encryption at REST on AWS with data from the Secret", func() {
-
-		testData = model.DataProvider(
-			"encryption-at-rest-aws",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject())
-
-		roles := []cloudaccess.Role{
-			{
-				Name: utils.RandomName(awsRoleNameBase),
-				AccessRole: v1.CloudProviderAccessRole{
-					ProviderName: "AWS",
-				},
-			},
-		}
-
-		userData := testData
-		encAtRest := v1.EncryptionAtRest{
-			AwsKms: v1.AwsKms{
-				Enabled: toptr.MakePtr(true),
-			},
-		}
-
-		By("Creating a project", func() {
-			actions.ProjectCreationFlow(testData)
-		})
-
-		var projectID string
-		By("Getting a project ID by name from Atlas", func() {
-			Eventually(func(g Gomega) error {
-				projectData, _, err := atlasClient.Client.Projects.GetOneProjectByName(userData.Context, userData.Project.Spec.Name)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(projectData).NotTo(BeNil())
-				ginkgo.GinkgoLogr.Info("Project ID", projectData.ID)
-				projectID = projectData.ID
-				return nil
-			}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
-		})
-
-		var atlasRoles *mongodbatlas.CloudProviderAccessRoles
-		By("Add cloud access role (AWS only)", func() {
-			cloudAccessRolesFlow(userData, roles)
-		})
-
-		By("Fetching project CPAs", func() {
-			var err error
-			atlasRoles, _, err = atlasClient.Client.CloudProviderAccess.ListRoles(userData.Context, projectID)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atlasRoles).NotTo(BeNil())
-			Expect(len(atlasRoles.AWSIAMRoles)).NotTo(BeZero())
-		})
-
-		secret := &corev1.Secret{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "aws-secret",
-				Namespace: userData.Resources.Namespace,
-				Labels: map[string]string{
-					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
-				},
-			},
-			Data: map[string][]byte{
-				"Region": []byte("US_EAST_1"),
-			},
-		}
-
-		By("Create KMS with AWS RoleID", func() {
-			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
-
-			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
-			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
-
-			encAtRest.AwsKms.Region = string(secret.Data["Region"])
-
-			fillKMSforAWS(fmt.Sprintf("%s-kms", userData.Project.Spec.Name), &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
-
-			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
-				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
-			userData.Project.Spec.EncryptionAtRest = &encAtRest
-
-			var roleARNToSet string
-			for _, r := range atlasRoles.AWSIAMRoles {
-				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
-					roleARNToSet = r.IAMAssumedRoleARN
-					break
-				}
-			}
-
-			Expect(roleARNToSet).NotTo(BeEmpty())
-
+			secretRef := userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef
+			secret := &corev1.Secret{}
+			Expect(userData.K8SClient.Get(userData.Context, secretRef.GetNamespacedName(), secret)).Should(Succeed())
 			secret.Data["RoleID"] = []byte(roleARNToSet)
-			secret.Data["CustomerMasterKeyID"] = []byte(encAtRest.AwsKms.CustomerMasterKeyID)
-			userData.Project.Spec.EncryptionAtRest.AwsKms.CustomerMasterKeyID = ""
-			userData.Project.Spec.EncryptionAtRest.AwsKms.RoleID = roleARNToSet
-			userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef = common.ResourceRefNamespaced{
-				Name:      secret.Name,
-				Namespace: secret.Namespace,
-			}
-
-			By("Creating a secret for AWS KMS", func() {
-				Expect(userData.K8SClient.Create(userData.Context, secret)).To(Succeed())
-			})
-
-			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+			Expect(userData.K8SClient.Update(userData.Context, secret)).Should(Succeed())
 			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
 		})
 	})
@@ -602,59 +558,57 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 	})
 
 	DescribeTable("fails if the service account key",
-		func(encryption *v1.EncryptionAtRest, errMsg string) {
-			testData.Project.Spec.EncryptionAtRest = encryption
+		func(key string, errMsg string) {
+			testData.Project.Spec.EncryptionAtRest = &v1.EncryptionAtRest{
+				GoogleCloudKms: v1.GoogleCloudKms{
+					Enabled: toptr.MakePtr(true),
+					SecretRef: common.ResourceRefNamespaced{
+						Name:      "gcp-test-secret",
+						Namespace: testData.Project.Namespace,
+					},
+				},
+			}
+			Expect(testData.K8SClient.Create(testData.Context, &corev1.Secret{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gcp-secret",
+					Namespace: testData.Project.Namespace,
+					Labels: map[string]string{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					},
+				},
+				Data: map[string][]byte{
+					"ServiceAccountKey":    []byte(key),
+				},
+			})).To(Succeed())
 			configureManager(testData)
 			createProjectWithValidationError(testData, errMsg)
 		},
 		Entry(
 			"is missing",
-			&v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: "",
-				},
-			},
+			"",
 			"missing Google Service Account Key but GCP KMS is enabled",
 		),
 		Entry(
 			"is an empty JSON object",
-			&v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: "{}",
-				},
-			},
+			"{}",
 			"invalid empty service account key",
 		),
 		Entry(
 			"is an empty JSON array",
-			&v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: "[]",
-				},
-			},
+			"[]",
 			"cannot unmarshal array into Go value",
 		),
 		Entry(
-			"has a bad PEM string",
-			&v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`),
-				},
-			},
+			`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`,
 			"failed to decode PEM block",
 		),
 		Entry(
 			"contains a bad URL",
-			&v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled:           toptr.MakePtr(true),
-					ServiceAccountKey: withProperUrls(`"token_uri": "http//badurl.example"`),
-				},
-			},
+			`"token_uri": "http//badurl.example"`,
 			"invalid URL address",
 		),
 	)
