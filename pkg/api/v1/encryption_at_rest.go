@@ -24,9 +24,32 @@ type AwsKms struct {
 	Region              string `json:"region,omitempty"` // The AWS region in which the AWS customer master key exists: CA_CENTRAL_1, US_EAST_1, US_EAST_2, US_WEST_1, US_WEST_2, SA_EAST_1
 	roleID              string // ID of an AWS IAM role authorized to manage an AWS customer master key.
 	Valid               *bool  `json:"valid,omitempty"` // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
-	// A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMasterKey and RoleID fields
+	// A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMasterKeyID and RoleID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
+}
+
+func (a *AwsKms) SetSecrets(accessKeyID, secretAccessKey, customerMasterKeyID, roleID string) {
+	a.accessKeyID = accessKeyID
+	a.secretAccessKey = secretAccessKey
+	a.customerMasterKeyID = customerMasterKeyID
+	a.roleID = roleID
+}
+
+func (a AwsKms) CustomerMasterKeyID() string {
+	return a.customerMasterKeyID
+}
+
+func (a AwsKms) AccessKeyID() string {
+	return a.accessKeyID
+}
+
+func (a AwsKms) RoleID() string {
+	return a.roleID
+}
+
+func (a AwsKms) SecretAccessKey() string {
+	return a.secretAccessKey
 }
 
 // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
@@ -45,19 +68,58 @@ type AzureKeyVault struct {
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
+func (az *AzureKeyVault) SetSecrets(subscriptionID, keyVaultName, keyIdentifier, secret string) {
+	az.subscriptionID = subscriptionID
+	az.keyVaultName = keyVaultName
+	az.keyIdentifier = keyIdentifier
+	az.secret = secret
+}
+
+func (az AzureKeyVault) KeyIdentifier() string {
+	return az.keyIdentifier
+}
+
+func (az AzureKeyVault) KeyVaultName() string {
+	return az.keyVaultName
+}
+
+func (az AzureKeyVault) SubscriptionID() string {
+	return az.subscriptionID
+}
+
+func (az AzureKeyVault) Secret() string {
+	return az.secret
+}
+
 // GoogleCloudKms specifies GCP KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type GoogleCloudKms struct {
-	Enabled              *bool  `json:"enabled,omitempty"`              // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
-	ServiceAccountKey    string `json:"serviceAccountKey,omitempty"`    // String-formatted JSON object containing GCP KMS credentials from your GCP account.
-	KeyVersionResourceID string `json:"keyVersionResourceID,omitempty"` // 	The Key Version Resource ID from your GCP account.
+	Enabled              *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	serviceAccountKey    string // String-formatted JSON object containing GCP KMS credentials from your GCP account.
+	keyVersionResourceID string // 	The Key Version Resource ID from your GCP account.
 	// A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
+func (g *GoogleCloudKms) SetSecrets(serviceAccountKey, keyVersionResourceID string) {
+	g.serviceAccountKey = serviceAccountKey
+	g.keyVersionResourceID = keyVersionResourceID
+}
+
+func (g GoogleCloudKms) KeyVersionResourceID() string {
+	return g.keyVersionResourceID
+}
+
+func (g GoogleCloudKms) ServiceAccountKey() string {
+	return g.serviceAccountKey
+}
+
 func (e EncryptionAtRest) ToAtlas(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
 	result := &mongodbatlas.EncryptionAtRest{
-		GroupID: projectID,
+		GroupID:        projectID,
+		AwsKms:         e.AwsKms.ToAtlas(),
+		GoogleCloudKms: e.GoogleCloudKms.ToAtlas(),
+		AzureKeyVault:  e.AzureKeyVault.ToAtlas(),
 	}
 
 	err := compat.JSONCopy(result, e)
@@ -79,8 +141,8 @@ func (a AwsKms) ToAtlas() mongodbatlas.AwsKms {
 func (g GoogleCloudKms) ToAtlas() mongodbatlas.GoogleCloudKms {
 	return mongodbatlas.GoogleCloudKms{
 		Enabled:              g.Enabled,
-		ServiceAccountKey:    g.ServiceAccountKey,
-		KeyVersionResourceID: g.KeyVersionResourceID,
+		ServiceAccountKey:    g.serviceAccountKey,
+		KeyVersionResourceID: g.keyVersionResourceID,
 	}
 }
 
