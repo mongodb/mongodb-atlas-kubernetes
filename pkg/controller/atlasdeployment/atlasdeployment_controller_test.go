@@ -648,14 +648,6 @@ func testProject(ns string) *v1.AtlasProject {
 	}
 }
 
-// func asAdvanced(deployment *v1.AtlasDeployment) *v1.AtlasDeployment {
-// 	if err := ConvertLegacyDeployment(&deployment.Spec); err != nil {
-// 		log.Fatalf("failed to convert legacy deployment: %v", err)
-// 	}
-// 	deployment.Spec.DeploymentSpec = nil
-// 	return deployment
-// }
-
 func intoAdvancedAtlasCluster(advancedSpec *v1.AdvancedDeploymentSpec) *mongodbatlas.AdvancedCluster {
 	ac, err := advancedSpec.ToAtlas()
 	if err != nil {

@@ -108,8 +108,6 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 	}
 
 	// TODO: Potential bug with disabling autoscaling if it was previously enabled
-	// j, _ := json.MarshalIndent(deploymentAsAtlas, "", " ")
-	// fmt.Println("DEBUG AFTER REGION SYNC", string(j))
 
 	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.DeploymentSpec.Name, deploymentAsAtlas)
 	if err != nil {

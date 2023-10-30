@@ -31,24 +31,6 @@ func TestClusterValidation(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: nil}
 			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
-		// t.Run("Instance size not empty when serverless", func(t *testing.T) {
-		// 	spec := mdbv1.AtlasDeploymentSpec{ServerlessSpec: nil, DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-		// 		ProviderSettings: &mdbv1.ProviderSettingsSpec{
-		// 			InstanceSizeName: "M10",
-		// 			ProviderName:     "SERVERLESS",
-		// 		},
-		// 	}}
-		// 	assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
-		// })
-		// t.Run("Instance size unset when not serverless", func(t *testing.T) {
-		// 	spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
-		// 		ProviderSettings: &mdbv1.ProviderSettingsSpec{
-		// 			InstanceSizeName: "",
-		// 			ProviderName:     "AWS",
-		// 		},
-		// 	}}
-		// 	assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
-		// })
 		t.Run("different instance sizes for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in the same region", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
@@ -251,18 +233,25 @@ func TestClusterValidation(t *testing.T) {
 }
 
 func TestDeploymentForGov(t *testing.T) {
-	// t.Run("should fail when deployment is configured to non-gov region", func(t *testing.T) {
-	// 	deploy := mdbv1.AtlasDeploymentSpec{
-	// 		DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-	//
-	// 			ProviderSettings: &mdbv1.ProviderSettingsSpec{
-	// 				RegionName: "EU_EAST_1",
-	// 			},
-	// 		},
-	// 	}
+	t.Run("should fail when deployment is configured to non-gov region", func(t *testing.T) {
+		deploy := mdbv1.AtlasDeploymentSpec{
+			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+					{
+						ZoneName:  "Zone EU",
+						NumShards: 1,
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							{
+								RegionName: "EU_EAST_1",
+							},
+						},
+					},
+				},
+			},
+		}
 
-	// 	assert.ErrorContains(t, deploymentForGov(&deploy, "GOV_REGIONS_ONLY"), "deployment in atlas for government support a restricted set of regions: EU_EAST_1 is not part of AWS for government regions")
-	// })
+		assert.ErrorContains(t, deploymentForGov(&deploy, "GOV_REGIONS_ONLY"), "deployment in atlas for government support a restricted set of regions: EU_EAST_1 is not part of AWS for government regions")
+	})
 
 	t.Run("should fail when advanced deployment is configured to non-gov region", func(t *testing.T) {
 		deploy := mdbv1.AtlasDeploymentSpec{

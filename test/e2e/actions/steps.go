@@ -73,12 +73,6 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 
 	deployment := data.InitialDeployments[0]
 	switch {
-	// case deployment.Spec.AdvancedDeploymentSpec != nil:
-	// 	atlasClient, err := atlas.AClient()
-	// 	Expect(err).To(BeNil())
-	// 	advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
-	// 	Expect(err).To(BeNil())
-	// 	Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
@@ -116,22 +110,6 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
-
-	// WHY all this if this can be checked directly above???
-	// deployment := input.Deployments[0]
-	// switch {
-	// case deployment.Spec.ServerlessSpec != nil:
-	// 	atlasClient, err := atlas.AClient()
-	// 	Expect(err).To(BeNil())
-	// 	serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, deployment.Spec.ServerlessSpec.Name)
-	// 	Expect(err).To(BeNil())
-	// 	Expect(serverlessInstance.StateName).To(Equal("IDLE"))
-	// default:
-	// 	aClient := atlas.GetClientOrFail()
-	// 	deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
-	// 	Expect(err).To(BeNil())
-	// 	Expect(deployment.StateName).Should(Equal("IDLE"))
-	// }
 }
 
 func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
