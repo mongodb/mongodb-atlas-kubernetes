@@ -14,7 +14,7 @@ mkdir -p "${crds_dir}"
 mkdir -p "${openshift}"
 
 # Generate configuration and save it to `all-in-one`
-controller-gen crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
+controller-gen crd:crdVersions=v1,ignoreUnexportedFields=true rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
 cd config/manager && kustomize edit set image controller="${INPUT_IMAGE_URL}"
 cd -
 ./scripts/split_roles_yaml.sh
