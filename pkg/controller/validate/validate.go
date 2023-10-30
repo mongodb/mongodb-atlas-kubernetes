@@ -475,10 +475,10 @@ func encryptionAtRest(encryption *mdbv1.EncryptionAtRest) error {
 	if encryption != nil &&
 		encryption.GoogleCloudKms.Enabled != nil &&
 		*encryption.GoogleCloudKms.Enabled {
-		if encryption.GoogleCloudKms.ServiceAccountKey == "" {
+		if encryption.GoogleCloudKms.ServiceAccountKey() == "" {
 			return fmt.Errorf("missing Google Service Account Key but GCP KMS is enabled")
 		}
-		if err := gceServiceAccountKey(encryption.GoogleCloudKms.ServiceAccountKey); err != nil {
+		if err := gceServiceAccountKey(encryption.GoogleCloudKms.ServiceAccountKey()); err != nil {
 			return fmt.Errorf("failed to validate Google Service Account Key: %w", err)
 		}
 	}

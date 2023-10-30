@@ -99,14 +99,12 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 }
 
 func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "Region", "RoleID")
+	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "AccessKeyID", "SecretAccessKey", "CustomerMasterKeyID", "RoleID")
 	if err != nil {
 		return watchObj, err
 	}
 
-	awsKms.CustomerMasterKeyID = fieldData["CustomerMasterKeyID"]
-	awsKms.Region = fieldData["Region"]
-	awsKms.RoleID = fieldData["RoleID"]
+	awsKms.SetSecrets(fieldData["AccessKeyID"], fieldData["SecretAccessKey"], fieldData["CustomerMasterKeyID"], fieldData["RoleID"])
 
 	return watchObj, nil
 }
@@ -117,26 +115,23 @@ func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *md
 		return watchObj, err
 	}
 
-	gkms.ServiceAccountKey = fieldData["ServiceAccountKey"]
-	gkms.KeyVersionResourceID = fieldData["KeyVersionResourceID"]
+	gkms.SetSecrets(fieldData["ServiceAccountKey"], fieldData["KeyVersionResourceID"])
 
 	return watchObj, nil
 }
 
 func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "ClientID", "Secret", "AzureEnvironment", "SubscriptionID", "ResourceGroupName", "KeyVaultName", "KeyIdentifier", "TenantID")
+	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "Secret", "SubscriptionID", "KeyVaultName", "KeyIdentifier")
 	if err != nil {
 		return watchObj, err
 	}
 
+	azureVault.SetSecrets(fieldData["SubscriptionID"], fieldData["KeyVaultName"], fieldData["KeyIdentifier"], fieldData["Secret"])
+
 	azureVault.ClientID = fieldData["ClientID"]
-	azureVault.Secret = fieldData["Secret"]
 	azureVault.AzureEnvironment = fieldData["AzureEnvironment"]
-	azureVault.SubscriptionID = fieldData["SubscriptionID"]
 	azureVault.TenantID = fieldData["TenantID"]
 	azureVault.ResourceGroupName = fieldData["ResourceGroupName"]
-	azureVault.KeyVaultName = fieldData["KeyVaultName"]
-	azureVault.KeyIdentifier = fieldData["KeyIdentifier"]
 
 	return watchObj, nil
 }
@@ -437,10 +432,11 @@ func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms) bool {
 		operator.Enabled = toptr.MakePtr(false)
 	}
 
+	// Atlas API does not return SecretAccessKey or RoleID
 	return *operator.Enabled == *atlas.Enabled &&
-		operator.Region == atlas.Region &&
-		operator.CustomerMasterKeyID == atlas.CustomerMasterKeyID &&
-		operator.AccessKeyID == atlas.AccessKeyID
+		operator.AccessKeyID() == atlas.AccessKeyID &&
+		operator.CustomerMasterKeyID() == atlas.CustomerMasterKeyID &&
+		operator.Region == atlas.Region
 }
 
 func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms) bool {
@@ -448,8 +444,9 @@ func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleC
 		operator.Enabled = toptr.MakePtr(false)
 	}
 
+	// Atlas API does not return service account key
 	return *operator.Enabled == *atlas.Enabled &&
-		operator.KeyVersionResourceID == atlas.KeyVersionResourceID
+		operator.KeyVersionResourceID() == atlas.KeyVersionResourceID
 }
 
 func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault) bool {
@@ -460,9 +457,9 @@ func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureK
 	return *operator.Enabled == *atlas.Enabled &&
 		operator.AzureEnvironment == atlas.AzureEnvironment &&
 		operator.ClientID == atlas.ClientID &&
-		operator.KeyIdentifier == atlas.KeyIdentifier &&
-		operator.KeyVaultName == atlas.KeyVaultName &&
+		operator.KeyIdentifier() == atlas.KeyIdentifier &&
+		operator.KeyVaultName() == atlas.KeyVaultName &&
 		operator.ResourceGroupName == atlas.ResourceGroupName &&
-		operator.SubscriptionID == atlas.SubscriptionID &&
+		operator.SubscriptionID() == atlas.SubscriptionID &&
 		operator.TenantID == atlas.TenantID
 }

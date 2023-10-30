@@ -685,8 +685,7 @@ func testEncryptionAtRest(enabled bool) *mdbv1.EncryptionAtRest {
 	flag := enabled
 	return &mdbv1.EncryptionAtRest{
 		GoogleCloudKms: mdbv1.GoogleCloudKms{
-			Enabled:           &flag,
-			ServiceAccountKey: sampleSAKey(),
+			Enabled: &flag,
 		},
 	}
 }
@@ -710,50 +709,49 @@ func TestEncryptionAtRestValidation(t *testing.T) {
 
 	t.Run("google service account key validation succeeds if encryption is enabled but the key is empty", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = ""
+		enc.GoogleCloudKms.SetSecrets("", "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "missing Google Service Account Key but GCP KMS is enabled")
 	})
 
 	t.Run("google service account key validation succeeds for a good key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKey()
-		fmt.Printf("g key=%q", enc.GoogleCloudKms.ServiceAccountKey)
+		enc.GoogleCloudKms.SetSecrets(sampleSAKey(), "test")
 		assert.NoError(t, encryptionAtRest(enc))
 	})
 
 	t.Run("google service account key validation succeeds for a good key in a single line", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = sampleSAKeyOneLine()
+		enc.GoogleCloudKms.SetSecrets(sampleSAKeyOneLine(), "test")
 		assert.NoError(t, encryptionAtRest(enc))
 	})
 
 	t.Run("google service account key validation fails for an empty json key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = "{}"
+		enc.GoogleCloudKms.SetSecrets("{}", "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "invalid empty service account key")
 	})
 
 	t.Run("google service account key validation fails for an empty array json as key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = "[]"
+		enc.GoogleCloudKms.SetSecrets("[]", "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal array into Go value")
 	})
 
 	t.Run("google service account key validation fails for a json object with a wrong field type", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = `{"type":true}`
+		enc.GoogleCloudKms.SetSecrets(`{"type":true}`, "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal bool")
 	})
 
 	t.Run("google service account key validation fails for a bad pem key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`)
+		enc.GoogleCloudKms.SetSecrets(withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`), "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "failed to decode PEM")
 	})
 
 	t.Run("google service account key validation fails for a bad URL", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.ServiceAccountKey = withProperUrls(`"token_uri": "http//badurl.example"`)
+		enc.GoogleCloudKms.SetSecrets(withProperUrls(`"token_uri": "http//badurl.example"`), "test")
 		assert.ErrorContains(t, encryptionAtRest(enc), "invalid URL address")
 	})
 }
