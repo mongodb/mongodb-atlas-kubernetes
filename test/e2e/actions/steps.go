@@ -96,7 +96,6 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
-		// "60m", "5m",
 	).WithTimeout(30*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
 
 	Eventually(func(g Gomega) {

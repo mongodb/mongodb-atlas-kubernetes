@@ -176,15 +176,6 @@ func TestClusterValidation(t *testing.T) {
 			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
 			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
-		// t.Run("Serverless Cluster", func(t *testing.T) {
-		// 	spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-		// 		ProviderSettings: &mdbv1.ProviderSettingsSpec{
-		// 			ProviderName: "SERVERLESS",
-		// 		},
-		// 	}}
-		// 	assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
-		// 	assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
-		// })
 		t.Run("Advanced cluster with replication config", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{
 				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
