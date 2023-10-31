@@ -36,11 +36,13 @@ import (
 )
 
 const (
-	AzureClientID     = "AZURE_CLIENT_ID"
-	KeyVaultName      = "ako-kms-test"
-	AzureClientSecret = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
-	AzureEnvironment  = "AZURE"
-	KeyName           = "encryption-at-rest-test-key"
+	AWSAccessKey       = "AWS_ACCESS_KEY_ID"
+	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	AzureClientID      = "AZURE_CLIENT_ID"
+	KeyVaultName       = "ako-kms-test"
+	AzureClientSecret  = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
+	AzureEnvironment   = "AZURE"
+	KeyName            = "encryption-at-rest-test-key"
 )
 
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
@@ -196,7 +198,6 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtR
 	CustomerMasterKeyID, err := awsAction.CreateKMS(alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
-	RoleID := userData.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
 
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -211,8 +212,10 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtR
 			},
 		},
 		Data: map[string][]byte{
+			"AccessKeyID":         []byte(os.Getenv(AWSAccessKey)),
+			"SecretAccessKey":     []byte(os.Getenv(AWSSecretAccessKey)),
 			"CustomerMasterKeyID": []byte(CustomerMasterKeyID),
-			"RoleID":              []byte(RoleID),
+			"RoleID":              []byte(assumedRoleArn),
 		},
 	}
 
@@ -581,7 +584,7 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 					},
 				},
 				Data: map[string][]byte{
-					"ServiceAccountKey":    []byte(key),
+					"ServiceAccountKey": []byte(key),
 				},
 			})).To(Succeed())
 			configureManager(testData)
@@ -603,12 +606,12 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 			"cannot unmarshal array into Go value",
 		),
 		Entry(
-			`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`,
+			withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`),
 			"failed to decode PEM block",
 		),
 		Entry(
 			"contains a bad URL",
-			`"token_uri": "http//badurl.example"`,
+			withProperUrls(`"token_uri": "http//badurl.example"`),
 			"invalid URL address",
 		),
 	)
