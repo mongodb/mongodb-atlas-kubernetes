@@ -417,21 +417,25 @@ func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool,
 		return true, nil
 	}
 
-	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear) ||
-		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear), nil
+	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear, true) ||
+		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear, false), nil
 }
 
-func areEaRConfigEqual(operator mdbv1.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest) bool {
-	return areAWSConfigEqual(operator.AwsKms, atlas.AwsKms) &&
-		areGCPConfigEqual(operator.GoogleCloudKms, atlas.GoogleCloudKms) &&
-		areAzureConfigEqual(operator.AzureKeyVault, atlas.AzureKeyVault)
+func areEaRConfigEqual(operator mdbv1.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest, lastApplied bool) bool {
+	return areAWSConfigEqual(operator.AwsKms, atlas.AwsKms, lastApplied) &&
+		areGCPConfigEqual(operator.GoogleCloudKms, atlas.GoogleCloudKms, lastApplied) &&
+		areAzureConfigEqual(operator.AzureKeyVault, atlas.AzureKeyVault, lastApplied)
 }
 
-func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms) bool {
+func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = toptr.MakePtr(false)
 	}
 
+	if lastApplied {
+		return *operator.Enabled == *atlas.Enabled &&
+			operator.Region == atlas.Region
+	}
 	// Atlas API does not return SecretAccessKey or RoleID
 	return *operator.Enabled == *atlas.Enabled &&
 		operator.AccessKeyID() == atlas.AccessKeyID &&
@@ -439,9 +443,13 @@ func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms) bool {
 		operator.Region == atlas.Region
 }
 
-func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms) bool {
+func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = toptr.MakePtr(false)
+	}
+
+	if lastApplied {
+		return *operator.Enabled == *atlas.Enabled
 	}
 
 	// Atlas API does not return service account key
@@ -449,9 +457,18 @@ func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleC
 		operator.KeyVersionResourceID() == atlas.KeyVersionResourceID
 }
 
-func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault) bool {
+func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = toptr.MakePtr(false)
+	}
+
+	if lastApplied {
+		return *operator.Enabled == *atlas.Enabled &&
+			operator.AzureEnvironment == atlas.AzureEnvironment &&
+			operator.ClientID == atlas.ClientID &&
+			operator.ResourceGroupName == atlas.ResourceGroupName &&
+			operator.TenantID == atlas.TenantID
+
 	}
 
 	return *operator.Enabled == *atlas.Enabled &&

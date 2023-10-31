@@ -173,6 +173,10 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 					AwsKms: mdbv1.AwsKms{
 						Enabled: toptr.MakePtr(true),
 						Region:  "eu-west-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
@@ -182,7 +186,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("", "", "aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
@@ -222,6 +226,10 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 					AwsKms: mdbv1.AwsKms{
 						Enabled: toptr.MakePtr(true),
 						Region:  "eu-central-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
@@ -231,7 +239,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("", "", "aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
@@ -295,24 +303,49 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 					AwsKms: mdbv1.AwsKms{
 						Enabled: toptr.MakePtr(true),
 						Region:  "eu-central-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
 				},
 			},
 		}
-		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("", "", "aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
+		secretData := map[string][]byte{
+			"AccessKeyID":         []byte("testAccessKeyID"),
+			"SecretAccessKey":     []byte("testSecretAccessKey"),
+			"CustomerMasterKeyID": []byte("aws-kms-master-key"),
+			"RoleID":              []byte("aws:id:arn/my-role"),
+		}
+
+		fakeClient := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
+			&v1.Secret{
+				Data: secretData,
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-aws-secret",
+					Namespace: "test-namespace",
+				},
+			},
+		}...).Build()
+
 		reconciler := &AtlasProjectReconciler{
 			SubObjectDeletionProtection: true,
+			Client:                      fakeClient,
 		}
 		result := reconciler.ensureEncryptionAtRest(workflowCtx, akoProject, true)
 
@@ -808,7 +841,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.operator.SetSecrets("sub id", "vault name", "key id", "")
-			assert.Equalf(t, tt.want, areAzureConfigEqual(tt.args.operator, tt.args.atlas), "areAzureConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			assert.Equalf(t, tt.want, areAzureConfigEqual(tt.args.operator, tt.args.atlas, false), "areAzureConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
@@ -877,7 +910,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.operator.SetSecrets("", "key version id")
-			assert.Equalf(t, tt.want, areGCPConfigEqual(tt.args.operator, tt.args.atlas), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			assert.Equalf(t, tt.want, areGCPConfigEqual(tt.args.operator, tt.args.atlas, false), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
@@ -946,7 +979,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.operator.SetSecrets("", "", "customer master key", "")
-			assert.Equalf(t, tt.want, areAWSConfigEqual(tt.args.operator, tt.args.atlas), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			assert.Equalf(t, tt.want, areAWSConfigEqual(tt.args.operator, tt.args.atlas, false), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
