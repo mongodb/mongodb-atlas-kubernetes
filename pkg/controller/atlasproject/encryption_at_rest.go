@@ -128,11 +128,6 @@ func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVaul
 
 	azureVault.SetSecrets(fieldData["SubscriptionID"], fieldData["KeyVaultName"], fieldData["KeyIdentifier"], fieldData["Secret"])
 
-	azureVault.ClientID = fieldData["ClientID"]
-	azureVault.AzureEnvironment = fieldData["AzureEnvironment"]
-	azureVault.TenantID = fieldData["TenantID"]
-	azureVault.ResourceGroupName = fieldData["ResourceGroupName"]
-
 	return watchObj, nil
 }
 
