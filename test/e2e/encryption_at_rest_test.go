@@ -543,6 +543,7 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 			40000,
 			[]func(*model.TestDataProvider){},
 		).WithProject(data.DefaultProject())
+		actions.ProjectCreationFlow(testData)
 	})
 
 	_ = AfterEach(func() {
@@ -571,6 +572,7 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 					},
 				},
 			}
+			configureManager(testData)
 			Expect(testData.K8SClient.Create(testData.Context, &corev1.Secret{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Secret",
@@ -578,7 +580,7 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "gcp-secret",
-					Namespace: testData.Project.Namespace,
+					Namespace: testData.Resources.Namespace,
 					Labels: map[string]string{
 						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 					},
@@ -587,7 +589,6 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 					"ServiceAccountKey": []byte(key),
 				},
 			})).To(Succeed())
-			configureManager(testData)
 			createProjectWithValidationError(testData, errMsg)
 		},
 		Entry(
@@ -606,6 +607,7 @@ var _ = Describe("Encryption at rest GCP key validation", Label("encryption-at-r
 			"cannot unmarshal array into Go value",
 		),
 		Entry(
+			"has a bad PEM string",
 			withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`),
 			"failed to decode PEM block",
 		),
