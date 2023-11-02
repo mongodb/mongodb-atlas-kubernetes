@@ -37,7 +37,7 @@ import (
 
 const (
 	AWSAccessKey       = "AWS_ACCESS_KEY_ID"
-	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY" //#nosec G101 -- False positive; this is the env var, not the secret itself
 	AzureClientID      = "AZURE_CLIENT_ID"
 	KeyVaultName       = "ako-kms-test"
 	AzureClientSecret  = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself

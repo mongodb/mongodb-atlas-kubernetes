@@ -463,7 +463,6 @@ func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureK
 			operator.ClientID == atlas.ClientID &&
 			operator.ResourceGroupName == atlas.ResourceGroupName &&
 			operator.TenantID == atlas.TenantID
-
 	}
 
 	return *operator.Enabled == *atlas.Enabled &&
