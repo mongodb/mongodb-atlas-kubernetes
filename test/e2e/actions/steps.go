@@ -16,7 +16,6 @@ import (
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlasdeployment"
 	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
@@ -74,12 +73,6 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 
 	deployment := data.InitialDeployments[0]
 	switch {
-	case deployment.Spec.AdvancedDeploymentSpec != nil:
-		atlasClient, err := atlas.AClient()
-		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
-		Expect(err).To(BeNil())
-		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
 	case deployment.Spec.ServerlessSpec != nil:
 		atlasClient, err := atlas.AClient()
 		Expect(err).To(BeNil())
@@ -103,34 +96,19 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
-		"60m", "1m",
-	).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
+	).WithTimeout(30*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
+
+	Eventually(func(g Gomega) {
+		deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
+			input.Namespace, input.Deployments[0].ObjectMeta.GetName())
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
+	}).WithTimeout(30 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
 
 	deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
-
-	deployment := input.Deployments[0]
-	switch {
-	case deployment.Spec.AdvancedDeploymentSpec != nil:
-		atlasClient, err := atlas.AClient()
-		Expect(err).To(BeNil())
-		advancedDeployment, err := atlasClient.GetDeployment(input.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
-		Expect(err).To(BeNil())
-		Expect(advancedDeployment.StateName).To(Equal("IDLE"))
-	case deployment.Spec.ServerlessSpec != nil:
-		atlasClient, err := atlas.AClient()
-		Expect(err).To(BeNil())
-		serverlessInstance, err := atlasClient.GetServerlessInstance(input.ProjectID, deployment.Spec.ServerlessSpec.Name)
-		Expect(err).To(BeNil())
-		Expect(serverlessInstance.StateName).To(Equal("IDLE"))
-	default:
-		aClient := atlas.GetClientOrFail()
-		deployment, err := aClient.GetDeployment(input.ProjectID, input.Deployments[0].Spec.GetDeploymentName())
-		Expect(err).To(BeNil())
-		Expect(deployment.StateName).Should(Equal("IDLE"))
-	}
 }
 
 func WaitProjectWithoutGenerationCheck(data *model.TestDataProvider) {
@@ -187,51 +165,8 @@ func CheckUserExistInAtlas(data *model.TestDataProvider) func() bool {
 	}
 }
 
-func CompareDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas.Cluster) {
-	ExpectWithOffset(1, created).To(MatchFields(IgnoreExtras, Fields{
-		"Name": Equal(requested.DeploymentSpec.Name),
-		"ProviderSettings": PointTo(MatchFields(IgnoreExtras, Fields{
-			"InstanceSizeName": Equal(requested.DeploymentSpec.ProviderSettings.InstanceSizeName),
-			"ProviderName":     Equal(string(requested.DeploymentSpec.ProviderSettings.ProviderName)),
-		})),
-		"ConnectionStrings": PointTo(MatchFields(IgnoreExtras, Fields{
-			"Standard":    Not(BeEmpty()),
-			"StandardSrv": Not(BeEmpty()),
-		})),
-	}), "Deployment should be the same as requested by the user")
-
-	if len(requested.DeploymentSpec.ReplicationSpecs) > 0 {
-		for i, replica := range requested.DeploymentSpec.ReplicationSpecs {
-			for key, region := range replica.RegionsConfig {
-				// different type
-				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].AnalyticsNodes).Should(PointTo(Equal(*region.AnalyticsNodes)), "Replica Spec: AnalyticsNodes is not the same")
-				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ElectableNodes).Should(PointTo(Equal(*region.ElectableNodes)), "Replica Spec: ElectableNodes is not the same")
-				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].Priority).Should(PointTo(Equal(*region.Priority)), "Replica Spec: Priority is not the same")
-				ExpectWithOffset(1, created.ReplicationSpecs[i].RegionsConfig[key].ReadOnlyNodes).Should(PointTo(Equal(*region.ReadOnlyNodes)), "Replica Spec: ReadOnlyNodes is not the same")
-			}
-		}
-	} else {
-		ExpectWithOffset(1, requested.DeploymentSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
-			"RegionName": Equal(created.ProviderSettings.RegionName),
-		})), "Deployment should be the same as requested by the user: Region Name")
-	}
-	if requested.DeploymentSpec.ProviderSettings.ProviderName == "TENANT" {
-		ExpectWithOffset(1, requested.DeploymentSpec.ProviderSettings).To(PointTo(MatchFields(IgnoreExtras, Fields{
-			"BackingProviderName": Equal(created.ProviderSettings.BackingProviderName),
-		})), "Deployment should be the same as requested by the user: Backing Provider Name")
-	}
-}
-
 func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas.AdvancedCluster) {
-	advancedSpec := requested.AdvancedDeploymentSpec
-
-	if advancedSpec == nil {
-		converted := v1.AtlasDeploymentSpec(requested)
-		err := atlasdeployment.ConvertLegacyDeployment(&converted)
-		Expect(err).ShouldNot(HaveOccurred())
-		converted.DeploymentSpec = nil
-		advancedSpec = converted.AdvancedDeploymentSpec
-	}
+	advancedSpec := requested.DeploymentSpec
 
 	Expect(created.MongoDBVersion).ToNot(BeEmpty())
 	Expect(created.MongoDBVersion).ToNot(BeEmpty())

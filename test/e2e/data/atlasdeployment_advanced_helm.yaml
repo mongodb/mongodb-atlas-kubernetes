@@ -5,13 +5,17 @@ metadata:
 spec:
   projectRef:
     name: my-project
-  advancedDeploymentSpec:
+  deploymentSpec:
     clusterType: REPLICASET
     name: advanced-deployment
     replicationSpecs:
-      - regionConfigs:
+      - zoneName: Zone1
+        numShards: 1
+        regionConfigs:
           - electableSpecs:
               instanceSize: M5
+              nodeCount: 1
             providerName: TENANT
             backingProviderName: AWS
             regionName: US_EAST_1
+            priority: 7

@@ -25,7 +25,7 @@ import (
 const FreeTier = "M0"
 
 func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	advancedDeploymentSpec := deployment.Spec.AdvancedDeploymentSpec
+	advancedDeploymentSpec := deployment.Spec.DeploymentSpec
 
 	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedDeploymentSpec.Name)
 
@@ -50,12 +50,12 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 		}
 	}
 
-	result := EnsureCustomZoneMapping(ctx, project.ID(), deployment.Spec.AdvancedDeploymentSpec.CustomZoneMapping, advancedDeployment.Name)
+	result := EnsureCustomZoneMapping(ctx, project.ID(), deployment.Spec.DeploymentSpec.CustomZoneMapping, advancedDeployment.Name)
 	if !result.IsOk() {
 		return advancedDeployment, result
 	}
 
-	result = EnsureManagedNamespaces(ctx, project.ID(), deployment.Spec.AdvancedDeploymentSpec.ClusterType, deployment.Spec.AdvancedDeploymentSpec.ManagedNamespaces, advancedDeployment.Name)
+	result = EnsureManagedNamespaces(ctx, project.ID(), deployment.Spec.DeploymentSpec.ClusterType, deployment.Spec.DeploymentSpec.ManagedNamespaces, advancedDeployment.Name)
 	if !result.IsOk() {
 		return advancedDeployment, result
 	}
@@ -78,7 +78,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
-	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.AdvancedDeploymentSpec)
+	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.DeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -92,7 +92,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
 			specDeployment = mdbv1.AdvancedDeploymentSpec{
-				Paused: deployment.Spec.AdvancedDeploymentSpec.Paused,
+				Paused: deployment.Spec.DeploymentSpec.Paused,
 			}
 		} else {
 			// otherwise, don't send the paused field
@@ -107,7 +107,9 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.AdvancedDeploymentSpec.Name, deploymentAsAtlas)
+	// TODO: Potential bug with disabling autoscaling if it was previously enabled
+
+	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.DeploymentSpec.Name, deploymentAsAtlas)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}

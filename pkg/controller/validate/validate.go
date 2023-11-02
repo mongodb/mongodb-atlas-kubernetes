@@ -39,12 +39,12 @@ type googleServiceAccountKey struct {
 func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
 	var err error
 
-	if allAreNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.advancedDeploymentSpec or spec.serverlessSpec to be present, but none were"))
+	if allAreNil(deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec to be present, but none were"))
 	}
 
-	if moreThanOneIsNonNil(deploymentSpec.AdvancedDeploymentSpec, deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
-		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec, spec.advancedDeploymentSpec or spec.serverlessSpec, more than one were present"))
+	if moreThanOneIsNonNil(deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
+		err = errors.Join(err, errors.New("expected exactly one of spec.deploymentSpec or spec.serverlessSpec, more than one were present"))
 	}
 
 	if isGov {
@@ -54,26 +54,17 @@ func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regio
 	}
 
 	if deploymentSpec.DeploymentSpec != nil {
-		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName == "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName != "SERVERLESS") {
-			err = errors.Join(err, errors.New("must specify instanceSizeName if provider name is not SERVERLESS"))
-		}
-		if deploymentSpec.DeploymentSpec.ProviderSettings != nil && (deploymentSpec.DeploymentSpec.ProviderSettings.InstanceSizeName != "" && deploymentSpec.DeploymentSpec.ProviderSettings.ProviderName == "SERVERLESS") {
-			err = errors.Join(err, errors.New("must not specify instanceSizeName if provider name is SERVERLESS"))
-		}
-	}
-
-	if deploymentSpec.AdvancedDeploymentSpec != nil {
-		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		autoscalingErr := autoscalingForAdvancedDeployment(deploymentSpec.DeploymentSpec.ReplicationSpecs)
 		if autoscalingErr != nil {
 			err = errors.Join(err, autoscalingErr)
 		}
 
-		instanceSizeErr := instanceSizeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		instanceSizeErr := instanceSizeForAdvancedDeployment(deploymentSpec.DeploymentSpec.ReplicationSpecs)
 		if instanceSizeErr != nil {
 			err = errors.Join(err, instanceSizeErr)
 		}
 
-		instanceSizeRangeErr := instanceSizeRangeForAdvancedDeployment(deploymentSpec.AdvancedDeploymentSpec.ReplicationSpecs)
+		instanceSizeRangeErr := instanceSizeRangeForAdvancedDeployment(deploymentSpec.DeploymentSpec.ReplicationSpecs)
 		if instanceSizeRangeErr != nil {
 			err = errors.Join(err, instanceSizeRangeErr)
 		}
@@ -86,14 +77,7 @@ func deploymentForGov(deployment *mdbv1.AtlasDeploymentSpec, regionUsageRestrict
 	var err error
 
 	if deployment.DeploymentSpec != nil {
-		regionErr := validCloudGovRegion(regionUsageRestrictions, deployment.DeploymentSpec.ProviderSettings.RegionName)
-		if regionErr != nil {
-			err = errors.Join(err, fmt.Errorf("deployment in atlas for government support a restricted set of regions: %w", regionErr))
-		}
-	}
-
-	if deployment.AdvancedDeploymentSpec != nil {
-		for _, replication := range deployment.AdvancedDeploymentSpec.ReplicationSpecs {
+		for _, replication := range deployment.DeploymentSpec.ReplicationSpecs {
 			for _, region := range replication.RegionConfigs {
 				regionErr := validCloudGovRegion(regionUsageRestrictions, region.RegionName)
 				if regionErr != nil {
@@ -247,12 +231,6 @@ func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.Atla
 		}
 
 		if copySetting.ShouldCopyOplogs != nil && *copySetting.ShouldCopyOplogs {
-			if deployment.Spec.AdvancedDeploymentSpec != nil &&
-				(deployment.Spec.AdvancedDeploymentSpec.PitEnabled == nil ||
-					!*deployment.Spec.AdvancedDeploymentSpec.PitEnabled) {
-				err = errors.Join(err, fmt.Errorf("copy setting at position %d: you must enable pit before enable copyOplogs", position))
-			}
-
 			if deployment.Spec.DeploymentSpec != nil &&
 				(deployment.Spec.DeploymentSpec.PitEnabled == nil ||
 					!*deployment.Spec.DeploymentSpec.PitEnabled) {

@@ -84,7 +84,7 @@ var _ = Describe("Deployment Backup Configuration", Label("backup-config"), func
 func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 	By("Enable backup for deployment", func() {
 		Expect(data.K8SClient.Get(data.Context, client.ObjectKeyFromObject(data.InitialDeployments[0]), data.InitialDeployments[0])).To(Succeed())
-		data.InitialDeployments[0].Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+		data.InitialDeployments[0].Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
 		Expect(data.K8SClient.Update(data.Context, data.InitialDeployments[0])).To(Succeed())
 
 		Eventually(func(g Gomega) bool {

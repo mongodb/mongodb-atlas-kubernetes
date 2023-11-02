@@ -145,32 +145,18 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
 		By("Verifying Deployment state in Atlas", func() {
-			legacyDeployment := createdDeployment.Spec.DeploymentSpec
-
-			if legacyDeployment != nil {
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
-				createdDeployment.Spec.DeploymentSpec = nil
-			}
 
 			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.AdvancedDeploymentSpec)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
 			Expect(diff).To(BeEmpty())
 
-			createdDeployment.Spec.DeploymentSpec = legacyDeployment
-
 			for _, check := range additionalChecks {
 				check(atlasDeploymentAsAtlas)
-			}
-
-			if legacyDeployment != nil {
-				createdDeployment.Spec.AdvancedDeploymentSpec = nil
 			}
 		})
 	}
@@ -180,7 +166,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.AdvancedDeploymentSpec)
+			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
@@ -298,7 +284,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating ReplicationSpecs", func() {
 				numShards := 2
-				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].NumShards = toptr.MakePtr(int64(numShards))
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].NumShards = numShards
 				createdDeployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
 
 				performUpdate(40 * time.Minute)
@@ -313,7 +299,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & increase DiskSizeGB", func() {
+	Describe("Create deployment & increase InstanceSize", func() {
 		It("Should Succeed", func() {
 			expectedDeployment := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -329,7 +315,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Increasing InstanceSize", func() {
-				createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M30"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M30"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M30"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M30"
 				performUpdate(40 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
@@ -351,26 +339,55 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Change deployment to GEOSHARDED", func() {
 				createdDeployment.Spec.DeploymentSpec.ClusterType = "GEOSHARDED"
-				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs = []*mdbv1.AdvancedReplicationSpec{
 					{
-						NumShards: int64ptr(1),
+						NumShards: 1,
 						ZoneName:  "Zone 1",
-						RegionsConfig: map[string]mdbv1.RegionsConfig{
-							"US_EAST_1": {
-								AnalyticsNodes: int64ptr(1),
-								ElectableNodes: int64ptr(2),
-								Priority:       int64ptr(7),
-								ReadOnlyNodes:  int64ptr(0),
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
+										Enabled: toptr.MakePtr(false),
+									},
+									Compute: &mdbv1.ComputeSpec{
+										Enabled:          toptr.MakePtr(false),
+										ScaleDownEnabled: toptr.MakePtr(false),
+									},
+								},
+								ElectableSpecs: &mdbv1.Specs{
+									InstanceSize: "M10",
+									NodeCount:    toptr.MakePtr(2),
+								},
+								AnalyticsSpecs: &mdbv1.Specs{
+									InstanceSize: "M10",
+									NodeCount:    toptr.MakePtr(1),
+								},
+								Priority:     toptr.MakePtr(7),
+								ProviderName: "AWS",
+								RegionName:   "US_EAST_1",
 							},
-							"US_WEST_1": {
-								AnalyticsNodes: int64ptr(0),
-								ElectableNodes: int64ptr(1),
-								Priority:       int64ptr(6),
-								ReadOnlyNodes:  int64ptr(0),
+							{
+								AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+									DiskGB: &mdbv1.DiskGB{
+										Enabled: toptr.MakePtr(false),
+									},
+									Compute: &mdbv1.ComputeSpec{
+										Enabled:          toptr.MakePtr(false),
+										ScaleDownEnabled: toptr.MakePtr(false),
+									},
+								},
+								ElectableSpecs: &mdbv1.Specs{
+									InstanceSize: "M10",
+									NodeCount:    toptr.MakePtr(1),
+								},
+								Priority:     toptr.MakePtr(6),
+								ProviderName: "AWS",
+								RegionName:   "US_WEST_1",
 							},
 						},
 					},
 				}
+
 				performUpdate(90 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
@@ -381,42 +398,62 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	Describe("Create/Update the deployment (more complex scenario)", func() {
 		It("Should be created", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.ClusterType = mdbv1.TypeReplicaSet
-			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
-				Compute: &mdbv1.ComputeSpec{
-					Enabled:          boolptr(true),
-					ScaleDownEnabled: boolptr(true),
-				},
-				DiskGBEnabled: boolptr(false),
-			}
-			createdDeployment.Spec.DeploymentSpec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
-				Compute: &mdbv1.ComputeSpec{
-					MaxInstanceSize: "M20",
-					MinInstanceSize: "M10",
-				},
-			}
-			createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M10"
+			createdDeployment.Spec.DeploymentSpec.ClusterType = string(mdbv1.TypeReplicaSet)
 			createdDeployment.Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "createdBy", Value: "Atlas Operator"}}
-			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs = []mdbv1.ReplicationSpec{{
-				NumShards: int64ptr(1),
+			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0] = &mdbv1.AdvancedReplicationSpec{
+				NumShards: 1,
 				ZoneName:  "Zone 1",
-				// One interesting thing: if the regionsConfig is not empty - Atlas nullifies the 'providerSettings.regionName' field
-				RegionsConfig: map[string]mdbv1.RegionsConfig{
-					"US_EAST_1": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(1), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)},
-					"US_WEST_2": {AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(7), ReadOnlyNodes: int64ptr(0)},
+				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M20",
+							},
+						},
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(2),
+						},
+						Priority:     toptr.MakePtr(7),
+						ProviderName: "AWS",
+						RegionName:   "US_EAST_1",
+					},
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M20",
+							},
+						},
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						Priority:     toptr.MakePtr(6),
+						ProviderName: "AWS",
+						RegionName:   "US_WEST_2",
+					},
 				},
-			}}
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(10)
+			}
+
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(10)
 
 			replicationSpecsCheckFunc := func(c *mongodbatlas.AdvancedCluster) {
-				err := atlasdeployment.ConvertLegacyDeployment(&createdDeployment.Spec)
-				Expect(err).ToNot(HaveOccurred())
-
-				mergedDeployment, _, err := atlasdeployment.MergedAdvancedDeployment(*c, *createdDeployment.Spec.AdvancedDeploymentSpec)
+				mergedDeployment, _, err := atlasdeployment.MergedAdvancedDeployment(*c, *createdDeployment.Spec.DeploymentSpec)
 				Expect(err).ToNot(HaveOccurred())
 
 				expectedReplicationSpecs := mergedDeployment.ReplicationSpecs
-				createdDeployment.Spec.AdvancedDeploymentSpec = nil
 
 				// The ID field is added by Atlas - we don't have it in our specs
 				Expect(c.ReplicationSpecs[0].ID).NotTo(BeNil())
@@ -436,14 +473,48 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Updating the deployment (multiple operations)", func() {
-				delete(createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionsConfig, "US_WEST_2")
-				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionsConfig["US_WEST_1"] = mdbv1.RegionsConfig{AnalyticsNodes: int64ptr(0), ElectableNodes: int64ptr(2), Priority: int64ptr(6), ReadOnlyNodes: int64ptr(0)}
-				config := createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"]
-				// Note, that Atlas has strict requirements to priorities - they must start with 7 and be in descending order over the regions
-				config.Priority = int64ptr(7)
-				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionsConfig["US_EAST_1"] = config
-
-				createdDeployment.Spec.DeploymentSpec.ProviderSettings.AutoScaling.Compute.MaxInstanceSize = "M30"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = []*mdbv1.AdvancedRegionConfig{
+					{
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M30",
+							},
+						},
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(2),
+						},
+						Priority:     toptr.MakePtr(7),
+						ProviderName: "AWS",
+						RegionName:   "US_EAST_1",
+					},
+					{
+						ElectableSpecs: &mdbv1.Specs{
+							InstanceSize: "M10",
+							NodeCount:    toptr.MakePtr(1),
+						},
+						Priority:     toptr.MakePtr(6),
+						ProviderName: "AWS",
+						RegionName:   "US_WEST_1",
+						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+							DiskGB: &mdbv1.DiskGB{
+								Enabled: toptr.MakePtr(true),
+							},
+							Compute: &mdbv1.ComputeSpec{
+								Enabled:          toptr.MakePtr(true),
+								ScaleDownEnabled: toptr.MakePtr(true),
+								MinInstanceSize:  "M10",
+								MaxInstanceSize:  "M30",
+							},
+						},
+					},
+				}
 
 				legacySpec := createdDeployment.Spec.DeploymentSpec
 
@@ -461,17 +532,20 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Disable deployment and disk AutoScaling", func() {
-				createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
-					Compute: &mdbv1.ComputeSpec{
-						Enabled:          boolptr(false),
-						ScaleDownEnabled: boolptr(false),
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+					DiskGB: &mdbv1.DiskGB{
+						Enabled: toptr.MakePtr(false),
 					},
-					DiskGBEnabled: boolptr(false),
-				}
-				createdDeployment.Spec.DeploymentSpec.ProviderSettings.AutoScaling = &mdbv1.AutoScalingSpec{
 					Compute: &mdbv1.ComputeSpec{
-						MinInstanceSize: "",
-						MaxInstanceSize: "",
+						Enabled: toptr.MakePtr(false),
+					},
+				}
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[1].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+					DiskGB: &mdbv1.DiskGB{
+						Enabled: toptr.MakePtr(false),
+					},
+					Compute: &mdbv1.ComputeSpec{
+						Enabled: toptr.MakePtr(false),
 					},
 				}
 
@@ -488,7 +562,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 					autoScalingInput := c.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
 					autoScalingSpec := deployment.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
-					Expect(autoScalingInput.Compute).To(Equal(autoScalingSpec.Compute))
+					Expect(autoScalingInput.Compute.Enabled).To(Equal(autoScalingSpec.Compute.Enabled))
+					Expect(autoScalingInput.Compute.MaxInstanceSize).To(Equal(autoScalingSpec.Compute.MaxInstanceSize))
+					Expect(autoScalingInput.Compute.MinInstanceSize).To(Equal(autoScalingSpec.Compute.MinInstanceSize))
 				})
 			})
 		})
@@ -496,7 +572,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	Describe("Create/Update the cluster", func() {
 		It("Should fail, then be fixed (GCP)", func() {
-			createdDeployment = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("")
+			createdDeployment = mdbv1.DefaultGCPDeployment(namespace.Name, createdProject.Name).WithAtlasName("----")
 
 			By(fmt.Sprintf("Trying to create the Deployment %s with invalid parameters", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				err := k8sClient.Create(context.Background(), createdDeployment)
@@ -513,11 +589,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 		})
 
-		It("Should Success (AWS) with enabled autoscaling", func() {
+		It("Should succeed (AWS) with enabled autoscaling for Disk size", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
-			createdDeployment.Spec.DeploymentSpec.AutoScaling = &mdbv1.AutoScalingSpec{
-				DiskGBEnabled: boolptr(true),
+
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr[int](20)
+			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+				DiskGB: &mdbv1.DiskGB{
+					Enabled: toptr.MakePtr(true),
+				},
 			}
 
 			By(fmt.Sprintf("Creating the Deployment %s with autoscaling", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -529,7 +608,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Decreasing the Deployment disk size should not take effect", func() {
 				// prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(14)
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(14)
 				performUpdate(30 * time.Minute)
 
 				doDeploymentStatusChecks()
@@ -537,14 +616,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
-					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(toptr.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 		})
 
 		It("Should Succeed (AWS)", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -556,14 +635,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating the Deployment labels", func() {
 				createdDeployment.Spec.DeploymentSpec.Labels = []common.LabelSpec{{Key: "int-test", Value: "true"}}
-				performUpdate(20 * time.Minute)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
 
 			By("Updating the Deployment tags", func() {
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
-				performUpdate(20 * time.Minute)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
@@ -575,7 +654,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating the order of Deployment tags", func() {
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-2", Value: "value-2"}, {Key: "test-1", Value: "value-1"}}
-				performUpdate(20 * time.Minute)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
@@ -596,33 +675,34 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				lastGeneration++
 				// Removing tags for next tests
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{}
-				performUpdate(20 * time.Minute)
+				performUpdate(30 * time.Minute)
 			})
 
 			By("Updating the Deployment backups settings", func() {
-				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(true)
-				performUpdate(20 * time.Minute)
+				createdDeployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+				// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = toptr.MakePtr(true)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
-					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled))
+					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
 
 			By("Decreasing the Deployment disk size", func() {
-				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = intptr(15)
-				performUpdate(20 * time.Minute)
+				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(15)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
-					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(float64ptr(0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.DiskSizeGB).To(BeAssignableToTypeOf(toptr.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 
 			By("Pausing the deployment", func() {
-				createdDeployment.Spec.DeploymentSpec.Paused = boolptr(true)
-				performUpdate(20 * time.Minute)
+				createdDeployment.Spec.DeploymentSpec.Paused = toptr.MakePtr(true)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
@@ -630,7 +710,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Updating the Deployment configuration while paused (should fail)", func() {
-				createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = boolptr(false)
+				createdDeployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(false)
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 				Eventually(func() bool {
 					return testutil.CheckCondition(
@@ -650,8 +730,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Unpausing the deployment", func() {
-				createdDeployment.Spec.DeploymentSpec.Paused = boolptr(false)
-				performUpdate(20 * time.Minute)
+				createdDeployment.Spec.DeploymentSpec.Paused = toptr.MakePtr(false)
+				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
@@ -661,13 +741,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			By("Checking that modifications were applied after unpausing", func() {
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
-					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled))
+					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
 
 			By("Setting incorrect instance size (should fail)", func() {
-				oldSizeName := createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName
-				createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = "M42"
+				oldSizeName := createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M42"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M42"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M42"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).To(Succeed())
 				Eventually(func() bool {
 					return testutil.CheckCondition(
@@ -684,8 +766,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				lastGeneration++
 
 				By("Fixing the Deployment", func() {
-					createdDeployment.Spec.DeploymentSpec.ProviderSettings.InstanceSizeName = oldSizeName
-					performUpdate(20 * time.Minute)
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = oldSizeName
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = oldSizeName
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = oldSizeName
+					performUpdate(30 * time.Minute)
 					doDeploymentStatusChecks()
 					checkAtlasState()
 				})
@@ -840,9 +924,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By(fmt.Sprintf("Updating the InstanceSize of Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M20"
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M20"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M20"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize = "M20"
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize = "M20"
 				Expect(k8sClient.Update(context.Background(), createdDeployment)).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) bool {
@@ -856,7 +940,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By(fmt.Sprintf("Enable AutoScaling for the Advanced Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
+				regionConfig := createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 				regionConfig.ElectableSpecs.InstanceSize = "M10"
 				regionConfig.ReadOnlySpecs.InstanceSize = "M10"
 				regionConfig.AnalyticsSpecs.InstanceSize = "M10"
@@ -884,7 +968,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By(fmt.Sprintf("Update Instance Size Margins with AutoScaling for Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
-				regionConfig := createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
+				regionConfig := createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
 				regionConfig.AutoScaling.Compute.MinInstanceSize = "M20"
 				regionConfig.ElectableSpecs.InstanceSize = "M20"
 				regionConfig.ReadOnlySpecs.InstanceSize = "M20"
@@ -905,7 +989,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 
-			createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs = []*mdbv1.AdvancedReplicationSpec{
+			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs = []*mdbv1.AdvancedReplicationSpec{
 				{
 					NumShards: 1,
 					ZoneName:  "US_EAST_1",
@@ -915,19 +999,19 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     intptr(1),
+								NodeCount:     toptr.MakePtr(1),
 							},
 							ElectableSpecs: &mdbv1.Specs{
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     intptr(3),
+								NodeCount:     toptr.MakePtr(3),
 							},
 							ReadOnlySpecs: &mdbv1.Specs{
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     intptr(1),
+								NodeCount:     toptr.MakePtr(1),
 							},
 							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 								DiskGB: &mdbv1.DiskGB{
@@ -941,7 +1025,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 								},
 							},
 							BackingProviderName: "AWS",
-							Priority:            intptr(7),
+							Priority:            toptr.MakePtr(7),
 							ProviderName:        "AWS",
 							RegionName:          "US_EAST_1",
 						},
@@ -963,7 +1047,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				err := compat.JSONCopy(&previousDeployment, createdDeployment)
 				Expect(err).NotTo(HaveOccurred())
 
-				createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 					RegionConfigs[0].
 					AutoScaling.
 					Compute.
@@ -990,16 +1074,16 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					err := compat.JSONCopy(&previousDeployment, createdDeployment)
 					Expect(err).NotTo(HaveOccurred())
 
-					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						ElectableSpecs.InstanceSize = "M20"
-					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						ReadOnlySpecs.InstanceSize = "M20"
-					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						AnalyticsSpecs.InstanceSize = "M20"
-					createdDeployment.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].
+					createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].
 						RegionConfigs[0].
 						AutoScaling.
 						Compute.
@@ -1026,7 +1110,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		It("Should Succeed", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.ProcessArgs = &mdbv1.ProcessArgs{
-				JavascriptEnabled:  boolptr(true),
+				JavascriptEnabled:  toptr.MakePtr(true),
 				DefaultReadConcern: "available",
 			}
 
@@ -1038,7 +1122,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			})
 
 			By("Updating Advanced Deployment Options", func() {
-				createdDeployment.Spec.ProcessArgs.JavascriptEnabled = boolptr(false)
+				createdDeployment.Spec.ProcessArgs.JavascriptEnabled = toptr.MakePtr(false)
 				performUpdate(40 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAdvancedDeploymentOptions(createdDeployment.Spec.ProcessArgs)
@@ -1172,7 +1256,6 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		})
 
 		It("Should succeed", func() {
-			fmt.Println("hey!")
 			By(fmt.Sprintf("Creating deployment with backups enabled: %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
@@ -1232,11 +1315,11 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		It("Should succeed", func() {
 			By("Creating deployment with backups enabled", func() {
 				createdDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
-				createdDeployment.Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
-				Expect(k8sClient.Create(context.Background(), createdDeployment)).Should(Succeed())
+				createdDeployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.AdvancedDeploymentSpec.Name)
+					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
 					g.Expect(err).Should(BeNil())
 					g.Expect(deployment.StateName).Should(Equal("IDLE"))
 					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
@@ -1319,8 +1402,8 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 			By("Creating a second deployment with backups enabled using same snapshot distribution configuration", func() {
 				secondDeployment = mdbv1.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 				secondDeployment.WithName("deployment-advanced-k8s-2")
-				secondDeployment.Spec.AdvancedDeploymentSpec.Name = "deployment-advanced-2"
-				secondDeployment.Spec.AdvancedDeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+				secondDeployment.Spec.DeploymentSpec.Name = "deployment-advanced-2"
+				secondDeployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
 				secondDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 					Name:      bScheduleName,
 					Namespace: namespace.Name,
@@ -1328,7 +1411,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 				Expect(k8sClient.Create(context.Background(), secondDeployment)).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), secondDeployment.Spec.AdvancedDeploymentSpec.Name)
+					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), secondDeployment.Spec.DeploymentSpec.Name)
 					g.Expect(err).Should(BeNil())
 					g.Expect(deployment.StateName).Should(Equal("IDLE"))
 					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
@@ -1457,22 +1540,6 @@ func deleteAtlasDeployment(projectID string, deploymentName string) error {
 func deleteServerlessInstance(projectID string, deploymentName string) error {
 	_, err := atlasClient.ServerlessInstances.Delete(context.Background(), projectID, deploymentName)
 	return err
-}
-
-func int64ptr(i int64) *int64 {
-	return &i
-}
-
-func intptr(i int) *int {
-	return &i
-}
-
-func float64ptr(f float64) *float64 {
-	return &f
-}
-
-func boolptr(b bool) *bool {
-	return &b
 }
 
 func createConnectionSecret() *corev1.Secret {

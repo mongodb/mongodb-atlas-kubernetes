@@ -5,7 +5,7 @@ metadata:
 spec:
   projectRef:
     name: my-project
-  advancedDeploymentSpec:
+  deploymentSpec:
     clusterType: GEOSHARDED
     name: advanced-deployment
     replicationSpecs:

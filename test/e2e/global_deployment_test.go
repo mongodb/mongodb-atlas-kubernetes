@@ -41,27 +41,6 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 			actions.ProjectCreationFlow(test)
 			globalClusterFlow(test, mapping, ns)
 		},
-		Entry("Test[gc-regular-deployment]: Deployment with global config", Label("gc-regular-deployment"),
-			model.DataProvider(
-				"gc-regular-deployment",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateRegularGeoshardedDeployment("gc-regular-deployment")),
-			[]v1.CustomZoneMapping{
-				{
-					Zone:     "Zone 1",
-					Location: "AO",
-				},
-			},
-			[]v1.ManagedNamespace{
-				{
-					Collection:     "somecollection",
-					Db:             "somedb",
-					CustomShardKey: "somekey",
-				},
-			},
-		),
 		Entry("Test[gc-advanced-deployment]: Advanced", Label("gc-advanced-deployment"),
 			model.DataProvider(
 				"gc-advanced-deployment",
@@ -115,9 +94,6 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []v1.CustomZone
 		if userData.InitialDeployments[0].Spec.DeploymentSpec != nil {
 			userData.InitialDeployments[0].Spec.DeploymentSpec.ManagedNamespaces = managedNamespace
 			userData.InitialDeployments[0].Spec.DeploymentSpec.CustomZoneMapping = mapping
-		} else {
-			userData.InitialDeployments[0].Spec.AdvancedDeploymentSpec.ManagedNamespaces = managedNamespace
-			userData.InitialDeployments[0].Spec.AdvancedDeploymentSpec.CustomZoneMapping = mapping
 		}
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.InitialDeployments[0])).To(Succeed())
@@ -161,9 +137,6 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []v1.CustomZone
 		if userData.InitialDeployments[0].Spec.DeploymentSpec != nil {
 			userData.InitialDeployments[0].Spec.DeploymentSpec.ManagedNamespaces = nil
 			userData.InitialDeployments[0].Spec.DeploymentSpec.CustomZoneMapping = nil
-		} else {
-			userData.InitialDeployments[0].Spec.AdvancedDeploymentSpec.ManagedNamespaces = nil
-			userData.InitialDeployments[0].Spec.AdvancedDeploymentSpec.CustomZoneMapping = nil
 		}
 		Expect(userData.K8SClient.Update(userData.Context, userData.InitialDeployments[0])).To(Succeed())
 		Eventually(func(g Gomega) bool {

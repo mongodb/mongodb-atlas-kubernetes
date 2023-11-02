@@ -7,8 +7,15 @@ spec:
     name: my-project
   deploymentSpec:
     name: deployment-backup
-    providerBackupEnabled: true
-    providerSettings:
-      instanceSizeName: M10
-      providerName: AWS
-      regionName: US_EAST_1
+    backupEnabled: true 
+    clusterType: REPLICASET
+    replicationSpecs:
+      - zoneName: Zone 1
+        regionConfigs:
+          - electableSpecs:
+              instanceSize: M20
+              nodeCount: 1
+            providerName: AWS 
+            backingProviderName: AWS
+            regionName: US_EAST_1
+            priority: 7

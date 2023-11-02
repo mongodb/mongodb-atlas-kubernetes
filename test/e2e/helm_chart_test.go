@@ -85,8 +85,6 @@ var _ = Describe("HELM charts", Ordered, func() {
 			data = test
 			GinkgoWriter.Println(data.Resources.KeyName)
 			switch deploymentType {
-			case "advanced":
-				data.Resources.Deployments[0].Spec.AdvancedDeploymentSpec.Name = data.Resources.KeyName
 			case "serverless":
 				data.Resources.Deployments[0].Spec.ServerlessSpec.Name = data.Resources.KeyName
 			default:
@@ -133,7 +131,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 			),
 			"default",
 		),
-		Entry("Advanced deployment by helm chart", Label("helm-advanced"),
+		Entry("Deployment by helm chart", Label("helm-advanced"),
 			model.DataProviderWithResources(
 				"helm-advanced",
 				model.AProject{},
@@ -151,7 +149,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 			),
 			"advanced",
 		),
-		Entry("Advanced multiregion deployment by helm chart", Label("helm-advanced-multiregion"),
+		Entry("Deployment multiregion by helm chart", Label("helm-advanced-multiregion"),
 			model.DataProviderWithResources(
 				"helm-advanced-multiregion",
 				model.AProject{},
@@ -252,7 +250,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 			})
 			By("User update new released operator", func() {
 				backup := true
-				data.Resources.Deployments[0].Spec.DeploymentSpec.ProviderBackupEnabled = &backup
+				data.Resources.Deployments[0].Spec.DeploymentSpec.BackupEnabled = &backup
 				actions.HelmUpgradeChartVersions(&data)
 				actions.CheckUsersCanUseOldApp(&data)
 			})
@@ -264,7 +262,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 })
 
 func waitDeploymentWithChecks(data *model.TestDataProvider) {
-	By("Wait creation until is done", func() {
+	By("Wait for a Deployment to be created", func() {
 		actions.WaitProjectWithoutGenerationCheck(data)
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
@@ -275,10 +273,6 @@ func waitDeploymentWithChecks(data *model.TestDataProvider) {
 	By("Check attributes", func() {
 		deployment := data.Resources.Deployments[0]
 		switch {
-		case deployment.Spec.AdvancedDeploymentSpec != nil:
-			advancedDeployment, err := atlasClient.GetDeployment(data.Resources.ProjectID, deployment.Spec.AdvancedDeploymentSpec.Name)
-			Expect(err).To(BeNil())
-			actions.CompareAdvancedDeploymentsSpec(deployment.Spec, *advancedDeployment)
 		case deployment.Spec.ServerlessSpec != nil:
 			serverlessInstance, err := atlasClient.GetServerlessInstance(data.Resources.ProjectID, deployment.Spec.ServerlessSpec.Name)
 			Expect(err).To(BeNil())

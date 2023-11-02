@@ -20,7 +20,7 @@ func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 	By("User use HELM upgrade command for changing atlas resources\n", func() {
 		data.Resources.Project.Spec.ProjectIPAccessList[0].Comment = "updated"
 		enabled := true
-		data.Resources.Deployments[0].Spec.DeploymentSpec.ProviderBackupEnabled = &enabled
+		data.Resources.Deployments[0].Spec.DeploymentSpec.BackupEnabled = &enabled
 		data.Resources.Users[0].DeleteAllRoles()
 		data.Resources.Users[0].AddBuildInAdminRole()
 		data.Resources.Users[0].Spec.Project.Name = data.Resources.GetAtlasProjectFullKubeName()
@@ -29,7 +29,7 @@ func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 		helm.UpgradeAtlasDeploymentChartDev(data.Resources)
 
 		By("Wait project creation", func() {
-			WaitDeployment(data, generation+1)
+			WaitDeployment(data, generation)
 			ExpectWithOffset(1, data.Resources.ProjectID).ShouldNot(BeEmpty())
 		})
 		aClient := atlas.GetClientOrFail()

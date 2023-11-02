@@ -25,7 +25,7 @@ const (
 func Test_backupScheduleManagedByAtlas(t *testing.T) {
 	deploment := &mdbv1.AtlasDeployment{
 		Spec: mdbv1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 				Name: clusterName,
 			},
 		},

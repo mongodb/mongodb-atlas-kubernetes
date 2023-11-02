@@ -194,6 +194,17 @@ jobs:
           platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
           echo "k8s_version=$version" >> $GITHUB_OUTPUT
           echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
+
+      - name: Generate configuration for the tests
+        uses: ./.github/actions/gen-install-scripts
+        with:
+          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          VERSION: ${{ steps.prepare.outputs.tag }}
+          ENV: dev
+
+      - name: Change path for the test
+        run: |
+          awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
       - name: Create k8s Kind Cluster
         if: ${{ steps.properties.outputs.k8s_platform == 'kind' && !env.ACT }}
         uses: helm/kind-action@v1.8.0

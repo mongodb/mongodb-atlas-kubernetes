@@ -24,35 +24,17 @@ import (
 func TestClusterValidation(t *testing.T) {
 	t.Run("Invalid cluster specs", func(t *testing.T) {
 		t.Run("Multiple specs specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: &mdbv1.DeploymentSpec{}}
+			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, ServerlessSpec: &mdbv1.ServerlessSpec{}}
 			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("No specs specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: nil}
-			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
-		})
-		t.Run("Instance size not empty when serverless", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
-				ProviderSettings: &mdbv1.ProviderSettingsSpec{
-					InstanceSizeName: "M10",
-					ProviderName:     "SERVERLESS",
-				},
-			}}
-			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
-		})
-		t.Run("Instance size unset when not serverless", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
-				ProviderSettings: &mdbv1.ProviderSettingsSpec{
-					InstanceSizeName: "",
-					ProviderName:     "AWS",
-				},
-			}}
+			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: nil}
 			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("different instance sizes for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in the same region", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -70,7 +52,7 @@ func TestClusterValidation(t *testing.T) {
 			})
 			t.Run("different instance size in different regions", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -93,7 +75,7 @@ func TestClusterValidation(t *testing.T) {
 			})
 			t.Run("different instance size in different replications", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -122,7 +104,7 @@ func TestClusterValidation(t *testing.T) {
 		t.Run("different autoscaling for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in different regions", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -153,7 +135,7 @@ func TestClusterValidation(t *testing.T) {
 			})
 			t.Run("different autoscaling in different replications", func(t *testing.T) {
 				spec := mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -190,28 +172,13 @@ func TestClusterValidation(t *testing.T) {
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, DeploymentSpec: nil}
-			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
-			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
-		})
-		t.Run("Regular cluster specs specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{}}
-			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
-			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
-		})
-
-		t.Run("Serverless Cluster", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{AdvancedDeploymentSpec: nil, DeploymentSpec: &mdbv1.DeploymentSpec{
-				ProviderSettings: &mdbv1.ProviderSettingsSpec{
-					ProviderName: "SERVERLESS",
-				},
-			}}
+			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, ServerlessSpec: nil}
 			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
 			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Advanced cluster with replication config", func(t *testing.T) {
 			spec := mdbv1.AtlasDeploymentSpec{
-				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 					ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 						{
 							RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -259,9 +226,17 @@ func TestClusterValidation(t *testing.T) {
 func TestDeploymentForGov(t *testing.T) {
 	t.Run("should fail when deployment is configured to non-gov region", func(t *testing.T) {
 		deploy := mdbv1.AtlasDeploymentSpec{
-			DeploymentSpec: &mdbv1.DeploymentSpec{
-				ProviderSettings: &mdbv1.ProviderSettingsSpec{
-					RegionName: "EU_EAST_1",
+			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+					{
+						ZoneName:  "Zone EU",
+						NumShards: 1,
+						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							{
+								RegionName: "EU_EAST_1",
+							},
+						},
+					},
 				},
 			},
 		}
@@ -271,7 +246,7 @@ func TestDeploymentForGov(t *testing.T) {
 
 	t.Run("should fail when advanced deployment is configured to non-gov region", func(t *testing.T) {
 		deploy := mdbv1.AtlasDeploymentSpec{
-			AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 					{
 						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
@@ -557,7 +532,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 		}
 		deployment := &mdbv1.AtlasDeployment{
 			Spec: mdbv1.AtlasDeploymentSpec{
-				AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 					PitEnabled: toptr.MakePtr(true),
 				},
 			},
@@ -581,7 +556,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			}
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						PitEnabled: toptr.MakePtr(true),
 					},
 				},
@@ -612,7 +587,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			}
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
-					AdvancedDeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
 				},
 				Status: status.AtlasDeploymentStatus{
 					ReplicaSets: []status.ReplicaSet{
@@ -643,7 +618,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			}
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.DeploymentSpec{
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						PitEnabled: toptr.MakePtr(true),
 					},
 				},
@@ -674,7 +649,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			}
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.DeploymentSpec{},
+					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
 				},
 				Status: status.AtlasDeploymentStatus{
 					ReplicaSets: []status.ReplicaSet{

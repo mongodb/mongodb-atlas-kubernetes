@@ -12,18 +12,18 @@ spec:
     replicationSpecs:
       - zoneName: US-Zone
         numShards: 1
-        regionConfigs:
+        regionsConfig:
           - regionName: CENTRAL_US
             providerName: GCP
             backingProviderName: GCP
             priority: 6
             electableSpecs:
-              - instanceSize: M10
-                nodeCount: 1
+              instanceSize: M10
+              nodeCount: 1
           - regionName: EASTERN_US
             providerName: GCP
             backingProviderName: GCP
             priority: 7
             electableSpecs:
-              - instanceSize: M10
-                nodeCount: 2
+              instanceSize: M10
+              nodeCount: 2
