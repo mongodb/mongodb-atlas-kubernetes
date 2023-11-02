@@ -98,14 +98,20 @@ pointing to the directory where `operatorhub-operator` repository was cloned in 
 
 For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
 
-Invoke with <version> like `1.0.0`:
+Invoke with <version> like `1.0.0` (never use the `v` prefix here, just the plain SEMVER version `x.y.z`):
+
 ```
 ./scripts/release-redhat.sh <version>
 ```
 
+Before posting the PR there is a manual change you need to make:
+
+* Ensure to add the `quay.io/` prefix in all Operator image references.
+
+You can see an [example fixed PR here on Community Operators for version 1.9.1](https://github.com/k8s-operatorhub/community-operators/pull/3457).
+
 Create the PR to the main repository and wait until CI jobs get green. 
 After the PR is approved and merged - it will soon get available on https://operatorhub.io
-Example PR: https://github.com/k8s-operatorhub/community-operators/pull/69
 
 ### Create a Pull Request for `openshift` with a new bundle
 
@@ -117,10 +123,16 @@ pointing to the directory where `community-operators-prod` repository was cloned
 *(This is temporary, to be fixed)
 Change the `mongodb-atlas-kubernetes.clusterserviceversion.yaml` file and change the `replaces:` setting the previous version
 
-Invoke the following script with <version> like `1.0.0`:
+Invoke the following script with <version> like `1.0.0` (no `v` prefix):
 ```
 ./scripts/release-redhat-openshift.sh <version>
 ```
+
+Before posting the PR there is a manual change you need to make:
+
+* Ensure to add the `quay.io/` prefix in all Operator image references.
+
+You can see an [example fixed PR here on OpenShift for version 1.9.1](https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/3521).
 
 Create the PR to the main repository and wait until CI jobs get green.
 
@@ -128,8 +140,6 @@ Create the PR to the main repository and wait until CI jobs get green.
 `git rebase -i HEAD~2; git push origin +mongodb-atlas-operator-community-<version>` if you need to squash multiple commits into one and perform force push)
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
-See https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/98 as an example
-
 
 ### Create a Pull Request for `openshift-certified-operators` with a new bundle
 
@@ -140,7 +150,7 @@ This is necessary for the Operator to appear on "operators" tab in Openshift clu
 pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
  - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
  - Use the image reference including the hash (`quay.io/mongodb/mongodb-atlas-kubernetes-operator:...@sha256:...`) from the [release process step "Push Atlas Operator to Quay.io"](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-post-merge.yml) as `IMG_SHA`
- - Use the version of the release as `VERSION`
+ - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without NPO `v`prefix.
 
 Invoke the following script:
 ```
@@ -154,8 +164,18 @@ If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) 
 Then go the GitHub and create a PR
 from the `mongodb-fork` repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).
 
+Before posting the PR there are manual changes you need to make:
+
+1. Ensure to add the `quay.io/` prefix in all Operator image references.
+1. Add a missing `com.redhat.openshift.versions: "v4.8"` line at the end of `metadata/annotations.yaml`.
+1. Ensure all image references, including `containerImage`, do NOT use the version *tag*. They **should only use the SHA of the AMD image**, NEVER the multi arch SHA.
+1. Add the missing`spec.relatedImages` section in `manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml`, to pin all the images per architecture.
+
+For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
+
+You can see an [example fixed PR here for certified version 1.9.1](https://github.com/redhat-openshift-ecosystem/certified-operators/pull/3020).
+
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
-See https://github.com/redhat-openshift-ecosystem/certified-operators/pull as an example
 
 # Post install hook release
 
