@@ -376,7 +376,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 							Region:  "EU_WEST_1",
 							SecretRef: common.ResourceRefNamespaced{
 								Name:      "aws-secret",
-								Namespace: testData.Project.Namespace,
+								Namespace: testData.Resources.Namespace,
 							},
 						},
 					},
