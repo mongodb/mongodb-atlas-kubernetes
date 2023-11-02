@@ -475,11 +475,13 @@ func encryptionAtRest(encryption *mdbv1.EncryptionAtRest) error {
 	if encryption != nil &&
 		encryption.GoogleCloudKms.Enabled != nil &&
 		*encryption.GoogleCloudKms.Enabled {
-		if encryption.GoogleCloudKms.ServiceAccountKey() == "" {
-			return nil
+		if encryption.GoogleCloudKms.SecretRef.Name == "" {
+			return fmt.Errorf("google cloud KMS is enabled but has no secretref")
 		}
-		if err := gceServiceAccountKey(encryption.GoogleCloudKms.ServiceAccountKey()); err != nil {
-			return fmt.Errorf("failed to validate Google Service Account Key: %w", err)
+		if encryption.GoogleCloudKms.ServiceAccountKey() != "" {
+			if err := gceServiceAccountKey(encryption.GoogleCloudKms.ServiceAccountKey()); err != nil {
+				return fmt.Errorf("failed to validate Google Service Account Key: %w", err)
+			}
 		}
 	}
 	return nil
