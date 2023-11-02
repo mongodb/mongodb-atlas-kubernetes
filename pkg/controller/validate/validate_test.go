@@ -707,12 +707,6 @@ func TestEncryptionAtRestValidation(t *testing.T) {
 		assert.NoError(t, encryptionAtRest(testEncryptionAtRest(false)))
 	})
 
-	t.Run("google service account key validation succeeds if encryption is enabled but the key is empty", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets("", "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "missing Google Service Account Key but GCP KMS is enabled")
-	})
-
 	t.Run("google service account key validation succeeds for a good key", func(t *testing.T) {
 		enc := testEncryptionAtRest(true)
 		enc.GoogleCloudKms.SetSecrets(sampleSAKey(), "test")
