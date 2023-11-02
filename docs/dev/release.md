@@ -167,9 +167,9 @@ from the `mongodb-fork` repository to https://github.com/redhat-openshift-ecosys
 Before posting the PR there are manual changes you need to make:
 
 1. Ensure to add the `quay.io/` prefix in all Operator image references.
-1. Add missing a `com.redhat.openshift.versions: "v4.8"` line at the end of `metadata/annotations.yaml`.
+1. Add a missing `com.redhat.openshift.versions: "v4.8"` line at the end of `metadata/annotations.yaml`.
 1. Ensure all image references, including `containerImage`, do NOT use the version *tag*. They **should only use the SHA of the AMD image**, NEVER the multi arch SHA.
-1. Add missing `spec.relatedImages` section in certified pinning all the images per architecture.
+1. Add the missing`spec.relatedImages` section in `manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml`, to pin all the images per architecture.
 
 For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
 
