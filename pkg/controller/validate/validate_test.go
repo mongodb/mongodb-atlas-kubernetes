@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -686,6 +687,10 @@ func testEncryptionAtRest(enabled bool) *mdbv1.EncryptionAtRest {
 	return &mdbv1.EncryptionAtRest{
 		GoogleCloudKms: mdbv1.GoogleCloudKms{
 			Enabled: &flag,
+			SecretRef: common.ResourceRefNamespaced{
+				Name:      "test-secret",
+				Namespace: "test-namespace",
+			},
 		},
 	}
 }
