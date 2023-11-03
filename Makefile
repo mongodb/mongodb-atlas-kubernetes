@@ -79,6 +79,10 @@ OPERATOR_NAMESPACE = mongodb-atlas-system
 ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
+BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes
+GO_LICENSES = go-licenses
+DISALLOWED_LICENSES = restricted,reciprocal
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -92,8 +96,25 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
+$(GO-LICENSES):
+	go install github.com/google/go-licenses@latest
+
+licenses.csv: $(GO_SOURCES) go.mod ## Track licenses in a CSV file
+	@echo "Tracking licenses into file $@"
+	@echo "========================================"
+	$(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+
+.PHONY: check-licenses
+check-licenses: licenses.csv  ## Check licenses
+	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
+	@echo "============================================"
+	$(GO_LICENSES) check --include_tests $(BASE_GO_PACKAGE)/... \
+	--disallowed_types $(DISALLOWED_LICENSES)
+	@echo "--------------------"
+	@echo "Licenses check: PASS"
+
 .PHONY: unit-test
-unit-test:
+unit-test: check-licenses
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
 
 .PHONY: int-test
