@@ -24,7 +24,7 @@ import (
 const (
 	ResourcePolicyAnnotation       = "mongodb.com/atlas-resource-policy"
 	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
-	ResourceVersion                = "mongodb.com/atlas-operator-minimal-version"
+	ResourceVersion                = "mongodb.com/atlas-resource-version"
 	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
 	ResourcePolicyKeep             = "keep"
 	ResourcePolicyDelete           = "delete"
