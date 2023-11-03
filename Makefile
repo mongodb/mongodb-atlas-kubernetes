@@ -98,25 +98,38 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-$(GO-LICENSES):
+$(TIMESTAMPS_DIR)/go-licenses-installed:
 	go install github.com/google/go-licenses@latest
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
-licenses.csv: $(GO_SOURCES) go.mod ## Track licenses in a CSV file
+go-licenses: $(TIMESTAMPS_DIR)/go-licenses-installed
+
+licenses.csv: $(TIMESTAMPS_DIR)/go-licenses-installed go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
-	$(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	GOOS=linux GOARCH=amd64 go mod download
+	GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
 
+# We only check that go.mod is NOT newer than licenses.csv because the CI
+# tends to generate slightly different results, so content comparison wouldn't work
+licenses-tracked: ## Checks license.csv is up to date	
+	@if [ go.mod -nt licenses.csv ]; then \
+	echo "License.csv is stale! Please run 'make licenses.csv' and commit"; exit 1; \
+	else echo "License.csv OK (up to date)"; fi
+	
 .PHONY: check-licenses
-check-licenses: licenses.csv  ## Check licenses
+check-license-compliance: licenses.csv  ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
-	$(GO_LICENSES) check --include_tests $(BASE_GO_PACKAGE)/... \
+	GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests $(BASE_GO_PACKAGE)/... \
 	--disallowed_types $(DISALLOWED_LICENSES)
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
 
+check-licenses: licenses-tracked check-license-compliance ## Check license tracking & compliance
+
 .PHONY: unit-test
-unit-test: check-licenses actions.txt
+unit-test:
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
 
 .PHONY: int-test

@@ -21,6 +21,11 @@ jobs:
     with:
       forked: true
 
+  check-licenses:
+    uses: ./.github/workflows/check-licenses.yml
+    with:
+      forked: false
+
   paths-filter:
     uses: ./.github/workflows/paths-filter.yml
 
