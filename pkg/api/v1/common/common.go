@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
@@ -50,13 +49,6 @@ func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.Objec
 	ns := SelectNamespace(rn.Namespace, parentNamespace)
 	key := kube.ObjectKey(ns, rn.Name)
 	return &key
-}
-
-func (rn *ResourceRefNamespaced) GetNamespacedName() types.NamespacedName {
-	return types.NamespacedName{
-		Name:      rn.Name,
-		Namespace: rn.Namespace,
-	}
 }
 
 func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {

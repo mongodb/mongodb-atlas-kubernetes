@@ -412,7 +412,7 @@ func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool,
 		return true, nil
 	}
 
-	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear, true) &&
+	return areEaRConfigEqual(*latestConfig.EncryptionAtRest, ear, true) ||
 		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear, false), nil
 }
 

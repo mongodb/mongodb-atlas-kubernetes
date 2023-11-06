@@ -433,7 +433,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			Expect(roleARNToSet).NotTo(BeEmpty())
 			secretRef := userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef
 			secret := &corev1.Secret{}
-			Expect(userData.K8SClient.Get(userData.Context, secretRef.GetNamespacedName(), secret)).Should(Succeed())
+			Expect(userData.K8SClient.Get(userData.Context, *secretRef.GetObject(userData.Resources.Namespace), secret)).Should(Succeed())
 			secret.Data["RoleID"] = []byte(roleARNToSet)
 			Expect(userData.K8SClient.Update(userData.Context, secret)).Should(Succeed())
 			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
