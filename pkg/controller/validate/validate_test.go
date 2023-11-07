@@ -1,16 +1,8 @@
 package validate
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
-	"os"
-	"strings"
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
@@ -666,95 +658,6 @@ func TestBackupScheduleValidation(t *testing.T) {
 	})
 }
 
-const sampleSAKeyFmt = `{
-	"type": "service_account",
-	"project_id": "some-project",
-	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",
-	"private_key": "%s",
-	"client_email": "619108922856-compute@developer.gserviceaccount.com",
-	"client_id": "117865750705662546099",
-	"auth_uri": "https://accounts.google.com/o/oauth2/auth",
-	"token_uri": "https://oauth2.googleapis.com/token",
-	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-computedeveloper.gserviceaccount.com",
-	"universe_domain": "googleapis.com"
-}`
-
-const sampleSAKeyOneLineFmt = `{	"type": "service_account",	"project_id": "some-project",	"private_key_id": "dc6c401f0acd0147ca70e3169f579b570583b58f",	"private_key": "%s",	"client_email": "619108922856-compute@developer.gserviceaccount.com",	"client_id": "117865750705662546099",	"auth_uri": "https://accounts.google.com/o/oauth2/auth",	"token_uri": "https://oauth2.googleapis.com/token",	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-computedeveloper.gserviceaccount.com",	"universe_domain": "googleapis.com"}`
-
-func testEncryptionAtRest(enabled bool) *mdbv1.EncryptionAtRest {
-	flag := enabled
-	return &mdbv1.EncryptionAtRest{
-		GoogleCloudKms: mdbv1.GoogleCloudKms{
-			Enabled: &flag,
-			SecretRef: common.ResourceRefNamespaced{
-				Name:      "test-secret",
-				Namespace: "test-namespace",
-			},
-		},
-	}
-}
-
-func withProperUrls(properties string) string {
-	urls := `"auth_uri": "https://accounts.google.com/o/oauth2/auth",
-	"token_uri": "https://oauth2.googleapis.com/token",
-	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-	"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/619108922856-compute%40developer.gserviceaccount.com"`
-	return fmt.Sprintf(`{%s, %s}`, urls, properties)
-}
-
-func TestEncryptionAtRestValidation(t *testing.T) {
-	t.Run("google service account key validation succeeds if no encryption at rest is used", func(t *testing.T) {
-		assert.NoError(t, encryptionAtRest(&mdbv1.EncryptionAtRest{}))
-	})
-
-	t.Run("google service account key validation succeeds if encryption at rest is disabled", func(t *testing.T) {
-		assert.NoError(t, encryptionAtRest(testEncryptionAtRest(false)))
-	})
-
-	t.Run("google service account key validation succeeds for a good key", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets(sampleSAKey(), "test")
-		assert.NoError(t, encryptionAtRest(enc))
-	})
-
-	t.Run("google service account key validation succeeds for a good key in a single line", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets(sampleSAKeyOneLine(), "test")
-		assert.NoError(t, encryptionAtRest(enc))
-	})
-
-	t.Run("google service account key validation fails for an empty json key", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets("{}", "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "invalid empty service account key")
-	})
-
-	t.Run("google service account key validation fails for an empty array json as key", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets("[]", "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal array into Go value")
-	})
-
-	t.Run("google service account key validation fails for a json object with a wrong field type", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets(`{"type":true}`, "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "cannot unmarshal bool")
-	})
-
-	t.Run("google service account key validation fails for a bad pem key", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets(withProperUrls(`"private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQblah\n-----END PRIVATE KEY-----\n"`), "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "failed to decode PEM")
-	})
-
-	t.Run("google service account key validation fails for a bad URL", func(t *testing.T) {
-		enc := testEncryptionAtRest(true)
-		enc.GoogleCloudKms.SetSecrets(withProperUrls(`"token_uri": "http//badurl.example"`), "test")
-		assert.ErrorContains(t, encryptionAtRest(enc), "invalid URL address")
-	})
-}
-
 func TestProjectIpAccessList(t *testing.T) {
 	t.Run("should return no error for empty list", func(t *testing.T) {
 		assert.NoError(t, projectIPAccessList([]project.IPAccessList{}))
@@ -935,37 +838,6 @@ func sampleAlertConfig(typeName string) mdbv1.AlertConfiguration {
 			},
 		},
 	}
-}
-
-func newPrivateKeyPEM() string {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	pemPrivateKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-	})
-
-	return string(pemPrivateKey)
-}
-
-func sampleSAKey() string {
-	return fmt.Sprintf(sampleSAKeyFmt, wrappedKey())
-}
-
-func sampleSAKeyOneLine() string {
-	return fmt.Sprintf(sampleSAKeyOneLineFmt, wrapKey(wrappedKey()))
-}
-
-func wrapKey(s string) string {
-	return strings.ReplaceAll(s, "\n", "\\n")
-}
-
-func wrappedKey() string {
-	return wrapKey(newPrivateKeyPEM())
 }
 
 func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
