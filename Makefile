@@ -179,7 +179,7 @@ $(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
 
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
-manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
+manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
 
 .PHONY: lint

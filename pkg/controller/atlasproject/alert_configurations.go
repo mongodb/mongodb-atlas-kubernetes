@@ -60,50 +60,55 @@ func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdb
 		ac := &alertConfigs[i]
 		for j := 0; j < len(ac.Notifications); j++ {
 			nf := &ac.Notifications[j]
-			var err error
-			var res *watch.WatchedObject
 			switch {
 			case nf.APITokenRef.Name != "":
-				nf.APIToken, res, err = readNotificationSecret(r.Client, nf.APITokenRef, projectNs, "APIToken")
+				token, res, err := readNotificationSecret(r.Client, nf.APITokenRef, projectNs, "APIToken")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetAPIToken(token)
 			case nf.DatadogAPIKeyRef.Name != "":
-				nf.DatadogAPIKey, res, err = readNotificationSecret(r.Client, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
+				token, res, err := readNotificationSecret(r.Client, nf.DatadogAPIKeyRef, projectNs, "DatadogAPIKey")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetDatadogAPIKey(token)
 			case nf.FlowdockAPITokenRef.Name != "":
-				nf.FlowdockAPIToken, res, err = readNotificationSecret(r.Client, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
+				token, res, err := readNotificationSecret(r.Client, nf.FlowdockAPITokenRef, projectNs, "FlowdockAPIToken")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetFlowdockAPIToken(token)
 			case nf.OpsGenieAPIKeyRef.Name != "":
-				nf.OpsGenieAPIKey, res, err = readNotificationSecret(r.Client, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
+				token, res, err := readNotificationSecret(r.Client, nf.OpsGenieAPIKeyRef, projectNs, "OpsGenieAPIKey")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetOpsGenieAPIKey(token)
 			case nf.ServiceKeyRef.Name != "":
-				nf.ServiceKey, res, err = readNotificationSecret(r.Client, nf.ServiceKeyRef, projectNs, "ServiceKey")
+				token, res, err := readNotificationSecret(r.Client, nf.ServiceKeyRef, projectNs, "ServiceKey")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetServiceKey(token)
 			case nf.VictorOpsSecretRef.Name != "":
-				nf.VictorOpsAPIKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
+				token, res, err := readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsAPIKey")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
-				nf.VictorOpsRoutingKey, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
+				nf.SetVictorOpsAPIKey(token)
+				token, res, err = readNotificationSecret(r.Client, nf.VictorOpsSecretRef, projectNs, "VictorOpsRoutingKey")
 				resourcesToWatch = append(resourcesToWatch, *res)
 				if err != nil {
 					return err
 				}
+				nf.SetVictorOpsRoutingKey(token)
 			}
 		}
 	}

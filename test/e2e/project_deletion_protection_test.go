@@ -372,10 +372,12 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					},
 					EncryptionAtRest: &mdbv1.EncryptionAtRest{
 						AwsKms: mdbv1.AwsKms{
-							Enabled:             toptr.MakePtr(true),
-							CustomerMasterKeyID: customerMasterKeyID,
-							Region:              "EU_WEST_1",
-							RoleID:              atlasRoleID,
+							Enabled: toptr.MakePtr(true),
+							Region:  "EU_WEST_1",
+							SecretRef: common.ResourceRefNamespaced{
+								Name:      "aws-secret",
+								Namespace: testData.Resources.Namespace,
+							},
 						},
 					},
 					CustomRoles: []mdbv1.CustomRole{
@@ -407,6 +409,24 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 			}
 			testData.Project = akoProject
+
+			Expect(testData.K8SClient.Create(ctx, &corev1.Secret{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "aws-secret",
+					Namespace: testData.Project.Namespace,
+					Labels: map[string]string{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					},
+				},
+				Data: map[string][]byte{
+					"CustomerMasterKeyID": []byte(customerMasterKeyID),
+					"RoleID":              []byte(atlasRoleID),
+				},
+			})).To(Succeed())
 
 			Expect(testData.K8SClient.Create(ctx, testData.Project))
 			time.Sleep(time.Second * 30)

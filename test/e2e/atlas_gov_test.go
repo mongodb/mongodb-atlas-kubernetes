@@ -296,12 +296,33 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			customerMasterKeyID, err := awsHelper.CreateKMS(fmt.Sprintf("%s-kms", projectName), "us-east-1", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
 
+			secret := &corev1.Secret{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "aws-secret",
+					Namespace: testData.Resources.Namespace,
+					Labels: map[string]string{
+						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+					},
+				},
+				Data: map[string][]byte{
+					"CustomerMasterKeyID": []byte(customerMasterKeyID),
+					"RoleID":              []byte(atlasRoleID),
+				},
+			}
+			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
+
 			testData.Project.Spec.EncryptionAtRest = &mdbv1.EncryptionAtRest{
 				AwsKms: mdbv1.AwsKms{
-					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: customerMasterKeyID,
-					Region:              "US_EAST_1",
-					RoleID:              atlasRoleID,
+					Enabled: toptr.MakePtr(true),
+					Region:  "US_EAST_1",
+					SecretRef: common.ResourceRefNamespaced{
+						Name:      "aws-secret",
+						Namespace: testData.Resources.Namespace,
+					},
 				},
 			}
 			Expect(testData.K8SClient.Update(ctx, testData.Project)).To(Succeed())

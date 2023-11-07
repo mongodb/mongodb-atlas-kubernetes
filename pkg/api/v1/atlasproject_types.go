@@ -127,26 +127,22 @@ func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
 	printable := p.DeepCopy()
 	// cleanup encryption at EncryptionAtRest
 	if printable.EncryptionAtRest != nil {
-		printable.EncryptionAtRest.AwsKms.AccessKeyID = hiddenField
-		printable.EncryptionAtRest.AwsKms.CustomerMasterKeyID = hiddenField
-		printable.EncryptionAtRest.AwsKms.SecretAccessKey = hiddenField
-		printable.EncryptionAtRest.AwsKms.RoleID = hiddenField
-		printable.EncryptionAtRest.AzureKeyVault.Secret = hiddenField
-		printable.EncryptionAtRest.GoogleCloudKms.ServiceAccountKey = hiddenField
+		printable.EncryptionAtRest.AwsKms.SetSecrets(hiddenField, hiddenField)
+		printable.EncryptionAtRest.AzureKeyVault.SetSecrets(hiddenField, hiddenField, hiddenField, hiddenField)
+		printable.EncryptionAtRest.GoogleCloudKms.SetSecrets(hiddenField, hiddenField)
 	}
-
 	// cleanup AlertConfigurations
 	for i := range printable.AlertConfigurations {
 		for j := range printable.AlertConfigurations[i].Notifications {
-			printable.AlertConfigurations[i].Notifications[j].APIToken = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].FlowdockAPIToken = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].DatadogAPIKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].SetAPIToken(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetDatadogAPIKey(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetFlowdockAPIToken(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetDatadogAPIKey(hiddenField)
 			printable.AlertConfigurations[i].Notifications[j].MobileNumber = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].OpsGenieAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].ServiceKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].VictorOpsAPIKey = hiddenField
-			printable.AlertConfigurations[i].Notifications[j].VictorOpsRoutingKey = hiddenField
+			printable.AlertConfigurations[i].Notifications[j].SetOpsGenieAPIKey(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetServiceKey(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetVictorOpsAPIKey(hiddenField)
+			printable.AlertConfigurations[i].Notifications[j].SetVictorOpsRoutingKey(hiddenField)
 		}
 	}
 

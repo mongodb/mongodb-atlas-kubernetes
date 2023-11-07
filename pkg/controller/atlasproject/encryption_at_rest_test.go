@@ -119,10 +119,12 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled:             toptr.MakePtr(true),
-						CustomerMasterKeyID: "aws-kms-master-key",
-						Region:              "eu-west-2",
-						RoleID:              "aws:id:arn/my-role",
+						Enabled: toptr.MakePtr(true),
+						Region:  "eu-west-2",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
@@ -131,7 +133,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-1","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-1","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
@@ -169,19 +171,22 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled:             toptr.MakePtr(true),
-						CustomerMasterKeyID: "aws-kms-master-key",
-						Region:              "eu-west-1",
-						RoleID:              "aws:id:arn/my-role",
+						Enabled: toptr.MakePtr(true),
+						Region:  "eu-west-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
 				},
 			},
 		}
+		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
@@ -219,19 +224,22 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled:             toptr.MakePtr(true),
-						CustomerMasterKeyID: "aws-kms-master-key",
-						Region:              "eu-central-1",
-						RoleID:              "aws:id:arn/my-role",
+						Enabled: toptr.MakePtr(true),
+						Region:  "eu-central-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
 				},
 			},
 		}
+		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
@@ -293,10 +301,12 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled:             toptr.MakePtr(true),
-						CustomerMasterKeyID: "aws-kms-master-key",
-						Region:              "eu-central-1",
-						RoleID:              "aws:id:arn/my-role",
+						Enabled: toptr.MakePtr(true),
+						Region:  "eu-central-1",
+						SecretRef: common.ResourceRefNamespaced{
+							Name:      "test-aws-secret",
+							Namespace: "test-namespace",
+						},
 					},
 					AzureKeyVault:  mdbv1.AzureKeyVault{},
 					GoogleCloudKms: mdbv1.GoogleCloudKms{},
@@ -305,15 +315,37 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 		}
 		akoProject.WithAnnotations(
 			map[string]string{
-				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"customerMasterKeyID":"aws-kms-master-key","region":"eu-west-2","roleId":"aws:id:arn/my-role"},"azureKeyVault":{},"googleCloudKms":{}}}`,
+				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
 			},
 		)
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
+		secretData := map[string][]byte{
+			"AccessKeyID":         []byte("testAccessKeyID"),
+			"SecretAccessKey":     []byte("testSecretAccessKey"),
+			"CustomerMasterKeyID": []byte("aws-kms-master-key"),
+			"RoleID":              []byte("aws:id:arn/my-role"),
+		}
+
+		fakeClient := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
+			&v1.Secret{
+				Data: secretData,
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-aws-secret",
+					Namespace: "test-namespace",
+				},
+			},
+		}...).Build()
+
 		reconciler := &AtlasProjectReconciler{
 			SubObjectDeletionProtection: true,
+			Client:                      fakeClient,
 		}
 		result := reconciler.ensureEncryptionAtRest(workflowCtx, akoProject, true)
 
@@ -331,8 +363,9 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 func TestReadEncryptionAtRestSecrets(t *testing.T) {
 	t.Run("AWS with correct secret data", func(t *testing.T) {
 		secretData := map[string][]byte{
+			"AccessKeyID":         []byte("testAccessKeyID"),
+			"SecretAccessKey":     []byte("testSecretAccessKey"),
 			"CustomerMasterKeyID": []byte("testCustomerMasterKeyID"),
-			"Region":              []byte("testRegion"),
 			"RoleID":              []byte("testRoleID"),
 		}
 
@@ -359,21 +392,22 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 					Name:      "aws-secret",
 					Namespace: "test",
 				},
+				Region: "testRegion",
 			},
 		}
 
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID)
-		assert.Equal(t, string(secretData["Region"]), encRest.AwsKms.Region)
-		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID)
+		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
+		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
 	})
 
 	t.Run("AWS with correct secret data (fallback namespace)", func(t *testing.T) {
 		secretData := map[string][]byte{
+			"AccessKeyID":         []byte("testAccessKeyID"),
+			"SecretAccessKey":     []byte("testSecretAccessKey"),
 			"CustomerMasterKeyID": []byte("testCustomerMasterKeyID"),
-			"Region":              []byte("testRegion"),
 			"RoleID":              []byte("testRoleID"),
 		}
 
@@ -405,9 +439,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test-fallback-ns")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID)
-		assert.Equal(t, string(secretData["Region"]), encRest.AwsKms.Region)
-		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID)
+		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
+		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
 	})
 
 	t.Run("AWS with missing fields", func(t *testing.T) {
@@ -481,8 +514,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["ServiceAccountKey"]), encRest.GoogleCloudKms.ServiceAccountKey)
-		assert.Equal(t, string(secretData["KeyVersionResourceID"]), encRest.GoogleCloudKms.KeyVersionResourceID)
+		assert.Equal(t, string(secretData["ServiceAccountKey"]), encRest.GoogleCloudKms.ServiceAccountKey())
+		assert.Equal(t, string(secretData["KeyVersionResourceID"]), encRest.GoogleCloudKms.KeyVersionResourceID())
 	})
 
 	t.Run("GCP with missing fields", func(t *testing.T) {
@@ -521,14 +554,10 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 	t.Run("Azure with correct secret data", func(t *testing.T) {
 		secretData := map[string][]byte{
-			"ClientID":          []byte("testClientID"),
-			"Secret":            []byte("testClientSecret"),
-			"AzureEnvironment":  []byte("testAzureEnvironment"),
-			"SubscriptionID":    []byte("testSubscriptionID"),
-			"TenantID":          []byte("testTenantID"),
-			"ResourceGroupName": []byte("testResourceGroupName"),
-			"KeyVaultName":      []byte("testKeyVaultName"),
-			"KeyIdentifier":     []byte("testKeyIdentifier"),
+			"Secret":         []byte("testClientSecret"),
+			"SubscriptionID": []byte("testSubscriptionID"),
+			"KeyVaultName":   []byte("testKeyVaultName"),
+			"KeyIdentifier":  []byte("testKeyIdentifier"),
 		}
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
@@ -559,14 +588,10 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["ClientID"]), encRest.AzureKeyVault.ClientID)
-		assert.Equal(t, string(secretData["Secret"]), encRest.AzureKeyVault.Secret)
-		assert.Equal(t, string(secretData["AzureEnvironment"]), encRest.AzureKeyVault.AzureEnvironment)
-		assert.Equal(t, string(secretData["SubscriptionID"]), encRest.AzureKeyVault.SubscriptionID)
-		assert.Equal(t, string(secretData["TenantID"]), encRest.AzureKeyVault.TenantID)
-		assert.Equal(t, string(secretData["ResourceGroupName"]), encRest.AzureKeyVault.ResourceGroupName)
-		assert.Equal(t, string(secretData["KeyVaultName"]), encRest.AzureKeyVault.KeyVaultName)
-		assert.Equal(t, string(secretData["KeyIdentifier"]), encRest.AzureKeyVault.KeyIdentifier)
+		assert.Equal(t, string(secretData["Secret"]), encRest.AzureKeyVault.Secret())
+		assert.Equal(t, string(secretData["SubscriptionID"]), encRest.AzureKeyVault.SubscriptionID())
+		assert.Equal(t, string(secretData["KeyVaultName"]), encRest.AzureKeyVault.KeyVaultName())
+		assert.Equal(t, string(secretData["KeyIdentifier"]), encRest.AzureKeyVault.KeyIdentifier())
 	})
 
 	t.Run("Azure with missing fields", func(t *testing.T) {
@@ -679,9 +704,9 @@ func TestAtlasInSync(t *testing.T) {
 	atlas = mongodbatlas.EncryptionAtRest{
 		AwsKms: mongodbatlas.AwsKms{
 			Enabled:             toptr.MakePtr(true),
-			CustomerMasterKeyID: "example",
+			CustomerMasterKeyID: "testCustomerMasterKeyID",
 			Region:              "US_EAST_1",
-			RoleID:              "example",
+			RoleID:              "testRoleID",
 			Valid:               toptr.MakePtr(true),
 		},
 		AzureKeyVault: mongodbatlas.AzureKeyVault{
@@ -693,14 +718,14 @@ func TestAtlasInSync(t *testing.T) {
 	}
 	spec = mdbv1.EncryptionAtRest{
 		AwsKms: mdbv1.AwsKms{
-			Enabled:             toptr.MakePtr(true),
-			CustomerMasterKeyID: "example",
-			Region:              "US_EAST_1",
-			Valid:               toptr.MakePtr(true),
+			Enabled: toptr.MakePtr(true),
+			Region:  "US_EAST_1",
+			Valid:   toptr.MakePtr(true),
 		},
 		AzureKeyVault:  mdbv1.AzureKeyVault{},
 		GoogleCloudKms: mdbv1.GoogleCloudKms{},
 	}
+	spec.AwsKms.SetSecrets("testCustomerMasterKeyID", "testRoleID")
 
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
@@ -724,10 +749,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 					Enabled:           toptr.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
-					SubscriptionID:    "sub id",
 					ResourceGroupName: "resource group",
-					KeyVaultName:      "vault name",
-					KeyIdentifier:     "key id",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
@@ -749,10 +771,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 				operator: mdbv1.AzureKeyVault{
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
-					SubscriptionID:    "sub id",
 					ResourceGroupName: "resource group",
-					KeyVaultName:      "vault name",
-					KeyIdentifier:     "key id",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
@@ -775,10 +794,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 					Enabled:           toptr.MakePtr(false),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
-					SubscriptionID:    "sub id",
 					ResourceGroupName: "resource group",
-					KeyVaultName:      "vault name",
-					KeyIdentifier:     "key id",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
@@ -801,10 +817,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 					Enabled:           toptr.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
-					SubscriptionID:    "sub id",
 					ResourceGroupName: "resource group",
-					KeyVaultName:      "vault name",
-					KeyIdentifier:     "key id",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
@@ -823,7 +836,8 @@ func TestAreAzureConfigEqual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, areAzureConfigEqual(tt.args.operator, tt.args.atlas), "areAzureConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			tt.args.operator.SetSecrets("sub id", "vault name", "key id", "")
+			assert.Equalf(t, tt.want, areAzureConfigEqual(tt.args.operator, tt.args.atlas, false), "areAzureConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
@@ -842,8 +856,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are equal",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(true),
-					KeyVersionResourceID: "key version id",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
 					Enabled:              toptr.MakePtr(true),
@@ -855,9 +868,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 		{
 			name: "GCP configuration are equal when disabled and nullable",
 			args: args{
-				operator: mdbv1.GoogleCloudKms{
-					KeyVersionResourceID: "key version id",
-				},
+				operator: mdbv1.GoogleCloudKms{},
 				atlas: mongodbatlas.GoogleCloudKms{
 					Enabled:              toptr.MakePtr(false),
 					KeyVersionResourceID: "key version id",
@@ -869,8 +880,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are different by enable field",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(true),
-					KeyVersionResourceID: "key version id",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
 					Enabled:              toptr.MakePtr(false),
@@ -883,12 +893,11 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are different by another field",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(true),
-					KeyVersionResourceID: "key version resource id",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
 					Enabled:              toptr.MakePtr(true),
-					KeyVersionResourceID: "key version id",
+					KeyVersionResourceID: "key version resource id",
 				},
 			},
 			want: false,
@@ -896,7 +905,8 @@ func TestAreGCPConfigEqual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, areGCPConfigEqual(tt.args.operator, tt.args.atlas), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			tt.args.operator.SetSecrets("", "key version id")
+			assert.Equalf(t, tt.want, areGCPConfigEqual(tt.args.operator, tt.args.atlas, false), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
@@ -915,8 +925,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are equal",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: "customer master key",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
 					Enabled:             toptr.MakePtr(true),
@@ -928,9 +937,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 		{
 			name: "AWS configuration are equal when disabled and nullable",
 			args: args{
-				operator: mdbv1.AwsKms{
-					CustomerMasterKeyID: "customer master key",
-				},
+				operator: mdbv1.AwsKms{},
 				atlas: mongodbatlas.AwsKms{
 					Enabled:             toptr.MakePtr(false),
 					CustomerMasterKeyID: "customer master key",
@@ -942,8 +949,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are different by enable field",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: "customer master key",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
 					Enabled:             toptr.MakePtr(false),
@@ -956,8 +962,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are different by another field",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: "customer master key",
+					Enabled: toptr.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
 					Enabled:             toptr.MakePtr(true),
@@ -969,7 +974,8 @@ func TestAreAWSConfigEqual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, areAWSConfigEqual(tt.args.operator, tt.args.atlas), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
+			tt.args.operator.SetSecrets("customer master key", "")
+			assert.Equalf(t, tt.want, areAWSConfigEqual(tt.args.operator, tt.args.atlas, false), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
 }
