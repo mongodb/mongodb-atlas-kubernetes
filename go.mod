@@ -26,8 +26,8 @@ require (
 	go.mongodb.org/atlas v0.35.0
 	go.mongodb.org/mongo-driver v1.12.1
 	go.uber.org/zap v1.26.0
-	golang.org/x/sync v0.4.0
-	google.golang.org/api v0.149.0
+	golang.org/x/sync v0.5.0
+	google.golang.org/api v0.150.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.26.4
@@ -49,7 +49,7 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
 )
 
 require (
