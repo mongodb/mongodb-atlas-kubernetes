@@ -5,7 +5,7 @@ go 1.21
 require (
 	cloud.google.com/go/kms v1.15.4
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.8.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
@@ -14,7 +14,6 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.46.7
-	github.com/fatih/structtag v1.2.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-test/deep v1.1.0
 	github.com/google/go-cmp v0.6.0
@@ -39,7 +38,7 @@ require (
 
 require (
 	cloud.google.com/go/iam v1.1.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
