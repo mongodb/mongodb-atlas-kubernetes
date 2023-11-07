@@ -36,13 +36,11 @@ import (
 )
 
 const (
-	AWSAccessKey       = "AWS_ACCESS_KEY_ID"
-	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY" //#nosec G101 -- False positive; this is the env var, not the secret itself
-	AzureClientID      = "AZURE_CLIENT_ID"
-	KeyVaultName       = "ako-kms-test"
-	AzureClientSecret  = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
-	AzureEnvironment   = "AZURE"
-	KeyName            = "encryption-at-rest-test-key"
+	AzureClientID     = "AZURE_CLIENT_ID"
+	KeyVaultName      = "ako-kms-test"
+	AzureClientSecret = "AZURE_CLIENT_SECRET" //#nosec G101 -- False positive; this is the env var, not the secret itself
+	AzureEnvironment  = "AZURE"
+	KeyName           = "encryption-at-rest-test-key"
 )
 
 var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() {
@@ -212,8 +210,6 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtR
 			},
 		},
 		Data: map[string][]byte{
-			"AccessKeyID":         []byte(os.Getenv(AWSAccessKey)),
-			"SecretAccessKey":     []byte(os.Getenv(AWSSecretAccessKey)),
 			"CustomerMasterKeyID": []byte(CustomerMasterKeyID),
 			"RoleID":              []byte(assumedRoleArn),
 		},
@@ -329,7 +325,7 @@ func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) 
 	return true, nil
 }
 
-var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered, func() {
+var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encryption-at-rest-aws"), Ordered, func() {
 	var testData *model.TestDataProvider
 
 	_ = BeforeEach(func() {
@@ -416,26 +412,12 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest"), Ordered,
 			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
 
 			fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
-			fillVaultforAzure(userData, &encAtRest)
-			fillKMSforGCP(userData, &encAtRest)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 			userData.Project.Spec.EncryptionAtRest = &encAtRest
 
-			var roleARNToSet string
-			for _, r := range atlasRoles.AWSIAMRoles {
-				if r.IAMAssumedRoleARN == aRole.IamAssumedRoleArn {
-					roleARNToSet = r.IAMAssumedRoleARN
-					break
-				}
-			}
-			Expect(roleARNToSet).NotTo(BeEmpty())
-			secretRef := userData.Project.Spec.EncryptionAtRest.AwsKms.SecretRef
-			secret := &corev1.Secret{}
-			Expect(userData.K8SClient.Get(userData.Context, *secretRef.GetObject(userData.Resources.Namespace), secret)).Should(Succeed())
-			secret.Data["RoleID"] = []byte(roleARNToSet)
-			Expect(userData.K8SClient.Update(userData.Context, secret)).Should(Succeed())
+			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
 		})
 	})
