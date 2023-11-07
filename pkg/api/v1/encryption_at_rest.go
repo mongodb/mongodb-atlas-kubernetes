@@ -18,8 +18,6 @@ type EncryptionAtRest struct {
 // AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AwsKms struct {
 	Enabled             *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project, To disable Encryption at Rest, pass only this parameter with a value of false, When you disable Encryption at Rest, Atlas also removes the configuration details.
-	accessKeyID         string // The IAM access key ID with permissions to access the customer master key specified by customerMasterKeyID.
-	secretAccessKey     string // The IAM secret access key with permissions to access the customer master key specified by customerMasterKeyID.
 	customerMasterKeyID string // The AWS customer master key used to encrypt and decrypt the MongoDB master keys.
 	Region              string `json:"region,omitempty"` // The AWS region in which the AWS customer master key exists: CA_CENTRAL_1, US_EAST_1, US_EAST_2, US_WEST_1, US_WEST_2, SA_EAST_1
 	roleID              string // ID of an AWS IAM role authorized to manage an AWS customer master key.
@@ -29,9 +27,7 @@ type AwsKms struct {
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
 }
 
-func (a *AwsKms) SetSecrets(accessKeyID, secretAccessKey, customerMasterKeyID, roleID string) {
-	a.accessKeyID = accessKeyID
-	a.secretAccessKey = secretAccessKey
+func (a *AwsKms) SetSecrets(customerMasterKeyID, roleID string) {
 	a.customerMasterKeyID = customerMasterKeyID
 	a.roleID = roleID
 }
@@ -40,16 +36,8 @@ func (a AwsKms) CustomerMasterKeyID() string {
 	return a.customerMasterKeyID
 }
 
-func (a AwsKms) AccessKeyID() string {
-	return a.accessKeyID
-}
-
 func (a AwsKms) RoleID() string {
 	return a.roleID
-}
-
-func (a AwsKms) SecretAccessKey() string {
-	return a.secretAccessKey
 }
 
 // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
@@ -129,8 +117,6 @@ func (e EncryptionAtRest) ToAtlas(projectID string) (*mongodbatlas.EncryptionAtR
 func (a AwsKms) ToAtlas() mongodbatlas.AwsKms {
 	return mongodbatlas.AwsKms{
 		Enabled:             a.Enabled,
-		AccessKeyID:         a.accessKeyID,
-		SecretAccessKey:     a.secretAccessKey,
 		RoleID:              a.roleID,
 		CustomerMasterKeyID: a.customerMasterKeyID,
 		Region:              a.Region,

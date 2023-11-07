@@ -99,12 +99,12 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 }
 
 func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "AccessKeyID", "SecretAccessKey", "CustomerMasterKeyID", "RoleID")
+	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "RoleID")
 	if err != nil {
 		return watchObj, err
 	}
 
-	awsKms.SetSecrets(fieldData["AccessKeyID"], fieldData["SecretAccessKey"], fieldData["CustomerMasterKeyID"], fieldData["RoleID"])
+	awsKms.SetSecrets(fieldData["CustomerMasterKeyID"], fieldData["RoleID"])
 
 	return watchObj, nil
 }
@@ -433,7 +433,6 @@ func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApp
 	}
 	// Atlas API does not return SecretAccessKey or RoleID
 	return *operator.Enabled == *atlas.Enabled &&
-		operator.AccessKeyID() == atlas.AccessKeyID &&
 		operator.CustomerMasterKeyID() == atlas.CustomerMasterKeyID &&
 		operator.Region == atlas.Region
 }

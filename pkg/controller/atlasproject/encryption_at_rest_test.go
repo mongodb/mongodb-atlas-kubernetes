@@ -183,7 +183,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("", "", "aws-kms-master-key", "aws:id:arn/my-role")
+		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
 				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
@@ -236,7 +236,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("", "", "aws-kms-master-key", "aws:id:arn/my-role")
+		akoProject.Spec.EncryptionAtRest.AwsKms.SetSecrets("aws-kms-master-key", "aws:id:arn/my-role")
 		akoProject.WithAnnotations(
 			map[string]string{
 				customresource.AnnotationLastAppliedConfiguration: `{"encryptionAtRest":{"awsKms":{"enabled":true,"region":"eu-west-2","secretRef":{"name":"test-aws-secret","namespace":"test-namespace"}},"azureKeyVault":{},"googleCloudKms":{}}}`,
@@ -401,8 +401,6 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
 		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
-		assert.Equal(t, string(secretData["SecretAccessKey"]), encRest.AwsKms.SecretAccessKey())
-		assert.Equal(t, string(secretData["AccessKeyID"]), encRest.AwsKms.AccessKeyID())
 	})
 
 	t.Run("AWS with correct secret data (fallback namespace)", func(t *testing.T) {
@@ -441,8 +439,6 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		err := readEncryptionAtRestSecrets(kk, service, encRest, "test-fallback-ns")
 		assert.Nil(t, err)
 
-		assert.Equal(t, string(secretData["AccessKeyID"]), encRest.AwsKms.AccessKeyID())
-		assert.Equal(t, string(secretData["SecretAccessKey"]), encRest.AwsKms.SecretAccessKey())
 		assert.Equal(t, string(secretData["CustomerMasterKeyID"]), encRest.AwsKms.CustomerMasterKeyID())
 		assert.Equal(t, string(secretData["RoleID"]), encRest.AwsKms.RoleID())
 	})
@@ -729,7 +725,7 @@ func TestAtlasInSync(t *testing.T) {
 		AzureKeyVault:  mdbv1.AzureKeyVault{},
 		GoogleCloudKms: mdbv1.GoogleCloudKms{},
 	}
-	spec.AwsKms.SetSecrets("", "", "testCustomerMasterKeyID", "testRoleID")
+	spec.AwsKms.SetSecrets("testCustomerMasterKeyID", "testRoleID")
 
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
@@ -978,7 +974,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.args.operator.SetSecrets("", "", "customer master key", "")
+			tt.args.operator.SetSecrets("customer master key", "")
 			assert.Equalf(t, tt.want, areAWSConfigEqual(tt.args.operator, tt.args.atlas, false), "areGCPConfigEqual(%v, %v)", tt.args.operator, tt.args.atlas)
 		})
 	}
