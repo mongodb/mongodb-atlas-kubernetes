@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,6 +22,7 @@ import (
 
 var _ = Describe("HELM charts", Ordered, func() {
 	var data model.TestDataProvider
+	skipped := false
 
 	_ = BeforeAll(func() {
 		cli.Execute("kubectl", "delete", "-f", "../../deploy/crds").Wait().Out.Contents()
@@ -37,6 +39,9 @@ var _ = Describe("HELM charts", Ordered, func() {
 
 	_ = AfterEach(func() {
 		By("After each.", func() {
+			if skipped {
+				return
+			}
 			GinkgoWriter.Write([]byte("\n"))
 			GinkgoWriter.Write([]byte("===============================================\n"))
 			GinkgoWriter.Write([]byte("Operator namespace: " + data.Resources.Namespace + "\n"))
@@ -222,6 +227,19 @@ var _ = Describe("HELM charts", Ordered, func() {
 
 	Describe("HELM charts.", Label("helm-update"), func() {
 		It("User deploy operator and later deploy new version of the Atlas operator", func() {
+			By("Check upgrade is actually possible", func() {
+				helm.AddMongoDBRepo()
+				releasedVersion, err := helm.GetReleasedChartVersion()
+				Expect(err).Should(BeNil())
+				devMajorVersion, err := helm.GetDevelopmentMayorVersion()
+				Expect(err).Should(BeNil())
+				releaseMajorVersion := strings.Split(releasedVersion, ".")[0]
+				if releaseMajorVersion != devMajorVersion {
+					skipped = true
+					Skip(fmt.Sprintf("cannot test upgrade from incompatible major release version %s to version %s",
+						releaseMajorVersion, devMajorVersion))
+				}
+			})
 			By("User creates configuration for a new Project, Deployment, DBUser", func() {
 				data = model.DataProviderWithResources(
 					"helm-upgrade",
@@ -243,7 +261,6 @@ var _ = Describe("HELM charts", Ordered, func() {
 				data.Resources.Deployments[0].Spec.DeploymentSpec.Name = "deployment-from-helm-upgrade"
 			})
 			By("User use helm for last released version of operator and deploy his resources", func() {
-				helm.AddMongoDBRepo()
 				helm.InstallOperatorNamespacedFromLatestRelease(data.Resources)
 				helm.InstallDeploymentRelease(data.Resources)
 				waitDeploymentWithChecks(&data)
