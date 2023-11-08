@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -227,6 +228,8 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		}),
 	}
 
+	featureFlags := featureflags.NewFeatureFlags(os.Environ)
+
 	atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
 
 	err = (&atlasproject.AtlasProjectReconciler{
@@ -254,14 +257,15 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		Client:                      k8sManager.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
-		ResourceWatcher:             watch.NewResourceWatcher(),
-		AtlasProvider:               atlasProvider,
-		GlobalPredicates:            globalPredicates,
-		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: deletionProtection,
+		Client:                        k8sManager.GetClient(),
+		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		EventRecorder:                 k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
+		ResourceWatcher:               watch.NewResourceWatcher(),
+		AtlasProvider:                 atlasProvider,
+		GlobalPredicates:              globalPredicates,
+		ObjectDeletionProtection:      deletionProtection,
+		SubObjectDeletionProtection:   deletionProtection,
+		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

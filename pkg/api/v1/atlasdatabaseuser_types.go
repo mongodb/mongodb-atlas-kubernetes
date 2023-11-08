@@ -76,8 +76,31 @@ type AtlasDatabaseUserSpec struct {
 	// PasswordSecret is a reference to the Secret keeping the user password.
 	PasswordSecret *common.ResourceRef `json:"passwordSecretRef,omitempty"`
 
-	// Username is a username for authenticating to MongoDB.
+	// Username is a username for authenticating to MongoDB
+	// Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
+	// In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
+	// In case of OIDC: the value should be the Identity Provider ID;
+	// In case of Plain text auth: the value can be anything
+	// +kubebuilder:validation:MaxLength:=1024
 	Username string `json:"username"`
+
+	// Human-readable label that indicates whether the new database Username
+	// with OIDC federated authentication.
+	// To create a federated authentication user, specify the value
+	// of IDP_GROUP for this field
+	// +kubebuilder:default:=NONE
+	// +kubebuilder:validation:Enum:=NONE;IDP_GROUP
+	// +optional
+	OIDCAuthType string `json:"oidcAuthType,omitempty"`
+
+	// Human-readable label that indicates whether the new database
+	// user authenticates with the Amazon Web Services (AWS)
+	// Identity and Access Management (IAM) credentials associated with
+	// the user or the user's role
+	// +kubebuilder:default:=NONE
+	// +kubebuilder:validation:Enum:=NONE;USER;ROLE
+	// +optional
+	AWSIAMType string `json:"awsIamType,omitempty"`
 
 	// X509Type is X.509 method by which the database authenticates the provided username
 	X509Type string `json:"x509Type,omitempty"`

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -42,17 +43,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
+//nolint:stylecheck
+var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authentication is disabled")
+
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
 	watch.ResourceWatcher
-	Client                      client.Client
-	Log                         *zap.SugaredLogger
-	Scheme                      *runtime.Scheme
-	GlobalPredicates            []predicate.Predicate
-	EventRecorder               record.EventRecorder
-	AtlasProvider               atlas.Provider
-	ObjectDeletionProtection    bool
-	SubObjectDeletionProtection bool
+	Client                        client.Client
+	Log                           *zap.SugaredLogger
+	Scheme                        *runtime.Scheme
+	EventRecorder                 record.EventRecorder
+	AtlasProvider                 atlas.Provider
+	GlobalPredicates              []predicate.Predicate
+	ObjectDeletionProtection      bool
+	SubObjectDeletionProtection   bool
+	FeaturePreviewOIDCAuthEnabled bool
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdatabaseusers,verbs=get;list;watch;create;update;patch;delete
@@ -162,6 +167,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
+	err = r.handleFeatureFlags(databaseUser)
+	if err != nil {
+		result = workflow.Terminate(workflow.Internal, err.Error())
+		log.Error(result.GetMessage())
+		return result.ReconcileResult(), nil
+	}
+
 	result = r.ensureDatabaseUser(workflowCtx, *project, *databaseUser)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -182,6 +194,28 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	workflowCtx.SetConditionTrue(status.ReadyType)
 
 	return result.ReconcileResult(), nil
+}
+
+func (r *AtlasDatabaseUserReconciler) handleFeatureFlags(dbuser *mdbv1.AtlasDatabaseUser) error {
+	err := handleOIDCPreview(r.FeaturePreviewOIDCAuthEnabled, dbuser)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TODO: Remove after the OIDC feature becomes stable
+func handleOIDCPreview(OIDCEnabled bool, dbuser *mdbv1.AtlasDatabaseUser) error {
+	if dbuser == nil {
+		return nil
+	}
+
+	if !OIDCEnabled && dbuser.Spec.OIDCAuthType == "IDP_GROUP" {
+		return ErrOIDCNotEnabled
+	}
+
+	return nil
 }
 
 func (r *AtlasDatabaseUserReconciler) readProjectResource(user *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) workflow.Result {
