@@ -70,10 +70,6 @@ spec:
                       description: Target region to copy snapshots belonging to replicationSpecId
                         to.
                       type: string
-                    replicationSpecId:
-                      description: Unique identifier that identifies the replication
-                        object for a zone in a cluster.
-                      type: string
                     shouldCopyOplogs:
                       description: Flag that indicates whether to copy the oplogs
                         to the target region.

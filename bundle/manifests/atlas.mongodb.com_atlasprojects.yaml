@@ -108,15 +108,11 @@ spec:
                         is detected.
                       items:
                         properties:
-                          apiToken:
-                            description: Slack API token or Bot token. Populated for
-                              the SLACK notifications type. If the token later becomes
-                              invalid, Atlas sends an email to the project owner and
-                              eventually removes the token.
-                            type: string
                           apiTokenRef:
-                            description: ResourceRefNamespaced is a reference to a
-                              Kubernetes Resource that allows to configure the namespace
+                            description: Secret containing a Slack API token or Bot
+                              token. Populated for the SLACK notifications type. If
+                              the token later becomes invalid, Atlas sends an email
+                              to the project owner and eventually removes the token.
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -133,8 +129,9 @@ spec:
                               notifications type.
                             type: string
                           datadogAPIKeyRef:
-                            description: ResourceRefNamespaced is a reference to a
-                              Kubernetes Resource that allows to configure the namespace
+                            description: Secret containing a Datadog API Key. Found
+                              in the Datadog dashboard. Populated for the DATADOG
+                              notifications type.
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -146,10 +143,6 @@ spec:
                             required:
                             - name
                             type: object
-                          datadogApiKey:
-                            description: Datadog API Key. Found in the Datadog dashboard.
-                              Populated for the DATADOG notifications type.
-                            type: string
                           datadogRegion:
                             description: Region that indicates which API URL to use
                             type: string
@@ -169,15 +162,11 @@ spec:
                           flowName:
                             description: Flowdock flow namse in lower-case letters.
                             type: string
-                          flowdockApiToken:
+                          flowdockApiTokenRef:
                             description: The Flowdock personal API token. Populated
                               for the FLOWDOCK notifications type. If the token later
                               becomes invalid, Atlas sends an email to the project
                               owner and eventually removes the token.
-                            type: string
-                          flowdockApiTokenRef:
-                            description: ResourceRefNamespaced is a reference to a
-                              Kubernetes Resource that allows to configure the namespace
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -198,15 +187,11 @@ spec:
                             description: Mobile number to which alert notifications
                               are sent. Populated for the SMS notifications type.
                             type: string
-                          opsGenieApiKey:
+                          opsGenieApiKeyRef:
                             description: Opsgenie API Key. Populated for the OPS_GENIE
                               notifications type. If the key later becomes invalid,
                               Atlas sends an email to the project owner and eventually
                               removes the token.
-                            type: string
-                          opsGenieApiKeyRef:
-                            description: ResourceRefNamespaced is a reference to a
-                              Kubernetes Resource that allows to configure the namespace
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -233,15 +218,11 @@ spec:
                             items:
                               type: string
                             type: array
-                          serviceKey:
+                          serviceKeyRef:
                             description: PagerDuty service key. Populated for the
                               PAGER_DUTY notifications type. If the key later becomes
                               invalid, Atlas sends an email to the project owner and
                               eventually removes the key.
-                            type: string
-                          serviceKeyRef:
-                            description: ResourceRefNamespaced is a reference to a
-                              Kubernetes Resource that allows to configure the namespace
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -273,21 +254,12 @@ spec:
                               is allowed here. Populated for the USER notifications
                               type.
                             type: string
-                          victorOpsApiKey:
-                            description: VictorOps API key. Populated for the VICTOR_OPS
-                              notifications type. If the key later becomes invalid,
-                              Atlas sends an email to the project owner and eventually
-                              removes the key.
-                            type: string
-                          victorOpsRoutingKey:
-                            description: VictorOps routing key. Populated for the
-                              VICTOR_OPS notifications type. If the key later becomes
-                              invalid, Atlas sends an email to the project owner and
-                              eventually removes the key.
-                            type: string
                           victorOpsSecretRef:
-                            description: Secret for VictorOps should contain both
-                              APIKey and RoutingKey values
+                            description: Secret containing a VictorOps API key and
+                              Routing key. Populated for the VICTOR_OPS notifications
+                              type. If the key later becomes invalid, Atlas sends
+                              an email to the project owner and eventually removes
+                              the key.
                             properties:
                               name:
                                 description: Name is the name of the Kubernetes Resource
@@ -444,21 +416,13 @@ spec:
                     description: AwsKms specifies AWS KMS configuration details and
                       whether Encryption at Rest is enabled for an Atlas project.
                     properties:
-                      accessKeyID:
-                        type: string
-                      customerMasterKeyID:
-                        type: string
                       enabled:
                         type: boolean
                       region:
                         type: string
-                      roleId:
-                        type: string
-                      secretAccessKey:
-                        type: string
                       secretRef:
                         description: A reference to as Secret containing the AccessKeyID,
-                          SecretAccessKey, CustomerMasterKey and RoleID fields
+                          SecretAccessKey, CustomerMasterKeyID and RoleID fields
                         properties:
                           name:
                             description: Name is the name of the Kubernetes Resource
@@ -484,13 +448,7 @@ spec:
                         type: string
                       enabled:
                         type: boolean
-                      keyIdentifier:
-                        type: string
-                      keyVaultName:
-                        type: string
                       resourceGroupName:
-                        type: string
-                      secret:
                         type: string
                       secretRef:
                         description: A reference to as Secret containing the SubscriptionID,
@@ -506,8 +464,6 @@ spec:
                         required:
                         - name
                         type: object
-                      subscriptionID:
-                        type: string
                       tenantID:
                         type: string
                     type: object
@@ -517,8 +473,6 @@ spec:
                     properties:
                       enabled:
                         type: boolean
-                      keyVersionResourceID:
-                        type: string
                       secretRef:
                         description: A reference to as Secret containing the ServiceAccountKey,
                           KeyVersionResourceID fields
@@ -533,8 +487,6 @@ spec:
                         required:
                         - name
                         type: object
-                      serviceAccountKey:
-                        type: string
                     type: object
                 type: object
               integrations:
