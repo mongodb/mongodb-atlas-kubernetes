@@ -1,76 +1,60 @@
 name: Clean Atlas organization
-# local run sample:
-# echo '{"ref":"HEAD/ref/CLOUDP-smth", "ref_type":"branch", "action":"workflow_dispatch", "inputs": {"clean":"true", "timelife": "3"} }' > payload.json | act -j cleanup-all -e payload.json
 
 on:
   schedule:
-    - cron: "0 1 * * 1-5"
-    - cron: "0 3 * * 1-5"
+    - cron: "*/30 7-22 * * 1-5"
   workflow_dispatch:
     inputs:
-      clean:
-        description: "Clean all(true) or old empty projects(false)?"
-        default: "false"
-        required: true
-      timelife:
-        description: "Timelife of project in hours"
+      lifetime:
+        description: "Lifetime of project in hours"
         default: "3"
-        required: true
-      cleanPE:
-        description: "Run PE cleaner(true) or not(false)?"
-        default: "true"
-        required: true
-      cleanVPC:
-        description: "Clean VPC(true) or not(false)?"
-        default: "true"
         required: true
 
 concurrency:
   group: cleanup
 
 jobs:
-  cleanup-all:
-    name: Cleanup atlas empty projects, and terminate cluster
+  cleanup:
+    name: Cleanup Atlas Cloud
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ["CloudQA", "CloudGovQA"]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout codebase
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: "${{ github.workspace }}/go.mod"
+          go-version-file: "${{ github.workspace }}/tools/clean/go.mod"
 
-      - name: Build & Test clean tool
-        run: (cd tools/clean && go build . && go test .)
+      - name: Build clean tool
+        run: (cd tools/clean && go build .)
 
-      - name: Run cleanup VPC
-        if: github.event_name == 'schedule' || github.event.inputs.cleanVPC == 'true'
+      - name: Persist GCP credentials
+        id: gcp-cred
         env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-        run: (cd tools/clean && ./clean vpc)
+          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED_NEW_TEST }}
+        run: |
+          echo $GCP_SA_CRED > ~/gcp_sa_cred.json
+          
+          echo credentials=$(realpath ~/gcp_sa_cred.json) >> $GITHUB_OUTPUT
 
-      - name: Run cleanup PE
-        if: github.event_name == 'schedule' || github.event.inputs.cleanPE == 'true'
+      - name: Run cleaner
         env:
+          MCLI_OPS_MANAGER_URL: ${{ matrix.target == 'CloudQA' && 'https://cloud-qa.mongodb.com/' || 'https://cloud-qa.mongodbgov.com/' }}
+          MCLI_PUBLIC_API_KEY: ${{ matrix.target == 'CloudQA' && secrets.ATLAS_PUBLIC_KEY || secrets.ATLAS_GOV_PUBLIC_KEY}}
+          MCLI_PRIVATE_API_KEY: ${{ matrix.target == 'CloudQA' && secrets.ATLAS_PRIVATE_KEY || secrets.ATLAS_GOV_PRIVATE_KEY }}
+          MCLI_ORG_ID: ${{ matrix.target == 'CloudQA' && secrets.ATLAS_ORG_ID || secrets.ATLAS_GOV_ORG_ID }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcp-cred.outputs.credentials }}
+          GOOGLE_PROJECT_ID: atlasoperator
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
-        run: (cd tools/clean && ./clean pe)
-
-      - name: Run atlas project cleaner
-        if: always()
-        env:
-          MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
-          MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
-          CLEAN_ALL: ${{ github.event.inputs.clean }}
-          MAX_PROJECT_LIFETIME: ${{ github.event.inputs.timelife }}
+          AZURE_RESOURCE_GROUP_NAME: svet-test
+          PROJECT_LIFETIME: ${{ inputs.lifetime }}
         run: (cd tools/clean && ./clean atlas)

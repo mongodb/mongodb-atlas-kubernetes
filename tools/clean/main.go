@@ -1,42 +1,50 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
-	"strings"
+	"strconv"
 	"tools/clean/atlas"
-	"tools/clean/pe"
-	"tools/clean/vpc"
+	"tools/clean/provider"
+
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 func main() {
-	if err := Clean(os.Args); err != nil {
-		log.Printf("Invocation failed: %s", err)
-		log.Fatalf("Usage: %s {atlas|pe|vpc}", os.Args[0])
+	ctx := context.Background()
+	awsCleaner := provider.NewAWSCleaner()
+
+	gcpCleaner, err := provider.NewGCPCleaner(ctx)
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
+
+		return
 	}
-}
 
-var cleanAtlas = atlas.CleanAtlas
+	azureCleaner, err := provider.NewAzureCleaner()
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
 
-var cleanPEs = pe.CleanPEs
-
-var cleanVPCs = vpc.CleanVPCs
-
-func Clean(args []string) error {
-	if len(args) != 2 {
-		return fmt.Errorf("Wrong number of arguments: expected 1 got %d", len(args)-1)
+		return
 	}
-	action := strings.ToLower(args[1])
-	switch action {
-	case "atlas":
-		cleanAtlas()
-	case "pe":
-		cleanPEs()
-	case "vpc":
-		cleanVPCs()
-	default:
-		return fmt.Errorf("Unsupported action %q", action)
+
+	c, err := atlas.NewCleaner(awsCleaner, gcpCleaner, azureCleaner)
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
+
+		return
 	}
-	return nil
+
+	lifetime, err := strconv.Atoi(os.Getenv("PROJECT_LIFETIME"))
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
+
+		return
+	}
+
+	err = c.Clean(ctx, lifetime)
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
+	}
 }
