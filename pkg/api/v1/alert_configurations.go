@@ -262,6 +262,9 @@ func (in *Notification) IsEqual(notification mongodbatlas.Notification) bool {
 func (in *Notification) ToAtlas() (*mongodbatlas.Notification, error) {
 	result := &mongodbatlas.Notification{}
 	err := compat.JSONCopy(result, in)
+	if err != nil {
+		return nil, err
+	}
 	result.APIToken = in.apiToken
 	result.DatadogAPIKey = in.datadogAPIKey
 	result.FlowdockAPIToken = in.flowdockAPIToken
@@ -269,7 +272,7 @@ func (in *Notification) ToAtlas() (*mongodbatlas.Notification, error) {
 	result.ServiceKey = in.serviceKey
 	result.VictorOpsAPIKey = in.victorOpsAPIKey
 	result.VictorOpsRoutingKey = in.victorOpsRoutingKey
-	return result, err
+	return result, nil
 }
 
 // MetricThreshold  causes an alert to be triggered. Required if "eventTypeName" : "OUTSIDE_METRIC_THRESHOLD".
