@@ -102,9 +102,9 @@ jobs:
           quay_username: mongodb+mongodb_atlas_kubernetes
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           tags: |
-            mongodb/atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
-            quay.io/mongodb/atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
-            quay.io/mongodb/atlas-kubernetes-operator:${{ steps.tag.outputs.version }}-certifed
+            mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
+            quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
+            quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}-certifed
       - name: Certify Openshift images
         if: ${{ env.CERTIFY == 'true' }}
         uses: ./.github/actions/certify-openshift-images
