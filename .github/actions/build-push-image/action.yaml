@@ -87,6 +87,8 @@ runs:
         go mod download
     - name: Build all platforms
       shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
       run: make all-platforms
     # - name: Fail if send input flags are both unset
     #   if: ${{ inputs.push_to_docker != 'true' && inputs.push_to_quay != 'true' }}
