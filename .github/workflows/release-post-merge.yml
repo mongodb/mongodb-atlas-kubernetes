@@ -104,7 +104,7 @@ jobs:
           tags: |
             mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
             quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}
-            quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}-certifed
+            quay.io/mongodb/mongodb-atlas-kubernetes-operator:${{ steps.tag.outputs.version }}-certified
       - name: Certify Openshift images
         if: ${{ env.CERTIFY == 'true' }}
         uses: ./.github/actions/certify-openshift-images
