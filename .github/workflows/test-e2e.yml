@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.DOCKER_REPO }}
-          # version: ${{ steps.prepare.outputs.tag }}
+          version: ${{ steps.prepare.outputs.tag }}
           tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           docker_username: ${{ secrets.DOCKER_USERNAME }}
@@ -110,7 +110,7 @@ jobs:
           get-existing-cache: true
           file: bundle.Dockerfile
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
-          # version: ${{ steps.prepare.outputs.tag }}
+          version: ${{ steps.prepare.outputs.tag }}
           tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
