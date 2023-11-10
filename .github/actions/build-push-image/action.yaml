@@ -122,7 +122,7 @@ runs:
         cache-to: type=gha,mode=max
         sbom: true
         push: true
-        tags: ${{ $inputs.tags }}
+        tags: ${{ inputs.tags }}
     # - name: Build and Push Operator to quay.io/${{ steps.tag.outputs.main_tag }}
     #   uses: docker/build-push-action@v3
     #   with:
