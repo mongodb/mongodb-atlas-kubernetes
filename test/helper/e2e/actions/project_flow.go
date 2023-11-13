@@ -68,7 +68,7 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 	ProjectCreationFlow(testData)
 
 	By("Configure cloud provider access", func() {
-		testData.Project.Spec.CloudProviderAccessRoles = []mdbv1.CloudProviderAccessRole{
+		testData.Project.Spec.CloudProviderIntegrations = []mdbv1.CloudProviderIntegration{
 			{
 				ProviderName: "AWS",
 			},
@@ -81,13 +81,13 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 				Namespace: testData.Project.Namespace,
 			}, testData.Project)).To(Succeed())
 
-			g.Expect(testData.Project.Status.CloudProviderAccessRoles).ShouldNot(BeEmpty())
+			g.Expect(testData.Project.Status.CloudProviderIntegrations).ShouldNot(BeEmpty())
 
-			return testData.Project.Status.CloudProviderAccessRoles[0].Status == status.CloudProviderAccessStatusCreated
+			return testData.Project.Status.CloudProviderIntegrations[0].Status == status.CloudProviderIntegrationStatusCreated
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 
 		roleArn, err := testData.AWSResourcesGenerator.CreateIAMRole(atlasIAMRoleName, func() helper.IAMPolicy {
-			cloudProviderAccess := testData.Project.Status.CloudProviderAccessRoles[0]
+			cloudProviderAccess := testData.Project.Status.CloudProviderIntegrations[0]
 			return helper.CloudProviderAccessPolicy(cloudProviderAccess.AtlasAWSAccountArn, cloudProviderAccess.AtlasAssumedRoleExternalID)
 		})
 
@@ -98,9 +98,9 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 			Expect(testData.AWSResourcesGenerator.DeleteIAMRole(atlasIAMRoleName)).To(Succeed())
 		})
 
-		testData.Project.Spec.CloudProviderAccessRoles[0].IamAssumedRoleArn = roleArn
+		testData.Project.Spec.CloudProviderIntegrations[0].IamAssumedRoleArn = roleArn
 		Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
 
-		WaitForConditionsToBecomeTrue(testData, status.CloudProviderAccessReadyType, status.ReadyType)
+		WaitForConditionsToBecomeTrue(testData, status.CloudProviderIntegrationReadyType, status.ReadyType)
 	})
 }

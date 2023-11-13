@@ -52,9 +52,9 @@ func AtlasProjectSetAlertConfigOption(alertConfigs *[]AlertConfiguration) AtlasP
 	}
 }
 
-func AtlasProjectCloudAccessRolesOption(cloudAccessRoles []CloudProviderAccessRole) AtlasProjectStatusOption {
+func AtlasProjectCloudIntegrationsOption(cloudIntegrations []CloudProviderIntegration) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
-		s.CloudProviderAccessRoles = cloudAccessRoles
+		s.CloudProviderIntegrations = cloudIntegrations
 	}
 }
 
@@ -108,8 +108,8 @@ type AtlasProjectStatus struct {
 	// AlertConfigurations contains a list of alert configuration statuses
 	AlertConfigurations []AlertConfiguration `json:"alertConfigurations,omitempty"`
 
-	// CloudProviderAccessRoles contains a list of configured cloud provider access roles. AWS support only
-	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
+	// CloudProviderIntegrations contains a list of configured cloud provider access roles. AWS support only
+	CloudProviderIntegrations []CloudProviderIntegration `json:"cloudProviderAccessRoles,omitempty"`
 
 	// CustomRoles contains a list of custom roles statuses
 	CustomRoles []CustomRole `json:"customRoles,omitempty"`

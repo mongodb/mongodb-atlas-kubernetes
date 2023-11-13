@@ -16,7 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func TestSyncCloudProviderAccess(t *testing.T) {
+func TestSyncCloudProviderIntegration(t *testing.T) {
 	t.Run("should fail when atlas is unavailable", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -29,13 +29,13 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := syncCloudProviderAccess(workflowCtx, "projectID", []mdbv1.CloudProviderAccessRole{})
+		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", []mdbv1.CloudProviderIntegration{})
 		assert.EqualError(t, err, "unable to fetch cloud provider access from Atlas: service unavailable")
 		assert.False(t, result)
 	})
 
 	t.Run("should synchronize all operations without reach ready status", func(t *testing.T) {
-		cpas := []mdbv1.CloudProviderAccessRole{
+		cpas := []mdbv1.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -107,13 +107,13 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			Context: context.TODO(),
 		}
 
-		result, err := syncCloudProviderAccess(workflowCtx, "projectID", cpas)
+		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
 		assert.NoError(t, err)
 		assert.False(t, result)
 	})
 
 	t.Run("should synchronize all operations and reach ready status", func(t *testing.T) {
-		cpas := []mdbv1.CloudProviderAccessRole{
+		cpas := []mdbv1.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -162,13 +162,13 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			Context: context.TODO(),
 		}
 
-		result, err := syncCloudProviderAccess(workflowCtx, "projectID", cpas)
+		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("should synchronize operations with errors", func(t *testing.T) {
-		cpas := []mdbv1.CloudProviderAccessRole{
+		cpas := []mdbv1.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -215,7 +215,7 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 			Context: context.TODO(),
 		}
 
-		result, err := syncCloudProviderAccess(workflowCtx, "projectID", cpas)
+		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", cpas)
 		assert.EqualError(t, err, "not all items were synchronized successfully")
 		assert.False(t, result)
 	})
@@ -223,18 +223,18 @@ func TestSyncCloudProviderAccess(t *testing.T) {
 
 func TestInitiateStatus(t *testing.T) {
 	t.Run("should create a cloud provider status as new", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
-		spec := []mdbv1.CloudProviderAccessRole{
+		spec := []mdbv1.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role",
@@ -250,33 +250,33 @@ func TestInitiateStatus(t *testing.T) {
 
 func TestEnrichStatuses(t *testing.T) {
 	t.Run("all statuses are new", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, []mongodbatlas.CloudProviderAccessRole{}))
 	})
 
 	t.Run("one new and one authorized statuses", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id",
@@ -285,23 +285,23 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role",
 				ProviderName:               "AWS",
 				RoleID:                     "role-1",
-				Status:                     status.CloudProviderAccessStatusAuthorized,
+				Status:                     status.CloudProviderIntegrationStatusAuthorized,
 				ErrorMessage:               "",
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -319,7 +319,7 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("one new, one created and one authorized statuses", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn-1",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
@@ -328,7 +328,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-1",
 				ProviderName:               "AWS",
 				RoleID:                     "role-1",
-				Status:                     status.CloudProviderAccessStatusAuthorized,
+				Status:                     status.CloudProviderIntegrationStatusAuthorized,
 				ErrorMessage:               "",
 			},
 			{
@@ -338,28 +338,28 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-2",
 				ProviderName:               "AWS",
 				RoleID:                     "role-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-2",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -385,7 +385,7 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("one new, one created, one authorized, and one authorized to remove statuses", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn-1",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
@@ -394,7 +394,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-1",
 				ProviderName:               "AWS",
 				RoleID:                     "role-1",
-				Status:                     status.CloudProviderAccessStatusAuthorized,
+				Status:                     status.CloudProviderIntegrationStatusAuthorized,
 				ErrorMessage:               "",
 			},
 			{
@@ -404,12 +404,12 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-2",
 				ProviderName:               "AWS",
 				RoleID:                     "role-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn-3",
@@ -419,24 +419,24 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-3",
 				ProviderName:               "AWS",
 				RoleID:                     "role-3",
-				Status:                     status.CloudProviderAccessStatusDeAuthorize,
+				Status:                     status.CloudProviderIntegrationStatusDeAuthorize,
 				ErrorMessage:               "",
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-2",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -471,7 +471,7 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("one created with empty ARN, one created, and one authorized statuses", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn-1",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
@@ -480,7 +480,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-1",
 				ProviderName:               "AWS",
 				RoleID:                     "role-1",
-				Status:                     status.CloudProviderAccessStatusAuthorized,
+				Status:                     status.CloudProviderIntegrationStatusAuthorized,
 				ErrorMessage:               "",
 			},
 			{
@@ -490,7 +490,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-2",
 				ProviderName:               "AWS",
 				RoleID:                     "role-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 			{
@@ -499,24 +499,24 @@ func TestEnrichStatuses(t *testing.T) {
 				CreatedDate:                "created-date-3",
 				ProviderName:               "AWS",
 				RoleID:                     "role-3",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-2",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -549,7 +549,7 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("one created with empty ARN, one created, one authorized, and one to be removed statuses", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				AtlasAWSAccountArn:         "atlas-account-arn-1",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
@@ -558,7 +558,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-1",
 				ProviderName:               "AWS",
 				RoleID:                     "role-1",
-				Status:                     status.CloudProviderAccessStatusAuthorized,
+				Status:                     status.CloudProviderIntegrationStatusAuthorized,
 				ErrorMessage:               "",
 			},
 			{
@@ -568,7 +568,7 @@ func TestEnrichStatuses(t *testing.T) {
 				IamAssumedRoleArn:          "aws:arn/my_role-2",
 				ProviderName:               "AWS",
 				RoleID:                     "role-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 			{
@@ -577,7 +577,7 @@ func TestEnrichStatuses(t *testing.T) {
 				CreatedDate:                "created-date-3",
 				ProviderName:               "AWS",
 				RoleID:                     "role-3",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 				ErrorMessage:               "",
 			},
 			{
@@ -586,24 +586,24 @@ func TestEnrichStatuses(t *testing.T) {
 				CreatedDate:                "created-date-4",
 				ProviderName:               "AWS",
 				RoleID:                     "role-4",
-				Status:                     status.CloudProviderAccessStatusDeAuthorize,
+				Status:                     status.CloudProviderIntegrationStatusDeAuthorize,
 				ErrorMessage:               "",
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-1",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "aws:arn/my_role-2",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -643,14 +643,14 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("match two status with empty ARN and two existing on Atlas", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				ProviderName:               "AWS",
 				AtlasAWSAccountArn:         "atlas-account-arn-1",
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 				RoleID:                     "role-1",
 				CreatedDate:                "created-date-1",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 			},
 			{
 				ProviderName:               "AWS",
@@ -658,17 +658,17 @@ func TestEnrichStatuses(t *testing.T) {
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-2",
 				RoleID:                     "role-2",
 				CreatedDate:                "created-date-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName: "AWS",
-				Status:       status.CloudProviderAccessStatusNew,
+				Status:       status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -691,7 +691,7 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 
 	t.Run("match two status with empty ARN and update them with ARN", func(t *testing.T) {
-		expected := []*status.CloudProviderAccessRole{
+		expected := []*status.CloudProviderIntegration{
 			{
 				ProviderName:               "AWS",
 				IamAssumedRoleArn:          "was:arn/role-1",
@@ -699,7 +699,7 @@ func TestEnrichStatuses(t *testing.T) {
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 				RoleID:                     "role-1",
 				CreatedDate:                "created-date-1",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 			},
 			{
 				ProviderName:               "AWS",
@@ -708,19 +708,19 @@ func TestEnrichStatuses(t *testing.T) {
 				AtlasAssumedRoleExternalID: "atlas-external-role-id-2",
 				RoleID:                     "role-2",
 				CreatedDate:                "created-date-2",
-				Status:                     status.CloudProviderAccessStatusCreated,
+				Status:                     status.CloudProviderIntegrationStatusCreated,
 			},
 		}
-		statuses := []*status.CloudProviderAccessRole{
+		statuses := []*status.CloudProviderIntegration{
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "was:arn/role-1",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 			{
 				ProviderName:      "AWS",
 				IamAssumedRoleArn: "was:arn/role-2",
-				Status:            status.CloudProviderAccessStatusNew,
+				Status:            status.CloudProviderIntegrationStatusNew,
 			},
 		}
 		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
@@ -744,22 +744,22 @@ func TestEnrichStatuses(t *testing.T) {
 	})
 }
 
-func TestCreateCloudProviderAccess(t *testing.T) {
-	t.Run("should create cloud provider access successfully", func(t *testing.T) {
-		expected := &status.CloudProviderAccessRole{
+func TestCreateCloudProviderIntegration(t *testing.T) {
+	t.Run("should create cloud provider integration successfully", func(t *testing.T) {
+		expected := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusCreated,
+			Status:                     status.CloudProviderIntegrationStatusCreated,
 			ErrorMessage:               "",
 		}
-		cpa := &status.CloudProviderAccessRole{
+		cpa := &status.CloudProviderIntegration{
 			ProviderName:      "AWS",
 			IamAssumedRoleArn: "aws:arn/my_role-1",
-			Status:            status.CloudProviderAccessStatusNew,
+			Status:            status.CloudProviderIntegrationStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -782,17 +782,17 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 		assert.Equal(t, expected, createCloudProviderAccess(workflowCtx, "projectID", cpa))
 	})
 
-	t.Run("should fail to create cloud provider access", func(t *testing.T) {
-		expected := &status.CloudProviderAccessRole{
+	t.Run("should fail to create cloud provider integration", func(t *testing.T) {
+		expected := &status.CloudProviderIntegration{
 			ProviderName:      "AWS",
 			IamAssumedRoleArn: "aws:arn/my_role-1",
-			Status:            status.CloudProviderAccessStatusFailedToCreate,
+			Status:            status.CloudProviderIntegrationStatusFailedToCreate,
 			ErrorMessage:      "service unavailable",
 		}
-		cpa := &status.CloudProviderAccessRole{
+		cpa := &status.CloudProviderIntegration{
 			ProviderName:      "AWS",
 			IamAssumedRoleArn: "aws:arn/my_role-1",
-			Status:            status.CloudProviderAccessStatusNew,
+			Status:            status.CloudProviderIntegrationStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -811,9 +811,9 @@ func TestCreateCloudProviderAccess(t *testing.T) {
 	})
 }
 
-func TestAuthorizeCloudProviderAccess(t *testing.T) {
-	t.Run("should authorize cloud provider access successfully", func(t *testing.T) {
-		expected := &status.CloudProviderAccessRole{
+func TestAuthorizeCloudProviderIntegration(t *testing.T) {
+	t.Run("should authorize cloud provider integration successfully", func(t *testing.T) {
+		expected := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
@@ -821,17 +821,17 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusAuthorized,
+			Status:                     status.CloudProviderIntegrationStatusAuthorized,
 			ErrorMessage:               "",
 		}
-		cpa := &status.CloudProviderAccessRole{
+		cpa := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusNew,
+			Status:                     status.CloudProviderIntegrationStatusNew,
 		}
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -855,25 +855,25 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 		assert.Equal(t, expected, authorizeCloudProviderAccess(workflowCtx, "projectID", cpa))
 	})
 
-	t.Run("should fail to authorize cloud provider access", func(t *testing.T) {
-		expected := &status.CloudProviderAccessRole{
+	t.Run("should fail to authorize cloud provider integration", func(t *testing.T) {
+		expected := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusFailedToAuthorize,
+			Status:                     status.CloudProviderIntegrationStatusFailedToAuthorize,
 			ErrorMessage:               "service unavailable",
 		}
-		cpa := &status.CloudProviderAccessRole{
+		cpa := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusCreated,
+			Status:                     status.CloudProviderIntegrationStatusCreated,
 		}
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -892,9 +892,9 @@ func TestAuthorizeCloudProviderAccess(t *testing.T) {
 	})
 }
 
-func TestDeleteCloudProviderAccess(t *testing.T) {
-	t.Run("should delete cloud provider access successfully", func(t *testing.T) {
-		cpa := &status.CloudProviderAccessRole{
+func TestDeleteCloudProviderIntegration(t *testing.T) {
+	t.Run("should delete cloud provider integration successfully", func(t *testing.T) {
+		cpa := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
@@ -902,7 +902,7 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 			IamAssumedRoleArn:          "aws:arn/my_role-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusFailedToDeAuthorize,
+			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
 		atlasClient := mongodbatlas.Client{
@@ -921,14 +921,14 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 		assert.Empty(t, cpa.ErrorMessage)
 	})
 
-	t.Run("should fail to delete cloud provider access", func(t *testing.T) {
-		cpa := &status.CloudProviderAccessRole{
+	t.Run("should fail to delete cloud provider integration", func(t *testing.T) {
+		cpa := &status.CloudProviderIntegration{
 			AtlasAWSAccountArn:         "atlas-account-arn-1",
 			AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
 			CreatedDate:                "created-date-1",
 			ProviderName:               "AWS",
 			RoleID:                     "role-1",
-			Status:                     status.CloudProviderAccessStatusFailedToDeAuthorize,
+			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
 		atlasClient := mongodbatlas.Client{
@@ -949,13 +949,13 @@ func TestDeleteCloudProviderAccess(t *testing.T) {
 	})
 }
 
-func TestCanCloudProviderAccessReconcile(t *testing.T) {
+func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
@@ -967,7 +967,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			Context: context.TODO(),
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		assert.False(t, result)
 	})
@@ -986,7 +986,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.EqualError(t, err, "failed to retrieve data")
 		assert.False(t, result)
@@ -1008,7 +1008,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -1031,7 +1031,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "arn1",
@@ -1039,12 +1039,12 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -1071,7 +1071,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "arn1",
@@ -1083,12 +1083,12 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
@@ -1110,7 +1110,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "arn1",
@@ -1118,18 +1118,18 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
 
-	t.Run("should return false when unable to reconcile Cloud Provider Access", func(t *testing.T) {
+	t.Run("should return false when unable to reconcile cloud provider integration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
 				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
@@ -1150,7 +1150,7 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "arn1",
@@ -1162,19 +1162,63 @@ func TestCanCloudProviderAccessReconcile(t *testing.T) {
 				},
 			},
 		}
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
+
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+
+	t.Run("should return true when migrating configuration but spec are equal", func(t *testing.T) {
+		atlasClient := mongodbatlas.Client{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
+				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
+					return &mongodbatlas.CloudProviderAccessRoles{
+						AWSIAMRoles: []mongodbatlas.CloudProviderAccessRole{
+							{
+								ProviderName:      "AWS",
+								IAMAssumedRoleARN: "arn1",
+							},
+							{
+								ProviderName:      "AWS",
+								IAMAssumedRoleARN: "arn2",
+							},
+						},
+					}, nil, nil
+				},
+			},
+		}
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
+					{
+						ProviderName:      "AWS",
+						IamAssumedRoleArn: "arn1",
+					},
+					{
+						ProviderName:      "AWS",
+						IamAssumedRoleArn: "arn2",
+					},
+				},
+			},
+		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result, err := canCloudProviderAccessReconcile(workflowCtx, true, akoProject)
+		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
 
 		assert.NoError(t, err)
-		assert.False(t, result)
+		assert.True(t, result)
 	})
 }
 
-func TestEnsureCloudProviderAccess(t *testing.T) {
+func TestEnsureCloudProviderIntegration(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
 			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
@@ -1189,7 +1233,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, true)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, true)
 
 		assert.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
@@ -1215,7 +1259,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "arn1",
@@ -1227,18 +1271,18 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 				},
 			},
 		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
+		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, true)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, true)
 
 		assert.Equal(
 			t,
 			workflow.Terminate(
 				workflow.AtlasDeletionProtection,
-				"unable to reconcile Cloud Provider Access due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
+				"unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 			),
 			result,
 		)
@@ -1247,7 +1291,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 	t.Run("should return earlier when there are not items to operate", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		workflowCtx := &workflow.Context{Context: context.TODO()}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, false)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
 		assert.Equal(
 			t,
 			workflow.OK(),
@@ -1258,7 +1302,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 	t.Run("should fail to reconcile", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -1281,10 +1325,10 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, false)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
 		assert.Equal(
 			t,
-			workflow.Terminate(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "unable to fetch cloud provider access from Atlas: failed to retrieve data"),
+			workflow.Terminate(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, "unable to fetch cloud provider access from Atlas: failed to retrieve data"),
 			result,
 		)
 	})
@@ -1292,7 +1336,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 	t.Run("should reconcile without reach ready status", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -1365,10 +1409,10 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, false)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
 		assert.Equal(
 			t,
-			workflow.InProgress(workflow.ProjectCloudAccessRolesIsNotReadyInAtlas, "not all entries are authorized"),
+			workflow.InProgress(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, "not all entries are authorized"),
 			result,
 		)
 	})
@@ -1376,7 +1420,7 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 	t.Run("should reconcile and reach ready status", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
-				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+				CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 					{
 						ProviderName:      "AWS",
 						IamAssumedRoleArn: "aws:arn/my_role-1",
@@ -1426,7 +1470,68 @@ func TestEnsureCloudProviderAccess(t *testing.T) {
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureProviderAccessStatus(workflowCtx, akoProject, false)
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
+		assert.Equal(
+			t,
+			workflow.OK(),
+			result,
+		)
+	})
+
+	t.Run("should reconcile and reach ready status using deprecated configuration", func(t *testing.T) {
+		akoProject := &mdbv1.AtlasProject{
+			Spec: mdbv1.AtlasProjectSpec{
+				CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{ //nolint:staticcheck SA1019
+					{
+						ProviderName:      "AWS",
+						IamAssumedRoleArn: "aws:arn/my_role-1",
+					},
+					{
+						ProviderName:      "AWS",
+						IamAssumedRoleArn: "aws:arn/my_role-2",
+					},
+				},
+			},
+		}
+		atlasCPAs := []mongodbatlas.CloudProviderAccessRole{
+			{
+				AtlasAWSAccountARN:         "atlas-account-arn-1",
+				AtlasAssumedRoleExternalID: "atlas-external-role-id-1",
+				AuthorizedDate:             "authorized-date-1",
+				CreatedDate:                "created-date-1",
+				IAMAssumedRoleARN:          "aws:arn/my_role-1",
+				ProviderName:               "AWS",
+				RoleID:                     "role-1",
+			},
+			{
+				AtlasAWSAccountARN:         "atlas-account-arn-2",
+				AtlasAssumedRoleExternalID: "atlas-external-role-id-2",
+				CreatedDate:                "created-date-2",
+				IAMAssumedRoleARN:          "aws:arn/my_role-2",
+				ProviderName:               "AWS",
+				RoleID:                     "role-2",
+			},
+		}
+		atlasClient := mongodbatlas.Client{
+			CloudProviderAccess: &atlas.CloudProviderAccessClientMock{
+				ListRolesFunc: func(projectID string) (*mongodbatlas.CloudProviderAccessRoles, *mongodbatlas.Response, error) {
+					return &mongodbatlas.CloudProviderAccessRoles{
+						AWSIAMRoles: atlasCPAs,
+					}, &mongodbatlas.Response{}, nil
+				},
+				AuthorizeRoleFunc: func(projectID, roleID string, cpa *mongodbatlas.CloudProviderAccessRoleRequest) (*mongodbatlas.CloudProviderAccessRole, *mongodbatlas.Response, error) {
+					atlasCPA := atlasCPAs[1]
+					atlasCPA.AuthorizedDate = "authorized-date-2"
+
+					return &atlasCPA, &mongodbatlas.Response{}, nil
+				},
+			},
+		}
+		workflowCtx := &workflow.Context{
+			Client:  atlasClient,
+			Context: context.TODO(),
+		}
+		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
 		assert.Equal(
 			t,
 			workflow.OK(),

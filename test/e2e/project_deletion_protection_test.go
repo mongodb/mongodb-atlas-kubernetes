@@ -105,7 +105,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Adding Cloud Provider Access to the project", func() {
+		By("Adding Cloud Provider Integration to the project", func() {
 			assumedRoleArn, err := cloudaccess.CreateAWSIAMRole(projectName)
 			Expect(err).ToNot(HaveOccurred())
 			awsRoleARN = assumedRoleArn
@@ -323,7 +323,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 				Spec: mdbv1.AtlasProjectSpec{
 					Name: projectName,
-					CloudProviderAccessRoles: []mdbv1.CloudProviderAccessRole{
+					CloudProviderIntegrations: []mdbv1.CloudProviderIntegration{
 						{
 							ProviderName:      "AWS",
 							IamAssumedRoleArn: "an-aws-role-arn",
@@ -441,9 +441,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.FalseCondition(status.IPAccessListReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.CloudProviderAccessReadyType).
+					status.FalseCondition(status.CloudProviderIntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Cloud Provider Access due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
@@ -486,9 +486,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.FalseCondition(status.CloudProviderAccessReadyType).
+					status.FalseCondition(status.CloudProviderIntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
-						WithMessageRegexp("unable to reconcile Cloud Provider Access due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
+						WithMessageRegexp("unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
@@ -520,22 +520,22 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
-		By("Cloud Provider Access is ready after configured properly", func() {
+		By("Cloud Provider Integration is ready after configured properly", func() {
 			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.CloudProviderAccessRoles[0].IamAssumedRoleArn = awsRoleARN
+			testData.Project.Spec.CloudProviderIntegrations[0].IamAssumedRoleArn = awsRoleARN
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
-				g.Expect(testData.Project.Status.CloudProviderAccessRoles).ToNot(HaveLen(0))
-				g.Expect(testData.Project.Status.CloudProviderAccessRoles[0].Status).To(Equal("AUTHORIZED"))
+				g.Expect(testData.Project.Status.CloudProviderIntegrations).ToNot(HaveLen(0))
+				g.Expect(testData.Project.Status.CloudProviderIntegrations[0].Status).To(Equal("AUTHORIZED"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Expect(
 				cloudaccess.AddAtlasStatementToAWSIAMRole(
-					testData.Project.Status.CloudProviderAccessRoles[0].AtlasAWSAccountArn,
-					testData.Project.Status.CloudProviderAccessRoles[0].AtlasAssumedRoleExternalID,
+					testData.Project.Status.CloudProviderIntegrations[0].AtlasAWSAccountArn,
+					testData.Project.Status.CloudProviderIntegrations[0].AtlasAssumedRoleExternalID,
 					projectName,
 				),
 			).To(Succeed())
@@ -546,7 +546,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.FalseCondition(status.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
@@ -596,7 +596,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.FalseCondition(status.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
@@ -649,7 +649,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.FalseCondition(status.MaintenanceWindowReadyType).
@@ -688,7 +688,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),
@@ -725,7 +725,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),
@@ -760,7 +760,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),
@@ -793,7 +793,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),
@@ -824,7 +824,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),
@@ -867,7 +867,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderAccessReadyType),
+					status.TrueCondition(status.CloudProviderIntegrationReadyType),
 					status.TrueCondition(status.NetworkPeerReadyType),
 					status.TrueCondition(status.IntegrationReadyType),
 					status.TrueCondition(status.MaintenanceWindowReadyType),

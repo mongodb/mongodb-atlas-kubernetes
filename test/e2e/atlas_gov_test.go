@@ -225,7 +225,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.CloudProviderAccessRoles = []mdbv1.CloudProviderAccessRole{
+			testData.Project.Spec.CloudProviderIntegrations = []mdbv1.CloudProviderIntegration{
 				{
 					ProviderName:      "AWS",
 					IamAssumedRoleArn: assumedRoleArn,
@@ -235,21 +235,21 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.CloudProviderAccessRoles).ShouldNot(BeEmpty())
-				g.Expect(testData.Project.Status.CloudProviderAccessRoles[0].Status).Should(BeElementOf([2]string{status.CloudProviderAccessStatusCreated, status.CloudProviderAccessStatusFailedToAuthorize}))
+				g.Expect(testData.Project.Status.CloudProviderIntegrations).ShouldNot(BeEmpty())
+				g.Expect(testData.Project.Status.CloudProviderIntegrations[0].Status).Should(BeElementOf([2]string{status.CloudProviderIntegrationStatusCreated, status.CloudProviderIntegrationStatusFailedToAuthorize}))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Expect(
 				cloudaccess.AddAtlasStatementToAWSIAMRole(
-					testData.Project.Status.CloudProviderAccessRoles[0].AtlasAWSAccountArn,
-					testData.Project.Status.CloudProviderAccessRoles[0].AtlasAssumedRoleExternalID,
+					testData.Project.Status.CloudProviderIntegrations[0].AtlasAWSAccountArn,
+					testData.Project.Status.CloudProviderIntegrations[0].AtlasAssumedRoleExternalID,
 					projectName,
 				),
 			).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.CloudProviderAccessReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.CloudProviderIntegrationReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -289,9 +289,9 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Configuring Encryption at Rest", func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			atlasAccountARN := testData.Project.Status.CloudProviderAccessRoles[0].AtlasAWSAccountArn
-			awsRoleARN := testData.Project.Status.CloudProviderAccessRoles[0].IamAssumedRoleArn
-			atlasRoleID := testData.Project.Status.CloudProviderAccessRoles[0].RoleID
+			atlasAccountARN := testData.Project.Status.CloudProviderIntegrations[0].AtlasAWSAccountArn
+			awsRoleARN := testData.Project.Status.CloudProviderIntegrations[0].IamAssumedRoleArn
+			atlasRoleID := testData.Project.Status.CloudProviderIntegrations[0].RoleID
 
 			customerMasterKeyID, err := awsHelper.CreateKMS(fmt.Sprintf("%s-kms", projectName), "us-east-1", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
@@ -377,7 +377,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 				status.TrueCondition(status.ProjectSettingsReadyType),
 				status.TrueCondition(status.ProjectCustomRolesReadyType),
 				status.TrueCondition(status.ProjectTeamsReadyType),
-				status.TrueCondition(status.CloudProviderAccessReadyType),
+				status.TrueCondition(status.CloudProviderIntegrationReadyType),
 				status.TrueCondition(status.NetworkPeerReadyType),
 				status.TrueCondition(status.EncryptionAtRestReadyType),
 				status.TrueCondition(status.ReadyType),

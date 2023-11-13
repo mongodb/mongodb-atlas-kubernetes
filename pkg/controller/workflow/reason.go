@@ -36,7 +36,7 @@ const (
 	ProjectPrivateEndpointIsNotReadyInAtlas    ConditionReason = "ProjectPrivateEndpointIsNotReadyInAtlas"
 	ProjectNetworkPeerIsNotReadyInAtlas        ConditionReason = "ProjectNetworkPeerIsNotReadyInAtlas"
 	ProjectEncryptionAtRestReady               ConditionReason = "ProjectEncryptionAtRestReady"
-	ProjectCloudAccessRolesIsNotReadyInAtlas   ConditionReason = "ProjectCloudAccessRolesIsNotReadyInAtlas"
+	ProjectCloudIntegrationsIsNotReadyInAtlas  ConditionReason = "ProjectCloudIntegrationsIsNotReadyInAtlas"
 	ProjectAuditingReady                       ConditionReason = "ProjectAuditingReady"
 	ProjectSettingsReady                       ConditionReason = "ProjectSettingsReady"
 	ProjectAlertConfigurationIsNotReadyInAtlas ConditionReason = "ProjectAlertConfigurationIsNotReadyInAtlas"

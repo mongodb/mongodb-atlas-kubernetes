@@ -296,8 +296,8 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureProviderAccessStatus(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderAccessReadyType), "")
+	if result = ensureCloudProviderIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderIntegrationReadyType), "")
 	}
 	results = append(results, result)
 
