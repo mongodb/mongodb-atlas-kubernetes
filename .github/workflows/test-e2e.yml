@@ -48,7 +48,7 @@ jobs:
     name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
     env:
-      DOCKER_REGISTRY: docker.io
+      DOCKER_REGISTRY: quay.io
       DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
       DOCKER_BUNDLES_REPO: mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
@@ -111,7 +111,7 @@ jobs:
           file: bundle.Dockerfile
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
           push_to_quay: true
