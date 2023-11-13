@@ -46,6 +46,9 @@ inputs:
     description: Flag to checkout source code from forked repository
     required: false
     default: "false"
+  tags:
+    description: A list of tags applied to the image
+    required: true
 runs:
   using: "composite"
   steps:
@@ -84,17 +87,9 @@ runs:
         go mod download
     - name: Build all platforms
       shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
       run: make all-platforms
-    - name: Fail if send input flags are both unset
-      if: ${{ inputs.push_to_docker != 'true' && inputs.push_to_quay != 'true' }}
-      shell: bash
-      run: exit 1
-    - name: Compute main build tag
-      id: tag
-      shell: bash
-      run: |
-        main_tag=${{ inputs.push_to_docker == 'true' && format('{0}:{1}', inputs.repository, inputs.version) || format('quay.io/{0}:{1}', inputs.repository, inputs.version)}}
-        echo "main_tag=$main_tag" >> $GITHUB_OUTPUT
     - name: Login to docker registry
       if: ${{ inputs.push_to_docker == 'true' }}
       uses: docker/login-action@v2
@@ -119,20 +114,4 @@ runs:
         cache-to: type=gha,mode=max
         sbom: true
         push: true
-        tags: ${{ steps.tag.outputs.main_tag }}
-    - name: Push To Quay
-      if: ${{ inputs.push_to_quay == 'true' && inputs.push_to_docker == 'true' }}
-      shell: bash
-      run: |
-        docker pull ${{ steps.tag.outputs.main_tag }}
-        docker tag ${{ steps.tag.outputs.main_tag }} quay.io/${{ inputs.repository }}:${{ inputs.version }}
-        echo "PUSH: docker push quay.io/${{ inputs.repository }}:${{ inputs.version }}"
-        docker push quay.io/${{ inputs.repository }}:${{ inputs.version }}
-    - name: Push Certified to Quay
-      if: ${{ inputs.certified_version != '' && inputs.push_to_quay == 'true' }}
-      shell: bash
-      run: |
-        docker pull ${{ steps.tag.outputs.main_tag }}
-        docker tag ${{ steps.tag.outputs.main_tag }} quay.io/${{ inputs.repository }}:${{ inputs.certified_version }}
-        echo "PUSH: docker push quay.io/${{ inputs.repository }}:${{ inputs.certified_version }}"
-        docker push quay.io/${{ inputs.repository }}:${{ inputs.certified_version }}
+        tags: ${{ inputs.tags }}

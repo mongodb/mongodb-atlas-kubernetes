@@ -4,7 +4,7 @@ set -eou pipefail
 
 docker login -u mongodb+mongodb_atlas_kubernetes -p "${QUAY_PASSWORD}" quay.io
 
-DIGESTS=$(docker manifest inspect "quay.io/${REPOSITORY}:${VERSION}" | jq -r .manifests[].digest)
+DIGESTS=$(docker manifest inspect "quay.io/${REPOSITORY}:${VERSION}" | jq -r '.manifests[] | select(.platform.os!="unknown") | .digest')
 
 for DIGEST in $DIGESTS; do
     echo "Check and Submit result to RedHat Connect"

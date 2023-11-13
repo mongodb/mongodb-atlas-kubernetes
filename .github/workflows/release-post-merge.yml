@@ -60,8 +60,6 @@ jobs:
           if [[ "$version" == "" ]]; then
             version=$(echo $BRANCH | awk -F '/' '{print $2}')
           fi
-
-
           echo "VERSION:$version"
           tag="v${version}"
           certified_version="${version}-certified"
@@ -101,6 +99,10 @@ jobs:
           push_to_quay: true
           quay_username: mongodb+mongodb_atlas_kubernetes
           quay_password: ${{ secrets.QUAY_PASSWORD }}
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}
+            quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}
+            quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified
       - name: Certify Openshift images
         if: ${{ env.CERTIFY == 'true' }}
         uses: ./.github/actions/certify-openshift-images
@@ -138,4 +140,3 @@ jobs:
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
 
-# TODO RedHad autopublish does not work. need to push bundles manually for now

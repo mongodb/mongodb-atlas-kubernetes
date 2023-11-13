@@ -38,6 +38,7 @@ jobs:
         with:
           repository: ${{ env.DOCKER_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
@@ -110,6 +111,7 @@ jobs:
           file: bundle.Dockerfile
           repository: ${{ env.DOCKER_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
           push_to_quay: true
