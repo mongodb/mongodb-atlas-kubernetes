@@ -53,7 +53,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.23.2
+	cloud.google.com/go/compute v1.23.3
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
