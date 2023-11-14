@@ -245,8 +245,6 @@ jobs:
           TEST_NAME: "${{ matrix.test }}"
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          OPENSHIFT_USER: ${{ secrets.OPENSHIFT_USER }}
-          OPENSHIFT_PASS: ${{ secrets.OPENSHIFT_PASS }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

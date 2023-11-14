@@ -14,9 +14,6 @@ Put the file `.actrc` to the root project folder with used secrets in GitHub
 -s ATLAS_ORG_ID=<id>
 -s ATLAS_PUBLIC_KEY=<public_key>
 -s ATLAS_PRIVATE_KEY=<private_key>
-# Openshift test
--s OPENSHIFT_USER=<username>
--s OPENSHIFT_PASS=<password>
 # Push to Docker Registry
 -s DOCKER_USERNAME=<username>
 -s DOCKER_PASSWORD=<password>
