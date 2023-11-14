@@ -114,7 +114,7 @@ check-licenses: licenses.csv  ## Check licenses
 	@echo "Licenses check: PASS"
 
 .PHONY: unit-test
-unit-test: check-licenses
+unit-test: check-licenses actions.txt
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS)
 
 .PHONY: int-test
@@ -351,3 +351,6 @@ all-platforms:
 all-platforms-docker: all-platforms
 	docker build --build-arg BINARY_PATH=bin/linux/amd64 -f fast.Dockerfile -t manager-amd64 .
 	docker build --build-arg BINARY_PATH=bin/linux/arm64 -f fast.Dockerfile -t manager-arm64 .
+
+actions.txt: .github/workflows/ ## List GitHub Action dependencies
+	./scripts/list-actions.sh > $@
