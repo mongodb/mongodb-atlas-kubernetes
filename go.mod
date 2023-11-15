@@ -1,4 +1,4 @@
-module github.com/mongodb/mongodb-atlas-kubernetes
+module github.com/mongodb/mongodb-atlas-kubernetes/v2
 
 go 1.21
 
