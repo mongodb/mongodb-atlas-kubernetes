@@ -9,6 +9,14 @@ of the `github-actions` bot.
 NOTE: The X- and Y- stream releases should only be launched using the workflow from the MAIN branch. Z-stream (patch)
 releases can be launched from a separate branch
 
+The release creation will fail if the file `major-version` contents does not match the major version to be released. This file explicitly means the upcoming release is for a particular major version, with potential breaking changes. This allows us to:
+
+1. Notice if we forgot to update the `major-version` file before releasing the next major version.
+2. Notice if we tried to re-release an older major version when the code is already prepared for the next major version.
+3. Skip some tests, like `helm update`, when crossing from one major version to the next, as such test is not expected to work across incompatible major version upgrades.
+
+If the create release branch job fails due an error such as `Bad major version for X... expected Y..`, review whether or not the `major-version` file was updated as expected. Check as well you are not trying to release a patch for the older major version from the new major version codebase.
+
 ## Approve the Pull Request named "Release x.y.z"
 
 Review the Pull Request. Approve and merge it to main.

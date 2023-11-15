@@ -11,6 +11,8 @@ CONTAINER_ENGINE?=docker
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= $(shell git describe --tags --dirty --broken | cut -c 2-)
 
+MAJOR_VERSION = $(shell cat major-version)
+
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -354,3 +356,8 @@ all-platforms-docker: all-platforms
 
 actions.txt: .github/workflows/ ## List GitHub Action dependencies
 	./scripts/list-actions.sh > $@
+
+.PHONY: check-major-version
+check-major-version: ## Check that VERSION starts with MAJOR_VERSION
+	@[[ $(VERSION) == $(MAJOR_VERSION).* ]] && echo "Version OK" || \
+	(echo "Bad major version for $(VERSION) expected $(MAJOR_VERSION)"; exit 1)

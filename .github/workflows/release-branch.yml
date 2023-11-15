@@ -57,6 +57,7 @@ jobs:
 
     - name: Create branch and push it
       run: |
+        make check-major-version
         BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
         git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
