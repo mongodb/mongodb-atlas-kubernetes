@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	. "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	. "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
 )
 
 type UserInputs struct {

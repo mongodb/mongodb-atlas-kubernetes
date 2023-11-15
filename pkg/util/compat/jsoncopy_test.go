@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	. "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
 )
 
 // JSONCopy will copy src to dst via JSON serialization/deserialization.

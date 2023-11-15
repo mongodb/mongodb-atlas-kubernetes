@@ -81,7 +81,7 @@ OPERATOR_NAMESPACE = mongodb-atlas-system
 ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
-BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes
+BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
@@ -146,7 +146,7 @@ bin/$(TARGET_OS)/$(TARGET_ARCH):
 
 bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version.Version=$(VERSION)" cmd/manager/main.go
 	@touch $@
 
 bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
@@ -189,8 +189,8 @@ lint:
 	golangci-lint run
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
-	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w \$$(GO_SOURCES)"
-	@goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w $(GO_SOURCES)
+	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w \$$(GO_SOURCES)"
+	@goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w $(GO_SOURCES)
 	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 .PHONY: fmt
@@ -198,8 +198,8 @@ fmt: $(TIMESTAMPS_DIR)/fmt ## Run go fmt against code
 
 fix-lint:
 	find . -name "*.go" -not -path "./vendor/*" -exec gofmt -w "{}" \;
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./pkg
-	goimports -local github.com/mongodb/mongodb-atlas-kubernetes -w ./test
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./pkg
+	goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -w ./test
 	golangci-lint run --fix
 
 $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)

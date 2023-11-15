@@ -3,7 +3,7 @@ package v1
 import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 // +kubebuilder:validation:Enum=GROUP_OWNER;GROUP_CLUSTER_MANAGER;GROUP_DATA_ACCESS_ADMIN;GROUP_DATA_ACCESS_READ_WRITE;GROUP_DATA_ACCESS_READ_ONLY;GROUP_READ_ONLY

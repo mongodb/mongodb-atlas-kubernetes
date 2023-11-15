@@ -3,8 +3,8 @@ package helm
 import (
 	"github.com/sethvargo/go-password/password"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
 )
 
 // Prepare chart values file for project, deployments, users https://github.com/mongodb/helm-charts/blob/main/charts/atlas-deployment/values.yaml

@@ -3,7 +3,7 @@ package project
 import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

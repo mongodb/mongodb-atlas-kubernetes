@@ -1,11 +1,11 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 // EncryptionAtRest allows to specify the Encryption at Rest for AWS, Azure and GCP providers

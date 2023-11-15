@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	helm "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	helm "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli/helm"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 // helm update should change at least 1 field: databaseusers, project, deployment

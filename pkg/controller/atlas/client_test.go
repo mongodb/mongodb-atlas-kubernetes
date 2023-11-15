@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
 func TestClientUserAgent(t *testing.T) {

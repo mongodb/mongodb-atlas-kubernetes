@@ -14,7 +14,7 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"

@@ -1,7 +1,7 @@
 package kustomize
 
 import (
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli"
 )
 
 func Version() {

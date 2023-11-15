@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"

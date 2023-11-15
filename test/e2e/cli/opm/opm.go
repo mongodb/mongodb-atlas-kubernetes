@@ -6,7 +6,7 @@ import (
 
 	"strings"
 
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli"
 )
 
 // Version print version

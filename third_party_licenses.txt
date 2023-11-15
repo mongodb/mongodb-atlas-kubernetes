@@ -26,7 +26,7 @@ github.com/matttproud/golang_protobuf_extensions/pbutil,https://github.com/mattt
 github.com/modern-go/concurrent,https://github.com/modern-go/concurrent/blob/bacd9c7ef1dd/LICENSE,Apache-2.0
 github.com/modern-go/reflect2,https://github.com/modern-go/reflect2/blob/v1.0.2/LICENSE,Apache-2.0
 github.com/mongodb-forks/digest,https://github.com/mongodb-forks/digest/blob/v1.0.5/COPYING,Apache-2.0
-github.com/mongodb/mongodb-atlas-kubernetes,https://github.com/mongodb/mongodb-atlas-kubernetes/blob/HEAD/LICENSE,Apache-2.0
+github.com/mongodb/mongodb-atlas-kubernetes/v2,https://github.com/mongodb/mongodb-atlas-kubernetes/blob/HEAD/LICENSE,Apache-2.0
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/prometheus/client_golang/prometheus,https://github.com/prometheus/client_golang/blob/v1.14.0/LICENSE,Apache-2.0
