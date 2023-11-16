@@ -101,8 +101,9 @@ func UninstallCRD(input model.UserInputs) {
 func InstallOperatorWideSubmodule(input model.UserInputs) {
 	packageChart(config.AtlasOperatorCRDHelmChartPath, filepath.Join(config.AtlasOperatorHelmChartPath, "charts"))
 	repo, tag := splitDockerImage()
-	Install(
-		"atlas-operator-"+input.Project.GetProjectName(),
+	createNamespace(input.Namespace)
+	installArgs := []string{
+		"atlas-operator-" + input.Project.GetProjectName(),
 		config.AtlasOperatorHelmChartPath,
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set", "objectDeletionProtection=false",
@@ -110,23 +111,32 @@ func InstallOperatorWideSubmodule(input model.UserInputs) {
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
 		"--set-string", fmt.Sprintf("image.tag=%s", tag),
 		"--namespace", input.Namespace,
-		"--create-namespace",
-	)
+	}
+	pullSecretPassword := os.Getenv("IMAGE_PULL_SECRET_PASSWORD")
+	if pullSecretPassword != "" {
+		installArgs = addPullSecret(installArgs, pullSecretPassword, input.Namespace)
+	}
+	Install(installArgs...)
 }
 
 // InstallOperatorNamespacedFromLatestRelease install latest released version of the
 // Atlas Operator from Helm charts repo.
 func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
-	Install(
-		"atlas-operator-"+input.Project.GetProjectName(),
+	createNamespace(input.Namespace)
+	installArgs := []string{
+		"atlas-operator-" + input.Project.GetProjectName(),
 		"mongodb/mongodb-atlas-operator",
 		"--set", fmt.Sprintf("watchNamespaces={%s}", input.Namespace),
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set", "objectDeletionProtection=false",
 		"--set", "subobjectDeletionProtection=false",
-		"--namespace="+input.Namespace,
-		"--create-namespace",
-	)
+		"--namespace=" + input.Namespace,
+	}
+	pullSecretPassword := os.Getenv("IMAGE_PULL_SECRET_PASSWORD")
+	if pullSecretPassword != "" {
+		installArgs = addPullSecret(installArgs, pullSecretPassword, input.Namespace)
+	}
+	Install(installArgs...)
 }
 
 // InstallOperatorNamespacedSubmodule installs the operator from `helm-charts` directory.
@@ -135,8 +145,9 @@ func InstallOperatorNamespacedFromLatestRelease(input model.UserInputs) {
 func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 	packageChart(config.AtlasOperatorCRDHelmChartPath, filepath.Join(config.AtlasOperatorHelmChartPath, "charts"))
 	repo, tag := splitDockerImage()
-	Install(
-		"atlas-operator-"+input.Project.GetProjectName(),
+	createNamespace(input.Namespace)
+	installArgs := []string{
+		"atlas-operator-" + input.Project.GetProjectName(),
 		config.AtlasOperatorHelmChartPath,
 		"--set-string", fmt.Sprintf("atlasURI=%s", config.AtlasHost),
 		"--set-string", fmt.Sprintf("image.repository=%s", repo),
@@ -145,9 +156,44 @@ func InstallOperatorNamespacedSubmodule(input model.UserInputs) {
 		"--set", "mongodb-atlas-operator-crds.enabled=false",
 		"--set", "objectDeletionProtection=false",
 		"--set", "subobjectDeletionProtection=false",
-		"--namespace="+input.Namespace,
-		"--create-namespace",
+		fmt.Sprintf("--namespace=%s", input.Namespace),
+	}
+	pullSecretPassword := os.Getenv("IMAGE_PULL_SECRET_PASSWORD")
+	if pullSecretPassword != "" {
+		installArgs = addPullSecret(installArgs, pullSecretPassword, input.Namespace)
+	}
+	Install(installArgs...)
+}
+
+func addPullSecret(installArgs []string, pullSecretPassword, namespace string) []string {
+	registry := os.Getenv("IMAGE_PULL_SECRET_REGISTRY")
+	pullSecretUsername := os.Getenv("IMAGE_PULL_SECRET_USERNAME")
+	secretName := fmt.Sprintf("ako-pull-secret-%s", registry)
+	createPullSecret(secretName, namespace, registry, pullSecretUsername, pullSecretPassword)
+	return append(installArgs,
+		"--set-string", fmt.Sprintf("imagePullSecrets[0].name=%s", secretName))
+}
+
+func createNamespace(namespace string) {
+	session := cli.Execute("kubectl", "create", "namespace", namespace)
+	msg := cli.GetSessionExitMsg(session)
+	Expect(session.ExitCode()).To(Equal(0), "namespace creation failed: %s", msg)
+}
+
+func createPullSecret(secretName, namespace, registry, username, password string) {
+	session := cli.Execute(
+		"kubectl",
+		"create",
+		"secret",
+		"docker-registry",
+		secretName,
+		fmt.Sprintf("--namespace=%s", namespace),
+		fmt.Sprintf("--docker-server=%s", registry),
+		fmt.Sprintf("--docker-username=%s", username),
+		fmt.Sprintf("--docker-password=%s", password),
 	)
+	msg := cli.GetSessionExitMsg(session)
+	Expect(session.ExitCode()).To(Equal(0), "pull secret creation failed: %s", msg)
 }
 
 // splitDockerImage returns the image name and tag.

@@ -14,7 +14,7 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     env:
-      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
@@ -33,24 +33,23 @@ jobs:
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
+      - name: Log in to ghcr.io registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          repository: ${{ env.DOCKER_REPO }}
+          repository: ${{ env.GHCR_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_PASSWORD }}
-          push_to_quay: false
+          push_to_docker: false
           forked: ${{ inputs.forked }}
   prepare-e2e-bundle:
     name: Prepare E2E Bundle configuration and image
     runs-on: ubuntu-latest
     env:
-      DOCKER_REGISTRY: quay.io
-      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_BUNDLES_REPO: mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - if: ${{ inputs.forked == false }}
         name: Check out code
@@ -72,7 +71,7 @@ jobs:
       - name: Generate configuration for the tests
         uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
           VERSION: ${{ steps.prepare.outputs.tag }}
           ENV: dev
       - name: Change path for the test
@@ -100,32 +99,28 @@ jobs:
       - name: Prepare docker tag
         id: prepare-docker-bundle-tag
         run: |
-          REPOSITORY=${{ env.DOCKER_BUNDLES_REPO }}
+          REPOSITORY=${{ env.GHCR_BUNDLES_REPO }}
           TAG=${{ steps.prepare.outputs.tag }}
           TAGS="${REPOSITORY}:${TAG}"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      - name: Log in to ghcr.io registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          get-existing-cache: true
-          file: bundle.Dockerfile
-          repository: ${{ env.DOCKER_BUNDLES_REPO }}
+          repository: ${{ env.GHCR_BUNDLES_REPO }}
           version: ${{ steps.prepare.outputs.tag }}
-          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          tags: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.prepare.outputs.tag }}
           platforms: linux/amd64
           push_to_docker: false
-          push_to_quay: true
-          quay_username: mongodb+mongodb_atlas_kubernetes
-          quay_password: ${{ secrets.QUAY_PASSWORD }}
           forked: ${{ inputs.forked }}
   e2e:
     name: E2E tests
     needs: [prepare-e2e, prepare-e2e-bundle]
     runs-on: ubuntu-latest
     env:
-      DOCKER_REGISTRY: docker.io
-      DOCKER_REPO: mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_BUNDLES_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     strategy:
       fail-fast: false
       matrix:
@@ -200,7 +195,7 @@ jobs:
       - name: Generate configuration for the tests
         uses: ./.github/actions/gen-install-scripts
         with:
-          IMAGE_URL: ${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}
+          IMAGE_URL: ${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}
           VERSION: ${{ steps.prepare.outputs.tag }}
           ENV: dev
 
@@ -238,8 +233,11 @@ jobs:
           MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
           MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
           MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
-          IMAGE_URL: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_REPO }}:${{ steps.prepare.outputs.tag }}"
-          BUNDLE_IMAGE: "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
+          IMAGE_URL: "${{ env.GHCR_REPO }}:${{ steps.prepare.outputs.tag }}"
+          IMAGE_PULL_SECRET_REGISTRY: ghcr.io
+          IMAGE_PULL_SECRET_USERNAME: $
+          IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
+          BUNDLE_IMAGE: "${{ env.GHCR_BUNDLES_REPO}}:${{ steps.prepare.outputs.tag }}"
           K8S_PLATFORM: "${{ steps.properties.outputs.k8s_platform }}"
           K8S_VERSION: "${{ steps.properties.outputs.k8s_version }}"
           TEST_NAME: "${{ matrix.test }}"
