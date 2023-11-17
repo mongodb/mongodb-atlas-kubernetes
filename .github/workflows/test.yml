@@ -28,6 +28,11 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     with:
       forked: false
+
+  check-licenses:
+    uses: ./.github/workflows/check-licenses.yml
+    with:
+      forked: false
   
   paths-filter:
     uses: ./.github/workflows/paths-filter.yml
