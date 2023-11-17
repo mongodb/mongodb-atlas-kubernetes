@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
 
 type ProjectIntegration project.Integration

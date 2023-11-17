@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	. "github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
+	. "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
 )
 
 func TestJSONSliceMerge(t *testing.T) {

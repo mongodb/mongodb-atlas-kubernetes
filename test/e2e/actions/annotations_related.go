@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"time"
 
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/data"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 func DeleteDeploymentCRWithKeepAnnotation(testData *model.TestDataProvider) {

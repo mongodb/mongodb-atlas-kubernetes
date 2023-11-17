@@ -7,14 +7,14 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/timeutil"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {

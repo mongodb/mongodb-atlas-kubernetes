@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/httputil"
 )
 
 // Client is the central place to create a client for Atlas using specified API keys and a server URL.

@@ -5,10 +5,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
+	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 func ProjectReadyCondition(data *model.TestDataProvider) string {

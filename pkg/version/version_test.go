@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
 func TestReleaseVersion(t *testing.T) {

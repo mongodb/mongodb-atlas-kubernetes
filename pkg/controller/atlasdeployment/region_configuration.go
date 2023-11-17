@@ -1,13 +1,13 @@
 package atlasdeployment
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlasCluster *mongodbatlas.AdvancedCluster) {

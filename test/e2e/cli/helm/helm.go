@@ -14,9 +14,9 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v3"
 
-	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	cli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 // GenKubeVersion

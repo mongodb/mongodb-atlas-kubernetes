@@ -8,12 +8,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("global-deployment"), func() {

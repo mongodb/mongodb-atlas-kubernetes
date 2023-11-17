@@ -8,9 +8,9 @@ import (
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 func WaitForConditionsToBecomeTrue(userData *model.TestDataProvider, conditionTypes ...status.ConditionType) {

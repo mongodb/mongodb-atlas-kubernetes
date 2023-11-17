@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 const (

@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/kube"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
 )
 
 func UpdateSpecOfSelectedDeployment(spec v1.AtlasDeploymentSpec, indexOfDeployment int) func(data *model.TestDataProvider) {

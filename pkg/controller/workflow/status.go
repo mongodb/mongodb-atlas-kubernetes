@@ -1,7 +1,7 @@
 package workflow
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 // Status is a mutable container containing the status of some particular reconciliation. It is expected to be updated

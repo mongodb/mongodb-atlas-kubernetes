@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
 )
 
 // EventHandlerWithDelete is an extension of EnqueueRequestForObject that will _not_ trigger a reconciliation for a Delete event.

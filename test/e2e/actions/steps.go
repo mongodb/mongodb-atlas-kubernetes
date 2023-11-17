@@ -14,17 +14,17 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	appclient "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/appclient"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli/helm"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	kube "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
+	appclient "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/appclient"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli/helm"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
 )
 
 func WaitDeployment(data *model.TestDataProvider, generation int) {

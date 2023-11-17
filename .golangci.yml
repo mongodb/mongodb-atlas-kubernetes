@@ -33,7 +33,7 @@ linters-settings:
   misspell:
     locale: US
   goimports:
-    local-prefixes: github.com/mongodb/mongodb-atlas-kubernetes
+    local-prefixes: github.com/mongodb/mongodb-atlas-kubernetes/v2
   depguard:
     rules:
       all:

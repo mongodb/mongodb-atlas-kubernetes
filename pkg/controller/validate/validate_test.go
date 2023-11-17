@@ -3,15 +3,15 @@ package validate
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 
 	"github.com/stretchr/testify/assert"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestClusterValidation(t *testing.T) {
