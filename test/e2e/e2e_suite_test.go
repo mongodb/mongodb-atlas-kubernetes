@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 const (
@@ -29,7 +29,7 @@ var (
 )
 
 func TestE2e(t *testing.T) {
-	if !helper.Enabled("AKO_E2E_TEST") {
+	if !control.Enabled("AKO_E2E_TEST") {
 		t.Skip("Skipping e2e tests, AKO_E2E_TEST is not set")
 	}
 	RegisterFailHandler(Fail)
@@ -37,7 +37,7 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	if !helper.Enabled("AKO_E2E_TEST") {
+	if !control.Enabled("AKO_E2E_TEST") {
 		fmt.Println("Skipping e2e BeforeSuite, AKO_E2E_TEST is not set")
 		return
 	}

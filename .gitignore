@@ -34,7 +34,7 @@ tags
 testbin/
 
 # don't include generated files from e2e tests
-test/e2e/data/gen/
+test/helper/e2e/data/gen/
 test/e2e/output/
 
 node_modules

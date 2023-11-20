@@ -10,14 +10,14 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/cli/helm"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli/helm"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
 var _ = Describe("HELM charts", Ordered, func() {
@@ -119,7 +119,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				"helm-ns",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"data/atlasdeployment_basic_helm.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader").
@@ -141,7 +141,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				"helm-advanced",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"data/atlasdeployment_advanced_helm.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_advanced_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
@@ -159,7 +159,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				"helm-advanced-multiregion",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"data/atlasdeployment_advanced_multi_region_helm.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_advanced_multi_region_helm.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
@@ -177,7 +177,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				"helm-serverless",
 				model.AProject{},
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"data/atlasdeployment_serverless.yaml"},
+				[]string{"../helper/e2e/data/atlasdeployment_serverless.yaml"},
 				[]string{},
 				[]model.DBUser{
 					*model.NewDBUser("reader2").
@@ -199,7 +199,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 					"helm-wide",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"data/atlasdeployment_basic_helm.yaml"},
+					[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{
 						*model.NewDBUser("reader2").
@@ -245,7 +245,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 					"helm-upgrade",
 					model.AProject{},
 					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"data/atlasdeployment_basic_helm.yaml"},
+					[]string{"../helper/e2e/data/atlasdeployment_basic_helm.yaml"},
 					[]string{},
 					[]model.DBUser{
 						*model.NewDBUser("admin").
