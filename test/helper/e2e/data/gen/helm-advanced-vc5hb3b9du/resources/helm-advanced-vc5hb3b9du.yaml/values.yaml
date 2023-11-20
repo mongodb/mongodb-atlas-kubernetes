@@ -1,0 +1,38 @@
+deployments:
+    - advancedDeploymentSpec:
+        clusterType: REPLICASET
+        name: helm-advanced
+        replicationSpecs:
+            - regionConfigs:
+                - backingProviderName: AWS
+                  electableSpecs:
+                    instanceSize: M5
+                  providerName: TENANT
+                  regionName: US_EAST_1
+      backupRef:
+        name: ""
+        namespace: ""
+      projectRef:
+        name: my-project
+        namespace: ""
+project:
+    connectionSecretRef:
+        name: helm-advanced
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-advanced-vc5hb3b9du
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: everyone
+users:
+    - databaseName: admin
+      password: 6W3nxZ8NuQ
+      passwordSecretRef:
+        name: dbuser-secret-u2
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: Ships
+          roleName: readWrite
+      username: reader2

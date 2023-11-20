@@ -90,7 +90,7 @@ func TestProtectedFailures(t *testing.T) {
 		expectedFailure error
 	}{
 		{"When all checkers fail, operator checker fails first", failedOpChecker(ErrOpChecker), failedAtlasChecker(ErrAtlasChecker), ErrOpChecker},
-		{"When unamanaged and atlas checker fails we get that its failure", testOpChecker(false), failedAtlasChecker(ErrAtlasChecker), ErrAtlasChecker},
+		{"When unmanaged and atlas checker fails we get that its failure", testOpChecker(false), failedAtlasChecker(ErrAtlasChecker), ErrAtlasChecker},
 	}
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {

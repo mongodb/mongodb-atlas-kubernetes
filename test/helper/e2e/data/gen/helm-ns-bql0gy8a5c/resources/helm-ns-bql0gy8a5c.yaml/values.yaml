@@ -1,0 +1,34 @@
+deployments:
+    - backupRef:
+        name: ""
+        namespace: ""
+      deploymentSpec:
+        name: helm-ns
+        providerSettings:
+            instanceSizeName: M10
+            providerName: AWS
+            regionName: US_EAST_1
+      projectRef:
+        name: my-project
+        namespace: ""
+project:
+    connectionSecretRef:
+        name: helm-ns
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-ns-bql0gy8a5c
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: everyone
+users:
+    - databaseName: admin
+      password: cK96r3MieS
+      passwordSecretRef:
+        name: dbuser-secret-u1
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: Ships
+          roleName: readWrite
+      username: reader

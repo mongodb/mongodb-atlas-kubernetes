@@ -13,12 +13,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/api/aws"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/model"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -205,15 +205,15 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 	})
 }
 
-func setupAWSResource(gen *helper.AwsResourcesGenerator, bucket, bucketPolicy, role string) {
+func setupAWSResource(gen *aws.AwsResourcesGenerator, bucket, bucketPolicy, role string) {
 	Expect(gen.CreateBucket(bucket)).To(Succeed())
 	gen.Cleanup(func() {
 		Expect(gen.EmptyBucket(bucket)).To(Succeed())
 		Expect(gen.DeleteBucket(bucket)).To(Succeed())
 	})
 
-	policyArn, err := gen.CreatePolicy(bucketPolicy, func() helper.IAMPolicy {
-		return helper.BucketExportPolicy(bucket)
+	policyArn, err := gen.CreatePolicy(bucketPolicy, func() aws.IAMPolicy {
+		return aws.BucketExportPolicy(bucket)
 	})
 	Expect(err).Should(BeNil())
 	Expect(policyArn).ShouldNot(BeEmpty())

@@ -22,12 +22,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloudaccess"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/cloud"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/cloudaccess"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/model"
 )
 
 var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {

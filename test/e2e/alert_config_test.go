@@ -17,10 +17,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/util/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/api/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/model"
 )
 
 var _ = Describe("Alert configuration tests", Label("alert-config"), func() {

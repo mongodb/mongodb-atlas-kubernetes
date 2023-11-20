@@ -9,13 +9,13 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/model"
 )
 
 // DO NOT RUN THIS TEST IN PARALLEL WITH OTHER TESTS

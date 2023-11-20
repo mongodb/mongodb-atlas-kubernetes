@@ -1,0 +1,41 @@
+deployments:
+    - backupRef:
+        name: ""
+        namespace: ""
+      deploymentSpec:
+        clusterType: REPLICASET
+        name: deployment-from-helm-upgrade
+        replicationSpecs:
+            - regionConfigs:
+                - backingProviderName: AWS
+                  electableSpecs:
+                    instanceSize: M0
+                    nodeCount: 1
+                  priority: 7
+                  providerName: TENANT
+                  regionName: US_EAST_1
+              zoneName: Zone 1
+      projectRef:
+        name: my-project
+        namespace: ""
+project:
+    connectionSecretRef:
+        name: helm-upgrade
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-upgrade-iyex1p28gw
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: everyone
+users:
+    - databaseName: admin
+      password: VcBRHS569O
+      passwordSecretRef:
+        name: dbuser-secret-u2
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: admin
+          roleName: atlasAdmin
+      username: admin

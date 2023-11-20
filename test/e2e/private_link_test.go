@@ -11,11 +11,11 @@ import (
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/actions/cloud"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/model"
 )
 
 // NOTES

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/test/helper/e2e/utils"
 )
 
 func main() {

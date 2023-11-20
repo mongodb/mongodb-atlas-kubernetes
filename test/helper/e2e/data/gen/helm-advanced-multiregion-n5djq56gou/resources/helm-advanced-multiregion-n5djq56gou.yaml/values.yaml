@@ -1,0 +1,62 @@
+deployments:
+    - advancedDeploymentSpec:
+        clusterType: GEOSHARDED
+        name: helm-advanced-multiregion
+        replicationSpecs:
+            - numShards: 1
+              regionConfigs:
+                - backingProviderName: AZURE
+                  electableSpecs:
+                    instanceSize: M10
+                    nodeCount: 3
+                  priority: 7
+                  providerName: AZURE
+                  regionName: EUROPE_NORTH
+              zoneName: Zone1
+            - numShards: 1
+              regionConfigs:
+                - backingProviderName: AWS
+                  electableSpecs:
+                    instanceSize: M10
+                    nodeCount: 3
+                  priority: 7
+                  providerName: AWS
+                  regionName: US_EAST_1
+              zoneName: Zone2
+            - numShards: 1
+              regionConfigs:
+                - backingProviderName: GCP
+                  electableSpecs:
+                    instanceSize: M10
+                    nodeCount: 3
+                  priority: 7
+                  providerName: GCP
+                  regionName: EASTERN_US
+              zoneName: Zone3
+      backupRef:
+        name: ""
+        namespace: ""
+      projectRef:
+        name: my-project
+        namespace: ""
+project:
+    connectionSecretRef:
+        name: helm-advanced-multiregion
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-advanced-multiregion-n5djq56gou
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: everyone
+users:
+    - databaseName: admin
+      password: hE9C2k4ZYG
+      passwordSecretRef:
+        name: dbuser-secret-u2
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: Ships
+          roleName: readWrite
+      username: reader2

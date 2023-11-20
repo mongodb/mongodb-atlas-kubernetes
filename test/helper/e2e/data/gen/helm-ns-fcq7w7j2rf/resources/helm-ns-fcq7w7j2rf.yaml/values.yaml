@@ -1,0 +1,43 @@
+deployments:
+    - backupRef:
+        name: ""
+        namespace: ""
+      deploymentSpec:
+        name: helm-ns
+        providerBackupEnabled: true
+        providerSettings:
+            instanceSizeName: M10
+            providerName: AWS
+            regionName: US_EAST_1
+        replicationSpecs:
+            - numShards: 1
+              regionsConfig:
+                US_EAST_1:
+                    analyticsNodes: 0
+                    electableNodes: 3
+                    priority: 7
+                    readOnlyNodes: 0
+      projectRef:
+        name: my-project
+        namespace: ""
+project:
+    connectionSecretRef:
+        name: helm-ns
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-ns-fcq7w7j2rf
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: updated
+users:
+    - databaseName: admin
+      password: bO4Q1odH5C
+      passwordSecretRef:
+        name: dbuser-secret-u1
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: admin
+          roleName: atlasAdmin
+      username: reader

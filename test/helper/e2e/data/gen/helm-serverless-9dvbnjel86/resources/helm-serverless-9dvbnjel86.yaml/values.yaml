@@ -1,0 +1,35 @@
+deployments:
+    - backupRef:
+        name: ""
+        namespace: ""
+      projectRef:
+        name: my-project
+        namespace: ""
+      serverlessSpec:
+        backupOptions: {}
+        name: helm-serverless
+        providerSettings:
+            backingProviderName: AWS
+            providerName: SERVERLESS
+            regionName: US_EAST_1
+project:
+    connectionSecretRef:
+        name: helm-serverless
+        namespace: ""
+    maintenanceWindow: {}
+    name: helm-serverless-9dvbnjel86
+    projectIpAccessList:
+        - cidrBlock: 0.0.0.0/0
+          comment: everyone
+users:
+    - databaseName: admin
+      password: 0lg76hbQov
+      passwordSecretRef:
+        name: dbuser-secret-u2
+      projectRef:
+        name: ""
+        namespace: ""
+      roles:
+        - databaseName: Ships
+          roleName: readWrite
+      username: reader2
