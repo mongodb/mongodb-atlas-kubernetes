@@ -359,13 +359,6 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 		return bsIsDefault, nil
 	}
 
-	// cjs, _ := json.MarshalIndent(currentCopy, "", " ")
-	// ajs, _ := json.MarshalIndent(newCopy, "", " ")
-	// djs, _ := json.MarshalIndent(defaultBs, "", " ")
-	// fmt.Println("ATLAS", string(cjs))
-	// fmt.Println("OPERATOR", string(ajs))
-	// fmt.Println("DEFAULT", string(djs))
-
 	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
 	if d != "" {
 		return bsNotEqual, nil
