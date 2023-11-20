@@ -18,6 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
@@ -25,6 +26,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+)
+
+type BackusScheduleCompareResult = uint8
+
+const (
+	bsEqual BackusScheduleCompareResult = iota
+	bsNotEqual
+	bsIsDefault
 )
 
 var errArgIsNotBackupSchedule = errors.New("failed to match resource type as AtlasBackupSchedule")
@@ -100,11 +109,16 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 			operatorBS.Policies[0].ID = atlasBS.Policies[0].ID
 		}
 
-		isSame, err := backupSchedulesAreEqual(atlasBS, operatorBS)
+		result, err := backupSchedulesAreEqual(atlasBS, operatorBS)
 		if err != nil {
 			return true, nil
 		}
-		return !isSame, nil
+		switch result {
+		case bsEqual:
+			return false, nil
+		default:
+			return true, nil
+		}
 	}
 }
 
@@ -258,12 +272,12 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	// There is only one policy, always
 	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
 
-	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
+	result, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
 	if err != nil {
 		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
 	}
 
-	if equal {
+	if result == bsNotEqual {
 		r.Log.Debug("backup schedules are equal, nothing to change")
 		return nil
 	}
@@ -276,26 +290,87 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	return nil
 }
 
-func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {
+func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (BackusScheduleCompareResult, error) {
 	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err := compat.JSONCopy(&currentCopy, currentSchedule)
 	if err != nil {
-		return false, err
+		return bsNotEqual, err
 	}
 
 	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err = compat.JSONCopy(&newCopy, newSchedule)
 	if err != nil {
-		return false, err
+		return bsNotEqual, err
 	}
 
 	normalizeBackupSchedule(&currentCopy)
 	normalizeBackupSchedule(&newCopy)
+
+	// Should never happend because the must be at least one policy in Atlas
+	if len(currentCopy.Policies) == 0 {
+		return bsEqual, nil
+	}
+
+	defaultBs := mongodbatlas.CloudProviderSnapshotBackupPolicy{
+		ClusterID:             currentCopy.ClusterID,
+		ClusterName:           currentCopy.ClusterName,
+		ReferenceHourOfDay:    toptr.MakePtr[int64](12),
+		ReferenceMinuteOfHour: toptr.MakePtr[int64](19),
+		RestoreWindowDays:     toptr.MakePtr[int64](2),
+		Policies: []mongodbatlas.Policy{
+			{
+				ID: currentCopy.Policies[0].ID,
+				PolicyItems: []mongodbatlas.PolicyItem{
+					{
+						FrequencyInterval: 6,
+						FrequencyType:     "hourly",
+						RetentionUnit:     "days",
+						RetentionValue:    2,
+					},
+					{
+						FrequencyInterval: 1,
+						FrequencyType:     "daily",
+						RetentionUnit:     "days",
+						RetentionValue:    7,
+					},
+					{
+						FrequencyInterval: 6,
+						FrequencyType:     "weekly",
+						RetentionUnit:     "weeks",
+						RetentionValue:    4,
+					},
+					{
+						FrequencyInterval: 40,
+						FrequencyType:     "monthly",
+						RetentionUnit:     "months",
+						RetentionValue:    12,
+					},
+				},
+			},
+		},
+		AutoExportEnabled:                 toptr.MakePtr(false),
+		UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
+		CopySettings:                      []mongodbatlas.CopySetting{},
+	}
+
+	// Atlas has a default BackupSchedule if backups enabled. If so, we skip it
+	if d := cmp.Diff(&currentCopy, &defaultBs, cmpopts.EquateEmpty()); d == "" {
+		fmt.Println("DEBUG BS EQUAL")
+		return bsIsDefault, nil
+	}
+
+	// cjs, _ := json.MarshalIndent(currentCopy, "", " ")
+	// ajs, _ := json.MarshalIndent(newCopy, "", " ")
+	// djs, _ := json.MarshalIndent(defaultBs, "", " ")
+	// fmt.Println("ATLAS", string(cjs))
+	// fmt.Println("OPERATOR", string(ajs))
+	// fmt.Println("DEFAULT", string(djs))
+
 	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
 	if d != "" {
-		return false, nil
+		return bsNotEqual, nil
 	}
-	return true, nil
+	return bsEqual, nil
 }
 
 func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) {
