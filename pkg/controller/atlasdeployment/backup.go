@@ -277,7 +277,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
 	}
 
-	if result == bsNotEqual {
+	if result == bsEqual {
 		r.Log.Debug("backup schedules are equal, nothing to change")
 		return nil
 	}
