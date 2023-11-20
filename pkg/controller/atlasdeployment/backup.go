@@ -290,36 +290,16 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	return nil
 }
 
-func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (BackusScheduleCompareResult, error) {
-	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
-	err := compat.JSONCopy(&currentCopy, currentSchedule)
-	if err != nil {
-		return bsNotEqual, err
-	}
-
-	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
-	err = compat.JSONCopy(&newCopy, newSchedule)
-	if err != nil {
-		return bsNotEqual, err
-	}
-
-	normalizeBackupSchedule(&currentCopy)
-	normalizeBackupSchedule(&newCopy)
-
-	// Should never happen because the must be at least one policy in Atlas
-	if len(currentCopy.Policies) == 0 {
-		return bsEqual, nil
-	}
-
-	defaultBs := mongodbatlas.CloudProviderSnapshotBackupPolicy{
-		ClusterID:             currentCopy.ClusterID,
-		ClusterName:           currentCopy.ClusterName,
+func getDefaultBsSchedule(clusterID, clusterName, policyID string) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
+	return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+		ClusterID:             clusterID,
+		ClusterName:           clusterName,
 		ReferenceHourOfDay:    toptr.MakePtr[int64](12),
 		ReferenceMinuteOfHour: toptr.MakePtr[int64](19),
 		RestoreWindowDays:     toptr.MakePtr[int64](2),
 		Policies: []mongodbatlas.Policy{
 			{
-				ID: currentCopy.Policies[0].ID,
+				ID: policyID,
 				PolicyItems: []mongodbatlas.PolicyItem{
 					{
 						FrequencyInterval: 6,
@@ -352,7 +332,30 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 		UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
 		CopySettings:                      []mongodbatlas.CopySetting{},
 	}
+}
 
+func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (BackusScheduleCompareResult, error) {
+	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
+	err := compat.JSONCopy(&currentCopy, currentSchedule)
+	if err != nil {
+		return bsNotEqual, err
+	}
+
+	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
+	err = compat.JSONCopy(&newCopy, newSchedule)
+	if err != nil {
+		return bsNotEqual, err
+	}
+
+	normalizeBackupSchedule(&currentCopy)
+	normalizeBackupSchedule(&newCopy)
+
+	// Should never happen because the must be at least one policy in Atlas
+	if len(currentCopy.Policies) == 0 {
+		return bsEqual, nil
+	}
+
+	defaultBs := getDefaultBsSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
 	// Atlas has a default BackupSchedule if backups enabled. If so, we skip it
 	if d := cmp.Diff(&currentCopy, &defaultBs, cmpopts.EquateEmpty()); d == "" {
 		fmt.Println("DEBUG BS EQUAL")
