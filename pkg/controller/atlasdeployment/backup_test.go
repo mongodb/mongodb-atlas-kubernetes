@@ -51,7 +51,65 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		assert.False(t, result)
 	})
 
-	t.Run("should return true if resources are not equal", func(t *testing.T) {
+	t.Run("should return false if bs in atlas equal to the default one", func(t *testing.T) {
+		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
+			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
+				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
+					return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
+							ClusterID:             clusterID,
+							ClusterName:           clusterName,
+							ReferenceHourOfDay:    toptr.MakePtr[int64](12),
+							ReferenceMinuteOfHour: toptr.MakePtr[int64](19),
+							RestoreWindowDays:     toptr.MakePtr[int64](2),
+							Policies: []mongodbatlas.Policy{
+								{
+									PolicyItems: []mongodbatlas.PolicyItem{
+										{
+											FrequencyInterval: 6,
+											FrequencyType:     "hourly",
+											RetentionUnit:     "days",
+											RetentionValue:    2,
+										},
+										{
+											FrequencyInterval: 1,
+											FrequencyType:     "daily",
+											RetentionUnit:     "days",
+											RetentionValue:    7,
+										},
+										{
+											FrequencyInterval: 6,
+											FrequencyType:     "weekly",
+											RetentionUnit:     "weeks",
+											RetentionValue:    4,
+										},
+										{
+											FrequencyInterval: 40,
+											FrequencyType:     "monthly",
+											RetentionUnit:     "months",
+											RetentionValue:    12,
+										},
+									},
+								},
+							},
+							AutoExportEnabled:                 toptr.MakePtr(false),
+							UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
+							CopySettings:                      []mongodbatlas.CopySetting{},
+						},
+						&mongodbatlas.Response{}, nil
+				},
+			},
+		}, projectID, deploment, &mdbv1.AtlasBackupPolicy{
+			TypeMeta:   metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       mdbv1.AtlasBackupPolicySpec{},
+			Status:     status.BackupPolicyStatus{},
+		})
+		result, err := validator(&mdbv1.AtlasBackupSchedule{})
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+
+	t.Run("should return false if resources are not equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
 			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
 				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
@@ -103,10 +161,10 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		})
 		result, err := validator(&mdbv1.AtlasBackupSchedule{})
 		assert.NoError(t, err)
-		assert.True(t, result)
+		assert.False(t, result)
 	})
 
-	t.Run("should return false if resources are equal", func(t *testing.T) {
+	t.Run("should return true if resources are equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
 			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
 				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
@@ -188,7 +246,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 			Status: status.BackupScheduleStatus{},
 		})
 		assert.NoError(t, err)
-		assert.False(t, result)
+		assert.True(t, result)
 	})
 }
 

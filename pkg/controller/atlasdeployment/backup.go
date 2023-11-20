@@ -306,7 +306,7 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 	normalizeBackupSchedule(&currentCopy)
 	normalizeBackupSchedule(&newCopy)
 
-	// Should never happend because the must be at least one policy in Atlas
+	// Should never happen because the must be at least one policy in Atlas
 	if len(currentCopy.Policies) == 0 {
 		return bsEqual, nil
 	}
