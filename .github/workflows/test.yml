@@ -25,7 +25,7 @@ jobs:
       forked: false
 
   validate-manifests:
-    uses: ./.github/workflows/validate-manifests.yaml
+    uses: ./.github/workflows/validate-manifests.yml
     with:
       forked: false
   
