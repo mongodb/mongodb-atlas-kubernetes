@@ -109,7 +109,7 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 			operatorBS.Policies[0].ID = atlasBS.Policies[0].ID
 		}
 
-		result, err := backupSchedulesAreEqual(atlasBS, operatorBS)
+		result, err := backupSchedulesAreEqualOrDefault(atlasBS, operatorBS)
 		if err != nil {
 			return false, nil
 		}
@@ -272,7 +272,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	// There is only one policy, always
 	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
 
-	result, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
+	result, err := backupSchedulesAreEqualOrDefault(currentSchedule, apiScheduleReq)
 	if err != nil {
 		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
 	}
@@ -334,7 +334,7 @@ func getDefaultBsSchedule(clusterID, clusterName, policyID string) *mongodbatlas
 	}
 }
 
-func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (BackusScheduleCompareResult, error) {
+func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (BackusScheduleCompareResult, error) {
 	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err := compat.JSONCopy(&currentCopy, currentSchedule)
 	if err != nil {
@@ -358,7 +358,6 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 	defaultBs := getDefaultBsSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
 	// Atlas has a default BackupSchedule if backups enabled. If so, we skip it
 	if d := cmp.Diff(&currentCopy, &defaultBs, cmpopts.EquateEmpty()); d == "" {
-		fmt.Println("DEBUG BS EQUAL")
 		return bsIsDefault, nil
 	}
 

@@ -311,12 +311,12 @@ func Test_backupSchedulesAreEqual(t *testing.T) {
 	}
 
 	t.Run("should return true when backups are both empty", func(t *testing.T) {
-		res, err := backupSchedulesAreEqual(&mongodbatlas.CloudProviderSnapshotBackupPolicy{}, &mongodbatlas.CloudProviderSnapshotBackupPolicy{})
+		res, err := backupSchedulesAreEqualOrDefault(&mongodbatlas.CloudProviderSnapshotBackupPolicy{}, &mongodbatlas.CloudProviderSnapshotBackupPolicy{})
 		assert.NoError(t, err)
 		assert.Equal(t, res, bsEqual)
 	})
 	t.Run("should return true when backups are identical", func(t *testing.T) {
-		res, err := backupSchedulesAreEqual(&examplePolicy, &examplePolicy)
+		res, err := backupSchedulesAreEqualOrDefault(&examplePolicy, &examplePolicy)
 		assert.NoError(t, err)
 		assert.Equal(t, res, bsEqual)
 	})
@@ -383,14 +383,14 @@ func Test_backupSchedulesAreEqual(t *testing.T) {
 				},
 			},
 		}
-		res, err := backupSchedulesAreEqual(firstPolicy, secondPolicy)
+		res, err := backupSchedulesAreEqualOrDefault(firstPolicy, secondPolicy)
 		assert.NoError(t, err)
 		assert.Equal(t, res, bsEqual)
 	})
 	t.Run("should return false when backups differ", func(t *testing.T) {
 		changedPolicy := examplePolicy
 		changedPolicy.ClusterName = "different name"
-		res, err := backupSchedulesAreEqual(&examplePolicy, &changedPolicy)
+		res, err := backupSchedulesAreEqualOrDefault(&examplePolicy, &changedPolicy)
 		assert.NoError(t, err)
 		assert.Equal(t, res, bsNotEqual)
 	})

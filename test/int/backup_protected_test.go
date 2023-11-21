@@ -9,9 +9,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
@@ -174,14 +172,12 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 			})
 
-			By("Deployment should NOT be Ready", func() {
+			By("Deployment should be Ready", func() {
 				Eventually(func(g Gomega) bool {
 					return testutil.CheckCondition(
 						k8sClient,
 						testDeployment,
-						status.FalseCondition(status.DeploymentReadyType).
-							WithReason(string(workflow.Internal)).
-							WithMessageRegexp(atlasdeployment.BackupProtected),
+						status.TrueCondition(status.DeploymentReadyType),
 						validateDeploymentUpdatingFunc(g))
 				}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
