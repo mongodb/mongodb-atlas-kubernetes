@@ -7,7 +7,13 @@ on:
     inputs:
       lifetime:
         description: "Lifetime of project in hours"
-        default: "3"
+        type: number
+        default: 2
+        required: true
+      cloud:
+        description: "Atlas environments to be cleaned"
+        type: string
+        default: '["CloudQA","CloudGovQA"]'
         required: true
 
 concurrency:
@@ -19,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: ["CloudQA", "CloudGovQA"]
+        target: ${{ fromJSON(inputs.cloud) }}
     steps:
       - name: Checkout codebase
         uses: actions/checkout@v4
@@ -56,5 +62,5 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP_NAME: svet-test
-          PROJECT_LIFETIME: ${{ inputs.lifetime || '3' }}
+          PROJECT_LIFETIME: ${{ inputs.lifetime || 2 }}
         run: (cd tools/clean && ./clean atlas)
