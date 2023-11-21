@@ -14,7 +14,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.48.1
-	github.com/go-logr/zapr v1.2.4
+	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.4.0
