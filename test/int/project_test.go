@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 
 	"time"
@@ -54,8 +56,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	AfterEach(func() {
 		if createdProject != nil && createdProject.Status.ID != "" {
 			By("Removing Atlas Project " + createdProject.Status.ID)
-			Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdProject), createdProject)).To(Succeed())
-			Expect(k8sClient.Delete(context.Background(), createdProject)).To(Succeed())
+			Eventually(deleteK8sObject(createdProject), 20, interval).Should(BeTrue())
 			Eventually(checkAtlasProjectRemoved(createdProject.Status.ID), 20, interval).Should(BeTrue())
 		}
 		removeControllersAndNamespace()
@@ -369,7 +370,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		var secondProject *mdbv1.AtlasProject
 		It("Should Succeed", func() {
 			By("Creating two projects first", func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("first-project")
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
@@ -388,12 +389,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
-				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdProject), createdProject)).To(Succeed())
-				createdProject.Spec.AlertConfigurationSyncEnabled = true
-				Expect(k8sClient.Update(context.Background(), createdProject)).To(Succeed())
-				Expect(k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(secondProject), secondProject)).To(Succeed())
-				secondProject.Spec.AlertConfigurationSyncEnabled = true
-				Expect(k8sClient.Update(context.Background(), secondProject)).To(Succeed())
+				Eventually(updateK8sObject[*mdbv1.AtlasProject](createdProject, func(createdProject *mdbv1.AtlasProject) {
+					createdProject.Spec.AlertConfigurationSyncEnabled = true
+				}), 20, interval).Should(BeTrue())
+
+				Eventually(updateK8sObject[*mdbv1.AtlasProject](secondProject, func(secondProject *mdbv1.AtlasProject) {
+					secondProject.Spec.AlertConfigurationSyncEnabled = true
+				}), 20, interval).Should(BeTrue())
 
 				// Both projects are expected to get to Failed state right away
 				expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.ProjectNotCreatedInAtlas))
@@ -727,4 +729,31 @@ func validateNoErrorsMaintenanceWindowDuringUpdate(g Gomega) func(a mdbv1.AtlasC
 		g.Expect(ok).To(BeTrue())
 		g.Expect(condition.Reason).To(BeEmpty())
 	}
+}
+
+func deleteK8sObject(obj client.Object) bool {
+	nn := kube.ObjectKeyFromObject(obj)
+	err := k8sClient.Get(context.Background(), nn, obj)
+	if err == nil {
+		err = k8sClient.Delete(context.Background(), obj)
+	}
+	if err != nil {
+		GinkgoWriter.Printf("Attempt to delete %s/%s failed: %v\n", nn.Namespace, nn.Name, err)
+		return false
+	}
+	return true
+}
+
+func updateK8sObject[T client.Object](obj T, updateFn func(T)) bool {
+	nn := kube.ObjectKeyFromObject(obj)
+	err := k8sClient.Get(context.Background(), nn, obj)
+	if err == nil {
+		updateFn(obj)
+		err = k8sClient.Update(context.Background(), obj)
+	}
+	if err != nil {
+		GinkgoWriter.Printf("Failed to update %s/%s: %v\n", nn.Namespace, nn.Name, err)
+		return false
+	}
+	return true
 }
