@@ -16,8 +16,8 @@ jobs:
     with:
       forked: true
 
-  check-manifests:
-    uses: ./.github/workflows/check-manifests.yaml
+  validate-manifests:
+    uses: ./.github/workflows/validate-manifests.yaml
     with:
       forked: true
   

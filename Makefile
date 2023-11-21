@@ -234,7 +234,7 @@ CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary
 	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2)
 
-.PHONY: check-manifests
+.PHONY: validate-manifests
 FILES = $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory)
 TEMP := $(shell echo "$(FILES)" | awk 'NF')
 LINES := $(shell echo "$(FILES)" | awk --field-separator=" " "{ print NF }")
@@ -251,7 +251,7 @@ endif
 	@echo "--------------------"
 	@echo "Check: PASS"
 
-check-manifests: generate manifests check-missing-files
+validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
 KUSTOMIZE = $(shell pwd)/bin/kustomize
