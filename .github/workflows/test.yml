@@ -23,6 +23,11 @@ jobs:
     uses: ./.github/workflows/lint.yaml
     with:
       forked: false
+
+  validate-manifests:
+    uses: ./.github/workflows/validate-manifests.yml
+    with:
+      forked: false
   
   unit-tests:
     uses: ./.github/workflows/test-unit.yml
