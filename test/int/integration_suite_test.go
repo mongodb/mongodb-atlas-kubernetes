@@ -199,8 +199,10 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		},
 	}
 
-	By("Creating the namespace " + namespace.Name)
+	By("Creating the namespace " + namespace.GenerateName + "...")
 	Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
+	Expect(namespace.Name).ToNot(BeEmpty())
+	GinkgoWriter.Printf("Generated namespace %q\n", namespace.Name)
 
 	// +kubebuilder:scaffold:scheme
 	logger := ctrzap.NewRaw(ctrzap.UseDevMode(true), ctrzap.WriteTo(GinkgoWriter), ctrzap.StacktraceLevel(zap.ErrorLevel))
