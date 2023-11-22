@@ -356,7 +356,7 @@ func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProvide
 	}
 
 	defaultBs := getDefaultBsSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
-	// Atlas has a default BackupSchedule if backups enabled. If so, we skip it
+	// Atlas has a default BackupSchedule if backups are enabled. If so, we skip it
 	if d := cmp.Diff(&currentCopy, &defaultBs, cmpopts.EquateEmpty()); d == "" {
 		return bsIsDefault, nil
 	}
