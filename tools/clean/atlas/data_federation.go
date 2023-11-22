@@ -26,7 +26,7 @@ func (c *Cleaner) deleteFederatedDatabases(ctx context.Context, projectID string
 		if fedDB.GetState() == "DELETED" {
 			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tFederated Database %s is being deleted...", fedDB.GetName()))
 
-			return
+			continue
 		}
 
 		_, _, err := c.client.DataFederationApi.DeleteFederatedDatabase(ctx, projectID, fedDB.GetName()).Execute()
