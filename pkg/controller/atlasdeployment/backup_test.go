@@ -51,7 +51,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		assert.False(t, result)
 	})
 
-	t.Run("should return false if bs in atlas equal to the default one", func(t *testing.T) {
+	t.Run("should return false if backup schedule in atlas equals to the default one", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
 			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
 				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
