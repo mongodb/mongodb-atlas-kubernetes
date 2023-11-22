@@ -125,5 +125,5 @@ func NewCleaner(aws *provider.AWS, gcp *provider.GCP, azure *provider.Azure) (*C
 }
 
 func isGov(url string) bool {
-	return strings.HasSuffix(url, "")
+	return strings.HasSuffix(url, "mongodbgov.com")
 }
