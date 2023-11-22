@@ -25,6 +25,8 @@ func (c *Cleaner) deleteClusters(ctx context.Context, projectID string, clusters
 	for _, cluster := range clusters {
 		if cluster.GetStateName() == "DELETING" {
 			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tCluster %s is being deleted...", cluster.GetName()))
+
+			return
 		}
 
 		_, err := c.client.ClustersApi.DeleteCluster(ctx, projectID, cluster.GetName()).Execute()
@@ -53,6 +55,8 @@ func (c *Cleaner) deleteServerlessClusters(ctx context.Context, projectID string
 	for _, cluster := range clusters {
 		if cluster.GetStateName() == "DELETING" {
 			fmt.Println(text.FgHiBlue.Sprintf("\t\t\tServerless Cluster %s is being deleted...", cluster.GetName()))
+
+			return
 		}
 
 		_, _, err := c.client.ServerlessInstancesApi.DeleteServerlessInstance(ctx, projectID, cluster.GetName()).Execute()

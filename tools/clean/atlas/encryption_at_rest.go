@@ -3,7 +3,6 @@ package atlas
 import (
 	"context"
 	"fmt"
-
 	"github.com/jedib0t/go-pretty/v6/text"
 	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 )
@@ -26,15 +25,14 @@ func (c *Cleaner) getEncryptionAtRest(ctx context.Context, projectID string) *ad
 }
 
 func (c *Cleaner) deleteEncryptionAtRest(ctx context.Context, projectID string, ear *admin.EncryptionAtRest) {
-	if ear.HasAwsKms() {
-		config := ear.GetAwsKms()
+	if config, ok := ear.GetAwsKmsOk(); ok && config.GetEnabled() {
 		err := c.aws.DeleteKMS(config.GetCustomerMasterKeyID(), config.GetRegion())
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\tFailed to delete AWS KMS key %s: %s", config.GetCustomerMasterKeyID(), err))
 		}
 	}
 
-	if ear.HasGoogleCloudKms() {
+	if config, ok := ear.GetGoogleCloudKmsOk(); ok && config.GetEnabled() {
 		config := ear.GetGoogleCloudKms()
 		err := c.gcp.DeleteCryptoKey(ctx, config.GetKeyVersionResourceID())
 		if err != nil {
@@ -42,8 +40,17 @@ func (c *Cleaner) deleteEncryptionAtRest(ctx context.Context, projectID string, 
 		}
 	}
 
+	disabeld := false
 	_, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementApi.
-		UpdateEncryptionAtRest(ctx, projectID, &admin.EncryptionAtRest{}).
+		UpdateEncryptionAtRest(
+			ctx,
+			projectID,
+			&admin.EncryptionAtRest{
+				AwsKms:         &admin.AWSKMSConfiguration{Enabled: &disabeld},
+				AzureKeyVault:  &admin.AzureKeyVault{Enabled: &disabeld},
+				GoogleCloudKms: &admin.GoogleCloudKMS{Enabled: &disabeld},
+			},
+		).
 		Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to delete encryption at rest for project %s: %s", projectID, err))
