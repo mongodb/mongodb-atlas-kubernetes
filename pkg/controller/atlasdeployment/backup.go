@@ -110,15 +110,10 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 		}
 
 		result, err := backupSchedulesAreEqualOrDefault(atlasBS, operatorBS)
-		if err != nil {
+		if err != nil || result == bsNotEqual {
 			return false, nil
 		}
-		switch result {
-		case bsEqual:
-			return true, nil
-		default:
-			return false, nil
-		}
+		return true, nil
 	}
 }
 
