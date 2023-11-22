@@ -40,15 +40,15 @@ func (c *Cleaner) deleteEncryptionAtRest(ctx context.Context, projectID string, 
 		}
 	}
 
-	disabeld := false
+	disabled := false
 	_, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementApi.
 		UpdateEncryptionAtRest(
 			ctx,
 			projectID,
 			&admin.EncryptionAtRest{
-				AwsKms:         &admin.AWSKMSConfiguration{Enabled: &disabeld},
-				AzureKeyVault:  &admin.AzureKeyVault{Enabled: &disabeld},
-				GoogleCloudKms: &admin.GoogleCloudKMS{Enabled: &disabeld},
+				AwsKms:         &admin.AWSKMSConfiguration{Enabled: &disabled},
+				AzureKeyVault:  &admin.AzureKeyVault{Enabled: &disabled},
+				GoogleCloudKms: &admin.GoogleCloudKMS{Enabled: &disabled},
 			},
 		).
 		Execute()
