@@ -10,22 +10,61 @@ on:
         type: number
         default: 2
         required: true
-      cloud:
-        description: "Atlas environments to be cleaned"
-        type: string
-        default: '["CloudQA","CloudGovQA"]'
+      commercial:
+        description: "Clean commercial Atlas environments"
+        type: boolean
+        default: true
+        required: true
+      government:
+        description: "Clean government Atlas environments"
+        type: boolean
+        default: true
         required: true
 
 concurrency:
   group: cleanup
 
 jobs:
+  calculate-targets:
+    name: Calculate targets for execution
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.set-targets.outputs.targets }}
+    steps:
+      - id: set-targets
+        name: Set Targets
+        env:
+          EVENT: ${{ github.event_name }}
+          COMMERCIAL: ${{ inputs.commercial }}
+          GOVERNMENT: ${{ inputs.government }}
+        run: |
+          if [ "$EVENT" == "schedule" ]; then
+            echo 'targets=["CloudQA", "CloudGovQA"]' >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          ENVS=()
+          
+          if [ "$COMMERCIAL" == true ]; then
+            ENVS+=("CloudQA")
+          fi
+          
+          if [ "$GOVERNMENT" == true ]; then
+            ENVS+=("CloudGovQA")
+          fi
+
+          JSON=$(printf '%s\n' "${ENVS[@]}" | jq -R . | jq -cs .)
+          
+          echo "targets=$JSON" >> $GITHUB_OUTPUT
+
   cleanup:
     name: Cleanup Atlas Cloud
     runs-on: ubuntu-latest
+    needs:
+      - calculate-targets
     strategy:
       matrix:
-        target: ${{ fromJSON(inputs.cloud) }}
+        target: ${{ fromJSON(needs.calculate-targets.outputs.targets) }}
     steps:
       - name: Checkout codebase
         uses: actions/checkout@v4
