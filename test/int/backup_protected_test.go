@@ -86,7 +86,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 			})
 		})
 
-		FIt("Should process BackupSchedule with deletion protection ON and Defaut BackupSchedule", func() {
+		It("Should process BackupSchedule with deletion protection ON and Defaut BackupSchedule", func() {
 			var bsPolicy *mdbv1.AtlasBackupPolicy
 			var bsSchedule *mdbv1.AtlasBackupSchedule
 			By("Creating AtlasBackupPolicy resource", func() {
