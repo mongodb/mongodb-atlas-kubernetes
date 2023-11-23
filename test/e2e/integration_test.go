@@ -12,19 +12,23 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("Configuration namespaced. Deploy deployment", Label("integration-ns"), func() {
+const (
+	datadogEnvKey         = "DATADOG_KEY"
+	pagerDutyEnvKey       = "PAGER_DUTY_SERVICE_KEY"
+	integrationSecretName = "integration-secret"
+)
+
+var _ = Describe("Project Third-Party Integration", Label("integration-ns"), func() {
 	var testData *model.TestDataProvider
-	var key string
 
 	BeforeEach(func() {
-		key = os.Getenv("DATADOG_KEY")
-		Expect(key).ShouldNot(BeEmpty())
+		Expect(os.Getenv(datadogEnvKey)).ShouldNot(BeEmpty())
+		Expect(os.Getenv(pagerDutyEnvKey)).ShouldNot(BeEmpty())
 	})
 
 	AfterEach(func() {
@@ -39,95 +43,132 @@ var _ = Describe("Configuration namespaced. Deploy deployment", Label("integrati
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
-	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider) {
+	DescribeTable("Integration can be configured in a project",
+		func(test *model.TestDataProvider, integration project.Integration, envKeyName string, setSecret configSecret) {
 			testData = test
 			actions.ProjectCreationFlow(test)
-			integrationCycle(test, key)
+			integrationTest(test, integration, os.Getenv(envKeyName), setSecret)
 		},
-		Entry("Users can use integration section", Label("project-integration"),
+
+		Entry("Users can integrate DATADOG on region US1", Label("project-integration"),
 			model.DataProvider(
-				"operator-integration-cr",
+				"datatog-us1",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30018,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "DATADOG",
+				Region: "US",
+			},
+			datadogEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.APIKeyRef = ref
+			},
+		),
+		Entry("Users can integrate DATADOG on region US3", Label("project-integration"),
+			model.DataProvider(
+				"datatog-us3",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				30018,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "DATADOG",
+				Region: "US3",
+			},
+			datadogEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.APIKeyRef = ref
+			},
+		),
+		Entry("Users can integrate DATADOG on region US5", Label("project-integration"),
+			model.DataProvider(
+				"datatog-us5",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				30018,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "DATADOG",
+				Region: "US5",
+			},
+			datadogEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.APIKeyRef = ref
+			},
+		),
+		Entry("Users can integrate DATADOG on region EU1", Label("project-integration"),
+			model.DataProvider(
+				"datatog-eu1",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				30018,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "DATADOG",
+				Region: "EU",
+			},
+			datadogEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.APIKeyRef = ref
+			},
+		),
+		Entry("Users can integrate PagerDuty on region US", Label("project-integration"),
+			model.DataProvider(
+				"pager-duty-us",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				30018,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "PAGER_DUTY",
+				Region: "US",
+			},
+			pagerDutyEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.ServiceKeyRef = ref
+			},
 		),
 	)
 })
 
-func integrationCycle(data *model.TestDataProvider, key string) {
-	integrationType := "DATADOG"
+func integrationTest(data *model.TestDataProvider, integration project.Integration, key string, setSecret configSecret) {
+	By("Create Secret for integration", func() {
+		Expect(k8s.CreateUserSecret(data.Context, data.K8SClient, key, integrationSecretName, data.Resources.Namespace)).Should(Succeed())
 
-	By("Deploy User Resources", func() {
-		projectStatus := GetProjectIntegrationStatus(data)
-		Expect(projectStatus).Should(BeEmpty())
+		setSecret(&integration, common.ResourceRefNamespaced{Name: integrationSecretName, Namespace: data.Resources.Namespace})
 	})
 
 	By("Add integration", func() {
-		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
-			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
-		newIntegration := project.Integration{
-			Type: integrationType,
-			APIKeyRef: common.ResourceRefNamespaced{
-				Name:      "datadog-secret",
-				Namespace: data.Resources.Namespace,
-			},
-			Region: "EU",
-		}
-		data.Project.Spec.Integrations = append(data.Project.Spec.Integrations, newIntegration)
-		By("Create Secret for integration", func() {
-			for _, i := range data.Project.Spec.Integrations {
-				Expect(k8s.CreateUserSecret(data.Context, data.K8SClient, key, i.APIKeyRef.Name, i.APIKeyRef.Namespace)).Should(Succeed())
-			}
-		})
+		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
+		data.Project.Spec.Integrations = append(data.Project.Spec.Integrations, integration)
+
 		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
 	})
 
-	atlasClient := atlas.GetClientOrFail()
-	By("Check statuses", func() {
-		var projectStatus string
-		projectStatus, err := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, status.IntegrationReadyType, data.Resources.Namespace, data.Project.GetName())
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(projectStatus).Should(Equal("True"))
+	By("Integration is ready", func() {
+		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
 
+		atlasIntegration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integration.Type)
 		Expect(err).ShouldNot(HaveOccurred())
-
-		dog, err := atlasClient.GetIntegrationByType(data.Project.ID(), integrationType)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(strings.HasSuffix(key, removeStarsFromString(dog.APIKey))).Should(BeTrue())
+		Expect(strings.HasSuffix(key, strings.TrimLeft(atlasIntegration.APIKey, "*"))).Should(BeTrue())
 	})
 
 	By("Delete integration", func() {
-		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name,
-			Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
+		Expect(data.K8SClient.Get(data.Context, types.NamespacedName{Name: data.Project.Name, Namespace: data.Resources.Namespace}, data.Project)).Should(Succeed())
 		data.Project.Spec.Integrations = []project.Integration{}
+
 		Expect(data.K8SClient.Update(data.Context, data.Project)).Should(Succeed())
-		actions.CheckProjectConditionsNotSet(data, status.IntegrationReadyType)
 	})
 
 	By("Delete integration check", func() {
-		integration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integrationType)
-		Expect(err).Should(HaveOccurred())
-		Expect(integration).To(BeNil())
+		actions.CheckProjectConditionsNotSet(data, status.IntegrationReadyType)
 
-		// TODO uncomment with
-		// status := kubecli.GetStatusCondition(string(status.IntegrationReadyType), data.Resources.Namespace, data.Resources.GetAtlasProjectFullKubeName())
-		// Expect(status).Should(BeEmpty())
+		atlasIntegration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integration.Type)
+		Expect(err).Should(HaveOccurred())
+		Expect(atlasIntegration).To(BeNil())
 	})
 }
 
-func GetProjectIntegrationStatus(testData *model.TestDataProvider) string {
-	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
-	for _, condition := range testData.Project.Status.Conditions {
-		if condition.Type == status.IntegrationReadyType {
-			return string(condition.Status)
-		}
-	}
-	return ""
-}
-
-func removeStarsFromString(str string) string {
-	return strings.ReplaceAll(str, "*", "")
-}
+type configSecret func(integration *project.Integration, ref common.ResourceRefNamespaced)
