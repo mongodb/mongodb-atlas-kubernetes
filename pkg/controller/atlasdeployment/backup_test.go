@@ -31,7 +31,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		},
 	}
 
-	t.Run("should return err when wrong resource passed", func(t *testing.T) {
+	t.Run("should return err when a wrong resource is provided", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{}, projectID, deploment, &mdbv1.AtlasBackupPolicy{})
 		result, err := validator(&mdbv1.AtlasDeployment{})
 		assert.EqualError(t, err, errArgIsNotBackupSchedule.Error())
@@ -109,7 +109,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		assert.False(t, result)
 	})
 
-	t.Run("should return false if resources are not equal", func(t *testing.T) {
+	t.Run("should return true if resources are not equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
 			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
 				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
@@ -161,10 +161,10 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 		})
 		result, err := validator(&mdbv1.AtlasBackupSchedule{})
 		assert.NoError(t, err)
-		assert.False(t, result)
+		assert.True(t, result)
 	})
 
-	t.Run("should return true if resources are equal", func(t *testing.T) {
+	t.Run("should return false if resources are equal", func(t *testing.T) {
 		validator := backupScheduleManagedByAtlas(context.TODO(), mongodbatlas.Client{
 			CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
 				GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
@@ -246,7 +246,7 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 			Status: status.BackupScheduleStatus{},
 		})
 		assert.NoError(t, err)
-		assert.True(t, result)
+		assert.False(t, result)
 	})
 }
 

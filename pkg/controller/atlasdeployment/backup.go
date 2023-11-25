@@ -110,10 +110,16 @@ func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.
 		}
 
 		result, err := backupSchedulesAreEqualOrDefault(atlasBS, operatorBS)
-		if err != nil || result == bsNotEqual {
+		if err != nil {
 			return false, nil
 		}
-		return true, nil
+
+		switch result {
+		case bsEqual, bsIsDefault:
+			return false, nil
+		default:
+			return true, nil
+		}
 	}
 }
 
@@ -352,12 +358,11 @@ func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProvide
 
 	defaultBs := getDefaultBsSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
 	// Atlas has a default BackupSchedule if backups are enabled. If so, we skip it
-	if d := cmp.Diff(&currentCopy, &defaultBs, cmpopts.EquateEmpty()); d == "" {
+	if d := cmp.Diff(&currentCopy, defaultBs, cmpopts.EquateEmpty()); d == "" {
 		return bsIsDefault, nil
 	}
 
-	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
-	if d != "" {
+	if d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty()); d != "" {
 		return bsNotEqual, nil
 	}
 	return bsEqual, nil
