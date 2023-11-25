@@ -31,12 +31,13 @@ func IsOwner(resource mdbv1.AtlasCustomResource, protectionFlag bool, operatorCh
 		return true, nil
 	}
 
-	existInAtlas, err := atlasChecker(resource)
+	managedByAtlas, err := atlasChecker(resource)
 	if err != nil {
 		return false, err
 	}
 
-	return !existInAtlas, nil
+	// Operator owns the resoruce if it is not managed by the Atlas
+	return !managedByAtlas, nil
 }
 
 func IsResourceProtected(resource mdbv1.AtlasCustomResource, protectionFlag bool) bool {
