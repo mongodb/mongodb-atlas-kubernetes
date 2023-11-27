@@ -21,7 +21,7 @@ jobs:
         uses: helm/kind-action@v1.8.0
         with:
           version: v0.20.0
-          config: test/e2e/config/kind.yaml
+          config: test/helper/e2e/config/kind.yaml
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
       - name: Setup Go

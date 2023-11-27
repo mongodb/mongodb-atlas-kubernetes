@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
 var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), func() {

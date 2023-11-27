@@ -7,11 +7,11 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/deploy"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/k8s"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("x509auth"), func() {

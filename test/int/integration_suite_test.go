@@ -29,7 +29,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -93,7 +93,7 @@ func init() {
 }
 
 func TestAPIs(t *testing.T) {
-	if !helper.Enabled("AKO_INT_TEST") {
+	if !control.Enabled("AKO_INT_TEST") {
 		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
 	}
 	RegisterFailHandler(Fail)
@@ -105,7 +105,7 @@ func TestAPIs(t *testing.T) {
 // The first function starts the envtest (done only once by the 1st node). The second function is called on each of
 // the ginkgo nodes and initializes all reconcilers and clients that will be used by the test.
 var _ = SynchronizedBeforeSuite(func() []byte {
-	if !helper.Enabled("AKO_INT_TEST") {
+	if !control.Enabled("AKO_INT_TEST") {
 		fmt.Println("Skipping int SynchronizedBeforeSuite, AKO_INT_TEST is not set")
 		return nil
 	}

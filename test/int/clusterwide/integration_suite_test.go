@@ -38,7 +38,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -76,7 +76,7 @@ func init() {
 }
 
 func TestAPIs(t *testing.T) {
-	if !helper.Enabled("AKO_INT_TEST") {
+	if !control.Enabled("AKO_INT_TEST") {
 		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
 	}
 	RegisterFailHandler(Fail)
@@ -84,7 +84,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	if !helper.Enabled("AKO_INT_TEST") {
+	if !control.Enabled("AKO_INT_TEST") {
 		fmt.Println("Skipping int BeforeSuite, AKO_INT_TEST is not set")
 		return
 	}

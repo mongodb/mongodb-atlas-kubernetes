@@ -12,10 +12,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/actions/cloud"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
 var _ = Describe("UserLogin", Label("serverless-pe"), func() {

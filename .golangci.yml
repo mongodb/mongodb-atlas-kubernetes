@@ -93,6 +93,13 @@ issues:
       linters:
         - stylecheck
         - noctx
+    - path: test/helper/e2e
+      linters:
+        - stylecheck
+      text: "ST1000|ST1001:|ST1003:"
+    - path: test/helper/e2e/appclient
+      linters:
+        - noctx
     - path: pkg/controller
       linters:
         - prealloc
