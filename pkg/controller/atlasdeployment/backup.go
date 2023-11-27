@@ -291,12 +291,12 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	return nil
 }
 
-func getDefaultBsSchedule(clusterID, clusterName, policyID string) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
+func getDefaultBackupSchedule(clusterID, clusterName, policyID string) *mongodbatlas.CloudProviderSnapshotBackupPolicy {
 	return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 		ClusterID:             clusterID,
 		ClusterName:           clusterName,
-		ReferenceHourOfDay:    toptr.MakePtr[int64](12),
-		ReferenceMinuteOfHour: toptr.MakePtr[int64](19),
+		ReferenceMinuteOfHour: nil,
+		ReferenceHourOfDay:    nil,
 		RestoreWindowDays:     toptr.MakePtr[int64](2),
 		Policies: []mongodbatlas.Policy{
 			{
@@ -342,6 +342,15 @@ func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProvide
 		return bsNotEqual, err
 	}
 
+	// Create a copy to compare to default
+	currentCopyToDefault := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
+	err = compat.JSONCopy(&currentCopyToDefault, currentSchedule)
+	if err != nil {
+		return bsNotEqual, err
+	}
+	currentCopyToDefault.ReferenceHourOfDay = nil
+	currentCopyToDefault.ReferenceMinuteOfHour = nil
+
 	newCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err = compat.JSONCopy(&newCopy, newSchedule)
 	if err != nil {
@@ -349,6 +358,7 @@ func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProvide
 	}
 
 	normalizeBackupSchedule(&currentCopy)
+	normalizeBackupSchedule(&currentCopyToDefault)
 	normalizeBackupSchedule(&newCopy)
 
 	// Should never happen because there must be at least one policy in Atlas
@@ -356,9 +366,11 @@ func backupSchedulesAreEqualOrDefault(currentSchedule *mongodbatlas.CloudProvide
 		return bsEqual, nil
 	}
 
-	defaultBs := getDefaultBsSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
+	defaultBs := getDefaultBackupSchedule(currentCopy.ClusterID, currentCopy.ClusterName, currentCopy.Policies[0].ID)
+
 	// Atlas has a default BackupSchedule if backups are enabled. If so, we skip it
-	if d := cmp.Diff(&currentCopy, defaultBs, cmpopts.EquateEmpty()); d == "" {
+	d := cmp.Diff(&currentCopyToDefault, defaultBs, cmpopts.EquateEmpty())
+	if d == "" {
 		return bsIsDefault, nil
 	}
 

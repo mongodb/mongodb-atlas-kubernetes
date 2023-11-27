@@ -58,8 +58,8 @@ func Test_backupScheduleManagedByAtlas(t *testing.T) {
 					return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 							ClusterID:             clusterID,
 							ClusterName:           clusterName,
-							ReferenceHourOfDay:    toptr.MakePtr[int64](12),
-							ReferenceMinuteOfHour: toptr.MakePtr[int64](19),
+							ReferenceHourOfDay:    nil,
+							ReferenceMinuteOfHour: nil,
 							RestoreWindowDays:     toptr.MakePtr[int64](2),
 							Policies: []mongodbatlas.Policy{
 								{
