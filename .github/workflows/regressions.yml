@@ -1,0 +1,29 @@
+# Create a regression metric
+
+name: Create a regression metric
+
+on:
+  workflow_call:
+    outputs:
+      metric:
+        description: "Produced regression metric"
+        value: ${{ jobs.make-regression-metric.outputs.metric }}
+
+jobs:
+  make-regression-metric:
+    runs-on: ubuntu-latest
+    outputs:
+      metric: ${{ steps.create-metric.outputs.metric }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Create regression metric
+        id: create-metric
+        run: |
+          export COMMIT_SHA=${{ github.sha }}
+          export STATUS=${{ job.status }}
+          export TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          export METRIC_JSON="[$(make regression-metric COMMIT_SHA=${COMMIT_SHA} TIMESTAMP=${TIMESTAMP} STATUS=${STATUS})]"
+          echo "METRIC: ${METRIC_JSON}"
+          echo "metric=${METRIC_JSON}" >> $GITHUB_OUTPUT

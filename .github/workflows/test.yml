@@ -55,3 +55,23 @@ jobs:
     secrets: inherit
     with:
       forked: false
+
+  regressions-metric:
+    if: success() || failure()
+    needs:
+      - lint
+      - validate-manifests
+      - unit-tests
+      - check-licenses
+      - cloud-tests
+    uses: ./.github/workflows/regressions.yml
+
+  track-regressions:
+    if: success() || failure()
+    needs:
+      - regressions-metric
+    uses: ./.github/workflows/metrics.yml
+    secrets: inherit
+    with:
+      collection: "regressions"
+      metrics: ${{ needs.regressions-metric.outputs.metric }}

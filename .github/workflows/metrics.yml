@@ -1,0 +1,41 @@
+# Store metrics
+
+name: Store metrics
+
+on:
+  workflow_call:
+    inputs:
+      collection:
+        type: string
+        required: true
+        default: "regressions"
+      metrics:
+        type: string
+        required: true
+        default: "W10K" # = base64("[]")
+
+jobs:
+    metrics:
+        name: metrics
+        runs-on: ubuntu-latest
+        concurrency:
+            group: metrics
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Check out metrics # Workaround and makes checkout fails due to permissions from CI 
+            uses: actions/checkout@v4
+            with:
+              ref: metrics
+              path: metrics
+
+          - name: Identify metrics repo
+            run: |
+              pushd metrics
+              git config user.email "metrics-workflow@bots.mongodb.com"
+              git config user.name "Metrics Workflow"
+              popd
+    
+          - name: Run add-metrics script
+            run: |
+              make add-metrics METRICS_COLLECTION=${{ inputs.collection }} METRICS_JSON_BASE64=$(echo '${{ inputs.metrics }}' |base64 -w0)

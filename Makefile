@@ -413,3 +413,9 @@ add-metrics-data:
 .PHONY: add-metrics
 add-metrics: clone-metrics add-metrics-data push-metrics ## Add some JSON metrics to the metrics' repo branch
 	rm -rf metrics
+
+# Beware of quoting  and $ escaping here: Need to use single quoting to avoid messing up JSON internal double quotes
+# and double $$ to output "$date" and not interpret is as a variable
+.PHONY: regression-metric
+regression-metric: ## Build a regression metric
+	@echo '{"commit":"$(COMMIT_SHA)","timestamp":{"$$date":"$(TIMESTAMP)"},"status":"$(STATUS)"}'
