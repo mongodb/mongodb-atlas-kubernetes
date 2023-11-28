@@ -203,7 +203,7 @@ func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string)
 	if err != nil {
 		return fmt.Errorf("error getting project list: %w", err)
 	}
-	path := fmt.Sprintf("output/%s/%s.yaml", ns, "projects")
+	path := fmt.Sprintf("../../output/%s/%s.yaml", ns, "projects")
 	err = utils.SaveToFile(path, yaml)
 	if err != nil {
 		return fmt.Errorf("error saving projects to file: %w", err)
@@ -216,7 +216,7 @@ func SaveTeamsToFile(ctx context.Context, k8sClient client.Client, ns string) er
 	if err != nil {
 		return fmt.Errorf("error getting team list: %w", err)
 	}
-	path := fmt.Sprintf("output/%s/%s.yaml", ns, "teams")
+	path := fmt.Sprintf("../../output/%s/%s.yaml", ns, "teams")
 	err = utils.SaveToFile(path, yaml)
 	if err != nil {
 		return fmt.Errorf("error saving teams to file: %w", err)
@@ -229,7 +229,7 @@ func SaveDeploymentsToFile(ctx context.Context, k8sClient client.Client, ns stri
 	if err != nil {
 		return fmt.Errorf("error getting deployment list: %w", err)
 	}
-	path := fmt.Sprintf("output/%s/%s.yaml", ns, "deployments")
+	path := fmt.Sprintf("../../output/%s/%s.yaml", ns, "deployments")
 	err = utils.SaveToFile(path, yaml)
 	if err != nil {
 		return fmt.Errorf("error saving deployments to file: %w", err)
@@ -242,7 +242,7 @@ func SaveUsersToFile(ctx context.Context, k8sClient client.Client, ns string) er
 	if err != nil {
 		return fmt.Errorf("error getting user list: %w", err)
 	}
-	path := fmt.Sprintf("output/%s/%s.yaml", ns, "users")
+	path := fmt.Sprintf("../../output/%s/%s.yaml", ns, "users")
 	err = utils.SaveToFile(path, yaml)
 	if err != nil {
 		return fmt.Errorf("error saving users to file: %w", err)
@@ -257,7 +257,7 @@ func SaveTestAppLogs(input model.UserInputs) {
 		Expect(err).ToNot(HaveOccurred())
 
 		utils.SaveToFile(
-			fmt.Sprintf("output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
+			fmt.Sprintf("../../output/%s/testapp-logs-%s.txt", input.Namespace, user.Spec.Username),
 			bytes,
 		)
 	}

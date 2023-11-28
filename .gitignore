@@ -35,7 +35,7 @@ testbin/
 
 # don't include generated files from e2e tests
 test/helper/e2e/data/gen/
-test/e2e/output/
+output/
 
 node_modules
 tmp/
