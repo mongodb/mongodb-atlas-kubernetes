@@ -46,3 +46,5 @@ deploy/
 # ignore tool binaries
 tools/clean/clean
 tools/makejwt/makejwt
+tools/metrics/metrics
+
