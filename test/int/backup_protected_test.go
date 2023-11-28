@@ -86,7 +86,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 			})
 		})
 
-		It("Should not process BackupSchedule with deletion protection ON", func() {
+		It("Should process BackupSchedule with deletion protection ON", func() {
 			var bsPolicy *mdbv1.AtlasBackupPolicy
 			var bsSchedule *mdbv1.AtlasBackupSchedule
 			By("Creating AtlasBackupPolicy resource", func() {
@@ -105,7 +105,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						Items: []mdbv1.AtlasBackupPolicyItem{
 							{
 								FrequencyType:     "daily",
-								FrequencyInterval: 5,
+								FrequencyInterval: 1,
 								RetentionUnit:     "days",
 								RetentionValue:    20,
 							},
@@ -131,9 +131,9 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 							Name:      bsPolicy.Name,
 							Namespace: bsPolicy.Namespace,
 						},
-						ReferenceHourOfDay:                10,
-						ReferenceMinuteOfHour:             10,
-						RestoreWindowDays:                 10,
+						ReferenceHourOfDay:                12,
+						ReferenceMinuteOfHour:             20,
+						RestoreWindowDays:                 2,
 						UpdateSnapshots:                   false,
 						UseOrgAndGroupNamesInExportPrefix: false,
 						CopySettings:                      []mdbv1.CopySetting{},
