@@ -29,8 +29,6 @@ import (
 
 var errArgIsNotBackupSchedule = errors.New("failed to match resource type as AtlasBackupSchedule")
 
-const BackupProtected = "unable to reconcile AtlasBackupSchedule due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"
-
 func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	service *workflow.Context,
 	projectID string,
@@ -243,14 +241,6 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 
 	r.Log.Debugf("successfully received backup configuration: %v", currentSchedule)
 
-	owner, err := customresource.IsOwner(bSchedule, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, backupScheduleManagedByAtlas(ctx, service.Client, projectID, deployment, bPolicy))
-	if err != nil {
-		return err
-	}
-
-	if !owner {
-		return fmt.Errorf(BackupProtected)
-	}
 	r.Log.Debugf("updating backup configuration for the atlas deployment: %v", clusterName)
 
 	apiScheduleReq := bSchedule.ToAtlas(currentSchedule.ClusterID, clusterName, deployment.GetReplicationSetID(), bPolicy)
