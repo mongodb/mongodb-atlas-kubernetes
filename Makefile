@@ -85,6 +85,9 @@ BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
+METRICS_COLLECTION := flaky
+METRICS_JSON_BASE64 := "WK10" # base64("[]")
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -392,3 +395,21 @@ actions.txt: .github/workflows/ ## List GitHub Action dependencies
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
 	@[[ $(VERSION) == $(MAJOR_VERSION).* ]] && echo "Version OK" || \
 	(echo "Bad major version for $(VERSION) expected $(MAJOR_VERSION)"; exit 1)
+
+.PHONY: clone-metrics
+clone-metrics: ## Clone the metrics branch into direcotry metrics
+	git clone git@github.com:mongodb/mongodb-atlas-kubernetes.git -b metrics metrics/ || echo "metrics already cloned"
+
+.PHONY: push-metrics
+push-metrics: ## Commit changes in the metrics branch at metrics dir and remove the dir
+	cd metrics && git add . && git commit -m "Added metrics"
+	cd metrics && git push -u origin metrics
+
+# We use base64 of the metric to avoid makefile interpreting and trying to expand $ such as for $date
+.PHONY: add-metrics-data
+add-metrics-data:
+	COLLECTION='$(METRICS_COLLECTION)' METRICS_JSON='$(shell echo $(METRICS_JSON_BASE64) |base64 -d)' scripts/add-metrics.sh
+
+.PHONY: add-metrics
+add-metrics: clone-metrics add-metrics-data push-metrics ## Add some JSON metrics to the metrics' repo branch
+	rm -rf metrics
