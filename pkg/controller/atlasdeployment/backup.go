@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,8 +24,6 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
-
-var errArgIsNotBackupSchedule = errors.New("failed to match resource type as AtlasBackupSchedule")
 
 func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	service *workflow.Context,
@@ -66,44 +62,6 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	}
 
 	return r.updateBackupScheduleAndPolicy(service.Context, service, projectID, deployment, bSchedule, bPolicy)
-}
-
-func backupScheduleManagedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID string, deployment *mdbv1.AtlasDeployment, policy *mdbv1.AtlasBackupPolicy) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		clusterName := deployment.GetDeploymentName()
-
-		backupSchedule, ok := resource.(*mdbv1.AtlasBackupSchedule)
-		if !ok {
-			return false, errArgIsNotBackupSchedule
-		}
-
-		atlasBS, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.ResourceNotFound || apiError.HTTPCode == http.StatusNotFound) {
-				return false, nil
-			}
-
-			return false, err
-		}
-
-		operatorBS := backupSchedule.ToAtlas(atlasBS.ClusterID, clusterName, deployment.GetReplicationSetID(), policy)
-		if err != nil {
-			return false, err
-		}
-		if len(operatorBS.Policies) != len(atlasBS.Policies) {
-			return false, nil
-		}
-		if len(atlasBS.Policies) != 0 && len(operatorBS.Policies) != 0 {
-			operatorBS.Policies[0].ID = atlasBS.Policies[0].ID
-		}
-
-		isSame, err := backupSchedulesAreEqual(atlasBS, operatorBS)
-		if err != nil {
-			return true, nil
-		}
-		return !isSame, nil
-	}
 }
 
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
