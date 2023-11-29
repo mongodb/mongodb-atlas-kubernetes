@@ -8,16 +8,28 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 )
 
-func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string) []admin.BaseNetworkPeeringConnectionSettings {
-	peers, _, err := c.client.NetworkPeeringApi.
-		ListPeeringConnections(ctx, projectID).
-		Execute()
-	if err != nil {
-		fmt.Println(text.FgRed.Sprintf("\tFailed to list networking peering for project %s: %s", projectID, err))
+var (
+	SupportedProviders = []string{"AWS", "AZURE", "GCP"}
+)
 
+func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string) []admin.BaseNetworkPeeringConnectionSettings {
+	peers := []admin.BaseNetworkPeeringConnectionSettings{}
+	for _, providerName := range SupportedProviders {
+		peers = append(peers, c.listNetworkPeeringForProvider(ctx, projectID, providerName)...)
+	}
+	if len(peers) == 0 {
 		return nil
 	}
+	return peers
+}
 
+func (c *Cleaner) listNetworkPeeringForProvider(ctx context.Context, projectID, providerName string) []admin.BaseNetworkPeeringConnectionSettings {
+	queryArgs := admin.ListPeeringConnectionsApiParams{GroupId: projectID, ProviderName: &providerName}
+	peers, _, err := c.client.NetworkPeeringApi.ListPeeringConnectionsWithParams(ctx, &queryArgs).Execute()
+	if err != nil {
+		fmt.Println(text.FgRed.Sprintf("\tFailed to list %s networking peering for project %s: %s", providerName, projectID, err))
+		return []admin.BaseNetworkPeeringConnectionSettings{}
+	}
 	return peers.Results
 }
 

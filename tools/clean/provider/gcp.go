@@ -19,18 +19,60 @@ type GCP struct {
 	projectID string
 
 	networkClient       *compute.NetworksClient
+	subnetworksClient   *compute.SubnetworksClient
 	forwardRuleClient   *compute.ForwardingRulesClient
 	addressClient       *compute.AddressesClient
 	keyManagementClient *kms.KeyManagementClient
 }
 
 func (gcp *GCP) DeleteVpc(ctx context.Context, vpcName string) error {
+	vpcGetRequest := &computepb.GetNetworkRequest{
+		Project: gcp.projectID,
+		Network: vpcName,
+	}
+	net, err := gcp.networkClient.Get(ctx, vpcGetRequest)
+	if err != nil {
+		return fmt.Errorf("failed to get VPC %q: %v", vpcName, err)
+	}
+	for _, subnetURL := range net.Subnetworks {
+		subnet, region := decodeSubnetURL(subnetURL)
+		if subnet == "" {
+			return fmt.Errorf("failed to decode subnet URL %q", subnetURL)
+		}
+		subnetDeleteRequest := &computepb.DeleteSubnetworkRequest{
+			Project:    gcp.projectID,
+			Subnetwork: subnet,
+			Region: region,
+		}
+		op, err := gcp.subnetworksClient.Delete(ctx, subnetDeleteRequest)
+		if err := waitOrFailOp(ctx, op, err); err != nil {
+			return fmt.Errorf("failed to delete subnet %q: %v", subnet, err)
+		}
+	}
 	vpcRequest := &computepb.DeleteNetworkRequest{
 		Project: gcp.projectID,
 		Network: vpcName,
 	}
 
 	op, err := gcp.networkClient.Delete(ctx, vpcRequest)
+	if err := waitOrFailOp(ctx, op, err); err != nil {
+		return fmt.Errorf("failed to delete VPC %q: %v", vpcName, err)
+	}
+
+	return nil
+}
+
+func decodeSubnetURL(subnetURL string) (string, string) {
+	parts := strings.Split(subnetURL, "/")
+	if len(parts) < 11 {
+		return "", ""
+	}
+	region := parts[8]
+	subnet := parts[10]
+	return subnet, region
+}
+
+func waitOrFailOp(ctx context.Context, op *compute.Operation, err error) error {
 	if err != nil {
 		return err
 	}
@@ -39,7 +81,6 @@ func (gcp *GCP) DeleteVpc(ctx context.Context, vpcName string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -177,6 +218,11 @@ func NewGCPCleaner(ctx context.Context) (*GCP, error) {
 		return nil, err
 	}
 
+	subnetworksClient, err := compute.NewSubnetworksRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	forwardRuleClient, err := compute.NewForwardingRulesRESTClient(ctx)
 	if err != nil {
 		return nil, err
@@ -195,6 +241,7 @@ func NewGCPCleaner(ctx context.Context) (*GCP, error) {
 	return &GCP{
 		projectID:           projectID,
 		networkClient:       networkClient,
+		subnetworksClient:   subnetworksClient,
 		forwardRuleClient:   forwardRuleClient,
 		addressClient:       addressClient,
 		keyManagementClient: keyManagementClient,

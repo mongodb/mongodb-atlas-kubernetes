@@ -52,7 +52,7 @@ func (c *Cleaner) Clean(ctx context.Context, lifetime int) error {
 	for _, proj := range projects {
 		p := proj
 
-		fmt.Println(text.FgHiWhite.Sprintf("\tStarting deletion of project %s(%s) ...", p.GetName(), p.GetId()))
+		fmt.Println(text.FgHiWhite.Sprintf("\tStarting deletion of project %s(%s) (created at %v)...", p.GetName(), p.GetId(), p.Created))
 
 		if time.Since(p.Created) < time.Duration(lifetime)*time.Hour {
 			fmt.Println(text.FgYellow.Sprintf("\tProject %s(%s) skipped once created less than %d hour ago", p.GetName(), p.GetId(), lifetime))
