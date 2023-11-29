@@ -18,6 +18,12 @@ const (
 	CloudProviderAZURE = "AZURE"
 )
 
+var (
+	SupportedProviders = []string{CloudProviderAWS, CloudProviderGCP, CloudProviderAZURE}
+
+	GovSupportedProviders = []string{CloudProviderAWS}
+)
+
 type Cleaner struct {
 	client *admin.APIClient
 	aws    *provider.AWS
