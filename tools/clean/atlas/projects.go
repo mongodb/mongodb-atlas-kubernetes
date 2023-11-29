@@ -49,7 +49,11 @@ func (c *Cleaner) GetProjectDependencies(ctx context.Context, projectID string, 
 	go func() {
 		defer wg.Done()
 
-		deps.NetworkPeering = c.listNetworkPeering(ctx, projectID)
+		providers := SupportedProviders
+		if isGov {
+			providers = GovSupportedProviders
+		}
+		deps.NetworkPeering = c.listNetworkPeering(ctx, projectID, providers)
 	}()
 
 	go func() {

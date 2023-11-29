@@ -8,13 +8,9 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 )
 
-var (
-	SupportedProviders = []string{"AWS", "AZURE", "GCP"}
-)
-
-func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string) []admin.BaseNetworkPeeringConnectionSettings {
+func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string, providers []string) []admin.BaseNetworkPeeringConnectionSettings {
 	peers := []admin.BaseNetworkPeeringConnectionSettings{}
-	for _, providerName := range SupportedProviders {
+	for _, providerName := range providers {
 		peers = append(peers, c.listNetworkPeeringForProvider(ctx, projectID, providerName)...)
 	}
 	if len(peers) == 0 {
