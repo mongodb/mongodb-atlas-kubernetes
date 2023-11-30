@@ -123,6 +123,15 @@ func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context 
 	return c
 }
 
+func (c *Context) SetConditionTrueMsg(conditionType status.ConditionType, msg string) *Context {
+	c.EnsureCondition(status.Condition{
+		Type:    conditionType,
+		Status:  corev1.ConditionTrue,
+		Message: msg,
+	})
+	return c
+}
+
 func (c *Context) UnsetCondition(conditionType status.ConditionType) *Context {
 	c.status.RemoveCondition(conditionType)
 	return c

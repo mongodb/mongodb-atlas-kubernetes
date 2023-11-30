@@ -1476,6 +1476,10 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			workflow.OK(),
 			result,
 		)
+		assert.Len(t, workflowCtx.Conditions(), 1)
+		assert.Equal(t, status.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
+		assert.Equal(t, "True", string(workflowCtx.Conditions()[0].Status))
+		assert.Empty(t, workflowCtx.Conditions()[0].Message)
 	})
 
 	t.Run("should reconcile and reach ready status using deprecated configuration", func(t *testing.T) {
@@ -1527,15 +1531,23 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 				},
 			},
 		}
-		workflowCtx := &workflow.Context{
+		workflowCtx := workflow.Context{
 			Client:  atlasClient,
 			Context: context.TODO(),
 		}
-		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
+		result := ensureCloudProviderIntegration(&workflowCtx, akoProject, false)
 		assert.Equal(
 			t,
 			workflow.OK(),
 			result,
+		)
+		assert.Len(t, workflowCtx.Conditions(), 1)
+		assert.Equal(t, status.CloudProviderIntegrationReadyType, workflowCtx.Conditions()[0].Type)
+		assert.Equal(t, "True", string(workflowCtx.Conditions()[0].Status))
+		assert.Equal(
+			t,
+			"The CloudProviderAccessRole has been deprecated, please move your configuration under CloudProviderIntegration.",
+			workflowCtx.Conditions()[0].Message,
 		)
 	})
 }

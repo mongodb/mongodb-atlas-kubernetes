@@ -1233,7 +1233,7 @@ spec:
                 items:
                   type: string
                 type: array
-              cloudProviderAccessRoles:
+              cloudProviderIntegrations:
                 description: CloudProviderIntegrations contains a list of configured
                   cloud provider access roles. AWS support only
                 items:

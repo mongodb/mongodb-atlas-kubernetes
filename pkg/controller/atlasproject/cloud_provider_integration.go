@@ -56,7 +56,13 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *mdbv
 		return workflow.InProgress(workflow.ProjectCloudIntegrationsIsNotReadyInAtlas, "not all entries are authorized")
 	}
 
-	workflowCtx.SetConditionTrue(status.CloudProviderIntegrationReadyType)
+	warnDeprecationMsg := ""
+	if len(project.Spec.CloudProviderAccessRoles) > 0 {
+		warnDeprecationMsg = "The CloudProviderAccessRole has been deprecated, please move your configuration under CloudProviderIntegration."
+	}
+
+	workflowCtx.SetConditionTrueMsg(status.CloudProviderIntegrationReadyType, warnDeprecationMsg)
+
 	return workflow.OK()
 }
 

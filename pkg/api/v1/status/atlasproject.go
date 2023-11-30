@@ -109,7 +109,7 @@ type AtlasProjectStatus struct {
 	AlertConfigurations []AlertConfiguration `json:"alertConfigurations,omitempty"`
 
 	// CloudProviderIntegrations contains a list of configured cloud provider access roles. AWS support only
-	CloudProviderIntegrations []CloudProviderIntegration `json:"cloudProviderAccessRoles,omitempty"`
+	CloudProviderIntegrations []CloudProviderIntegration `json:"cloudProviderIntegrations,omitempty"`
 
 	// CustomRoles contains a list of custom roles statuses
 	CustomRoles []CustomRole `json:"customRoles,omitempty"`
