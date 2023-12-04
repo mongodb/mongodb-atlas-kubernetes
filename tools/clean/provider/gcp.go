@@ -42,7 +42,7 @@ func (gcp *GCP) DeleteVpc(ctx context.Context, vpcName string) error {
 		subnetDeleteRequest := &computepb.DeleteSubnetworkRequest{
 			Project:    gcp.projectID,
 			Subnetwork: subnet,
-			Region: region,
+			Region:     region,
 		}
 		op, err := gcp.subnetworksClient.Delete(ctx, subnetDeleteRequest)
 		if err := waitOrFailOp(ctx, op, err); err != nil {

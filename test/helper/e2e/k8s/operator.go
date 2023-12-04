@@ -5,15 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
-
-	"go.uber.org/zap/zaptest"
-
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +26,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -104,15 +103,16 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		watch.SelectNamespacesPredicate(config.WatchedNamespaces), // select only desired namespaces
 	}
 
+	atlasProvider := atlas.NewProductionProvider(config.AtlasDomain, config.GlobalAPISecret, mgr.GetClient())
+
 	if err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:                      mgr.GetScheme(),
-		AtlasDomain:                 config.AtlasDomain,
-		GlobalAPISecret:             config.GlobalAPISecret,
 		ResourceWatcher:             watch.NewResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
+		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
 		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
 	}).SetupWithManager(mgr); err != nil {

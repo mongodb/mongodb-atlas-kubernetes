@@ -39,7 +39,7 @@ func (c *CloudProviderAccessClientMock) GetRole(_ context.Context, projectID str
 		c.GetRoleRequests = map[string]struct{}{}
 	}
 
-	c.GetRoleRequests[fmt.Sprintf("%s.%.s", projectID, roleID)] = struct{}{}
+	c.GetRoleRequests[fmt.Sprintf("%s.%s", projectID, roleID)] = struct{}{}
 
 	return c.GetRoleFunc(projectID, roleID)
 }
@@ -59,7 +59,7 @@ func (c *CloudProviderAccessClientMock) AuthorizeRole(_ context.Context, project
 		c.AuthorizeRoleRequests = map[string]*mongodbatlas.CloudProviderAccessRoleRequest{}
 	}
 
-	c.AuthorizeRoleRequests[fmt.Sprintf("%s.%.s", projectID, roleID)] = cpa
+	c.AuthorizeRoleRequests[fmt.Sprintf("%s.%s", projectID, roleID)] = cpa
 
 	return c.AuthorizeRoleFunc(projectID, roleID, cpa)
 }

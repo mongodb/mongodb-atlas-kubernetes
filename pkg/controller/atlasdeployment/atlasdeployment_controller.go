@@ -59,10 +59,9 @@ type AtlasDeploymentReconciler struct {
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
-	AtlasDomain                 string
-	GlobalAPISecret             client.ObjectKey
 	GlobalPredicates            []predicate.Predicate
 	EventRecorder               record.EventRecorder
+	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 }
@@ -126,21 +125,21 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	if err := validate.DeploymentSpec(&deployment.Spec, customresource.IsGov(r.AtlasDomain), project.Spec.RegionUsageRestrictions); err != nil {
+	if err := validate.DeploymentSpec(&deployment.Spec, r.AtlasProvider.IsCloudGov(), project.Spec.RegionUsageRestrictions); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
-	if !customresource.IsResourceSupportedInDomain(deployment, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(deployment) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDeployment is not supported by Atlas for government").
 			WithoutRetry()
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
+	connection, err := r.AtlasProvider.CreateConnection(project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -148,7 +147,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	}
 	workflowCtx.Connection = connection
 
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, err := r.AtlasProvider.CreateClient(&connection, log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
@@ -448,15 +447,15 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(
 	ctx *workflow.Context,
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment) workflow.Result {
+	if deployment.Spec.ProcessArgs == nil {
+		return workflow.OK()
+	}
+
 	deploymentName := deployment.GetDeploymentName()
 	context := context.Background()
 	atlasArgs, _, err := ctx.Client.Clusters.GetProcessArgs(context, project.Status.ID, deploymentName)
 	if err != nil {
 		return workflow.Terminate(workflow.DeploymentAdvancedOptionsReady, "cannot get process args")
-	}
-
-	if deployment.Spec.ProcessArgs == nil {
-		return workflow.OK()
 	}
 
 	if !deployment.Spec.ProcessArgs.IsEqual(atlasArgs) {

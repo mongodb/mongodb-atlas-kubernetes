@@ -87,7 +87,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		return nil, err
 	}
 
-	if !customresource.IsResourceSupportedInDomain(bSchedule, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(bSchedule) {
 		return nil, errors.New("the AtlasBackupSchedule is not supported by Atlas for government")
 	}
 
@@ -141,7 +141,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 		return nil, errors.New(errText)
 	}
 
-	if !customresource.IsResourceSupportedInDomain(bPolicy, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(bPolicy) {
 		return nil, errors.New("the AtlasBackupPolicy is not supported by Atlas for government")
 	}
 

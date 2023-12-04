@@ -24,30 +24,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/go-logr/zapr"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -127,6 +127,8 @@ var _ = BeforeSuite(func() {
 			}),
 		}
 
+		atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
+
 		err = (&atlasproject.AtlasProjectReconciler{
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
@@ -140,9 +142,9 @@ var _ = BeforeSuite(func() {
 		err = (&atlasdeployment.AtlasDeploymentReconciler{
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			AtlasDomain:      atlasDomain,
 			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
+			AtlasProvider:    atlasProvider,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 

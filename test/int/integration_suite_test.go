@@ -229,6 +229,8 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		}),
 	}
 
+	atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
+
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
@@ -245,11 +247,10 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasdeployment.AtlasDeploymentReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-		AtlasDomain:                 atlasDomain,
 		ResourceWatcher:             watch.NewResourceWatcher(),
-		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDeployment"),
+		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
