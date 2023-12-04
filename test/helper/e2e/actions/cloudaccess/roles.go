@@ -10,7 +10,7 @@ import (
 
 type Role struct {
 	Name       string
-	AccessRole v1.CloudProviderAccessRole
+	AccessRole v1.CloudProviderIntegration
 }
 
 func CreateRoles(roles []Role) error {
@@ -29,7 +29,7 @@ func CreateRoles(roles []Role) error {
 	return nil
 }
 
-func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderAccessRole) error {
+func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderIntegration) error {
 	if len(roles) != len(roleStatuses) {
 		return fmt.Errorf("number of roles %d does not match number of statuses %d", len(roles), len(roleStatuses))
 	}
@@ -45,7 +45,7 @@ func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderAc
 	return nil
 }
 
-func DeleteRoles(roles []v1.CloudProviderAccessRole) []error {
+func DeleteCloudProviderIntegrations(roles []v1.CloudProviderIntegration) []error {
 	var errorList []error
 	for _, role := range roles {
 		switch role.ProviderName {

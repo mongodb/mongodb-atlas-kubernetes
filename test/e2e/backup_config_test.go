@@ -174,7 +174,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		exportBucket, err := aClient.CreateExportBucket(
 			data.Project.ID(),
 			bucket,
-			data.Project.Status.CloudProviderAccessRoles[0].RoleID,
+			data.Project.Status.CloudProviderIntegrations[0].RoleID,
 		)
 		Expect(err).Should(BeNil())
 		Expect(exportBucket).ShouldNot(BeNil())

@@ -34,20 +34,20 @@ const (
 
 // AtlasProject condition types
 const (
-	ProjectReadyType                ConditionType = "ProjectReady"
-	IPAccessListReadyType           ConditionType = "IPAccessListReady"
-	MaintenanceWindowReadyType      ConditionType = "MaintenanceWindowReady"
-	PrivateEndpointServiceReadyType ConditionType = "PrivateEndpointServiceReady"
-	PrivateEndpointReadyType        ConditionType = "PrivateEndpointReady"
-	NetworkPeerReadyType            ConditionType = "NetworkPeerReady"
-	CloudProviderAccessReadyType    ConditionType = "CloudProviderAccessReady"
-	IntegrationReadyType            ConditionType = "ThirdPartyIntegrationReady"
-	AlertConfigurationReadyType     ConditionType = "AlertConfigurationReady"
-	EncryptionAtRestReadyType       ConditionType = "EncryptionAtRestReady"
-	AuditingReadyType               ConditionType = "AuditingReady"
-	ProjectSettingsReadyType        ConditionType = "ProjectSettingsReady"
-	ProjectCustomRolesReadyType     ConditionType = "ProjectCustomRolesReady"
-	ProjectTeamsReadyType           ConditionType = "ProjectTeamsReady"
+	ProjectReadyType                  ConditionType = "ProjectReady"
+	IPAccessListReadyType             ConditionType = "IPAccessListReady"
+	MaintenanceWindowReadyType        ConditionType = "MaintenanceWindowReady"
+	PrivateEndpointServiceReadyType   ConditionType = "PrivateEndpointServiceReady"
+	PrivateEndpointReadyType          ConditionType = "PrivateEndpointReady"
+	NetworkPeerReadyType              ConditionType = "NetworkPeerReady"
+	CloudProviderIntegrationReadyType ConditionType = "CloudProviderIntegrationReady"
+	IntegrationReadyType              ConditionType = "ThirdPartyIntegrationReady"
+	AlertConfigurationReadyType       ConditionType = "AlertConfigurationReady"
+	EncryptionAtRestReadyType         ConditionType = "EncryptionAtRestReady"
+	AuditingReadyType                 ConditionType = "AuditingReady"
+	ProjectSettingsReadyType          ConditionType = "ProjectSettingsReady"
+	ProjectCustomRolesReadyType       ConditionType = "ProjectCustomRolesReady"
+	ProjectTeamsReadyType             ConditionType = "ProjectTeamsReady"
 )
 
 // AtlasDeployment condition types

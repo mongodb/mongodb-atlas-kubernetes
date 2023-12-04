@@ -91,7 +91,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderAccessRole{
+					AccessRole: v1.CloudProviderIntegration{
 						ProviderName: "AWS",
 					},
 				},
@@ -137,9 +137,9 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-		var aRole status.CloudProviderAccessRole
-		if len(userData.Project.Status.CloudProviderAccessRoles) > 0 {
-			aRole = userData.Project.Status.CloudProviderAccessRoles[0]
+		var aRole status.CloudProviderIntegration
+		if len(userData.Project.Status.CloudProviderIntegrations) > 0 {
+			aRole = userData.Project.Status.CloudProviderIntegrations[0]
 		}
 
 		fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
@@ -356,7 +356,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 		roles := []cloudaccess.Role{
 			{
 				Name: utils.RandomName(awsRoleNameBase),
-				AccessRole: v1.CloudProviderAccessRole{
+				AccessRole: v1.CloudProviderIntegration{
 					ProviderName: "AWS",
 				},
 			},
@@ -402,8 +402,8 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 				Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 
-			Expect(len(userData.Project.Status.CloudProviderAccessRoles)).NotTo(Equal(0))
-			aRole := userData.Project.Status.CloudProviderAccessRoles[0]
+			Expect(len(userData.Project.Status.CloudProviderIntegrations)).NotTo(Equal(0))
+			aRole := userData.Project.Status.CloudProviderIntegrations[0]
 
 			fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 

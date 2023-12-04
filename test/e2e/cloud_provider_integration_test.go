@@ -58,14 +58,14 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderAccessRole{
+					AccessRole: v1.CloudProviderIntegration{
 						ProviderName: "AWS",
 						// IamAssumedRoleArn will be filled after role creation
 					},
 				},
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderAccessRole{
+					AccessRole: v1.CloudProviderIntegration{
 						ProviderName: "AWS",
 						// IamAssumedRoleArn will be filled after role creation
 					},
@@ -77,7 +77,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 
 func DeleteAllRoles(testData *model.TestDataProvider) {
 	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
-	errorList := cloudaccess.DeleteRoles(testData.Project.Spec.CloudProviderAccessRoles)
+	errorList := cloudaccess.DeleteCloudProviderIntegrations(testData.Project.Spec.CloudProviderIntegrations)
 	Expect(len(errorList)).Should(Equal(0), errorList)
 }
 
@@ -91,7 +91,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 		for _, role := range roles {
-			userData.Project.Spec.CloudProviderAccessRoles = append(userData.Project.Spec.CloudProviderAccessRoles, role.AccessRole)
+			userData.Project.Spec.CloudProviderIntegrations = append(userData.Project.Spec.CloudProviderIntegrations, role.AccessRole)
 		}
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 	})
@@ -104,24 +104,24 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 		project := &v1.AtlasProject{}
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
 
-		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderAccessRoles)
+		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderIntegrations)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		actions.WaitForConditionsToBecomeTrue(userData, status.CloudProviderAccessReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, status.CloudProviderIntegrationReadyType, status.ReadyType)
 	})
 
 	By("Check cloud access roles status state", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
-		Expect(userData.Project.Status.CloudProviderAccessRoles).Should(HaveLen(len(roles)))
+		Expect(userData.Project.Status.CloudProviderIntegrations).Should(HaveLen(len(roles)))
 	})
 }
 
 func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen int) {
 	project := &v1.AtlasProject{}
 	g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, project)).Should(Succeed())
-	g.Expect(project.Status.CloudProviderAccessRoles).Should(HaveLen(rolesLen))
+	g.Expect(project.Status.CloudProviderIntegrations).Should(HaveLen(rolesLen))
 
-	for _, role := range project.Status.CloudProviderAccessRoles {
-		g.Expect(role.Status).Should(BeElementOf([2]string{status.CloudProviderAccessStatusCreated, status.CloudProviderAccessStatusFailedToAuthorize}))
+	for _, role := range project.Status.CloudProviderIntegrations {
+		g.Expect(role.Status).Should(BeElementOf([2]string{status.CloudProviderIntegrationStatusCreated, status.CloudProviderIntegrationStatusFailedToAuthorize}))
 	}
 }

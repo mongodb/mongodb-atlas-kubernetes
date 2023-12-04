@@ -1,6 +1,6 @@
 package status
 
-type CloudProviderAccessRole struct {
+type CloudProviderIntegration struct {
 	AtlasAWSAccountArn         string         `json:"atlasAWSAccountArn,omitempty"`
 	AtlasAssumedRoleExternalID string         `json:"atlasAssumedRoleExternalId"`
 	AuthorizedDate             string         `json:"authorizedDate,omitempty"`
@@ -19,24 +19,22 @@ type FeatureUsage struct {
 }
 
 const (
-	CloudProviderAccessStatusNew                 = "NEW"
-	CloudProviderAccessStatusCreated             = "CREATED"
-	CloudProviderAccessStatusAuthorized          = "AUTHORIZED"
-	CloudProviderAccessStatusDeAuthorize         = "DEAUTHORIZE"
-	CloudProviderAccessStatusFailedToCreate      = "FAILED_TO_CREATE"
-	CloudProviderAccessStatusFailedToAuthorize   = "FAILED_TO_AUTHORIZE"
-	CloudProviderAccessStatusFailedToDeAuthorize = "FAILED_TO_DEAUTHORIZE"
+	CloudProviderIntegrationStatusNew                 = "NEW"
+	CloudProviderIntegrationStatusCreated             = "CREATED"
+	CloudProviderIntegrationStatusAuthorized          = "AUTHORIZED"
+	CloudProviderIntegrationStatusDeAuthorize         = "DEAUTHORIZE"
+	CloudProviderIntegrationStatusFailedToCreate      = "FAILED_TO_CREATE"
+	CloudProviderIntegrationStatusFailedToAuthorize   = "FAILED_TO_AUTHORIZE"
+	CloudProviderIntegrationStatusFailedToDeAuthorize = "FAILED_TO_DEAUTHORIZE"
 
-	StatusFailed   = "FAILED"
-	StatusCreated  = "CREATED"
-	StatusReady    = "READY"
-	StatusEmptyARN = "EMPTY_ARN"
+	StatusFailed = "FAILED"
+	StatusReady  = "READY"
 )
 
-func NewCloudProviderAccessRole(providerName, assumedRoleArn string) CloudProviderAccessRole {
-	return CloudProviderAccessRole{
+func NewCloudProviderIntegration(providerName, assumedRoleArn string) CloudProviderIntegration {
+	return CloudProviderIntegration{
 		ProviderName:      providerName,
 		IamAssumedRoleArn: assumedRoleArn,
-		Status:            CloudProviderAccessStatusNew,
+		Status:            CloudProviderIntegrationStatusNew,
 	}
 }

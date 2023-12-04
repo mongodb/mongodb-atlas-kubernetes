@@ -71,8 +71,13 @@ type AtlasProjectSpec struct {
 
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
+
 	// CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
+	// Deprecated: This configuration was deprecated in favor of CloudProviderIntegrations
 	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
+
+	// CloudProviderIntegrations is a list of Cloud Provider Integration configured for the current Project.
+	CloudProviderIntegrations []CloudProviderIntegration `json:"cloudProviderIntegrations,omitempty"`
 
 	// AlertConfiguration is a list of Alert Configurations configured for the current Project.
 	AlertConfigurations []AlertConfiguration `json:"alertConfigurations,omitempty"`

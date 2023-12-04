@@ -343,7 +343,7 @@ func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
 	}
 
 	if result.RoleID == "" {
-		awsRole, foundRole := selectRole(project.Status.CloudProviderAccessRoles, "AWS")
+		awsRole, foundRole := selectRole(project.Status.CloudProviderIntegrations, "AWS")
 		if foundRole {
 			result.RoleID = awsRole.RoleID
 		}
@@ -380,7 +380,7 @@ func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleC
 	return
 }
 
-func selectRole(accessRoles []status.CloudProviderAccessRole, providerName string) (result status.CloudProviderAccessRole, found bool) {
+func selectRole(accessRoles []status.CloudProviderIntegration, providerName string) (result status.CloudProviderIntegration, found bool) {
 	for _, role := range accessRoles {
 		if role.ProviderName == providerName {
 			return role, true

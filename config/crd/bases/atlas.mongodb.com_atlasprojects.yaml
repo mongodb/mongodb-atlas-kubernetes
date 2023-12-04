@@ -305,9 +305,32 @@ spec:
                     type: boolean
                 type: object
               cloudProviderAccessRoles:
-                description: CloudProviderAccessRoles is a list of Cloud Provider
-                  Access Roles configured for the current Project.
+                description: 'CloudProviderAccessRoles is a list of Cloud Provider
+                  Access Roles configured for the current Project. Deprecated: This
+                  configuration was deprecated in favor of CloudProviderIntegrations'
                 items:
+                  description: 'CloudProviderAccessRole define an integration to a
+                    cloud provider Deprecated: This type is deprecated in favor of
+                    CloudProviderIntegration'
+                  properties:
+                    iamAssumedRoleArn:
+                      description: IamAssumedRoleArn is the ARN of the IAM role that
+                        is assumed by the Atlas cluster.
+                      type: string
+                    providerName:
+                      description: ProviderName is the name of the cloud provider.
+                        Currently only AWS is supported.
+                      type: string
+                  required:
+                  - providerName
+                  type: object
+                type: array
+              cloudProviderIntegrations:
+                description: CloudProviderIntegrations is a list of Cloud Provider
+                  Integration configured for the current Project.
+                items:
+                  description: CloudProviderIntegration define an integration to a
+                    cloud provider
                   properties:
                     iamAssumedRoleArn:
                       description: IamAssumedRoleArn is the ARN of the IAM role that
@@ -1210,8 +1233,8 @@ spec:
                 items:
                   type: string
                 type: array
-              cloudProviderAccessRoles:
-                description: CloudProviderAccessRoles contains a list of configured
+              cloudProviderIntegrations:
+                description: CloudProviderIntegrations contains a list of configured
                   cloud provider access roles. AWS support only
                 items:
                   properties:
