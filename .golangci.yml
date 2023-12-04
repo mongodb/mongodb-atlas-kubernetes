@@ -28,6 +28,7 @@ linters:
     - unparam
     - unused
     - whitespace
+    - importas
 
 linters-settings:
   misspell:
