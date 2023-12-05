@@ -1,0 +1,70 @@
+name: Cloud Tests Filter
+
+on:
+  workflow_call:
+    outputs:
+        production-code-changed:
+          description: "Was production code changed?"
+          value: ${{ jobs.cloud-tests-filter.outputs.production-code-changed }}
+        run-cloud-tests:
+          description: "Should cloud tests run?"
+          value: ${{ jobs.cloud-tests-filter.outputs.run-cloud-tests == 'true' }}
+
+jobs:
+    cloud-tests-filter:
+        runs-on: ubuntu-latest
+        outputs:
+          production-code-changed: ${{ steps.paths-filter.outputs.production-code-changed }}
+          run-cloud-tests: ${{ steps.tests-filter.outputs.run-cloud-tests }}
+        steps:
+        - uses: actions/checkout@v4
+        - uses: dorny/paths-filter@v2
+          id: paths-filter
+          with:
+            # production code also includes changes to e2e and int tests,
+            # note any other paths are covered by unit testing which run always
+            filters: |
+              production-code-changed:
+                - 'cmd/**/!(*_test.go)'
+                - 'pkg/**/!(*_test.go)'
+                - 'Dockerfile'
+                - 'test/e2e/**'
+                - 'test/int/**'
+        # run only if 'production-code' files were changed
+        - name: Production code changed
+          if: steps.paths-filter.outputs.production-code-changed == 'true'
+          run: echo "Production code was changed"
+    
+        - name: Tests Filter
+          id: tests-filter
+          env:
+            CLOUD_TESTS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'cloud-tests') }}
+            SAFE_TO_TEST_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}
+            EVENT: ${{ github.event_name }}
+            ACTION: ${{ github.event.action }}
+            FORKED: ${{ github.event.repository.full_name != github.event.pull_request.head.repo.full_name }}
+            DRAFT: ${{ github.event.pull_request.draft }}
+            CODE_CHANGED: ${{ steps.paths-filter.outputs.production-code-changed }}
+            GH_REF: ${{ github.ref }}
+            PR_HEAD_REPONAME: ${{ github.event.pull_request.head.repo.full_name }}
+            REPONAME: ${{ github.repository }}
+            ACTOR: ${{ github.actor }}
+          run: |
+            # Evaluate whether or not cloud tests should run
+            RUN_CLOUD_TESTS='false'
+            # cloud-tests label forces cloud tests to run, BUT only on AKO PRs, not from forked repos 
+            if [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
+              RUN_CLOUD_TESTS='true'
+            # safe-to-test label forces clous tests to run, BUT only when the PR was just "labeled" safe to test
+            elif [ "${SAFE_TO_TEST_LABEL}" == "true" ] && [ "${ACTION}" == "labeled" ];then
+              RUN_CLOUD_TESTS='true'
+            # otherwise run only for regular AKO PRs (not draft nor forked) which include code changes 
+            elif [ "${FORKED}" == "false" ] && [ "${DRAFT}" == "false" ] && [ "${CODE_CHANGED}" == "true" ]; then
+              RUN_CLOUD_TESTS='true'
+            fi
+            echo "run-cloud-tests=${RUN_CLOUD_TESTS}" >> "$GITHUB_OUTPUT"
+    
+        # run only if not cloud tests should run
+        - name: Cloud tests should run
+          if: steps.tests-filter.outputs.run-cloud-tests == 'true'
+          run: echo "Cloud tests should run"
