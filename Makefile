@@ -85,6 +85,10 @@ BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
+# JWT
+JWT_RSA_PEM_KEY_BASE64 ?= ""
+JWT_APP_ID ?= ""
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -392,3 +396,11 @@ actions.txt: .github/workflows/ ## List GitHub Action dependencies
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
 	@[[ $(VERSION) == $(MAJOR_VERSION).* ]] && echo "Version OK" || \
 	(echo "Bad major version for $(VERSION) expected $(MAJOR_VERSION)"; exit 1)
+
+tools/makejwt/makejwt: tools/makejwt/*.go
+	cd tools/makejwt && go test . && go build .
+
+.PHONY: release-helm
+release-helm: tools/makejwt/makejwt ## kick the operator helm chart release
+	@APP_ID=$(JWT_APP_ID) RSA_PEM_KEY_BASE64=$(JWT_RSA_PEM_KEY_BASE64) \
+	VERSION=$(VERSION) ./scripts/release-helm.sh

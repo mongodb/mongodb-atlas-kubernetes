@@ -45,3 +45,4 @@ deploy/
 
 # ignore tool binaries
 tools/clean/clean
+tools/makejwt/makejwt
