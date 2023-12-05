@@ -1,14 +1,8 @@
 # Check for every push
-
 name: Lint
 
 on:
   workflow_call:
-    inputs:
-      forked:
-        type: boolean
-        required: false
-        default: false
 
 jobs:
   lint:
@@ -22,19 +16,8 @@ jobs:
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.7.0
-        with:
-          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.54
-
-          # Optional: working directory, useful for monorepos
-          # working-directory:
-
-          args: --timeout 10m
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-
+      - name: lint
+        run: make lint
 
       - name: Run ShellCheck
         uses: bewuethr/shellcheck-action@v2
