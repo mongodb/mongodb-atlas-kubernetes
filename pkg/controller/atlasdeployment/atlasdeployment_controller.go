@@ -64,6 +64,7 @@ type AtlasDeploymentReconciler struct {
 	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	DummyArg                    string // dummy arg ensures to trigger all tests.
 }
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasdeployments,verbs=get;list;watch;create;update;patch;delete
