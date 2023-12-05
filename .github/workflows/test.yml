@@ -1,10 +1,6 @@
 name: Test
 
 on:
-  pull_request_target:
-    types: [labeled]
-    paths-ignore:
-      - 'docs/**'
   push:
     branches:
       - 'main'
@@ -23,53 +19,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-forked:
-    uses: ./.github/workflows/check-pr-origin.yaml
-
   lint:
     uses: ./.github/workflows/lint.yaml
+    with:
+      forked: false
 
   validate-manifests:
     uses: ./.github/workflows/validate-manifests.yml
+    with:
+      forked: false
   
   unit-tests:
     uses: ./.github/workflows/test-unit.yml
+    with:
+      forked: false
 
   check-licenses:
     uses: ./.github/workflows/check-licenses.yml
+    with:
+      forked: false
   
   paths-filter:
     uses: ./.github/workflows/paths-filter.yml
-
-  debug:
-    needs:
-      - paths-filter
-      - check-forked
-    name: debug
-    runs-on: ubuntu-latest
-    steps:
-    - name: Debug
-      run: |
-        echo "Label cloud-tests=${{ contains(github.event.pull_request.labels.*.name, 'cloud-tests') }}"
-        echo "Label safe-to-test=${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}"
-        echo "PR IS Draft=${{ github.event.pull_request.draft }}"
-        echo "production code changed=${{ needs.paths-filter.outputs.production-code-changed }}"
-        echo "PR Forked=${{ needs.check-forked.outputs.pr-forked }}"
-        echo "Non draft & Non forked with changes? ${{ (github.event.pull_request.draft == false && needs.paths-filter.outputs.production-code-changed == 'true' && needs.check-forked.outputs.pr-forked == 'false') }}"
 
   cloud-tests:
     needs:
       - lint
       - unit-tests
       - paths-filter
-      - check-forked
-      - validate-manifests
-      - check-licenses
     if: |
       contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
-      contains(github.event.pull_request.labels.*.name, 'safe-to-test') ||
       (github.event.pull_request.draft == false &&
-       needs.paths-filter.outputs.production-code-changed == 'true' &&
-       needs.check-forked.outputs.pr-forked == 'false')
+      needs.paths-filter.outputs.production-code-changed == 'true')
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
+    with:
+      forked: false

@@ -18,6 +18,11 @@ on:
         default: "quay.io/mongodb"
         type: string
         required: false
+      forked:
+        description: "PR from forked repo"
+        default: false
+        type: boolean
+        required: false
   workflow_dispatch:
 
 concurrency:
@@ -29,8 +34,19 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # required for tags
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          fetch-depth: 0 # required for tags
 
       - name: Prepare tag
         id: prepare

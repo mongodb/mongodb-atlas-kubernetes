@@ -1,0 +1,46 @@
+name: Test Forked
+
+on:
+  pull_request_target:
+    types: [labeled]
+    paths-ignore:
+      - 'docs/**'
+
+concurrency:
+  group: test-forked-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    with:
+      forked: true
+
+  validate-manifests:
+    uses: ./.github/workflows/validate-manifests.yml
+    with:
+      forked: true
+  
+  unit-tests:
+    uses: ./.github/workflows/test-unit.yml
+    with:
+      forked: true
+
+  check-licenses:
+    uses: ./.github/workflows/check-licenses.yml
+    with:
+      forked: true
+
+  paths-filter:
+    uses: ./.github/workflows/paths-filter.yml
+
+  cloud-tests-forked:
+    needs:
+      - lint
+      - unit-tests
+      - paths-filter
+    if: needs.paths-filter.outputs.production-code-changed == 'true'
+    uses: ./.github/workflows/cloud-tests-forked.yml
+    secrets: inherit
+    with:
+      forked: true
