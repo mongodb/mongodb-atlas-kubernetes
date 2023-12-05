@@ -2,13 +2,25 @@ name: Validate Manifests
 
 on:
   workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   validate-manifests:
     name: Validate Manifests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - if: ${{ inputs.forked == false }}
+        uses: actions/checkout@v4
+
+      - if: ${{ inputs.forked == true }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Cache multiple paths
         uses: actions/cache@v3
@@ -22,7 +34,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
 
       - name: Install dependencies
         run: go install golang.org/x/tools/cmd/goimports@latest

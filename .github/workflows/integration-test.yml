@@ -2,6 +2,11 @@ name: Integration tests non-forked
 
 on:
   workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: int-test-${{ github.head_ref || github.ref_name }}
@@ -23,3 +28,5 @@ jobs:
     needs: allowed
     uses: ./.github/workflows/test-int.yml
     secrets: inherit
+    with:
+      forked: false

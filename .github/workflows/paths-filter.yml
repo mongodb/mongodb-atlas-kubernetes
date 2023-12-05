@@ -1,4 +1,4 @@
-name: Path Filter
+name: Unit Tests
 
 on:
   workflow_call:

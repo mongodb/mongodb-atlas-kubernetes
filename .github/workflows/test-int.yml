@@ -2,6 +2,11 @@ name: Integration tests.
 
 on:
   workflow_call:
+    inputs:
+      forked:
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
 
 jobs:
@@ -20,8 +25,16 @@ jobs:
             nodes: 1
 
     steps:
-      - name: Check out code
+      - if: ${{ inputs.forked == false }}
+        name: Check out code
         uses: actions/checkout@v4
+
+      - if: ${{ inputs.forked == true }}
+        name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Cache multiple paths
         uses: actions/cache@v3
