@@ -73,6 +73,7 @@ runs:
       uses: actions/setup-go@v4
       with:
         go-version-file: "${{ github.workspace }}/go.mod"
+        cache: false
     - name: Setup cache
       if: ${{ inputs.get-existing-cache == 'false' }}
       uses: actions/cache@v3

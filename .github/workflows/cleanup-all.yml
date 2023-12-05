@@ -73,6 +73,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: "${{ github.workspace }}/tools/clean/go.mod"
+          cache: false
 
       - name: Build clean tool
         run: (cd tools/clean && go build .)

@@ -28,6 +28,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
       - name: Install dependencies
         run: |
           go install golang.org/x/tools/cmd/goimports@latest
