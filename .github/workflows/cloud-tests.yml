@@ -42,7 +42,7 @@ jobs:
 
   int-tests:
     needs: allowed
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/test-int.yml
     secrets: inherit
 
   e2e-tests:
