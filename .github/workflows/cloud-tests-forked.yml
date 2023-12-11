@@ -25,7 +25,7 @@ jobs:
     
     int-tests:
         needs: allowed-forked
-        uses: ./.github/workflows/integration-test.yml
+        uses: ./.github/workflows/test-int.yml
         secrets: inherit
         with:
           forked: true

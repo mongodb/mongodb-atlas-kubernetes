@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eou pipefail
+set -eoxu pipefail
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
 #
@@ -24,8 +24,9 @@ CATALOG_DIR="${CATALOG_DIR:-./openshift/atlas-catalog}"
 CATALOG_RELEASE_DIR="${CATALOG_RELEASE_DIR:-./openshift/atlas-catalog-release}"
 
 if [ -z "${CURRENT_VERSION+x}" ]; then
+  git fetch --tags
   # opm doesn't allow 'v' prefix for versions
-  CURRENT_VERSION=$(git describe --tags | awk '{gsub(/v/,"",$0); print}')
+  CURRENT_VERSION=$(git describe --tags || echo "v0.0.0-test" | awk '{gsub(/v/,"",$0); print}')
 	echo "CURRENT_VERSION is not set. Setting to default: ${CURRENT_VERSION}"
 fi
 
