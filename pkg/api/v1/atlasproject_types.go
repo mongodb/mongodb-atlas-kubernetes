@@ -123,6 +123,10 @@ type AtlasProjectSpec struct {
 	// Teams enable you to grant project access roles to multiple users.
 	// +optional
 	Teams []Team `json:"teams,omitempty"`
+
+	// BackupCompliancePolicyRef is a reference to the backup compliance CR.	
+	// +optional
+	BackupCompliancePolicyRef *common.ResourceRefNamespaced `json:"backupCompliancePolicyRef,omitempty"`
 }
 
 const hiddenField = "*** redacted ***"
@@ -189,6 +193,19 @@ func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 		var key client.ObjectKey
 		if p.Spec.ConnectionSecret.Namespace != "" {
 			key = kube.ObjectKey(p.Spec.ConnectionSecret.Namespace, p.Spec.ConnectionSecret.Name)
+		} else {
+			key = kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
+		}
+		return &key
+	}
+	return nil
+}
+
+func (p *AtlasProject) BackupCompliancePolicyObjectKey() *client.ObjectKey {
+	if p.Spec.BackupCompliancePolicyRef != nil {
+		var key client.ObjectKey
+		if p.Spec.BackupCompliancePolicyRef.Namespace != "" {
+			key = kube.ObjectKey(p.Spec.BackupCompliancePolicyRef.Namespace, p.Spec.BackupCompliancePolicyRef.Name)
 		} else {
 			key = kube.ObjectKey(p.Namespace, p.Spec.ConnectionSecret.Name)
 		}
