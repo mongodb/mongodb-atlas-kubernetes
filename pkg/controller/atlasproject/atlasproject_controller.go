@@ -340,6 +340,11 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
+	if result = r.ensureBackupCompliance(workflowCtx, project); result.IsOK() {
+		r.EventRecorder.Event(project, "Normal", string(status.BackupComplianceReadyType), "")
+	}
+	results = append(results, result)
+
 	return results
 }
 
