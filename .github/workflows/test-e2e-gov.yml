@@ -25,7 +25,7 @@ jobs:
           cluster_name: "atlas-gov-e2e-test"
           wait: 180s
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
       - name: Install dependencies

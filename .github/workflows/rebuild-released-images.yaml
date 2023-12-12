@@ -72,7 +72,7 @@ jobs:
           git remote show origin
           git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
       - name: Setup cache
