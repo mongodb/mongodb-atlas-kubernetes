@@ -7,13 +7,13 @@ Atlas Kubernetes Operator testing can be divided into tow different types of tes
 - **Local Tests**: which includes `unit tests`, `linting` and things like that.
 - **Cloud Tests**: which test the operator against Atlas QA cloud performing real resource provisioning actions. These include not both `integration` and `end to end` (`e2e`) tests.
 
-Both tests differ mainly in cost: **Local Tests** are cheap because they run in a few minutes and are reliable, while **Cloud Tests** take about an hour to run, can be flaky and require access to certain secrets to manage cloud infrastructure. For this reason not all PRs should always run **Cloud Tests**.
+Both tests differ mainly in cost: **Local Tests** are cheap because they don't consume remote resources, while **Cloud Tests** a longer time to run, can be flaky, and consume remote cloud infrastructure. For this reason not all PRs should always run **Cloud Tests**.
 
 Here are the reasons or situations to skip *Cloud Tests*:
 
 - **Draft PRs should not run Cloud Tests** by default.
 - **Changes not affecting production code should not need to run Cloud tests** most of the time.
-- **External PRs from forked repositories should also not run Cloud Tests** by default, as they will get access to cloud resources without any vet the changes to check whether or not such access is reasonable and safe.
+- **External PRs from forked repositories should also not run Cloud Tests** by default.
 
 On other occasions, project maintainers will want to enforce that **Cloud Tests** will run, for example:
 
@@ -26,9 +26,9 @@ Note that in the case of the `safe-to-test` label, such label is automatically r
 
 The workflow `test.yml` is the main entry point for the whole test flow.
 
-Most of the times, it will trigger a GitHub `pull_request` event, which for PRS from forked repositories, will only have read only credentials and should not be given access to cloud resources. For PRs from maintainers, from the official repository, this restriction does not apply and `pull_request` event can run all tests needed.
+Most of the times, it will trigger a GitHub `pull_request` event, which for PRs from forked repositories, will only read only credentials and should not be given access to cloud resources. For PRs from maintainers, from the official repository, this restriction does not apply and the `pull_request` event can run all tests needed.
 
-For `safe-to-test` forked PRs, a GitHub `pull_request_target` event is triggered ONLY on the `labeled` event type. This event allows for external PRs to run with write credentials and will be given cloud access. This the need to protect access behind a label maintainers need to explicitly set.
+For `safe-to-test` forked PRs, a GitHub `pull_request_target` event is triggered ONLY on the `labeled` event type. This event allows for external PRs to run with write credentials and will be given cloud access. Thus the need to protect access behind a label which maintainers need to set explicitly.
 
 Apart from that, tests can also run on `push` (merges) or on demand by `workflow_dispatch`. Both actions are actions only accessible to official maintainers.
 
