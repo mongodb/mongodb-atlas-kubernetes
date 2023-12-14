@@ -1,32 +1,35 @@
 package atlasproject
 
 import (
+	"context"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
-// Reference set
+	// Reference set
+	if project.Spec.BackupCompliancePolicyRef.Name != "" {
+		// check reference points to existing compliance policy CR
+		compliancePolicy := mdbv1.AtlasBackupCompliancePolicy{}
+		r.Client.Get(context.Background(), *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), &compliancePolicy)
+		// check if compliance policy exists in atlas (and matches)
+		// if match, return workflow.OK()
+		// otherwise, create/update compliance policy...
 
-	// check reference points to existing compliance policy CR
-
-	// check if compliance policy exists in atlas (and matches)
-	// if match, return workflow.OK()
-	// otherwise, create/update compliance policy...
-
-	// check existing backups meet requirements
+		// check existing backups meet requirements
 		// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
-	// if dont meet, set status, return workflow.Terminate()
-	// otherwise, continue...
+		// if dont meet, set status, return workflow.Terminate()
+		// otherwise, continue...
 
-	// enable finalizer on compliance policy CR (if doesn't already exist)
-	// finalizer blocks deletion while there are references and/or compliance policy exists in atlas
+		// enable finalizer on compliance policy CR (if doesn't already exist)
+		// finalizer blocks deletion while there are references and/or compliance policy exists in atlas
 
-	// add annotation to compliance policy for associated atlas project
+		// add annotation to compliance policy for associated atlas project
 
-	// create compliance policy in atlas
-
-// Reference unset
+		// create compliance policy in atlas
+	}
+	// Reference unset
 
 	// Check finalizer
 	// Check if compliance policy CR is referenced in k8s
