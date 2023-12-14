@@ -124,7 +124,7 @@ type AtlasProjectSpec struct {
 	// +optional
 	Teams []Team `json:"teams,omitempty"`
 
-	// BackupCompliancePolicyRef is a reference to the backup compliance CR.	
+	// BackupCompliancePolicyRef is a reference to the backup compliance CR.
 	// +optional
 	BackupCompliancePolicyRef *common.ResourceRefNamespaced `json:"backupCompliancePolicyRef,omitempty"`
 }
