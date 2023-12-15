@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"net/http"
 	"strings"
+
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
