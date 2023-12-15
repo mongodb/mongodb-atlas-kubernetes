@@ -7,9 +7,13 @@ on:
     paths-ignore:
       - 'docs/**'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, unlabeled]
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+  pull_request_target: # for forked repos changes labeled 'safe-to-test' or 'cloud-tests'
+    types: [labeled]
     paths-ignore:
       - 'docs/**'
   workflow_dispatch:
@@ -21,37 +25,28 @@ concurrency:
 jobs:
   lint:
     uses: ./.github/workflows/lint.yaml
-    with:
-      forked: false
 
   validate-manifests:
     uses: ./.github/workflows/validate-manifests.yml
-    with:
-      forked: false
   
   unit-tests:
     uses: ./.github/workflows/test-unit.yml
-    with:
-      forked: false
 
   check-licenses:
     uses: ./.github/workflows/check-licenses.yml
-    with:
-      forked: false
   
-  paths-filter:
-    uses: ./.github/workflows/paths-filter.yml
+  cloud-tests-filter:
+    uses: ./.github/workflows/cloud-tests-filter.yml
 
   cloud-tests:
     needs:
       - lint
       - unit-tests
-      - paths-filter
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
-      (github.event.pull_request.draft == false &&
-      needs.paths-filter.outputs.production-code-changed == 'true')
+      - validate-manifests
+      - check-licenses
+      - cloud-tests-filter
+    if: (needs.cloud-tests-filter.outputs.run-cloud-tests == 'true')
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
     with:
-      forked: false
+      forked: ${{ github.event.repository.full_name != github.event.pull_request.head.repo.full_name }}

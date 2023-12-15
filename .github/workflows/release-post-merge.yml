@@ -76,6 +76,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/tools/makejwt/go.mod"
+          cache: false
       - name: Trigger helm post release workflow
         if: ${{ env.RELEASE_HELM == 'true' }}
         run: |

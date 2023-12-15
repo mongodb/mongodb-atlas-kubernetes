@@ -89,6 +89,9 @@ DISALLOWED_LICENSES = restricted,reciprocal
 JWT_RSA_PEM_KEY_BASE64 ?= ""
 JWT_APP_ID ?= ""
 
+# golangci-lint
+GOLANGCI_LINT_VERSION := v1.54.2
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -201,9 +204,15 @@ $(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
 
+$(TIMESTAMPS_DIR)/golangci-lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
+
+golangci-lint: $(TIMESTAMPS_DIR)/golangci-lint
+
 .PHONY: lint
-lint:
-	golangci-lint run
+lint: golangci-lint
+	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes/v2 -l -w \$$(GO_SOURCES)"
