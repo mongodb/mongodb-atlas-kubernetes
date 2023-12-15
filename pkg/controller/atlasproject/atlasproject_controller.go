@@ -137,7 +137,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(workflowCtx, status.DeploymentReadyType, result)
+		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.Client = atlasClient

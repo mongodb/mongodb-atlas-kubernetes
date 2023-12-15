@@ -3,6 +3,7 @@ package atlas
 import (
 	"context"
 	"fmt"
+
 	"github.com/jedib0t/go-pretty/v6/text"
 	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 )
