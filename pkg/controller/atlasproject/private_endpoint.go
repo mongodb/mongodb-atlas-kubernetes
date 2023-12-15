@@ -220,16 +220,16 @@ func (a atlasPE) InterfaceEndpointIDs() []string {
 	return nil
 }
 
-func getAllPrivateEndpoints(client mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
+func getAllPrivateEndpoints(client *mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
 	providers := []string{"AWS", "AZURE", "GCP"}
-	for _, provider := range providers {
-		atlasPeConnections, _, err := client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
+	for _, p := range providers {
+		atlasPeConnections, _, err := client.PrivateEndpoints.List(context.Background(), projectID, p, &mongodbatlas.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
 
 		for connIdx := range atlasPeConnections {
-			atlasPeConnections[connIdx].ProviderName = provider
+			atlasPeConnections[connIdx].ProviderName = p
 		}
 
 		for _, atlasPeConnection := range atlasPeConnections {
@@ -550,7 +550,7 @@ type intersectionPair struct {
 	atlas atlasPE
 }
 
-func canPrivateEndpointReconcile(atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canPrivateEndpointReconcile(atlasClient *mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}

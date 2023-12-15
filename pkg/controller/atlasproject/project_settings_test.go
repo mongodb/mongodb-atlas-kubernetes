@@ -19,7 +19,7 @@ import (
 func TestProjectSettingsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
@@ -31,7 +31,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -50,7 +50,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -70,7 +70,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -119,7 +119,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -169,7 +169,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -219,7 +219,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
@@ -241,7 +241,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureProjectSettings(workflowCtx, akoProject, true)
@@ -290,7 +290,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureProjectSettings(workflowCtx, akoProject, true)
@@ -307,22 +307,22 @@ func TestEnsureProjectSettings(t *testing.T) {
 }
 
 func TestAreSettingsInSync(t *testing.T) {
-	atlas := &mdbv1.ProjectSettings{
+	atlasDef := &mdbv1.ProjectSettings{
 		IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
 		IsDataExplorerEnabled:                       toptr.MakePtr(true),
 		IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
 		IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
 		IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
 	}
-	spec := &mdbv1.ProjectSettings{
+	specDef := &mdbv1.ProjectSettings{
 		IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
 		IsDataExplorerEnabled:                       toptr.MakePtr(true),
 	}
 
-	areEqual := areSettingsInSync(atlas, spec)
+	areEqual := areSettingsInSync(atlasDef, specDef)
 	assert.True(t, areEqual, "Only fields which are set should be compared")
 
-	spec.IsPerformanceAdvisorEnabled = toptr.MakePtr(false)
-	areEqual = areSettingsInSync(atlas, spec)
+	specDef.IsPerformanceAdvisorEnabled = toptr.MakePtr(false)
+	areEqual = areSettingsInSync(atlasDef, specDef)
 	assert.False(t, areEqual, "Field values should be the same ")
 }

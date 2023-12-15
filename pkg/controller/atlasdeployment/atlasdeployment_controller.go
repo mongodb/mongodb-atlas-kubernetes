@@ -139,15 +139,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := r.AtlasProvider.CreateConnection(project.ConnectionSecretObjectKey(), log)
-	if err != nil {
-		result := workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
-	}
-	workflowCtx.Connection = connection
-
-	atlasClient, err := r.AtlasProvider.CreateClient(&connection, log)
+	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)

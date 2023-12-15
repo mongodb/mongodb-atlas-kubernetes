@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,9 +35,9 @@ type AtlasFederatedAuthReconciler struct {
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
-	AtlasDomain                 string
 	GlobalPredicates            []predicate.Predicate
 	EventRecorder               record.EventRecorder
+	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 }
@@ -82,28 +81,14 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	if !customresource.IsResourceSupportedInDomain(fedauth, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(fedauth) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasFederatedAuth is not supported by Atlas for government").
 			WithoutRetry()
 		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, types.NamespacedName{},
-		fedauth.ConnectionSecretObjectKey())
-	if err != nil {
-		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
-		if errRm := customresource.ManageFinalizer(ctx, r.Client, fedauth, customresource.UnsetFinalizer); errRm != nil {
-			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			return result.ReconcileResult(), nil
-		}
-		return result.ReconcileResult(), nil
-	}
-
-	workflowCtx.Connection = connection
-
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, fedauth.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
@@ -111,7 +96,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 	workflowCtx.Client = atlasClient
 
-	owner, err := customresource.IsOwner(fedauth, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, workflowCtx.Connection.OrgID))
+	owner, err := customresource.IsOwner(fedauth, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
@@ -131,7 +116,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	result = r.ensureFederatedAuth(workflowCtx, fedauth)
+	result = r.ensureFederatedAuth(workflowCtx, orgID, fedauth)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
 	}
@@ -159,7 +144,7 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	}
 }
 
-func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, orgID string) customresource.AtlasChecker {
+func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, orgID string) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
 		fedauth, ok := resource.(*mdbv1.AtlasFederatedAuth)
 		if !ok {
@@ -176,7 +161,7 @@ func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, orgID 
 			return false, err
 		}
 
-		projectlist, err := prepareProjectList(&atlasClient)
+		projectlist, err := prepareProjectList(atlasClient)
 		if err != nil {
 			return false, err
 		}

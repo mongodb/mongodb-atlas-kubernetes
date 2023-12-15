@@ -49,10 +49,9 @@ type AtlasDatabaseUserReconciler struct {
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
-	AtlasDomain                 string
-	GlobalAPISecret             client.ObjectKey
-	EventRecorder               record.EventRecorder
 	GlobalPredicates            []predicate.Predicate
+	EventRecorder               record.EventRecorder
+	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 }
@@ -106,7 +105,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
-	if !customresource.IsResourceSupportedInDomain(databaseUser, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(databaseUser) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDatabaseUser is not supported by Atlas for government").
 			WithoutRetry()
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -120,16 +119,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
-	if err != nil {
-		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
-
-		return result.ReconcileResult(), nil
-	}
-	workflowCtx.Connection = connection
-
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
+	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -205,7 +195,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	ctx context.Context,
 	dbUser *mdbv1.AtlasDatabaseUser,
 	project *mdbv1.AtlasProject,
-	atlasClient mongodbatlas.Client,
+	atlasClient *mongodbatlas.Client,
 	log *zap.SugaredLogger,
 ) (bool, workflow.Result) {
 	if dbUser.GetDeletionTimestamp().IsZero() {
@@ -256,7 +246,7 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func managedByAtlas(ctx context.Context, atlasClient mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
+func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
 		dbUser, ok := resource.(*mdbv1.AtlasDatabaseUser)
 		if !ok {

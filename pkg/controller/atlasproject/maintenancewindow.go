@@ -152,7 +152,7 @@ func operatorToAtlasMaintenanceWindow(maintenanceWindow project.MaintenanceWindo
 	return operatorWindow, workflow.OK()
 }
 
-func getInAtlas(client mongodbatlas.Client, projectID string) (*mongodbatlas.MaintenanceWindow, workflow.Result) {
+func getInAtlas(client *mongodbatlas.Client, projectID string) (*mongodbatlas.MaintenanceWindow, workflow.Result) {
 	window, _, err := client.MaintenanceWindows.Get(context.Background(), projectID)
 	if err != nil {
 		return nil, workflow.Terminate(workflow.ProjectWindowNotObtainedFromAtlas, err.Error())
@@ -160,10 +160,10 @@ func getInAtlas(client mongodbatlas.Client, projectID string) (*mongodbatlas.Mai
 	return window, workflow.OK()
 }
 
-func createOrUpdateInAtlas(client mongodbatlas.Client, projectID string, maintenanceWindow project.MaintenanceWindow) workflow.Result {
-	operatorWindow, status := operatorToAtlasMaintenanceWindow(maintenanceWindow)
-	if !status.IsOk() {
-		return status
+func createOrUpdateInAtlas(client *mongodbatlas.Client, projectID string, maintenanceWindow project.MaintenanceWindow) workflow.Result {
+	operatorWindow, resourceStatus := operatorToAtlasMaintenanceWindow(maintenanceWindow)
+	if !resourceStatus.IsOk() {
+		return resourceStatus
 	}
 
 	if _, err := client.MaintenanceWindows.Update(context.Background(), projectID, operatorWindow); err != nil {
@@ -172,14 +172,14 @@ func createOrUpdateInAtlas(client mongodbatlas.Client, projectID string, mainten
 	return workflow.OK()
 }
 
-func deleteInAtlas(client mongodbatlas.Client, projectID string) workflow.Result {
+func deleteInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
 	if _, err := client.MaintenanceWindows.Reset(context.Background(), projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotDeletedInAtlas, err.Error())
 	}
 	return workflow.OK()
 }
 
-func deferInAtlas(client mongodbatlas.Client, projectID string) workflow.Result {
+func deferInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
 	if _, err := client.MaintenanceWindows.Defer(context.Background(), projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotDeferredInAtlas, err.Error())
 	}
@@ -187,7 +187,7 @@ func deferInAtlas(client mongodbatlas.Client, projectID string) workflow.Result 
 }
 
 // toggleAutoDeferInAtlas toggles the field "autoDeferOnceEnabled" by sending a POST /autoDefer request to the API
-func toggleAutoDeferInAtlas(client mongodbatlas.Client, projectID string) workflow.Result {
+func toggleAutoDeferInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
 	if _, err := client.MaintenanceWindows.AutoDefer(context.Background(), projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err.Error())
 	}

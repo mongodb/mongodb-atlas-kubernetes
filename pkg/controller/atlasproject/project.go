@@ -12,7 +12,7 @@ import (
 )
 
 // ensureProjectExists creates the project if it doesn't exist yet. Returns the project ID
-func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, project *mdbv1.AtlasProject) (string, workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, orgID string, project *mdbv1.AtlasProject) (string, workflow.Result) {
 	// Try to find the project
 	p, _, err := ctx.Client.Projects.GetOneProjectByName(context.Background(), project.Spec.Name)
 	if err != nil {
@@ -21,7 +21,7 @@ func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, proj
 		if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
 			// Project doesn't exist? Try to create it
 			p = &mongodbatlas.Project{
-				OrgID:                     ctx.Connection.OrgID,
+				OrgID:                     orgID,
 				Name:                      project.Spec.Name,
 				WithDefaultAlertsSettings: &project.Spec.WithDefaultAlertsSettings,
 				RegionUsageRestrictions:   project.Spec.RegionUsageRestrictions,

@@ -1,24 +1,34 @@
 package atlas
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
-const govAtlasDomain = "mongodbgov.com"
+const (
+	govAtlasDomain = "mongodbgov.com"
+	orgIDKey       = "orgId"
+	publicAPIKey   = "publicApiKey"
+	privateAPIKey  = "privateApiKey"
+)
 
 type Provider interface {
-	CreateConnection(secretRef *client.ObjectKey, log *zap.SugaredLogger) (Connection, error)
-	CreateClient(connection *Connection, log *zap.SugaredLogger, opts ...httputil.ClientOpt) (mongodbatlas.Client, error)
+	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
 	IsCloudGov() bool
-	IsResourceSupported(resource mdbv1.AtlasCustomResource) bool
+	IsResourceSupported(resource akov2.AtlasCustomResource) bool
 }
 
 type ProductionProvider struct {
@@ -35,18 +45,8 @@ func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey,
 	}
 }
 
-func (f *ProductionProvider) CreateConnection(secretRef *client.ObjectKey, log *zap.SugaredLogger) (Connection, error) {
-	//TODO move implementation here once all controllers are using the manager
-	return ReadConnection(log, f.k8sClient, f.globalSecretRef, secretRef)
-}
-
-func (f *ProductionProvider) CreateClient(connection *Connection, log *zap.SugaredLogger, opts ...httputil.ClientOpt) (mongodbatlas.Client, error) {
-	//TODO move implementation here once all controllers are using the manager
-	return Client(f.domain, *connection, log, opts...)
-}
-
-func (f *ProductionProvider) IsCloudGov() bool {
-	domainURL, err := url.Parse(f.domain)
+func (p *ProductionProvider) IsCloudGov() bool {
+	domainURL, err := url.Parse(p.domain)
 	if err != nil {
 		return false
 	}
@@ -54,26 +54,80 @@ func (f *ProductionProvider) IsCloudGov() bool {
 	return strings.HasSuffix(domainURL.Hostname(), govAtlasDomain)
 }
 
-func (f *ProductionProvider) IsResourceSupported(resource mdbv1.AtlasCustomResource) bool {
-	if !f.IsCloudGov() {
+func (p *ProductionProvider) IsResourceSupported(resource akov2.AtlasCustomResource) bool {
+	if !p.IsCloudGov() {
 		return true
 	}
 
 	switch atlasResource := resource.(type) {
-	case *mdbv1.AtlasProject,
-		*mdbv1.AtlasTeam,
-		*mdbv1.AtlasBackupSchedule,
-		*mdbv1.AtlasBackupPolicy,
-		*mdbv1.AtlasDatabaseUser,
-		*mdbv1.AtlasFederatedAuth:
+	case *akov2.AtlasProject,
+		*akov2.AtlasTeam,
+		*akov2.AtlasBackupSchedule,
+		*akov2.AtlasBackupPolicy,
+		*akov2.AtlasDatabaseUser,
+		*akov2.AtlasFederatedAuth:
 		return true
-	case *mdbv1.AtlasDataFederation:
+	case *akov2.AtlasDataFederation:
 		return false
-	case *mdbv1.AtlasDeployment:
+	case *akov2.AtlasDeployment:
 		if atlasResource.Spec.ServerlessSpec == nil {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+	if secretRef == nil {
+		secretRef = &p.globalSecretRef
+	}
+
+	secret := &corev1.Secret{}
+	if err := p.k8sClient.Get(ctx, *secretRef, secret); err != nil {
+		return nil, "", fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
+	}
+
+	secretData := make(map[string]string)
+	for k, v := range secret.Data {
+		secretData[k] = string(v)
+	}
+
+	if missingFields, valid := validateSecretData(secretData); !valid {
+		return nil, "", fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
+	}
+
+	clientCfg := []httputil.ClientOpt{
+		httputil.Digest(secretData[publicAPIKey], secretData[privateAPIKey]),
+		httputil.LoggingTransport(log),
+	}
+	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, clientCfg...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
+
+	return c, secretData[orgIDKey], err
+}
+
+func validateSecretData(secretData map[string]string) ([]string, bool) {
+	var missingFields []string
+	requiredKeys := []string{orgIDKey, publicAPIKey, privateAPIKey}
+
+	for _, key := range requiredKeys {
+		if _, ok := secretData[key]; !ok {
+			missingFields = append(missingFields, key)
+		}
+	}
+
+	if len(missingFields) > 0 {
+		return missingFields, false
+	}
+
+	return nil, true
+}
+
+func operatorUserAgent() string {
+	return fmt.Sprintf("%s/%s (%s;%s)", "MongoDBAtlasKubernetesOperator", version.Version, runtime.GOOS, runtime.GOARCH)
 }

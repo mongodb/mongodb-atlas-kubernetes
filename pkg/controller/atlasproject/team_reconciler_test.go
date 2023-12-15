@@ -18,7 +18,7 @@ import (
 func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return error when passing wrong resource", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID")
@@ -29,7 +29,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource has no Atlas Team ID", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID")
@@ -52,7 +52,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID")
@@ -75,7 +75,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID")
@@ -106,7 +106,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID-1")
@@ -137,7 +137,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx, "orgID-1")

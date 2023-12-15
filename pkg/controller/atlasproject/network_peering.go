@@ -252,7 +252,7 @@ func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, log
 	return workflow.OK(), status.NetworkPeerReadyType
 }
 
-func createNetworkPeers(context context.Context, mongoClient mongodbatlas.Client, groupID string, peers []mdbv1.NetworkPeer, logger *zap.SugaredLogger) []status.AtlasNetworkPeer {
+func createNetworkPeers(context context.Context, mongoClient *mongodbatlas.Client, groupID string, peers []mdbv1.NetworkPeer, logger *zap.SugaredLogger) []status.AtlasNetworkPeer {
 	var newPeerStatuses []status.AtlasNetworkPeer
 	for _, peer := range peers {
 		err := validateInitNetworkPeer(peer)

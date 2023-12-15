@@ -13,13 +13,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Context, fedauth *mdbv1.AtlasFederatedAuth) workflow.Result {
+func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Context, orgID string, fedauth *mdbv1.AtlasFederatedAuth) workflow.Result {
 	// If disabled, skip with no error
 	if !fedauth.Spec.Enabled {
 		return workflow.OK().WithMessage(string(workflow.FederatedAuthIsNotEnabledInCR))
 	}
-
-	orgID := service.Connection.OrgID
 
 	// Get current IDP for the ORG
 	atlasFedSettings, _, err := service.Client.FederatedSettings.Get(context.Background(), orgID)
@@ -37,7 +35,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 
 	idpID := orgConfig.IdentityProviderID
 
-	projectList, err := prepareProjectList(&service.Client)
+	projectList, err := prepareProjectList(service.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", orgID, err.Error()))
 	}
@@ -47,7 +45,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.Internal, fmt.Sprintln("Can not convert Federated Auth spec to Atlas", err.Error()))
 	}
 
-	if result := r.ensureIDPSettings(atlasFedSettingsID, idpID, fedauth, &service.Client); !result.IsOk() {
+	if result := r.ensureIDPSettings(atlasFedSettingsID, idpID, fedauth, service.Client); !result.IsOk() {
 		return result
 	}
 

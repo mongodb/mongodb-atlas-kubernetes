@@ -79,7 +79,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 
 			By("Creating a project in Atlas", func() {
 				atlasProject := mongodbatlas.Project{
-					OrgID:                     connection.OrgID,
+					OrgID:                     orgID,
 					Name:                      projectName,
 					WithDefaultAlertsSettings: toptr.MakePtr(true),
 				}

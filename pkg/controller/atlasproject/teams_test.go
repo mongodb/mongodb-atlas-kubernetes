@@ -5,10 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/zap"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -52,7 +56,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, false, &mdbv1.AtlasProject{})
@@ -64,7 +68,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -83,7 +87,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -103,7 +107,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -123,7 +127,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -163,7 +167,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -203,7 +207,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -243,7 +247,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -266,7 +270,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     logger,
 			Context: context.TODO(),
 		}
@@ -337,7 +341,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     logger,
 			Context: context.TODO(),
 		}
@@ -362,14 +366,30 @@ func TestUpdateTeamState(t *testing.T) {
 	t.Run("should not duplicate projects listed", func(t *testing.T) {
 		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
-			Log: logger,
+			Context: context.TODO(),
+			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
 		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasProject{})
 		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasTeam{})
+		testScheme.AddKnownTypes(mdbv1.GroupVersion, &corev1.Secret{})
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-secret",
+			},
+			Data: map[string][]byte{
+				"orgId":         []byte("0987654321"),
+				"publicApiKey":  []byte("api-pub-key"),
+				"privateApiKey": []byte("api-priv-key"),
+			},
+			Type: "Opaque",
+		}
 		project := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				Name: "projectName",
+				ConnectionSecret: &common.ResourceRefNamespaced{
+					Name: "my-secret",
+				},
 			},
 			Status: status.AtlasProjectStatus{
 				ID: "projectID",
@@ -390,13 +410,19 @@ func TestUpdateTeamState(t *testing.T) {
 				},
 			},
 		}
+		atlasProvider := &atlas.TestProvider{
+			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+				return &mongodbatlas.Client{}, "0987654321", nil
+			},
+		}
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(team).
+			WithObjects(secret, project, team).
 			Build()
 		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-			Log:    logger,
+			Client:        k8sClient,
+			Log:           logger,
+			AtlasProvider: atlasProvider,
 		}
 		teamRef := &common.ResourceRefNamespaced{
 			Name:      team.Name,

@@ -26,7 +26,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := syncCloudProviderIntegration(workflowCtx, "projectID", []mdbv1.CloudProviderIntegration{})
@@ -103,7 +103,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 
@@ -158,7 +158,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 
@@ -210,7 +210,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.TODO(),
 		}
@@ -775,7 +775,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 
@@ -802,7 +802,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.TODO(),
 		}
@@ -848,7 +848,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 
@@ -883,7 +883,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.TODO(),
 		}
@@ -913,7 +913,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 
@@ -939,7 +939,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.TODO(),
 		}
@@ -952,7 +952,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
@@ -963,7 +963,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
@@ -983,7 +983,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1005,7 +1005,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1041,7 +1041,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1085,7 +1085,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1120,7 +1120,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1164,7 +1164,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1208,7 +1208,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderAccessRoles\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canCloudProviderIntegrationReconcile(workflowCtx, true, akoProject)
@@ -1230,7 +1230,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(workflowCtx, akoProject, true)
@@ -1273,7 +1273,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"cloudProviderIntegrations\":[{\"providerName\":\"AWS\",\"iamAssumedRoleArn\":\"arn1\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(workflowCtx, akoProject, true)
@@ -1322,7 +1322,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
@@ -1406,7 +1406,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
@@ -1467,7 +1467,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(workflowCtx, akoProject, false)
@@ -1532,7 +1532,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 			},
 		}
 		workflowCtx := workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result := ensureCloudProviderIntegration(&workflowCtx, akoProject, false)

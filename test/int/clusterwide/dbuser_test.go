@@ -137,7 +137,7 @@ func buildConnectionSecret(name string) corev1.Secret {
 			Name:      name,
 			Namespace: namespace.Name,
 		},
-		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
+		StringData: map[string]string{"orgId": orgID, "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
 }
 

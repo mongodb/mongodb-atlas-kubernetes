@@ -240,7 +240,7 @@ func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.
 }
 
 // GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
-func GetAllDeploymentNames(client mongodbatlas.Client, projectID string) ([]string, error) {
+func GetAllDeploymentNames(client *mongodbatlas.Client, projectID string) ([]string, error) {
 	var deploymentNames []string
 
 	advancedDeployments, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
