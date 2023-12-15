@@ -61,3 +61,18 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas() *mongodbatlas.BackupCompliancePo
 
 	return result
 }
+
+func (b *AtlasBackupCompliancePolicy) GetStatus() status.Status {
+	return b.Status
+}
+
+func (b *AtlasBackupCompliancePolicy) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	b.Status.Conditions = conditions
+	b.Status.ObservedGeneration = b.ObjectMeta.Generation
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasBackupCompliancePolicyStatusOption)
+		v(&b.Status)
+	}
+}
