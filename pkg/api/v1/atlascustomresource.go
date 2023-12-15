@@ -28,6 +28,7 @@ var _ AtlasCustomResource = &AtlasFederatedAuth{}
 var _ AtlasCustomResource = &AtlasStreamInstance{}
 var _ AtlasCustomResource = &AtlasStreamConnection{}
 var _ AtlasCustomResource = &AtlasSearchIndexConfig{}
+var _ AtlasCustomResource = &AtlasBackupCompliancePolicy{}
 
 // InitCondition initializes the underlying type of the given condition to the given default value
 // if the underlying condition type is unset.
