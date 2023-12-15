@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"net/http"
+	"strings"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -22,7 +22,7 @@ const (
 func NewClient(client *mongodbatlas.Client) *DataFederationServiceOp {
 	return &DataFederationServiceOp{
 		Client:      client,
-		AtlasDomain: fmt.Sprintf(dataFederationBasePath, client.BaseURL.String()),
+		AtlasDomain: fmt.Sprintf(dataFederationBasePath, strings.TrimSuffix(client.BaseURL.String(), "/")),
 	}
 }
 
