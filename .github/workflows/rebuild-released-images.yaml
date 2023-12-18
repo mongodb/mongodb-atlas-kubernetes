@@ -70,7 +70,7 @@ jobs:
       - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
         run: |
           git remote show origin
-          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile
+          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile scripts/version-check.sh scripts/module-path.sh
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -87,8 +87,8 @@ jobs:
         shell: bash
         run: |
           go mod download
-      - name: Build all platforms
-        run: make all-platforms
+      - name: Build all platforms & check version
+        run: make all-platforms check-version VERSION=${{ matrix.version }}
       - name: "Set up Docker Buildx"
         uses: docker/setup-buildx-action@v3
         with:

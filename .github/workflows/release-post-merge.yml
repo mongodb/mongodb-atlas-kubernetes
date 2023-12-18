@@ -86,7 +86,9 @@ jobs:
       - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
         run: |
           git remote show origin
-          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile
+          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile scripts/version-check.sh scripts/module-path.sh
+      - name: Build all platforms & check version
+        run: make all-platforms check-version VERSION=${{ github.event.inputs.version }}
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
