@@ -58,7 +58,7 @@ jobs:
           AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
       - name: Upload operator logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: logs
           path: output/**
