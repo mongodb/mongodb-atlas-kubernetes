@@ -5,6 +5,8 @@ on:
     paths:
       - 'test/app/**'
       - '!test/app/helm/**'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
