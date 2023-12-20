@@ -32,7 +32,10 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	// Fake client
 	scheme := runtime.NewScheme()
 	utilruntime.Must(mdbv1.AddToScheme(scheme))
-	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existingProject).Build()
+	// Subresources need to be explicitly set now since controller-runtime 1.15
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existingProject).
+		WithStatusSubresource(existingProject).Build()
 
 	// Patch the existing project
 	updatedProject := existingProject.DeepCopy()

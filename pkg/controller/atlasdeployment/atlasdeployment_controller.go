@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -484,19 +483,19 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasDeployment & handle delete separately
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasDeployment{}}, &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
+	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasDeployment{}), &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup schedules
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasBackupSchedule{}}, watch.NewBackupScheduleHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup policies
-	err = c.Watch(&source.Kind{Type: &mdbv1.AtlasBackupPolicy{}}, watch.NewBackupPolicyHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}

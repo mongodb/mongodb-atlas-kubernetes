@@ -285,12 +285,12 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
+			// set deletion timestamp after creation in k8s
+			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
-
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
 				te.log,
@@ -332,7 +332,6 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			customresource.SetAnnotation(deployment,
 				customresource.ResourcePolicyAnnotation,
 				customresource.ResourcePolicyKeep,
@@ -340,6 +339,8 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
+			// set deletion timestamp after creation in k8s
+			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, result := te.reconciler.handleDeletion(
@@ -383,7 +384,6 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 				AdvancedClusters: advancedClusterClient,
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			customresource.SetAnnotation(deployment,
 				customresource.ResourcePolicyAnnotation,
 				customresource.ResourcePolicyDelete,
@@ -391,6 +391,8 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
+			// set deletion timestamp after creation in k8s
+			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, result := te.reconciler.handleDeletion(
@@ -626,13 +628,17 @@ func newTestDeploymentEnv(t *testing.T,
 }
 
 func testK8sClient() client.Client {
+	// Subresources need to be explicitly set now since controller-runtime 1.15
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	sch := runtime.NewScheme()
 	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDeployment{})
 	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupSchedule{})
 	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupScheduleList{})
 	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupPolicy{})
 	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
-	return fake.NewClientBuilder().WithScheme(sch).Build()
+	return fake.NewClientBuilder().WithScheme(sch).
+		WithStatusSubresource(&v1.AtlasBackupSchedule{}, &v1.AtlasBackupPolicy{}).
+		Build()
 }
 
 func testLog(t *testing.T) *zap.SugaredLogger {
@@ -854,9 +860,12 @@ func TestReconciliation(t *testing.T) {
 		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupScheduleList{})
 		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupPolicy{})
 		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDatabaseUserList{})
+		// Subresources need to be explicitly set now since controller-runtime 1.15
+		// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(sch).
 			WithObjects(secret, project, bPolicy, bSchedule, deployment).
+			WithStatusSubresource(bPolicy, bSchedule).
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()

@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -54,18 +55,18 @@ func NewAtlasTeamHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *R
 // Create handles the Create event for the resource.
 // Note that we implement Create in addition to Update to be able to handle cases when config map or secret is deleted
 // and then created again.
-func (c *ResourcesHandler) Create(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-	c.doHandle(e.Object.GetNamespace(), e.Object.GetName(), e.Object.GetObjectKind().GroupVersionKind().Kind, q)
+func (c *ResourcesHandler) Create(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+	c.doHandle(ctx, e.Object.GetNamespace(), e.Object.GetName(), e.Object.GetObjectKind().GroupVersionKind().Kind, q)
 }
 
-func (c *ResourcesHandler) Update(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Update(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	if !shouldHandleUpdate(e) {
 		zap.S().Debugf("resource watcher: skipping update for resource %v", e.ObjectNew.GetName())
 		return
 	}
 	// For some reasons e.ObjectOld.GetObjectKind().GroupVersionKind().Kind is empty... that's why we have to keep the
 	// resourceKind as a field in the handler...
-	c.doHandle(e.ObjectOld.GetNamespace(), e.ObjectNew.GetName(), c.ResourceKind, q)
+	c.doHandle(ctx, e.ObjectOld.GetNamespace(), e.ObjectNew.GetName(), c.ResourceKind, q)
 }
 
 // shouldHandleUpdate return true if the update event must be handled. This should happen only if the real data has
@@ -86,7 +87,7 @@ func shouldHandleUpdate(e event.UpdateEvent) bool {
 	return true
 }
 
-func (c *ResourcesHandler) doHandle(namespace, name, kind string, q workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) doHandle(_ context.Context, namespace, name, kind string, q workqueue.RateLimitingInterface) {
 	watchedResource := WatchedObject{
 		ResourceKind: kind,
 		Resource:     types.NamespacedName{Name: name, Namespace: namespace},
@@ -98,7 +99,8 @@ func (c *ResourcesHandler) doHandle(namespace, name, kind string, q workqueue.Ra
 }
 
 // Delete (Seems we don't need to react on watched resources removal..)
-func (c *ResourcesHandler) Delete(event.DeleteEvent, workqueue.RateLimitingInterface) {}
+func (c *ResourcesHandler) Delete(context.Context, event.DeleteEvent, workqueue.RateLimitingInterface) {
+}
 
-func (c *ResourcesHandler) Generic(e event.GenericEvent, w workqueue.RateLimitingInterface) {
+func (c *ResourcesHandler) Generic(context.Context, event.GenericEvent, workqueue.RateLimitingInterface) {
 }

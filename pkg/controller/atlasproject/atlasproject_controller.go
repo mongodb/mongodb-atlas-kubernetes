@@ -34,7 +34,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/authmode"
@@ -355,8 +354,8 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
 		For(&mdbv1.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, watch.NewSecretHandler(r.WatchedResources)).
-		Watches(&source.Kind{Type: &mdbv1.AtlasTeam{}}, watch.NewAtlasTeamHandler(r.WatchedResources)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
+		Watches(&mdbv1.AtlasTeam{}, watch.NewAtlasTeamHandler(r.WatchedResources)).
 		Complete(r)
 }
 

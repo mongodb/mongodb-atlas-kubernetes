@@ -1,6 +1,8 @@
 package watch
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/workqueue"
@@ -19,7 +21,7 @@ type EventHandlerWithDelete struct {
 	}
 }
 
-func (d *EventHandlerWithDelete) Delete(e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
+func (d *EventHandlerWithDelete) Delete(_ context.Context, e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
 	objectKey := kube.ObjectKeyFromObject(e.Object)
 	log := zap.S().With("resource", objectKey)
 

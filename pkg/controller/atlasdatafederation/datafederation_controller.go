@@ -8,7 +8,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 
@@ -219,7 +218,7 @@ func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context,
 func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDataFederation").
-		Watches(&source.Kind{Type: &mdbv1.AtlasDataFederation{}}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
+		Watches(&mdbv1.AtlasDataFederation{}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
 		For(&mdbv1.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Complete(r)
 }

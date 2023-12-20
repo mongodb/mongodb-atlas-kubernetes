@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestHandleCreate(t *testing.T) {
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Create(createEvent, &queue)
+		handler.Create(context.TODO(), createEvent, &queue)
 		assert.Zero(t, queue.Len())
 	})
 	t.Run("Create event is handled", func(t *testing.T) {
@@ -33,7 +34,7 @@ func TestHandleCreate(t *testing.T) {
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Create(createEvent, &queue)
+		handler.Create(context.TODO(), createEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)
 
 		enqueued, _ := queue.Get()
@@ -56,7 +57,7 @@ func TestHandleUpdate(t *testing.T) {
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Update(updateEvent, &queue)
+		handler.Update(context.TODO(), updateEvent, &queue)
 		assert.Zero(t, queue.Len())
 	})
 	t.Run("Update event is handled", func(t *testing.T) {
@@ -72,7 +73,7 @@ func TestHandleUpdate(t *testing.T) {
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Update(updateEvent, &queue)
+		handler.Update(context.TODO(), updateEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)
 
 		enqueued, _ := queue.Get()
