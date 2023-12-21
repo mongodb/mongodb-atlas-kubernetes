@@ -413,7 +413,7 @@ tools/makejwt/makejwt: tools/makejwt/*.go
 	cd tools/makejwt && go test . && go build .
 
 .PHONY: check-version
-check-version:
+check-version: ## Check the version is correct & releasable (vX.Y.Z and not "*-dirty" or "unknown")
 	VERSION=$(VERSION) BINARY=bin/$(TARGET_OS)/$(TARGET_ARCH)/manager ./scripts/version-check.sh
 
 .PHONY: release-helm
