@@ -140,6 +140,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
 	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
@@ -162,7 +163,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	projectID, result := r.ensureProjectExists(workflowCtx, orgID, project)
+	projectID, result := r.ensureProjectExists(workflowCtx, project)
 	if !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil

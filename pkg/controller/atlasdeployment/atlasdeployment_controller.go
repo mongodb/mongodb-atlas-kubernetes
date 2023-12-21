@@ -139,12 +139,13 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
 	// Allow users to specify M0/M2/M5 deployments without providing TENANT for Normal and Serverless deployments

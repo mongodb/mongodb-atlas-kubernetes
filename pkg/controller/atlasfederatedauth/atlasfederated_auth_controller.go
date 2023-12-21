@@ -116,7 +116,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	result = r.ensureFederatedAuth(workflowCtx, orgID, fedauth)
+	result = r.ensureFederatedAuth(workflowCtx, fedauth)
 	if !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
 	}

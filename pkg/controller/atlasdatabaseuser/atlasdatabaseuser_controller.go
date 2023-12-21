@@ -119,13 +119,14 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
+	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
 	owner, err := customresource.IsOwner(databaseUser, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, project.ID(), log))

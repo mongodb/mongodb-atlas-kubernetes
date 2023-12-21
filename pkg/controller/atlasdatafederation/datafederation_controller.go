@@ -96,12 +96,13 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, _, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
+	ctx.OrgID = orgID
 	ctx.Client = atlasClient
 
 	owner, err := customresource.IsOwner(dataFederation, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(context, atlasClient, project.ID(), log))

@@ -20,6 +20,9 @@ type Context struct {
 	// Is not supposed to be mutated!
 	Log *zap.SugaredLogger
 
+	// OrgID is the identifier of the Organization which the Atlas client was configured for
+	OrgID string
+
 	// Client is a mongodb atlas client used to make v1.0 API calls
 	Client *mongodbatlas.Client
 
