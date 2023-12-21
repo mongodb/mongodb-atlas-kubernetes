@@ -13,6 +13,7 @@ const (
 	AtlasFinalizerNotRemoved      ConditionReason = "AtlasFinalizerNotRemoved"
 	AtlasDeletionProtection       ConditionReason = "AtlasDeletionProtection"
 	AtlasGovUnsupported           ConditionReason = "AtlasGovUnsupported"
+	AtlasAPIAccessNotConfigured   ConditionReason = "AtlasAPIAccessNotConfigured"
 )
 
 // Atlas Project reasons

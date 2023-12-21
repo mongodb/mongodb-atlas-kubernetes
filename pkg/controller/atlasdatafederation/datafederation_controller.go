@@ -98,7 +98,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 
 	atlasClient, orgID, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result := workflow.Terminate(workflow.Internal, err.Error())
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}

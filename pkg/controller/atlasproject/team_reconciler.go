@@ -59,7 +59,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		atlasClient, orgID, err := r.AtlasProvider.Client(teamCtx.Context, connectionSecretKey, log)
 		if err != nil {
-			result := workflow.Terminate(workflow.Internal, err.Error())
+			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 			setCondition(teamCtx, status.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
