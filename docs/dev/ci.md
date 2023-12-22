@@ -40,3 +40,20 @@ The `test.yml` workflow calls the local tests workflows directly, and then also 
 That workflow also shows relevant CI context values that allow us to debug why the CI took one decision or another, depending of whether the PR is a **draft**, it is **forked or not**, etc.
 
 The `test.yml` takes the output from `cloud-tests-filter.yml` and will ONLY invoke the `cloud-tests.yml` workflow IF `cloud-tests-filter.yml` had decided **Cloud Tests* should run.
+
+## Kubernetes version in CI tests
+
+The kubernetes version in CI tests is set purposefully to the oldest kubernetes version we need to support.
+
+Such version is set by parameterising the kind image tag within the **strategy** **matrix** at the `test-e2e.yml` workflow. Eg:
+
+```yaml
+    e2e:
+    name: E2E tests
+      ...
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
+        ...
+```
