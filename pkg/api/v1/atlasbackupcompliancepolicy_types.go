@@ -76,3 +76,15 @@ func (b *AtlasBackupCompliancePolicy) UpdateStatus(conditions []status.Condition
 		v(&b.Status)
 	}
 }
+
+// AtlasBackupCompliancePolicyList contains a list of AtlasBackupCompliancePolicy
+// +kubebuilder:object:root=true
+type AtlasBackupCompliancePolicyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []*AtlasBackupCompliancePolicy `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&AtlasBackupCompliancePolicy{}, &AtlasBackupCompliancePolicyList{})
+}

@@ -31,7 +31,10 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	deployment *mdbv1.AtlasDeployment,
 	isEnabled bool,
 ) error {
-	if deployment.Spec.BackupScheduleRef.Name == "" {
+	// TODO(sur) this is buggy and works only if one flears the backup schedule ref,
+	// it doesn't work when pointing to another backup schedule ref.
+	// potential solution: always garbage collect?
+	defer func() {
 		r.Log.Debug("no backup schedule configured for the deployment")
 
 		err := r.garbageCollectBackupResource(service.Context, deployment.GetDeploymentName())
@@ -39,7 +42,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 			return err
 		}
 		return nil
-	}
+	}()
 
 	if !isEnabled {
 		return fmt.Errorf("can not proceed with backup configuration. Backups are not enabled for cluster %s", deployment.GetDeploymentName())

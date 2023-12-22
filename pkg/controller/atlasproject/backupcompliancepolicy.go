@@ -1,3 +1,19 @@
+/*
+Copyright 2023 MongoDB.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package atlasproject
 
 import (
@@ -7,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -14,65 +31,57 @@ import (
 )
 
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
-	// Reference set
-	if project.Spec.BackupCompliancePolicyRef.Name != "" {
-		// TODO start watching backup compliance CR
-		// check reference points to existing compliance policy CR
-		compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
-		err := r.Client.Get(context.Background(), *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
-		if err != nil {
-			ctx.Log.Errorf("failed to get backup compliance policy ")
-		}
-		// check if compliance policy exists in atlas (and matches)
-		// if match, return workflow.OK()
-		atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(context.Background(), project.ID())
-		if err != nil {
-			ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
-			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
-		}
+	defer func() { r.garbageCollectBackupResource(ctx.Context, project.GetName()) }()
 
-		// otherwise, create/update compliance policy...
-
-		// check existing backups meet requirements
-		// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
-		// if dont meet, set status, return workflow.Terminate()
-
-		if !currentBackupPoliciesMatchCompliance() {
-			// TODO figure out appropriate status names/messages
-			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotMet, "current backup policies do not satisfy this compliance policy")
-		}
-		// otherwise, continue...
-
-		// enable finalizer on compliance policy CR (if doesn't already exist)
-		err = customresource.ManageFinalizer(context.Background(), r.Client, compliancePolicy, customresource.SetFinalizer)
-		if err != nil {
-			ctx.SetConditionFalse(status.BackupComplianceReadyType)
-			return workflow.Terminate(workflow.AtlasFinalizerNotSet, err.Error())
-		}
-		// finalizer blocks deletion while there are references and/or compliance policy exists in atlas
-
-		// add annotation to compliance policy for associated atlas project
-		compliancePolicy.SetAnnotations(map[string]string{
-			// TODO pick better name for project annotation
-			"mongodbatlas/project": project.ID(),
-		})
-		r.Client.Update(context.Background(), compliancePolicy)
-
-		// create compliance policy in atlas
-		result := syncBackupCompliancePolicy(ctx, project.ID(), *compliancePolicy, *atlasCompliancePolicy)
-		if !result.IsOk() {
-			ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
-			return result
-		}
-
-		return workflow.OK()
+	// reference set
+	// TODO start watching backup compliance CR
+	// check reference points to existing compliance policy CR
+	compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
+	err := r.Client.Get(context.Background(), *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
+	if err != nil {
+		ctx.Log.Errorf("failed to get backup compliance policy ")
 	}
-	// Reference unset
-	// TODO should this be an else or can we just let the flow fall through?
+	// check if compliance policy exists in atlas (and matches)
+	// if match, return workflow.OK()
+	atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(context.Background(), project.ID())
+	if err != nil {
+		ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
+	}
 
-	// Check finalizer
-	// Check if compliance policy CR is referenced in k8s
-	// Check if compliance policy is in use in Atlas itself
+	// otherwise, create/update compliance policy...
+
+	// check existing backups meet requirements
+	// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
+	// if dont meet, set status, return workflow.Terminate()
+
+	if !currentBackupPoliciesMatchCompliance() {
+		// TODO figure out appropriate status names/messages
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotMet, "current backup policies do not satisfy this compliance policy")
+	}
+	// otherwise, continue...
+
+	// enable finalizer on compliance policy CR (if doesn't already exist)
+	err = customresource.ManageFinalizer(context.Background(), r.Client, compliancePolicy, customresource.SetFinalizer)
+	if err != nil {
+		ctx.SetConditionFalse(status.BackupComplianceReadyType)
+		return workflow.Terminate(workflow.AtlasFinalizerNotSet, err.Error())
+	}
+	// finalizer blocks deletion while there are references and/or compliance policy exists in atlas
+
+	// add annotation to compliance policy for associated atlas project
+	compliancePolicy.SetAnnotations(map[string]string{
+		// TODO pick better name for project annotation
+		"mongodbatlas/project": project.ID(),
+	})
+	r.Client.Update(context.Background(), compliancePolicy)
+
+	// create compliance policy in atlas
+	result := syncBackupCompliancePolicy(ctx, project.ID(), *compliancePolicy, *atlasCompliancePolicy)
+	if !result.IsOk() {
+		ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
+		return result
+	}
 
 	return workflow.OK()
 }
