@@ -193,12 +193,12 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID strin
 	return workflow.OK()
 }
 
-func deploymentIsReady(client mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
-	status, _, err := client.Clusters.Status(context.Background(), projectID, deploymentName)
+func deploymentIsReady(client *mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
+	resourceStatus, _, err := client.Clusters.Status(context.Background(), projectID, deploymentName)
 	if err != nil {
 		return false, err
 	}
-	return status.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
+	return resourceStatus.ChangeStatus == mongodbatlas.ChangeStatusApplied, nil
 }
 
 func filterScopeDeployments(user mdbv1.AtlasDatabaseUser, allDeploymentsInProject []string) []string {

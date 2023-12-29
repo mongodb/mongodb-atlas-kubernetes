@@ -60,9 +60,11 @@ var (
 	testEnv     *envtest.Environment
 	k8sManager  ctrl.Manager
 	atlasClient *mongodbatlas.Client
-	connection  atlas.Connection
 	namespace   corev1.Namespace
 	atlasDomain string
+	orgID       string
+	publicKey   string
+	privateKey  string
 )
 
 const (
@@ -99,7 +101,7 @@ var _ = BeforeSuite(func() {
 			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		}
 
-		atlasClient, connection = prepareAtlasClient()
+		atlasClient = prepareAtlasClient()
 
 		var err error
 		cfg, err = testEnv.Start()
@@ -132,10 +134,10 @@ var _ = BeforeSuite(func() {
 		err = (&atlasproject.AtlasProjectReconciler{
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-			AtlasDomain:      atlasDomain,
 			ResourceWatcher:  watch.NewResourceWatcher(),
-			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
+			AtlasProvider:    atlasProvider,
+			GlobalPredicates: globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -151,10 +153,10 @@ var _ = BeforeSuite(func() {
 		err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 			Client:           k8sManager.GetClient(),
 			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			AtlasDomain:      atlasDomain,
-			GlobalPredicates: globalPredicates,
 			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
 			ResourceWatcher:  watch.NewResourceWatcher(),
+			AtlasProvider:    atlasProvider,
+			GlobalPredicates: globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -180,8 +182,8 @@ var _ = AfterSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 })
 
-func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
-	orgID, publicKey, privateKey := os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
+func prepareAtlasClient() *mongodbatlas.Client {
+	orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
 	if orgID == "" || publicKey == "" || privateKey == "" {
 		Fail(`All of the "ATLAS_ORG_ID", "ATLAS_PUBLIC_KEY", and "ATLAS_PRIVATE_KEY" environment variables must be set!`)
 	}
@@ -191,9 +193,5 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
 	Expect(err).ToNot(HaveOccurred())
 
-	return aClient, atlas.Connection{
-		OrgID:      orgID,
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-	}
+	return aClient
 }

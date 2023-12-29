@@ -35,7 +35,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	BeforeEach(func() {
 		By("Checking if Federation Settings enabled for the org", func() {
-			federationSettings, _, err := atlasClient.FederatedSettings.Get(ctx, connection.OrgID)
+			federationSettings, _, err := atlasClient.FederatedSettings.Get(ctx, orgID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(federationSettings).ShouldNot(BeNil())
 
@@ -51,7 +51,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Getting existing org config", func() {
-			connectedOrgConfig, _, err := atlasClient.FederatedSettings.GetConnectedOrg(ctx, originalFederationSettings.ID, connection.OrgID)
+			connectedOrgConfig, _, err := atlasClient.FederatedSettings.GetConnectedOrg(ctx, originalFederationSettings.ID, orgID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(connectedOrgConfig).ShouldNot(BeNil())
 

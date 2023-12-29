@@ -326,5 +326,5 @@ func TestAuditingInSync(t *testing.T) {
 }
 
 func testWorkFlowContext(client mongodbatlas.Client) *workflow.Context {
-	return &workflow.Context{Client: client, Context: context.TODO()}
+	return &workflow.Context{Client: &client, Context: context.TODO()}
 }

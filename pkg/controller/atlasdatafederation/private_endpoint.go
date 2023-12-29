@@ -10,7 +10,7 @@ import (
 )
 
 func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, project *mdbv1.AtlasProject, dataFederation *mdbv1.AtlasDataFederation) workflow.Result {
-	clientDF := NewClient(ctx.Client, r.AtlasDomain)
+	clientDF := NewClient(ctx.Client)
 
 	projectID := project.ID()
 	specPEs := dataFederation.Spec.PrivateEndpoints

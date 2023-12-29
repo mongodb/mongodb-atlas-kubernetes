@@ -117,7 +117,7 @@ func checkCustomZoneMapping(customZoneMapping status.CustomZoneMapping) workflow
 	return workflow.OK()
 }
 
-func getZoneMappingMap(ctx context.Context, client mongodbatlas.Client, groupID, clusterName string) (map[string]string, error) {
+func getZoneMappingMap(ctx context.Context, client *mongodbatlas.Client, groupID, clusterName string) (map[string]string, error) {
 	cluster, _, err := client.AdvancedClusters.Get(ctx, groupID, clusterName)
 	if err != nil {
 		return nil, err

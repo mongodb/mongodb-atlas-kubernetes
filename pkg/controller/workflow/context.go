@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 )
 
@@ -21,11 +20,11 @@ type Context struct {
 	// Is not supposed to be mutated!
 	Log *zap.SugaredLogger
 
-	// Client is a mongodb atlas client used to make v1.0 API calls
-	Client mongodbatlas.Client
+	// OrgID is the identifier of the Organization which the Atlas client was configured for
+	OrgID string
 
-	// Connection is an object encapsulating information about connecting to Atlas using API
-	Connection atlas.Connection
+	// Client is a mongodb atlas client used to make v1.0 API calls
+	Client *mongodbatlas.Client
 
 	status Status
 

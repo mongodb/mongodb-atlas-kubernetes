@@ -53,7 +53,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		}
 
 		team := &v1.AtlasTeam{}
-		teamReconciler := r.teamReconcile(team, workflowCtx.Connection)
+		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey())
 		_, err := teamReconciler(
 			context.Background(),
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
@@ -225,14 +225,17 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	}
 
 	log := r.Log.With("atlasteam", teamRef)
-	teamCtx, err := createTeamContextFromParent(ctx.Context, team, r.Client, ctx.Connection, r.AtlasDomain, log)
+	teamCtx := customresource.MarkReconciliationStarted(r.Client, team, log, ctx.Context)
+
+	atlasClient, orgID, err := r.AtlasProvider.Client(teamCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		return err
 	}
+	teamCtx.Client = atlasClient
 
 	if len(assignedProjects) == 0 {
 		log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
-		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(context.Background(), teamCtx.Connection.OrgID, team.Status.ID)
+		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(context.Background(), orgID, team.Status.ID)
 		if err != nil {
 			return err
 		}

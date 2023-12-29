@@ -53,10 +53,9 @@ type AtlasProjectReconciler struct {
 	watch.ResourceWatcher
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
-	AtlasDomain                 string
-	GlobalAPISecret             client.ObjectKey
 	GlobalPredicates            []predicate.Predicate
 	EventRecorder               record.EventRecorder
+	AtlasProvider               atlas.Provider
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
 }
@@ -121,38 +120,27 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	if err := validate.Project(project, customresource.IsGov(r.AtlasDomain)); err != nil {
+	if err := validate.Project(project, r.AtlasProvider.IsCloudGov()); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
 		setCondition(workflowCtx, status.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
 
-	if !customresource.IsResourceSupportedInDomain(project, r.AtlasDomain) {
+	if !r.AtlasProvider.IsResourceSupported(project) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasProject is not supported by Atlas for government").
 			WithoutRetry()
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
-	connection, err := atlas.ReadConnection(log, r.Client, r.GlobalAPISecret, project.ConnectionSecretObjectKey())
+	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result = workflow.Terminate(workflow.AtlasCredentialsNotProvided, err.Error())
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		setCondition(workflowCtx, status.ProjectReadyType, result)
-		if errRm := customresource.ManageFinalizer(ctx, r.Client, project, customresource.UnsetFinalizer); errRm != nil {
-			result = workflow.Terminate(workflow.Internal, errRm.Error())
-			return result.ReconcileResult(), nil
-		}
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.Connection = connection
-
-	atlasClient, err := atlas.Client(r.AtlasDomain, connection, log)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(workflowCtx, status.DeploymentReadyType, result)
-		return result.ReconcileResult(), nil
-	}
+	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
 	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
@@ -234,7 +222,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (result workflow.Result) {
+func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (result workflow.Result) {
 	log := workflowCtx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
@@ -286,7 +274,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 
 	var result workflow.Result
-	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&workflowCtx.Client), project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(workflowCtx.Client), project, r.SubObjectDeletionProtection); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
 	}
 	results = append(results, result)
@@ -349,7 +337,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	return results
 }
 
-func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
+func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 

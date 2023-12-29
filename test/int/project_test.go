@@ -209,7 +209,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
-			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided))
+			expectedCondition := status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasAPIAccessNotConfigured))
 			Eventually(func() bool {
 				return testutil.CheckCondition(k8sClient, createdProject, expectedCondition)
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
@@ -223,7 +223,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(createdProject.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 			Expect(createdProject.ID()).To(BeEmpty())
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
-			testutil.EventExists(k8sClient, createdProject, "Warning", string(workflow.AtlasCredentialsNotProvided), "Secret .* not found")
+			testutil.EventExists(k8sClient, createdProject, "Warning", string(workflow.AtlasAPIAccessNotConfigured), "Secret .* not found")
 
 			// Atlas
 			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), expectedProject.Spec.Name)
@@ -640,7 +640,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
 				expectedConditionsMatchers := testutil.MatchConditions(
-					status.FalseCondition(status.ProjectReadyType).WithReason(string(workflow.AtlasCredentialsNotProvided)),
+					status.FalseCondition(status.ProjectReadyType).
+						WithReason(string(workflow.AtlasAPIAccessNotConfigured)),
 					status.FalseCondition(status.ReadyType),
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ResourceVersionStatus),
@@ -670,7 +671,7 @@ func buildConnectionSecret(name string) corev1.Secret {
 				"atlas.mongodb.com/type": "credentials",
 			},
 		},
-		StringData: map[string]string{"orgId": connection.OrgID, "publicApiKey": connection.PublicKey, "privateApiKey": connection.PrivateKey},
+		StringData: secretData(),
 	}
 }
 

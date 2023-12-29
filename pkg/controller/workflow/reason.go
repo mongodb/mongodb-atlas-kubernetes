@@ -6,7 +6,6 @@ type ConditionReason string
 
 // General reasons
 const (
-	AtlasCredentialsNotProvided   ConditionReason = "AtlasCredentialsNotProvided"
 	Internal                      ConditionReason = "InternalError"
 	AtlasResourceVersionMismatch  ConditionReason = "AtlasResourceVersionMismatch"
 	AtlasResourceVersionIsInvalid ConditionReason = "AtlasResourceVersionIsInvalid"
@@ -14,6 +13,7 @@ const (
 	AtlasFinalizerNotRemoved      ConditionReason = "AtlasFinalizerNotRemoved"
 	AtlasDeletionProtection       ConditionReason = "AtlasDeletionProtection"
 	AtlasGovUnsupported           ConditionReason = "AtlasGovUnsupported"
+	AtlasAPIAccessNotConfigured   ConditionReason = "AtlasAPIAccessNotConfigured"
 )
 
 // Atlas Project reasons

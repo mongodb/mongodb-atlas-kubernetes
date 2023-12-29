@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+
+	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 type DataFederationServiceOp service
@@ -20,13 +20,10 @@ const (
 
 //TODO: Replace with a atlas-go-client calls when they are available
 
-func NewClient(client mongodbatlas.Client, atlasDomain string) *DataFederationServiceOp {
-	if strings.HasSuffix(atlasDomain, "/") {
-		atlasDomain = strings.TrimRight(atlasDomain, "/")
-	}
+func NewClient(client *mongodbatlas.Client) *DataFederationServiceOp {
 	return &DataFederationServiceOp{
 		Client:      client,
-		AtlasDomain: fmt.Sprintf(dataFederationBasePath, atlasDomain),
+		AtlasDomain: fmt.Sprintf(dataFederationBasePath, strings.TrimSuffix(client.BaseURL.String(), "/")),
 	}
 }
 
@@ -192,6 +189,6 @@ func (s *DataFederationServiceOp) DeleteOnePrivateEndpoint(ctx context.Context, 
 }
 
 type service struct {
-	Client      mongodbatlas.Client
+	Client      *mongodbatlas.Client
 	AtlasDomain string
 }

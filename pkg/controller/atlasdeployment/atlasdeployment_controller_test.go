@@ -96,7 +96,7 @@ func TestDeploymentManaged(t *testing.T) {
 			}
 			project := testProject(fakeNamespace)
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			te := newTestDeploymentEnv(t, tc.protected, atlasClient, testK8sClient(), project, deployment)
+			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, testK8sClient(), project, deployment)
 			if tc.managedTag {
 				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
 			}
@@ -127,7 +127,6 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			protected := true
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
 				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
@@ -137,7 +136,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 				},
 			}
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
+			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
@@ -169,7 +168,6 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			protected := true
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
 				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
@@ -184,7 +182,7 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 				},
 			}
 			deployment := v1.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
-			te := newTestDeploymentEnv(t, protected, atlasClient, testK8sClient(), project, deployment)
+			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
 
@@ -198,12 +196,11 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 }
 
 func TestFinalizerNotFound(t *testing.T) {
-	protected := false
 	atlasClient := mongodbatlas.Client{}
 	project := testProject(fakeNamespace)
 	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 	k8sclient := testK8sClient()
-	te := newTestDeploymentEnv(t, protected, atlasClient, k8sclient, project, deployment)
+	te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
 
 	deletionRequest, result := te.reconciler.handleDeletion(
 		te.workflowCtx,
@@ -233,7 +230,6 @@ func TestFinalizerGetsSet(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			protected := false
 			atlasClient := mongodbatlas.Client{}
 			project := testProject(fakeNamespace)
 			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
@@ -242,7 +238,7 @@ func TestFinalizerGetsSet(t *testing.T) {
 			}
 			k8sclient := testK8sClient()
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			te := newTestDeploymentEnv(t, protected, atlasClient, k8sclient, project, deployment)
+			te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, _ := te.reconciler.handleDeletion(
 				te.workflowCtx,
@@ -293,7 +289,7 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			te := newTestDeploymentEnv(t, tc.protected, atlasClient, k8sclient, project, deployment)
+			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
@@ -344,7 +340,7 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			te := newTestDeploymentEnv(t, tc.protected, atlasClient, k8sclient, project, deployment)
+			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
@@ -395,7 +391,7 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			te := newTestDeploymentEnv(t, tc.protected, atlasClient, k8sclient, project, deployment)
+			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
 			deletionRequest, result := te.reconciler.handleDeletion(
 				te.workflowCtx,
@@ -606,18 +602,18 @@ type testDeploymentEnv struct {
 
 func newTestDeploymentEnv(t *testing.T,
 	protected bool,
-	atlasClient mongodbatlas.Client,
+	atlasClient *mongodbatlas.Client,
 	k8sclient client.Client,
 	project *v1.AtlasProject,
 	deployment *v1.AtlasDeployment,
 ) *testDeploymentEnv {
 	t.Helper()
 
-	log := testLog(t)
-	r := testDeploymentReconciler(log, k8sclient, protected)
+	logger := testLog(t)
+	r := testDeploymentReconciler(logger, k8sclient, protected)
 
 	prevResult := testPrevResult()
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, log, context.Background())
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, deployment, logger, context.Background())
 	workflowCtx.Client = atlasClient
 	return &testDeploymentEnv{
 		reconciler:  r,
@@ -865,15 +861,8 @@ func TestReconciliation(t *testing.T) {
 
 		logger := zaptest.NewLogger(t).Sugar()
 		atlasProvider := &atlas_mock.TestProvider{
-			CreateConnectionFunc: func(secretRef *client.ObjectKey) (atlas.Connection, error) {
-				return atlas.Connection{
-					OrgID:      "0987654321",
-					PublicKey:  "a1b2c3",
-					PrivateKey: "abcdef123456",
-				}, nil
-			},
-			CreateClientFunc: func() (mongodbatlas.Client, error) {
-				return mongodbatlas.Client{
+			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+				return &mongodbatlas.Client{
 					AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
 						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 							return &mongodbatlas.AdvancedCluster{
@@ -938,7 +927,7 @@ func TestReconciliation(t *testing.T) {
 							}, nil, nil
 						},
 					},
-				}, nil
+				}, "0987654321", nil
 			},
 			IsCloudGovFunc: func() bool {
 				return false

@@ -50,7 +50,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 					connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
 				},
 			},
-			StringData: map[string]string{OrgID: connection.OrgID, PublicAPIKey: connection.PublicKey, PrivateAPIKey: connection.PrivateKey},
+			StringData: secretData(),
 		}
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())

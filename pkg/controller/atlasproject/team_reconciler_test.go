@@ -18,10 +18,11 @@ import (
 func TestTeamManagedByAtlas(t *testing.T) {
 	t.Run("should return error when passing wrong resource", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			OrgID:   "orgID",
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&v1.AtlasProject{})
 		assert.EqualError(t, err, "failed to match resource type as AtlasTeams")
 		assert.False(t, result)
@@ -29,10 +30,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource has no Atlas Team ID", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			OrgID:   "orgID",
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&v1.AtlasTeam{})
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -52,10 +54,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			OrgID:   "orgID",
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -75,10 +78,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			OrgID:   "orgID",
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
 		assert.EqualError(t, err, "unavailable")
 		assert.False(t, result)
@@ -106,10 +110,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			OrgID:   "orgID-1",
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID-1")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.False(t, result)
@@ -137,10 +142,11 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			OrgID:   "orgID-1",
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
-		checker := teamsManagedByAtlas(workflowCtx, "orgID-1")
+		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.True(t, result)

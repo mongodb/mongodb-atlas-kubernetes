@@ -77,13 +77,15 @@ var (
 	k8sClient            client.Client
 	atlasClient          *mongodbatlas.Client
 	dataFederationClient *atlasdatafederation.DataFederationServiceOp
-	connection           atlas.Connection
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
 	cfg               *rest.Config
 	managerCancelFunc context.CancelFunc
 	atlasDomain       string
+	orgID             string
+	publicKey         string
+	privateKey        string
 )
 
 func init() {
@@ -149,10 +151,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
 
-	atlasClient, connection = prepareAtlasClient()
+	atlasClient = prepareAtlasClient()
 	defaultTimeouts()
 
-	dataFederationClient = atlasdatafederation.NewClient(*atlasClient, atlasDomain)
+	dataFederationClient = atlasdatafederation.NewClient(atlasClient)
 })
 
 var _ = SynchronizedAfterSuite(func() {
@@ -168,8 +170,8 @@ func defaultTimeouts() {
 	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
 }
 
-func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
-	orgID, publicKey, privateKey := os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
+func prepareAtlasClient() *mongodbatlas.Client {
+	orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
 	if orgID == "" || publicKey == "" || privateKey == "" {
 		Fail(`All of the "ATLAS_ORG_ID", "ATLAS_PUBLIC_KEY", and "ATLAS_PRIVATE_KEY" environment variables must be set!`)
 	}
@@ -179,11 +181,7 @@ func prepareAtlasClient() (*mongodbatlas.Client, atlas.Connection) {
 	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
 	Expect(err).ToNot(HaveOccurred())
 
-	return aClient, atlas.Connection{
-		OrgID:      orgID,
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-	}
+	return aClient
 }
 
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
@@ -234,11 +232,10 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasproject.AtlasProjectReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
-		AtlasDomain:                 atlasDomain,
 		ResourceWatcher:             watch.NewResourceWatcher(),
-		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasProject"),
+		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
@@ -259,10 +256,9 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		AtlasDomain:                 atlasDomain,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher:             watch.NewResourceWatcher(),
-		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		AtlasProvider:               atlasProvider,
 		GlobalPredicates:            globalPredicates,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
@@ -272,10 +268,9 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasdatafederation.AtlasDataFederationReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
-		AtlasDomain:                 atlasDomain,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDatabaseUser"),
 		ResourceWatcher:             watch.NewResourceWatcher(),
-		GlobalAPISecret:             kube.ObjectKey(namespace.Name, "atlas-operator-api-key"),
+		AtlasProvider:               atlasProvider,
 		GlobalPredicates:            globalPredicates,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
@@ -285,10 +280,10 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	err = (&atlasfederatedauth.AtlasFederatedAuthReconciler{
 		Client:                      k8sManager.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasFederatedAuth").Sugar(),
-		AtlasDomain:                 atlasDomain,
 		ResourceWatcher:             watch.NewResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
+		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
 		SubObjectDeletionProtection: deletionProtection,
 	}).SetupWithManager(k8sManager)
@@ -314,4 +309,12 @@ func removeControllersAndNamespace() {
 	By("Removing the namespace " + namespace.Name)
 	err := k8sClient.Delete(context.Background(), &namespace)
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func secretData() map[string]string {
+	return map[string]string{
+		OrgID:         orgID,
+		PublicAPIKey:  publicKey,
+		PrivateAPIKey: privateKey,
+	}
 }

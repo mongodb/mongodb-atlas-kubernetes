@@ -224,7 +224,7 @@ func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IP
 	return active, expired
 }
 
-func canIPAccessListReconcile(ctx context.Context, atlasClient mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canIPAccessListReconcile(ctx context.Context, atlasClient *mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}

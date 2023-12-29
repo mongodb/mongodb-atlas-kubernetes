@@ -35,10 +35,10 @@ func asPEM(keyType string, key *rsa.PrivateKey) []byte {
 
 func testSpec(appId, b64Key string) *JWTSpec {
 	return &JWTSpec{
-		AppID: appId,
+		AppID:          appId,
 		Base64PEMBytes: b64Key,
-		Raw: true,
-		Duration: 10 * time.Minute,
+		Raw:            true,
+		Duration:       10 * time.Minute,
 	}
 }
 

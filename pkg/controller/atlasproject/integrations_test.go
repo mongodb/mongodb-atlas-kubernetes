@@ -30,29 +30,29 @@ func TestToAlias(t *testing.T) {
 }
 
 func TestAreIntegrationsEqual(t *testing.T) {
-	atlas := aliasThirdPartyIntegration{
+	atlasDef := aliasThirdPartyIntegration{
 		Type:   "DATADOG",
 		APIKey: "****************************4e6f",
 		Region: "EU",
 	}
-	spec := aliasThirdPartyIntegration{
+	specDef := aliasThirdPartyIntegration{
 		Type:   "DATADOG",
 		APIKey: "actual-valid-id*************4e6f",
 		Region: "EU",
 	}
 
-	areEqual := AreIntegrationsEqual(&atlas, &spec)
+	areEqual := AreIntegrationsEqual(&atlasDef, &specDef)
 	assert.True(t, areEqual, "Identical objects should be equal")
 
-	spec.APIKey = "non-equal-id************1234"
-	areEqual = AreIntegrationsEqual(&atlas, &spec)
+	specDef.APIKey = "non-equal-id************1234"
+	areEqual = AreIntegrationsEqual(&atlasDef, &specDef)
 	assert.False(t, areEqual, "Should fail if the last 4 characters of APIKey do not match")
 }
 
 func TestCanIntegrationsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
@@ -64,7 +64,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
-			Client:  mongodbatlas.Client{},
+			Client:  &mongodbatlas.Client{},
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
@@ -83,7 +83,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
@@ -103,7 +103,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
@@ -149,7 +149,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
@@ -195,7 +195,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
@@ -241,7 +241,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 			},
 		)
 		workflowCtx := &workflow.Context{
-			Client:  atlasClient,
+			Client:  &atlasClient,
 			Context: context.TODO(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)

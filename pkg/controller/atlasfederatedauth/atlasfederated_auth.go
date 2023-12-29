@@ -19,10 +19,8 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK().WithMessage(string(workflow.FederatedAuthIsNotEnabledInCR))
 	}
 
-	orgID := service.Connection.OrgID
-
 	// Get current IDP for the ORG
-	atlasFedSettings, _, err := service.Client.FederatedSettings.Get(context.Background(), orgID)
+	atlasFedSettings, _, err := service.Client.FederatedSettings.Get(service.Context, service.OrgID)
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err.Error())
 	}
@@ -30,24 +28,24 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	atlasFedSettingsID := atlasFedSettings.ID
 
 	// Get current Org config
-	orgConfig, _, err := service.Client.FederatedSettings.GetConnectedOrg(context.Background(), atlasFedSettingsID, orgID)
+	orgConfig, _, err := service.Client.FederatedSettings.GetConnectedOrg(service.Context, atlasFedSettingsID, service.OrgID)
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err.Error())
 	}
 
 	idpID := orgConfig.IdentityProviderID
 
-	projectList, err := prepareProjectList(&service.Client)
+	projectList, err := prepareProjectList(service.Client)
 	if err != nil {
-		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", orgID, err.Error()))
+		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", service.OrgID, err.Error()))
 	}
 
-	operatorConf, err := fedauth.Spec.ToAtlas(orgID, idpID, projectList)
+	operatorConf, err := fedauth.Spec.ToAtlas(service.OrgID, idpID, projectList)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintln("Can not convert Federated Auth spec to Atlas", err.Error()))
 	}
 
-	if result := r.ensureIDPSettings(atlasFedSettingsID, idpID, fedauth, &service.Client); !result.IsOk() {
+	if result := r.ensureIDPSettings(atlasFedSettingsID, idpID, fedauth, service.Client); !result.IsOk() {
 		return result
 	}
 
@@ -55,7 +53,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK()
 	}
 
-	updatedSettings, _, err := service.Client.FederatedSettings.UpdateConnectedOrg(context.Background(), atlasFedSettingsID, orgID, operatorConf)
+	updatedSettings, _, err := service.Client.FederatedSettings.UpdateConnectedOrg(service.Context, atlasFedSettingsID, service.OrgID, operatorConf)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintln("Can not update federation settings", err.Error()))
 	}
