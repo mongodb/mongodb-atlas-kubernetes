@@ -14,43 +14,54 @@ on:
         options:
         - mongodb/mongodb-atlas-kubernetes-operator-prerelease
         - mongodb/mongodb-atlas-kubernetes-operator
+      releases:
+        type: string
+        description: "Custom list of releases to rebuild"
+        default: ""
+        required: false
 
 jobs:
   read-versions:
     name: Read config file 
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.images-matrix.outputs.matrix }}
-      platforms: ${{ steps.images-matrix.outputs.platforms }}
       date: ${{ steps.set-date.outputs.date }}
+      releases: ${{ steps.releases.outputs.releases }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
-      - name: Read config file (daily-builds.json) 
-        id: images-matrix
-        run: |
-          CONTENT=`cat ./daily-builds.json`
-          CONTENT="${CONTENT//'%'/'%25'}"
-          echo matrix=${CONTENT} >> $GITHUB_OUTPUT
       - name: Set date
         id: set-date
         run: |
           DATE=$(date +'%Y-%m-%d')
           echo date=${DATE} >> $GITHUB_OUTPUT
+      - name: Releases
+        id: releases
+        run: |
+          if [ "${{ github.event.inputs.releases }}" == "" ]; then
+            echo "Computing supported releases..."
+            git fetch --tags
+            echo "releases=$(./scripts/supported-releases.sh)" | tee -a $GITHUB_OUTPUT
+          else
+            echo "Formatting ${{ github.event.inputs.releases }} as JSON array"
+            json_releases=$(echo "${{ github.event.inputs.releases }}" |tr "," "\n" |xargs -n1 |awk '{print "\""$1"\""}' |tr "\n" "," |sed 's/,$//' |awk '{print "["$1"]"}')
+            echo "releases=$json_releases" | tee -a $GITHUB_OUTPUT
+          fi
   
   build-and-publish-image:
     runs-on: ubuntu-latest
+    needs:
+      - read-versions
     env:
       IMAGE_REPOSITORY:  ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
       QUAY_ROBOT_NAME: mongodb+mongodb_atlas_kubernetes
-    needs:
-      - read-versions
+      PLATFORMS: "linux/arm64,linux/amd64"
     strategy:
       matrix:
-        version: ${{ fromJSON(needs.read-versions.outputs.matrix).versions }}
+        version: ${{ fromJSON(needs.read-versions.outputs.releases) }}
     steps:
       - name: Print daily tag
         id: daily-tag
@@ -101,7 +112,7 @@ jobs:
       - name: "Set up Docker Buildx"
         uses: docker/setup-buildx-action@v3
         with:
-          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          platforms: ${{ env.PLATFORMS }}
       - name: Login to docker registry
         uses: docker/login-action@v3
         with:
@@ -119,7 +130,7 @@ jobs:
           context: .
           file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           build-args: VERSION=${{ matrix.version }}
-          platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
+          platforms: ${{ env.PLATFORMS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
