@@ -96,7 +96,7 @@ jobs:
         run: |
           make all-platforms VERSION=${{ github.event.inputs.version }}
           # not all versiions Makefiles support the version check
-          if make |grep -q check-version; then
+          if make | grep -q check-version; then
             make check-version VERSION=${{ github.event.inputs.version }}
           fi
       - name: Build and Push image
