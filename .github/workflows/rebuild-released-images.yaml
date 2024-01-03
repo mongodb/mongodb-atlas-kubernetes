@@ -104,10 +104,13 @@ jobs:
       - name: Build all platforms & check version
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
-          make all-platforms VERSION=${{ github.event.inputs.version }}
+          make all-platforms VERSION=${{ matrix.version }}
           # not all versiions Makefiles support the version check
           if make |grep -q check-version; then
-            make check-version VERSION=${{ github.event.inputs.version }}
+            echo "Checking version..."
+            make check-version VERSION=${{ matrix.version }}
+          else
+            echo "Skipped version check"
           fi
       - name: "Set up Docker Buildx"
         uses: docker/setup-buildx-action@v3
