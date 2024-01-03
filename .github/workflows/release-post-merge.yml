@@ -83,17 +83,27 @@ jobs:
           make release-helm JWT_RSA_PEM_KEY_BASE64="${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}" \
             JWT_APP_ID="${{ secrets.AKO_RELEASER_APP_ID }}" \
             VERSION="${{ steps.tag.outputs.version }}"
-      - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
+      - name: Choose Dockerfile
+        id: pick-dockerfile
         run: |
-          git remote show origin
-          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile scripts/version-check.sh scripts/module-path.sh
+          if test -f "fast.Dockerfile"; then
+            echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
+          fi
       - name: Build all platforms & check version
-        run: make all-platforms check-version VERSION=${{ github.event.inputs.version }}
+        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
+        run: |
+          make all-platforms VERSION=${{ github.event.inputs.version }}
+          # not all versiions Makefiles support the version check
+          if make | grep -q check-version; then
+            make check-version VERSION=${{ github.event.inputs.version }}
+          fi
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
           repository: ${{ env.IMAGE_REPOSITORY }}
-          file: fast.Dockerfile
+          file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           version: ${{ steps.tag.outputs.version }}
           certified_version: ${{ steps.tag.outputs.certified_version }}
           platforms: linux/amd64,linux/arm64

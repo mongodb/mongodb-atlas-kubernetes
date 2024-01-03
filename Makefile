@@ -92,9 +92,6 @@ JWT_APP_ID ?= ""
 # golangci-lint
 GOLANGCI_LINT_VERSION := v1.54.2
 
-# The module import path varies after version 1
-MODULE_PATH = $(shell ./scripts/module-path.sh)
-
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -169,7 +166,7 @@ bin/$(TARGET_OS)/$(TARGET_ARCH):
 
 bin/$(TARGET_OS)/$(TARGET_ARCH)/manager: $(GO_SOURCES) bin/$(TARGET_OS)/$(TARGET_ARCH)
 	@echo "Building operator with version $(VERSION); $(TARGET_OS) - $(TARGET_ARCH)"
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X $(MODULE_PATH)/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o $@ -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version.Version=$(VERSION)" cmd/manager/main.go
 	@touch $@
 
 bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
@@ -413,7 +410,7 @@ tools/makejwt/makejwt: tools/makejwt/*.go
 	cd tools/makejwt && go test . && go build .
 
 .PHONY: check-version
-check-version:
+check-version: ## Check the version is correct & releasable (vX.Y.Z and not "*-dirty" or "unknown")
 	VERSION=$(VERSION) BINARY=bin/$(TARGET_OS)/$(TARGET_ARCH)/manager ./scripts/version-check.sh
 
 .PHONY: release-helm

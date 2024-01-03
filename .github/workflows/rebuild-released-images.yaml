@@ -4,7 +4,6 @@ name: Daily build
 on:
   schedule:
     - cron: "0 1 * * 1-5"
-    - cron: "0 3 * * 1-5"
   workflow_dispatch:
     inputs:
       image_repo:
@@ -67,10 +66,6 @@ jobs:
           ref: "v${{ matrix.version }}"
           submodules: true
           fetch-depth: 0
-      - name: Upgrade build Makefile & Dockerfile # TODO: remove after version 1.9 is deprecated
-        run: |
-          git remote show origin
-          git checkout origin/${{ github.ref_name }} -- Makefile fast.Dockerfile scripts/version-check.sh scripts/module-path.sh
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -87,8 +82,22 @@ jobs:
         shell: bash
         run: |
           go mod download
+      - name: Choose Dockerfile
+        id: pick-dockerfile
+        run: |
+          if test -f "fast.Dockerfile"; then
+            echo "dockerfile=fast.Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
+          fi
       - name: Build all platforms & check version
-        run: make all-platforms check-version VERSION=${{ matrix.version }}
+        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
+        run: |
+          make all-platforms VERSION=${{ github.event.inputs.version }}
+          # not all versiions Makefiles support the version check
+          if make |grep -q check-version; then
+            make check-version VERSION=${{ github.event.inputs.version }}
+          fi
       - name: "Set up Docker Buildx"
         uses: docker/setup-buildx-action@v3
         with:
@@ -108,7 +117,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: fast.Dockerfile
+          file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           build-args: VERSION=${{ matrix.version }}
           platforms: ${{ fromJSON(needs.read-versions.outputs.matrix).platforms }}
           cache-from: type=gha
