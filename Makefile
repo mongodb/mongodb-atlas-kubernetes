@@ -390,8 +390,8 @@ clean: ## Clean built binaries
 
 .PHONY: all-platforms
 all-platforms:
-	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64
-	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64
+	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
+	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 
 .PHONY: all-platforms-docker
 all-platforms-docker: all-platforms
