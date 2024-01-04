@@ -107,7 +107,7 @@ e2e-openshift-upgrade:
 .PHONY: manager
 manager: generate fmt vet ## Build manager binary
 	@echo "Building operator with version $(VERSION)"
-	 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -o bin/manager -ldflags="-X github.com/mongodb/mongodb-atlas-kubernetes/pkg/version.Version=$(VERSION)" cmd/manager/main.go
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
