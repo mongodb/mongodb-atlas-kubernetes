@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
@@ -99,17 +100,14 @@ func main() {
 		for ns := range config.WatchedNamespaces {
 			namespaces = append(namespaces, ns)
 		}
-		cacheFunc = cache.MultiNamespacedCacheBuilder(namespaces)
+		cacheFunc = controller.MultiNamespacedCacheBuilder(namespaces)
 	} else {
-		cacheFunc = cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&corev1.Secret{}: {
-					Label: labels.SelectorFromSet(labels.Set{
-						connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
-					}),
-				},
-			},
-		})
+		cacheFunc = controller.CustomLabelSelectorCacheBuilder(
+			&corev1.Secret{},
+			labels.SelectorFromSet(labels.Set{
+				connectionsecret.TypeLabelKey: connectionsecret.CredLabelVal,
+			}),
+		)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
