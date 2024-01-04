@@ -339,7 +339,7 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			// set deletion timestamp after creation in k8s
+			// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
 			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
@@ -391,7 +391,7 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
-			// set deletion timestamp after creation in k8s
+			// set deletion timestamp after creation in k8s, otherwise the creation would reset the deletion timestamp
 			deployment.SetDeletionTimestamp(&metav1.Time{Time: time.Now()})
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, k8sclient, project, deployment)
 
