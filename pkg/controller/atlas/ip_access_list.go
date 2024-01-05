@@ -17,13 +17,13 @@ func CustomIPAccessListStatus(client *mongodbatlas.Client) IPAccessListStatus {
 
 	return func(ctx context.Context, projectID, entryValue string) (string, error) {
 		urlStr := fmt.Sprintf("/api/atlas/v1.0/groups/%s/accessList/%s/status", projectID, entryValue)
-		req, err := client.NewRequest(context.Background(), http.MethodGet, urlStr, nil)
+		req, err := client.NewRequest(ctx, http.MethodGet, urlStr, nil)
 		if err != nil {
 			return "", err
 		}
 
 		status := ipAccessListStatus{}
-		_, err = client.Do(context.Background(), req, &status)
+		_, err = client.Do(ctx, req, &status)
 		if err != nil {
 			return "", err
 		}

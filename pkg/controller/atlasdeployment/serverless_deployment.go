@@ -1,7 +1,6 @@
 package atlasdeployment
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -18,7 +17,7 @@ func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *w
 		return nil, workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
 	serverlessSpec := deployment.Spec.ServerlessSpec
-	atlasDeployment, resp, err := workflowCtx.Client.ServerlessInstances.Get(context.Background(), project.Status.ID, serverlessSpec.Name)
+	atlasDeployment, resp, err := workflowCtx.Client.ServerlessInstances.Get(workflowCtx.Context, project.Status.ID, serverlessSpec.Name)
 	if err != nil {
 		if resp == nil {
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
@@ -33,7 +32,7 @@ func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *w
 			return atlasDeployment, workflow.Terminate(workflow.Internal, err.Error())
 		}
 		workflowCtx.Log.Infof("Serverless Instance %s doesn't exist in Atlas - creating", serverlessSpec.Name)
-		atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Create(context.Background(), project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
+		atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Create(workflowCtx.Context, project.Status.ID, &mongodbatlas.ServerlessCreateRequestParams{
 			Name: serverlessSpec.Name,
 			ProviderSettings: &mongodbatlas.ServerlessProviderSettings{
 				BackingProviderName: serverlessSpec.ProviderSettings.BackingProviderName,
@@ -57,7 +56,7 @@ func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *w
 			convertedDeployment.Tags = &[]*mongodbatlas.Tag{}
 		}
 		if !isTagsEqual(*(atlasDeployment.Tags), *(convertedDeployment.Tags)) {
-			atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Update(context.Background(), project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
+			atlasDeployment, _, err = workflowCtx.Client.ServerlessInstances.Update(workflowCtx.Context, project.Status.ID, serverlessSpec.Name, &mongodbatlas.ServerlessUpdateRequestParams{
 				Tag: convertedDeployment.Tags,
 				ServerlessBackupOptions: &mongodbatlas.ServerlessBackupOptions{
 					ServerlessContinuousBackupEnabled: &serverlessSpec.BackupOptions.ServerlessContinuousBackupEnabled,

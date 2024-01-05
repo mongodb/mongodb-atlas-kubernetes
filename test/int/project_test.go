@@ -356,7 +356,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				return testutil.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 
-			Expect(testutil.ReadAtlasResource(k8sClient, createdProject)).To(BeTrue())
+			Expect(testutil.ReadAtlasResource(context.Background(), k8sClient, createdProject)).To(BeTrue())
 			Expect(createdProject.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
 
 			// Atlas

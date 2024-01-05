@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"errors"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -14,7 +13,7 @@ import (
 // ensureProjectExists creates the project if it doesn't exist yet. Returns the project ID
 func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, project *mdbv1.AtlasProject) (string, workflow.Result) {
 	// Try to find the project
-	p, _, err := ctx.Client.Projects.GetOneProjectByName(context.Background(), project.Spec.Name)
+	p, _, err := ctx.Client.Projects.GetOneProjectByName(ctx.Context, project.Spec.Name)
 	if err != nil {
 		ctx.Log.Infow("Error", "err", err.Error())
 		var apiError *mongodbatlas.ErrorResponse

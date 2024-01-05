@@ -30,7 +30,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 		log := r.Log.With("atlasteam", req.NamespacedName)
 
-		result := customresource.PrepareResource(r.Client, req, team, log)
+		result := customresource.PrepareResource(ctx, r.Client, req, team, log)
 		if !result.IsOk() {
 			return result.ReconcileResult(), nil
 		}

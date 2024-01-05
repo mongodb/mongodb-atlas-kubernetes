@@ -54,7 +54,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	log := r.Log.With("atlasdatafederation", req.NamespacedName)
 
 	dataFederation := &mdbv1.AtlasDataFederation{}
-	result := customresource.PrepareResource(r.Client, req, dataFederation, log)
+	result := customresource.PrepareResource(context, r.Client, req, dataFederation, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
@@ -224,7 +224,7 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager) error
 }
 
 // Delete implements a handler for the Delete event
-func (r *AtlasDataFederationReconciler) Delete(e event.DeleteEvent) error {
+func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.DeleteEvent) error {
 	dataFederation, ok := e.Object.(*mdbv1.AtlasDataFederation)
 	if !ok {
 		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)
@@ -236,20 +236,21 @@ func (r *AtlasDataFederationReconciler) Delete(e event.DeleteEvent) error {
 	log.Infow("-> Starting AtlasDataFederation deletion", "spec", dataFederation.Spec)
 
 	project := &mdbv1.AtlasProject{}
-	if result := r.readProjectResource(context.Background(), dataFederation, project); !result.IsOk() {
+
+	if result := r.readProjectResource(ctx, dataFederation, project); !result.IsOk() {
 		return errors.New("cannot read project resource")
 	}
 
 	log = log.With("projectID", project.Status.ID, "dataFederationName", dataFederation.Spec.Name)
 
 	// We always remove the connection secrets even if the deployment is not removed from Atlas
-	secrets, err := connectionsecret.ListByDeploymentName(r.Client, dataFederation.Namespace, project.ID(), dataFederation.Spec.Name)
+	secrets, err := connectionsecret.ListByDeploymentName(ctx, r.Client, dataFederation.Namespace, project.ID(), dataFederation.Spec.Name)
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}
 
 	for i := range secrets {
-		if err := r.Client.Delete(context.Background(), &secrets[i]); err != nil {
+		if err := r.Client.Delete(ctx, &secrets[i]); err != nil {
 			if k8serrors.IsNotFound(err) {
 				continue
 			}

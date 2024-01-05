@@ -44,13 +44,13 @@ type PrivateLinkConnURLs struct {
 
 // Ensure creates or updates the connection Secret for the specific cluster and db user. Returns the name of the Secret
 // created.
-func Ensure(client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) (string, error) {
+func Ensure(ctx context.Context, client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) (string, error) {
 	var getError error
 	s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 		Name:      formatSecretName(projectName, clusterName, data.DBUserName),
 		Namespace: namespace,
 	}}
-	if getError = client.Get(context.Background(), kube.ObjectKeyFromObject(s), s); getError != nil && !apiErrors.IsNotFound(getError) {
+	if getError = client.Get(ctx, kube.ObjectKeyFromObject(s), s); getError != nil && !apiErrors.IsNotFound(getError) {
 		return "", getError
 	}
 	if err := fillSecret(s, projectID, clusterName, data); err != nil {
@@ -58,10 +58,10 @@ func Ensure(client client.Client, namespace, projectName, projectID, clusterName
 	}
 	if getError != nil {
 		// Creating
-		return s.Name, client.Create(context.Background(), s)
+		return s.Name, client.Create(ctx, s)
 	}
 
-	return s.Name, client.Update(context.Background(), s)
+	return s.Name, client.Update(ctx, s)
 }
 
 func fillSecret(secret *corev1.Secret, projectID string, clusterName string, data ConnectionData) error {

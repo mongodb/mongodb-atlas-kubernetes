@@ -86,7 +86,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	log := r.Log.With("atlasdeployment", req.NamespacedName)
 
 	deployment := &mdbv1.AtlasDeployment{}
-	result := customresource.PrepareResource(r.Client, req, deployment, log)
+	result := customresource.PrepareResource(context, r.Client, req, deployment, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
@@ -511,7 +511,7 @@ func (r *AtlasDeploymentReconciler) deleteConnectionStrings(
 	deployment *mdbv1.AtlasDeployment,
 ) error {
 	// We always remove the connection secrets even if the deployment is not removed from Atlas
-	secrets, err := connectionsecret.ListByDeploymentName(r.Client, "", project.ID(), deployment.GetDeploymentName())
+	secrets, err := connectionsecret.ListByDeploymentName(context, r.Client, "", project.ID(), deployment.GetDeploymentName())
 	if err != nil {
 		return fmt.Errorf("failed to find connection secrets for the user: %w", err)
 	}

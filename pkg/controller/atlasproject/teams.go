@@ -55,7 +55,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		team := &v1.AtlasTeam{}
 		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey())
 		_, err := teamReconciler(
-			context.Background(),
+			workflowCtx.Context,
 			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
 		)
 		if err != nil {
@@ -107,7 +107,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *v1.AtlasProject, teamsToAssign map[string]*v1.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
-	atlasAssignedTeams, _, err := ctx.Client.Projects.GetProjectTeamsAssigned(context.Background(), projectID)
+	atlasAssignedTeams, _, err := ctx.Client.Projects.GetProjectTeamsAssigned(ctx.Context, projectID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 		}
 
 		ctx.Log.Debugf("removing team %s from project for later update", atlasAssignedTeam.TeamID)
-		_, err = ctx.Client.Teams.RemoveTeamFromProject(context.Background(), projectID, atlasAssignedTeam.TeamID)
+		_, err = ctx.Client.Teams.RemoveTeamFromProject(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
@@ -148,7 +148,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 
 	for _, atlasAssignedTeam := range toDelete {
 		ctx.Log.Debugf("removing team %s from project", atlasAssignedTeam.TeamID)
-		_, err = ctx.Client.Teams.RemoveTeamFromProject(context.Background(), projectID, atlasAssignedTeam.TeamID)
+		_, err = ctx.Client.Teams.RemoveTeamFromProject(ctx.Context, projectID, atlasAssignedTeam.TeamID)
 		if err != nil {
 			ctx.Log.Warnf("failed to remove team %s from project: %s", atlasAssignedTeam.TeamID, err.Error())
 		}
@@ -181,7 +181,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 			}
 		}
 
-		_, _, err = ctx.Client.Projects.AddTeamsToProject(context.Background(), projectID, projectTeams)
+		_, _, err = ctx.Client.Projects.AddTeamsToProject(ctx.Context, projectID, projectTeams)
 		if err != nil {
 			return err
 		}
@@ -199,7 +199,7 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *v1.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
 	team := &v1.AtlasTeam{}
 	objKey := kube.ObjectKey(teamRef.Namespace, teamRef.Name)
-	err := r.Client.Get(context.Background(), objKey, team)
+	err := r.Client.Get(ctx.Context, objKey, team)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 
 	if len(assignedProjects) == 0 {
 		log.Debugf("team %s has no project associated to it. removing from atlas.", team.Spec.Name)
-		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(context.Background(), orgID, team.Status.ID)
+		_, err = teamCtx.Client.Teams.RemoveTeamFromOrganization(ctx.Context, orgID, team.Status.ID)
 		if err != nil {
 			return err
 		}

@@ -12,16 +12,16 @@ import (
 )
 
 // ListByDeploymentName returns all secrets in the specified namespace that have labels for 'projectID' and 'clusterName'
-func ListByDeploymentName(k8sClient client.Client, namespace, projectID, clusterName string) ([]corev1.Secret, error) {
-	return list(k8sClient, namespace, projectID, clusterName, "")
+func ListByDeploymentName(ctx context.Context, k8sClient client.Client, namespace, projectID, clusterName string) ([]corev1.Secret, error) {
+	return list(ctx, k8sClient, namespace, projectID, clusterName, "")
 }
 
 // ListByUserName returns all secrets in the specified namespace that have label for 'projectID' and data for 'userName'
-func ListByUserName(k8sClient client.Client, namespace, projectID, userName string) ([]corev1.Secret, error) {
-	return list(k8sClient, namespace, projectID, "", userName)
+func ListByUserName(ctx context.Context, k8sClient client.Client, namespace, projectID, userName string) ([]corev1.Secret, error) {
+	return list(ctx, k8sClient, namespace, projectID, "", userName)
 }
 
-func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName string) ([]corev1.Secret, error) {
+func list(ctx context.Context, k8sClient client.Client, namespace, projectID, clusterName, dbUserName string) ([]corev1.Secret, error) {
 	secrets := corev1.SecretList{}
 	var result []corev1.Secret
 	opts := &client.ListOptions{
@@ -34,7 +34,7 @@ func list(k8sClient client.Client, namespace, projectID, clusterName, dbUserName
 		opts.Namespace = namespace
 	}
 
-	if err := k8sClient.List(context.Background(), &secrets, opts); err != nil {
+	if err := k8sClient.List(ctx, &secrets, opts); err != nil {
 		return nil, err
 	}
 

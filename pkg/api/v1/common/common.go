@@ -51,10 +51,10 @@ func (rn *ResourceRefNamespaced) GetObject(parentNamespace string) *client.Objec
 	return &key
 }
 
-func (rn *ResourceRefNamespaced) ReadPassword(kubeClient client.Client, parentNamespace string) (string, error) {
+func (rn *ResourceRefNamespaced) ReadPassword(ctx context.Context, kubeClient client.Client, parentNamespace string) (string, error) {
 	if rn != nil {
 		secret := &v1.Secret{}
-		if err := kubeClient.Get(context.Background(), *rn.GetObject(parentNamespace), secret); err != nil {
+		if err := kubeClient.Get(ctx, *rn.GetObject(parentNamespace), secret); err != nil {
 			return "", err
 		}
 		p, exist := secret.Data["password"]

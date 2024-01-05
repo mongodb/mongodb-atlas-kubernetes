@@ -72,7 +72,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	}
 
 	if encRest.AwsKms.Enabled != nil && *encRest.AwsKms.Enabled && encRest.AwsKms.SecretRef.Name != "" {
-		watchObj, err := readAndFillAWSSecret(kubeClient, parentNs, &encRest.AwsKms)
+		watchObj, err := readAndFillAWSSecret(service.Context, kubeClient, parentNs, &encRest.AwsKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
@@ -80,7 +80,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	}
 
 	if encRest.GoogleCloudKms.Enabled != nil && *encRest.GoogleCloudKms.Enabled && encRest.GoogleCloudKms.SecretRef.Name != "" {
-		watchObj, err := readAndFillGoogleSecret(kubeClient, parentNs, &encRest.GoogleCloudKms)
+		watchObj, err := readAndFillGoogleSecret(service.Context, kubeClient, parentNs, &encRest.GoogleCloudKms)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	}
 
 	if encRest.AzureKeyVault.Enabled != nil && *encRest.AzureKeyVault.Enabled && encRest.AzureKeyVault.SecretRef.Name != "" {
-		watchObj, err := readAndFillAzureSecret(kubeClient, parentNs, &encRest.AzureKeyVault)
+		watchObj, err := readAndFillAzureSecret(service.Context, kubeClient, parentNs, &encRest.AzureKeyVault)
 		service.AddResourcesToWatch(*watchObj)
 		if err != nil {
 			return err
@@ -98,8 +98,8 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	return nil
 }
 
-func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "RoleID")
+func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(ctx, kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "RoleID")
 	if err != nil {
 		return watchObj, err
 	}
@@ -109,8 +109,8 @@ func readAndFillAWSSecret(kubeClient client.Client, parentNs string, awsKms *mdb
 	return watchObj, nil
 }
 
-func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *mdbv1.GoogleCloudKms) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
+func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, parentNs string, gkms *mdbv1.GoogleCloudKms) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(ctx, kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
 	if err != nil {
 		return watchObj, err
 	}
@@ -120,8 +120,8 @@ func readAndFillGoogleSecret(kubeClient client.Client, parentNs string, gkms *md
 	return watchObj, nil
 }
 
-func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
-	fieldData, watchObj, err := readSecretData(kubeClient, azureVault.SecretRef, parentNs, "Secret", "SubscriptionID", "KeyVaultName", "KeyIdentifier")
+func readAndFillAzureSecret(ctx context.Context, kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
+	fieldData, watchObj, err := readSecretData(ctx, kubeClient, azureVault.SecretRef, parentNs, "Secret", "SubscriptionID", "KeyVaultName", "KeyIdentifier")
 	if err != nil {
 		return watchObj, err
 	}
@@ -132,7 +132,7 @@ func readAndFillAzureSecret(kubeClient client.Client, parentNs string, azureVaul
 }
 
 // Return all requested field from a secret
-func readSecretData(kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldNames ...string) (map[string]string, *watch.WatchedObject, error) {
+func readSecretData(ctx context.Context, kubeClient client.Client, res common.ResourceRefNamespaced, parentNamespace string, fieldNames ...string) (map[string]string, *watch.WatchedObject, error) {
 	secret := &v1.Secret{}
 	var ns string
 	if res.Namespace == "" {
@@ -146,7 +146,7 @@ func readSecretData(kubeClient client.Client, res common.ResourceRefNamespaced, 
 	secretObj := client.ObjectKey{Name: res.Name, Namespace: ns}
 	obj := &watch.WatchedObject{ResourceKind: "Secret", Resource: secretObj}
 
-	if err := kubeClient.Get(context.Background(), secretObj, secret); err != nil {
+	if err := kubeClient.Get(ctx, secretObj, secret); err != nil {
 		return result, obj, err
 	}
 
@@ -189,7 +189,7 @@ func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, pr
 }
 
 func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbatlas.EncryptionAtRest, error) {
-	encryptionAtRestsInAtlas, _, err := ctx.Client.EncryptionsAtRest.Get(context.Background(), projectID)
+	encryptionAtRestsInAtlas, _, err := ctx.Client.EncryptionsAtRest.Get(ctx.Context, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, proje
 		return err
 	}
 
-	if _, _, err := ctx.Client.EncryptionsAtRest.Create(context.Background(), &requestBody); err != nil { // Create() sends PATCH request
+	if _, _, err := ctx.Client.EncryptionsAtRest.Create(ctx.Context, &requestBody); err != nil { // Create() sends PATCH request
 		return err
 	}
 
@@ -232,7 +232,7 @@ func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatl
 	}
 
 	// assume that role ID is set as AWS ARN
-	resp, _, err := ctx.Client.CloudProviderAccess.ListRoles(context.Background(), projectID)
+	resp, _, err := ctx.Client.CloudProviderAccess.ListRoles(ctx.Context, projectID)
 	if err != nil {
 		return err
 	}

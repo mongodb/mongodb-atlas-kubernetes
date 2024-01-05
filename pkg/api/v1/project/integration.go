@@ -1,6 +1,8 @@
 package project
 
 import (
+	"context"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -59,7 +61,7 @@ type Integration struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodbatlas.ThirdPartyIntegration, err error) {
+func (i Integration) ToAtlas(ctx context.Context, c client.Client, defaultNS string) (result *mongodbatlas.ThirdPartyIntegration, err error) {
 	result = &mongodbatlas.ThirdPartyIntegration{
 		Type:                     i.Type,
 		AccountID:                i.AccountID,
@@ -82,7 +84,7 @@ func (i Integration) ToAtlas(c client.Client, defaultNS string) (result *mongodb
 			return
 		}
 
-		*target, err = passwordField.ReadPassword(c, defaultNS)
+		*target, err = passwordField.ReadPassword(ctx, c, defaultNS)
 		storeError(err, errors)
 	}
 

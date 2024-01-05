@@ -41,7 +41,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	updatedProject := existingProject.DeepCopy()
 	updatedProject.Status.Common.Conditions[0].Status = corev1.ConditionTrue
 	updatedProject.Status.ID = "theId"
-	assert.NoError(t, patchUpdateStatus(fakeClient, updatedProject))
+	assert.NoError(t, patchUpdateStatus(context.Background(), fakeClient, updatedProject))
 
 	projectAfterPatch := &mdbv1.AtlasProject{}
 	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(updatedProject), projectAfterPatch))

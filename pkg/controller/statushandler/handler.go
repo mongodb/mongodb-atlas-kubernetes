@@ -19,7 +19,7 @@ func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder recor
 
 	resource.UpdateStatus(ctx.Conditions(), ctx.StatusOptions()...)
 
-	if err := patchUpdateStatus(kubeClient, resource); err != nil {
+	if err := patchUpdateStatus(ctx.Context, kubeClient, resource); err != nil {
 		if apiErrors.IsNotFound(err) {
 			ctx.Log.Infof("The resource %s no longer exists, not updating the status", kube.ObjectKey(resource.GetNamespace(), resource.GetName()))
 			return

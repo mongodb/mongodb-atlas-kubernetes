@@ -1,3 +1,4 @@
+// TODO: move away from pkg, this code is only usable from tests
 package testutil
 
 import (
@@ -14,7 +15,8 @@ import (
 )
 
 func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, checksIfFail ...func(mdbv1.AtlasCustomResource)) bool {
-	if ok := ReadAtlasResource(k8sClient, createdResource); !ok {
+	// This is only used from test code
+	if ok := ReadAtlasResource(context.Background(), k8sClient, createdResource); !ok {
 		return false
 	}
 	// Atlas Operator hasn't started working yet
@@ -34,8 +36,8 @@ func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomRe
 	return true
 }
 
-func ReadAtlasResource(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource) bool {
-	if err := k8sClient.Get(context.Background(), kube.ObjectKeyFromObject(createdResource), createdResource); err != nil {
+func ReadAtlasResource(ctx context.Context, k8sClient client.Client, createdResource mdbv1.AtlasCustomResource) bool {
+	if err := k8sClient.Get(ctx, kube.ObjectKeyFromObject(createdResource), createdResource); err != nil {
 		// The only error we tolerate is "not found"
 		gomega.Expect(apiErrors.IsNotFound(err)).To(gomega.BeTrue(), fmt.Sprintf("Unexpected error: %s", err))
 		return false

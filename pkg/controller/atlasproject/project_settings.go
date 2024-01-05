@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -77,12 +76,12 @@ func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSett
 		return err
 	}
 
-	_, _, err = ctx.Client.Projects.UpdateProjectSettings(context.Background(), projectID, specAsAtlas)
+	_, _, err = ctx.Client.Projects.UpdateProjectSettings(ctx.Context, projectID, specAsAtlas)
 	return err
 }
 
 func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings, error) {
-	data, _, err := ctx.Client.Projects.GetProjectSettings(context.Background(), projectID)
+	data, _, err := ctx.Client.Projects.GetProjectSettings(ctx.Context, projectID)
 	if err != nil {
 		return nil, err
 	}
