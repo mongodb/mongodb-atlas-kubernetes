@@ -3,10 +3,12 @@ package actions
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -50,6 +52,7 @@ func PrepareOperatorConfigurations(userData *model.TestDataProvider) manager.Man
 		},
 		ObjectDeletionProtection:    userData.ObjectDeletionProtection,
 		SubObjectDeletionProtection: userData.SubObjectDeletionProtection,
+		FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return mgr
