@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -134,15 +135,16 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		ResourceWatcher:             watch.NewResourceWatcher(),
-		Client:                      mgr.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:                      mgr.GetScheme(),
-		EventRecorder:               mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-		AtlasProvider:               atlasProvider,
-		GlobalPredicates:            globalPredicates,
-		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		ResourceWatcher:               watch.NewResourceWatcher(),
+		Client:                        mgr.GetClient(),
+		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:                        mgr.GetScheme(),
+		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		AtlasProvider:                 atlasProvider,
+		GlobalPredicates:              globalPredicates,
+		ObjectDeletionProtection:      config.ObjectDeletionProtection,
+		SubObjectDeletionProtection:   config.SubObjectDeletionProtection,
+		FeaturePreviewOIDCAuthEnabled: config.FeatureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		return nil, err
@@ -184,6 +186,7 @@ type Config struct {
 	GlobalAPISecret             client.ObjectKey
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	FeatureFlags                *featureflags.FeatureFlags
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program

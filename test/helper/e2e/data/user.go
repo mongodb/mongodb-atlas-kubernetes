@@ -84,6 +84,12 @@ func WithNamespace(namespace string) func(user *v1.AtlasDatabaseUser) {
 	}
 }
 
+func WithOIDCEnabled() func(user *v1.AtlasDatabaseUser) {
+	return func(user *v1.AtlasDatabaseUser) {
+		user.Spec.OIDCAuthType = "IDP_GROUP"
+	}
+}
+
 func WithProject(project *v1.AtlasProject) func(user *v1.AtlasDatabaseUser) {
 	return func(user *v1.AtlasDatabaseUser) {
 		user.Spec.Project = common.ResourceRefNamespaced{

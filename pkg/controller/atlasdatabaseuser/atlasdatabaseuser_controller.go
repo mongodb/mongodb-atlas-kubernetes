@@ -170,6 +170,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	err = r.handleFeatureFlags(databaseUser)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
+		workflowCtx.SetConditionFromResult(status.ReadyType, result)
 		log.Error(result.GetMessage())
 		return result.ReconcileResult(), nil
 	}
