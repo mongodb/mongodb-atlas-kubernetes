@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -35,6 +36,7 @@ func MultiNamespaceOperator(data *model.TestDataProvider, watchNamespace []strin
 				Name:      config.DefaultOperatorGlobalKey,
 			},
 			WatchedNamespaces: watchNamespaceMap,
+			FeatureFlags:      featureflags.NewFeatureFlags(func() []string { return []string{} }),
 		})
 		Expect(err).Should(Succeed())
 		ctx := context.Background()

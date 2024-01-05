@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
@@ -80,6 +81,7 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
+				FeatureFlags: featureflags.NewFeatureFlags(func() []string { return []string{} }),
 			})
 			Expect(err).NotTo(HaveOccurred())
 			go func(ctx context.Context) context.Context {
