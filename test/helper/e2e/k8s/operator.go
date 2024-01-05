@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"os"
 	"strings"
 	"time"
 
@@ -234,6 +235,7 @@ func managerDefaults() *Config {
 		GlobalAPISecret:             client.ObjectKey{},
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
+		FeatureFlags:                featureflags.NewFeatureFlags(os.Environ),
 	}
 }
 
