@@ -25,9 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered, Label("deployment-ns"), func() {
+var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered, Label("users-oidc"), func() {
 	var testData *model.TestDataProvider
-	secondNamespace := "second-namespace"
 
 	_ = AfterEach(func() {
 		if CurrentSpecReport().Failed() {
@@ -70,7 +69,6 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 		By("Running operator watching global namespace with OIDC disabled", func() {
 			Eventually(k8s.CreateNamespace(testData.Context, testData.K8SClient, config.DefaultOperatorNS)).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			k8s.CreateDefaultSecret(testData.Context, testData.K8SClient, config.DefaultOperatorGlobalKey, config.DefaultOperatorNS)
-			k8s.CreateNamespace(testData.Context, testData.K8SClient, secondNamespace)
 
 			mgr, err := k8s.BuildManager(&k8s.Config{
 				GlobalAPISecret: client.ObjectKey{
