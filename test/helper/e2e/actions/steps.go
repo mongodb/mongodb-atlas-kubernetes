@@ -483,10 +483,6 @@ func AfterEachFinalCleanup(datas []model.TestDataProvider) {
 		DeleteDBUsersApps(data)
 		DeleteAtlasGlobalKeyIfExist(data)
 		Expect(k8s.DeleteNamespace(data.Context, data.K8SClient, data.Resources.Namespace)).Should(Succeed(), "Can't delete namespace")
-		Eventually(func(g Gomega) {
-			ns := &corev1.Namespace{}
-			g.Expect(data.K8SClient.Get(context.Background(), types.NamespacedName{Name: data.Resources.Namespace}, ns)).ShouldNot(Succeed())
-		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		GinkgoWriter.Write([]byte("AfterEach. Cleanup finished\n"))
 	}
 }
