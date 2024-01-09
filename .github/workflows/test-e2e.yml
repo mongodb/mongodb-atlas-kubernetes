@@ -134,6 +134,7 @@ jobs:
             "cloud-access-role",
             "deployment-annotations-ns",
             "deployment-ns",
+            "users-oidc",
             "deployment-wide",
             "encryption-at-rest",
             "free-tier",
@@ -257,10 +258,10 @@ jobs:
         run: |
           helm version
           go version
-          
+
           GOWORK=off go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo && \
           go install github.com/onsi/gomega/...
-          
+
           cd test/e2e
 
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -85,6 +86,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
 				},
+				FeatureFlags: featureflags.NewFeatureFlags(func() []string { return []string{} }),
 			})
 			Expect(err).NotTo(HaveOccurred())
 

@@ -44,6 +44,8 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
@@ -167,15 +169,16 @@ func main() {
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		ResourceWatcher:             watch.NewResourceWatcher(),
-		Client:                      mgr.GetClient(),
-		Log:                         logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		Scheme:                      mgr.GetScheme(),
-		EventRecorder:               mgr.GetEventRecorderFor("AtlasDatabaseUser"),
-		GlobalPredicates:            globalPredicates,
-		AtlasProvider:               atlasProvider,
-		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		ResourceWatcher:               watch.NewResourceWatcher(),
+		Client:                        mgr.GetClient(),
+		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
+		Scheme:                        mgr.GetScheme(),
+		EventRecorder:                 mgr.GetEventRecorderFor("AtlasDatabaseUser"),
+		AtlasProvider:                 atlasProvider,
+		GlobalPredicates:              globalPredicates,
+		ObjectDeletionProtection:      config.ObjectDeletionProtection,
+		SubObjectDeletionProtection:   config.SubObjectDeletionProtection,
+		FeaturePreviewOIDCAuthEnabled: config.FeatureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
 		os.Exit(1)
@@ -241,6 +244,7 @@ type Config struct {
 	LogEncoder                  string
 	ObjectDeletionProtection    bool
 	SubObjectDeletionProtection bool
+	FeatureFlags                *featureflags.FeatureFlags
 }
 
 // ParseConfiguration fills the 'OperatorConfig' from the flags passed to the program
@@ -286,6 +290,7 @@ func parseConfiguration() Config {
 
 	configureDeletionProtection(&config)
 
+	config.FeatureFlags = featureflags.NewFeatureFlags(os.Environ)
 	return config
 }
 
