@@ -7,8 +7,16 @@ import (
 	"github.com/google/go-github/v57/github"
 )
 
+type WorkflowsQuerier interface {
+	// TestWorkflowRuns are all the test run by AKO at page X (descendent order)
+	TestWorkflowRuns(branch, event string, page int) (*github.WorkflowRuns, error)
+
+	// TestWorkflowRunJobs are all the jobs at a given Workflow Run at page X (descendent order)
+	TestWorkflowRunJobs(runID int64, filter string, page int) (*github.Jobs, error)
+}
+
 type QueryClient interface {
-	RegressionQuerier
+	WorkflowsQuerier
 }
 
 type ghQueryClient struct {
@@ -40,7 +48,8 @@ func (ghc *ghQueryClient) TestWorkflowRuns(branch, event string, page int) (*git
 				Page:    page,
 				PerPage: PerPage,
 			},
-		})
+		},
+	)
 	return wfRuns, err
 }
 

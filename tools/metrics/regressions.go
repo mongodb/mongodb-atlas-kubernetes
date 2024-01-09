@@ -4,17 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/google/go-github/v57/github"
 )
-
-type RegressionQuerier interface {
-	// TestWorkflowRuns are all the test run by AKO at page X (descendent order)
-	TestWorkflowRuns(branch, event string, page int) (*github.WorkflowRuns, error)
-
-	// TestWorkflowRunJobs are all the jobs at a given Workflow Run at page X (descendent order)
-	TestWorkflowRunJobs(runID int64, filter string, page int) (*github.Jobs, error)
-}
 
 type testRegressions struct {
 	testIdentifier
@@ -53,12 +43,14 @@ func QueryRegressions(qc QueryClient, notAfter time.Time, period time.Duration, 
 	}
 	page := 0
 	notBefore := notAfter.Add(period * time.Duration(-slots))
-	workflowFilename := ".github/workflows/test.yml"
 	for {
 		page += 1
 		wfRuns, err := qc.TestWorkflowRuns("main", "push", page)
 		if err != nil {
-			return nil, fmt.Errorf("failed to query runs for %q: %w", workflowFilename, err)
+			return nil, fmt.Errorf("failed to query runs for %q: %w", akoWorkflowFilename, err)
+		}
+		if wfRuns.TotalCount != nil && *wfRuns.TotalCount == 0 {
+			return srr, nil
 		}
 		for _, run := range wfRuns.WorkflowRuns {
 			if run.CreatedAt.Before(notBefore) {
@@ -72,7 +64,7 @@ func QueryRegressions(qc QueryClient, notAfter time.Time, period time.Duration, 
 			if err != nil {
 				return nil, err
 			}
-			slot := slotForTimestamp(period, run.CreatedAt.Time)
+			slot := slotForTimestamp(period, notAfter, run.CreatedAt.Time)
 			for _, failure := range failed {
 				registerRegression(srr[slot], identify(failure), runID(rid))
 			}
@@ -90,46 +82,17 @@ func queryJobRegressions(qc QueryClient, rid int64) ([]string, error) {
 	}
 	failed := []string{}
 	for _, job := range jobs.Jobs {
-		if *job.Conclusion == "failure" {
+		if job.Conclusion != nil && *job.Conclusion == "failure" {
 			failed = append(failed, *job.Name)
 		}
 	}
 	return failed, nil
 }
 
-func slotForTimestamp(period time.Duration, timestamp time.Time) int {
-	slot := int(time.Since(timestamp) / period)
-	return slot
-}
-
-func slotInterval(notAfter time.Time, period time.Duration, slot int) interval {
-	return interval{
-		start: notAfter.Add(-(time.Duration(slot+1) * period)),
-		end:   notAfter.Add(-(time.Duration(slot) * period)),
-	}
-}
-
-func identify(testName string) testIdentifier {
-	return testIdentifier{
-		test:     testName,
-		testType: testTypeFor(testName),
-	}
-}
-
-func testTypeFor(name string) TestType {
-	if strings.Contains(name, "unit-tests") {
-		return Unit
-	}
-	if strings.Contains(name, "int-tests") {
-		return Integration
-	}
-	return E2E
-}
-
 func registerRegression(reg *slotRegressions, id testIdentifier, rid runID) {
-	tr, ok := reg.regressions[id.test]
+	tr, ok := reg.regressions[id.Name]
 	if !ok {
-		reg.regressions[id.test] = &testRegressions{testIdentifier: id, regressions: []runID{rid}}
+		reg.regressions[id.Name] = &testRegressions{testIdentifier: id, regressions: []runID{rid}}
 		return
 	}
 	tr.regressions = append(tr.regressions, rid)
