@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 )
 
 type IPAccessList struct {

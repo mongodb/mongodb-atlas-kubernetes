@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/timeutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 

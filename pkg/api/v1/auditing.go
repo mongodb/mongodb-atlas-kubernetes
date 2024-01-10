@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 )
 
 // Auditing represents MongoDB Maintenance Windows

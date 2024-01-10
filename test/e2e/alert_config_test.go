@@ -11,12 +11,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -171,7 +171,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 	for _, alertConfig := range userData.Project.Status.AlertConfigurations {
 		statusIDList = append(statusIDList, alertConfig.ID)
 	}
-	Expect(util.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
+	Expect(compare.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
 }
 
 var _ = Describe("Alert configuration with secrets test", Label("alert-config"), func() {

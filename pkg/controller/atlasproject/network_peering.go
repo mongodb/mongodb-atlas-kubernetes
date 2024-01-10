@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -16,7 +17,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util"
 )
 
 const (
@@ -165,7 +165,7 @@ func deleteUnusedContainers(context context.Context, containerService mongodbatl
 		return err
 	}
 	for _, container := range containers {
-		if !util.Contains(doNotDelete, container.ID) {
+		if !compare.Contains(doNotDelete, container.ID) {
 			response, errDelete := containerService.Delete(context, groupID, container.ID)
 			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
 				return errDelete

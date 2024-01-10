@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
 )
 
 type AlertConfiguration struct {
@@ -231,9 +231,9 @@ func (in *Notification) IsEqual(notification mongodbatlas.Notification) bool {
 		in.ChannelName != notification.ChannelName ||
 		in.datadogAPIKey != notification.DatadogAPIKey ||
 		in.DatadogRegion != notification.DatadogRegion ||
-		!util.PtrValuesEqual(in.DelayMin, notification.DelayMin) ||
+		!compare.PtrValuesEqual(in.DelayMin, notification.DelayMin) ||
 		in.EmailAddress != notification.EmailAddress ||
-		!util.PtrValuesEqual(in.EmailEnabled, notification.EmailEnabled) ||
+		!compare.PtrValuesEqual(in.EmailEnabled, notification.EmailEnabled) ||
 		in.flowdockAPIToken != notification.FlowdockAPIToken ||
 		in.FlowName != notification.FlowName ||
 		in.IntervalMin != notification.IntervalMin ||
@@ -242,7 +242,7 @@ func (in *Notification) IsEqual(notification mongodbatlas.Notification) bool {
 		in.OpsGenieRegion != notification.OpsGenieRegion ||
 		in.OrgName != notification.OrgName ||
 		in.serviceKey != notification.ServiceKey ||
-		!util.PtrValuesEqual(in.SMSEnabled, notification.SMSEnabled) ||
+		!compare.PtrValuesEqual(in.SMSEnabled, notification.SMSEnabled) ||
 		in.TeamID != notification.TeamID ||
 		in.TeamName != notification.TeamName ||
 		in.TypeName != notification.TypeName ||
@@ -252,7 +252,7 @@ func (in *Notification) IsEqual(notification mongodbatlas.Notification) bool {
 		return false
 	}
 
-	if !util.IsEqualWithoutOrder(in.Roles, notification.Roles) {
+	if !compare.IsEqualWithoutOrder(in.Roles, notification.Roles) {
 		return false
 	}
 

@@ -1,4 +1,4 @@
-package util
+package compare
 
 func IsEqualWithoutOrder[T comparable](a, b []T) bool {
 	if len(a) != len(b) {

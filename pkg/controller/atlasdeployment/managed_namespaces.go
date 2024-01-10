@@ -6,10 +6,10 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util"
 )
 
 func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []mdbv1.ManagedNamespace, deploymentName string) workflow.Result {
@@ -101,8 +101,8 @@ func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desire
 	if existing.Db == desired.Db &&
 		existing.Collection == desired.Collection &&
 		existing.CustomShardKey == desired.CustomShardKey &&
-		util.PtrValuesEqual(existing.IsShardKeyUnique, desired.IsShardKeyUnique) &&
-		util.PtrValuesEqual(existing.IsCustomShardKeyHashed, desired.IsCustomShardKeyHashed) &&
+		compare.PtrValuesEqual(existing.IsShardKeyUnique, desired.IsShardKeyUnique) &&
+		compare.PtrValuesEqual(existing.IsCustomShardKeyHashed, desired.IsCustomShardKeyHashed) &&
 		existing.NumInitialChunks == desired.NumInitialChunks {
 		return true
 	}
