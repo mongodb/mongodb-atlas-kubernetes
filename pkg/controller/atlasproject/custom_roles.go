@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,7 +64,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 }
 
 func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole, error) {
-	data, _, err := ctx.Client.CustomDBRoles.List(context.Background(), projectID, nil)
+	data, _, err := ctx.Client.CustomDBRoles.List(ctx.Context, projectID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve custom roles from atlas: %w", err)
 	}
@@ -126,7 +125,7 @@ func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[str
 
 	statuses := map[string]status.CustomRole{}
 	for _, customRole := range toDelete {
-		_, err := ctx.Client.CustomDBRoles.Delete(context.Background(), projectID, customRole.Name)
+		_, err := ctx.Client.CustomDBRoles.Delete(ctx.Context, projectID, customRole.Name)
 
 		opStatus, errorMsg := evaluateOperation(err)
 		statuses[customRole.Name] = status.CustomRole{
@@ -153,7 +152,7 @@ func updateCustomRoles(ctx *workflow.Context, projectID string, toUpdate map[str
 		data := customRole.ToAtlas()
 		// Patch fails when sending the role name in the body, needs clarification with cloud team
 		data.RoleName = ""
-		_, _, err := ctx.Client.CustomDBRoles.Update(context.Background(), projectID, customRole.Name, data)
+		_, _, err := ctx.Client.CustomDBRoles.Update(ctx.Context, projectID, customRole.Name, data)
 
 		opStatus, errorMsg := evaluateOperation(err)
 
@@ -178,7 +177,7 @@ func createCustomRoles(ctx *workflow.Context, projectID string, toCreate map[str
 
 	statuses := map[string]status.CustomRole{}
 	for _, customRole := range toCreate {
-		_, _, err := ctx.Client.CustomDBRoles.Create(context.Background(), projectID, customRole.ToAtlas())
+		_, _, err := ctx.Client.CustomDBRoles.Create(ctx.Context, projectID, customRole.ToAtlas())
 
 		opStatus, errorMsg := evaluateOperation(err)
 

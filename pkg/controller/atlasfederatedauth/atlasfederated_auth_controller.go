@@ -51,7 +51,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	log := r.Log.With("atlasfederatedauth", req.NamespacedName)
 
 	fedauth := &mdbv1.AtlasFederatedAuth{}
-	result := customresource.PrepareResource(r.Client, req, fedauth, log)
+	result := customresource.PrepareResource(ctx, r.Client, req, fedauth, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
@@ -159,7 +159,7 @@ func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, orgID
 			return false, err
 		}
 
-		projectlist, err := prepareProjectList(atlasClient)
+		projectlist, err := prepareProjectList(ctx, atlasClient)
 		if err != nil {
 			return false, err
 		}

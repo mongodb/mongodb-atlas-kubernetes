@@ -21,7 +21,7 @@ import (
 )
 
 func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canPrivateEndpointReconcile(workflowCtx.Client, protected, project)
+	canReconcile, err := canPrivateEndpointReconcile(workflowCtx.Context, workflowCtx.Client, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.PrivateEndpointReadyType, result)
@@ -41,7 +41,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasPr
 
 	specPEs := project.Spec.DeepCopy().PrivateEndpoints
 
-	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Client, project.ID())
+	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Context, workflowCtx.Client, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -145,7 +145,7 @@ func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []m
 				return notReadyInterfaceResult
 			}
 
-			interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, atlasPeService.ProviderName, atlasPeService.ID, interfaceEndpointID)
+			interfaceEndpoint, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(ctx.Context, projectID, atlasPeService.ProviderName, atlasPeService.ID, interfaceEndpointID)
 			if err != nil {
 				return workflow.Terminate(workflow.Internal, err.Error())
 			}
@@ -220,10 +220,10 @@ func (a atlasPE) InterfaceEndpointIDs() []string {
 	return nil
 }
 
-func getAllPrivateEndpoints(client *mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
+func getAllPrivateEndpoints(ctx context.Context, client *mongodbatlas.Client, projectID string) (result []atlasPE, err error) {
 	providers := []string{"AWS", "AZURE", "GCP"}
 	for _, p := range providers {
-		atlasPeConnections, _, err := client.PrivateEndpoints.List(context.Background(), projectID, p, &mongodbatlas.ListOptions{})
+		atlasPeConnections, _, err := client.PrivateEndpoints.List(ctx, projectID, p, &mongodbatlas.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +243,7 @@ func getAllPrivateEndpoints(client *mongodbatlas.Client, projectID string) (resu
 func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []mdbv1.PrivateEndpoint, endpointCounts []int) (newConnections []atlasPE, err error) {
 	newConnections = make([]atlasPE, 0)
 	for idx, pe := range endpointsToCreate {
-		conn, _, err := ctx.Client.PrivateEndpoints.Create(context.Background(), projectID, &mongodbatlas.PrivateEndpointConnection{
+		conn, _, err := ctx.Client.PrivateEndpoints.Create(ctx.Context, projectID, &mongodbatlas.PrivateEndpointConnection{
 			ProviderName: string(pe.Provider),
 			Region:       pe.Region,
 		})
@@ -281,7 +281,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 				interfaceConn.Endpoints = gcpEndpoints
 			}
 
-			interfaceConn, response, err := ctx.Client.PrivateEndpoints.AddOnePrivateEndpoint(context.Background(), projectID, string(specPeService.Provider), atlasPeService.ID, interfaceConn)
+			interfaceConn, response, err := ctx.Client.PrivateEndpoints.AddOnePrivateEndpoint(ctx.Context, projectID, string(specPeService.Provider), atlasPeService.ID, interfaceConn)
 			ctx.Log.Debugw("AddOnePrivateEndpoint Reply", "interfaceConn", interfaceConn, "err", err)
 			if err != nil {
 				ctx.Log.Debugw("failed to create PE Interface", "error", err)
@@ -327,7 +327,7 @@ func endpointDefinedInSpec(specEndpoint mdbv1.PrivateEndpoint) bool {
 }
 
 func DeleteAllPrivateEndpoints(ctx *workflow.Context, projectID string) workflow.Result {
-	atlasPEs, err := getAllPrivateEndpoints(ctx.Client, projectID)
+	atlasPEs, err := getAllPrivateEndpoints(ctx.Context, ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -350,7 +350,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 		interfaceEndpointIDs := peService.InterfaceEndpointIDs()
 		if len(interfaceEndpointIDs) != 0 {
 			for _, interfaceEndpointID := range interfaceEndpointIDs {
-				if _, err := ctx.Client.PrivateEndpoints.DeleteOnePrivateEndpoint(context.Background(), projectID, peService.ProviderName, peService.ID, interfaceEndpointID); err != nil {
+				if _, err := ctx.Client.PrivateEndpoints.DeleteOnePrivateEndpoint(ctx.Context, projectID, peService.ProviderName, peService.ID, interfaceEndpointID); err != nil {
 					return workflow.Terminate(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "failed to delete Private Endpoint")
 				}
 			}
@@ -358,7 +358,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 			continue
 		}
 
-		if _, err := ctx.Client.PrivateEndpoints.Delete(context.Background(), projectID, peService.ProviderName, peService.ID); err != nil {
+		if _, err := ctx.Client.PrivateEndpoints.Delete(ctx.Context, projectID, peService.ProviderName, peService.ID); err != nil {
 			return workflow.Terminate(workflow.ProjectPEServiceIsNotReadyInAtlas, "failed to delete Private Endpoint Service")
 		}
 
@@ -430,7 +430,7 @@ func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint s
 	if endpoint.InterfaceEndpointID == "" {
 		return nil, errors.New("InterfaceEndpointID is empty")
 	}
-	interfaceEndpointConn, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(context.Background(), projectID, string(provider.ProviderGCP), endpoint.ID, endpoint.InterfaceEndpointID)
+	interfaceEndpointConn, _, err := ctx.Client.PrivateEndpoints.GetOnePrivateEndpoint(ctx.Context, projectID, string(provider.ProviderGCP), endpoint.ID, endpoint.InterfaceEndpointID)
 	if err != nil {
 		return nil, err
 	}
@@ -550,7 +550,7 @@ type intersectionPair struct {
 	atlas atlasPE
 }
 
-func canPrivateEndpointReconcile(atlasClient *mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canPrivateEndpointReconcile(ctx context.Context, atlasClient *mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
@@ -563,7 +563,7 @@ func canPrivateEndpointReconcile(atlasClient *mongodbatlas.Client, protected boo
 		}
 	}
 
-	list, err := getAllPrivateEndpoints(atlasClient, akoProject.ID())
+	list, err := getAllPrivateEndpoints(ctx, atlasClient, akoProject.ID())
 	if err != nil {
 		return false, err
 	}

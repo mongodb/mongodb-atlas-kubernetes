@@ -19,7 +19,7 @@ import (
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
 func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(context.Background(), project.ID(), &mongodbatlas.ListOptions{})
+	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(ctx.Context, project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 	}
@@ -84,7 +84,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 			requeue = true
 			continue
 		}
-		password, err := dbUser.ReadPassword(k8sClient)
+		password, err := dbUser.ReadPassword(ctx.Context, k8sClient)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
@@ -97,7 +97,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 		FillPrivateConnStrings(ds.connectionStrings, &data)
 
 		var secretName string
-		if secretName, err = Ensure(k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
+		if secretName, err = Ensure(ctx.Context, k8sClient, dbUser.Namespace, project.Spec.Name, project.ID(), ds.name, data); err != nil {
 			return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
 		}
 		secrets = append(secrets, secretName)
@@ -125,7 +125,7 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 	// Performing the cleanup of old secrets only if the username has changed
 	if user.Status.UserName != user.Spec.Username {
 		// Note, that we pass the username from the status, not from the spec
-		return RemoveStaleSecretsByUserName(k8sClient, projectID, user.Status.UserName, user, ctx.Log)
+		return RemoveStaleSecretsByUserName(ctx.Context, k8sClient, projectID, user.Status.UserName, user, ctx.Log)
 	}
 	return nil
 }
@@ -136,7 +136,7 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 	if len(scopes) == 0 {
 		return nil
 	}
-	secrets, err := ListByUserName(k8sClient, user.Namespace, projectID, user.Spec.Username)
+	secrets, err := ListByUserName(ctx.Context, k8sClient, user.Namespace, projectID, user.Spec.Username)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 			continue
 		}
 		if !stringutil.Contains(scopes, deployment) {
-			if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
+			if err = k8sClient.Delete(ctx.Context, &secrets[i]); err != nil {
 				return err
 			}
 			ctx.Log.Debugw("Removed connection Secret as it's not referenced by the AtlasDatabaseUser anymore", "secretname", s.Name)
@@ -156,15 +156,15 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 }
 
 // RemoveStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
-func RemoveStaleSecretsByUserName(k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
-	secrets, err := ListByUserName(k8sClient, user.Namespace, projectID, userName)
+func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
+	secrets, err := ListByUserName(ctx, k8sClient, user.Namespace, projectID, userName)
 	if err != nil {
 		return err
 	}
 	var lastError error
 	removed := 0
 	for i := range secrets {
-		if err = k8sClient.Delete(context.Background(), &secrets[i]); err != nil {
+		if err = k8sClient.Delete(ctx, &secrets[i]); err != nil {
 			log.Errorf("Failed to remove connection Secret: %v", err)
 			lastError = err
 		} else {
@@ -196,7 +196,7 @@ func FillPrivateConnStrings(connStrings *mongodbatlas.ConnectionStrings, data *C
 }
 
 func GetAllServerless(ctx *workflow.Context, projectID string) ([]*mongodbatlas.Cluster, error) {
-	serverless, _, err := ctx.Client.ServerlessInstances.List(context.Background(), projectID, nil)
+	serverless, _, err := ctx.Client.ServerlessInstances.List(ctx.Context, projectID, nil)
 	if err != nil {
 		if !IsCloudGovDomain(ctx) {
 			return nil, fmt.Errorf("error getting serverless: %w", err)

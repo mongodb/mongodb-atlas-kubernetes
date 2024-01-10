@@ -1,3 +1,4 @@
+// TODO: move away from pkg, this code is only usable from tests
 package testutil
 
 import (
@@ -15,7 +16,7 @@ func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient 
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectName, deploymentName)
+			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(ctx, projectName, deploymentName)
 			if err != nil {
 				return false
 			}
@@ -42,7 +43,7 @@ func WaitForAtlasDatabaseUserStateToNotBeReached(ctx context.Context, atlasClien
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDatabaseUser, _, err := atlasClient.DatabaseUsers.Get(context.Background(), authDb, groupId, userName)
+			atlasDatabaseUser, _, err := atlasClient.DatabaseUsers.Get(ctx, authDb, groupId, userName)
 			if err != nil {
 				return false
 			}
@@ -69,7 +70,7 @@ func WaitForAtlasProjectStateToNotBeReached(ctx context.Context, atlasClient *mo
 		case <-ctx.Done():
 			return true
 		default:
-			project, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), projectName)
+			project, _, err := atlasClient.Projects.GetOneProjectByName(ctx, projectName)
 			if err != nil {
 				return false
 			}

@@ -27,7 +27,7 @@ const FreeTier = "M0"
 func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	advancedDeploymentSpec := deployment.Spec.DeploymentSpec
 
-	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(context.Background(), project.Status.ID, advancedDeploymentSpec.Name)
+	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(ctx.Context, project.Status.ID, advancedDeploymentSpec.Name)
 
 	if err != nil {
 		if resp == nil {
@@ -44,7 +44,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 		}
 
 		ctx.Log.Infof("Advanced Deployment %s doesn't exist in Atlas - creating", advancedDeploymentSpec.Name)
-		advancedDeployment, _, err = ctx.Client.AdvancedClusters.Create(context.Background(), project.Status.ID, advancedDeployment)
+		advancedDeployment, _, err = ctx.Client.AdvancedClusters.Create(ctx.Context, project.Status.ID, advancedDeployment)
 		if err != nil {
 			return advancedDeployment, workflow.Terminate(workflow.DeploymentNotCreatedInAtlas, err.Error())
 		}
@@ -109,7 +109,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 
 	// TODO: Potential bug with disabling autoscaling if it was previously enabled
 
-	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(context.Background(), project.Status.ID, deployment.Spec.DeploymentSpec.Name, deploymentAsAtlas)
+	atlasDeploymentAsAtlas, _, err = ctx.Client.AdvancedClusters.Update(ctx.Context, project.Status.ID, deployment.Spec.DeploymentSpec.Name, deploymentAsAtlas)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.DeploymentNotUpdatedInAtlas, err.Error())
 	}
@@ -240,10 +240,10 @@ func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.
 }
 
 // GetAllDeploymentNames returns all deployment names including regular and advanced deployment.
-func GetAllDeploymentNames(client *mongodbatlas.Client, projectID string) ([]string, error) {
+func GetAllDeploymentNames(ctx context.Context, client *mongodbatlas.Client, projectID string) ([]string, error) {
 	var deploymentNames []string
 
-	advancedDeployments, _, err := client.AdvancedClusters.List(context.Background(), projectID, &mongodbatlas.ListOptions{})
+	advancedDeployments, _, err := client.AdvancedClusters.List(ctx, projectID, &mongodbatlas.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func GetAllDeploymentNames(client *mongodbatlas.Client, projectID string) ([]str
 
 func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
-	err := r.Client.List(context.TODO(), &databaseUsers, &client.ListOptions{})
+	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -288,7 +288,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			continue
 		}
 
-		password, err := dbUser.ReadPassword(r.Client)
+		password, err := dbUser.ReadPassword(ctx.Context, r.Client)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
@@ -303,7 +303,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
-		secretName, err := connectionsecret.Ensure(r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), name, data)
+		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}

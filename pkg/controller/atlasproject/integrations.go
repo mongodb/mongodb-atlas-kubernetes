@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -88,7 +87,7 @@ func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Contex
 }
 
 func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.ThirdPartyIntegrations, error) {
-	integrationsInAtlas, _, err := ctx.Client.Integrations.List(context.Background(), projectID)
+	integrationsInAtlas, _, err := ctx.Client.Integrations.List(ctx.Context, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,7 @@ func fetchIntegrations(ctx *workflow.Context, projectID string) (*mongodbatlas.T
 func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, projectID string, integrationsToUpdate [][]set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrationsToUpdate {
 		atlasIntegration := item[0].(aliasThirdPartyIntegration)
-		kubeIntegration, err := item[1].(project.Integration).ToAtlas(r.Client, namespace)
+		kubeIntegration, err := item[1].(project.Integration).ToAtlas(ctx.Context, r.Client, namespace)
 		if kubeIntegration == nil {
 			ctx.Log.Warnw("Update Integrations", "Can not convert kube integration", err)
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, "Update Integrations: Can not convert kube integration")
@@ -107,7 +106,7 @@ func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, 
 		t := mongodbatlas.ThirdPartyIntegration(atlasIntegration)
 		if &t != kubeIntegration {
 			ctx.Log.Debugf("Try to update integration: %s", kubeIntegration.Type)
-			if _, _, err := ctx.Client.Integrations.Replace(context.Background(), projectID, kubeIntegration.Type, kubeIntegration); err != nil {
+			if _, _, err := ctx.Client.Integrations.Replace(ctx.Context, projectID, kubeIntegration.Type, kubeIntegration); err != nil {
 				return workflow.Terminate(workflow.ProjectIntegrationRequest, "Can not convert integration")
 			}
 		}
@@ -117,7 +116,7 @@ func (r *AtlasProjectReconciler) updateIntegrationsAtlas(ctx *workflow.Context, 
 
 func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integrationsToRemove []set.Identifiable) error {
 	for _, integration := range integrationsToRemove {
-		if _, err := ctx.Client.Integrations.Delete(context.Background(), projectID, integration.Identifier().(string)); err != nil {
+		if _, err := ctx.Client.Integrations.Delete(ctx.Context, projectID, integration.Identifier().(string)); err != nil {
 			return err
 		}
 		ctx.Log.Debugf("Third Party Integration deleted: %s", integration.Identifier())
@@ -127,12 +126,12 @@ func deleteIntegrationsFromAtlas(ctx *workflow.Context, projectID string, integr
 
 func (r *AtlasProjectReconciler) createIntegrationsInAtlas(ctx *workflow.Context, projectID string, integrations []set.Identifiable, namespace string) workflow.Result {
 	for _, item := range integrations {
-		integration, err := item.(project.Integration).ToAtlas(r.Client, namespace)
+		integration, err := item.(project.Integration).ToAtlas(ctx.Context, r.Client, namespace)
 		if err != nil || integration == nil {
 			return workflow.Terminate(workflow.ProjectIntegrationInternal, fmt.Sprintf("cannot convert integration: %s", err.Error()))
 		}
 
-		_, resp, err := ctx.Client.Integrations.Create(context.Background(), projectID, integration.Type, integration)
+		_, resp, err := ctx.Client.Integrations.Create(ctx.Context, projectID, integration.Type, integration)
 		if resp.StatusCode != http.StatusOK {
 			ctx.Log.Debugw("Create request failed", "Status", resp.Status, "Integration", integration)
 		}
@@ -156,7 +155,7 @@ func (r *AtlasProjectReconciler) checkIntegrationsReady(ctx *workflow.Context, n
 		if isPrometheusType(atlas.Type) {
 			areEqual = arePrometheusesEqual(atlas, spec)
 		} else {
-			specAsAtlas, _ := spec.ToAtlas(r.Client, namespace)
+			specAsAtlas, _ := spec.ToAtlas(ctx.Context, r.Client, namespace)
 			specAlias := aliasThirdPartyIntegration(*specAsAtlas)
 			areEqual = AreIntegrationsEqual(&atlas, &specAlias)
 		}

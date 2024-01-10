@@ -1,7 +1,6 @@
 package atlasdatafederation
 
 import (
-	"context"
 	"net/http"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -27,7 +26,7 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 		return workflow.Terminate(workflow.Internal, "can not convert DataFederation (operator -> atlas)")
 	}
 
-	atlasSpec, resp, err := ctx.Client.DataFederation.Get(context.Background(), projectID, operatorSpec.Name)
+	atlasSpec, resp, err := ctx.Client.DataFederation.Get(ctx.Context, projectID, operatorSpec.Name)
 	if err != nil {
 		if resp == nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
@@ -37,7 +36,7 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 			return workflow.Terminate(workflow.DataFederationNotCreatedInAtlas, err.Error())
 		}
 
-		_, _, err = ctx.Client.DataFederation.Create(context.Background(), projectID, dataFederationToAtlas)
+		_, _, err = ctx.Client.DataFederation.Create(ctx.Context, projectID, dataFederationToAtlas)
 		if err != nil {
 			return workflow.Terminate(workflow.DataFederationNotCreatedInAtlas, err.Error())
 		}
@@ -54,7 +53,7 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 		return workflow.OK()
 	}
 
-	_, _, err = ctx.Client.DataFederation.Update(context.Background(), projectID, dataFederation.Spec.Name, dataFederationToAtlas, nil)
+	_, _, err = ctx.Client.DataFederation.Update(ctx.Context, projectID, dataFederation.Spec.Name, dataFederationToAtlas, nil)
 	if err != nil {
 		return workflow.Terminate(workflow.DataFederationNotUpdatedInAtlas, err.Error())
 	}

@@ -97,7 +97,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 			status.NetworkPeerReadyType
 	}
 
-	diff, err := sortPeers(list, peerSpecs, logger, mongoClient.Containers, groupID)
+	diff, err := sortPeers(workflowCtx.Context, list, peerSpecs, logger, mongoClient.Containers, groupID)
 	if err != nil {
 		logger.Errorf("failed to sort network peers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, "failed to sort network peers"),
@@ -337,13 +337,13 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService mongodbatlas.Peer
 	return peersList, nil
 }
 
-func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPeer, logger *zap.SugaredLogger, containerService mongodbatlas.ContainersService, groupID string) (*networkPeerDiff, error) {
+func sortPeers(ctx context.Context, existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPeer, logger *zap.SugaredLogger, containerService mongodbatlas.ContainersService, groupID string) (*networkPeerDiff, error) {
 	var diff networkPeerDiff
 	var peersToUpdate []mdbv1.NetworkPeer
 	for _, existedPeer := range existedPeers {
 		needToDelete := true
 		for _, expectedPeer := range expectedPeers {
-			if comparePeersPair(existedPeer, expectedPeer, containerService, groupID) {
+			if comparePeersPair(ctx, existedPeer, expectedPeer, containerService, groupID) {
 				existedPeer.ProviderName = string(expectedPeer.ProviderName)
 				existedPeer.AccepterRegionName = expectedPeer.AccepterRegionName
 				existedPeer.ContainerID = expectedPeer.ContainerID
@@ -370,7 +370,7 @@ func sortPeers(existedPeers []mongodbatlas.Peer, expectedPeers []mdbv1.NetworkPe
 			if err != nil {
 				return nil, err
 			}
-			if comparePeersPair(*opPeer, expectedPeer, containerService, groupID) {
+			if comparePeersPair(ctx, *opPeer, expectedPeer, containerService, groupID) {
 				needToCreate = false
 			}
 		}
@@ -385,7 +385,7 @@ func isPeerDeleting(peer mongodbatlas.Peer) bool {
 	return peer.Status == StatusDeleting || peer.StatusName == StatusDeleting || peer.StatusName == StatusTerminating
 }
 
-func comparePeersPair(existedPeer mongodbatlas.Peer, expectedPeer mdbv1.NetworkPeer, containerService mongodbatlas.ContainersService, groupID string) bool {
+func comparePeersPair(ctx context.Context, existedPeer mongodbatlas.Peer, expectedPeer mdbv1.NetworkPeer, containerService mongodbatlas.ContainersService, groupID string) bool {
 	if expectedPeer.ProviderName == "" {
 		expectedPeer.ProviderName = provider.ProviderAWS
 	}
@@ -407,7 +407,7 @@ func comparePeersPair(existedPeer mongodbatlas.Peer, expectedPeer mdbv1.NetworkP
 	if expectedPeer.AtlasCIDRBlock != "" {
 		if existedPeer.AtlasCIDRBlock == "" {
 			// existed peer doesn't contain AtlasCIDRBlock. so we have to get it by containerID
-			get, _, err := containerService.Get(context.Background(), groupID, existedPeer.ContainerID)
+			get, _, err := containerService.Get(ctx, groupID, existedPeer.ContainerID)
 			if err != nil {
 				return false
 			}

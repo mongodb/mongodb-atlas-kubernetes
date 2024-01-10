@@ -74,7 +74,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log := r.Log.With("atlasdatabaseuser", req.NamespacedName)
 
 	databaseUser := &mdbv1.AtlasDatabaseUser{}
-	result := customresource.PrepareResource(r.Client, req, databaseUser, log)
+	result := customresource.PrepareResource(ctx, r.Client, req, databaseUser, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
@@ -117,13 +117,13 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	project := &mdbv1.AtlasProject{}
-	if result = r.readProjectResource(databaseUser, project); !result.IsOk() {
+	if result = r.readProjectResource(ctx, databaseUser, project); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.Client(ctx, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
@@ -219,8 +219,8 @@ func handleOIDCPreview(OIDCEnabled bool, dbuser *mdbv1.AtlasDatabaseUser) error 
 	return nil
 }
 
-func (r *AtlasDatabaseUserReconciler) readProjectResource(user *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) workflow.Result {
-	if err := r.Client.Get(context.Background(), user.AtlasProjectObjectKey(), project); err != nil {
+func (r *AtlasDatabaseUserReconciler) readProjectResource(ctx context.Context, user *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) workflow.Result {
+	if err := r.Client.Get(ctx, user.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 	return workflow.OK()
@@ -238,7 +238,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	}
 
 	if customresource.HaveFinalizer(dbUser, customresource.FinalizerLabel) {
-		err := connectionsecret.RemoveStaleSecretsByUserName(r.Client, project.ID(), dbUser.Spec.Username, *dbUser, log)
+		err := connectionsecret.RemoveStaleSecretsByUserName(ctx, r.Client, project.ID(), dbUser.Spec.Username, *dbUser, log)
 		if err != nil {
 			return true, workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotDeleted, err.Error())
 		}
@@ -255,7 +255,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 		return true, workflow.OK()
 	}
 
-	_, err := atlasClient.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	_, err := atlasClient.DatabaseUsers.Delete(ctx, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
 		var apiError *mongodbatlas.ErrorResponse
 		if errors.As(err, &apiError) && apiError.ErrorCode != atlas.UsernameNotFound {

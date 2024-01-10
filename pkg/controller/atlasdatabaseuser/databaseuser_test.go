@@ -52,25 +52,25 @@ func TestCheckUserExpired(t *testing.T) {
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	t.Run("Validate DeleteAfterDate", func(t *testing.T) {
-		result := checkUserExpired(zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("foo"))
+		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("foo"))
 		assert.False(t, result.IsOk())
 		assert.Equal(t, reconcile.Result{}, result.ReconcileResult())
 
-		result = checkUserExpired(zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("2021/11/30T15:04:05"))
+		result = checkUserExpired(context.Background(), zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("2021/11/30T15:04:05"))
 		assert.False(t, result.IsOk())
 	})
 	t.Run("User Marked Expired", func(t *testing.T) {
 		data := dataForSecret()
 		// Create a connection secret
-		_, err := connectionsecret.Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
+		_, err := connectionsecret.Ensure(context.Background(), fakeClient, "tetNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		// The secret for the other project
-		_, err = connectionsecret.Ensure(fakeClient, "testNs", "project2", "dsfsdf234234sdfdsf23423", "cluster1", data)
+		_, err = connectionsecret.Ensure(context.Background(), fakeClient, "testNs", "project2", "dsfsdf234234sdfdsf23423", "cluster1", data)
 		assert.NoError(t, err)
 
 		before := time.Now().UTC().Add(time.Minute * -1).Format("2006-01-02T15:04:05.999Z")
 		user := *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(before)
-		result := checkUserExpired(zap.S(), fakeClient, "603e7bf38a94956835659ae5", user)
+		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "603e7bf38a94956835659ae5", user)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, reconcile.Result{}, result.ReconcileResult())
 
@@ -88,10 +88,10 @@ func TestCheckUserExpired(t *testing.T) {
 	t.Run("No expiration happened", func(t *testing.T) {
 		data := dataForSecret()
 		// Create a connection secret
-		_, err := connectionsecret.Ensure(fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
+		_, err := connectionsecret.Ensure(context.Background(), fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		after := time.Now().UTC().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
-		result := checkUserExpired(zap.S(), fakeClient, "603e7bf38a94956835659ae5", *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(after))
+		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "603e7bf38a94956835659ae5", *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(after))
 		assert.True(t, result.IsOk())
 
 		// The secret is still there

@@ -1,6 +1,7 @@
 package connectionsecret
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,54 +24,54 @@ func TestListConnectionSecrets(t *testing.T) {
 		// c1, user1
 		data := dataForSecret()
 		data.DBUserName = "user1"
-		_, err := Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		_, err := Ensure(context.Background(), fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
 		assert.NoError(t, err)
 
 		// c1, user2
 		data = dataForSecret()
 		data.DBUserName = "user2"
-		_, err = Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		_, err = Ensure(context.Background(), fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
 		assert.NoError(t, err)
 
 		// c2, user1
 		data = dataForSecret()
 		data.DBUserName = "user1"
-		_, err = Ensure(fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c2", data)
+		_, err = Ensure(context.Background(), fakeClient, "testNs", "p1", "603e7bf38a94956835659ae5", "c2", data)
 		assert.NoError(t, err)
 
 		// c1, user1 but different project (p2)
 		data = dataForSecret()
 		data.DBUserName = "user1"
-		_, err = Ensure(fakeClient, "testNs", "p2", "some-other-project-id", "c1", data)
+		_, err = Ensure(context.Background(), fakeClient, "testNs", "p2", "some-other-project-id", "c1", data)
 		assert.NoError(t, err)
 
 		// c1, user1 but different namespace
 		data = dataForSecret()
 		data.DBUserName = "user1"
-		_, err = Ensure(fakeClient, "otherNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
+		_, err = Ensure(context.Background(), fakeClient, "otherNs", "p1", "603e7bf38a94956835659ae5", "c1", data)
 		assert.NoError(t, err)
 
-		secrets, err := ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c1")
+		secrets, err := ListByDeploymentName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "c1")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c1-user1", "p1-c1-user2"}, getSecretsNames(secrets))
 
-		secrets, err = ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c2")
+		secrets, err = ListByDeploymentName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "c2")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c2-user1"}, getSecretsNames(secrets))
 
-		secrets, err = ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "c3")
+		secrets, err = ListByDeploymentName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "c3")
 		assert.NoError(t, err)
 		assert.Len(t, getSecretsNames(secrets), 0)
 
-		secrets, err = ListByDeploymentName(fakeClient, "testNs", "non-existent-project-id", "c1")
+		secrets, err = ListByDeploymentName(context.Background(), fakeClient, "testNs", "non-existent-project-id", "c1")
 		assert.NoError(t, err)
 		assert.Len(t, getSecretsNames(secrets), 0)
 
-		secrets, err = ListByUserName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "user1")
+		secrets, err = ListByUserName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "user1")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c1-user1", "p1-c2-user1"}, getSecretsNames(secrets))
 
-		secrets, err = ListByUserName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "user2")
+		secrets, err = ListByUserName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "user2")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"p1-c1-user2"}, getSecretsNames(secrets))
 	})
@@ -83,10 +84,10 @@ func TestListConnectionSecrets(t *testing.T) {
 
 		data := dataForSecret()
 		data.DBUserName = "user1"
-		_, err := Ensure(fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data)
+		_, err := Ensure(context.Background(), fakeClient, "testNs", "#nice project!", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/", data)
 		assert.NoError(t, err)
 
-		secrets, err := ListByDeploymentName(fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
+		secrets, err := ListByDeploymentName(context.Background(), fakeClient, "testNs", "603e7bf38a94956835659ae5", "the cluster@thecompany.com/")
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"nice-project-the-cluster-thecompany.com-user1"}, getSecretsNames(secrets))
 	})

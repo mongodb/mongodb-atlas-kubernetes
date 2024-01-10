@@ -186,10 +186,10 @@ func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options 
 	}
 }
 
-func (p *AtlasDatabaseUser) ReadPassword(kubeClient client.Client) (string, error) {
+func (p *AtlasDatabaseUser) ReadPassword(ctx context.Context, kubeClient client.Client) (string, error) {
 	if p.Spec.PasswordSecret != nil {
 		secret := &corev1.Secret{}
-		if err := kubeClient.Get(context.Background(), *p.PasswordSecretObjectKey(), secret); err != nil {
+		if err := kubeClient.Get(ctx, *p.PasswordSecretObjectKey(), secret); err != nil {
 			return "", err
 		}
 		p, exist := secret.Data["password"]
@@ -206,8 +206,8 @@ func (p *AtlasDatabaseUser) ReadPassword(kubeClient client.Client) (string, erro
 }
 
 // ToAtlas converts the AtlasDatabaseUser to native Atlas client format. Reads the password from the Secret
-func (p AtlasDatabaseUser) ToAtlas(kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
-	password, err := p.ReadPassword(kubeClient)
+func (p AtlasDatabaseUser) ToAtlas(ctx context.Context, kubeClient client.Client) (*mongodbatlas.DatabaseUser, error) {
+	password, err := p.ReadPassword(ctx, kubeClient)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,6 @@
 package atlasdatafederation
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -17,12 +16,12 @@ import (
 
 func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, df *mdbv1.AtlasDataFederation) workflow.Result {
 	databaseUsers := mdbv1.AtlasDatabaseUserList{}
-	err := r.Client.List(context.TODO(), &databaseUsers, &client.ListOptions{})
+	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	atlasDF, _, err := ctx.Client.DataFederation.Get(context.Background(), project.ID(), df.Spec.Name)
+	atlasDF, _, err := ctx.Client.DataFederation.Get(ctx.Context, project.ID(), df.Spec.Name)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -55,7 +54,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 			continue
 		}
 
-		password, err := dbUser.ReadPassword(r.Client)
+		password, err := dbUser.ReadPassword(ctx.Context, r.Client)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}
@@ -73,7 +72,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		ctx.Log.Debugw("Creating a connection Secret", "data", data)
 
-		secretName, err := connectionsecret.Ensure(r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
+		secretName, err := connectionsecret.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
 		if err != nil {
 			return workflow.Terminate(workflow.DeploymentConnectionSecretsNotCreated, err.Error())
 		}

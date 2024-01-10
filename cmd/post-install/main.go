@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 const (
@@ -52,7 +53,7 @@ func createK8sClient() (client.Client, error) {
 
 // isDeploymentReady returns a boolean indicating if the deployment has reached the ready state and is
 // ready to be used.
-func isDeploymentReady(logger *zap.SugaredLogger) (bool, error) {
+func isDeploymentReady(ctx context.Context, logger *zap.SugaredLogger) (bool, error) {
 	k8sClient, err := createK8sClient()
 	if err != nil {
 		return false, err
@@ -72,7 +73,7 @@ func isDeploymentReady(logger *zap.SugaredLogger) (bool, error) {
 		totalTime += pollingInterval
 
 		atlasDeployment := mdbv1.AtlasDeployment{}
-		if err := k8sClient.Get(context.TODO(), kube.ObjectKey(namespace, deploymentName), &atlasDeployment); err != nil {
+		if err := k8sClient.Get(ctx, kube.ObjectKey(namespace, deploymentName), &atlasDeployment); err != nil {
 			return false, err
 		}
 
@@ -90,9 +91,10 @@ func isDeploymentReady(logger *zap.SugaredLogger) (bool, error) {
 }
 
 func main() {
+	ctx := signals.SetupSignalHandler()
 	logger := setupLogger()
 
-	deploymentIsReady, err := isDeploymentReady(logger)
+	deploymentIsReady, err := isDeploymentReady(ctx, logger)
 	if err != nil {
 		logger.Error(err)
 		os.Exit(1)

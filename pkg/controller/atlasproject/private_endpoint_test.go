@@ -1,6 +1,7 @@
 package atlasproject
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 
 func TestCanPrivateEndpointReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canPrivateEndpointReconcile(&mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -93,7 +94,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canPrivateEndpointReconcile(&mongodbatlas.Client{}, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -108,7 +109,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canPrivateEndpointReconcile(&atlasClient, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -124,7 +125,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canPrivateEndpointReconcile(&atlasClient, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -164,7 +165,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(&atlasClient, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -209,7 +210,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(&atlasClient, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -254,7 +255,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(&atlasClient, true, akoProject)
+		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)

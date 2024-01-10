@@ -43,7 +43,7 @@ func ensureMaintenanceWindow(workflowCtx *workflow.Context, atlasProject *mdbv1.
 	if isEmptyWindow(atlasProject.Spec.MaintenanceWindow) {
 		if condition, found := workflowCtx.GetCondition(status.MaintenanceWindowReadyType); found {
 			workflowCtx.Log.Debugw("Window is empty, deleting in Atlas")
-			if result := deleteInAtlas(workflowCtx.Client, atlasProject.ID()); !result.IsOk() {
+			if result := deleteInAtlas(workflowCtx.Context, workflowCtx.Client, atlasProject.ID()); !result.IsOk() {
 				workflowCtx.SetConditionFromResult(condition.Type, result)
 				return result
 			}
@@ -69,7 +69,7 @@ func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec proje
 	}
 
 	ctx.Log.Debugw("Checking if window needs update")
-	windowInAtlas, result := getInAtlas(ctx.Client, projectID)
+	windowInAtlas, result := getInAtlas(ctx.Context, ctx.Client, projectID)
 	if !result.IsOk() {
 		return result
 	}
@@ -78,13 +78,13 @@ func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec proje
 		ctx.Log.Debugw("Creating or updating window")
 		// We set startASAP to false because the operator takes care of calling the API a second time if both
 		// startASAP and the new maintenance time-slots are defined
-		if result := createOrUpdateInAtlas(ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
+		if result := createOrUpdateInAtlas(ctx.Context, ctx.Client, projectID, windowSpec.WithStartASAP(false)); !result.IsOk() {
 			return result
 		}
 	} else if *windowInAtlas.AutoDeferOnceEnabled != windowSpec.AutoDefer {
 		// If autoDefer flag is different in Atlas, and we haven't updated the window previously, we toggle the flag
 		ctx.Log.Debugw("Toggling autoDefer")
-		if result := toggleAutoDeferInAtlas(ctx.Client, projectID); !result.IsOk() {
+		if result := toggleAutoDeferInAtlas(ctx.Context, ctx.Client, projectID); !result.IsOk() {
 			return result
 		}
 	}
@@ -93,7 +93,7 @@ func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec proje
 		ctx.Log.Debugw("Starting maintenance ASAP")
 		// To avoid any unexpected behavior, we send a request to the API containing only the StartASAP flag,
 		// although the API should ignore other fields in that case
-		if result := createOrUpdateInAtlas(ctx.Client, projectID, project.NewMaintenanceWindow().WithStartASAP(true)); !result.IsOk() {
+		if result := createOrUpdateInAtlas(ctx.Context, ctx.Client, projectID, project.NewMaintenanceWindow().WithStartASAP(true)); !result.IsOk() {
 			return result
 		}
 		// Nothing else should be done after sending a StartASAP request
@@ -102,7 +102,7 @@ func syncAtlasWithSpec(ctx *workflow.Context, projectID string, windowSpec proje
 
 	if windowSpec.Defer {
 		ctx.Log.Debugw("Deferring scheduled maintenance")
-		if result := deferInAtlas(ctx.Client, projectID); !result.IsOk() {
+		if result := deferInAtlas(ctx.Context, ctx.Client, projectID); !result.IsOk() {
 			return result
 		}
 		// Nothing else should be done after deferring
@@ -152,43 +152,43 @@ func operatorToAtlasMaintenanceWindow(maintenanceWindow project.MaintenanceWindo
 	return operatorWindow, workflow.OK()
 }
 
-func getInAtlas(client *mongodbatlas.Client, projectID string) (*mongodbatlas.MaintenanceWindow, workflow.Result) {
-	window, _, err := client.MaintenanceWindows.Get(context.Background(), projectID)
+func getInAtlas(ctx context.Context, client *mongodbatlas.Client, projectID string) (*mongodbatlas.MaintenanceWindow, workflow.Result) {
+	window, _, err := client.MaintenanceWindows.Get(ctx, projectID)
 	if err != nil {
 		return nil, workflow.Terminate(workflow.ProjectWindowNotObtainedFromAtlas, err.Error())
 	}
 	return window, workflow.OK()
 }
 
-func createOrUpdateInAtlas(client *mongodbatlas.Client, projectID string, maintenanceWindow project.MaintenanceWindow) workflow.Result {
+func createOrUpdateInAtlas(ctx context.Context, client *mongodbatlas.Client, projectID string, maintenanceWindow project.MaintenanceWindow) workflow.Result {
 	operatorWindow, resourceStatus := operatorToAtlasMaintenanceWindow(maintenanceWindow)
 	if !resourceStatus.IsOk() {
 		return resourceStatus
 	}
 
-	if _, err := client.MaintenanceWindows.Update(context.Background(), projectID, operatorWindow); err != nil {
+	if _, err := client.MaintenanceWindows.Update(ctx, projectID, operatorWindow); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotCreatedInAtlas, err.Error())
 	}
 	return workflow.OK()
 }
 
-func deleteInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
-	if _, err := client.MaintenanceWindows.Reset(context.Background(), projectID); err != nil {
+func deleteInAtlas(ctx context.Context, client *mongodbatlas.Client, projectID string) workflow.Result {
+	if _, err := client.MaintenanceWindows.Reset(ctx, projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotDeletedInAtlas, err.Error())
 	}
 	return workflow.OK()
 }
 
-func deferInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
-	if _, err := client.MaintenanceWindows.Defer(context.Background(), projectID); err != nil {
+func deferInAtlas(ctx context.Context, client *mongodbatlas.Client, projectID string) workflow.Result {
+	if _, err := client.MaintenanceWindows.Defer(ctx, projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotDeferredInAtlas, err.Error())
 	}
 	return workflow.OK()
 }
 
 // toggleAutoDeferInAtlas toggles the field "autoDeferOnceEnabled" by sending a POST /autoDefer request to the API
-func toggleAutoDeferInAtlas(client *mongodbatlas.Client, projectID string) workflow.Result {
-	if _, err := client.MaintenanceWindows.AutoDefer(context.Background(), projectID); err != nil {
+func toggleAutoDeferInAtlas(ctx context.Context, client *mongodbatlas.Client, projectID string) workflow.Result {
+	if _, err := client.MaintenanceWindows.AutoDefer(ctx, projectID); err != nil {
 		return workflow.Terminate(workflow.ProjectWindowNotAutoDeferredInAtlas, err.Error())
 	}
 	return workflow.OK()

@@ -1,7 +1,6 @@
 package atlasproject
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -111,12 +110,12 @@ func removeConfigurationType(atlas *mongodbatlas.Auditing) {
 }
 
 func fetchAuditing(ctx *workflow.Context, projectID string) (*mongodbatlas.Auditing, error) {
-	res, _, err := ctx.Client.Auditing.Get(context.Background(), projectID)
+	res, _, err := ctx.Client.Auditing.Get(ctx.Context, projectID)
 	return res, err
 }
 
 func patchAuditing(ctx *workflow.Context, projectID string, auditing *mongodbatlas.Auditing) error {
-	_, _, err := ctx.Client.Auditing.Configure(context.Background(), projectID, auditing)
+	_, _, err := ctx.Client.Auditing.Configure(ctx.Context, projectID, auditing)
 	return err
 }
 

@@ -1,3 +1,4 @@
+// TODO: move away from pkg, this code is only usable from tests
 package testutil
 
 import (

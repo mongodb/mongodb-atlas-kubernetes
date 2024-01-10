@@ -35,7 +35,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 
 	idpID := orgConfig.IdentityProviderID
 
-	projectList, err := prepareProjectList(service.Client)
+	projectList, err := prepareProjectList(service.Context, service.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Sprintf("Can not list projects for org ID %s. %s", service.OrgID, err.Error()))
 	}
@@ -45,7 +45,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.Internal, fmt.Sprintln("Can not convert Federated Auth spec to Atlas", err.Error()))
 	}
 
-	if result := r.ensureIDPSettings(atlasFedSettingsID, idpID, fedauth, service.Client); !result.IsOk() {
+	if result := r.ensureIDPSettings(service.Context, atlasFedSettingsID, idpID, fedauth, service.Client); !result.IsOk() {
 		return result
 	}
 
@@ -71,12 +71,12 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	return workflow.OK()
 }
 
-func prepareProjectList(client *mongodbatlas.Client) (map[string]string, error) {
+func prepareProjectList(ctx context.Context, client *mongodbatlas.Client) (map[string]string, error) {
 	if client == nil {
 		return nil, errors.New("client is not created")
 	}
 
-	projects, _, err := client.Projects.GetAllProjects(context.Background(), nil)
+	projects, _, err := client.Projects.GetAllProjects(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +88,8 @@ func prepareProjectList(client *mongodbatlas.Client) (map[string]string, error) 
 	return result, nil
 }
 
-func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(federationSettingsID, idpID string, fedauth *mdbv1.AtlasFederatedAuth, client *mongodbatlas.Client) workflow.Result {
-	idpSettings, _, err := client.FederatedSettings.GetIdentityProvider(context.Background(), federationSettingsID, idpID)
+func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, federationSettingsID, idpID string, fedauth *mdbv1.AtlasFederatedAuth, client *mongodbatlas.Client) workflow.Result {
+	idpSettings, _, err := client.FederatedSettings.GetIdentityProvider(ctx, federationSettingsID, idpID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -100,7 +100,7 @@ func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(federationSettingsID, i
 		}
 
 		*idpSettings.SsoDebugEnabled = *fedauth.Spec.SSODebugEnabled
-		_, _, err := client.FederatedSettings.UpdateIdentityProvider(context.Background(), federationSettingsID, idpID, idpSettings)
+		_, _, err := client.FederatedSettings.UpdateIdentityProvider(ctx, federationSettingsID, idpID, idpSettings)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}

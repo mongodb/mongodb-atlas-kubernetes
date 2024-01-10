@@ -80,7 +80,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	project := &mdbv1.AtlasProject{}
-	result := customresource.PrepareResource(r.Client, req, project, log)
+	result := customresource.PrepareResource(ctx, r.Client, req, project, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}

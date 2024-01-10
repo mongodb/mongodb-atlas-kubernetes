@@ -17,15 +17,15 @@ import (
 type EventHandlerWithDelete struct {
 	handler.EnqueueRequestForObject
 	Controller interface {
-		Delete(e event.DeleteEvent) error
+		Delete(ctx context.Context, e event.DeleteEvent) error
 	}
 }
 
-func (d *EventHandlerWithDelete) Delete(_ context.Context, e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
+func (d *EventHandlerWithDelete) Delete(ctx context.Context, e event.DeleteEvent, _ workqueue.RateLimitingInterface) {
 	objectKey := kube.ObjectKeyFromObject(e.Object)
 	log := zap.S().With("resource", objectKey)
 
-	if err := d.Controller.Delete(e); err != nil && k8serrors.IsNotFound(err) {
+	if err := d.Controller.Delete(ctx, e); err != nil && k8serrors.IsNotFound(err) {
 		log.Errorf("Object (%s) removed from Kubernetes, but controller could not delete it: %s", e.Object.GetObjectKind(), err)
 	}
 }

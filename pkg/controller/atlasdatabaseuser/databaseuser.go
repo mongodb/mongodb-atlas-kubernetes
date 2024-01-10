@@ -24,12 +24,12 @@ import (
 )
 
 func (r *AtlasDatabaseUserReconciler) ensureDatabaseUser(ctx *workflow.Context, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
-	apiUser, err := dbUser.ToAtlas(r.Client)
+	apiUser, err := dbUser.ToAtlas(ctx.Context, r.Client)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if result := checkUserExpired(ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
+	if result := checkUserExpired(ctx.Context, ctx.Log, r.Client, project.ID(), dbUser); !result.IsOk() {
 		return result
 	}
 
@@ -66,7 +66,7 @@ func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.
 
 		deleteAttempts := 3
 		for i := 1; i <= deleteAttempts; i++ {
-			_, err := ctx.Client.DatabaseUsers.Delete(context.Background(), dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
+			_, err := ctx.Client.DatabaseUsers.Delete(ctx.Context, dbUser.Spec.DatabaseName, projectID, dbUser.Status.UserName)
 			if err == nil {
 				break
 			}
@@ -79,7 +79,7 @@ func handleUserNameChange(ctx *workflow.Context, projectID string, dbUser mdbv1.
 	return workflow.OK()
 }
 
-func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+func checkUserExpired(ctx context.Context, log *zap.SugaredLogger, k8sClient client.Client, projectID string, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
 	if dbUser.Spec.DeleteAfterDate == "" {
 		return workflow.OK()
 	}
@@ -89,7 +89,7 @@ func checkUserExpired(log *zap.SugaredLogger, k8sClient client.Client, projectID
 		return workflow.Terminate(workflow.DatabaseUserInvalidSpec, err.Error()).WithoutRetry()
 	}
 	if deleteAfter.Before(time.Now()) {
-		if err = connectionsecret.RemoveStaleSecretsByUserName(k8sClient, projectID, dbUser.Spec.Username, dbUser, log); err != nil {
+		if err = connectionsecret.RemoveStaleSecretsByUserName(ctx, k8sClient, projectID, dbUser.Spec.Username, dbUser, log); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 		return workflow.Terminate(workflow.DatabaseUserExpired, "The database user is expired and has been removed from Atlas").WithoutRetry()
@@ -104,7 +104,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	passwordKey := dbUser.PasswordSecretObjectKey()
 	var currentPasswordResourceVersion string
 	if passwordKey != nil {
-		if err := k8sClient.Get(context.Background(), *passwordKey, secret); err != nil {
+		if err := k8sClient.Get(ctx.Context, *passwordKey, secret); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
 		currentPasswordResourceVersion = secret.ResourceVersion
@@ -113,12 +113,12 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	retryAfterUpdate := workflow.InProgress(workflow.DatabaseUserDeploymentAppliedChanges, "Clusters are scheduled to handle database users updates")
 
 	// Try to find the user
-	u, _, err := ctx.Client.DatabaseUsers.Get(context.Background(), dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
+	u, _, err := ctx.Client.DatabaseUsers.Get(ctx.Context, dbUser.Spec.DatabaseName, project.ID(), dbUser.Spec.Username)
 	if err != nil {
 		var apiError *mongodbatlas.ErrorResponse
 		if errors.As(err, &apiError) && apiError.ErrorCode == atlas.UsernameNotFound {
 			log.Debugw("User doesn't exist. Create new user", "apiUser", apiUser)
-			if _, _, err = ctx.Client.DatabaseUsers.Create(context.Background(), project.ID(), apiUser); err != nil {
+			if _, _, err = ctx.Client.DatabaseUsers.Create(ctx.Context, project.ID(), apiUser); err != nil {
 				return workflow.Terminate(workflow.DatabaseUserNotCreatedInAtlas, err.Error())
 			}
 			ctx.EnsureStatusOption(status.AtlasDatabaseUserPasswordVersion(currentPasswordResourceVersion))
@@ -133,7 +133,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 	if shouldUpdate, err := shouldUpdate(ctx.Log, u, dbUser, currentPasswordResourceVersion); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	} else if shouldUpdate {
-		_, _, err = ctx.Client.DatabaseUsers.Update(context.Background(), project.ID(), dbUser.Spec.Username, apiUser)
+		_, _, err = ctx.Client.DatabaseUsers.Update(ctx.Context, project.ID(), dbUser.Spec.Username, apiUser)
 		if err != nil {
 			return workflow.Terminate(workflow.DatabaseUserNotUpdatedInAtlas, err.Error())
 		}
@@ -151,7 +151,7 @@ func performUpdateInAtlas(ctx *workflow.Context, k8sClient client.Client, projec
 func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) error {
 	for _, s := range user.GetScopes(mdbv1.DeploymentScopeType) {
 		var apiError *mongodbatlas.ErrorResponse
-		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(context.Background(), projectID, s)
+		_, _, advancedErr := ctx.Client.AdvancedClusters.Get(ctx.Context, projectID, s)
 		if errors.As(advancedErr, &apiError) && apiError.ErrorCode == atlas.ClusterNotFound {
 			return fmt.Errorf(`"scopes" field references deployment named "%s" but such deployment doesn't exist in Atlas'`, s)
 		}
@@ -160,7 +160,7 @@ func validateScopes(ctx *workflow.Context, projectID string, user mdbv1.AtlasDat
 }
 
 func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID string, user mdbv1.AtlasDatabaseUser) workflow.Result {
-	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Client, projectID)
+	allDeploymentNames, err := atlasdeployment.GetAllDeploymentNames(ctx.Context, ctx.Client, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -175,7 +175,7 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID strin
 
 	readyDeployments := 0
 	for _, c := range deploymentsToCheck {
-		ready, err := deploymentIsReady(ctx.Client, projectID, c)
+		ready, err := deploymentIsReady(ctx.Context, ctx.Client, projectID, c)
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -193,8 +193,8 @@ func checkDeploymentsHaveReachedGoalState(ctx *workflow.Context, projectID strin
 	return workflow.OK()
 }
 
-func deploymentIsReady(client *mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
-	resourceStatus, _, err := client.Clusters.Status(context.Background(), projectID, deploymentName)
+func deploymentIsReady(ctx context.Context, client *mongodbatlas.Client, projectID, deploymentName string) (bool, error) {
+	resourceStatus, _, err := client.Clusters.Status(ctx, projectID, deploymentName)
 	if err != nil {
 		return false, err
 	}

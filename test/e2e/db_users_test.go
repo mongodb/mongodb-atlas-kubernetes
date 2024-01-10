@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namaspace", Label("deployment-ns"), func() {
+var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namespace", Label("deployment-ns"), func() {
 	var testData *model.TestDataProvider
 	secondNamespace := "second-namespace"
 
