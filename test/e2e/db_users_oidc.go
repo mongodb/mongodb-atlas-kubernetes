@@ -12,13 +12,13 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	dbuserController "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -94,7 +94,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 					dbUser := testData.Users[i]
 
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-					g.Expect(testutil.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
+					g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
 				}
 
 				return true
@@ -187,7 +187,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 	// 				dbUser := testData.Users[i]
 
 	// 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-	// 				g.Expect(testutil.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
+	// 				g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
 	// 			}
 
 	// 			return true

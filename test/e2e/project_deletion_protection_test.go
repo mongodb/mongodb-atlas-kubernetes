@@ -10,6 +10,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloudaccess"
@@ -434,7 +434,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Project is ready by all sub-resources are in conflict", func() {
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -481,7 +481,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -541,7 +541,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -591,7 +591,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -644,7 +644,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -683,7 +683,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -720,7 +720,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -755,7 +755,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -788,7 +788,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -819,7 +819,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.FalseCondition(status.ReadyType),
@@ -852,7 +852,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
-				g.Expect(testData.Teams[0].Status.Conditions).To(ContainElements(testutil.MatchCondition(status.TrueCondition(status.ReadyType))))
+				g.Expect(testData.Teams[0].Status.Conditions).To(ContainElements(conditions.MatchCondition(status.TrueCondition(status.ReadyType))))
 			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -862,7 +862,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),

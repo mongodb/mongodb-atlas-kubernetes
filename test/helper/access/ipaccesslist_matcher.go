@@ -1,5 +1,4 @@
-// TODO: move away from pkg, this code is only usable from tests
-package testutil
+package access
 
 import (
 	"github.com/onsi/gomega/format"

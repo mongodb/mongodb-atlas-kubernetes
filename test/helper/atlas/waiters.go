@@ -1,10 +1,9 @@
-// TODO: move away from pkg, this code is only usable from tests
-package testutil
+package atlas
 
 import (
 	"context"
 
-	. "github.com/onsi/gomega"
+	g "github.com/onsi/gomega"
 	"go.mongodb.org/atlas/mongodbatlas"
 )
 
@@ -28,7 +27,7 @@ func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient 
 				}
 			}
 
-			Expect(allTrue).To(BeFalse())
+			g.Expect(allTrue).To(g.BeFalse())
 
 			return allTrue
 		}
@@ -37,13 +36,13 @@ func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient 
 
 // WaitForAtlasDatabaseUserStateToNotBeReached periodically checks the given atlas database user for a given condition.
 // The function returns true after the given context timeout is exceeded.
-func WaitForAtlasDatabaseUserStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, authDb, groupId, userName string, fns ...func(user *mongodbatlas.DatabaseUser) bool) func() bool {
+func WaitForAtlasDatabaseUserStateToNotBeReached(ctx context.Context, atlasClient *mongodbatlas.Client, authDB, groupID, userName string, fns ...func(user *mongodbatlas.DatabaseUser) bool) func() bool {
 	return func() bool {
 		select {
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDatabaseUser, _, err := atlasClient.DatabaseUsers.Get(ctx, authDb, groupId, userName)
+			atlasDatabaseUser, _, err := atlasClient.DatabaseUsers.Get(ctx, authDB, groupID, userName)
 			if err != nil {
 				return false
 			}
@@ -55,7 +54,7 @@ func WaitForAtlasDatabaseUserStateToNotBeReached(ctx context.Context, atlasClien
 				}
 			}
 
-			Expect(allTrue).To(BeFalse())
+			g.Expect(allTrue).To(g.BeFalse())
 
 			return allTrue
 		}
@@ -82,7 +81,7 @@ func WaitForAtlasProjectStateToNotBeReached(ctx context.Context, atlasClient *mo
 				}
 			}
 
-			Expect(allTrue).To(BeFalse())
+			g.Expect(allTrue).To(g.BeFalse())
 
 			return allTrue
 		}

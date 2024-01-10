@@ -1,5 +1,4 @@
-// TODO: move away from pkg, this code is only usable from tests
-package testutil
+package resources
 
 import (
 	"context"
@@ -12,6 +11,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 )
 
 func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, checksIfFail ...func(mdbv1.AtlasCustomResource)) bool {
@@ -24,7 +24,7 @@ func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomRe
 		return false
 	}
 
-	match, err := gomega.ContainElement(MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
+	match, err := gomega.ContainElement(conditions.MatchCondition(expectedCondition)).Match(createdResource.GetStatus().GetConditions())
 	if err != nil || !match {
 		if len(checksIfFail) > 0 {
 			for _, f := range checksIfFail {

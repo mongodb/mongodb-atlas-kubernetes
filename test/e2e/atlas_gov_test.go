@@ -20,8 +20,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloudaccess"
@@ -161,7 +161,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Project is ready", func() {
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.IPAccessListReadyType),
@@ -216,7 +216,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectTeamsReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.ProjectTeamsReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -249,7 +249,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.CloudProviderIntegrationReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.CloudProviderIntegrationReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -283,7 +283,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.NetworkPeerReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.NetworkPeerReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -329,7 +329,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.EncryptionAtRestReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.EncryptionAtRestReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
@@ -346,7 +346,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.PrivateEndpoints).ShouldNot(BeEmpty())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.PrivateEndpointServiceReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.PrivateEndpointServiceReadyType))))
 			}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 20).Should(Succeed())
 
 			peID, err := awsHelper.CreatePrivateEndpoint(
@@ -362,12 +362,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).To(ContainElement(testutil.MatchCondition(status.TrueCondition(status.PrivateEndpointReadyType))))
+				g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.PrivateEndpointReadyType))))
 			}).WithTimeout(time.Minute * 10).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Project is in ready state", func() {
-			expectedConditions := testutil.MatchConditions(
+			expectedConditions := conditions.MatchConditions(
 				status.TrueCondition(status.ValidationSucceeded),
 				status.TrueCondition(status.ProjectReadyType),
 				status.TrueCondition(status.IPAccessListReadyType),
@@ -505,7 +505,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Cluster is in ready state", func() {
-			expectedConditions := testutil.MatchConditions(
+			expectedConditions := conditions.MatchConditions(
 				status.TrueCondition(status.DeploymentReadyType),
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
@@ -568,7 +568,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("DatabaseUser is in ready state", func() {
-			expectedConditions := testutil.MatchConditions(
+			expectedConditions := conditions.MatchConditions(
 				status.TrueCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
 				status.TrueCondition(status.ResourceVersionStatus),
@@ -601,7 +601,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Project is ready", func() {
 			Eventually(func(g Gomega) {
-				expectedConditions := testutil.MatchConditions(
+				expectedConditions := conditions.MatchConditions(
 					status.TrueCondition(status.ValidationSucceeded),
 					status.TrueCondition(status.ProjectReadyType),
 					status.TrueCondition(status.ReadyType),
@@ -638,7 +638,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Serverless is not supported in Atlas for government", func() {
-			expectedConditions := testutil.MatchConditions(
+			expectedConditions := conditions.MatchConditions(
 				status.FalseCondition(status.DeploymentReadyType),
 				status.FalseCondition(status.ReadyType),
 				status.TrueCondition(status.ValidationSucceeded),
@@ -695,7 +695,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("DataFederation is not supported in Atlas for government", func() {
-			expectedConditions := testutil.MatchConditions(
+			expectedConditions := conditions.MatchConditions(
 				status.FalseCondition(status.DataFederationReadyType),
 				status.FalseCondition(status.ReadyType),
 			)
@@ -762,7 +762,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).ToNot(ContainElement(testutil.MatchCondition(status.TrueCondition(status.ProjectTeamsReadyType))))
+				g.Expect(testData.Project.Status.Conditions).ToNot(ContainElement(conditions.MatchCondition(status.TrueCondition(status.ProjectTeamsReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 

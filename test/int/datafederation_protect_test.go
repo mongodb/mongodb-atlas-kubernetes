@@ -15,7 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection-enabled"), func() {
@@ -53,7 +53,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 			Eventually(func() bool {
-				return testutil.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
 			}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 		})
 
@@ -136,7 +136,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, testDataFederation, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDataFederation, status.TrueCondition(status.ReadyType))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -160,7 +160,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, testDataFederation, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDataFederation, status.TrueCondition(status.ReadyType))
 					// TODO: Modify timeouts
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
