@@ -154,7 +154,9 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 
 func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUser) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username)
+		_, r, err := atlasClient.DatabaseUsersApi.
+			GetDatabaseUser(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username).
+			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -167,7 +169,9 @@ func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUse
 
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
+		_, r, err := atlasClient.ClustersApi.
+			GetCluster(context.Background(), projectID, deploymentName).
+			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -180,7 +184,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+		_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
