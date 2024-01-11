@@ -56,7 +56,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	// check existing backups meet requirements
 	// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
 	// if dont meet, set status, return workflow.Terminate()
-	backups, err := r.getBackupPoliciesInProject()
+	backups, err := r.getBackupPoliciesInProject(ctx.Context, project)
 	if err != nil {
 		ctx.Log.Errorf("failed to get backup policies: %v", err)
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
@@ -95,7 +95,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 
 // TODO: there is certainly a better way of doing this
 // can we annotate these seperate resources to attribute them to projects/deployments?
-func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context, project mdbv1.AtlasProject) ([]mdbv1.AtlasBackupPolicyItem, error) {
+func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context, project *mdbv1.AtlasProject) ([]mdbv1.AtlasBackupPolicyItem, error) {
 	policies := []mdbv1.AtlasBackupPolicyItem{}
 	deployments := &mdbv1.AtlasDeploymentList{}
 
