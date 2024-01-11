@@ -11,8 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -89,18 +88,16 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	Describe("Operator is running with deletion protection disabled", func() {
 		It("Adds database users and allow them to be deleted", func() {
 			By("Creating a database user previously on Atlas", func() {
-				dbUser := &admin.CloudDatabaseUser{
-					Username:     dbUserName3,
-					Password:     toptr.MakePtr("mypass"),
-					DatabaseName: "admin",
-					Roles: []admin.DatabaseUserRole{
+				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
+				dbUser.SetPassword("mypass")
+				dbUser.SetRoles(
+					[]admin.DatabaseUserRole{
 						{
 							RoleName:     "readWriteAnyDatabase",
 							DatabaseName: "admin",
 						},
 					},
-					Scopes: []admin.UserScope{},
-				}
+				)
 				_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 				Expect(err).To(BeNil())
 			})
@@ -570,7 +567,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
 				containsDatabaseUser := func(dbUser *admin.CloudDatabaseUser) bool {
-					for _, role := range dbUser.Roles {
+					for _, role := range dbUser.GetRoles() {
 						if role.RoleName == "new-role" && role.DatabaseName == "new-database" && role.GetCollectionName() == "new-collection" {
 							return true
 						}
@@ -804,39 +801,11 @@ func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
 			Execute()
 		Expect(err).ToNot(HaveOccurred())
-		operatorDBUser, err := user.ToAtlas(context.Background(), k8sClient)
+		operatorDBUser, err := user.ToAtlasSDK(context.Background(), k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, projectID)))
+		Expect(*atlasDBUser).To(Equal(*operatorDBUser))
 	})
-}
-
-// normalize brings the operator 'user' to the user returned by Atlas that allows to perform comparison for equality
-func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.DatabaseUser {
-	if user.Scopes == nil {
-		user.Scopes = []mongodbatlas.Scope{}
-	}
-	if user.Labels == nil {
-		user.Labels = []mongodbatlas.Label{}
-	}
-	if user.LDAPAuthType == "" {
-		user.LDAPAuthType = "NONE"
-	}
-	if user.AWSIAMType == "" {
-		user.AWSIAMType = "NONE"
-	}
-	if user.X509Type == "" {
-		user.X509Type = "NONE"
-	}
-	if user.OIDCAuthType == "" {
-		user.OIDCAuthType = "NONE"
-	}
-	if user.DeleteAfterDate != "" {
-		user.DeleteAfterDate = timeutil.FormatISO8601(timeutil.MustParseISO8601(user.DeleteAfterDate))
-	}
-	user.GroupID = projectID
-	user.Password = ""
-	return user
 }
 
 func deleteSecret(user *mdbv1.AtlasDatabaseUser) {

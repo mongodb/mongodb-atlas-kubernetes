@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -137,7 +137,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasDataFederation).ToNot(BeNil())
-					g.Expect(atlasDataFederation.State).Should(Equal("ACTIVE"))
+					g.Expect(atlasDataFederation.GetState()).Should(Equal("ACTIVE"))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +37,12 @@ type ProductionProvider struct {
 	k8sClient       client.Client
 	domain          string
 	globalSecretRef client.ObjectKey
+}
+
+type credentialsSecret struct {
+	OrgID      string
+	PublicKey  string
+	PrivateKey string
 }
 
 func NewProductionProvider(atlasDomain string, globalSecretRef client.ObjectKey, k8sClient client.Client) *ProductionProvider {
@@ -81,26 +87,13 @@ func (p *ProductionProvider) IsResourceSupported(resource akov2.AtlasCustomResou
 }
 
 func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
-	if secretRef == nil {
-		secretRef = &p.globalSecretRef
-	}
-
-	secret := &corev1.Secret{}
-	if err := p.k8sClient.Get(ctx, *secretRef, secret); err != nil {
-		return nil, "", fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
-	}
-
-	secretData := make(map[string]string)
-	for k, v := range secret.Data {
-		secretData[k] = string(v)
-	}
-
-	if missingFields, valid := validateSecretData(secretData); !valid {
-		return nil, "", fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
+	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
+	if err != nil {
+		return nil, "", err
 	}
 
 	clientCfg := []httputil.ClientOpt{
-		httputil.Digest(secretData[publicAPIKey], secretData[privateAPIKey]),
+		httputil.Digest(secretData.PublicKey, secretData.PrivateKey),
 		httputil.LoggingTransport(log),
 	}
 	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, clientCfg...)
@@ -110,7 +103,7 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 
 	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
 
-	return c, secretData[orgIDKey], err
+	return c, secretData.OrgID, err
 }
 
 func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
@@ -126,41 +119,47 @@ func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.Ob
 	//	return nil, "", err
 	//}
 
-	c, err := NewClient(p.domain, secretData[publicAPIKey], secretData[privateAPIKey])
+	c, err := NewClient(p.domain, secretData.PublicKey, secretData.PrivateKey)
 
-	return c, secretData[orgIDKey], err
+	return c, secretData.OrgID, err
 }
 
-func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (map[string]string, error) {
+func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (credentialsSecret, error) {
 	if secretRef == nil {
 		secretRef = fallbackRef
 	}
 
 	secret := &corev1.Secret{}
 	if err := k8sClient.Get(ctx, *secretRef, secret); err != nil {
-		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
+		return credentialsSecret{}, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
-	secretData := make(map[string]string)
-	for k, v := range secret.Data {
-		secretData[k] = string(v)
+	secretData := credentialsSecret{
+		OrgID:      string(secret.Data[orgIDKey]),
+		PublicKey:  string(secret.Data[publicAPIKey]),
+		PrivateKey: string(secret.Data[privateAPIKey]),
 	}
 
-	if missingFields, valid := validateSecretData(secretData); !valid {
-		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
+	if missingFields, valid := validateSecretData(&secretData); !valid {
+		return credentialsSecret{}, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
 	}
 
 	return secretData, nil
 }
 
-func validateSecretData(secretData map[string]string) ([]string, bool) {
-	var missingFields []string
-	requiredKeys := []string{orgIDKey, publicAPIKey, privateAPIKey}
+func validateSecretData(secretData *credentialsSecret) ([]string, bool) {
+	missingFields := make([]string, 0, 3)
 
-	for _, key := range requiredKeys {
-		if _, ok := secretData[key]; !ok {
-			missingFields = append(missingFields, key)
-		}
+	if secretData.OrgID == "" {
+		missingFields = append(missingFields, orgIDKey)
+	}
+
+	if secretData.PublicKey == "" {
+		missingFields = append(missingFields, publicAPIKey)
+	}
+
+	if secretData.PrivateKey == "" {
+		missingFields = append(missingFields, privateAPIKey)
 	}
 
 	if len(missingFields) > 0 {

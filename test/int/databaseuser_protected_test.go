@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -69,18 +69,16 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		})
 
 		By("Creating database user", func() {
-			dbUser := &admin.CloudDatabaseUser{
-				Username:     dbUserName3,
-				Password:     toptr.MakePtr("mypass"),
-				DatabaseName: "admin",
-				Roles: []admin.DatabaseUserRole{
+			dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
+			dbUser.SetPassword("mypass")
+			dbUser.SetRoles(
+				[]admin.DatabaseUserRole{
 					{
 						RoleName:     "readAnyDatabase",
 						DatabaseName: "admin",
 					},
 				},
-				Scopes: []admin.UserScope{},
-			}
+			)
 			_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 			Expect(err).To(BeNil())
 		})

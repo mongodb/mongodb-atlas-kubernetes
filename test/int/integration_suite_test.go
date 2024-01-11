@@ -29,7 +29,7 @@ import (
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,14 +103,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 
 	By("Validating configuration data is available", func() {
-		orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
-		Expect(orgID).ToNot(BeEmpty())
-		Expect(publicKey).ToNot(BeEmpty())
-		Expect(privateKey).ToNot(BeEmpty())
-
-		if domain, found := os.LookupEnv("ATLAS_DOMAIN"); found && domain != "" {
-			atlasDomain = domain
-		}
+		Expect(os.Getenv("ATLAS_ORG_ID")).ToNot(BeEmpty())
+		Expect(os.Getenv("ATLAS_PUBLIC_KEY")).ToNot(BeEmpty())
+		Expect(os.Getenv("ATLAS_PRIVATE_KEY")).ToNot(BeEmpty())
 	})
 
 	var b bytes.Buffer
@@ -139,6 +134,12 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		d := gob.NewDecoder(bytes.NewReader(data))
 		err := d.Decode(&cfg)
 		Expect(err).ToNot(HaveOccurred())
+
+		orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
+
+		if domain, found := os.LookupEnv("ATLAS_DOMAIN"); found && domain != "" {
+			atlasDomain = domain
+		}
 
 		err = mdbv1.AddToScheme(scheme.Scheme)
 		Expect(err).ToNot(HaveOccurred())

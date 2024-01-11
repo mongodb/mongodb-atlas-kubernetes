@@ -148,31 +148,31 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 
 func TestValidateSecretData(t *testing.T) {
 	t.Run("should be invalid and all missing data", func(t *testing.T) {
-		missing, ok := validateSecretData(map[string]string{})
+		missing, ok := validateSecretData(&credentialsSecret{})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"orgId", "publicApiKey", "privateApiKey"})
 	})
 
 	t.Run("should be invalid and organization id is missing", func(t *testing.T) {
-		missing, ok := validateSecretData(map[string]string{"publicApiKey": "abcdef", "privateApiKey": "123456"})
+		missing, ok := validateSecretData(&credentialsSecret{PublicKey: "abcdef", PrivateKey: "123456"})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"orgId"})
 	})
 
 	t.Run("should be invalid and public key id is missing", func(t *testing.T) {
-		missing, ok := validateSecretData(map[string]string{"orgId": "abcdef", "privateApiKey": "123456"})
+		missing, ok := validateSecretData(&credentialsSecret{OrgID: "abcdef", PrivateKey: "123456"})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"publicApiKey"})
 	})
 
 	t.Run("should be invalid and private key id is missing", func(t *testing.T) {
-		missing, ok := validateSecretData(map[string]string{"publicApiKey": "abcdef", "orgId": "123456"})
+		missing, ok := validateSecretData(&credentialsSecret{PublicKey: "abcdef", OrgID: "123456"})
 		assert.False(t, ok)
 		assert.Equal(t, missing, []string{"privateApiKey"})
 	})
 
 	t.Run("should be valid", func(t *testing.T) {
-		missing, ok := validateSecretData(map[string]string{"orgId": "my-org", "publicApiKey": "abcdef", "privateApiKey": "123456"})
+		missing, ok := validateSecretData(&credentialsSecret{OrgID: "my-org", PublicKey: "abcdef", PrivateKey: "123456"})
 		assert.True(t, ok)
 		assert.Empty(t, missing)
 	})

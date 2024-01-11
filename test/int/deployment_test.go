@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -108,9 +108,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.Standard))
-			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
-			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.MongoDBVersion))
+			Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.GetStandard()))
+			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
+			Expect(createdDeployment.Status.MongoDBVersion).To(Equal(atlasDeployment.GetMongoDBVersion()))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
 			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
 			Expect(createdDeployment.Status.Conditions).To(ConsistOf(conditions.MatchConditions(
@@ -132,7 +132,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
+			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.GetStandardSrv()))
 			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
 			Expect(createdDeployment.Status.Conditions).To(HaveLen(4))
@@ -272,11 +272,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(deployment *admin.AdvancedClusterDescription) {
-				Expect(deployment.ReplicationSpecs).To(HaveLen(1))
-				Expect(deployment.ReplicationSpecs[0].Id).NotTo(BeNil())
-				Expect(deployment.ReplicationSpecs[0].ZoneName).To(Equal("Zone 1"))
-				Expect(deployment.ReplicationSpecs[0].RegionConfigs).To(HaveLen(1))
-				Expect(deployment.ReplicationSpecs[0].RegionConfigs[0]).NotTo(BeNil())
+				Expect(deployment.GetReplicationSpecs()).To(HaveLen(1))
+				Expect(deployment.GetReplicationSpecs()[0].Id).NotTo(BeNil())
+				Expect(deployment.GetReplicationSpecs()[0].ZoneName).To(Equal("Zone 1"))
+				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()).To(HaveLen(1))
+				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()[0]).NotTo(BeNil())
 			}
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -285,7 +285,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
-					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(1))
+					Expect(deployment.GetReplicationSpecs()[0].NumShards).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
@@ -299,7 +299,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				twoNumShard := func(deployment *admin.AdvancedClusterDescription) {
-					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(numShards))
+					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(numShards))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
 				checkAtlasState(replicationSpecsCheck, twoNumShard)
@@ -464,14 +464,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				expectedReplicationSpecs := mergedDeployment.ReplicationSpecs
 
 				// The ID field is added by Atlas - we don't have it in our specs
-				Expect(c.ReplicationSpecs[0].Id).NotTo(BeNil())
+				Expect(c.GetReplicationSpecs()[0].Id).NotTo(BeNil())
 
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
-				Expect(c.ReplicationSpecs[0].NumShards).To(Equal(expectedReplicationSpecs[0].NumShards))
-				Expect(c.ReplicationSpecs[0].ZoneName).To(Equal(expectedReplicationSpecs[0].ZoneName))
+				Expect(c.GetReplicationSpecs()[0].NumShards).To(Equal(expectedReplicationSpecs[0].NumShards))
+				Expect(c.GetReplicationSpecs()[0].ZoneName).To(Equal(expectedReplicationSpecs[0].ZoneName))
 
 				less := func(a, b *mongodbatlas.AdvancedRegionConfig) bool { return a.RegionName < b.RegionName }
-				Expect(cmp.Diff(c.ReplicationSpecs[0].RegionConfigs, expectedReplicationSpecs[0].RegionConfigs, cmpopts.SortSlices(less)))
+				Expect(cmp.Diff(c.GetReplicationSpecs()[0].RegionConfigs, expectedReplicationSpecs[0].RegionConfigs, cmpopts.SortSlices(less)))
 			}
 
 			By("Creating the Deployment", func() {
@@ -568,7 +568,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment, err := createdDeployment.Spec.Deployment()
 					Expect(err).NotTo(HaveOccurred())
 
-					autoScalingInput := c.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
+					autoScalingInput := c.GetReplicationSpecs()[0].GetRegionConfigs()[0].AutoScaling
 					autoScalingSpec := deployment.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
 					Expect(autoScalingInput.Compute.Enabled).To(Equal(autoScalingSpec.Compute.Enabled))
 					Expect(autoScalingInput.Compute.MaxInstanceSize).To(Equal(autoScalingSpec.Compute.MaxInstanceSize))
@@ -1106,9 +1106,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(current).NotTo(BeNil())
 
-						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs.InstanceSize).To(Equal("M20"))
-						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize).To(Equal("M20"))
-						g.Expect(current.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs.InstanceSize).To(Equal("M20"))
+						replicas := current.GetReplicationSpecs()
+						g.Expect(replicas[0].GetRegionConfigs()[0].AnalyticsSpecs.InstanceSize).To(Equal("M20"))
+						g.Expect(replicas[0].GetRegionConfigs()[0].ElectableSpecs.InstanceSize).To(Equal("M20"))
+						g.Expect(replicas[0].GetRegionConfigs()[0].ReadOnlySpecs.InstanceSize).To(Equal("M20"))
 						return true
 					}).WithTimeout(2 * time.Minute).WithPolling(interval).Should(BeTrue())
 				})
@@ -1296,10 +1297,10 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 					if err != nil {
 						return err
 					}
-					if len(actualPolicy.Policies[0].PolicyItems) == 0 {
+					if len(actualPolicy.GetPolicies()[0].GetPolicyItems()) == 0 {
 						return errors.New("policies == 0")
 					}
-					ap := actualPolicy.Policies[0].PolicyItems[0]
+					ap := actualPolicy.GetPolicies()[0].GetPolicyItems()[0]
 					cp := backupPolicyDefault.Spec.Items[0]
 					if ap.FrequencyType != cp.FrequencyType {
 						return fmt.Errorf("incorrect frequency type. got: %v. expected: %v", ap.FrequencyType, cp.FrequencyType)
@@ -1341,9 +1342,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						GetCluster(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name).
 						Execute()
 					g.Expect(err).Should(BeNil())
-					g.Expect(deployment.StateName).Should(Equal("IDLE"))
-					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
-					g.Expect(len(deployment.ReplicationSpecs)).ShouldNot(Equal(0))
+					g.Expect(deployment.GetStateName()).Should(Equal("IDLE"))
+					g.Expect(deployment.GetBackupEnabled()).Should(BeTrue())
+					g.Expect(len(deployment.GetReplicationSpecs())).ShouldNot(Equal(0))
 				}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Succeed())
 			})
 
@@ -1435,9 +1436,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						GetCluster(context.Background(), createdProject.ID(), secondDeployment.Spec.DeploymentSpec.Name).
 						Execute()
 					g.Expect(err).Should(BeNil())
-					g.Expect(deployment.StateName).Should(Equal("IDLE"))
-					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
-					g.Expect(len(deployment.ReplicationSpecs)).ShouldNot(Equal(0))
+					g.Expect(deployment.GetStateName()).Should(Equal("IDLE"))
+					g.Expect(deployment.GetBackupEnabled()).Should(BeTrue())
+					g.Expect(len(deployment.GetReplicationSpecs())).ShouldNot(Equal(0))
 				}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Succeed())
 			})
 
@@ -1512,8 +1513,8 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []mongodbatlas.CopySetting) {
 	atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 	g.Expect(err).Should(BeNil())
-	g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
-	g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
+	g.Expect(atlasCluster.GetStateName()).Should(Equal("IDLE"))
+	g.Expect(atlasCluster.GetBackupEnabled()).Should(BeTrue())
 
 	for i := range copySettings {
 		copySettings[i].ReplicationSpecID = toptr.MakePtr(atlasCluster.GetReplicationSpecs()[0].GetId())
@@ -1523,8 +1524,8 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 		GetBackupSchedule(context.Background(), projectID, deploymentName).
 		Execute()
 	g.Expect(err).Should(BeNil())
-	g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
-	g.Expect(atlasBSchedule.CopySettings).Should(Equal(copySettings))
+	g.Expect(len(atlasBSchedule.GetCopySettings())).ShouldNot(Equal(0))
+	g.Expect(atlasBSchedule.GetCopySettings()).Should(Equal(copySettings))
 }
 
 // checkAtlasDeploymentRemoved returns true if the Atlas Deployment is removed from Atlas. Note the behavior: the deployment

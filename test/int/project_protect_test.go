@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115003/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -60,7 +60,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -102,7 +102,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
