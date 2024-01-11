@@ -41,7 +41,8 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
 	err := r.Client.Get(context.Background(), *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
 	if err != nil {
-		ctx.Log.Errorf("failed to get backup compliance policy ")
+		ctx.Log.Errorf("failed to get backup compliance policy: %v", err)
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 	}
 	// check if compliance policy exists in atlas (and matches)
 	// if match, return workflow.OK()
