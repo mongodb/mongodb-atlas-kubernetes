@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +28,7 @@ const (
 
 type Provider interface {
 	Client(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error)
+	SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error)
 	IsCloudGov() bool
 	IsResourceSupported(resource akov2.AtlasCustomResource) bool
 }
@@ -109,6 +111,46 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
 
 	return c, secretData[orgIDKey], err
+}
+
+func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+	secretData, err := getSecrets(ctx, p.k8sClient, secretRef, &p.globalSecretRef)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// TODO review we need add a custom logger to http client
+	//httpClientWithCustomLogger := http.DefaultClient
+	//err = httputil.LoggingTransport(log)(http.DefaultClient)
+	//if err != nil {
+	//	return nil, "", err
+	//}
+
+	c, err := NewClient(p.domain, secretData[publicAPIKey], secretData[privateAPIKey])
+
+	return c, secretData[orgIDKey], err
+}
+
+func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (map[string]string, error) {
+	if secretRef == nil {
+		secretRef = fallbackRef
+	}
+
+	secret := &corev1.Secret{}
+	if err := k8sClient.Get(ctx, *secretRef, secret); err != nil {
+		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
+	}
+
+	secretData := make(map[string]string)
+	for k, v := range secret.Data {
+		secretData[k] = string(v)
+	}
+
+	if missingFields, valid := validateSecretData(secretData); !valid {
+		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
+	}
+
+	return secretData, nil
 }
 
 func validateSecretData(secretData map[string]string) ([]string, bool) {
