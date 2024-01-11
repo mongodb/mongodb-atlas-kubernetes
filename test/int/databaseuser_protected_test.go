@@ -6,13 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -72,19 +69,19 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		})
 
 		By("Creating database user", func() {
-			dbUser := &mongodbatlas.DatabaseUser{
+			dbUser := &admin.CloudDatabaseUser{
 				Username:     dbUserName3,
-				Password:     "mypass",
+				Password:     toptr.MakePtr("mypass"),
 				DatabaseName: "admin",
-				Roles: []mongodbatlas.Role{
+				Roles: []admin.DatabaseUserRole{
 					{
 						RoleName:     "readAnyDatabase",
 						DatabaseName: "admin",
 					},
 				},
-				Scopes: []mongodbatlas.Scope{},
+				Scopes: []admin.UserScope{},
 			}
-			_, _, err := atlasClient.DatabaseUsers.Create(context.Background(), testProject.ID(), dbUser)
+			_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 			Expect(err).To(BeNil())
 		})
 	})
@@ -312,7 +309,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), testProject.ID(), deploymentName)
+				_, r, err := atlasClient.ClustersApi.
+					GetCluster(context.Background(), testProject.ID(), deploymentName).
+					Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true
@@ -327,11 +326,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			projectID := testProject.ID()
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+				_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true

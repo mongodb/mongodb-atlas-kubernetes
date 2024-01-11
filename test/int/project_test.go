@@ -2,37 +2,31 @@ package int
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/access"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/maintenance"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/access"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/maintenance"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 const (
@@ -67,11 +61,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	})
 
 	checkIPAccessListInAtlas := func() {
-		list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
+		list, _, err := atlasClient.ProjectIPAccessListApi.
+			ListProjectIpAccessLists(context.Background(), createdProject.ID()).
+			Execute()
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(list.Results).To(HaveLen(len(createdProject.Spec.ProjectIPAccessList)))
-		Expect(list.Results[0]).To(access.MatchIPAccessList(createdProject.Spec.ProjectIPAccessList[0]))
+		Expect(list.GetTotalCount()).To(Equal(len(createdProject.Spec.ProjectIPAccessList)))
+		Expect(list.GetResults()[0]).To(access.MatchIPAccessList(createdProject.Spec.ProjectIPAccessList[0]))
 	}
 
 	checkExpiredAccessLists := func(lists []project.IPAccessList) {
@@ -83,7 +79,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	}
 
 	checkMaintenanceWindowInAtlas := func() {
-		window, _, err := atlasClient.MaintenanceWindows.Get(context.Background(), createdProject.ID())
+		window, _, err := atlasClient.MaintenanceWindowsApi.
+			GetMaintenanceWindow(context.Background(), createdProject.ID()).
+			Execute()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(window).To(maintenance.MatchMaintenanceWindow(createdProject.Spec.MaintenanceWindow))
 	}
@@ -112,7 +110,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			checkAtlasProjectIsReady()
 
 			// Atlas
-			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.Status.ID)
+			atlasProject, _, err := atlasClient.ProjectsApi.
+				GetProject(context.Background(), createdProject.Status.ID).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
@@ -230,12 +230,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			events.EventExists(k8sClient, createdProject, "Warning", string(workflow.AtlasAPIAccessNotConfigured), "Secret .* not found")
 
 			// Atlas
-			_, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), expectedProject.Spec.Name)
+			_, _, err := atlasClient.ProjectsApi.
+				GetProjectByName(context.Background(), expectedProject.Spec.Name).
+				Execute()
 
 			// "NOT_IN_GROUP" is what is returned if the project is not found
-			var apiError *mongodbatlas.ErrorResponse
-			Expect(errors.As(err, &apiError)).To(BeTrue(), "Error occurred: "+err.Error())
-			Expect(apiError.ErrorCode).To(Equal(atlas.NotInGroup))
+			Expect(admin.IsErrorCode(err, atlas.NotInGroup)).To(BeTrue())
 		})
 	})
 
@@ -256,7 +256,8 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
 			})
 			By("Manually deleting the project from Atlas", func() {
-				_, _ = atlasClient.Projects.Delete(context.Background(), createdProject.ID())
+				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), createdProject.ID()).Execute()
+				Expect(err).ToNot(HaveOccurred())
 				createdProject = nil
 			})
 		})
@@ -364,7 +365,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(createdProject.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.ProjectReadyType))))
 
 			// Atlas
-			atlasProject, _, err := atlasClient.Projects.GetOneProject(context.Background(), createdProject.ID())
+			atlasProject, _, err := atlasClient.ProjectsApi.GetProject(context.Background(), createdProject.ID()).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
@@ -478,11 +479,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			checkExpiredAccessLists([]project.IPAccessList{expiredList})
 
 			// Atlas
-			list, _, err := atlasClient.ProjectIPAccessList.List(context.Background(), createdProject.ID(), &mongodbatlas.ListOptions{})
+			list, _, err := atlasClient.ProjectIPAccessListApi.
+				ListProjectIpAccessLists(context.Background(), createdProject.ID()).
+				Execute()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(list.Results).To(HaveLen(1))
-			Expect(list.Results[0]).To(access.MatchIPAccessList(activeList))
+			Expect(list.GetTotalCount()).To(Equal(1))
+			Expect(list.GetResults()[0]).To(access.MatchIPAccessList(activeList))
 		})
 		It("Should Fail (AWS security group not supported without VPC)", func() {
 			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
@@ -682,7 +685,7 @@ func buildConnectionSecret(name string) corev1.Secret {
 // checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+		_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
 		if err != nil {
 			if r != nil && (r.StatusCode == http.StatusNotFound || r.StatusCode == http.StatusUnauthorized) {
 				return true

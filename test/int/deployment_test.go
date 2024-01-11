@@ -8,26 +8,18 @@ import (
 	"strconv"
 	"time"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
@@ -36,7 +28,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 const (
@@ -82,7 +79,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas to let project get removed
-				_, err := atlasClient.AdvancedClusters.Delete(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName(), nil)
+				_, err := atlasClient.ClustersApi.
+					DeleteCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
+					Execute()
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(checkAtlasDeploymentRemoved(createdProject.Status.ID, createdDeployment.GetDeploymentName()), 600, interval).Should(BeTrue())
 				createdDeployment = nil
@@ -103,7 +102,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			deploymentName := createdDeployment.GetDeploymentName()
 			Expect(deploymentName).ToNot(BeEmpty())
 
-			atlasDeployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, deploymentName)
+			atlasDeployment, _, err := atlasClient.ClustersApi.
+				GetCluster(context.Background(), createdProject.Status.ID, deploymentName).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
@@ -125,11 +126,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	doServerlessDeploymentStatusChecks := func() {
 		By("Checking observed Serverless state", func() {
-			atlasDeployment, _, err := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+			atlasDeployment, _, err := atlasClient.ServerlessInstancesApi.
+				GetServerlessInstance(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(createdDeployment.Status.ConnectionStrings).NotTo(BeNil())
-			Expect(createdDeployment.Status.ConnectionStrings.Standard).To(Equal(atlasDeployment.ConnectionStrings.Standard))
 			Expect(createdDeployment.Status.ConnectionStrings.StandardSrv).To(Equal(atlasDeployment.ConnectionStrings.StandardSrv))
 			Expect(createdDeployment.Status.MongoDBVersion).To(Not(BeEmpty()))
 			Expect(createdDeployment.Status.StateName).To(Equal("IDLE"))
@@ -145,13 +147,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
-	checkAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
+	checkAtlasState := func(additionalChecks ...func(c *admin.AdvancedClusterDescription)) {
 		By("Verifying Deployment state in Atlas", func() {
 
-			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
+				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
+			mergedDeployment, atlasDeployment, err := mergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
@@ -163,12 +167,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	}
 
-	checkAdvancedAtlasState := func(additionalChecks ...func(c *mongodbatlas.AdvancedCluster)) {
+	checkAdvancedAtlasState := func(additionalChecks ...func(c *admin.AdvancedClusterDescription)) {
 		By("Verifying Advanced Deployment state in Atlas", func() {
-			atlasDeploymentAsAtlas, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
+				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
-			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
+			mergedDeployment, atlasDeployment, err := mergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
@@ -182,7 +188,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 	checkAdvancedDeploymentOptions := func(specOptions *mdbv1.ProcessArgs) {
 		By("Checking that Atlas Advanced Options are equal to the Spec Options", func() {
-			atlasOptions, _, err := atlasClient.Clusters.GetProcessArgs(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName())
+			atlasOptions, _, err := atlasClient.ClustersApi.
+				GetClusterAdvancedConfiguration(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(specOptions.IsEqual(atlasOptions)).To(BeTrue())
@@ -263,9 +271,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
-			replicationSpecsCheck := func(deployment *mongodbatlas.AdvancedCluster) {
+			replicationSpecsCheck := func(deployment *admin.AdvancedClusterDescription) {
 				Expect(deployment.ReplicationSpecs).To(HaveLen(1))
-				Expect(deployment.ReplicationSpecs[0].ID).NotTo(BeNil())
+				Expect(deployment.ReplicationSpecs[0].Id).NotTo(BeNil())
 				Expect(deployment.ReplicationSpecs[0].ZoneName).To(Equal("Zone 1"))
 				Expect(deployment.ReplicationSpecs[0].RegionConfigs).To(HaveLen(1))
 				Expect(deployment.ReplicationSpecs[0].RegionConfigs[0]).NotTo(BeNil())
@@ -276,7 +284,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 				doDeploymentStatusChecks()
 
-				singleNumShard := func(deployment *mongodbatlas.AdvancedCluster) {
+				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
 					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
@@ -290,7 +298,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				performUpdate(40 * time.Minute)
 				doDeploymentStatusChecks()
 
-				twoNumShard := func(deployment *mongodbatlas.AdvancedCluster) {
+				twoNumShard := func(deployment *admin.AdvancedClusterDescription) {
 					Expect(deployment.ReplicationSpecs[0].NumShards).To(Equal(numShards))
 				}
 				// ReplicationSpecs has the same defaults but the number of shards has changed
@@ -449,14 +457,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(10)
 
-			replicationSpecsCheckFunc := func(c *mongodbatlas.AdvancedCluster) {
-				mergedDeployment, _, err := atlasdeployment.MergedAdvancedDeployment(*c, *createdDeployment.Spec.DeploymentSpec)
+			replicationSpecsCheckFunc := func(c *admin.AdvancedClusterDescription) {
+				mergedDeployment, _, err := mergedAdvancedDeployment(*c, *createdDeployment.Spec.DeploymentSpec)
 				Expect(err).ToNot(HaveOccurred())
 
 				expectedReplicationSpecs := mergedDeployment.ReplicationSpecs
 
 				// The ID field is added by Atlas - we don't have it in our specs
-				Expect(c.ReplicationSpecs[0].ID).NotTo(BeNil())
+				Expect(c.ReplicationSpecs[0].Id).NotTo(BeNil())
 
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
 				Expect(c.ReplicationSpecs[0].NumShards).To(Equal(expectedReplicationSpecs[0].NumShards))
@@ -556,7 +564,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 				doDeploymentStatusChecks()
 
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					deployment, err := createdDeployment.Spec.Deployment()
 					Expect(err).NotTo(HaveOccurred())
 
@@ -612,7 +620,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				performUpdate(30 * time.Minute)
 
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
@@ -644,10 +652,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
-						Expect(c.Tags[i].Key == tag.Key).To(BeTrue())
-						Expect(c.Tags[i].Value == tag.Value).To(BeTrue())
+						Expect(c.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
+						Expect(c.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
 					}
 				})
 			})
@@ -656,10 +664,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.DeploymentSpec.Tags = []*mdbv1.TagSpec{{Key: "test-2", Value: "value-2"}, {Key: "test-1", Value: "value-1"}}
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					for i, tag := range createdDeployment.Spec.DeploymentSpec.Tags {
-						Expect(c.Tags[i].Key == tag.Key).To(BeTrue())
-						Expect(c.Tags[i].Value == tag.Value).To(BeTrue())
+						Expect(c.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
+						Expect(c.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
 					}
 				})
 			})
@@ -683,7 +691,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = toptr.MakePtr(true)
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
@@ -692,7 +700,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.DeploymentSpec.DiskSizeGB = toptr.MakePtr(15)
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					Expect(*c.DiskSizeGB).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
 					// check whether https://github.com/mongodb/go-client-mongodb-atlas/issues/140 is fixed
@@ -704,7 +712,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.DeploymentSpec.Paused = toptr.MakePtr(true)
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
 				})
 			})
@@ -733,14 +741,14 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.DeploymentSpec.Paused = toptr.MakePtr(false)
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					Expect(c.Paused).To(Equal(createdDeployment.Spec.DeploymentSpec.Paused))
 				})
 			})
 
 			By("Checking that modifications were applied after unpausing", func() {
 				doDeploymentStatusChecks()
-				checkAtlasState(func(c *mongodbatlas.AdvancedCluster) {
+				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
 					Expect(c.BackupEnabled).To(Equal(createdDeployment.Spec.DeploymentSpec.BackupEnabled))
 				})
 			})
@@ -895,9 +903,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
 
-				containsLabel := func(ac *mongodbatlas.AdvancedCluster) bool {
-					for _, label := range ac.Labels {
-						if label.Key == "some-key" && label.Value == "some-value" {
+				containsLabel := func(ac *admin.AdvancedClusterDescription) bool {
+					for _, label := range ac.GetLabels() {
+						if label.GetKey() == "some-key" && label.GetValue() == "some-value" {
 							return true
 						}
 					}
@@ -1092,7 +1100,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 					Eventually(func(g Gomega) bool {
 						GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
-						current, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
+						current, _, err := atlasClient.ClustersApi.
+							GetCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
+							Execute()
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(current).NotTo(BeNil())
 
@@ -1143,11 +1153,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "test-1", Value: "value-1"}, {Key: "test-2", Value: "value-2"}}
 				performUpdate(20 * time.Minute)
 				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				atlasDeployment, _, _ := atlasClient.ServerlessInstancesApi.
+					GetServerlessInstance(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name).
+					Execute()
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-						Expect((*atlasDeployment.Tags)[i].Key == tag.Key).To(BeTrue())
-						Expect((*atlasDeployment.Tags)[i].Value == tag.Value).To(BeTrue())
+						Expect(atlasDeployment.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
+						Expect(atlasDeployment.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
 					}
 				}
 			})
@@ -1156,11 +1168,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment.Spec.ServerlessSpec.Tags = []*mdbv1.TagSpec{{Key: "test-2", Value: "value-2"}, {Key: "test-1", Value: "value-1"}}
 				performUpdate(20 * time.Minute)
 				doServerlessDeploymentStatusChecks()
-				atlasDeployment, _, _ := atlasClient.ServerlessInstances.Get(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name)
+				atlasDeployment, _, _ := atlasClient.ServerlessInstancesApi.
+					GetServerlessInstance(context.Background(), createdProject.Status.ID, createdDeployment.Spec.ServerlessSpec.Name).
+					Execute()
 				if createdDeployment != nil {
 					for i, tag := range createdDeployment.Spec.ServerlessSpec.Tags {
-						Expect((*atlasDeployment.Tags)[i].Key == tag.Key).To(BeTrue())
-						Expect((*atlasDeployment.Tags)[i].Value == tag.Value).To(BeTrue())
+						Expect(atlasDeployment.GetTags()[i].GetKey() == tag.Key).To(BeTrue())
+						Expect(atlasDeployment.GetTags()[i].GetValue() == tag.Value).To(BeTrue())
 					}
 				}
 			})
@@ -1262,11 +1276,13 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 				// Do not use Gomega function here like func(g Gomega) as it seems to hang when tests run in parallel
 				Eventually(
 					func() error {
-						deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
+						deployment, _, err := atlasClient.ClustersApi.
+							GetCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
+							Execute()
 						if err != nil {
 							return err
 						}
-						if deployment.StateName != "IDLE" {
+						if deployment.GetStateName() != "IDLE" {
 							return errors.New("deployment is not IDLE yet")
 						}
 						time.Sleep(10 * time.Second)
@@ -1274,7 +1290,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 					}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Not(HaveOccurred()))
 
 				Eventually(func() error {
-					actualPolicy, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName())
+					actualPolicy, _, err := atlasClient.CloudBackupsApi.
+						GetBackupSchedule(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
+						Execute()
 					if err != nil {
 						return err
 					}
@@ -1319,7 +1337,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name)
+					deployment, _, err := atlasClient.ClustersApi.
+						GetCluster(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name).
+						Execute()
 					g.Expect(err).Should(BeNil())
 					g.Expect(deployment.StateName).Should(Equal("IDLE"))
 					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
@@ -1411,7 +1431,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 				Expect(k8sClient.Create(context.Background(), secondDeployment)).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.AdvancedClusters.Get(context.Background(), createdProject.ID(), secondDeployment.Spec.DeploymentSpec.Name)
+					deployment, _, err := atlasClient.ClustersApi.
+						GetCluster(context.Background(), createdProject.ID(), secondDeployment.Spec.DeploymentSpec.Name).
+						Execute()
 					g.Expect(err).Should(BeNil())
 					g.Expect(deployment.StateName).Should(Equal("IDLE"))
 					g.Expect(*deployment.BackupEnabled).Should(BeTrue())
@@ -1488,16 +1510,18 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 }
 
 func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []mongodbatlas.CopySetting) {
-	atlasCluster, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
+	atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 	g.Expect(err).Should(BeNil())
 	g.Expect(atlasCluster.StateName).Should(Equal("IDLE"))
 	g.Expect(*atlasCluster.BackupEnabled).Should(BeTrue())
 
 	for i := range copySettings {
-		copySettings[i].ReplicationSpecID = toptr.MakePtr(atlasCluster.ReplicationSpecs[0].ID)
+		copySettings[i].ReplicationSpecID = toptr.MakePtr(atlasCluster.GetReplicationSpecs()[0].GetId())
 	}
 
-	atlasBSchedule, _, err := atlasClient.CloudProviderSnapshotBackupPolicies.Get(context.Background(), projectID, deploymentName)
+	atlasBSchedule, _, err := atlasClient.CloudBackupsApi.
+		GetBackupSchedule(context.Background(), projectID, deploymentName).
+		Execute()
 	g.Expect(err).Should(BeNil())
 	g.Expect(len(atlasBSchedule.CopySettings)).ShouldNot(Equal(0))
 	g.Expect(atlasBSchedule.CopySettings).Should(Equal(copySettings))
@@ -1508,7 +1532,7 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 // deployment is terminated from UI (in this case GET request succeeds while the deployment is being terminated)
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deploymentName)
+		_, r, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -1521,7 +1545,9 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasServerlessInstanceRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ServerlessInstances.Get(context.Background(), projectID, deploymentName)
+		_, r, err := atlasClient.ServerlessInstancesApi.
+			GetServerlessInstance(context.Background(), projectID, deploymentName).
+			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -1533,12 +1559,14 @@ func checkAtlasServerlessInstanceRemoved(projectID string, deploymentName string
 }
 
 func deleteAtlasDeployment(projectID string, deploymentName string) error {
-	_, err := atlasClient.AdvancedClusters.Delete(context.Background(), projectID, deploymentName, nil)
+	_, err := atlasClient.ClustersApi.DeleteCluster(context.Background(), projectID, deploymentName).Execute()
 	return err
 }
 
 func deleteServerlessInstance(projectID string, deploymentName string) error {
-	_, err := atlasClient.ServerlessInstances.Delete(context.Background(), projectID, deploymentName)
+	_, _, err := atlasClient.ServerlessInstancesApi.
+		DeleteServerlessInstance(context.Background(), projectID, deploymentName).
+		Execute()
 	return err
 }
 
@@ -1612,4 +1640,86 @@ func deleteProjectFromKubernetes(project *mdbv1.AtlasProject) {
 		Expect(k8sClient.Delete(context.Background(), project)).To(Succeed())
 		Eventually(checkAtlasProjectRemoved(project.Status.ID), 60, interval).Should(BeTrue())
 	})
+}
+
+// mergedAdvancedDeployment is clone of atlasdeployment.MergedAdvancedDeployment
+func mergedAdvancedDeployment(
+	atlasDeploymentAsAtlas admin.AdvancedClusterDescription,
+	specDeployment mdbv1.AdvancedDeploymentSpec,
+) (mergedDeployment mdbv1.AdvancedDeploymentSpec, atlasDeployment mdbv1.AdvancedDeploymentSpec, err error) {
+	if atlasDeploymentAsAtlas.ReplicationSpecs != nil {
+		for _, replicationSpec := range atlasDeploymentAsAtlas.GetReplicationSpecs() {
+			for _, regionConfig := range replicationSpec.GetRegionConfigs() {
+				if regionConfig.ElectableSpecs != nil &&
+					regionConfig.ElectableSpecs.GetInstanceSize() == atlasdeployment.FreeTier {
+					atlasDeploymentAsAtlas.DiskSizeGB = nil
+				}
+			}
+		}
+	}
+
+	var value *int
+	if atlasDeploymentAsAtlas.DiskSizeGB != nil && *atlasDeploymentAsAtlas.DiskSizeGB >= 1 {
+		value = toptr.MakePtr(int(*atlasDeploymentAsAtlas.DiskSizeGB))
+	}
+	atlasDeployment.DiskSizeGB = value
+	atlasDeploymentAsAtlas.DiskSizeGB = nil
+	if err = compat.JSONCopy(&atlasDeployment, atlasDeploymentAsAtlas); err != nil {
+		return mergedDeployment, atlasDeployment, err
+	}
+
+	for _, region := range specDeployment.ReplicationSpecs[0].RegionConfigs {
+		if region == nil {
+			return
+		}
+
+		var notNilSpecs mdbv1.Specs
+		if region.ElectableSpecs != nil {
+			notNilSpecs = *region.ElectableSpecs
+		} else if region.ReadOnlySpecs != nil {
+			notNilSpecs = *region.ReadOnlySpecs
+		} else if region.AnalyticsSpecs != nil {
+			notNilSpecs = *region.AnalyticsSpecs
+		}
+
+		if region.ElectableSpecs == nil {
+			region.ElectableSpecs = &notNilSpecs
+			region.ElectableSpecs.NodeCount = toptr.MakePtr(0)
+		}
+
+		if region.ReadOnlySpecs == nil {
+			region.ReadOnlySpecs = &notNilSpecs
+			region.ReadOnlySpecs.NodeCount = toptr.MakePtr(0)
+		}
+
+		if region.AnalyticsSpecs == nil {
+			region.AnalyticsSpecs = &notNilSpecs
+			region.AnalyticsSpecs.NodeCount = toptr.MakePtr(0)
+		}
+	}
+
+	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
+
+	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
+		return
+	}
+
+	if err = compat.JSONCopy(&mergedDeployment, specDeployment); err != nil {
+		return
+	}
+
+	for i, replicationSpec := range atlasDeployment.ReplicationSpecs {
+		for k, v := range replicationSpec.RegionConfigs {
+			// the response does not return backing provider names in some situations.
+			// if this is the case, we want to strip these fields so they do not cause a bad comparison.
+			if v.BackingProviderName == "" && k < len(mergedDeployment.ReplicationSpecs[i].RegionConfigs) {
+				mergedDeployment.ReplicationSpecs[i].RegionConfigs[k].BackingProviderName = ""
+			}
+		}
+	}
+
+	atlasDeployment.MongoDBVersion = ""
+	mergedDeployment.MongoDBVersion = ""
+
+	return
 }

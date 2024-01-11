@@ -6,7 +6,7 @@ import (
 
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
@@ -24,19 +24,19 @@ type maintenanceWindowMatcher struct {
 }
 
 func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err error) {
-	var c *mongodbatlas.MaintenanceWindow
+	var c *admin.GroupMaintenanceWindow
 	var ok bool
-	if c, ok = actual.(*mongodbatlas.MaintenanceWindow); !ok {
+	if c, ok = actual.(*admin.GroupMaintenanceWindow); !ok {
 		actualType := reflect.TypeOf(actual)
 		return false, errors.New("Expected *mongodbatlas.MaintenanceWindow but received type " + actualType.String())
 	}
-	if c.DayOfWeek != m.ExpectedMaintenanceWindow.DayOfWeek {
+	if c.GetDayOfWeek() != m.ExpectedMaintenanceWindow.DayOfWeek {
 		return false, nil
 	}
-	if *c.HourOfDay != m.ExpectedMaintenanceWindow.HourOfDay {
+	if c.GetHourOfDay() != m.ExpectedMaintenanceWindow.HourOfDay {
 		return false, nil
 	}
-	if *c.AutoDeferOnceEnabled != m.ExpectedMaintenanceWindow.AutoDefer {
+	if c.GetAutoDeferOnceEnabled() != m.ExpectedMaintenanceWindow.AutoDefer {
 		return false, nil
 	}
 	return true, nil

@@ -21,50 +21,45 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115002/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasfederatedauth"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-	// +kubebuilder:scaffold:imports
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
+
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
+	atlasDomainDefault  = "https://cloud-qa.mongodb.com/"
 	EventuallyTimeout   = 60 * time.Second
 	ConsistentlyTimeout = 1 * time.Second
 	PollingInterval     = 10 * time.Second
@@ -75,32 +70,26 @@ var (
 	testEnv *envtest.Environment
 
 	// These variables are initialized once per each node
-	k8sClient            client.Client
-	atlasClient          *mongodbatlas.Client
-	dataFederationClient *atlasdatafederation.DataFederationServiceOp
+	k8sClient   client.Client
+	atlasClient *admin.APIClient
 
 	// These variables are per each test and are changed by each BeforeRun
 	namespace         corev1.Namespace
 	cfg               *rest.Config
 	managerCancelFunc context.CancelFunc
-	atlasDomain       string
 	orgID             string
 	publicKey         string
 	privateKey        string
+	atlasDomain       = atlasDomainDefault
 )
-
-func init() {
-	if atlasDomain = os.Getenv("ATLAS_DOMAIN"); atlasDomain == "" {
-		atlasDomain = "https://cloud-qa.mongodb.com/"
-	}
-}
 
 func TestAPIs(t *testing.T) {
 	if !control.Enabled("AKO_INT_TEST") {
 		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
 	}
+
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Atlas Operator Integration Test Suite")
+	RunSpecs(t, "Atlas Operator Namespaced Integration Test Suite")
 }
 
 // SynchronizedBeforeSuite uses the parallel "with singleton" pattern described by ginkgo
@@ -112,77 +101,71 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		fmt.Println("Skipping int SynchronizedBeforeSuite, AKO_INT_TEST is not set")
 		return nil
 	}
-	By("bootstrapping test environment")
 
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
-	}
+	By("Validating configuration data is available", func() {
+		orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
+		Expect(orgID).ToNot(BeEmpty())
+		Expect(publicKey).ToNot(BeEmpty())
+		Expect(privateKey).ToNot(BeEmpty())
 
-	cfg, err := testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
+		if domain, found := os.LookupEnv("ATLAS_DOMAIN"); found && domain != "" {
+			atlasDomain = domain
+		}
+	})
 
 	var b bytes.Buffer
-	e := gob.NewEncoder(&b)
-	err = e.Encode(*cfg)
-	Expect(err).NotTo(HaveOccurred())
 
-	fmt.Printf("Api Server is listening on %s\n", cfg.Host)
+	By("Bootstrapping test environment", func() {
+		useExistingCluster := os.Getenv("USE_EXISTING_CLUSTER") != ""
+		testEnv = &envtest.Environment{
+			CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			UseExistingCluster: &useExistingCluster,
+		}
+
+		cfg, err := testEnv.Start()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg).ToNot(BeNil())
+
+		e := gob.NewEncoder(&b)
+		err = e.Encode(*cfg)
+		Expect(err).ToNot(HaveOccurred())
+
+		fmt.Printf("Api Server is listening on %s\n", cfg.Host)
+	})
+
 	return b.Bytes()
 }, func(data []byte) {
-	if os.Getenv("USE_EXISTING_CLUSTER") != "" {
-		var err error
-		// For the existing deployment we read the kubeconfig
-		cfg, err = config.GetConfig()
-		if err != nil {
-			panic("Failed to read the config for existing deployment")
-		}
-	} else {
+	By("Setup test dependencies", func() {
 		d := gob.NewDecoder(bytes.NewReader(data))
 		err := d.Decode(&cfg)
-		Expect(err).NotTo(HaveOccurred())
-	}
+		Expect(err).ToNot(HaveOccurred())
 
-	err := mdbv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
+		err = mdbv1.AddToScheme(scheme.Scheme)
+		Expect(err).ToNot(HaveOccurred())
 
-	// It's recommended to construct the client directly for tests
-	// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).ToNot(BeNil())
+		// It's recommended to construct the client directly for tests
+		// see https://github.com/kubernetes-sigs/controller-runtime/issues/343#issuecomment-469435686
+		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient).ToNot(BeNil())
 
-	atlasClient = prepareAtlasClient()
-	defaultTimeouts()
-
-	dataFederationClient = atlasdatafederation.NewClient(atlasClient)
+		atlasClient, err = atlas.NewClient(atlasDomain, publicKey, privateKey)
+		Expect(err).ToNot(HaveOccurred())
+		defaultTimeouts()
+	})
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
-	By("tearing down the test environment")
-	err := testEnv.Stop()
-	Expect(err).ToNot(HaveOccurred())
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	By("Tearing down the test environment", func() {
+		err := testEnv.Stop()
+		Expect(err).ToNot(HaveOccurred())
+	})
 })
 
 func defaultTimeouts() {
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultEventuallyPollingInterval(PollingInterval)
 	SetDefaultConsistentlyDuration(ConsistentlyTimeout)
-}
-
-func prepareAtlasClient() *mongodbatlas.Client {
-	orgID, publicKey, privateKey = os.Getenv("ATLAS_ORG_ID"), os.Getenv("ATLAS_PUBLIC_KEY"), os.Getenv("ATLAS_PRIVATE_KEY")
-	if orgID == "" || publicKey == "" || privateKey == "" {
-		Fail(`All of the "ATLAS_ORG_ID", "ATLAS_PUBLIC_KEY", and "ATLAS_PRIVATE_KEY" environment variables must be set!`)
-	}
-	withDigest := httputil.Digest(publicKey, privateKey)
-	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, withDigest)
-	Expect(err).ToNot(HaveOccurred())
-	aClient, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(atlasDomain))
-	Expect(err).ToNot(HaveOccurred())
-
-	return aClient
 }
 
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
