@@ -7,13 +7,13 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -105,7 +105,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 					dbUser := testData.Users[i]
 
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-					g.Expect(testutil.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
+					g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
 				}
 
 				return true

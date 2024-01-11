@@ -8,8 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
-
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -18,6 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 // NOTES
@@ -221,7 +220,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 			Name:      dataFederationInstanceName,
 		}, df)).To(Succeed())
 		Eventually(func() bool {
-			return testutil.CheckCondition(userData.K8SClient, df, status.TrueCondition(status.ReadyType))
+			return resources.CheckCondition(userData.K8SClient, df, status.TrueCondition(status.ReadyType))
 		}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 	})
 }

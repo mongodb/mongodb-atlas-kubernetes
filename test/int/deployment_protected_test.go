@@ -10,7 +10,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/testutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -51,7 +51,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 				Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
-					return testutil.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
 				}).WithTimeout(3 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 		})
@@ -100,7 +100,7 @@ func preserveDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDepl
 
 	By("Waiting the deployment to settle in Kubernetes", func() {
 		Eventually(func(g Gomega) bool {
-			return testutil.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
+			return resources.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
 		}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 	})
 

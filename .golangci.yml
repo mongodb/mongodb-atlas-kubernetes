@@ -94,10 +94,10 @@ issues:
       linters:
         - stylecheck
         - noctx
-    - path: test/helper/e2e
+    - path: test/helper
       linters:
         - stylecheck
-      text: "ST1000|ST1001:|ST1003:"
+      text: "ST1000:|ST1001:|ST1003:"
     - path: test/helper/e2e/appclient
       linters:
         - noctx

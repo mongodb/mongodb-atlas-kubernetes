@@ -158,14 +158,14 @@ type Notification struct {
 	// The Flowdock personal API token. Populated for the FLOWDOCK notifications type. If the token later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
 	// +optional
 	FlowdockAPITokenRef common.ResourceRefNamespaced `json:"flowdockApiTokenRef,omitempty"`
-	// Flowdock flow namse in lower-case letters.
+	// Flowdock flow name in lower-case letters.
 	FlowName string `json:"flowName,omitempty"`
 	// Number of minutes to wait between successive notifications for unacknowledged alerts that are not resolved.
 	IntervalMin int `json:"intervalMin,omitempty"`
 	// Mobile number to which alert notifications are sent. Populated for the SMS notifications type.
 	MobileNumber   string `json:"mobileNumber,omitempty"`
 	opsGenieAPIKey string
-	// Opsgenie API Key. Populated for the OPS_GENIE notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
+	// OpsGenie API Key. Populated for the OPS_GENIE notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the token.
 	// +optional
 	OpsGenieAPIKeyRef common.ResourceRefNamespaced `json:"opsGenieApiKeyRef,omitempty"`
 	// Region that indicates which API URL to use.
@@ -174,7 +174,7 @@ type Notification struct {
 	OrgName    string `json:"orgName,omitempty"`
 	serviceKey string
 	// PagerDuty service key. Populated for the PAGER_DUTY notifications type. If the key later becomes invalid, Atlas sends an email to the project owner and eventually removes the key.
-	// +optinal
+	// +optional
 	ServiceKeyRef common.ResourceRefNamespaced `json:"serviceKeyRef,omitempty"`
 	// Flag indicating if text message notifications should be sent. Populated for ORG, GROUP, and USER notifications types.
 	SMSEnabled *bool `json:"smsEnabled,omitempty"`
