@@ -18,6 +18,8 @@ package atlasproject
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
@@ -54,10 +56,11 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	// check existing backups meet requirements
 	// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
 	// if dont meet, set status, return workflow.Terminate()
+	backups := r.getBackupPoliciesInProject()
 
-	if !currentBackupPoliciesMatchCompliance() {
+	if err = currentBackupPoliciesMatchCompliance(backups, *compliancePolicy); err != nil {
 		// TODO figure out appropriate status names/messages
-		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotMet, "current backup policies do not satisfy this compliance policy")
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotMet, err.Error())
 	}
 	// otherwise, continue...
 
@@ -86,6 +89,40 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	return workflow.OK()
 }
 
+// TODO: there is certainly a better way of doing this
+// can we annotate these seperate resources to attribute them to projects/deployments?
+func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context, project mdbv1.AtlasProject) ([]mdbv1.AtlasBackupPolicyItem, error) {
+	policies := []mdbv1.AtlasBackupPolicyItem{}
+	deployments := &mdbv1.AtlasDeploymentList{}
+
+	// Get all deployments
+	err := r.Client.List(ctx, deployments)
+	if err != nil {
+		return policies, fmt.Errorf("failed to retrieve list of deployments: %w", err)
+	}
+	// We only want deployments in this project
+	for _, d := range deployments.Items {
+		if d.Spec.Project.Name != project.Name || d.Spec.Project.Namespace != project.Namespace {
+			continue
+		}
+		// Get backup schedule for deployment
+		schedule := &mdbv1.AtlasBackupSchedule{}
+		err = r.Client.Get(ctx, *d.Spec.BackupScheduleRef.GetObject(d.Namespace), schedule)
+		if err != nil {
+			return policies, fmt.Errorf("failed to retrieve backup schedule: %w", err)
+		}
+		// Get backup policy from schedule
+		policy := &mdbv1.AtlasBackupPolicy{}
+		err = r.Client.Get(ctx, *schedule.Spec.PolicyRef.GetObject(d.Namespace), policy)
+		if err != nil {
+			return policies, fmt.Errorf("failed to retreieve backup policy: %w", err)
+		}
+		// apparently there is only ever 1 item, but better safe than sorry
+		policies = append(policies, policy.Spec.Items...)
+	}
+	return policies, nil
+}
+
 // syncBackupCompliancePolicy compares the compliance policy specified in Kubernetes to the one currently present in Atlas, updating Atlas should they differ.
 func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompliancePolicy mdbv1.AtlasBackupCompliancePolicy, atlasCompliancePolicy mongodbatlas.BackupCompliancePolicy) workflow.Result {
 	// TODO do we need to check this, or can we just always update?
@@ -102,7 +139,40 @@ func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompl
 }
 
 // currentBackupPoliciesMatchCompliance checks all backup policies present in the project, assessing if they meet the requirements specified in the backup compliance policy.
-func currentBackupPoliciesMatchCompliance() bool {
-	// TODO should this return a bool, or an error?
-	return true
+func currentBackupPoliciesMatchCompliance(backups []mdbv1.AtlasBackupPolicyItem, compliance mdbv1.AtlasBackupCompliancePolicy) error {
+	// error rather than bool means we can accumulate errors and report all insufficient backup policies, rather than just the first we encounter
+	var err error
+	for _, complianceScheduledPolicy := range compliance.Spec.ScheduledPolicyItems {
+		for _, backup := range backups {
+			if backup.FrequencyType != complianceScheduledPolicy.FrequencyType {
+				continue
+			}
+			if !compareBackupPolicyItem(backup, complianceScheduledPolicy) {
+				// TODO: ideally have some identifying information here, but currently no way to tell backup policies apart (pass in policy rather than policyitem?)
+				errors.Join(err, errors.New("existing backup policy does not satisfy backup compliance policy"))
+			}
+		}
+	}
+	return err
+}
+
+// TODO: likely needs renaming because we're actually checking >= rather than ==
+// compareBackupPolicyItem checks that policy item x satisfies the minimums set in y
+func compareBackupPolicyItem(x, y mdbv1.AtlasBackupPolicyItem) bool {
+	return x.FrequencyType == y.FrequencyType &&
+		x.FrequencyInterval >= y.FrequencyInterval &&
+		normalizeRetention(x) >= normalizeRetention(y)
+}
+
+// normalizeRetention 'normalizes' the retention, which is otherwise defined by both its value and its units.
+func normalizeRetention(policy mdbv1.AtlasBackupPolicyItem) int {
+	switch policy.RetentionUnit {
+	case "days":
+		return policy.RetentionValue
+	case "weeks":
+		return policy.RetentionValue * 7
+	case "months":
+		return policy.RetentionValue * 31
+	}
+	return -1
 }
