@@ -56,7 +56,11 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	// check existing backups meet requirements
 	// TODO POTENTIAL RACE WITH DEPLOYMENT CONTROLLER
 	// if dont meet, set status, return workflow.Terminate()
-	backups := r.getBackupPoliciesInProject()
+	backups, err := r.getBackupPoliciesInProject()
+	if err != nil {
+		ctx.Log.Errorf("failed to get backup policies: %v", err)
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
+	}
 
 	if err = currentBackupPoliciesMatchCompliance(backups, *compliancePolicy); err != nil {
 		// TODO figure out appropriate status names/messages
