@@ -3,7 +3,6 @@ package atlas
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"runtime"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 )
 
@@ -97,16 +95,7 @@ func (p *ProductionProvider) Client(ctx context.Context, secretRef *client.Objec
 		return nil, "", fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
 	}
 
-	clientCfg := []httputil.ClientOpt{
-		httputil.Digest(secretData[publicAPIKey], secretData[privateAPIKey]),
-		httputil.LoggingTransport(log),
-	}
-	httpClient, err := httputil.DecorateClient(&http.Client{Transport: http.DefaultTransport}, clientCfg...)
-	if err != nil {
-		return nil, "", err
-	}
-
-	c, err := mongodbatlas.New(httpClient, mongodbatlas.SetBaseURL(p.domain), mongodbatlas.SetUserAgent(operatorUserAgent()))
+	c, err := NewClient(p.domain, secretData[publicAPIKey], secretData[privateAPIKey], log)
 
 	return c, secretData[orgIDKey], err
 }
