@@ -23,7 +23,7 @@ func TestHandleCreate(t *testing.T) {
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Create(context.TODO(), createEvent, &queue)
+		handler.Create(context.Background(), createEvent, &queue)
 		assert.Zero(t, queue.Len())
 	})
 	t.Run("Create event is handled", func(t *testing.T) {
@@ -34,7 +34,7 @@ func TestHandleCreate(t *testing.T) {
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Create(context.TODO(), createEvent, &queue)
+		handler.Create(context.Background(), createEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)
 
 		enqueued, _ := queue.Get()
@@ -57,7 +57,7 @@ func TestHandleUpdate(t *testing.T) {
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Update(context.TODO(), updateEvent, &queue)
+		handler.Update(context.Background(), updateEvent, &queue)
 		assert.Zero(t, queue.Len())
 	})
 	t.Run("Update event is handled", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestHandleUpdate(t *testing.T) {
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
-		handler.Update(context.TODO(), updateEvent, &queue)
+		handler.Update(context.Background(), updateEvent, &queue)
 		assert.Equal(t, queue.Len(), 1)
 
 		enqueued, _ := queue.Get()

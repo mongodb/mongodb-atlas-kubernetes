@@ -470,15 +470,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("IP Access List is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.ProjectIPAccessList[0].CIDRBlock = "192.168.0.0/24"
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -515,18 +515,18 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Cloud Provider Integration is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.CloudProviderIntegrations[0].IamAssumedRoleArn = awsRoleARN
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
 				g.Expect(testData.Project.Status.CloudProviderIntegrations).ToNot(HaveLen(0))
 				g.Expect(testData.Project.Status.CloudProviderIntegrations[0].Status).To(Equal("AUTHORIZED"))
@@ -573,18 +573,18 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Network Peering is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.NetworkPeers[0].VpcID = AwsVpcID
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
 				g.Expect(testData.Project.Status.NetworkPeers).ToNot(HaveLen(0))
 				g.Expect(testData.Project.Status.NetworkPeers[0].StatusName).To(Equal("AVAILABLE"))
@@ -621,7 +621,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
@@ -639,9 +639,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			}
 			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
 
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Integrations[0].Type = "PAGER_DUTY"
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -672,15 +672,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Maintenance Window is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.MaintenanceWindow.DayOfWeek = 7
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -709,15 +709,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Auditing is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Auditing.AuditFilter = `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -744,15 +744,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Maintenance Window is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Settings.IsDataExplorerEnabled = toptr.MakePtr(true)
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -777,15 +777,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Encryption At Rest is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.EncryptionAtRest.AwsKms.Region = "EU_WEST_2"
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -808,15 +808,15 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Custom Roles is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.CustomRoles[0].Actions[0].Resources[0].Database = toptr.MakePtr("testDB")
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -837,29 +837,29 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Team is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
 			testData.Teams[0].Spec.Usernames = make([]mdbv1.TeamUser, 0, len(usernames))
 			for _, username := range usernames {
 				testData.Teams[0].Spec.Usernames = append(testData.Teams[0].Spec.Usernames, mdbv1.TeamUser(username))
 			}
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Teams[0])).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Teams[0])).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Teams[0]), testData.Teams[0])).To(Succeed())
 				g.Expect(testData.Teams[0].Status.Conditions).To(ContainElements(conditions.MatchCondition(status.TrueCondition(status.ReadyType))))
 			}).WithTimeout(time.Minute * 1).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Assigned Teams is ready after configured properly", func() {
-			Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Teams[0].Roles[0] = "GROUP_OWNER"
-			Expect(testData.K8SClient.Update(context.TODO(), testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
@@ -878,7 +878,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					status.TrueCondition(status.ProjectTeamsReadyType),
 				)
 
-				g.Expect(testData.K8SClient.Get(context.TODO(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 				g.Expect(testData.Project.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})

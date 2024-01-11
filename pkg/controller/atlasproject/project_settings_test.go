@@ -20,7 +20,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
@@ -32,7 +32,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -51,7 +51,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
@@ -71,7 +71,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
@@ -120,7 +120,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
@@ -170,7 +170,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
@@ -220,7 +220,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canProjectSettingsReconcile(workflowCtx, true, akoProject)
 
@@ -242,7 +242,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureProjectSettings(workflowCtx, akoProject, true)
 
@@ -291,7 +291,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureProjectSettings(workflowCtx, akoProject, true)
 

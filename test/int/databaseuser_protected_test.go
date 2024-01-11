@@ -45,12 +45,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 		By("Creating a project", func() {
 			connSecret := buildConnectionSecret("my-atlas-key")
-			Expect(k8sClient.Create(context.TODO(), &connSecret)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), &connSecret)).To(Succeed())
 
 			testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
 				WithConnectionSecret(connSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
-			Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
@@ -64,7 +64,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				customresource.ResourcePolicyAnnotation,
 				customresource.ResourcePolicyDelete,
 			)
-			Expect(k8sClient.Create(context.TODO(), testDeployment)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
 				return resources.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType))
@@ -84,7 +84,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				},
 				Scopes: []mongodbatlas.Scope{},
 			}
-			_, _, err := atlasClient.DatabaseUsers.Create(context.TODO(), testProject.ID(), dbUser)
+			_, _, err := atlasClient.DatabaseUsers.Create(context.Background(), testProject.ID(), dbUser)
 			Expect(err).To(BeNil())
 		})
 	})
@@ -93,12 +93,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		It("Adds database users and protect them to be deleted when operator doesn't own resource", func() {
 			By("First without setting atlas-resource-policy annotation", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser1 = mdbv1.NewDBUser(testNamespace.Name, dbUserName1, dbUserName1, projectName).
 					WithPasswordSecret(UserPasswordSecret).
 					WithRole("readWriteAnyDatabase", "admin", "")
-				Expect(k8sClient.Create(context.TODO(), testDBUser1)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
@@ -112,13 +112,13 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			// nolint:dupl
 			By("Second setting atlas-resource-policy annotation to delete", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret2, DBUserPassword2)
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser2 = mdbv1.NewDBUser(testNamespace.Name, dbUserName2, dbUserName2, projectName).
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWriteAnyDatabase", "admin", "")
 				testDBUser2.SetAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete})
-				Expect(k8sClient.Create(context.TODO(), testDBUser2)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser2)).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser2, status.TrueCondition(status.ReadyType))
@@ -131,12 +131,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Third previously added in Atlas", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, "third-pass-secret", "mypass")
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser3 = mdbv1.NewDBUser(testNamespace.Name, dbUserName3, dbUserName3, projectName).
 					WithPasswordSecret("third-pass-secret").
 					WithRole("readWriteAnyDatabase", "admin", "")
-				Expect(k8sClient.Create(context.TODO(), testDBUser3)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser3)).To(Succeed())
 
 				Eventually(func(g Gomega) bool {
 					expectedConditions := conditions.MatchConditions(
@@ -147,7 +147,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 							WithMessageRegexp("unable to reconcile database user: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled."),
 					)
 
-					g.Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(testDBUser3), testDBUser3, &client.GetOptions{}))
+					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser3), testDBUser3, &client.GetOptions{}))
 					g.Expect(testDBUser3.Status.Conditions).To(ContainElements(expectedConditions))
 
 					return true
@@ -156,7 +156,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Deleting AtlasDatabaseUser custom resource", func() {
 				By("Keeping database user 1 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser1)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser1)).To(Succeed())
 
 					secretName := fmt.Sprintf(
 						"%s-%s-%s",
@@ -172,7 +172,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				})
 
 				By("Deleting database user 2 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser2)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser2)).To(Succeed())
 
 					secretName := fmt.Sprintf(
 						"%s-%s-%s",
@@ -188,7 +188,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				})
 
 				By("Keeping database user 3 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser3)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser3)).To(Succeed())
 
 					Eventually(checkAtlasDatabaseUserRemoved(testProject.ID(), *testDBUser3)).
 						WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(BeFalse())
@@ -199,12 +199,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 		It("Adds database users and manage them when operator take ownership of existing resources", func() {
 			By("First without setting atlas-resource-policy annotation", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, DBUserPassword)
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser1 = mdbv1.NewDBUser(testNamespace.Name, dbUserName1, dbUserName1, projectName).
 					WithPasswordSecret(UserPasswordSecret).
 					WithRole("readWriteAnyDatabase", "admin", "")
-				Expect(k8sClient.Create(context.TODO(), testDBUser1)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
@@ -218,13 +218,13 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			// nolint:dupl
 			By("Second setting atlas-resource-policy annotation to delete", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret2, DBUserPassword2)
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser2 = mdbv1.NewDBUser(testNamespace.Name, dbUserName2, dbUserName2, projectName).
 					WithPasswordSecret(UserPasswordSecret2).
 					WithRole("readWriteAnyDatabase", "admin", "")
 				testDBUser2.SetAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete})
-				Expect(k8sClient.Create(context.TODO(), testDBUser2)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser2)).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser2, status.TrueCondition(status.ReadyType))
@@ -237,12 +237,12 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Third previously added in Atlas", func() {
 				passwordSecret := buildPasswordSecret(testNamespace.Name, "third-pass-secret", "mypass")
-				Expect(k8sClient.Create(context.TODO(), &passwordSecret)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
 				testDBUser3 = mdbv1.NewDBUser(testNamespace.Name, dbUserName3, dbUserName3, projectName).
 					WithPasswordSecret("third-pass-secret").
 					WithRole("readAnyDatabase", "admin", "")
-				Expect(k8sClient.Create(context.TODO(), testDBUser3)).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testDBUser3)).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser3, status.TrueCondition(status.ReadyType))
@@ -255,7 +255,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 			By("Deleting AtlasDatabaseUser custom resource", func() {
 				By("Keeping database user 1 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser1)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser1)).To(Succeed())
 
 					secretName := fmt.Sprintf(
 						"%s-%s-%s",
@@ -271,7 +271,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				})
 
 				By("Deleting database user 2 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser2)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser2)).To(Succeed())
 
 					secretName := fmt.Sprintf(
 						"%s-%s-%s",
@@ -287,7 +287,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				})
 
 				By("Keeping database user 3 in Atlas", func() {
-					Expect(k8sClient.Delete(context.TODO(), testDBUser3)).To(Succeed())
+					Expect(k8sClient.Delete(context.Background(), testDBUser3)).To(Succeed())
 
 					secretName := fmt.Sprintf(
 						"%s-%s-%s",
@@ -309,10 +309,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	AfterEach(func() {
 		By("Deleting deployment", func() {
 			deploymentName := testDeployment.GetDeploymentName()
-			Expect(k8sClient.Delete(context.TODO(), testDeployment)).To(Succeed())
+			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.AdvancedClusters.Get(context.TODO(), testProject.ID(), deploymentName)
+				_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), testProject.ID(), deploymentName)
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true
@@ -325,13 +325,13 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 		By("Deleting project", func() {
 			projectID := testProject.ID()
-			Expect(k8sClient.Delete(context.TODO(), testProject)).To(Succeed())
+			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, err := atlasClient.Projects.Delete(context.TODO(), projectID)
+			_, err := atlasClient.Projects.Delete(context.Background(), projectID)
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.Projects.GetOneProject(context.TODO(), projectID)
+				_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true

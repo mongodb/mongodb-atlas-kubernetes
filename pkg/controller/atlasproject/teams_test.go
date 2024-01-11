@@ -57,7 +57,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, false, &mdbv1.AtlasProject{})
 		assert.NoError(t, err)
@@ -69,7 +69,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -88,7 +88,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -108,7 +108,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -128,7 +128,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -168,7 +168,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -208,7 +208,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -248,7 +248,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
 
@@ -272,7 +272,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
 			Log:     logger,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
 			Log: logger,
@@ -343,7 +343,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
 			Log:     logger,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
 			Client: k8sClient,
@@ -366,7 +366,7 @@ func TestUpdateTeamState(t *testing.T) {
 	t.Run("should not duplicate projects listed", func(t *testing.T) {
 		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
-			Context: context.TODO(),
+			Context: context.Background(),
 			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
@@ -434,7 +434,7 @@ func TestUpdateTeamState(t *testing.T) {
 		// "reconcile" the team state and check we still have 1 project in status
 		err := reconciler.updateTeamState(workflowCtx, project, teamRef, false)
 		assert.NoError(t, err)
-		k8sClient.Get(context.TODO(), types.NamespacedName{Name: team.ObjectMeta.Name, Namespace: team.ObjectMeta.Namespace}, team)
+		k8sClient.Get(context.Background(), types.NamespacedName{Name: team.ObjectMeta.Name, Namespace: team.ObjectMeta.Namespace}, team)
 		assert.Equal(t, 1, len(team.Status.Projects))
 	})
 }
