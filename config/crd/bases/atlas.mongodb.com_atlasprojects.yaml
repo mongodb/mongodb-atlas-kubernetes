@@ -304,6 +304,19 @@ spec:
                       the {GROUP-ID} has database auditing enabled.
                     type: boolean
                 type: object
+              backupCompliancePolicyRef:
+                description: BackupCompliancePolicyRef is a reference to the backup
+                  compliance CR.
+                properties:
+                  name:
+                    description: Name is the name of the Kubernetes Resource
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the Kubernetes Resource
+                    type: string
+                required:
+                - name
+                type: object
               cloudProviderAccessRoles:
                 description: 'CloudProviderAccessRoles is a list of Cloud Provider
                   Access Roles configured for the current Project. Deprecated: This
