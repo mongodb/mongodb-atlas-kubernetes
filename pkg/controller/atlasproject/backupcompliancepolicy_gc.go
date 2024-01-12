@@ -35,6 +35,7 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 
 	g, ctx := errgroup.WithContext(ctx)
 	for _, policy := range policies.Items {
+		_ = policy
 		g.Go(func() error {
 			return nil
 		})
