@@ -152,7 +152,7 @@ func integrationTest(data *model.TestDataProvider, integration project.Integrati
 
 		atlasIntegration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integration.Type)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(strings.HasSuffix(key, strings.TrimLeft(atlasIntegration.APIKey, "*"))).Should(BeTrue())
+		Expect(strings.HasSuffix(key, strings.TrimLeft(atlasIntegration.GetApiKey(), "*"))).Should(BeTrue())
 	})
 
 	By("Delete integration", func() {

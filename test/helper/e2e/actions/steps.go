@@ -9,14 +9,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	kube "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/appclient"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli"
@@ -167,15 +167,14 @@ func CheckUserExistInAtlas(data *model.TestDataProvider) func() bool {
 	}
 }
 
-func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created mongodbatlas.AdvancedCluster) {
+func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admin.AdvancedClusterDescription) {
 	advancedSpec := requested.DeploymentSpec
 
-	Expect(created.MongoDBVersion).ToNot(BeEmpty())
-	Expect(created.MongoDBVersion).ToNot(BeEmpty())
-	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
-	Expect(created.ConnectionStrings.Standard).ToNot(BeEmpty())
-	Expect(created.Name).To(Equal(requested.GetDeploymentName()))
-	Expect(created.GroupID).To(Not(BeEmpty()))
+	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.GetStandard()).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.GetStandardSrv()).ToNot(BeEmpty())
+	Expect(created.GetName()).To(Equal(requested.GetDeploymentName()))
+	Expect(created.GetGroupId()).To(Not(BeEmpty()))
 
 	defaultPriority := 7
 	for i, replicationSpec := range advancedSpec.ReplicationSpecs {
@@ -183,19 +182,19 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created mong
 			if region.Priority == nil {
 				region.Priority = &defaultPriority
 			}
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].ProviderName).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].RegionName).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].GetProviderName()).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
+			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].GetRegionName()).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
 			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
 		}
 	}
 }
 
-func CompareServerlessSpec(requested model.DeploymentSpec, created mongodbatlas.Cluster) {
+func CompareServerlessSpec(requested model.DeploymentSpec, created admin.ServerlessInstanceDescription) {
 	serverlessSpec := requested.ServerlessSpec
-	Expect(created.MongoDBVersion).ToNot(BeEmpty())
-	Expect(created.ConnectionStrings.StandardSrv).ToNot(BeEmpty())
-	Expect(created.Name).To(Equal(serverlessSpec.Name))
-	Expect(created.GroupID).To(Not(BeEmpty()))
+	Expect(created.GetMongoDBVersion()).ToNot(BeEmpty())
+	Expect(created.ConnectionStrings.GetStandardSrv()).ToNot(BeEmpty())
+	Expect(created.GetName()).To(Equal(serverlessSpec.Name))
+	Expect(created.GetGroupId()).To(Not(BeEmpty()))
 }
 
 func SaveProjectsToFile(ctx context.Context, k8sClient client.Client, ns string) error {
@@ -275,7 +274,7 @@ func CheckUsersAttributes(data *model.TestDataProvider) {
 
 	for _, deployment := range data.InitialDeployments {
 		for _, user := range data.Users {
-			var atlasUser *mongodbatlas.DatabaseUser
+			var atlasUser *admin.CloudDatabaseUser
 
 			getUser := func() bool {
 				var err error

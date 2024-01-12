@@ -22,9 +22,6 @@ const (
 )
 
 var (
-	// default
-	Platform    = "kind"
-	K8sVersion  = "v1.17.17"
 	atlasClient *atlas.Atlas
 )
 
@@ -32,15 +29,18 @@ func TestE2e(t *testing.T) {
 	if !control.Enabled("AKO_E2E_TEST") {
 		t.Skip("Skipping e2e tests, AKO_E2E_TEST is not set")
 	}
+
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "E2E Suite")
+	RunSpecs(t, "Atlas Operator E2E Test Suite")
 }
 
 var _ = BeforeSuite(func() {
 	if !control.Enabled("AKO_E2E_TEST") {
 		fmt.Println("Skipping e2e BeforeSuite, AKO_E2E_TEST is not set")
+
 		return
 	}
+
 	GinkgoWriter.Write([]byte("==============================Before==============================\n"))
 	SetDefaultEventuallyTimeout(EventuallyTimeout)
 	SetDefaultEventuallyPollingInterval(PollingInterval)
@@ -51,13 +51,11 @@ var _ = BeforeSuite(func() {
 
 // checkUpEnvironment initial check setup
 func checkUpEnvironment() {
-	Platform = os.Getenv("K8S_PLATFORM")
-	K8sVersion = os.Getenv("K8S_VERSION")
-
 	Expect(os.Getenv("MCLI_ORG_ID")).ShouldNot(BeEmpty(), "Please, setup MCLI_ORG_ID environment variable")
 	Expect(os.Getenv("MCLI_PUBLIC_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PUBLIC_API_KEY environment variable")
 	Expect(os.Getenv("MCLI_PRIVATE_API_KEY")).ShouldNot(BeEmpty(), "Please, setup MCLI_PRIVATE_API_KEY environment variable")
 	Expect(os.Getenv("MCLI_OPS_MANAGER_URL")).ShouldNot(BeEmpty(), "Please, setup MCLI_OPS_MANAGER_URL environment variable")
+
 	atlasClient = atlas.GetClientOrFail()
 }
 
