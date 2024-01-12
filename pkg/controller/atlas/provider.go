@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"

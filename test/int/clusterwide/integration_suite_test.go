@@ -27,7 +27,7 @@ import (
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -37,7 +37,6 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"

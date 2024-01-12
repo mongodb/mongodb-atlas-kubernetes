@@ -29,7 +29,7 @@ import (
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasproject"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,8 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"

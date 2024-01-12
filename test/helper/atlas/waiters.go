@@ -4,7 +4,7 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 )
 
 // WaitForAtlasDeploymentStateToNotBeReached periodically checks the given atlas deployment for a given condition. The function

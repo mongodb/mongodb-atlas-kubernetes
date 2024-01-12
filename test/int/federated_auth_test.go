@@ -7,15 +7,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231115003/admin"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -26,7 +26,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	var originalConnectedOrgConfig *admin.ConnectedOrgConfig
 	var originalFederationSettings *admin.OrgFederationSettings
-	var originalIdp *admin.FederationIdentityProvider
+	var originalIdp *admin.FederationSamlIdentityProvider
 
 	resourceName := "fed-auth-test"
 	ctx := context.Background()
