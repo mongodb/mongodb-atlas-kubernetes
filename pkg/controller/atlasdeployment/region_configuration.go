@@ -1,8 +1,8 @@
 package atlasdeployment
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas/mongodbatlas"

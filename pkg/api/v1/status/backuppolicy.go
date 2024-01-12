@@ -1,6 +1,6 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/collection"
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 
 // +k8s:deepcopy-gen=false
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 
 	"go.uber.org/zap"
 

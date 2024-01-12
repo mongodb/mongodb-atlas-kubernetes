@@ -17,9 +17,9 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enabled"), func() {

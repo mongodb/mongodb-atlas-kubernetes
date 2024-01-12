@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
 
 func TestHandleCreate(t *testing.T) {

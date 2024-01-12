@@ -6,7 +6,7 @@ import (
 	"github.com/go-test/deep"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 )
 
 func Test_BackupScheduleToAtlas(t *testing.T) {

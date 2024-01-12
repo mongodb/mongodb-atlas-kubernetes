@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/util/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 )
 
 type AwsAction struct {
