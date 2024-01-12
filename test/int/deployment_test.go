@@ -570,7 +570,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 					autoScalingInput := c.GetReplicationSpecs()[0].GetRegionConfigs()[0].GetAutoScaling()
 					autoScalingSpec := deployment.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
-					Expect(autoScalingInput.Compute.GetEnabled()).To(Equal(autoScalingSpec.Compute.Enabled))
+					Expect(autoScalingInput.Compute.Enabled).To(Equal(autoScalingSpec.Compute.Enabled))
 					Expect(autoScalingInput.Compute.GetMaxInstanceSize()).To(Equal(autoScalingSpec.Compute.MaxInstanceSize))
 					Expect(autoScalingInput.Compute.GetMinInstanceSize()).To(Equal(autoScalingSpec.Compute.MinInstanceSize))
 				})
