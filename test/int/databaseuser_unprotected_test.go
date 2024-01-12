@@ -803,12 +803,12 @@ func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 		operatorDBUser, err := user.ToAtlasSDK(context.Background(), k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(*atlasDBUser).To(Equal(normalize(operatorDBUser, projectID)))
+		Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, projectID)))
 	})
 }
 
 // normalize brings the operator 'user' to the user returned by Atlas that allows to perform comparison for equality
-func normalize(user *admin.CloudDatabaseUser, projectID string) *admin.CloudDatabaseUser {
+func normalize(user admin.CloudDatabaseUser, projectID string) admin.CloudDatabaseUser {
 	if !user.HasScopes() {
 		user.SetScopes([]admin.UserScope{})
 	}

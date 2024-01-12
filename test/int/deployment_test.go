@@ -285,7 +285,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				doDeploymentStatusChecks()
 
 				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
-					Expect(deployment.GetReplicationSpecs()[0].NumShards).To(Equal(1))
+					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
 				}
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
@@ -568,11 +568,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					deployment, err := createdDeployment.Spec.Deployment()
 					Expect(err).NotTo(HaveOccurred())
 
-					autoScalingInput := c.GetReplicationSpecs()[0].GetRegionConfigs()[0].AutoScaling
+					autoScalingInput := c.GetReplicationSpecs()[0].GetRegionConfigs()[0].GetAutoScaling()
 					autoScalingSpec := deployment.ReplicationSpecs[0].RegionConfigs[0].AutoScaling
-					Expect(autoScalingInput.Compute.Enabled).To(Equal(autoScalingSpec.Compute.Enabled))
-					Expect(autoScalingInput.Compute.MaxInstanceSize).To(Equal(autoScalingSpec.Compute.MaxInstanceSize))
-					Expect(autoScalingInput.Compute.MinInstanceSize).To(Equal(autoScalingSpec.Compute.MinInstanceSize))
+					Expect(autoScalingInput.Compute.GetEnabled()).To(Equal(autoScalingSpec.Compute.Enabled))
+					Expect(autoScalingInput.Compute.GetMaxInstanceSize()).To(Equal(autoScalingSpec.Compute.MaxInstanceSize))
+					Expect(autoScalingInput.Compute.GetMinInstanceSize()).To(Equal(autoScalingSpec.Compute.MinInstanceSize))
 				})
 			})
 		})
