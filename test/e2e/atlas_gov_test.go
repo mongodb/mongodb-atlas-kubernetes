@@ -6,11 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/google/uuid"
-	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -181,13 +179,15 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		By("Configuring a Team", func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
-			users, _, err := atlasClient.Client.AtlasUsers.List(ctx, testData.Project.ID(), &mongodbatlas.ListOptions{})
+			users, _, err := atlasClient.Client.ProjectsApi.
+				ListProjectUsers(ctx, testData.Project.ID()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(users).ToNot(BeEmpty())
 
-			usernames := make([]mdbv1.TeamUser, 0, len(users))
-			for _, user := range users {
-				usernames = append(usernames, mdbv1.TeamUser(user.Username))
+			usernames := make([]mdbv1.TeamUser, 0, users.GetTotalCount())
+			for _, user := range users.GetResults() {
+				usernames = append(usernames, mdbv1.TeamUser(user.GetUsername()))
 			}
 
 			akoTeam := &mdbv1.AtlasTeam{
@@ -740,7 +740,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Delete(ctx, akoDeployment)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, _, err := atlasClient.Client.AdvancedClusters.Get(ctx, testData.Project.ID(), clusterName)
+				_, _, err := atlasClient.Client.ClustersApi.GetCluster(ctx, testData.Project.ID(), clusterName).Execute()
 				g.Expect(err).To(HaveOccurred())
 			}).WithTimeout(time.Minute * 30).WithPolling(time.Second * 20).Should(Succeed())
 

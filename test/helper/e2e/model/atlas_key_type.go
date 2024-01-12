@@ -1,22 +1,13 @@
 package model
 
-import "go.mongodb.org/atlas/mongodbatlas"
+import (
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+)
 
 type AtlasRoles = string
 
 const (
-	OrgOwner        AtlasRoles = "ORG_OWNER"
-	OrgMember       AtlasRoles = "ORG_MEMBER"
-	OrgGroupCreator AtlasRoles = "ORG_GROUP_CREATOR"
-	OrgBillingAdmin AtlasRoles = "ORG_BILLING_ADMIN"
-	OrgReadOnly     AtlasRoles = "ORG_READ_ONLY"
-
-	GroupDeploymentManager   AtlasRoles = "GROUP_CLUSTER_MANAGER"
-	GroupDataAccessAdmin     AtlasRoles = "GROUP_DATA_ACCESS_ADMIN"
-	GropuDataAccessReadOnly  AtlasRoles = "GROUP_DATA_ACCESS_READ_ONLY"
-	GroupDataAccessReadWrite AtlasRoles = "GROUP_DATA_ACCESS_READ_WRITE"
-	GroupOwner               AtlasRoles = "GROUP_OWNER"
-	GroupReadOnly            AtlasRoles = "GROUP_READ_ONLY"
+	GroupOwner AtlasRoles = "GROUP_OWNER"
 )
 
 type AtlasKeyType struct {
@@ -25,15 +16,7 @@ type AtlasKeyType struct {
 	Whitelist            []string
 
 	GlobalLevelKey    bool // if true, tests create "<operator-deployment-name>-api-key"
-	GlobalKeyAttached *mongodbatlas.APIKey
-}
-
-func NewAtlasKeyType(r []AtlasRoles, wl []string) *AtlasKeyType {
-	return &AtlasKeyType{
-		DefaultFullAccessKey: false,
-		Roles:                r,
-		Whitelist:            wl,
-	}
+	GlobalKeyAttached *admin.ApiKeyUserDetails
 }
 
 func NewEmptyAtlasKeyType() *AtlasKeyType {

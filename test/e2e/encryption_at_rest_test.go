@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -376,26 +376,30 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 		var projectID string
 		By("Getting a project ID by name from Atlas", func() {
 			Eventually(func(g Gomega) error {
-				projectData, _, err := atlasClient.Client.Projects.GetOneProjectByName(userData.Context, userData.Project.Spec.Name)
+				projectData, _, err := atlasClient.Client.ProjectsApi.
+					GetProjectByName(userData.Context, userData.Project.Spec.Name).
+					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(projectData).NotTo(BeNil())
-				ginkgo.GinkgoLogr.Info("Project ID", projectData.ID)
-				projectID = projectData.ID
+				ginkgo.GinkgoLogr.Info("Project ID", projectData.GetId())
+				projectID = projectData.GetId()
 				return nil
 			}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 
-		var atlasRoles *mongodbatlas.CloudProviderAccessRoles
+		var atlasRoles *admin.CloudProviderAccessRoles
 		By("Add cloud access role (AWS only)", func() {
 			cloudAccessRolesFlow(userData, roles)
 		})
 
 		By("Fetching project CPAs", func() {
 			var err error
-			atlasRoles, _, err = atlasClient.Client.CloudProviderAccess.ListRoles(userData.Context, projectID)
+			atlasRoles, _, err = atlasClient.Client.CloudProviderAccessApi.
+				ListCloudProviderAccessRoles(userData.Context, projectID).
+				Execute()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(atlasRoles).NotTo(BeNil())
-			Expect(len(atlasRoles.AWSIAMRoles)).NotTo(BeZero())
+			Expect(len(atlasRoles.GetAwsIamRoles())).NotTo(BeZero())
 		})
 
 		By("Create KMS with AWS RoleID", func() {

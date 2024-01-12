@@ -95,7 +95,7 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []v1.Team, n int) {
 	By("Setup Teams", func() {
 		aClient := atlas.GetClientOrFail()
-		users, err := aClient.GetOrgUsers(data.Project.ID())
+		users, err := aClient.GetOrgUsers()
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(len(users) < n).ShouldNot(BeTrue())
 

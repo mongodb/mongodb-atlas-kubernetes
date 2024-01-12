@@ -207,7 +207,9 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 		Expect(userData.K8SClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			df, _, err := atlasClient.Client.DataFederation.Get(context.Background(), userData.Project.ID(), createdDataFederation.Spec.Name)
+			df, _, err := atlasClient.Client.DataFederationApi.
+				GetFederatedDatabase(context.Background(), userData.Project.ID(), createdDataFederation.Spec.Name).
+				Execute()
 			g.Expect(err).ShouldNot(HaveOccurred())
 			g.Expect(df).NotTo(BeNil())
 		}).WithTimeout(20 * time.Minute).WithPolling(15 * time.Second).ShouldNot(HaveOccurred())

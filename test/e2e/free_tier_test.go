@@ -3,9 +3,9 @@ package e2e_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -63,15 +63,33 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 		aClient := atlas.GetClientOrFail()
 		Expect(userData.InitialDeployments).Should(HaveLen(1))
 		name := userData.InitialDeployments[0].GetDeploymentName()
-		_, _, err := aClient.Client.Clusters.Create(userData.Context, userData.Project.ID(), &mongodbatlas.Cluster{
-			Name: name,
-			ProviderSettings: &mongodbatlas.ProviderSettings{
-				ProviderName:        string(provider.ProviderTenant),
-				RegionName:          "US_EAST_1",
-				InstanceSizeName:    data.InstanceSizeM0,
-				BackingProviderName: string(provider.ProviderAWS),
-			},
-		})
+		admin.NewAdvancedClusterDescriptionWithDefaults()
+		_, _, err := aClient.Client.ClustersApi.
+			CreateCluster(
+				userData.Context,
+				userData.Project.ID(),
+				&admin.AdvancedClusterDescription{
+					Name:        &name,
+					ClusterType: toptr.MakePtr("REPLICASET"),
+					ReplicationSpecs: []admin.ReplicationSpec{
+						{
+							ZoneName: toptr.MakePtr("Zone 1"),
+							RegionConfigs: []admin.CloudRegionConfig{
+								{
+									ProviderName:        toptr.MakePtr("TENANT"),
+									BackingProviderName: toptr.MakePtr("AWS"),
+									Priority:            toptr.MakePtr(7),
+									RegionName:          toptr.MakePtr("US_EAST_1"),
+									ElectableSpecs: &admin.HardwareSpec{
+										InstanceSize: toptr.MakePtr(data.InstanceSizeM0),
+										NodeCount:    toptr.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+				},
+			).Execute()
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 

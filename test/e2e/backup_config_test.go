@@ -6,11 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -19,10 +20,6 @@ import (
 	helper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const (
@@ -189,7 +186,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 
 		backupSchedule.Spec.AutoExportEnabled = true
 		backupSchedule.Spec.Export = &mdbv1.AtlasBackupExportSpec{
-			ExportBucketID: exportBucket.ID,
+			ExportBucketID: exportBucket.GetId(),
 			FrequencyType:  "monthly",
 		}
 		Expect(data.K8SClient.Update(data.Context, backupSchedule)).To(Succeed())

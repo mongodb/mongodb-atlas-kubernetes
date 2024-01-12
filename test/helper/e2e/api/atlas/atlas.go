@@ -2,19 +2,16 @@ package atlas
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/debug"
-
-	"github.com/mongodb-forks/digest"
-	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 var globalAtlas *Atlas
@@ -23,139 +20,93 @@ type Atlas struct {
 	OrgID   string
 	Public  string
 	Private string
-	Client  *mongodbatlas.Client
+	Client  *admin.APIClient
 }
 
-const (
-	keyDescription = "created from the AO test"
-)
-
 func AClient() (Atlas, error) {
-	var A Atlas
-	A.OrgID = os.Getenv("MCLI_ORG_ID")
-	A.Public = os.Getenv("MCLI_PUBLIC_API_KEY")
-	A.Private = os.Getenv("MCLI_PRIVATE_API_KEY")
-	t := digest.NewTransport(A.Public, A.Private)
-	tc, err := t.Client()
-	if err != nil {
-		return A, err
+	a := Atlas{
+		OrgID:   os.Getenv("MCLI_ORG_ID"),
+		Public:  os.Getenv("MCLI_PUBLIC_API_KEY"),
+		Private: os.Getenv("MCLI_PRIVATE_API_KEY"),
 	}
-	A.Client = mongodbatlas.NewClient(tc)
-	u, _ := url.Parse(os.Getenv("MCLI_OPS_MANAGER_URL"))
-	A.Client.BaseURL = u
-	return A, nil
+
+	c, err := atlas.NewClient(os.Getenv("MCLI_OPS_MANAGER_URL"), a.Public, a.Private)
+	a.Client = c
+
+	return a, err
 }
 
 func GetClientOrFail() *Atlas {
 	if globalAtlas != nil {
 		return globalAtlas
 	}
+
 	c, err := AClient()
 	Expect(err).NotTo(HaveOccurred())
+
 	globalAtlas = &c
+
 	return globalAtlas
-}
-
-func (a *Atlas) AddKeyWithAccessList(projectID string, roles, access []string) (*mongodbatlas.APIKey, error) {
-	createKeyRequest := &mongodbatlas.APIKeyInput{
-		Desc:  keyDescription,
-		Roles: roles,
-	}
-	newKey, _, err := a.Client.ProjectAPIKeys.Create(context.Background(), projectID, createKeyRequest)
-	if err != nil {
-		return nil, err
-	}
-	createAccessRequest := formAccessRequest(access)
-	_, _, err = a.Client.AccessListAPIKeys.Create(context.Background(), a.OrgID, newKey.ID, createAccessRequest)
-	if err != nil {
-		return nil, err
-	}
-	return newKey, nil
-}
-
-func formAccessRequest(access []string) []*mongodbatlas.AccessListAPIKeysReq {
-	createRequest := make([]*mongodbatlas.AccessListAPIKeysReq, 0)
-	var req *mongodbatlas.AccessListAPIKeysReq
-	for _, item := range access {
-		if strings.Contains(item, "/") {
-			req = &mongodbatlas.AccessListAPIKeysReq{CidrBlock: item}
-		} else {
-			req = &mongodbatlas.AccessListAPIKeysReq{IPAddress: item}
-		}
-		createRequest = append(createRequest, req)
-	}
-	return createRequest
-}
-
-func (a *Atlas) GetPrivateEndpoint(projectID, provider string) ([]mongodbatlas.PrivateEndpointConnection, error) {
-	endpointsList, _, err := a.Client.PrivateEndpoints.List(context.Background(), projectID, provider, &mongodbatlas.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	ginkgoPrettyPrintf(endpointsList, "listing private endpoints in project %s", projectID)
-	return endpointsList, nil
 }
 
 func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
 	for _, c := range a.GetDeployments(projectID) {
-		if c.Name == name {
+		if c.GetName() == name {
 			return true
 		}
 	}
+
 	return false
 }
 
 func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
-	project, _, err := a.Client.Projects.GetOneProject(context.Background(), projectID)
-	if err != nil {
-		var apiError *mongodbatlas.ErrorResponse
-		if errors.As(err, &apiError) && (apiError.ErrorCode == "GROUP_NOT_FOUND" || apiError.ErrorCode == "RESOURCE_NOT_FOUND") {
-			return false
-		}
-		g.Expect(err).NotTo(HaveOccurred())
+	project, _, err := a.Client.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+	if admin.IsErrorCode(err, "GROUP_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
+		return false
 	}
+
+	g.Expect(err).NotTo(HaveOccurred())
+
 	return project != nil
 }
 
-func (a *Atlas) GetDeployments(projectID string) []*mongodbatlas.AdvancedCluster {
-	reply, _, err := a.Client.AdvancedClusters.List(context.Background(), projectID, nil)
+func (a *Atlas) GetDeployments(projectID string) []admin.AdvancedClusterDescription {
+	reply, _, err := a.Client.ClustersApi.ListClusters(context.Background(), projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
-	deployments := reply.Results
-	ginkgoPrettyPrintf(deployments, "listing legacy deployments in project %s", projectID)
-	return deployments
+	ginkgoPrettyPrintf(reply.Results, "listing legacy deployments in project %s", projectID)
+
+	return reply.Results
 }
 
-func (a *Atlas) GetDeployment(projectId, deploymentName string) (*mongodbatlas.AdvancedCluster, error) {
-	advancedDeployment, _, err := a.Client.AdvancedClusters.Get(context.Background(), projectId, deploymentName)
-	if err != nil {
-		return nil, err
-	}
+func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.AdvancedClusterDescription, error) {
+	advancedDeployment, _, err := a.Client.ClustersApi.
+		GetCluster(context.Background(), projectId, deploymentName).
+		Execute()
+
 	ginkgoPrettyPrintf(advancedDeployment, "getting advanced deployment %s in project %s", deploymentName, projectId)
-	return advancedDeployment, nil
+
+	return advancedDeployment, err
 }
 
-func (a *Atlas) GetServerlessInstance(projectId, deploymentName string) (*mongodbatlas.Cluster, error) {
-	serverlessInstance, _, err := a.Client.ServerlessInstances.Get(context.Background(), projectId, deploymentName)
-	if err != nil {
-		return nil, err
-	}
+func (a *Atlas) GetServerlessInstance(projectId, deploymentName string) (*admin.ServerlessInstanceDescription, error) {
+	serverlessInstance, _, err := a.Client.ServerlessInstancesApi.
+		GetServerlessInstance(context.Background(), projectId, deploymentName).
+		Execute()
+
 	ginkgoPrettyPrintf(serverlessInstance, "getting serverless instance %s in project %s", deploymentName, projectId)
-	return serverlessInstance, nil
+
+	return serverlessInstance, err
 }
 
-func (a *Atlas) GetDBUser(database, userName, projectID string) (*mongodbatlas.DatabaseUser, error) {
-	user, _, err := a.Client.DatabaseUsers.Get(context.Background(), database, projectID, userName)
-	if err != nil {
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) &&
-				(apiError.ErrorCode == "USERNAME_NOT_FOUND" || apiError.ErrorCode == "RESOURCE_NOT_FOUND" || apiError.ErrorCode == "USER_NOT_IN_GROUP" || apiError.Response.StatusCode == 400) {
-				return nil, nil
-			}
-			return nil, err
-		}
+func (a *Atlas) GetDBUser(database, userName, projectID string) (*admin.CloudDatabaseUser, error) {
+	user, _, err := a.Client.DatabaseUsersApi.
+		GetDatabaseUser(context.Background(), projectID, database, userName).
+		Execute()
+	if admin.IsErrorCode(err, "USERNAME_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") || admin.IsErrorCode(err, "USER_NOT_IN_GROUP") {
+		return nil, nil
 	}
-	return user, nil
+
+	return user, err
 }
 
 // ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
@@ -164,60 +115,56 @@ func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) 
 	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }
 
-func (a *Atlas) GetIntegrationByType(projectId, iType string) (*mongodbatlas.ThirdPartyIntegration, error) {
-	integration, _, err := a.Client.Integrations.Get(context.Background(), projectId, iType)
-	if err != nil {
-		return nil, err
-	}
-	return integration, nil
+func (a *Atlas) GetIntegrationByType(projectId, iType string) (*admin.ThridPartyIntegration, error) {
+	integration, _, err := a.Client.ThirdPartyIntegrationsApi.
+		GetThirdPartyIntegration(context.Background(), projectId, iType).
+		Execute()
+
+	return integration, err
 }
 
-func (a *Atlas) GetUserByName(database, projectID, username string) (*mongodbatlas.DatabaseUser, error) {
-	dbUser, _, err := a.Client.DatabaseUsers.Get(context.Background(), database, projectID, username)
+func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.CloudDatabaseUser, error) {
+	dbUser, _, err := a.Client.DatabaseUsersApi.
+		GetDatabaseUser(context.Background(), projectID, database, username).
+		Execute()
 	if err != nil {
 		return nil, err
 	}
+
 	return dbUser, nil
 }
 
-func (a *Atlas) DeleteGlobalKey(key mongodbatlas.APIKey) error {
-	_, err := a.Client.APIKeys.Delete(context.Background(), a.OrgID, key.ID)
-	if err != nil {
-		return err
-	}
-	return nil
+func (a *Atlas) DeleteGlobalKey(key admin.ApiKeyUserDetails) error {
+	_, _, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
+
+	return err
 }
 
-func (a *Atlas) GetEncryptionAtRest(projectID string) (*mongodbatlas.EncryptionAtRest, error) {
-	encryptionAtRest, _, err := a.Client.EncryptionsAtRest.Get(context.Background(), projectID)
-	if err != nil {
-		return nil, err
-	}
-	return encryptionAtRest, nil
+func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, error) {
+	encryptionAtRest, _, err := a.Client.EncryptionAtRestUsingCustomerKeyManagementApi.
+		GetEncryptionAtRest(context.Background(), projectID).
+		Execute()
+
+	return encryptionAtRest, err
 }
 
-func (a *Atlas) GetOrgUsers(projectID string) ([]mongodbatlas.AtlasUser, error) {
-	users, _, err := a.Client.AtlasUsers.List(context.Background(), projectID, nil)
-	if err != nil {
-		return nil, err
-	}
+func (a *Atlas) GetOrgUsers() ([]admin.CloudAppUser, error) {
+	users, _, err := a.Client.OrganizationsApi.ListOrganizationUsers(context.Background(), a.OrgID).Execute()
 
-	return users, nil
+	return users.Results, err
 }
 
-func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*mongodbatlas.CloudProviderSnapshotExportBucket, error) {
-	r, _, err := a.Client.CloudProviderSnapshotExportBuckets.Create(
-		context.Background(),
-		projectID,
-		&mongodbatlas.CloudProviderSnapshotExportBucket{
-			BucketName:    bucketName,
-			CloudProvider: "AWS",
-			IAMRoleID:     roleID,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
+func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotAWSExportBucket, error) {
+	r, _, err := a.Client.CloudBackupsApi.
+		CreateExportBucket(
+			context.Background(),
+			projectID,
+			&admin.DiskBackupSnapshotAWSExportBucket{
+				BucketName:    &bucketName,
+				CloudProvider: toptr.MakePtr("AWS"),
+				IamRoleId:     &roleID,
+			},
+		).Execute()
 
-	return r, nil
+	return r, err
 }
