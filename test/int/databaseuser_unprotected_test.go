@@ -799,11 +799,27 @@ func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
 			Execute()
 		Expect(err).ToNot(HaveOccurred())
+		atlasDBUser.Links = nil
 		operatorDBUser, err := user.ToAtlasSDK(context.Background(), k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(*atlasDBUser).To(Equal(*operatorDBUser))
+		Expect(*atlasDBUser).To(Equal(normalize(operatorDBUser, projectID)))
 	})
+}
+
+// normalize brings the operator 'user' to the user returned by Atlas that allows to perform comparison for equality
+func normalize(user *admin.CloudDatabaseUser, projectID string) *admin.CloudDatabaseUser {
+	if !user.HasScopes() {
+		user.SetScopes([]admin.UserScope{})
+	}
+	if !user.HasLabels() {
+		user.SetLabels([]admin.ComponentLabel{})
+	}
+
+	user.SetGroupId(projectID)
+	user.Password = nil
+
+	return user
 }
 
 func deleteSecret(user *mdbv1.AtlasDatabaseUser) {

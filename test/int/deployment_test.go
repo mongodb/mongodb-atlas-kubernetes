@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231001002/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -274,8 +273,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			// Atlas will add some defaults in case the Atlas Operator doesn't set them
 			replicationSpecsCheck := func(deployment *admin.AdvancedClusterDescription) {
 				Expect(deployment.GetReplicationSpecs()).To(HaveLen(1))
-				Expect(deployment.GetReplicationSpecs()[0].Id).NotTo(BeNil())
-				Expect(deployment.GetReplicationSpecs()[0].ZoneName).To(Equal("Zone 1"))
+				Expect(deployment.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
+				Expect(deployment.GetReplicationSpecs()[0].GetZoneName()).To(Equal("Zone 1"))
 				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()).To(HaveLen(1))
 				Expect(deployment.GetReplicationSpecs()[0].GetRegionConfigs()[0]).NotTo(BeNil())
 			}
@@ -465,13 +464,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				expectedReplicationSpecs := mergedDeployment.ReplicationSpecs
 
 				// The ID field is added by Atlas - we don't have it in our specs
-				Expect(c.GetReplicationSpecs()[0].Id).NotTo(BeNil())
+				Expect(c.GetReplicationSpecs()[0].GetId()).NotTo(BeEmpty())
 
 				// Apart from 'ID' all other fields are equal to the ones sent by the Operator
-				Expect(c.GetReplicationSpecs()[0].NumShards).To(Equal(expectedReplicationSpecs[0].NumShards))
-				Expect(c.GetReplicationSpecs()[0].ZoneName).To(Equal(expectedReplicationSpecs[0].ZoneName))
+				Expect(c.GetReplicationSpecs()[0].GetNumShards()).To(Equal(expectedReplicationSpecs[0].NumShards))
+				Expect(c.GetReplicationSpecs()[0].GetZoneName()).To(Equal(expectedReplicationSpecs[0].ZoneName))
 
-				less := func(a, b *mongodbatlas.AdvancedRegionConfig) bool { return a.RegionName < b.RegionName }
+				less := func(a, b *admin.CloudRegionConfig) bool { return a.GetRegionName() < b.GetRegionName() }
 				Expect(cmp.Diff(c.GetReplicationSpecs()[0].RegionConfigs, expectedReplicationSpecs[0].RegionConfigs, cmpopts.SortSlices(less)))
 			}
 
@@ -1108,9 +1107,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 						g.Expect(current).NotTo(BeNil())
 
 						replicas := current.GetReplicationSpecs()
-						g.Expect(replicas[0].GetRegionConfigs()[0].AnalyticsSpecs.InstanceSize).To(Equal("M20"))
-						g.Expect(replicas[0].GetRegionConfigs()[0].ElectableSpecs.InstanceSize).To(Equal("M20"))
-						g.Expect(replicas[0].GetRegionConfigs()[0].ReadOnlySpecs.InstanceSize).To(Equal("M20"))
+						g.Expect(replicas[0].GetRegionConfigs()[0].AnalyticsSpecs.GetInstanceSize()).To(Equal("M20"))
+						g.Expect(replicas[0].GetRegionConfigs()[0].ElectableSpecs.GetInstanceSize()).To(Equal("M20"))
+						g.Expect(replicas[0].GetRegionConfigs()[0].ReadOnlySpecs.GetInstanceSize()).To(Equal("M20"))
 						return true
 					}).WithTimeout(2 * time.Minute).WithPolling(interval).Should(BeTrue())
 				})
@@ -1409,7 +1408,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						g,
 						createdProject.ID(),
 						createdDeployment.GetDeploymentName(),
-						[]mongodbatlas.CopySetting{
+						[]admin.DiskBackupCopySetting{
 							{
 								CloudProvider:    toptr.MakePtr("AWS"),
 								RegionName:       toptr.MakePtr("US_WEST_1"),
@@ -1449,7 +1448,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						g,
 						createdProject.ID(),
 						secondDeployment.GetDeploymentName(),
-						[]mongodbatlas.CopySetting{
+						[]admin.DiskBackupCopySetting{
 							{
 								CloudProvider:    toptr.MakePtr("AWS"),
 								RegionName:       toptr.MakePtr("US_WEST_1"),
@@ -1511,14 +1510,14 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 	}
 }
 
-func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []mongodbatlas.CopySetting) {
+func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []admin.DiskBackupCopySetting) {
 	atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 	g.Expect(err).Should(BeNil())
 	g.Expect(atlasCluster.GetStateName()).Should(Equal("IDLE"))
 	g.Expect(atlasCluster.GetBackupEnabled()).Should(BeTrue())
 
 	for i := range copySettings {
-		copySettings[i].ReplicationSpecID = toptr.MakePtr(atlasCluster.GetReplicationSpecs()[0].GetId())
+		copySettings[i].SetReplicationSpecId(atlasCluster.GetReplicationSpecs()[0].GetId())
 	}
 
 	atlasBSchedule, _, err := atlasClient.CloudBackupsApi.
