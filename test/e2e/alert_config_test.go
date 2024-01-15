@@ -161,7 +161,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 		ListAlertConfigurations(userData.Context, userData.Project.ID()).
 		Execute()
 	Expect(err).ShouldNot(HaveOccurred())
-	Expect(alertConfigurations).Should(HaveLen(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
+	Expect(alertConfigurations.GetTotalCount()).Should(Equal(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
 
 	atlasIDList := make([]string, 0, alertConfigurations.GetTotalCount())
 	for _, alertConfig := range alertConfigurations.GetResults() {
@@ -268,7 +268,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 					ListAlertConfigurations(testData.Context, testData.Project.ID()).
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(atlasAlertConfigs.GetTotalCount()).Should(HaveLen(len(alertConfigs)))
+				g.Expect(atlasAlertConfigs.GetTotalCount()).Should(Equal(len(alertConfigs)))
 				g.Expect(atlasAlertConfigs.GetResults()[0].Notifications[0].GetDatadogApiKey()).ShouldNot(BeEmpty())
 			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
