@@ -307,7 +307,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 			}
 			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
-			Expect(testData.K8SClient.Create(ctx, testData.Teams[0])).ToNot(Succeed())
+			Expect(testData.K8SClient.Create(ctx, testData.Teams[0])).To(Succeed())
 
 			akoProject := &mdbv1.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
