@@ -166,7 +166,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				p, _, err = atlasClient.Client.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, p.GetId()).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(p).ToNot(BeNil())
-				g.Expect(p.StatusName).To(Equal("PENDING_ACCEPTANCE"))
+				g.Expect(p.GetStatusName()).To(Equal("PENDING_ACCEPTANCE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Expect(aws.AcceptVpcPeeringConnection(p.GetConnectionId(), "eu-west-2")).To(Succeed())
@@ -175,7 +175,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				pCheck, _, err := atlasClient.Client.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, p.GetId()).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(pCheck).ToNot(BeNil())
-				g.Expect(pCheck.StatusName).To(Equal("AVAILABLE"))
+				g.Expect(pCheck.GetStatusName()).To(Equal("AVAILABLE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			networkPeerID = p.GetId()
@@ -307,7 +307,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 			}
 			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
-			Expect(testData.K8SClient.Create(ctx, testData.Teams[0]))
+			Expect(testData.K8SClient.Create(ctx, testData.Teams[0])).ToNot(Succeed())
 
 			akoProject := &mdbv1.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
