@@ -36,7 +36,9 @@ import (
 const ProjectAnnotation = "mongodbatlas/project"
 
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
-	defer func() { r.garbageCollectBackupResource(ctx.Context, project) }()
+	defer func() {
+		r.garbageCollectBackupResource(ctx.Context, project)
+	}()
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
 		// check if it is actually enabled in Atlas
