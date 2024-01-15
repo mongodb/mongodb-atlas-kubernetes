@@ -1,0 +1,29 @@
+name: CI Reports
+
+on:
+  workflow_call:
+  schedule:
+    - cron: "0 0 * * 1" # At 0:00 on Monday
+
+jobs:
+  check-licenses:
+    name: CI Reports
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
+
+      - name: Send Regressions Report
+        run: make slack-report REPORT_TYPE=regressions
+
+      - name: Send Flakiness Report
+        run: make slack-report REPORT_TYPE=flakiness

@@ -85,12 +85,11 @@ BASE_GO_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2
 GO_LICENSES = go-licenses
 DISALLOWED_LICENSES = restricted,reciprocal
 
-# JWT
-JWT_RSA_PEM_KEY_BASE64 ?= ""
-JWT_APP_ID ?= ""
-
 # golangci-lint
 GOLANGCI_LINT_VERSION := v1.54.2
+
+REPORT_TYPE = flakiness
+SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -415,5 +414,31 @@ check-version: ## Check the version is correct & releasable (vX.Y.Z and not "*-d
 
 .PHONY: release-helm
 release-helm: tools/makejwt/makejwt ## kick the operator helm chart release
+ifndef JWT_RSA_PEM_KEY_BASE64
+	@echo "Must set JWT_RSA_PEM_KEY_BASE64 and JWT_APP_ID to $@"
+	@exit 1
+endif
 	@APP_ID=$(JWT_APP_ID) RSA_PEM_KEY_BASE64=$(JWT_RSA_PEM_KEY_BASE64) \
 	VERSION=$(VERSION) ./scripts/release-helm.sh
+
+.PHONY: github-token
+github-token: tools/makejwt/makejwt ## github-token gets a GitHub token from a key in env vars
+ifndef JWT_RSA_PEM_KEY_BASE64
+	@echo "Must set JWT_RSA_PEM_KEY_BASE64 and JWT_APP_ID to get $@"
+	@exit 1
+endif
+	@REPO=mongodb/mongodb-atlas-kubernetes APP_ID=$(JWT_APP_ID) \
+	RSA_PEM_KEY_BASE64=$(JWT_RSA_PEM_KEY_BASE64) ./scripts/gh-access-token.sh
+
+tools/metrics/metrics: tools/metrics/*.go
+	cd tools/metrics && go test . && go build .
+
+.PHONY: slack-report
+slack-report: tools/metrics/metrics ## slack a report
+ifndef GITHUB_TOKEN
+	echo "Getting GitHub token..."
+	$(eval GITHUB_TOKEN := $(shell $(MAKE) -s github-token))
+endif
+	@echo "Computing and sending $(REPORT_TYPE) report to Slack..."
+	@GITHUB_TOKEN=$(GITHUB_TOKEN) FORMAT=summary ./tools/metrics/metrics $(REPORT_TYPE) | \
+	./scripts/slackit.sh $(SLACK_WEBHOOK)
