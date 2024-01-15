@@ -266,7 +266,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		By("Adding Assign team to the project", func() {
 			users, _, err := atlasClient.Client.OrganizationsApi.ListOrganizationUsers(ctx, atlasClient.OrgID).Execute()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(users).ToNot(BeEmpty())
+			Expect(users.GetTotalCount()).ToNot(Equal(0))
 
 			usernames = make([]string, 0, users.GetTotalCount())
 			for _, user := range users.GetResults() {
