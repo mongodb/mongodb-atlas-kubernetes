@@ -124,7 +124,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 		err = e.Encode(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		fmt.Printf("Api Server is listening on %s\n", cfg.Host)
+		GinkgoWriter.Printf("Api Server is listening on %s\n", cfg.Host)
 	})
 
 	return b.Bytes()

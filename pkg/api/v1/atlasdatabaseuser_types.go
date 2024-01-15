@@ -230,9 +230,13 @@ func (p AtlasDatabaseUser) ToAtlasSDK(ctx context.Context, kubeClient client.Cli
 
 	result := admin.NewCloudDatabaseUserWithDefaults()
 	err = compat.JSONCopy(result, p.Spec)
+	if err != nil {
+		return nil, err
+	}
+
 	result.Password = &password
 
-	return result, err
+	return result, nil
 }
 
 func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {

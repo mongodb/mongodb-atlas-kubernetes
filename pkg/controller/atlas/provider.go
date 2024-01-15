@@ -120,18 +120,21 @@ func (p *ProductionProvider) SdkClient(ctx context.Context, secretRef *client.Ob
 	//}
 
 	c, err := NewClient(p.domain, secretData.PublicKey, secretData.PrivateKey)
+	if err != nil {
+		return nil, "", err
+	}
 
-	return c, secretData.OrgID, err
+	return c, secretData.OrgID, nil
 }
 
-func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (credentialsSecret, error) {
+func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbackRef *client.ObjectKey) (*credentialsSecret, error) {
 	if secretRef == nil {
 		secretRef = fallbackRef
 	}
 
 	secret := &corev1.Secret{}
 	if err := k8sClient.Get(ctx, *secretRef, secret); err != nil {
-		return credentialsSecret{}, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
+		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
 	secretData := credentialsSecret{
@@ -141,10 +144,10 @@ func getSecrets(ctx context.Context, k8sClient client.Client, secretRef, fallbac
 	}
 
 	if missingFields, valid := validateSecretData(&secretData); !valid {
-		return credentialsSecret{}, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
+		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
 	}
 
-	return secretData, nil
+	return &secretData, nil
 }
 
 func validateSecretData(secretData *credentialsSecret) ([]string, bool) {
