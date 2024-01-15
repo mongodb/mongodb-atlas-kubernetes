@@ -27,7 +27,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Context, clusterID string) error {
+func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Context, project *mdbv1.AtlasProject) error {
 	policies := &mdbv1.AtlasBackupCompliancePolicyList{}
 
 	err := r.Client.List(ctx, policies)
@@ -40,12 +40,25 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 		policy := p
 		g.Go(func() error {
 			// get policy's associated projects
-			annotation, exists := policy.Annotations[ProjectAnnotation]
+			annotation := policy.Annotations[ProjectAnnotation]
 			annotations := strings.Split(annotation, ",")
-			// check if project is covered by this policy
-			if !slices.Contains(annotations, clusterID) {
+			if !slices.Contains(annotations, project.ID()) {
+				// project not covered by policy
 				return nil
 			}
+			// policy thinks it covers project
+			if project.Spec.BackupCompliancePolicyRef.Name == policy.Name ||
+				project.Spec.BackupCompliancePolicyRef.Namespace == policy.Namespace {
+				// project is still using the BCP 
+				return nil
+			}
+			// if we reach here, the BCP has associated itself with the project,
+			// but the project no longer references the BCP (i.e. deletion attempted)
+
+			// remove annotation
+			// set status on project about deletion of BCP
+
+			//if this is the last referenced
 
 			return nil
 		})
