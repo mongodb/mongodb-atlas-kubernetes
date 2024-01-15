@@ -184,8 +184,8 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		By("Adding integration to the project", func() {
 			_, _, err := atlasClient.Client.ThirdPartyIntegrationsApi.CreateThirdPartyIntegration(
 				ctx,
-				projectID,
 				"PAGER_DUTY",
+				projectID,
 				&admin.ThridPartyIntegration{
 					Type:       toptr.MakePtr("PAGER_DUTY"),
 					Region:     toptr.MakePtr("EU"),
