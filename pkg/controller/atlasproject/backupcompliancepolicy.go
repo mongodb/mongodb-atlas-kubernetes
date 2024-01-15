@@ -37,6 +37,9 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	defer func() { r.garbageCollectBackupResource(ctx.Context, project.GetName()) }()
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
+		// check if it is actually enabled in Atlas
+		// if it is enabled in Atlas, we still have to signal here via the status condition
+		// that there is an not-deleted-yet backup compliance policy in Atlas
 		ctx.UnsetCondition(status.BackupComplianceReadyType)
 		return workflow.OK()
 	}
