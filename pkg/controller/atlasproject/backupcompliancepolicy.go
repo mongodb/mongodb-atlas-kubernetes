@@ -81,7 +81,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	// otherwise, continue...
 
 	// enable finalizer on compliance policy CR (if doesn't already exist)
-	err = customresource.ManageFinalizer(context.Background(), r.Client, compliancePolicy, customresource.SetFinalizer)
+	err = customresource.ManageFinalizer(ctx.Context, r.Client, compliancePolicy, customresource.SetFinalizer)
 	if err != nil {
 		ctx.SetConditionFalse(status.BackupComplianceReadyType)
 		return workflow.Terminate(workflow.AtlasFinalizerNotSet, err.Error())
@@ -94,7 +94,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		// TODO pick better name for project annotation
 		ProjectAnnotation: fmt.Sprintf("%v,%v", project.ID(), annotation),
 	})
-	if err = r.Client.Update(context.Background(), compliancePolicy); err != nil {
+	if err = r.Client.Update(ctx.Context, compliancePolicy); err != nil {
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 	}
 
@@ -147,7 +147,7 @@ func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompl
 	// TODO do we need to check this, or can we just always update?
 	localCompliancePolicy := kubeCompliancePolicy.ToAtlas()
 	if cmp.Diff(localCompliancePolicy, atlasCompliancePolicy, cmpopts.EquateEmpty()) != "" {
-		_, _, err := ctx.Client.BackupCompliancePolicy.Update(context.Background(), groupID, localCompliancePolicy)
+		_, _, err := ctx.Client.BackupCompliancePolicy.Update(ctx.Context, groupID, localCompliancePolicy)
 		if err != nil {
 			ctx.Log.Errorf("failed to update backup compliance policy in atlas: %v", err)
 			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err.Error())
