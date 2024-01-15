@@ -33,8 +33,10 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
+const ProjectAnnotation = "mongodbatlas/project"
+
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
-	defer func() { r.garbageCollectBackupResource(ctx.Context, project.GetName()) }()
+	defer func() { r.garbageCollectBackupResource(ctx.Context, project.ID()) }()
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
 		// check if it is actually enabled in Atlas
@@ -87,11 +89,14 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	// finalizer blocks deletion while there are references and/or compliance policy exists in atlas
 
 	// add annotation to compliance policy for associated atlas project
+	annotation := compliancePolicy.GetAnnotations()[ProjectAnnotation]
 	compliancePolicy.SetAnnotations(map[string]string{
 		// TODO pick better name for project annotation
-		"mongodbatlas/project": project.ID(),
+		ProjectAnnotation: fmt.Sprintf("%v,%v", project.ID(), annotation),
 	})
-	r.Client.Update(context.Background(), compliancePolicy)
+	if err = r.Client.Update(context.Background(), compliancePolicy); err != nil {
+		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
+	}
 
 	// create compliance policy in atlas
 	result := syncBackupCompliancePolicy(ctx, project.ID(), *compliancePolicy, *atlasCompliancePolicy)
@@ -104,7 +109,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 }
 
 // TODO: there is certainly a better way of doing this
-// can we annotate these seperate resources to attribute them to projects/deployments?
+// can we annotate these separate resources to attribute them to projects/deployments?
 func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context, project *mdbv1.AtlasProject) ([]mdbv1.AtlasBackupPolicyItem, error) {
 	policies := []mdbv1.AtlasBackupPolicyItem{}
 	deployments := &mdbv1.AtlasDeploymentList{}
@@ -163,7 +168,7 @@ func currentBackupPoliciesMatchCompliance(backups []mdbv1.AtlasBackupPolicyItem,
 			}
 			if !compareBackupPolicyItem(backup, complianceScheduledPolicy) {
 				// TODO: ideally have some identifying information here, but currently no way to tell backup policies apart (pass in policy rather than policyitem?)
-				errors.Join(err, errors.New("existing backup policy does not satisfy backup compliance policy"))
+				err = errors.Join(err, errors.New("existing backup policy does not satisfy backup compliance policy"))
 			}
 		}
 	}

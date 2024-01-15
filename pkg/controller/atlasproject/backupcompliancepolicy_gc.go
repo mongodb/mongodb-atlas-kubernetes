@@ -19,13 +19,15 @@ package atlasproject
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Context, clusterName string) error {
+func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Context, clusterID string) error {
 	policies := &mdbv1.AtlasBackupCompliancePolicyList{}
 
 	err := r.Client.List(ctx, policies)
@@ -34,9 +36,17 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	for _, policy := range policies.Items {
-		_ = policy
+	for _, p := range policies.Items {
+		policy := p
 		g.Go(func() error {
+			// get policy's associated projects
+			annotation, exists := policy.Annotations[ProjectAnnotation]
+			annotations := strings.Split(annotation, ",")
+			// check if project is covered by this policy
+			if !slices.Contains(annotations, clusterID) {
+				return nil
+			}
+
 			return nil
 		})
 	}
