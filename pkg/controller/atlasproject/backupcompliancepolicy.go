@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -35,18 +36,23 @@ import (
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
 	defer func() { r.garbageCollectBackupResource(ctx.Context, project.GetName()) }()
 
+	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
+		ctx.UnsetCondition(status.BackupComplianceReadyType)
+		return workflow.OK()
+	}
+
 	// reference set
 	// TODO start watching backup compliance CR
 	// check reference points to existing compliance policy CR
 	compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
-	err := r.Client.Get(context.Background(), *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
+	err := r.Client.Get(ctx.Context, *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
 	if err != nil {
 		ctx.Log.Errorf("failed to get backup compliance policy: %v", err)
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 	}
 	// check if compliance policy exists in atlas (and matches)
 	// if match, return workflow.OK()
-	atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(context.Background(), project.ID())
+	atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(ctx.Context, project.ID())
 	if err != nil {
 		ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
@@ -180,4 +186,8 @@ func normalizeRetention(policy mdbv1.AtlasBackupPolicyItem) int {
 		return policy.RetentionValue * 31
 	}
 	return -1
+}
+
+func IsBackupComplianceEmpty(backupCompliancePolicyRef *common.ResourceRefNamespaced) bool {
+	return (backupCompliancePolicyRef == nil) || (backupCompliancePolicyRef.Name == "")
 }
