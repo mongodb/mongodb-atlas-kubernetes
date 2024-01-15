@@ -50,7 +50,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 					customresource.ResourcePolicyAnnotation,
 					customresource.ResourcePolicyDelete,
 				)
-				Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
@@ -69,7 +69,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 			})
 			By("Deleting project from k8s and atlas", func() {
-				Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
 				Eventually(
 					checkAtlasProjectRemoved(testProject.Status.ID),
 				).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())

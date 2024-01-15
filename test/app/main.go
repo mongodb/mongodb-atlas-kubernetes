@@ -22,7 +22,7 @@ import (
 
 var (
 	collection *mongo.Collection
-	ctx        = context.TODO()
+	ctx        = context.Background()
 
 	// related to DB
 	dbName         = "Ships"

@@ -20,7 +20,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID",
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&v1.AtlasProject{})
@@ -32,7 +32,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID",
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(&v1.AtlasTeam{})
@@ -56,7 +56,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID",
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -80,7 +80,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID",
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -112,7 +112,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID-1",
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)
@@ -144,7 +144,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID-1",
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
 		result, err := checker(team)

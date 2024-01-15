@@ -219,7 +219,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(&workflowCtx, false, &mdbv1.AtlasProject{})
 		assert.NoError(t, err)
@@ -231,7 +231,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 		assert.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -250,7 +250,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -270,7 +270,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -290,7 +290,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -346,7 +346,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -402,7 +402,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -460,7 +460,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
 
@@ -482,7 +482,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureCustomRoles(workflowCtx, akoProject, true)
 
@@ -539,7 +539,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"cluster":false,"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureCustomRoles(workflowCtx, akoProject, true)
 

@@ -48,7 +48,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 					customresource.ResourcePolicyAnnotation,
 					customresource.ResourcePolicyDelete,
 				)
-				Expect(k8sClient.Create(context.TODO(), testProject, &client.CreateOptions{})).To(Succeed())
+				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
@@ -58,7 +58,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 
 		AfterAll(func() {
 			By("Deleting project from k8s and atlas", func() {
-				Expect(k8sClient.Delete(context.TODO(), testProject, &client.DeleteOptions{})).To(Succeed())
+				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
 				Eventually(
 					checkAtlasProjectRemoved(testProject.Status.ID),
 				).WithTimeout(3 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
@@ -95,7 +95,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 
 func preserveDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDeployment *mdbv1.AtlasDeployment) {
 	By("Creating deployment in Kubernetes", func() {
-		Expect(k8sClient.Create(context.TODO(), testDeployment, &client.CreateOptions{})).To(Succeed())
+		Expect(k8sClient.Create(context.Background(), testDeployment, &client.CreateOptions{})).To(Succeed())
 	})
 
 	By("Waiting the deployment to settle in Kubernetes", func() {
@@ -105,10 +105,10 @@ func preserveDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDepl
 	})
 
 	By("Deleting the deployment from Kubernetes", func() {
-		Expect(k8sClient.Delete(context.TODO(), testDeployment, &client.DeleteOptions{})).To(Succeed())
+		Expect(k8sClient.Delete(context.Background(), testDeployment, &client.DeleteOptions{})).To(Succeed())
 		Eventually(func() bool {
 			deployment := mdbv1.AtlasDeployment{}
-			err := k8sClient.Get(context.TODO(), kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
+			err := k8sClient.Get(context.Background(), kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
 			return k8serrors.IsNotFound(err)
 		}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 	})

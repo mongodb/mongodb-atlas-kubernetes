@@ -53,7 +53,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -84,7 +84,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
@@ -104,7 +104,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
@@ -150,7 +150,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
@@ -196,7 +196,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 
@@ -242,7 +242,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canIntegrationsReconcile(workflowCtx, true, akoProject)
 

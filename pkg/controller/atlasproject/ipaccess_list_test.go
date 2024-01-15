@@ -41,7 +41,7 @@ func TestFilterActiveIPAccessLists(t *testing.T) {
 
 func TestCanIPAccessListReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canIPAccessListReconcile(context.TODO(), &mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		result, err := canIPAccessListReconcile(context.Background(), &mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -49,7 +49,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &mongodbatlas.Client{}, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &mongodbatlas.Client{}, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
@@ -64,7 +64,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
@@ -80,7 +80,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 		}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -115,7 +115,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -154,7 +154,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
@@ -193,7 +193,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.TODO(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -213,7 +213,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
@@ -255,7 +255,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
 
@@ -313,7 +313,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result := ensureIPAccessList(
 			workflowCtx,
@@ -349,7 +349,7 @@ func TestSyncIPAccessList(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 
 		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
@@ -378,7 +378,7 @@ func TestSyncIPAccessList(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 
 		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
@@ -398,7 +398,7 @@ func TestSyncIPAccessList(t *testing.T) {
 		atlasClient := mongodbatlas.Client{}
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 
 		assert.NoError(t, syncIPAccessList(workflowCtx, "projectID", current, desired))

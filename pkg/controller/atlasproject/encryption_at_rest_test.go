@@ -25,7 +25,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -56,7 +56,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
@@ -86,7 +86,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
@@ -138,7 +138,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
@@ -191,7 +191,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
@@ -244,7 +244,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		result, err := canEncryptionAtRestReconcile(workflowCtx, true, akoProject)
 
@@ -266,7 +266,7 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
 			SubObjectDeletionProtection: true,
@@ -320,7 +320,7 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 		)
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Context: context.TODO(),
+			Context: context.Background(),
 		}
 		secretData := map[string][]byte{
 			"AccessKeyID":         []byte("testAccessKeyID"),
