@@ -8,7 +8,7 @@ import (
 )
 
 func TestQueryRegressions(t *testing.T) {
-	srs, err := QueryRegressions(newTestClient(), lastRecordingTime, Weekly, 5)
+	srs, err := QueryRegressions(newTestClient(), lastRecordingTime, Weekly, 3)
 	assert.NoError(t, err)
 	require.NotNil(t, srs)
 }
