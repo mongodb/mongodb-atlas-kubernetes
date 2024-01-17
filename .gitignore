@@ -41,7 +41,11 @@ node_modules
 tmp/
 
 # ready to work samples
-deploy/
+deploy
+
+# e2e work files
+config/e2e
+bundle/e2e
 
 # ignore tool binaries
 tools/clean/clean
