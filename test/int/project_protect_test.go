@@ -13,8 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -48,7 +48,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -90,7 +90,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -123,7 +123,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 

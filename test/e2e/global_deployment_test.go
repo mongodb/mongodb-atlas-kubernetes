@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -106,7 +107,7 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []akov2.CustomZ
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
-				if condition.Type == status.CustomZoneMappingReadyType {
+				if condition.Type == api.CustomZoneMappingReadyType {
 					return condition.Status == corev1.ConditionTrue
 				}
 			}
@@ -121,7 +122,7 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []akov2.CustomZ
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
-				if condition.Type == status.ManagedNamespacesReadyType {
+				if condition.Type == api.ManagedNamespacesReadyType {
 					return condition.Status == corev1.ConditionTrue
 				}
 			}
@@ -145,7 +146,7 @@ func globalClusterFlow(userData *model.TestDataProvider, mapping []akov2.CustomZ
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
-				if condition.Type == status.DeploymentReadyType {
+				if condition.Type == api.DeploymentReadyType {
 					return condition.Status == corev1.ConditionTrue
 				}
 			}

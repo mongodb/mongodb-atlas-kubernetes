@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
@@ -55,25 +56,25 @@ func TestInitCondition(t *testing.T) {
 			name: "keep condition",
 			resource: &resource{
 				conditions: []status.Condition{
-					{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
+					{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
 				},
 			},
-			defaultCondition: status.Condition{Type: status.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
+			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionFalse, Message: "default"},
 			want: []status.Condition{
-				{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
+				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "untouched"},
 			},
 		},
 		{
 			name: "set condition",
 			resource: &resource{
 				conditions: []status.Condition{
-					{Type: status.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
+					{Type: api.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
 				},
 			},
-			defaultCondition: status.Condition{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			want: []status.Condition{
-				{Type: status.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
-				{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+				{Type: api.ValidationSucceeded, Status: corev1.ConditionTrue, Message: "untouched"},
+				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
 		},
 		{
@@ -81,9 +82,9 @@ func TestInitCondition(t *testing.T) {
 			resource: &resource{
 				conditions: nil,
 			},
-			defaultCondition: status.Condition{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			want: []status.Condition{
-				{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
 		},
 		{
@@ -91,9 +92,9 @@ func TestInitCondition(t *testing.T) {
 			resource: &resource{
 				conditions: []status.Condition{},
 			},
-			defaultCondition: status.Condition{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+			defaultCondition: status.Condition{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			want: []status.Condition{
-				{Type: status.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
+				{Type: api.ReadyType, Status: corev1.ConditionTrue, Message: "default"},
 			},
 		},
 	} {

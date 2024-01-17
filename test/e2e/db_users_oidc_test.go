@@ -11,8 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	dbuserController "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
@@ -93,7 +93,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 					dbUser := testData.Users[i]
 
 					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-					g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
+					g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, api.TrueCondition(api.ReadyType))).To(BeTrue())
 				}
 
 				return true
@@ -120,7 +120,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 						Namespace: testData.Users[0].Namespace,
 					}, currentUser)).NotTo(HaveOccurred())
 				for _, condition := range currentUser.Status.Conditions {
-					if condition.Type == status.ReadyType {
+					if condition.Type == api.ReadyType {
 						g.Expect(condition.Status).Should(Equal(corev1.ConditionFalse))
 						g.Expect(condition.Message).To(ContainSubstring(dbuserController.ErrOIDCNotEnabled.Error()))
 					}
@@ -186,7 +186,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 	// 				dbUser := testData.Users[i]
 
 	// 				g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
-	// 				g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(status.ReadyType))).To(BeTrue())
+	// 				g.Expect(resources.CheckCondition(testData.K8SClient, dbUser, status.TrueCondition(api.ReadyType))).To(BeTrue())
 	// 			}
 
 	// 			return true
@@ -213,7 +213,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 	// 					Namespace: testData.Users[0].Namespace,
 	// 				}, currentUser)).NotTo(HaveOccurred())
 	// 			for _, condition := range currentUser.Status.Conditions {
-	// 				if condition.Type == status.ReadyType {
+	// 				if condition.Type == api.ReadyType {
 	// 					g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue))
 	// 				}
 	// 			}

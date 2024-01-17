@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -60,7 +60,7 @@ func (r *AtlasStreamsConnectionReconciler) ensureAtlasStreamConnection(ctx conte
 		return r.skip(ctx, log, akoStreamConnection), nil
 	}
 
-	conditions := akov2.InitCondition(akoStreamConnection, status.FalseCondition(status.ReadyType))
+	conditions := api.InitCondition(akoStreamConnection, api.FalseCondition(api.ReadyType))
 	workflowCtx := workflow.NewContext(log, conditions, ctx)
 	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamConnection)
 
@@ -149,20 +149,20 @@ func (r *AtlasStreamsConnectionReconciler) unsupport(ctx *workflow.Context) (ctr
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasStreamConnection is not supported by Atlas for government").
 		WithoutRetry()
-	ctx.SetConditionFromResult(status.ReadyType, unsupported)
+	ctx.SetConditionFromResult(api.ReadyType, unsupported)
 	return unsupported.ReconcileResult(), nil
 }
 
 func (r *AtlasStreamsConnectionReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err.Error())
-	ctx.SetConditionFromResult(status.ReadyType, terminated)
+	ctx.SetConditionFromResult(api.ReadyType, terminated)
 	return terminated.ReconcileResult(), nil
 }
 
 func (r *AtlasStreamsConnectionReconciler) ready(ctx *workflow.Context) (ctrl.Result, error) {
 	result := workflow.OK()
-	ctx.SetConditionFromResult(status.ReadyType, result)
+	ctx.SetConditionFromResult(api.ReadyType, result)
 	return result.ReconcileResult(), nil
 }
 

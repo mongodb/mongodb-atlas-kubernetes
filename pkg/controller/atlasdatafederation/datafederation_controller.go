@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -85,20 +85,20 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	if !r.AtlasProvider.IsResourceSupported(dataFederation) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDataFederation is not supported by Atlas for government").
 			WithoutRetry()
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	project := &akov2.AtlasProject{}
 	if result := r.readProjectResource(context, dataFederation, project); !result.IsOk() {
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	atlasClient, orgID, err := r.AtlasProvider.Client(ctx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	ctx.OrgID = orgID
@@ -108,7 +108,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	owner, err := customresource.IsOwner(dataFederation, false, customresource.IsResourceManagedByOperator, managedByAtlas(context, atlasClient, project.ID(), log))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -119,19 +119,19 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile DataFederation: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
 		)
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
 	}
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation); !result.IsOk() {
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	if result = r.ensurePrivateEndpoints(ctx, project, dataFederation); !result.IsOk() {
-		ctx.SetConditionFromResult(status.DataFederationPEReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationPEReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
@@ -163,7 +163,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 				if err = r.deleteDataFederationFromAtlas(context, atlasClient, dataFederation, project, log); err != nil {
 					log.Errorf("failed to remove DataFederation from Atlas: %s", err)
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+					ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 					return result.ReconcileResult(), nil
 				}
 			}
@@ -180,13 +180,13 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	err = customresource.ApplyLastConfigApplied(context, project, r.Client)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
-		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
+		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
 	}
 
-	ctx.SetConditionTrue(status.ReadyType)
+	ctx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
 }
 
@@ -263,7 +263,7 @@ func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.Dele
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		dataFederation, ok := resource.(*akov2.AtlasDataFederation)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDataFederation")

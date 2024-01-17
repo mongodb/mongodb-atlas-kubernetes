@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -200,13 +201,13 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			result,
 		)
 
-		condition, ok := service.GetCondition(status.ServerlessPrivateEndpointReadyType)
+		condition, ok := service.GetCondition(api.ServerlessPrivateEndpointReadyType)
 		assert.True(t, ok)
 		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
 		assert.Equal(
 			t,
 			status.Condition{
-				Type:    status.ServerlessPrivateEndpointReadyType,
+				Type:    api.ServerlessPrivateEndpointReadyType,
 				Status:  corev1.ConditionFalse,
 				Reason:  string(workflow.ServerlessPrivateEndpointInProgress),
 				Message: "Waiting serverless private endpoint to be configured",
@@ -261,13 +262,13 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.Equal(t, workflow.OK(), result)
 
-		condition, ok := service.GetCondition(status.ServerlessPrivateEndpointReadyType)
+		condition, ok := service.GetCondition(api.ServerlessPrivateEndpointReadyType)
 		assert.True(t, ok)
 		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
 		assert.Equal(
 			t,
 			status.Condition{
-				Type:   status.ServerlessPrivateEndpointReadyType,
+				Type:   api.ServerlessPrivateEndpointReadyType,
 				Status: corev1.ConditionTrue,
 			},
 			condition,

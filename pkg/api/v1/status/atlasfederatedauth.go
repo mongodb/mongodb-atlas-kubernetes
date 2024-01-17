@@ -1,7 +1,9 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 type AtlasFederatedAuthStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 }
 
 // +k8s:deepcopy-gen=false

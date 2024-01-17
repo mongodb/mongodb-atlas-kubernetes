@@ -31,9 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -103,22 +103,22 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if err := validate.DatabaseUser(databaseUser); err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.ValidationSucceeded, result)
+		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
 
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
+	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
 	if !r.AtlasProvider.IsResourceSupported(databaseUser) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDatabaseUser is not supported by Atlas for government").
 			WithoutRetry()
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	project := &akov2.AtlasProject{}
 	if result = r.readProjectResource(ctx, databaseUser, project); !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
@@ -126,7 +126,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	atlasClient, orgID, err := r.AtlasProvider.Client(ctx, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
@@ -137,7 +137,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	owner, err := customresource.IsOwner(databaseUser, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, project.ID(), log))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("enable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -148,7 +148,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile database user: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
 		)
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -162,7 +162,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	err = customresource.ApplyLastConfigApplied(ctx, databaseUser, r.Client)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -171,14 +171,14 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	err = r.handleFeatureFlags(databaseUser)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.ReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ReadyType, result)
 		log.Error(result.GetMessage())
 		return result.ReconcileResult(), nil
 	}
 
 	result = r.ensureDatabaseUser(workflowCtx, *project, *databaseUser)
 	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 
 		return result.ReconcileResult(), nil
 	}
@@ -186,14 +186,14 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	err = customresource.ManageFinalizer(ctx, r.Client, databaseUser, customresource.SetFinalizer)
 	if err != nil {
 		result = workflow.Terminate(workflow.AtlasFinalizerNotSet, err.Error())
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
 	}
 
-	workflowCtx.SetConditionTrue(status.DatabaseUserReadyType)
-	workflowCtx.SetConditionTrue(status.ReadyType)
+	workflowCtx.SetConditionTrue(api.DatabaseUserReadyType)
+	workflowCtx.SetConditionTrue(api.ReadyType)
 
 	return result.ReconcileResult(), nil
 }
@@ -283,7 +283,7 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		dbUser, ok := resource.(*akov2.AtlasDatabaseUser)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDatabaseUser")

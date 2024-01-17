@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -125,28 +127,28 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 
 	project := &akov2.AtlasProject{}
 	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	if err := validate.DeploymentSpec(&deployment.Spec, r.AtlasProvider.IsCloudGov(), project.Spec.RegionUsageRestrictions); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.ValidationSucceeded, result)
+		workflowCtx.SetConditionFromResult(api.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
+	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
 	if !r.AtlasProvider.IsResourceSupported(deployment) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasDeployment is not supported by Atlas for government").
 			WithoutRetry()
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.OrgID = orgID
@@ -155,7 +157,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	atlasSdkClient, _, err := r.AtlasProvider.SdkClient(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SdkClient = atlasSdkClient
@@ -179,19 +181,19 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 	if err := uniqueKey(&convertedDeployment.Spec); err != nil {
 		log.Errorw("failed to validate tags", "error", err)
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	handleDeployment := r.selectDeploymentHandler(convertedDeployment)
 	if result, _ := handleDeployment(workflowCtx, project, convertedDeployment, req); !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return r.registerConfigAndReturn(workflowCtx, log, deployment, result), nil
 	}
 
 	if !convertedDeployment.IsServerless() {
 		if result := r.handleAdvancedOptions(workflowCtx, project, convertedDeployment); !result.IsOk() {
-			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+			workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 			return r.registerConfigAndReturn(workflowCtx, log, deployment, result), nil
 		}
 	}
@@ -208,7 +210,7 @@ func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 		err := customresource.ApplyLastConfigApplied(workflowCtx.Context, deployment, r.Client)
 		if err != nil {
 			alternateResult := workflow.Terminate(workflow.Internal, err.Error())
-			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, alternateResult)
+			workflowCtx.SetConditionFromResult(api.DeploymentReadyType, alternateResult)
 			log.Error(result.GetMessage())
 
 			return result.ReconcileResult()
@@ -248,7 +250,7 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result
@@ -259,7 +261,7 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Deployment due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result
@@ -313,7 +315,7 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 		if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
 			log.Errorf("failed to remove deployment from Atlas: %s", err)
 			result := workflow.Terminate(workflow.Internal, err.Error())
-			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+			workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 			return true, result
 		}
 	}
@@ -403,7 +405,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
 		backupEnabled,
 	); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+		workflowCtx.SetConditionFromResult(api.DeploymentReadyType, result)
 		return result, nil
 	}
 
@@ -412,11 +414,11 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
 	}
 
 	workflowCtx.
-		SetConditionTrue(status.DeploymentReadyType).
+		SetConditionTrue(api.DeploymentReadyType).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(c.MongoDBVersion)).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(c.ConnectionStrings))
 
-	workflowCtx.SetConditionTrue(status.ReadyType)
+	workflowCtx.SetConditionTrue(api.ReadyType)
 	return result, nil
 }
 
@@ -451,12 +453,12 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(
 	}
 
 	ctx.
-		SetConditionTrue(status.DeploymentReadyType).
+		SetConditionTrue(api.DeploymentReadyType).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(d.MongoDBVersion)).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(d.ConnectionStrings)).
 		EnsureStatusOption(status.AtlasDeploymentMongoURIUpdatedOption(d.MongoURIUpdated))
 
-	ctx.SetConditionTrue(status.ReadyType)
+	ctx.SetConditionTrue(api.ReadyType)
 	return result, nil
 }
 
@@ -722,7 +724,7 @@ type atlasTypedCluster struct {
 }
 
 func managedByAtlas(workflowCtx *workflow.Context, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		deployment, ok := resource.(*akov2.AtlasDeployment)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDeployment")

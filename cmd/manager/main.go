@@ -25,9 +25,12 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,14 +41,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
@@ -79,6 +81,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(akov2.AddToScheme(scheme))
+	utilruntime.Must(akov1alpha1.AddToScheme(scheme))
 }
 
 func main() {
@@ -179,6 +182,21 @@ func main() {
 		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
+		os.Exit(1)
+	}
+
+	if err = (&atlasproject.AtlasProjectExperimentalReconciler{
+		Client:                      mgr.GetClient(),
+		Log:                         logger.Named("controllers").Named("AtlasExperimentalProject").Sugar(),
+		Scheme:                      mgr.GetScheme(),
+		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
+		GlobalPredicates:            globalPredicates,
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasExperimentalProject"),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasExperimentalProject")
 		os.Exit(1)
 	}
 

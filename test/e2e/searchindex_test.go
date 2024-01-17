@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -72,7 +73,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
-					if condition.Type == status.DeploymentReadyType {
+					if condition.Type == api.DeploymentReadyType {
 						return condition.Status == v1.ConditionTrue
 					}
 				}

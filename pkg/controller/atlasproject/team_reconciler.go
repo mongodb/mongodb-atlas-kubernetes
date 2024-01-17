@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -52,14 +53,14 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		if !r.AtlasProvider.IsResourceSupported(team) {
 			result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasTeam is not supported by Atlas for government").
 				WithoutRetry()
-			setCondition(teamCtx, status.ReadyType, result)
+			setCondition(teamCtx, api.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 
 		atlasClient, orgID, err := r.AtlasProvider.Client(teamCtx.Context, connectionSecretKey, log)
 		if err != nil {
 			result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-			setCondition(teamCtx, status.ReadyType, result)
+			setCondition(teamCtx, api.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 		teamCtx.OrgID = orgID
@@ -68,7 +69,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		owner, err := customresource.IsOwner(team, false, customresource.IsResourceManagedByOperator, teamsManagedByAtlas(teamCtx))
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			log.Error(result.GetMessage())
 
 			return result.ReconcileResult(), nil
@@ -79,7 +80,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 				workflow.AtlasDeletionProtection,
 				"unable to reconcile Team due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 			)
-			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			log.Error(result.GetMessage())
 
 			return result.ReconcileResult(), nil
@@ -87,7 +88,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		teamID, result := ensureTeamState(teamCtx, team)
 		if !result.IsOk() {
-			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			if result.IsWarning() {
 				teamCtx.Log.Warnf("failed to ensure team state %v: %s", team.Spec, result.GetMessage())
 			}
@@ -99,7 +100,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 
 		result = ensureTeamUsersAreInSync(teamCtx, teamID, team)
 		if !result.IsOk() {
-			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			return result.ReconcileResult(), nil
 		}
 
@@ -139,13 +140,13 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		err = customresource.ApplyLastConfigApplied(teamCtx.Context, team, r.Client)
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, err.Error())
-			teamCtx.SetConditionFromResult(status.ReadyType, result)
+			teamCtx.SetConditionFromResult(api.ReadyType, result)
 			log.Error(result.GetMessage())
 
 			return result.ReconcileResult(), nil
 		}
 
-		teamCtx.SetConditionTrue(status.ReadyType)
+		teamCtx.SetConditionTrue(api.ReadyType)
 		return workflow.OK().ReconcileResult(), nil
 	}
 }
@@ -319,7 +320,7 @@ func renameTeam(workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team, new
 }
 
 func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		team, ok := resource.(*akov2.AtlasTeam)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasTeams")

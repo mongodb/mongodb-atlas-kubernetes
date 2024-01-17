@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -155,6 +156,8 @@ func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
 	return nil
 }
 
+var _ api.AtlasCustomResource = &AtlasProject{}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Name",type=string,JSONPath=`.spec.name`
@@ -197,11 +200,11 @@ func (p *AtlasProject) ConnectionSecretObjectKey() *client.ObjectKey {
 	return nil
 }
 
-func (p *AtlasProject) GetStatus() status.Status {
+func (p *AtlasProject) GetStatus() api.Status {
 	return p.Status
 }
 
-func (p *AtlasProject) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (p *AtlasProject) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	p.Status.Conditions = conditions
 	p.Status.ObservedGeneration = p.ObjectMeta.Generation
 
