@@ -27,6 +27,7 @@ const (
 	ResourcePolicyDelete           = "delete"
 	ReconciliationPolicySkip       = "skip"
 	ResourceVersionAllow           = "allow"
+	TimeFormatISO8601              = "2006-01-02T15:04:05.999Z"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.

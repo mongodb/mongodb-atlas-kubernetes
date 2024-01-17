@@ -1,9 +1,8 @@
 package project
 
 import (
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"strings"
-
-	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 )
@@ -27,9 +26,10 @@ type IPAccessList struct {
 }
 
 // ToAtlas converts the ProjectIPAccessList to native Atlas client format.
-func (i IPAccessList) ToAtlas() (*mongodbatlas.ProjectIPAccessList, error) {
-	result := &mongodbatlas.ProjectIPAccessList{}
+func (i IPAccessList) ToAtlas() (*admin.NetworkPermissionEntry, error) {
+	result := &admin.NetworkPermissionEntry{}
 	err := compat.JSONCopy(result, i)
+
 	return result, err
 }
 

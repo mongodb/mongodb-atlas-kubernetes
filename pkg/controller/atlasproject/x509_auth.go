@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (authmode.AuthModes, workflow.Result) {
+func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, project *mdbv1.AtlasProject) (authmode.AuthModes, workflow.Result) {
 	log := ctx.Log
 
 	var specCert string
@@ -31,8 +31,8 @@ func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID str
 	}
 
 	if authModes.CheckAuthMode(authmode.X509) && specCert == "" {
-		log.Infow("Disable x509 auth", "projectID", projectID)
-		_, err := ctx.Client.X509AuthDBUsers.DisableCustomerX509(ctx.Context, projectID)
+		log.Infow("Disable x509 auth", "projectID", project.ID())
+		_, err := ctx.Client.X509AuthDBUsers.DisableCustomerX509(ctx.Context, project.ID())
 		if err != nil {
 			return authModes, workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -40,7 +40,7 @@ func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID str
 		return authModes, workflow.OK()
 	}
 
-	customer, _, err := ctx.Client.X509AuthDBUsers.GetCurrentX509Conf(ctx.Context, projectID)
+	customer, _, err := ctx.Client.X509AuthDBUsers.GetCurrentX509Conf(ctx.Context, project.ID())
 	if err != nil {
 		return authModes, workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -49,10 +49,10 @@ func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID str
 		conf := mongodbatlas.CustomerX509{
 			Cas: specCert,
 		}
-		log.Infow("Saving new x509 cert", "projectID", projectID)
+		log.Infow("Saving new x509 cert", "projectID", project.ID())
 		log.Debugw("New customer", "conf", conf)
 
-		_, _, err := ctx.Client.X509AuthDBUsers.SaveConfiguration(ctx.Context, projectID, &conf)
+		_, _, err := ctx.Client.X509AuthDBUsers.SaveConfiguration(ctx.Context, project.ID(), &conf)
 		if err != nil {
 			return authModes, workflow.Terminate(workflow.Internal, err.Error())
 		}

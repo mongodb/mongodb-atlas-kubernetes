@@ -21,17 +21,13 @@ import (
 	"errors"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -42,6 +38,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -133,14 +130,14 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.OrgID = orgID
-	workflowCtx.Client = atlasClient
+	workflowCtx.SdkClient = atlasClient
 
 	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
 	if err != nil {
@@ -170,7 +167,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if result = r.ensureDeletionFinalizer(workflowCtx, atlasClient, project); !result.IsOk() {
+	if result = r.ensureDeletionFinalizer(workflowCtx, project); !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -189,7 +186,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	var authModes authmode.AuthModes
-	if authModes, result = r.ensureX509(workflowCtx, projectID, project); !result.IsOk() {
+	if authModes, result = r.ensureX509(workflowCtx, project); !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -221,7 +218,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (result workflow.Result) {
+func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, project *mdbv1.AtlasProject) (result workflow.Result) {
 	log := workflowCtx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
@@ -248,7 +245,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.C
 					return result
 				}
 
-				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {
+				if err := r.deleteAtlasProject(workflowCtx, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
 					setCondition(workflowCtx, status.DeploymentReadyType, result)
 					return result
@@ -336,13 +333,12 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	return results
 }
 
-func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
+func (r *AtlasProjectReconciler) deleteAtlasProject(workflowCtx *workflow.Context, project *mdbv1.AtlasProject) (err error) {
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
-	_, err = atlasClient.Projects.Delete(ctx, project.Status.ID)
-	var apiError *mongodbatlas.ErrorResponse
-	if errors.As(err, &apiError) && apiError.ErrorCode == atlas.NotInGroup {
+	_, _, err = workflowCtx.SdkClient.ProjectsApi.DeleteProject(workflowCtx.Context, project.ID()).Execute()
+	if admin.IsErrorCode(err, atlas.NotInGroup) {
 		log.Infow("Project does not exist", "projectID", project.Status.ID)
 		return nil
 	}
@@ -382,13 +378,11 @@ func managedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
 			return false, nil
 		}
 
-		atlasProject, _, err := workflowCtx.Client.Projects.GetOneProject(workflowCtx.Context, project.ID())
+		atlasProject, _, err := workflowCtx.SdkClient.ProjectsApi.GetProject(workflowCtx.Context, project.ID()).Execute()
+		if admin.IsErrorCode(err, atlas.NotInGroup) || admin.IsErrorCode(err, atlas.ResourceNotFound) {
+			return false, nil
+		}
 		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
-				return false, nil
-			}
-
 			return false, err
 		}
 
