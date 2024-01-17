@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -180,9 +181,9 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{}, result)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[1].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[1].Status)
 	})
 
@@ -263,7 +264,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotConfigured), ctx.Conditions()[0].Reason)
 		assert.Contains(t, ctx.Conditions()[0].Message, "failed to retrieve connection {my-sample-connection default}")
@@ -349,7 +350,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotCreated), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to create connection", ctx.Conditions()[0].Message)
@@ -444,7 +445,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotUpdated), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to update connection", ctx.Conditions()[0].Message)
@@ -523,7 +524,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamConnectionNotRemoved), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to delete connection", ctx.Conditions()[0].Message)

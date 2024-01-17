@@ -21,9 +21,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -69,7 +69,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 		})
 
@@ -78,7 +78,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, testDeployment, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 		})
 	})
@@ -110,7 +110,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
@@ -129,7 +129,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser2)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser2, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser2, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser2)
@@ -147,7 +147,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser3)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser3, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser3, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser3)
@@ -225,7 +225,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -246,7 +246,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -289,7 +289,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
@@ -302,7 +302,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), secondDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, secondDeployment, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, secondDeployment, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -344,7 +344,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
@@ -356,7 +356,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				passwordSecret := buildPasswordSecret(testNamespace.Name, UserPasswordSecret, "")
 				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
 
-				expectedCondition := status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
+				expectedCondition := api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.Internal)).WithMessageRegexp("the 'password' field is empty")
 				Eventually(func() bool {
 					return resources.CheckCondition(k8sClient, testDBUser1, expectedCondition)
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
@@ -369,7 +369,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Update(context.Background(), &passwordSecret)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				// We need to make sure that the new connection secret is different from the initial one
@@ -392,7 +392,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), secondTestDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, secondTestDeployment, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, secondTestDeployment, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(20 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -406,7 +406,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)
@@ -422,7 +422,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				_, _, err := atlasClient.DatabaseUsersApi.
@@ -445,7 +445,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 1)
@@ -488,7 +488,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
 				}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 0)
@@ -505,7 +505,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 1)
@@ -518,14 +518,14 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				Expect(k8sClient.Update(context.Background(), testDBUser1)).To(Succeed())
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.FalseCondition(status.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.FalseCondition(api.DatabaseUserReadyType).WithReason(string(workflow.DatabaseUserExpired)))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				expectedConditionsMatchers := conditions.MatchConditions(
-					status.FalseCondition(status.DatabaseUserReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ResourceVersionStatus),
+					api.FalseCondition(api.DatabaseUserReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ResourceVersionStatus),
 				)
 				Expect(testDBUser1.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 
@@ -544,7 +544,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Create(context.Background(), testDBUser1)).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
 				validateSecret(k8sClient, *testProject, *testDeployment, *testDBUser1)

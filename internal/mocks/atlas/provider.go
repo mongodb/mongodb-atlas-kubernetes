@@ -3,12 +3,12 @@ package atlas
 import (
 	"context"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
 type TestProvider struct {
@@ -30,6 +30,6 @@ func (f *TestProvider) IsCloudGov() bool {
 	return f.IsCloudGovFunc()
 }
 
-func (f *TestProvider) IsResourceSupported(_ akov2.AtlasCustomResource) bool {
+func (f *TestProvider) IsResourceSupported(_ api.AtlasCustomResource) bool {
 	return f.IsSupportedFunc()
 }

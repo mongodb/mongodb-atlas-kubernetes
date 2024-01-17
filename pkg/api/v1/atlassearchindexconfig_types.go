@@ -4,6 +4,7 @@ import (
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
@@ -167,11 +168,11 @@ type TokenFilter struct {
 	IgnoreCase bool `json:"ignoreCase,omitempty"`
 }
 
-func (s *AtlasSearchIndexConfig) GetStatus() status.Status {
+func (s *AtlasSearchIndexConfig) GetStatus() api.Status {
 	return s.Status
 }
 
-func (s *AtlasSearchIndexConfig) UpdateStatus(conditions []status.Condition, opts ...status.Option) {
+func (s *AtlasSearchIndexConfig) UpdateStatus(conditions []api.Condition, opts ...api.Option) {
 	s.Status.Conditions = conditions
 	s.Status.ObservedGeneration = s.ObjectMeta.Generation
 

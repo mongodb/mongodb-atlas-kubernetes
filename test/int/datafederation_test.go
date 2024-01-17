@@ -13,9 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -60,7 +60,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 		By("Creating the project " + createdProject.Name)
 		Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 		Eventually(func() bool {
-			return resources.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+			return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType))
 		}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 	})
 
@@ -156,7 +156,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 					Name:      dataFederationInstanceName,
 				}, df)).To(Succeed())
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, df, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, df, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 			})
 

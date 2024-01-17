@@ -9,14 +9,14 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
 const FinalizerLabel = "mongodbatlas/finalizer"
 
-type FinalizerOperator func(resource akov2.AtlasCustomResource, finalizer string)
+type FinalizerOperator func(resource api.AtlasCustomResource, finalizer string)
 
-func HaveFinalizer(resource akov2.AtlasCustomResource, finalizer string) bool {
+func HaveFinalizer(resource api.AtlasCustomResource, finalizer string) bool {
 	for _, f := range resource.GetFinalizers() {
 		if f == finalizer {
 			return true
@@ -27,14 +27,14 @@ func HaveFinalizer(resource akov2.AtlasCustomResource, finalizer string) bool {
 }
 
 // SetFinalizer Add the given finalizer to the list of resource finalizer
-func SetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
+func SetFinalizer(resource api.AtlasCustomResource, finalizer string) {
 	if !HaveFinalizer(resource, finalizer) {
 		resource.SetFinalizers(append(resource.GetFinalizers(), finalizer))
 	}
 }
 
 // UnsetFinalizer remove the given finalizer from the list of resource finalizer
-func UnsetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
+func UnsetFinalizer(resource api.AtlasCustomResource, finalizer string) {
 	finalizers := make([]string, 0, len(resource.GetFinalizers()))
 
 	for _, f := range resource.GetFinalizers() {
@@ -49,11 +49,11 @@ func UnsetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
 func ManageFinalizer(
 	ctx context.Context,
 	c client.Client,
-	resource akov2.AtlasCustomResource,
+	resource api.AtlasCustomResource,
 	op FinalizerOperator,
 ) error {
-	// we just copied an akov2.AtlasCustomResource so it must be one
-	resourceCopy := resource.DeepCopyObject().(akov2.AtlasCustomResource)
+	// we just copied an api.AtlasCustomResource so it must be one
+	resourceCopy := resource.DeepCopyObject().(api.AtlasCustomResource)
 	op(resourceCopy, FinalizerLabel)
 
 	if reflect.DeepEqual(resource.GetFinalizers(), resourceCopy.GetFinalizers()) {

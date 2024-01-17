@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -14,15 +16,15 @@ import (
 func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.Result {
 	result := syncCustomZoneMapping(service, groupID, deploymentName, customZoneMappings)
 	if !result.IsOk() {
-		service.SetConditionFromResult(status.CustomZoneMappingReadyType, result)
+		service.SetConditionFromResult(api.CustomZoneMappingReadyType, result)
 		return result
 	}
 
 	if customZoneMappings == nil {
-		service.UnsetCondition(status.CustomZoneMappingReadyType)
+		service.UnsetCondition(api.CustomZoneMappingReadyType)
 		service.EnsureStatusOption(status.AtlasDeploymentCustomZoneMappingOption(nil))
 	} else {
-		service.SetConditionTrue(status.CustomZoneMappingReadyType)
+		service.SetConditionTrue(api.CustomZoneMappingReadyType)
 	}
 
 	return result

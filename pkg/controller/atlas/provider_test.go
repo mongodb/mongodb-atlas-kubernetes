@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -82,7 +83,7 @@ func TestProvider_IsCloudGov(t *testing.T) {
 func TestProvider_IsResourceSupported(t *testing.T) {
 	dataProvider := map[string]struct {
 		domain      string
-		resource    akov2.AtlasCustomResource
+		resource    api.AtlasCustomResource
 		expectation bool
 	}{
 		"should return true when it's commercial Atlas": {

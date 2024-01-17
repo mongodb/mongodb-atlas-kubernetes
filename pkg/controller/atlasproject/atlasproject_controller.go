@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -79,9 +81,15 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	project := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, project, log)
-	if !result.IsOk() {
-		return result.ReconcileResult(), nil
+	if result.IsOk() {
+		return r.reconcilev2(project, result, ctx, req)
 	}
+
+	return result.ReconcileResult(), nil
+}
+
+func (r *AtlasProjectReconciler) reconcilev2(project *akov2.AtlasProject, result workflow.Result, ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := r.Log.With("atlasproject", req.NamespacedName)
 
 	if customresource.ReconciliationShouldBeSkipped(project) {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasProject reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", project.Spec)
@@ -119,22 +127,22 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if err := validate.Project(project, r.AtlasProvider.IsCloudGov()); err != nil {
 		result := workflow.Terminate(workflow.Internal, err.Error())
-		setCondition(workflowCtx, status.ValidationSucceeded, result)
+		setCondition(workflowCtx, api.ValidationSucceeded, result)
 		return result.ReconcileResult(), nil
 	}
-	workflowCtx.SetConditionTrue(status.ValidationSucceeded)
+	workflowCtx.SetConditionTrue(api.ValidationSucceeded)
 
 	if !r.AtlasProvider.IsResourceSupported(project) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasProject is not supported by Atlas for government").
 			WithoutRetry()
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.SdkClient = atlasSdkClient
@@ -142,7 +150,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	workflowCtx.OrgID = orgID
@@ -152,7 +160,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	owner, err := customresource.IsOwner(project, false, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -163,7 +171,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
@@ -171,14 +179,14 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	projectID, result := r.ensureProjectExists(workflowCtx, project)
 	if !result.IsOk() {
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
 	if result = r.handleDeletion(workflowCtx, atlasClient, project); !result.IsOk() {
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 
@@ -186,7 +194,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
 		if err != nil {
 			result = workflow.Terminate(workflow.Internal, err.Error())
-			workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+			workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 			log.Error(result.GetMessage())
 
 			return result.ReconcileResult(), nil
@@ -197,15 +205,15 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	var authModes authmode.AuthModes
 	if authModes, result = r.ensureX509(workflowCtx, projectID, project); !result.IsOk() {
-		setCondition(workflowCtx, status.ProjectReadyType, result)
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
 	authModes.AddAuthMode(authmode.Scram) // add the default auth method
 	workflowCtx.EnsureStatusOption(status.AtlasProjectAuthModesOption(authModes))
 
 	// Updating the status with "projectReady = true" and "IPAccessListReady = false" (not as separate updates!)
-	workflowCtx.SetConditionTrue(status.ProjectReadyType)
-	r.EventRecorder.Event(project, "Normal", string(status.ProjectReadyType), "")
+	workflowCtx.SetConditionTrue(api.ProjectReadyType)
+	r.EventRecorder.Event(project, "Normal", string(api.ProjectReadyType), "")
 
 	results := r.ensureProjectResources(workflowCtx, project)
 	for i := range results {
@@ -218,13 +226,13 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	err = customresource.ApplyLastConfigApplied(ctx, project, r.Client)
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, err.Error())
-		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result.ReconcileResult(), nil
 	}
 
-	workflowCtx.SetConditionTrue(status.ReadyType)
+	workflowCtx.SetConditionTrue(api.ReadyType)
 	return workflow.OK().ReconcileResult(), nil
 }
 
@@ -247,23 +255,23 @@ func (r *AtlasProjectReconciler) handleDeletion(workflowCtx *workflow.Context, a
 				result = workflow.OK()
 			} else {
 				if result = DeleteAllPrivateEndpoints(workflowCtx, project.ID()); !result.IsOk() {
-					setCondition(workflowCtx, status.PrivateEndpointReadyType, result)
+					setCondition(workflowCtx, api.PrivateEndpointReadyType, result)
 					return result
 				}
 				if result = DeleteAllNetworkPeers(workflowCtx.Context, project.ID(), workflowCtx.SdkClient.NetworkPeeringApi, workflowCtx.Log); !result.IsOk() {
-					setCondition(workflowCtx, status.NetworkPeerReadyType, result)
+					setCondition(workflowCtx, api.NetworkPeerReadyType, result)
 					return result
 				}
 
 				err := r.syncAssignedTeams(workflowCtx, project.ID(), project, nil)
 				if err != nil {
-					workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
+					workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
 					return workflow.Terminate(workflow.TeamNotCleaned, err.Error())
 				}
 
 				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {
 					result = workflow.Terminate(workflow.Internal, err.Error())
-					setCondition(workflowCtx, status.DeploymentReadyType, result)
+					setCondition(workflowCtx, api.DeploymentReadyType, result)
 					return result
 				}
 			}
@@ -287,62 +295,62 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 
 	var result workflow.Result
 	if result = ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(workflowCtx.SdkClient), project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.IPAccessListReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.IPAccessListReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensurePrivateEndpoint(workflowCtx, project); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.PrivateEndpointReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureCloudProviderIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.CloudProviderIntegrationReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.CloudProviderIntegrationReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureNetworkPeers(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.NetworkPeerReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.NetworkPeerReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = r.ensureAlertConfigurations(workflowCtx, project); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.AlertConfigurationReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.AlertConfigurationReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = r.ensureIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.IntegrationReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.IntegrationReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureMaintenanceWindow(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.MaintenanceWindowReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = r.ensureEncryptionAtRest(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.EncryptionAtRestReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.EncryptionAtRestReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureAuditing(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.AuditingReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.AuditingReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureProjectSettings(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.ProjectSettingsReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.ProjectSettingsReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = ensureCustomRoles(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.ProjectCustomRolesReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.ProjectCustomRolesReadyType), "")
 	}
 	results = append(results, result)
 
 	if result = r.ensureAssignedTeams(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
-		r.EventRecorder.Event(project, "Normal", string(status.ProjectTeamsReadyType), "")
+		r.EventRecorder.Event(project, "Normal", string(api.ProjectTeamsReadyType), "")
 	}
 	results = append(results, result)
 
@@ -373,7 +381,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // setCondition sets the condition from the result and logs the warnings
-func setCondition(ctx *workflow.Context, condition status.ConditionType, result workflow.Result) {
+func setCondition(ctx *workflow.Context, condition api.ConditionType, result workflow.Result) {
 	ctx.SetConditionFromResult(condition, result)
 	logIfWarning(ctx, result)
 }
@@ -385,7 +393,7 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 }
 
 func managedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource akov2.AtlasCustomResource) (bool, error) {
+	return func(resource api.AtlasCustomResource) (bool, error) {
 		project, ok := resource.(*akov2.AtlasProject)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasProject")

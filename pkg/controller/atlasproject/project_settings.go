@@ -8,8 +8,8 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -18,7 +18,7 @@ func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasPr
 	canReconcile, err := canProjectSettingsReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectSettingsReadyType, result)
 
 		return result
 	}
@@ -28,22 +28,22 @@ func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasPr
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectSettingsReadyType, result)
 
 		return result
 	}
 
 	if result = syncProjectSettings(workflowCtx, project.ID(), project); !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.ProjectSettingsReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectSettingsReadyType, result)
 		return result
 	}
 
 	if project.Spec.Settings == nil {
-		workflowCtx.UnsetCondition(status.ProjectSettingsReadyType)
+		workflowCtx.UnsetCondition(api.ProjectSettingsReadyType)
 		return workflow.OK()
 	}
 
-	workflowCtx.SetConditionTrue(status.ProjectSettingsReadyType)
+	workflowCtx.SetConditionTrue(api.ProjectSettingsReadyType)
 	return workflow.OK()
 }
 

@@ -8,8 +8,8 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -18,7 +18,7 @@ func ensureAuditing(workflowCtx *workflow.Context, project *akov2.AtlasProject, 
 	canReconcile, err := canAuditingReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
+		workflowCtx.SetConditionFromResult(api.AuditingReadyType, result)
 
 		return result
 	}
@@ -28,23 +28,23 @@ func ensureAuditing(workflowCtx *workflow.Context, project *akov2.AtlasProject, 
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
+		workflowCtx.SetConditionFromResult(api.AuditingReadyType, result)
 
 		return result
 	}
 
 	result := createOrDeleteAuditing(workflowCtx, project.ID(), project)
 	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.AuditingReadyType, result)
+		workflowCtx.SetConditionFromResult(api.AuditingReadyType, result)
 		return result
 	}
 
 	if isAuditingEmpty(project.Spec.Auditing) {
-		workflowCtx.UnsetCondition(status.AuditingReadyType)
+		workflowCtx.UnsetCondition(api.AuditingReadyType)
 		return workflow.OK()
 	}
 
-	workflowCtx.SetConditionTrue(status.AuditingReadyType)
+	workflowCtx.SetConditionTrue(api.AuditingReadyType)
 	return workflow.OK()
 }
 

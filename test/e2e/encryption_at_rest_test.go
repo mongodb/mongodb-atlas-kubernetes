@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -149,7 +150,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
 		userData.Project.Spec.EncryptionAtRest = &encAtRest
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.EncryptionAtRestReadyType, api.ReadyType)
 	})
 
 	By("Remove Encryption at Rest from the project", func() {
@@ -162,7 +163,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 	})
 
 	By("Check if project returned back to the initial state", func() {
-		actions.CheckProjectConditionsNotSet(userData, status.EncryptionAtRestReadyType)
+		actions.CheckProjectConditionsNotSet(userData, api.EncryptionAtRestReadyType)
 
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
@@ -415,7 +416,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 			userData.Project.Spec.EncryptionAtRest = &encAtRest
 
 			Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-			actions.WaitForConditionsToBecomeTrue(userData, status.EncryptionAtRestReadyType, status.ReadyType)
+			actions.WaitForConditionsToBecomeTrue(userData, api.EncryptionAtRestReadyType, api.ReadyType)
 		})
 	})
 })

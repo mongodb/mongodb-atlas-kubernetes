@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -98,7 +98,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov
 	By("Add Custom Roles to the project", func() {
 		userData.Project.Spec.CustomRoles = customRoles
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectCustomRolesReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectCustomRolesReadyType, api.ReadyType)
 	})
 
 	By("Update Custom Role from the project", func() {
@@ -114,7 +114,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov
 		userData.Project.Spec.CustomRoles[0].Actions = crActions
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectCustomRolesReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectCustomRolesReadyType, api.ReadyType)
 	})
 
 	By("Remove one Custom Roles from the project", func() {
@@ -125,7 +125,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov
 			userData.Project.Spec.CustomRoles = cr[:1]
 			g.Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		}).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectCustomRolesReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectCustomRolesReadyType, api.ReadyType)
 	})
 
 	By("Remove all Custom Roles from the project", func() {
@@ -135,6 +135,6 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov
 			userData.Project.Spec.CustomRoles = nil
 			g.Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		}).Should(Succeed())
-		actions.CheckProjectConditionsNotSet(userData, status.ProjectCustomRolesReadyType)
+		actions.CheckProjectConditionsNotSet(userData, api.ProjectCustomRolesReadyType)
 	})
 }

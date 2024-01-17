@@ -13,10 +13,10 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -53,7 +53,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
-					return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+					return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(3 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 		})
@@ -150,7 +150,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 
 			By("Deployment should be Ready", func() {
 				Eventually(func(g Gomega) bool {
-					return resources.CheckCondition(k8sClient, testDeployment, status.TrueCondition(status.ReadyType), validateDeploymentUpdatingFunc(g))
+					return resources.CheckCondition(k8sClient, testDeployment, api.TrueCondition(api.ReadyType), validateDeploymentUpdatingFunc(g))
 				}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})
 
@@ -177,7 +177,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 					return resources.CheckCondition(
 						k8sClient,
 						testDeployment,
-						status.TrueCondition(status.DeploymentReadyType),
+						api.TrueCondition(api.DeploymentReadyType),
 						validateDeploymentUpdatingFunc(g))
 				}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			})

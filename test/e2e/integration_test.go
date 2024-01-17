@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
@@ -164,7 +164,7 @@ func integrationTest(data *model.TestDataProvider, integration project.Integrati
 	})
 
 	By("Integration is ready", func() {
-		actions.WaitForConditionsToBecomeTrue(data, status.IntegrationReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(data, api.IntegrationReadyType, api.ReadyType)
 
 		atlasIntegration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integration.Type)
 		Expect(err).ShouldNot(HaveOccurred())
@@ -179,7 +179,7 @@ func integrationTest(data *model.TestDataProvider, integration project.Integrati
 	})
 
 	By("Delete integration check", func() {
-		actions.CheckProjectConditionsNotSet(data, status.IntegrationReadyType)
+		actions.CheckProjectConditionsNotSet(data, api.IntegrationReadyType)
 
 		atlasIntegration, err := atlasClient.GetIntegrationByType(data.Project.ID(), integration.Type)
 		Expect(err).Should(HaveOccurred())

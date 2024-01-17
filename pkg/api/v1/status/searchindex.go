@@ -1,7 +1,9 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 type AtlasSearchIndexConfigStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 }
 
 // +kubebuilder:object:generate=false

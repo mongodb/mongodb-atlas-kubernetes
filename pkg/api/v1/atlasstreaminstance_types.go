@@ -6,6 +6,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -61,11 +62,11 @@ func init() {
 	SchemeBuilder.Register(&AtlasStreamInstance{}, &AtlasStreamInstanceList{})
 }
 
-func (f *AtlasStreamInstance) GetStatus() status.Status {
+func (f *AtlasStreamInstance) GetStatus() api.Status {
 	return f.Status
 }
 
-func (f *AtlasStreamInstance) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (f *AtlasStreamInstance) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	f.Status.Conditions = conditions
 	f.Status.ObservedGeneration = f.ObjectMeta.Generation
 

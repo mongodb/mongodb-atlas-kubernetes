@@ -19,6 +19,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -123,7 +124,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			deployment: deployment,
 		}
 		result := reconciler.Reconcile()
-		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNamesAreNotUnique))
+		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNamesAreNotUnique))
 		assert.False(t, result.IsOk())
 	})
 
@@ -601,7 +602,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 		result := reconciler.Reconcile()
 		fmt.Println("Result", result)
-		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNotReady))
+		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})
 
@@ -717,7 +718,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 		result := reconciler.Reconcile()
 		fmt.Println("Result", result)
-		assert.True(t, reconciler.ctx.HasReason(status.SearchIndexesNotReady))
+		assert.True(t, reconciler.ctx.HasReason(api.SearchIndexesNotReady))
 		assert.True(t, result.IsInProgress())
 	})
 

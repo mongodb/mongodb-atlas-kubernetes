@@ -13,10 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -84,7 +84,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 			Expect(k8sClient.Create(context.Background(), akoProject)).To(Succeed())
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, akoProject, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, akoProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(5 * time.Minute).WithPolling(interval).Should(BeTrue())
 		})
 	})
@@ -154,7 +154,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			Eventually(func(g Gomega) {
 				fedAuth := &akov2.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
-				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
+				g.Expect(resources.CheckCondition(k8sClient, fedAuth, api.TrueCondition(api.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 
@@ -183,7 +183,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			Eventually(func(g Gomega) {
 				fedAuth := &akov2.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
-				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
+				g.Expect(resources.CheckCondition(k8sClient, fedAuth, api.TrueCondition(api.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 	})

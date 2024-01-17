@@ -8,8 +8,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -38,7 +38,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 
 		found := false
 		for _, c := range dbUser.Status.Conditions {
-			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
+			if c.Type == api.ReadyType && c.Status == v1.ConditionTrue {
 				found = true
 				break
 			}

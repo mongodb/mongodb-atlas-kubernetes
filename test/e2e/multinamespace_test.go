@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -117,7 +117,7 @@ func watchedFlow(data *model.TestDataProvider) {
 	By(fmt.Sprintf("Check if projects were deployed. Project name: %s, namespace: %s",
 		data.Project.GetName(), data.Project.GetNamespace()), func() {
 		Eventually(func(g Gomega) {
-			condition, _ := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, data.Project.GetName())
+			condition, _ := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, api.ReadyType, data.Resources.Namespace, data.Project.GetName())
 			g.Expect(condition).Should(Equal("True"))
 		}).Should(Succeed(), "kubernetes resource: Project status `Ready` should be True. Watched namespace")
 	})
@@ -130,7 +130,7 @@ func notWatchedFlow(data *model.TestDataProvider) {
 	By(fmt.Sprintf("Check if projects were deployed. Project name: %s, namespace: %s",
 		data.Project.GetName(), data.Project.GetNamespace()), func() {
 		Eventually(func(g Gomega) {
-			condition, _ := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, data.Project.GetName())
+			condition, _ := k8s.GetProjectStatusCondition(data.Context, data.K8SClient, api.ReadyType, data.Resources.Namespace, data.Project.GetName())
 			g.Expect(condition).Should(Equal(""))
 		}).Should(Succeed(), "Kubernetes resource: Project status `Ready` should be empty. NOT Watched namespace")
 	})

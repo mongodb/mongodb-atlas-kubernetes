@@ -13,5 +13,6 @@ resources:
   - bases/atlas.mongodb.com_atlasstreaminstances.yaml
   - bases/atlas.mongodb.com_atlasstreamconnections.yaml
   - bases/atlas.mongodb.com_atlassearchindexconfigs.yaml
+  - bases/atlas.experimental.mongodb.com_atlasprojects.yaml
 configurations:
   - kustomizeconfig.yaml

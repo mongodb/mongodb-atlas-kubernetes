@@ -22,6 +22,7 @@ import (
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -190,10 +191,10 @@ func TestReconcile(t *testing.T) {
 		err = k8sClient.Get(context.Background(), client.ObjectKeyFromObject(&fedAuth), &fedAuthResult)
 		assert.NoError(t, err)
 		assert.Condition(t, func() bool {
-			expected := map[status.ConditionType]struct{}{
-				status.ResourceVersionStatus:  {},
-				status.FederatedAuthReadyType: {},
-				status.ReadyType:              {},
+			expected := map[api.ConditionType]struct{}{
+				api.ResourceVersionStatus:  {},
+				api.FederatedAuthReadyType: {},
+				api.ReadyType:              {},
 			}
 
 			for _, condition := range fedAuthResult.Status.Conditions {

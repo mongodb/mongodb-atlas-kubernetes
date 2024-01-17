@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -124,7 +125,7 @@ func TestCreate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "configuring stream instance in Atlas", ctx.Conditions()[0].Message)
@@ -210,7 +211,7 @@ func TestCreate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to create instance", ctx.Conditions()[0].Message)
@@ -470,7 +471,7 @@ func TestDelete(t *testing.T) {
 			}, result)
 			assert.NotEmpty(t, streamInstance.Finalizers)
 			assert.Len(t, ctx.Conditions(), 1)
-			assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+			assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 			assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 			assert.Equal(t, string(workflow.StreamInstanceNotRemoved), ctx.Conditions()[0].Reason)
 			assert.Equal(t, "failed to delete instance", ctx.Conditions()[0].Message)
@@ -724,7 +725,7 @@ func TestDelete(t *testing.T) {
 		}, result)
 		assert.NotEmpty(t, streamInstance.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotRemoved), ctx.Conditions()[0].Reason)
 		assert.Contains(t, ctx.Conditions()[0].Message, `atlasstreaminstances.atlas.mongodb.com "my-stream-processing-instance" not found`)
@@ -833,7 +834,7 @@ func TestUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "configuring stream instance in Atlas", ctx.Conditions()[0].Message)
@@ -922,7 +923,7 @@ func TestUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to update instance", ctx.Conditions()[0].Message)

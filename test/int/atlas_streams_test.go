@@ -12,9 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -76,7 +76,7 @@ YJZC5C0=
 			Expect(k8sClient.Create(context.Background(), testProject)).To(Succeed())
 
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, testProject, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, testProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 		})
 	})
@@ -313,9 +313,9 @@ YJZC5C0=
 
 func checkInstanceIsReady(instanceObjKey client.ObjectKey) {
 	readyConditions := conditions.MatchConditions(
-		status.TrueCondition(status.ReadyType),
-		status.TrueCondition(status.ResourceVersionStatus),
-		status.TrueCondition(status.StreamInstanceReadyType),
+		api.TrueCondition(api.ReadyType),
+		api.TrueCondition(api.ResourceVersionStatus),
+		api.TrueCondition(api.StreamInstanceReadyType),
 	)
 	Eventually(func(g Gomega) {
 		streamInstance := &akov2.AtlasStreamInstance{}

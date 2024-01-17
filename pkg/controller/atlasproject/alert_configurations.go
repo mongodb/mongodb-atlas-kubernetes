@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -25,7 +26,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 	if project.Spec.AlertConfigurationSyncEnabled {
 		specToSync := project.Spec.DeepCopy().AlertConfigurations
 
-		alertConfigurationCondition := status.AlertConfigurationReadyType
+		alertConfigurationCondition := api.AlertConfigurationReadyType
 		if len(specToSync) == 0 {
 			service.UnsetCondition(alertConfigurationCondition)
 			return workflow.OK()
@@ -43,7 +44,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 		service.SetConditionTrue(alertConfigurationCondition)
 		return result
 	}
-	service.UnsetCondition(status.AlertConfigurationReadyType)
+	service.UnsetCondition(api.AlertConfigurationReadyType)
 	service.Log.Debugf("Alert configuration sync is disabled for project %s", project.Name)
 	return workflow.OK()
 }

@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -132,7 +133,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Empty(t, conditions[0].Reason)
 		assert.Empty(t, conditions[0].Message)
@@ -183,7 +184,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.AtlasGovUnsupported), conditions[0].Reason)
 		assert.Equal(t, "the AtlasSearchIndexConfig is not supported by Atlas for government", conditions[0].Message)
@@ -246,7 +247,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Equal(t, string(workflow.Internal), conditions[0].Reason)
 		assert.Equal(t, "failed to list instances", conditions[0].Message)
@@ -323,7 +324,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NotEmpty(t, searchIndexConfig.GetFinalizers())
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
 		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
@@ -377,7 +378,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Empty(t, searchIndexConfig.GetFinalizers())
 		conditions := searchIndexConfig.Status.GetConditions()
 		assert.Len(t, conditions, 2)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
+		assert.Equal(t, api.ReadyType, conditions[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
 		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
@@ -403,7 +404,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 
@@ -440,7 +441,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotSet), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
@@ -473,7 +474,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 
@@ -496,7 +497,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.Equal(t, ctrl.Result{}, result)
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 
@@ -534,7 +535,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.NotEmpty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.AtlasFinalizerNotRemoved), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to set finalizer", ctx.Conditions()[0].Message)
@@ -569,7 +570,7 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(searchIndexConfig), searchIndexConfig))
 		assert.Empty(t, searchIndexConfig.Finalizers)
 		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, api.ReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
 	})
 }

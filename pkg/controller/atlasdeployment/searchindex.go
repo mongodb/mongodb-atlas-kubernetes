@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -131,7 +132,7 @@ func (sr *searchIndexReconciler) idle(index *internal.SearchIndex) workflow.Resu
 		status.WithName(index.Name),
 		status.WithMsg(msg))))
 	ok := workflow.OK()
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, ok)
+	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, ok)
 	return ok
 }
 
@@ -145,7 +146,7 @@ func (sr *searchIndexReconciler) terminate(index *internal.SearchIndex, err erro
 		status.WithName(index.Name),
 	)))
 	terminate := workflow.Terminate(status.SearchIndexStatusError, msg.Error())
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, terminate)
+	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, terminate)
 	return terminate
 }
 
@@ -180,7 +181,7 @@ func (sr *searchIndexReconciler) progress(index *internal.SearchIndex) workflow.
 			status.WithID(index.GetID()),
 			status.WithName(index.Name))))
 	inProgress := workflow.InProgress(status.SearchIndexStatusInProgress, msg)
-	sr.ctx.SetConditionFromResult(status.SearchIndexesReadyType, inProgress)
+	sr.ctx.SetConditionFromResult(api.SearchIndexesReadyType, inProgress)
 	return inProgress
 }
 

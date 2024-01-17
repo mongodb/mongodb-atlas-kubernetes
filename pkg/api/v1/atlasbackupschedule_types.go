@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -85,6 +86,8 @@ type CopySetting struct {
 	Frequencies []string `json:"frequencies,omitempty"`
 }
 
+var _ api.AtlasCustomResource = &AtlasBackupSchedule{}
+
 // AtlasBackupSchedule is the Schema for the atlasbackupschedules API
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -142,11 +145,11 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, replicaSetID stri
 	return result
 }
 
-func (in *AtlasBackupSchedule) GetStatus() status.Status {
+func (in *AtlasBackupSchedule) GetStatus() api.Status {
 	return in.Status
 }
 
-func (in *AtlasBackupSchedule) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (in *AtlasBackupSchedule) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	in.Status.Conditions = conditions
 	in.Status.ObservedGeneration = in.ObjectMeta.Generation
 

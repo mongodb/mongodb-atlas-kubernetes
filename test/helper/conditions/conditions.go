@@ -5,16 +5,16 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
 // MatchCondition returns the GomegaMatcher that checks if the 'actual' status.Condition matches the 'expected' one.
-func MatchCondition(expected status.Condition) types.GomegaMatcher {
+func MatchCondition(expected api.Condition) types.GomegaMatcher {
 	return &conditionMatcher{ExpectedCondition: expected}
 }
 
 // MatchConditions is a convenience method that allows to create the range of matchers simplifying testing
-func MatchConditions(expected ...status.Condition) []types.GomegaMatcher {
+func MatchConditions(expected ...api.Condition) []types.GomegaMatcher {
 	result := make([]types.GomegaMatcher, len(expected))
 	for i, c := range expected {
 		result[i] = MatchCondition(c)
@@ -23,13 +23,13 @@ func MatchConditions(expected ...status.Condition) []types.GomegaMatcher {
 }
 
 type conditionMatcher struct {
-	ExpectedCondition status.Condition
+	ExpectedCondition api.Condition
 }
 
 func (m *conditionMatcher) Match(actual interface{}) (success bool, err error) {
-	var c status.Condition
+	var c api.Condition
 	var ok bool
-	if c, ok = actual.(status.Condition); !ok {
+	if c, ok = actual.(api.Condition); !ok {
 		panic("Expected Condition")
 	}
 	if m.ExpectedCondition.Reason != "" && c.Reason != m.ExpectedCondition.Reason {
@@ -56,11 +56,11 @@ func (m *conditionMatcher) NegatedFailureMessage(actual interface{}) (message st
 	return format.Message(actual, "not to match", m.ExpectedCondition)
 }
 
-func FindConditionByType(conditions []status.Condition, conditionType status.ConditionType) (status.Condition, bool) {
+func FindConditionByType(conditions []api.Condition, conditionType api.ConditionType) (api.Condition, bool) {
 	for _, c := range conditions {
 		if c.Type == conditionType {
 			return c, true
 		}
 	}
-	return status.Condition{}, false
+	return api.Condition{}, false
 }

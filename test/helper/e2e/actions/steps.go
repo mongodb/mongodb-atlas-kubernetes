@@ -14,8 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	appclient "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/appclient"
@@ -64,7 +64,7 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 	input := data.Resources
 	EventuallyWithOffset(1,
 		func(g Gomega) string {
-			deploymentStatus, err := k8s.GetDeploymentStatusCondition(data.Context, data.K8SClient, status.ReadyType, input.Namespace, data.InitialDeployments[0].ObjectMeta.GetName())
+			deploymentStatus, err := k8s.GetDeploymentStatusCondition(data.Context, data.K8SClient, api.ReadyType, input.Namespace, data.InitialDeployments[0].ObjectMeta.GetName())
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
@@ -98,7 +98,7 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 	input := data.Resources
 	EventuallyWithOffset(1,
 		func(g Gomega) string {
-			deploymentStatus, err := k8s.GetDeploymentStatusCondition(data.Context, data.K8SClient, status.ReadyType, input.Namespace, input.Deployments[0].ObjectMeta.GetName())
+			deploymentStatus, err := k8s.GetDeploymentStatusCondition(data.Context, data.K8SClient, api.ReadyType, input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
@@ -292,7 +292,7 @@ func CheckUsersAttributes(data *model.TestDataProvider) {
 			EventuallyWithOffset(1, getUser, "7m", "10s").Should(BeTrue())
 			EventuallyWithOffset(1,
 				func() string {
-					userStatus, err := k8s.GetDBUserStatusCondition(data.Context, data.K8SClient, status.ReadyType, data.Resources.Namespace, userDBResourceName(deployment.ObjectMeta.Name, user))
+					userStatus, err := k8s.GetDBUserStatusCondition(data.Context, data.K8SClient, api.ReadyType, data.Resources.Namespace, userDBResourceName(deployment.ObjectMeta.Name, user))
 					if err != nil {
 						return err.Error()
 					}

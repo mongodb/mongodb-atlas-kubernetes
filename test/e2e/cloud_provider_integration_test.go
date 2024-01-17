@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -107,7 +108,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderIntegrations)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		actions.WaitForConditionsToBecomeTrue(userData, status.CloudProviderIntegrationReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.CloudProviderIntegrationReadyType, api.ReadyType)
 	})
 
 	By("Check cloud access roles status state", func() {

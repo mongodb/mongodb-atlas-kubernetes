@@ -8,8 +8,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -63,7 +63,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
-					if condition.Type == status.DeploymentReadyType {
+					if condition.Type == api.DeploymentReadyType {
 						return condition.Status == v1.ConditionTrue
 					}
 				}
@@ -94,7 +94,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
-					if condition.Type == status.DeploymentReadyType {
+					if condition.Type == api.DeploymentReadyType {
 						return condition.Status == v1.ConditionTrue
 					}
 				}
@@ -119,7 +119,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				}, testData.InitialDeployments[0])).To(Succeed())
 				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
-					if condition.Type == status.DeploymentReadyType {
+					if condition.Type == api.DeploymentReadyType {
 						return condition.Status == v1.ConditionTrue
 					}
 				}

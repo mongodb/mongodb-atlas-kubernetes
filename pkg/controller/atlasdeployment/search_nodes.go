@@ -24,8 +24,8 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -49,7 +49,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 	}
 
 	// determine the current controller state and invoke state handling methods
-	c, ok := ctx.GetCondition(status.SearchNodesReadyType)
+	c, ok := ctx.GetCondition(api.SearchNodesReadyType)
 	if ok {
 		switch reason := workflow.ConditionReason(c.Reason); reason {
 		case workflow.SearchNodesCreating, workflow.SearchNodesUpdating:
@@ -266,7 +266,7 @@ func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg,
 		coarseProgress = workflow.InProgress(state, coarseMsg)
 	)
 
-	s.ctx.SetConditionFromResult(status.SearchNodesReadyType, fineProgress)
+	s.ctx.SetConditionFromResult(api.SearchNodesReadyType, fineProgress)
 	return coarseProgress
 }
 
@@ -274,19 +274,19 @@ func (s *searchNodeController) progress(state workflow.ConditionReason, fineMsg,
 func (s *searchNodeController) terminate(reason workflow.ConditionReason, err error) workflow.Result {
 	s.ctx.Log.Error(err)
 	result := workflow.Terminate(reason, err.Error())
-	s.ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
+	s.ctx.SetConditionFromResult(api.SearchNodesReadyType, result)
 	return result
 }
 
 // unmanage transitions to pending state if no search nodes are managed.
 func (s *searchNodeController) unmanage() workflow.Result {
-	s.ctx.UnsetCondition(status.SearchNodesReadyType)
+	s.ctx.UnsetCondition(api.SearchNodesReadyType)
 	return workflow.OK()
 }
 
 // idle transitions to idle state search nodes that are ready and idle.
 func (s *searchNodeController) idle() workflow.Result {
-	s.ctx.SetConditionTrue(status.SearchNodesReadyType)
+	s.ctx.SetConditionTrue(api.SearchNodesReadyType)
 	return workflow.OK()
 }
 

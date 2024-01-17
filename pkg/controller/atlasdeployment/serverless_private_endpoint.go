@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -48,9 +49,9 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID strin
 
 	switch len(deploymentSpec.PrivateEndpoints) {
 	case 0:
-		service.UnsetCondition(status.ServerlessPrivateEndpointReadyType)
+		service.UnsetCondition(api.ServerlessPrivateEndpointReadyType)
 	default:
-		service.SetConditionFromResult(status.ServerlessPrivateEndpointReadyType, result)
+		service.SetConditionFromResult(api.ServerlessPrivateEndpointReadyType, result)
 	}
 
 	return result
