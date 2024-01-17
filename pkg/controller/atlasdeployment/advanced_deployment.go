@@ -16,8 +16,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -272,7 +272,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 
 		found := false
 		for _, c := range dbUser.Status.Conditions {
-			if c.Type == status.ReadyType && c.Status == v1.ConditionTrue {
+			if c.Type == api.ReadyType && c.Status == v1.ConditionTrue {
 				found = true
 				break
 			}

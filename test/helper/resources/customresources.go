@@ -9,12 +9,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 )
 
-func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition status.Condition, checksIfFail ...func(mdbv1.AtlasCustomResource)) bool {
+func CheckCondition(k8sClient client.Client, createdResource mdbv1.AtlasCustomResource, expectedCondition api.Condition, checksIfFail ...func(mdbv1.AtlasCustomResource)) bool {
 	// This is only used from test code
 	if ok := ReadAtlasResource(context.Background(), k8sClient, createdResource); !ok {
 		return false

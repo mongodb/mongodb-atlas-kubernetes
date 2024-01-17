@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 )
 
 //+k8s:deepcopy-gen=false
@@ -13,8 +13,8 @@ import (
 type AtlasCustomResource interface {
 	metav1.Object
 	runtime.Object
-	status.Reader
-	status.Writer
+	api.Reader
+	api.Writer
 }
 
 var _ AtlasCustomResource = &AtlasProject{}

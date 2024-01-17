@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
@@ -69,7 +69,7 @@ func GetProjectObservedGeneration(ctx context.Context, k8sClient client.Client, 
 	return int(project.Status.ObservedGeneration), nil
 }
 
-func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
+func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, statusType api.ConditionType, ns string, name string) (string, error) {
 	project := &v1.AtlasProject{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, project)
 	if err != nil {
@@ -83,7 +83,7 @@ func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, sta
 	return "", fmt.Errorf("condition %s not found. found %v", statusType, project.Status.Conditions)
 }
 
-func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
+func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, statusType api.ConditionType, ns string, name string) (string, error) {
 	deployment := &v1.AtlasDeployment{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, deployment)
 	if err != nil {
@@ -97,7 +97,7 @@ func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, 
 	return "", fmt.Errorf("condition %s not found. found %v", statusType, deployment.Status.Conditions)
 }
 
-func GetDBUserStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
+func GetDBUserStatusCondition(ctx context.Context, k8sClient client.Client, statusType api.ConditionType, ns string, name string) (string, error) {
 	user := &v1.AtlasDatabaseUser{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, user)
 	if err != nil {

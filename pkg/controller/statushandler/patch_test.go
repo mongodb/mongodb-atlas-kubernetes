@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -23,8 +24,8 @@ func Test_PatchUpdateStatus(t *testing.T) {
 			Namespace: "test-ns",
 		},
 		Status: status.AtlasProjectStatus{
-			Common: status.Common{Conditions: []status.Condition{{
-				Type:   status.IPAccessListReadyType,
+			Common: api.Common{Conditions: []api.Condition{{
+				Type:   api.IPAccessListReadyType,
 				Status: corev1.ConditionFalse,
 			}}},
 		},
@@ -45,6 +46,6 @@ func Test_PatchUpdateStatus(t *testing.T) {
 
 	projectAfterPatch := &mdbv1.AtlasProject{}
 	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(updatedProject), projectAfterPatch))
-	assert.Equal(t, []status.Condition{{Type: status.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
+	assert.Equal(t, []api.Condition{{Type: api.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
 	assert.Equal(t, "theId", projectAfterPatch.Status.ID)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 
 	"github.com/google/go-cmp/cmp"
@@ -91,7 +92,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 		return nil, errors.New("the AtlasBackupSchedule is not supported by Atlas for government")
 	}
 
-	bSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleSetDeploymentID(deployment.GetDeploymentName()))
+	bSchedule.UpdateStatus([]api.Condition{}, status.AtlasBackupScheduleSetDeploymentID(deployment.GetDeploymentName()))
 
 	if err = r.Client.Status().Update(service.Context, bSchedule); err != nil {
 		r.Log.Errorw("failed to update BackupSchedule status", "error", err)
@@ -146,7 +147,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 	}
 
 	scheduleRef := kube.ObjectKeyFromObject(bSchedule).String()
-	bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicySetScheduleID(scheduleRef))
+	bPolicy.UpdateStatus([]api.Condition{}, status.AtlasBackupPolicySetScheduleID(scheduleRef))
 
 	if err = r.Client.Status().Update(service.Context, bPolicy); err != nil {
 		r.Log.Errorw("failed to update BackupPolicy status", "error", err)
@@ -280,7 +281,7 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 					continue
 				}
 
-				backupSchedule.UpdateStatus([]status.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(clusterName))
+				backupSchedule.UpdateStatus([]api.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(clusterName))
 
 				if err = r.Client.Status().Update(ctx, &backupSchedule); err != nil {
 					r.Log.Errorw("failed to update BackupSchedule status", "error", err)
@@ -311,7 +312,7 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 				}
 
 				scheduleRef := kube.ObjectKeyFromObject(&backupSchedule).String()
-				bPolicy.UpdateStatus([]status.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
+				bPolicy.UpdateStatus([]api.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
 
 				if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
 					r.Log.Errorw("failed to update BackupPolicy status", "error", err)

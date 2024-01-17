@@ -1,6 +1,9 @@
 package status
 
-import "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
+import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+)
 
 // +k8s:deepcopy-gen=false
 
@@ -23,7 +26,7 @@ func AtlasBackupScheduleUnsetDeploymentID(ID string) AtlasBackupScheduleStatusOp
 }
 
 type BackupScheduleStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 
 	DeploymentIDs []string `json:"deploymentID,omitempty"`
 }

@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -40,7 +41,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 	canReconcile, err := canServerlessPrivateEndpointsReconcile(service, protected, groupID, deployment)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		service.SetConditionFromResult(status.AlertConfigurationReadyType, result)
+		service.SetConditionFromResult(api.AlertConfigurationReadyType, result)
 
 		return result
 	}
@@ -50,7 +51,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Serverless Private Endpoints due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		service.SetConditionFromResult(status.AlertConfigurationReadyType, result)
+		service.SetConditionFromResult(api.AlertConfigurationReadyType, result)
 
 		return result
 	}
@@ -58,7 +59,7 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 	providerName := GetServerlessProvider(deploymentSpec)
 	if providerName == provider.ProviderGCP {
 		if len(deploymentSpec.PrivateEndpoints) == 0 {
-			service.UnsetCondition(status.ServerlessPrivateEndpointReadyType)
+			service.UnsetCondition(api.ServerlessPrivateEndpointReadyType)
 			return workflow.OK()
 		} else {
 			return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "private endpoints are not supported for GCP")
@@ -67,16 +68,16 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 
 	result := syncServerlessPrivateEndpoints(service, groupID, deploymentName, providerName, deploymentSpec.PrivateEndpoints)
 	if !result.IsOk() {
-		service.SetConditionFromResult(status.ServerlessPrivateEndpointReadyType, result)
+		service.SetConditionFromResult(api.ServerlessPrivateEndpointReadyType, result)
 		return result
 	}
 
 	if deploymentSpec.PrivateEndpoints == nil {
-		service.UnsetCondition(status.ServerlessPrivateEndpointReadyType)
+		service.UnsetCondition(api.ServerlessPrivateEndpointReadyType)
 		return workflow.OK()
 	}
 
-	service.SetConditionTrue(status.ServerlessPrivateEndpointReadyType)
+	service.SetConditionTrue(api.ServerlessPrivateEndpointReadyType)
 	return result
 }
 

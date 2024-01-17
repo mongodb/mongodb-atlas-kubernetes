@@ -12,9 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -61,7 +61,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, createdProject, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
 		})
 	})
@@ -114,14 +114,14 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			Expect(k8sClient.Create(context.Background(), createdDeploymentAWS)).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) bool {
-				return resources.CheckCondition(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc(g))
+				return resources.CheckCondition(k8sClient, createdDeploymentAWS, api.TrueCondition(api.ReadyType), validateDeploymentCreatingFunc(g))
 			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
 			createdDBUser = mdbv1.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(func() bool {
-				return resources.CheckCondition(k8sClient, createdDBUser, status.TrueCondition(status.ReadyType))
+				return resources.CheckCondition(k8sClient, createdDBUser, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(DBUserUpdateTimeout).WithPolling(interval).Should(BeTrue())
 
 			By("Removing the deployment", func() {
@@ -201,14 +201,14 @@ func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) 
 		if startedCreation {
 			g.Expect(c.Status.StateName).To(Equal("CREATING"), fmt.Sprintf("Current conditions: %+v", c.Status.Conditions))
 			expectedConditionsMatchers := conditions.MatchConditions(
-				status.FalseCondition(status.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
-				status.FalseCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
+				api.FalseCondition(api.DeploymentReadyType).WithReason(string(workflow.DeploymentCreating)).WithMessageRegexp("deployment is provisioning"),
+				api.FalseCondition(api.ReadyType),
+				api.TrueCondition(api.ValidationSucceeded),
 			)
 			g.Expect(c.Status.Conditions).To(ConsistOf(expectedConditionsMatchers))
 		} else {
 			// Otherwise there could have been some exception in Atlas on creation - let's check the conditions
-			condition, ok := conditions.FindConditionByType(c.Status.Conditions, status.DeploymentReadyType)
+			condition, ok := conditions.FindConditionByType(c.Status.Conditions, api.DeploymentReadyType)
 			g.Expect(ok).To(BeFalse(), fmt.Sprintf("Unexpected condition: %v", condition))
 		}
 	}

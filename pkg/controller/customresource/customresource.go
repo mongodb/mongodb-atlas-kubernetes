@@ -11,8 +11,8 @@ import (
 
 	"github.com/Masterminds/semver"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
@@ -53,7 +53,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource mdbv1.AtlasCustomRe
 	if err != nil {
 		log.Debugf("resource version for '%s' is invalid", resource.GetName())
 		result := workflow.Terminate(workflow.AtlasResourceVersionIsInvalid, err.Error())
-		ctx.SetConditionFromResult(status.ResourceVersionStatus, result)
+		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}
 
@@ -63,19 +63,19 @@ func ValidateResourceVersion(ctx *workflow.Context, resource mdbv1.AtlasCustomRe
 			fmt.Sprintf("version of the resource '%s' is higher than the operator version '%s'. ",
 				resource.GetName(),
 				version.Version))
-		ctx.SetConditionFromResult(status.ResourceVersionStatus, result)
+		ctx.SetConditionFromResult(api.ResourceVersionStatus, result)
 		return result
 	}
 
 	log.Debugf("resource '%s' version is valid", resource.GetName())
-	ctx.SetConditionTrue(status.ResourceVersionStatus)
+	ctx.SetConditionTrue(api.ResourceVersionStatus)
 	return workflow.OK()
 }
 
 // MarkReconciliationStarted updates the status of the Atlas Resource to indicate that the Operator has started working on it.
 // Internally this will also update the 'observedGeneration' field that notify clients that the resource is being worked on
 func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomResource, log *zap.SugaredLogger, context context.Context) *workflow.Context {
-	updatedConditions := status.EnsureConditionExists(status.FalseCondition(status.ReadyType), resource.GetStatus().GetConditions())
+	updatedConditions := api.EnsureConditionExists(api.FalseCondition(api.ReadyType), resource.GetStatus().GetConditions())
 
 	ctx := workflow.NewContext(log, updatedConditions, context)
 	statushandler.Update(ctx, client, nil, resource)

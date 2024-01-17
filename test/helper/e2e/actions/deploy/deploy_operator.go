@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -66,7 +66,7 @@ func CreateProject(testData *model.TestDataProvider) {
 			condition, _ := k8s.GetProjectStatusCondition(
 				testData.Context,
 				testData.K8SClient,
-				status.ReadyType,
+				api.ReadyType,
 				testData.Resources.Namespace,
 				testData.Project.GetName(),
 			)
@@ -111,7 +111,7 @@ func CreateUsers(testData *model.TestDataProvider) {
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: user.GetName(), Namespace: user.GetNamespace()}, user))
 				for _, condition := range user.Status.Conditions {
-					if condition.Type == status.ReadyType {
+					if condition.Type == api.ReadyType {
 						g.Expect(condition.Status).Should(Equal(corev1.ConditionTrue), "User should be ready")
 					}
 				}

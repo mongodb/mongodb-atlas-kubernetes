@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -23,7 +24,7 @@ func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context
 	canReconcile, err := canIntegrationsReconcile(workflowCtx, protected, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.IntegrationReadyType, result)
 
 		return result
 	}
@@ -33,23 +34,23 @@ func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.IntegrationReadyType, result)
 
 		return result
 	}
 
 	result := r.createOrDeleteIntegrations(workflowCtx, akoProject.ID(), akoProject)
 	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.IntegrationReadyType, result)
+		workflowCtx.SetConditionFromResult(api.IntegrationReadyType, result)
 		return result
 	}
 
 	if len(akoProject.Spec.Integrations) == 0 {
-		workflowCtx.UnsetCondition(status.IntegrationReadyType)
+		workflowCtx.UnsetCondition(api.IntegrationReadyType)
 		return workflow.OK()
 	}
 
-	workflowCtx.SetConditionTrue(status.IntegrationReadyType)
+	workflowCtx.SetConditionTrue(api.IntegrationReadyType)
 	return workflow.OK()
 }
 

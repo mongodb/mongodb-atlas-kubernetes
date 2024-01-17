@@ -1,6 +1,7 @@
 package status
 
 import (
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
@@ -84,7 +85,7 @@ func AtlasProjectPrometheusOption(prometheus *Prometheus) AtlasProjectStatusOpti
 
 // AtlasProjectStatus defines the observed state of AtlasProject
 type AtlasProjectStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 
 	// The ID of the Atlas Project
 	// +optional

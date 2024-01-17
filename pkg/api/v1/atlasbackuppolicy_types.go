@@ -11,6 +11,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
@@ -49,11 +50,11 @@ type AtlasBackupPolicy struct {
 	Status status.BackupPolicyStatus `json:"status,omitempty"`
 }
 
-func (in *AtlasBackupPolicy) GetStatus() status.Status {
+func (in *AtlasBackupPolicy) GetStatus() api.Status {
 	return in.Status
 }
 
-func (in *AtlasBackupPolicy) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (in *AtlasBackupPolicy) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	in.Status.Conditions = conditions
 	in.Status.ObservedGeneration = in.ObjectMeta.Generation
 

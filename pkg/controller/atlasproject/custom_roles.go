@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/google/go-cmp/cmp"
@@ -20,7 +21,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 	canReconcile, err := canCustomRolesReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectCustomRolesReadyType, result)
 
 		return result
 	}
@@ -30,7 +31,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectCustomRolesReadyType, result)
 
 		return result
 	}
@@ -49,15 +50,15 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 	result := syncCustomRolesStatus(workflowCtx, project.Spec.CustomRoles, createStatus, updateStatus, deleteStatus)
 
 	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.ProjectCustomRolesReadyType, result)
+		workflowCtx.SetConditionFromResult(api.ProjectCustomRolesReadyType, result)
 
 		return result
 	}
 
-	workflowCtx.SetConditionTrue(status.ProjectCustomRolesReadyType)
+	workflowCtx.SetConditionTrue(api.ProjectCustomRolesReadyType)
 
 	if len(project.Spec.CustomRoles) == 0 {
-		workflowCtx.UnsetCondition(status.ProjectCustomRolesReadyType)
+		workflowCtx.UnsetCondition(api.ProjectCustomRolesReadyType)
 	}
 
 	return result

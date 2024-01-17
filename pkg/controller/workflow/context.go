@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 )
 
@@ -30,7 +30,7 @@ type Context struct {
 
 	// This is the condition happened the last (most of all it contains the most important information that needs
 	// to be logged)
-	lastCondition *status.Condition
+	lastCondition *api.Condition
 
 	// lastConditionWarn indicates if the last "terminal" condition was expected (for example wait for some resource)
 	// or unexpected (any errors)
@@ -43,7 +43,7 @@ type Context struct {
 	Context context.Context
 }
 
-func NewContext(log *zap.SugaredLogger, conditions []status.Condition, context context.Context) *Context {
+func NewContext(log *zap.SugaredLogger, conditions []api.Condition, context context.Context) *Context {
 	return &Context{
 		status:  NewStatus(conditions),
 		Log:     log,
@@ -51,19 +51,19 @@ func NewContext(log *zap.SugaredLogger, conditions []status.Condition, context c
 	}
 }
 
-func (c Context) Conditions() []status.Condition {
+func (c Context) Conditions() []api.Condition {
 	return c.status.conditions
 }
 
-func (c Context) GetCondition(conditionType status.ConditionType) (condition status.Condition, found bool) {
+func (c Context) GetCondition(conditionType api.ConditionType) (condition api.Condition, found bool) {
 	return c.status.GetCondition(conditionType)
 }
 
-func (c Context) StatusOptions() []status.Option {
+func (c Context) StatusOptions() []api.Option {
 	return c.status.options
 }
 
-func (c Context) LastCondition() *status.Condition {
+func (c Context) LastCondition() *api.Condition {
 	return c.lastCondition
 }
 
@@ -71,19 +71,19 @@ func (c Context) LastConditionWarn() bool {
 	return c.lastConditionWarn
 }
 
-func (c *Context) EnsureStatusOption(option status.Option) *Context {
+func (c *Context) EnsureStatusOption(option api.Option) *Context {
 	c.status.EnsureOption(option)
 	return c
 }
 
-func (c *Context) EnsureCondition(condition status.Condition) *Context {
+func (c *Context) EnsureCondition(condition api.Condition) *Context {
 	c.status.EnsureCondition(condition)
 	c.lastCondition = &condition
 	return c
 }
 
-func (c *Context) SetConditionFromResult(conditionType status.ConditionType, result Result) *Context {
-	condition := status.Condition{
+func (c *Context) SetConditionFromResult(conditionType api.ConditionType, result Result) *Context {
+	condition := api.Condition{
 		Type:    conditionType,
 		Status:  corev1.ConditionFalse,
 		Reason:  string(result.reason),
@@ -97,16 +97,16 @@ func (c *Context) SetConditionFromResult(conditionType status.ConditionType, res
 	return c
 }
 
-func (c *Context) SetConditionFalse(conditionType status.ConditionType) *Context {
-	c.EnsureCondition(status.Condition{
+func (c *Context) SetConditionFalse(conditionType api.ConditionType) *Context {
+	c.EnsureCondition(api.Condition{
 		Type:   conditionType,
 		Status: corev1.ConditionFalse,
 	})
 	return c
 }
 
-func (c *Context) SetConditionFalseMsg(conditionType status.ConditionType, msg string) *Context {
-	c.EnsureCondition(status.Condition{
+func (c *Context) SetConditionFalseMsg(conditionType api.ConditionType, msg string) *Context {
+	c.EnsureCondition(api.Condition{
 		Type:    conditionType,
 		Status:  corev1.ConditionFalse,
 		Message: msg,
@@ -114,16 +114,16 @@ func (c *Context) SetConditionFalseMsg(conditionType status.ConditionType, msg s
 	return c
 }
 
-func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context {
-	c.EnsureCondition(status.Condition{
+func (c *Context) SetConditionTrue(conditionType api.ConditionType) *Context {
+	c.EnsureCondition(api.Condition{
 		Type:   conditionType,
 		Status: corev1.ConditionTrue,
 	})
 	return c
 }
 
-func (c *Context) SetConditionTrueMsg(conditionType status.ConditionType, msg string) *Context {
-	c.EnsureCondition(status.Condition{
+func (c *Context) SetConditionTrueMsg(conditionType api.ConditionType, msg string) *Context {
+	c.EnsureCondition(api.Condition{
 		Type:    conditionType,
 		Status:  corev1.ConditionTrue,
 		Message: msg,
@@ -131,7 +131,7 @@ func (c *Context) SetConditionTrueMsg(conditionType status.ConditionType, msg st
 	return c
 }
 
-func (c *Context) UnsetCondition(conditionType status.ConditionType) *Context {
+func (c *Context) UnsetCondition(conditionType api.ConditionType) *Context {
 	c.status.RemoveCondition(conditionType)
 	return c
 }

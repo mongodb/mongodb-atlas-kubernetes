@@ -27,6 +27,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -171,11 +172,11 @@ func (p AtlasDatabaseUser) PasswordSecretObjectKey() *client.ObjectKey {
 	return nil
 }
 
-func (p *AtlasDatabaseUser) GetStatus() status.Status {
+func (p *AtlasDatabaseUser) GetStatus() api.Status {
 	return p.Status
 }
 
-func (p *AtlasDatabaseUser) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+func (p *AtlasDatabaseUser) UpdateStatus(conditions []api.Condition, options ...api.Option) {
 	p.Status.Conditions = conditions
 	p.Status.ObservedGeneration = p.ObjectMeta.Generation
 

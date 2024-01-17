@@ -1,5 +1,7 @@
 package status
 
+import "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
+
 // +k8s:deepcopy-gen=false
 
 // AtlasDatabaseUserStatusOption is the option that is applied to Atlas Project Status
@@ -19,7 +21,7 @@ func AtlasDatabaseUserNameOption(name string) AtlasDatabaseUserStatusOption {
 
 // AtlasDatabaseUserStatus defines the observed state of AtlasProject
 type AtlasDatabaseUserStatus struct {
-	Common `json:",inline"`
+	api.Common `json:",inline"`
 
 	// PasswordVersion is the 'ResourceVersion' of the password Secret that the Atlas Operator is aware of
 	PasswordVersion string `json:"passwordVersion,omitempty"`

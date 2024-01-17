@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,7 +35,7 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 	canReconcile, err := canIPAccessListReconcile(service.Context, service.Client, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		service.SetConditionFromResult(status.IPAccessListReadyType, result)
+		service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 		return result
 	}
@@ -44,7 +45,7 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		service.SetConditionFromResult(status.IPAccessListReadyType, result)
+		service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 		return result
 	}
@@ -55,7 +56,7 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 	list, _, err := service.Client.ProjectIPAccessList.List(service.Context, akoProject.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("failed to retrieve IP Access list: %s", err))
-		service.SetConditionFromResult(status.IPAccessListReadyType, result)
+		service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 		return result
 	}
@@ -65,7 +66,7 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 		err = syncIPAccessList(service, akoProject.ID(), currentList, desiredList)
 		if err != nil {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to sync desired state with Atlas: %s", err))
-			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+			service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 			return result
 		}
@@ -75,30 +76,30 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 		ipAccessStatus, err := statusFunc(service.Context, akoProject.ID(), mapToEntryValue(ipAccessList, true))
 		if err != nil {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to check status in Atlas: %s", err))
-			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+			service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 			return result
 		}
 
 		if ipAccessStatus == ipAccessStatusFailed {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("configuration of %s failed in Atlas", mapToEntryValue(ipAccessList, false)))
-			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+			service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 			return result
 		}
 
 		if ipAccessStatus == ipAccessStatusPending {
 			result := workflow.InProgress(workflow.ProjectIPAccessListNotActive, fmt.Sprintf("waiting Atlas to configure entry %s", mapToEntryValue(ipAccessList, false)))
-			service.SetConditionFromResult(status.IPAccessListReadyType, result)
+			service.SetConditionFromResult(api.IPAccessListReadyType, result)
 
 			return result
 		}
 	}
 
-	service.SetConditionTrue(status.IPAccessListReadyType)
+	service.SetConditionTrue(api.IPAccessListReadyType)
 
 	if len(akoProject.Spec.ProjectIPAccessList) == 0 {
-		service.UnsetCondition(status.IPAccessListReadyType)
+		service.UnsetCondition(api.IPAccessListReadyType)
 	}
 
 	return workflow.OK()

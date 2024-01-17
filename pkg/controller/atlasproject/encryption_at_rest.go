@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 
 	v1 "k8s.io/api/core/v1"
@@ -29,14 +30,14 @@ const (
 
 func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
-		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
+		workflowCtx.UnsetCondition(api.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
 	}
 
 	canReconcile, err := canEncryptionAtRestReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
 
 		return result
 	}
@@ -46,23 +47,23 @@ func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Co
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
 
 		return result
 	}
 
 	result := createOrDeleteEncryptionAtRests(workflowCtx, project.ID(), project)
 	if !result.IsOk() {
-		workflowCtx.SetConditionFromResult(status.EncryptionAtRestReadyType, result)
+		workflowCtx.SetConditionFromResult(api.EncryptionAtRestReadyType, result)
 		return result
 	}
 
 	if IsEncryptionSpecEmpty(project.Spec.EncryptionAtRest) {
-		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
+		workflowCtx.UnsetCondition(api.EncryptionAtRestReadyType)
 		return workflow.OK()
 	}
 
-	workflowCtx.SetConditionTrue(status.EncryptionAtRestReadyType)
+	workflowCtx.SetConditionTrue(api.EncryptionAtRestReadyType)
 	return workflow.OK()
 }
 
