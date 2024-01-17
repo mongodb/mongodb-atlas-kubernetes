@@ -125,9 +125,8 @@ jobs:
       fail-fast: false
       matrix:
         # k8s: ["1.17-kind", "1.19-kind", "1.17-opeshift"] # <supported platform version>-<platform>
-        k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
-        test:
-          [
+        k8s: ["v1.21.1-kind"] # <K8sGitVersion>-<Platform>
+        test: [
             "alert-config",
             "auditing",
             # "bundle-test",
@@ -154,7 +153,7 @@ jobs:
             "teams",
             "backup-config",
             "data-federation",
-            "deletion-protection"
+            "deletion-protection",
           ]
     steps:
       - name: Get repo files from cache
@@ -264,6 +263,7 @@ jobs:
 
           cd test/e2e
 
+          echo 'Current test filter "${TEST_NAME}"'
           # no `long-run`, no `broken` tests. `Long-run` tests run as a separate job
           [[ $TEST_NAME == 'long-run' ]]  &&  filter='long-run && !broken' || filter="$TEST_NAME"' && !long-run && !broken' && \
           echo 'Running: AKO_E2E_TEST=1 ginkgo --label-filter="${filter}" --timeout 120m --nodes=10 --cover --v' && \
