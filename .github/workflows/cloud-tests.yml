@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'merge_group' ||
       github.ref == 'refs/heads/main' ||
       (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') ||
       contains(github.event.pull_request.labels.*.name, 'safe-to-test')
@@ -59,6 +60,13 @@ jobs:
     secrets: inherit
     with:
       forked:  ${{ inputs.forked }}
+
+  test-e2e-gov:
+    needs:
+      - allowed
+    if: github.event_name == 'merge_group'
+    uses: ./.github/workflows/test-e2e-gov.yml
+    secrets: inherit
 
   openshift-upgrade-test:
     needs: allowed
