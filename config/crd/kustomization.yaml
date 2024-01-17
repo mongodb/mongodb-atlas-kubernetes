@@ -10,5 +10,6 @@ resources:
   - bases/atlas.mongodb.com_atlasbackupschedules.yaml
   - bases/atlas.mongodb.com_atlasteams.yaml
   - bases/atlas.mongodb.com_atlasfederatedauths.yaml
+  - bases/atlas.experimental.mongodb.com_atlasprojects.yaml
 configurations:
   - kustomizeconfig.yaml

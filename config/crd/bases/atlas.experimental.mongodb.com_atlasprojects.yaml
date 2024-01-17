@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: atlasprojects.atlas.mongodb.com
+  name: atlasprojects.atlas.experimental.mongodb.com
 spec:
-  group: atlas.mongodb.com
+  group: atlas.experimental.mongodb.com
   names:
     kind: AtlasProject
     listKind: AtlasProjectList
@@ -19,7 +19,7 @@ spec:
     - jsonPath: .spec.name
       name: Name
       type: string
-    name: v1
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: AtlasProject is the Schema for the atlasprojects API
@@ -37,8 +37,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtlasProjectSpec defines the desired state of Project in
-              Atlas
             properties:
               alertConfigurationSyncEnabled:
                 description: AlertConfigurationSyncEnabled is a flag that enables/disables
@@ -782,6 +780,10 @@ spec:
                       type: string
                   type: object
                 type: array
+              newRequiredField:
+                description: NewField is a new field in the Atlas project and completely
+                  breaks compatibility with v1
+                type: string
               privateEndpoints:
                 description: PrivateEndpoints is a list of Private Endpoints configured
                   for the current Project.
@@ -947,6 +949,7 @@ spec:
                 type: object
             required:
             - name
+            - newRequiredField
             type: object
           status:
             description: AtlasProjectStatus defines the observed state of AtlasProject
