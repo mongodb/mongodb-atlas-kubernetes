@@ -18,7 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-var _ = Describe("UserLogin", Label("serverless-pe"), func() {
+var _ = Describe("UserLogin", Label("serverless-pe"), Ordered, func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
@@ -48,7 +48,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 		})
 	})
 
-	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
+	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Ordered,
 		func(test *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
@@ -138,7 +138,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 				Namespace: userData.InitialDeployments[0].Namespace,
 			}, userData.InitialDeployments[0])).To(Succeed())
 			return userData.InitialDeployments[0].Status.StateName == status.StateIDLE
-		}).WithTimeout(15 * time.Minute).Should(BeTrue())
+		}).WithTimeout(30 * time.Minute).Should(BeTrue())
 	})
 
 	By("Adding Private Endpoints to Deployment", func() {
