@@ -16,9 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
@@ -122,7 +122,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			Eventually(func(g Gomega) {
 				fedAuth := &mdbv1.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
-				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
+				g.Expect(resources.CheckCondition(k8sClient, fedAuth, api.TrueCondition(api.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 
@@ -142,7 +142,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			Eventually(func(g Gomega) {
 				fedAuth := &mdbv1.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
-				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
+				g.Expect(resources.CheckCondition(k8sClient, fedAuth, api.TrueCondition(api.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 	})

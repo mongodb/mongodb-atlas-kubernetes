@@ -507,10 +507,10 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Cluster is in ready state", func() {
 			expectedConditions := conditions.MatchConditions(
-				status.TrueCondition(status.DeploymentReadyType),
-				status.TrueCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
-				status.TrueCondition(status.ResourceVersionStatus),
+				api.TrueCondition(api.DeploymentReadyType),
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.ValidationSucceeded),
+				api.TrueCondition(api.ResourceVersionStatus),
 			)
 
 			Eventually(func(g Gomega) {
@@ -570,9 +570,9 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("DatabaseUser is in ready state", func() {
 			expectedConditions := conditions.MatchConditions(
-				status.TrueCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
-				status.TrueCondition(status.ResourceVersionStatus),
+				api.TrueCondition(api.ReadyType),
+				api.TrueCondition(api.ValidationSucceeded),
+				api.TrueCondition(api.ResourceVersionStatus),
 			)
 
 			Eventually(func(g Gomega) {
@@ -603,9 +603,9 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		By("Project is ready", func() {
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.TrueCondition(status.ReadyType),
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.TrueCondition(api.ReadyType),
 				)
 
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -640,9 +640,9 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Serverless is not supported in Atlas for government", func() {
 			expectedConditions := conditions.MatchConditions(
-				status.FalseCondition(status.DeploymentReadyType),
-				status.FalseCondition(status.ReadyType),
-				status.TrueCondition(status.ValidationSucceeded),
+				api.FalseCondition(api.DeploymentReadyType),
+				api.FalseCondition(api.ReadyType),
+				api.TrueCondition(api.ValidationSucceeded),
 			)
 
 			Eventually(func(g Gomega) {
@@ -697,8 +697,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("DataFederation is not supported in Atlas for government", func() {
 			expectedConditions := conditions.MatchConditions(
-				status.FalseCondition(status.DataFederationReadyType),
-				status.FalseCondition(status.ReadyType),
+				api.FalseCondition(api.DataFederationReadyType),
+				api.FalseCondition(api.ReadyType),
 			)
 
 			Eventually(func(g Gomega) {
@@ -763,7 +763,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				g.Expect(testData.Project.Status.Conditions).ToNot(ContainElement(conditions.MatchCondition(status.TrueCondition(status.ProjectTeamsReadyType))))
+				g.Expect(testData.Project.Status.Conditions).ToNot(ContainElement(conditions.MatchCondition(api.TrueCondition(api.ProjectTeamsReadyType))))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 

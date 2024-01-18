@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -95,7 +96,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 	})
 
 	By("Check if project statuses are updating, get project ID", func() {
-		actions.WaitForConditionsToBecomeTrue(userData, status.PrivateEndpointServiceReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.PrivateEndpointServiceReadyType, api.ReadyType)
 		Expect(AllPEndpointUpdated(userData)).Should(BeTrue(),
 			"Error: Was created a different amount of endpoints")
 		Expect(userData.Project.ID()).ShouldNot(BeEmpty())
@@ -220,7 +221,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 			Name:      dataFederationInstanceName,
 		}, df)).To(Succeed())
 		Eventually(func() bool {
-			return resources.CheckCondition(userData.K8SClient, df, status.TrueCondition(status.ReadyType))
+			return resources.CheckCondition(userData.K8SClient, df, api.TrueCondition(api.ReadyType))
 		}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 	})
 }

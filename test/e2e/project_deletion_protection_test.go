@@ -8,6 +8,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
@@ -435,37 +436,37 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		By("Project is ready by all sub-resources are in conflict", func() {
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.FalseCondition(status.IPAccessListReadyType).
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.FalseCondition(api.IPAccessListReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile IP Access List due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.CloudProviderIntegrationReadyType).
+					api.FalseCondition(api.CloudProviderIntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.NetworkPeerReadyType).
+					api.FalseCondition(api.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.IntegrationReadyType).
+					api.FalseCondition(api.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.MaintenanceWindowReadyType).
+					api.FalseCondition(api.MaintenanceWindowReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AuditingReadyType).
+					api.FalseCondition(api.AuditingReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectSettingsReadyType).
+					api.FalseCondition(api.ProjectSettingsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.EncryptionAtRestReadyType).
+					api.FalseCondition(api.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectCustomRolesReadyType).
+					api.FalseCondition(api.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectTeamsReadyType).
+					api.FalseCondition(api.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
@@ -482,35 +483,35 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.IPAccessListReadyType),
-					status.FalseCondition(status.CloudProviderIntegrationReadyType).
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.TrueCondition(api.IPAccessListReadyType),
+					api.FalseCondition(api.CloudProviderIntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.NetworkPeerReadyType).
+					api.FalseCondition(api.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.IntegrationReadyType).
+					api.FalseCondition(api.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.MaintenanceWindowReadyType).
+					api.FalseCondition(api.MaintenanceWindowReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AuditingReadyType).
+					api.FalseCondition(api.AuditingReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectSettingsReadyType).
+					api.FalseCondition(api.ProjectSettingsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.EncryptionAtRestReadyType).
+					api.FalseCondition(api.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectCustomRolesReadyType).
+					api.FalseCondition(api.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectTeamsReadyType).
+					api.FalseCondition(api.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
@@ -542,33 +543,33 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderIntegrationReadyType),
-					status.FalseCondition(status.NetworkPeerReadyType).
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.TrueCondition(api.IPAccessListReadyType),
+					api.TrueCondition(api.CloudProviderIntegrationReadyType),
+					api.FalseCondition(api.NetworkPeerReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Network Peering due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.IntegrationReadyType).
+					api.FalseCondition(api.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.MaintenanceWindowReadyType).
+					api.FalseCondition(api.MaintenanceWindowReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AuditingReadyType).
+					api.FalseCondition(api.AuditingReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectSettingsReadyType).
+					api.FalseCondition(api.ProjectSettingsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.EncryptionAtRestReadyType).
+					api.FalseCondition(api.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectCustomRolesReadyType).
+					api.FalseCondition(api.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectTeamsReadyType).
+					api.FalseCondition(api.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
@@ -587,36 +588,36 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				g.Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
 				g.Expect(testData.Project.Status.NetworkPeers).ToNot(HaveLen(0))
-				g.Expect(testData.Project.Status.NetworkPeers[0].StatusName).To(Equal("AVAILABLE"))
+				g.Expect(testData.Project.api.NetworkPeers[0].StatusName).To(Equal("AVAILABLE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderIntegrationReadyType),
-					status.TrueCondition(status.NetworkPeerReadyType),
-					status.FalseCondition(status.IntegrationReadyType).
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.TrueCondition(api.IPAccessListReadyType),
+					api.TrueCondition(api.CloudProviderIntegrationReadyType),
+					api.TrueCondition(api.NetworkPeerReadyType),
+					api.FalseCondition(api.IntegrationReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.MaintenanceWindowReadyType).
+					api.FalseCondition(api.MaintenanceWindowReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AuditingReadyType).
+					api.FalseCondition(api.AuditingReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectSettingsReadyType).
+					api.FalseCondition(api.ProjectSettingsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.EncryptionAtRestReadyType).
+					api.FalseCondition(api.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectCustomRolesReadyType).
+					api.FalseCondition(api.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectTeamsReadyType).
+					api.FalseCondition(api.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)
@@ -645,29 +646,29 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			Eventually(func(g Gomega) {
 				expectedConditions := conditions.MatchConditions(
-					status.TrueCondition(status.ValidationSucceeded),
-					status.TrueCondition(status.ProjectReadyType),
-					status.FalseCondition(status.ReadyType),
-					status.TrueCondition(status.IPAccessListReadyType),
-					status.TrueCondition(status.CloudProviderIntegrationReadyType),
-					status.TrueCondition(status.NetworkPeerReadyType),
-					status.TrueCondition(status.IntegrationReadyType),
-					status.FalseCondition(status.MaintenanceWindowReadyType).
+					api.TrueCondition(api.ValidationSucceeded),
+					api.TrueCondition(api.ProjectReadyType),
+					api.FalseCondition(api.ReadyType),
+					api.TrueCondition(api.IPAccessListReadyType),
+					api.TrueCondition(api.CloudProviderIntegrationReadyType),
+					api.TrueCondition(api.NetworkPeerReadyType),
+					api.TrueCondition(api.IntegrationReadyType),
+					api.FalseCondition(api.MaintenanceWindowReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Maintenance Window due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.AuditingReadyType).
+					api.FalseCondition(api.AuditingReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Auditing due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectSettingsReadyType).
+					api.FalseCondition(api.ProjectSettingsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Project Settings due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.EncryptionAtRestReadyType).
+					api.FalseCondition(api.EncryptionAtRestReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Encryption At Rest due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectCustomRolesReadyType).
+					api.FalseCondition(api.ProjectCustomRolesReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Custom Roles due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
-					status.FalseCondition(status.ProjectTeamsReadyType).
+					api.FalseCondition(api.ProjectTeamsReadyType).
 						WithReason(string(workflow.AtlasDeletionProtection)).
 						WithMessageRegexp("unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information"),
 				)

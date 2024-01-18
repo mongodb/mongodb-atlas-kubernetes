@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -98,7 +99,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []v1.C
 	By("Add Custom Roles to the project", func() {
 		userData.Project.Spec.CustomRoles = customRoles
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
-		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectCustomRolesReadyType, status.ReadyType)
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectCustomRolesReadyType, api.ReadyType)
 	})
 
 	By("Update Custom Role from the project", func() {

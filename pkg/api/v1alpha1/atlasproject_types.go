@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	v1status "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
@@ -53,6 +52,4 @@ type AtlasExperimentalProjectSpec struct {
 	// NewField is a new field in the Atlas project and completely breaks compatibility with v1
 	// +kubebuilder:validation:Required
 	NewField string `json:"newRequiredField"`
-
-	MaintenanceWindow project.MaintenanceWindow `json:"maintenanceWindowExperimental,omitempty"`
 }
