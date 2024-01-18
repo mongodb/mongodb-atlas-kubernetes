@@ -148,7 +148,7 @@ jobs:
             "networkpeering",
             "privatelink",
             "project-settings",
-            "serverless-pe", 
+            "serverless-pe",
             "x509auth",
             "custom-roles",
             "teams",
