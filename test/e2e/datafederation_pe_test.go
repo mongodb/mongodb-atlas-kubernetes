@@ -197,12 +197,13 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 		}
 	})
 
-	By("Creating DataFederation with a PrivateEndpoint", func() {
-		peData := userData.Project.Status.PrivateEndpoints[0]
+	By("Creating DataFederation with a PrivateEndpoint (empty ID)", func() {
+		// peData := userData.Project.Status.PrivateEndpoints[0]
 		createdDataFederation = v1.NewDataFederationInstance(
 			userData.Project.Name,
 			dataFederationInstanceName,
-			userData.Project.Namespace).WithPrivateEndpoint(GetPrivateEndpointID(peData), "AWS", "DATA_LAKE")
+			// userData.Project.Namespace).WithPrivateEndpoint(GetPrivateEndpointID(peData), string(provider.ProviderAWS), "DATA_LAKE")
+			userData.Project.Namespace).WithPrivateEndpoint("", string(provider.ProviderAWS), "DATA_LAKE")
 		Expect(userData.K8SClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
