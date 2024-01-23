@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
@@ -26,16 +24,16 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
 
-	var originalConnectedOrgConfig *mongodbatlas.FederatedSettingsConnectedOrganization
-	var originalFederationSettings *mongodbatlas.FederatedSettings
-	var originalIdp *mongodbatlas.FederatedSettingsIdentityProvider
+	var originalConnectedOrgConfig *admin.ConnectedOrgConfig
+	var originalFederationSettings *admin.OrgFederationSettings
+	var originalIdp *admin.FederationSamlIdentityProvider
 
 	resourceName := "fed-auth-test"
 	ctx := context.Background()
 
 	BeforeEach(func() {
 		By("Checking if Federation Settings enabled for the org", func() {
-			federationSettings, _, err := atlasClient.FederatedSettings.Get(ctx, orgID)
+			federationSettings, _, err := atlasClient.FederatedAuthenticationApi.GetFederationSettings(ctx, orgID).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(federationSettings).ShouldNot(BeNil())
 
@@ -43,7 +41,9 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Getting original IDP", func() {
-			idp, _, err := atlasClient.FederatedSettings.GetIdentityProvider(ctx, originalFederationSettings.ID, originalFederationSettings.IdentityProviderID)
+			idp, _, err := atlasClient.FederatedAuthenticationApi.
+				GetIdentityProvider(ctx, originalFederationSettings.GetId(), originalFederationSettings.GetIdentityProviderId()).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(idp).ShouldNot(BeNil())
 
@@ -51,7 +51,9 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Getting existing org config", func() {
-			connectedOrgConfig, _, err := atlasClient.FederatedSettings.GetConnectedOrg(ctx, originalFederationSettings.ID, orgID)
+			connectedOrgConfig, _, err := atlasClient.FederatedAuthenticationApi.
+				GetConnectedOrgConfig(ctx, originalFederationSettings.GetId(), orgID).
+				Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(connectedOrgConfig).ShouldNot(BeNil())
 
@@ -72,24 +74,25 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	It("Should be able to update existing Organization's federations settings", func() {
 		By("Creating a FederatedAuthConfig resource", func() {
-			roles := []mdbv1.RoleMapping{}
-
-			for i := range originalConnectedOrgConfig.RoleMappings {
-				atlasRole := *(originalConnectedOrgConfig.RoleMappings[i])
+			atlasRoleMappings := originalConnectedOrgConfig.GetRoleMappings()
+			roles := make([]mdbv1.RoleMapping, 0, len(atlasRoleMappings))
+			for i := range atlasRoleMappings {
+				atlasRole := atlasRoleMappings[i]
 				newRole := mdbv1.RoleMapping{
 					ExternalGroupName: atlasRole.ExternalGroupName,
 					RoleAssignments:   []mdbv1.RoleAssignment{},
 				}
 
-				for j := range atlasRole.RoleAssignments {
-					atlasRS := atlasRole.RoleAssignments[j]
-					project, _, err := atlasClient.Projects.GetOneProject(ctx, atlasRS.GroupID)
+				atlasRoleAssignments := atlasRole.GetRoleAssignments()
+				for j := range atlasRoleAssignments {
+					atlasRS := atlasRoleAssignments[j]
+					project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(project).NotTo(BeNil())
 
 					newRS := mdbv1.RoleAssignment{
 						ProjectName: project.Name,
-						Role:        atlasRS.Role,
+						Role:        atlasRS.GetRole(),
 					}
 					newRole.RoleAssignments = append(newRole.RoleAssignments, newRS)
 				}
@@ -107,7 +110,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 						Name:      connectionSecret.Name,
 						Namespace: connectionSecret.Namespace,
 					},
-					DomainAllowList:          append(originalConnectedOrgConfig.DomainAllowList, "cloud-qa.mongodb.com"),
+					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com"),
 					DomainRestrictionEnabled: toptr.MakePtr(true),
 					SSODebugEnabled:          toptr.MakePtr(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
@@ -130,10 +133,10 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			fedAuth := &mdbv1.AtlasFederatedAuth{}
 			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 
-			fedAuth.Spec.DomainAllowList = originalConnectedOrgConfig.DomainAllowList
-			fedAuth.Spec.DomainRestrictionEnabled = originalConnectedOrgConfig.DomainRestrictionEnabled
+			fedAuth.Spec.DomainAllowList = originalConnectedOrgConfig.GetDomainAllowList()
+			fedAuth.Spec.DomainRestrictionEnabled = &originalConnectedOrgConfig.DomainRestrictionEnabled
 			fedAuth.Spec.SSODebugEnabled = originalIdp.SsoDebugEnabled
-			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.PostAuthRoleGrants
+			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.GetPostAuthRoleGrants()
 
 			Expect(k8sClient.Update(ctx, fedAuth)).NotTo(HaveOccurred())
 		})

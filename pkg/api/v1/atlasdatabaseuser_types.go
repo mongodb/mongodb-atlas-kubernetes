@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -217,6 +219,24 @@ func (p AtlasDatabaseUser) ToAtlas(ctx context.Context, kubeClient client.Client
 	result.Password = password
 
 	return result, err
+}
+
+// ToAtlasSDK is clone of ToAtlas used temporarily for test migrations
+func (p AtlasDatabaseUser) ToAtlasSDK(ctx context.Context, kubeClient client.Client) (*admin.CloudDatabaseUser, error) {
+	password, err := p.ReadPassword(ctx, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+
+	result := admin.NewCloudDatabaseUserWithDefaults()
+	err = compat.JSONCopy(result, p.Spec)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Password = &password
+
+	return result, nil
 }
 
 func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {

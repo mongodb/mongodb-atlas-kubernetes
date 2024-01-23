@@ -8,18 +8,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
-	"go.mongodb.org/atlas/mongodbatlas"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enabled"), func() {
@@ -63,12 +60,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), projectName)
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -78,12 +75,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			projectName := fmt.Sprintf("existing-project-%s", testNamespace.Name)
 
 			By("Creating a project in Atlas", func() {
-				atlasProject := mongodbatlas.Project{
-					OrgID:                     orgID,
+				atlasProject := admin.Group{
+					OrgId:                     orgID,
 					Name:                      projectName,
 					WithDefaultAlertsSettings: toptr.MakePtr(true),
 				}
-				_, _, err := atlasClient.Projects.Create(context.Background(), &atlasProject, &mongodbatlas.CreateProjectOptions{})
+				_, _, err := atlasClient.ProjectsApi.CreateProject(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())
 			})
 
@@ -105,12 +102,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.Projects.GetOneProjectByName(context.Background(), projectName)
+					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.Projects.Delete(context.Background(), projectID)
+				_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -136,7 +133,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+					_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(r).ToNot(BeNil())
 					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))

@@ -3,7 +3,7 @@ package access
 import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
@@ -17,34 +17,26 @@ func MatchIPAccessList(expected project.IPAccessList) types.GomegaMatcher {
 	return &ipAccessListMatcher{ExpectedIPAccessList: expected}
 }
 
-func BuildMatchersFromExpected(ipLists []project.IPAccessList) []types.GomegaMatcher {
-	result := make([]types.GomegaMatcher, len(ipLists))
-	for i, list := range ipLists {
-		result[i] = MatchIPAccessList(list)
-	}
-	return result
-}
-
 type ipAccessListMatcher struct {
 	ExpectedIPAccessList project.IPAccessList
 }
 
 func (m *ipAccessListMatcher) Match(actual interface{}) (success bool, err error) {
-	var c mongodbatlas.ProjectIPAccessList
+	var c admin.NetworkPermissionEntry
 	var ok bool
-	if c, ok = actual.(mongodbatlas.ProjectIPAccessList); !ok {
+	if c, ok = actual.(admin.NetworkPermissionEntry); !ok {
 		panic("Expected mongodbatlas.ProjectIPAccessList")
 	}
-	if m.ExpectedIPAccessList.CIDRBlock != "" && c.CIDRBlock != m.ExpectedIPAccessList.CIDRBlock {
+	if m.ExpectedIPAccessList.CIDRBlock != "" && c.GetCidrBlock() != m.ExpectedIPAccessList.CIDRBlock {
 		return false, nil
 	}
-	if m.ExpectedIPAccessList.AwsSecurityGroup != "" && c.AwsSecurityGroup != m.ExpectedIPAccessList.AwsSecurityGroup {
+	if m.ExpectedIPAccessList.AwsSecurityGroup != "" && c.GetAwsSecurityGroup() != m.ExpectedIPAccessList.AwsSecurityGroup {
 		return false, nil
 	}
-	if m.ExpectedIPAccessList.IPAddress != "" && c.IPAddress != m.ExpectedIPAccessList.IPAddress {
+	if m.ExpectedIPAccessList.IPAddress != "" && c.GetIpAddress() != m.ExpectedIPAccessList.IPAddress {
 		return false, nil
 	}
-	if m.ExpectedIPAccessList.Comment != "" && c.Comment != m.ExpectedIPAccessList.Comment {
+	if m.ExpectedIPAccessList.Comment != "" && c.GetComment() != m.ExpectedIPAccessList.Comment {
 		return false, nil
 	}
 	if m.ExpectedIPAccessList.DeleteAfterDate != "" {
@@ -52,11 +44,7 @@ func (m *ipAccessListMatcher) Match(actual interface{}) (success bool, err error
 		if err != nil {
 			return false, err
 		}
-		fromAtlas, err := timeutil.ParseISO8601(c.DeleteAfterDate)
-		if err != nil {
-			return false, err
-		}
-		return expected.Unix() == fromAtlas.Unix(), nil
+		return expected.Unix() == c.GetDeleteAfterDate().Unix(), nil
 	}
 	return true, nil
 }

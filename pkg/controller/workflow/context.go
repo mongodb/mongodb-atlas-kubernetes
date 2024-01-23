@@ -3,6 +3,8 @@ package workflow
 import (
 	"context"
 
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -24,7 +26,8 @@ type Context struct {
 	OrgID string
 
 	// Client is a mongodb atlas client used to make v1.0 API calls
-	Client *mongodbatlas.Client
+	Client    *mongodbatlas.Client
+	SdkClient *admin.APIClient
 
 	status Status
 

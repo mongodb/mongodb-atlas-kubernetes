@@ -9,40 +9,32 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
-
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-
-	"go.mongodb.org/atlas/mongodbatlas"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/events"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
 const (
 	databaseUserTimeout = 10 * time.Minute
-
 	UserPasswordSecret  = "user-password-secret"
 	DBUserPassword      = "Passw0rd!"
 	UserPasswordSecret2 = "second-user-password-secret"
@@ -94,19 +86,17 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	Describe("Operator is running with deletion protection disabled", func() {
 		It("Adds database users and allow them to be deleted", func() {
 			By("Creating a database user previously on Atlas", func() {
-				dbUser := &mongodbatlas.DatabaseUser{
-					Username:     dbUserName3,
-					Password:     "mypass",
-					DatabaseName: "admin",
-					Roles: []mongodbatlas.Role{
+				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
+				dbUser.SetPassword("mypass")
+				dbUser.SetRoles(
+					[]admin.DatabaseUserRole{
 						{
 							RoleName:     "readWriteAnyDatabase",
 							DatabaseName: "admin",
 						},
 					},
-					Scopes: []mongodbatlas.Scope{},
-				}
-				_, _, err := atlasClient.DatabaseUsers.Create(context.Background(), testProject.ID(), dbUser)
+				)
+				_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 				Expect(err).To(BeNil())
 			})
 
@@ -199,7 +189,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					Eventually(checkAtlasDatabaseUserRemoved(testProject.ID(), *testDBUser2)).
 						WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeFalse())
 
-					_, err := atlasClient.DatabaseUsers.Delete(context.Background(), "admin", testProject.ID(), dbUserName2)
+					_, _, err := atlasClient.DatabaseUsersApi.
+						DeleteDatabaseUser(context.Background(), testProject.ID(), "admin", dbUserName2).
+						Execute()
 					Expect(err).To(BeNil())
 				})
 
@@ -327,7 +319,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Delete(context.Background(), secondDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), testProject.ID(), deploymentName)
+					_, r, err := atlasClient.ClustersApi.
+						GetCluster(context.Background(), testProject.ID(), deploymentName).
+						Execute()
 					if err != nil {
 						if r != nil && r.StatusCode == http.StatusNotFound {
 							return true
@@ -431,7 +425,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					return resources.CheckCondition(k8sClient, testDBUser1, status.TrueCondition(status.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
-				_, _, err := atlasClient.DatabaseUsers.Get(context.Background(), testDBUser1.Spec.DatabaseName, testProject.ID(), oldName)
+				_, _, err := atlasClient.DatabaseUsersApi.
+					GetDatabaseUser(context.Background(), testProject.ID(), testDBUser1.Spec.DatabaseName, oldName).
+					Execute()
 				Expect(err).To(HaveOccurred())
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 2)
@@ -464,7 +460,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 				Expect(k8sClient.Delete(context.Background(), secondTestDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), testProject.ID(), deploymentName)
+					_, r, err := atlasClient.ClustersApi.
+						GetCluster(context.Background(), testProject.ID(), deploymentName).
+						Execute()
 					if err != nil {
 						if r != nil && r.StatusCode == http.StatusNotFound {
 							return true
@@ -495,7 +493,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 0)
 
-				_, _, err := atlasClient.DatabaseUsers.Get(context.Background(), testDBUser1.Spec.DatabaseName, testProject.ID(), testDBUser1.Spec.Username)
+				_, _, err := atlasClient.DatabaseUsersApi.
+					GetDatabaseUser(context.Background(), testProject.ID(), testDBUser1.Spec.DatabaseName, testDBUser1.Spec.Username).
+					Execute()
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -564,9 +564,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
-				containsDatabaseUser := func(dbUser *mongodbatlas.DatabaseUser) bool {
-					for _, role := range dbUser.Roles {
-						if role.RoleName == "new-role" && role.DatabaseName == "new-database" && role.CollectionName == "new-collection" {
+				containsDatabaseUser := func(dbUser *admin.CloudDatabaseUser) bool {
+					for _, role := range dbUser.GetRoles() {
+						if role.RoleName == "new-role" && role.DatabaseName == "new-database" && role.GetCollectionName() == "new-collection" {
 							return true
 						}
 					}
@@ -585,7 +585,9 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.AdvancedClusters.Get(context.Background(), testProject.ID(), deploymentName)
+				_, r, err := atlasClient.ClustersApi.
+					GetCluster(context.Background(), testProject.ID(), deploymentName).
+					Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true
@@ -601,7 +603,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.Projects.GetOneProject(context.Background(), projectID)
+				_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true
@@ -644,14 +646,18 @@ func validateSecret(k8sClient client.Client, project mdbv1.AtlasProject, deploym
 	password, err := user.ReadPassword(context.Background(), k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), project.ID(), deployment.GetDeploymentName())
+	c, _, err := atlasClient.ClustersApi.
+		GetCluster(context.Background(), project.ID(), deployment.GetDeploymentName()).
+		Execute()
 	Expect(err).NotTo(HaveOccurred())
 
+	connectionStrings := c.GetConnectionStrings()
+
 	expectedData := map[string][]byte{
-		"connectionStringStandard":    []byte(buildConnectionURL(c.ConnectionStrings.Standard, username, password)),
-		"connectionStringStandardSrv": []byte(buildConnectionURL(c.ConnectionStrings.StandardSrv, username, password)),
-		"connectionStringPrivate":     []byte(buildConnectionURL(c.ConnectionStrings.Private, username, password)),
-		"connectionStringPrivateSrv":  []byte(buildConnectionURL(c.ConnectionStrings.PrivateSrv, username, password)),
+		"connectionStringStandard":    []byte(buildConnectionURL(connectionStrings.GetStandard(), username, password)),
+		"connectionStringStandardSrv": []byte(buildConnectionURL(connectionStrings.GetStandardSrv(), username, password)),
+		"connectionStringPrivate":     []byte(buildConnectionURL(connectionStrings.GetPrivate(), username, password)),
+		"connectionStringPrivateSrv":  []byte(buildConnectionURL(connectionStrings.GetPrivateSrv(), username, password)),
 		"username":                    []byte(username),
 		"password":                    []byte(password),
 	}
@@ -692,14 +698,16 @@ func buildConnectionURL(connURL, userName, password string) string {
 func mongoClient(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.AdvancedClusters.Get(context.Background(), projectID, deployment.GetDeploymentName())
+	c, _, err := atlasClient.ClustersApi.
+		GetCluster(context.Background(), projectID, deployment.GetDeploymentName()).
+		Execute()
 	Expect(err).NotTo(HaveOccurred())
 
 	if c.ConnectionStrings == nil {
 		return nil, errors.New("connection strings are not provided")
 	}
 
-	cs, err := url.Parse(c.ConnectionStrings.StandardSrv)
+	cs, err := url.Parse(c.ConnectionStrings.GetStandardSrv())
 	Expect(err).NotTo(HaveOccurred())
 
 	password, err := user.ReadPassword(context.Background(), k8sClient)
@@ -758,7 +766,9 @@ func tryWrite(projectID string, deployment mdbv1.AtlasDeployment, user mdbv1.Atl
 
 func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUser) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username)
+		_, r, err := atlasClient.DatabaseUsersApi.
+			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
+			Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true
@@ -785,9 +795,12 @@ func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
 
 func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 	By("Verifying Database User state in Atlas", func() {
-		atlasDBUser, _, err := atlasClient.DatabaseUsers.Get(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username)
+		atlasDBUser, _, err := atlasClient.DatabaseUsersApi.
+			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
+			Execute()
 		Expect(err).ToNot(HaveOccurred())
-		operatorDBUser, err := user.ToAtlas(context.Background(), k8sClient)
+		atlasDBUser.Links = nil
+		operatorDBUser, err := user.ToAtlasSDK(context.Background(), k8sClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(*atlasDBUser).To(Equal(normalize(*operatorDBUser, projectID)))
@@ -795,30 +808,17 @@ func checkUserInAtlas(projectID string, user mdbv1.AtlasDatabaseUser) {
 }
 
 // normalize brings the operator 'user' to the user returned by Atlas that allows to perform comparison for equality
-func normalize(user mongodbatlas.DatabaseUser, projectID string) mongodbatlas.DatabaseUser {
-	if user.Scopes == nil {
-		user.Scopes = []mongodbatlas.Scope{}
+func normalize(user admin.CloudDatabaseUser, projectID string) admin.CloudDatabaseUser {
+	if !user.HasScopes() {
+		user.SetScopes([]admin.UserScope{})
 	}
-	if user.Labels == nil {
-		user.Labels = []mongodbatlas.Label{}
+	if !user.HasLabels() {
+		user.SetLabels([]admin.ComponentLabel{})
 	}
-	if user.LDAPAuthType == "" {
-		user.LDAPAuthType = "NONE"
-	}
-	if user.AWSIAMType == "" {
-		user.AWSIAMType = "NONE"
-	}
-	if user.X509Type == "" {
-		user.X509Type = "NONE"
-	}
-	if user.OIDCAuthType == "" {
-		user.OIDCAuthType = "NONE"
-	}
-	if user.DeleteAfterDate != "" {
-		user.DeleteAfterDate = timeutil.FormatISO8601(timeutil.MustParseISO8601(user.DeleteAfterDate))
-	}
-	user.GroupID = projectID
-	user.Password = ""
+
+	user.SetGroupId(projectID)
+	user.Password = nil
+
 	return user
 }
 

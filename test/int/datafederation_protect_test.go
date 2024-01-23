@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -71,13 +71,15 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 		if !manualDeletion {
 			By("Removing Atlas DataFederation "+testDataFederationName, func() {
-				_, err := atlasClient.DataFederation.Delete(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+				_, _, err := atlasClient.DataFederationApi.
+					DeleteFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+					Execute()
 				Expect(err).To(BeNil())
 			})
 		}
 
 		By("Removing Atlas Project "+testProject.Status.ID, func() {
-			_, err := atlasClient.Projects.Delete(context.Background(), testProject.ID())
+			_, _, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), testProject.ID()).Execute()
 			Expect(err).To(BeNil())
 		})
 
@@ -96,7 +98,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					df, _, err := dataFederationClient.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+					df, _, err := atlasClient.DataFederationApi.
+						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						Execute()
 					g.Expect(err).ShouldNot(HaveOccurred())
 					g.Expect(df).NotTo(BeNil())
 				}).WithTimeout(20 * time.Minute).WithPolling(15 * time.Second).ShouldNot(HaveOccurred())
@@ -108,7 +112,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+					dataFederation, _, err := atlasClient.DataFederationApi.
+						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -117,17 +123,21 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 		It("Adds an existing Atlas data federation and protects it from being deleted", func() {
 			By("Creating a data federation instance in Atlas", func() {
-				df := &mongodbatlas.DataFederationInstance{
-					Name: testDataFederationName,
+				df := &admin.DataLakeTenant{
+					Name: &testDataFederationName,
 				}
 
-				_, _, err := atlasClient.DataFederation.Create(context.Background(), testProject.ID(), df)
+				_, _, err := atlasClient.DataFederationApi.
+					CreateFederatedDatabase(context.Background(), testProject.ID(), df).
+					Execute()
 				Expect(err).To(BeNil())
 				Eventually(func(g Gomega) {
-					atlasDataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederationName)
+					atlasDataFederation, _, err := atlasClient.DataFederationApi.
+						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederationName).
+						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasDataFederation).ToNot(BeNil())
-					g.Expect(atlasDataFederation.State).Should(Equal("ACTIVE"))
+					g.Expect(atlasDataFederation.GetState()).Should(Equal("ACTIVE"))
 				}).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 
@@ -146,7 +156,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+					dataFederation, _, err := atlasClient.DataFederationApi.
+						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(dataFederation).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -170,7 +182,9 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederation.Get(context.Background(), testProject.ID(), testDataFederation.Spec.Name)
+					dataFederation, _, err := atlasClient.DataFederationApi.
+						GetFederatedDatabase(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
+						Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(dataFederation).To(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
