@@ -78,14 +78,14 @@ jobs:
         run: |
           awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
       - name: Cache repo files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ./*
           key: ${{ github.sha }}
       - name: Check go dependencies
         id: cache-go
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -159,7 +159,7 @@ jobs:
     steps:
       - name: Get repo files from cache
         id: get-repo-files-from-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./*
           key: ${{ github.sha }}
@@ -171,7 +171,7 @@ jobs:
           fetch-depth: 0
       - name: Get all go dependencies
         id: get-go-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
