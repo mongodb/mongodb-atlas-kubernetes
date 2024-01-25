@@ -5,7 +5,7 @@ import (
 	"io"
 	"sort"
 
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -45,7 +45,7 @@ func listProjectsByName(client *admin.APIClient, projectName string) ([]admin.Gr
 	}
 
 	found := make([]admin.Group, 0, projects.GetTotalCount())
-	for _, project := range projects.Results {
+	for _, project := range *projects.Results {
 		if project.Name == projectName {
 			found = append(found, project)
 		}

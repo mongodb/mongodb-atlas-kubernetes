@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 )
 
 func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string, providers []string) []admin.BaseNetworkPeeringConnectionSettings {

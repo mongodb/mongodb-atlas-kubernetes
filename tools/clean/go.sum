@@ -110,8 +110,8 @@ github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.mongodb.org/atlas-sdk/v20231001002 v20231001002.0.0 h1:h1X2CGKyN1UFvNs69vp7xpufbbreq6p7bbrg5uJ1sxw=
-go.mongodb.org/atlas-sdk/v20231001002 v20231001002.0.0/go.mod h1:4TAUPaWPFNSbi8c1hbQLr1wAdkmqi48O7zvyXjBM+a8=
+go.mongodb.org/atlas-sdk/v20231115004 v20231115004.0.0 h1:+E0Aeve4HZFkvu47sYopY6Q2FOMqh/YnLJUtbGEKkfg=
+go.mongodb.org/atlas-sdk/v20231115004 v20231115004.0.0/go.mod h1:FzD5DLz+WPB+z3OGgNBjXMPQJjJ7Y+hKn4iupXZuoOc=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

@@ -269,7 +269,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(atlasAlertConfigs.GetTotalCount()).Should(Equal(len(alertConfigs)))
-				g.Expect(atlasAlertConfigs.GetResults()[0].Notifications[0].GetDatadogApiKey()).ShouldNot(BeEmpty())
+				g.Expect(atlasAlertConfigs.GetResults()[0].GetNotifications()[0].GetDatadogApiKey()).ShouldNot(BeEmpty())
 			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
 	})

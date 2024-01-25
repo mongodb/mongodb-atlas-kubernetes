@@ -3,7 +3,7 @@ package workflow
 import (
 	"context"
 
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"

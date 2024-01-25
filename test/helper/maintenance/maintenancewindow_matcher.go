@@ -6,7 +6,7 @@ import (
 
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )

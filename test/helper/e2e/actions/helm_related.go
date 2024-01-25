@@ -42,8 +42,8 @@ func HelmDefaultUpgradeResources(data *model.TestDataProvider) {
 			if err != nil {
 				return err
 			}
-			if user.Roles[0].RoleName != model.RoleBuildInAdmin {
-				return fmt.Errorf("user role %s not equal to %s", user.Roles[0].RoleName, model.RoleBuildInAdmin)
+			if user.GetRoles()[0].RoleName != model.RoleBuildInAdmin {
+				return fmt.Errorf("user role %s not equal to %s", user.GetRoles()[0].RoleName, model.RoleBuildInAdmin)
 			}
 			return nil
 		}).WithTimeout(7 * time.Minute).WithPolling(10 * time.Second).ShouldNot(HaveOccurred())

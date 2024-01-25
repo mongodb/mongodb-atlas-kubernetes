@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -182,9 +182,9 @@ func CompareAdvancedDeploymentsSpec(requested model.DeploymentSpec, created admi
 			if region.Priority == nil {
 				region.Priority = &defaultPriority
 			}
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].GetProviderName()).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].GetRegionName()).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
-			ExpectWithOffset(1, created.ReplicationSpecs[i].RegionConfigs[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
+			ExpectWithOffset(1, created.GetReplicationSpecs()[i].GetRegionConfigs()[key].GetProviderName()).Should(Equal(region.ProviderName), "Replica Spec: ProviderName is not the same")
+			ExpectWithOffset(1, created.GetReplicationSpecs()[i].GetRegionConfigs()[key].GetRegionName()).Should(Equal(region.RegionName), "Replica Spec: RegionName is not the same")
+			ExpectWithOffset(1, created.GetReplicationSpecs()[i].GetRegionConfigs()[key].Priority).Should(Equal(region.Priority), "Replica Spec: Priority is not the same")
 		}
 	}
 }
@@ -304,7 +304,7 @@ func CheckUsersAttributes(data *model.TestDataProvider) {
 				"DatabaseName": Or(Equal(user.Spec.DatabaseName), Equal("admin")),
 			}), "Users attributes should be the same as requested by the user")
 
-			for i, role := range atlasUser.Roles {
+			for i, role := range atlasUser.GetRoles() {
 				ExpectWithOffset(1, role).To(MatchFields(IgnoreMissing, Fields{
 					"RoleName":       Equal(user.Spec.Roles[i].RoleName),
 					"DatabaseName":   Equal(user.Spec.Roles[i].DatabaseName),

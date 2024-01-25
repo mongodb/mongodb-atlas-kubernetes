@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +26,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	var originalConnectedOrgConfig *admin.ConnectedOrgConfig
 	var originalFederationSettings *admin.OrgFederationSettings
-	var originalIdp *admin.FederationSamlIdentityProvider
+	var originalIdp *admin.FederationIdentityProvider
 
 	resourceName := "fed-auth-test"
 	ctx := context.Background()
@@ -41,13 +41,17 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Getting original IDP", func() {
-			idp, _, err := atlasClient.FederatedAuthenticationApi.
-				GetIdentityProvider(ctx, originalFederationSettings.GetId(), originalFederationSettings.GetIdentityProviderId()).
-				Execute()
+			identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, originalFederationSettings.GetId()).Execute()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(idp).ShouldNot(BeNil())
 
-			originalIdp = idp
+			for _, identityProvider := range identityProviders.GetResults() {
+				idp := identityProvider
+				if identityProvider.GetOktaIdpId() == originalFederationSettings.GetIdentityProviderId() {
+					originalIdp = &idp
+				}
+			}
+
+			Expect(originalIdp).ShouldNot(BeNil())
 		})
 
 		By("Getting existing org config", func() {

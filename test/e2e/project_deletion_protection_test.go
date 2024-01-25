@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -247,10 +247,10 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				&admin.UserCustomDBRole{
 					RoleName:       "testRole",
 					InheritedRoles: nil,
-					Actions: []admin.DatabasePrivilegeAction{
+					Actions: &[]admin.DatabasePrivilegeAction{
 						{
 							Action: "INSERT",
-							Resources: []admin.DatabasePermittedNamespaceResource{
+							Resources: &[]admin.DatabasePermittedNamespaceResource{
 								{
 									Db:         "testDB",
 									Collection: "testCollection",
@@ -275,7 +275,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			team := &admin.Team{
 				Name:      fmt.Sprintf("%s-team", projectName),
-				Usernames: usernames,
+				Usernames: &usernames,
 			}
 
 			team, _, err = atlasClient.Client.TeamsApi.CreateTeam(ctx, atlasClient.OrgID, team).Execute()
@@ -288,7 +288,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				&[]admin.TeamRole{
 					{
 						TeamId:    team.Id,
-						RoleNames: []string{"GROUP_OWNER"},
+						RoleNames: &[]string{"GROUP_OWNER"},
 					},
 				},
 			).Execute()

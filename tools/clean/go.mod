@@ -13,7 +13,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	github.com/aws/aws-sdk-go v1.45.25
 	github.com/jedib0t/go-pretty/v6 v6.4.8
-	go.mongodb.org/atlas-sdk/v20231001002 v20231001002.0.0
+	go.mongodb.org/atlas-sdk/v20231115004 v20231115004.0.0
 	google.golang.org/api v0.147.0
 )
 

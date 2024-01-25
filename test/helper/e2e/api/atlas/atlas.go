@@ -7,7 +7,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -75,7 +75,7 @@ func (a *Atlas) GetDeployments(projectID string) []admin.AdvancedClusterDescript
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(reply.Results, "listing legacy deployments in project %s", projectID)
 
-	return reply.Results
+	return *reply.Results
 }
 
 func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.AdvancedClusterDescription, error) {
@@ -151,7 +151,7 @@ func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, 
 func (a *Atlas) GetOrgUsers() ([]admin.CloudAppUser, error) {
 	users, _, err := a.Client.OrganizationsApi.ListOrganizationUsers(context.Background(), a.OrgID).Execute()
 
-	return users.Results, err
+	return *users.Results, err
 }
 
 func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotAWSExportBucket, error) {
