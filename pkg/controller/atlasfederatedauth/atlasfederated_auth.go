@@ -102,6 +102,9 @@ func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, fe
 		}
 
 		idpUpdate := admin.IdentityProviderUpdate{
+			DisplayName:     idp.DisplayName,
+			IssuerUri:       idp.IssuerUri,
+			SsoUrl:          idp.SsoUrl,
 			SsoDebugEnabled: fedauth.Spec.SSODebugEnabled,
 		}
 		_, _, err := client.FederatedAuthenticationApi.UpdateIdentityProvider(ctx, federationSettingsID, idp.GetId(), &idpUpdate).Execute()
