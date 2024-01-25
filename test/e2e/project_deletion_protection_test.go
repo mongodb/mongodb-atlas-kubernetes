@@ -6,29 +6,24 @@ import (
 	"os"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
-
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
-	"github.com/google/uuid"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloudaccess"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
@@ -77,31 +72,30 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 		projectName := fmt.Sprintf("project-deletion-protection-e2e-%s", uuid.New().String()[0:6])
 
 		By("Creating a project outside the operator", func() {
-			atlasProject, _, err := atlasClient.Client.Projects.Create(
-				ctx, &mongodbatlas.Project{
-					OrgID: os.Getenv("MCLI_ORG_ID"),
+			atlasProject, _, err := atlasClient.Client.ProjectsApi.CreateProject(
+				ctx, &admin.Group{
+					OrgId: os.Getenv("MCLI_ORG_ID"),
 					Name:  projectName,
 				},
-				&mongodbatlas.CreateProjectOptions{},
-			)
+			).Execute()
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasProject).ToNot(BeNil())
 
-			projectID = atlasProject.ID
+			projectID = atlasProject.GetId()
 		})
 
 		By("Adding IP Access List entry to the project", func() {
-			_, _, err := atlasClient.Client.ProjectIPAccessList.Create(
+			_, _, err := atlasClient.Client.ProjectIPAccessListApi.CreateProjectIpAccessList(
 				ctx,
 				projectID,
-				[]*mongodbatlas.ProjectIPAccessList{
+				&[]admin.NetworkPermissionEntry{
 					{
-						CIDRBlock: "192.168.0.0/24",
-						GroupID:   projectID,
+						CidrBlock: toptr.MakePtr("192.168.0.0/24"),
+						GroupId:   &projectID,
 					},
 				},
-			)
+			).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -110,33 +104,33 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 			awsRoleARN = assumedRoleArn
 
-			cloudProvider, _, err := atlasClient.Client.CloudProviderAccess.CreateRole(
+			cloudProvider, _, err := atlasClient.Client.CloudProviderAccessApi.CreateCloudProviderAccessRole(
 				ctx,
 				projectID,
-				&mongodbatlas.CloudProviderAccessRoleRequest{
+				&admin.CloudProviderAccessRole{
 					ProviderName: "AWS",
 				},
-			)
+			).Execute()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(cloudaccess.AddAtlasStatementToAWSIAMRole(cloudProvider.AtlasAWSAccountARN, cloudProvider.AtlasAssumedRoleExternalID, projectName)).
+			Expect(cloudaccess.AddAtlasStatementToAWSIAMRole(cloudProvider.GetAtlasAWSAccountArn(), cloudProvider.GetAtlasAssumedRoleExternalId(), projectName)).
 				To(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, _, err := atlasClient.Client.CloudProviderAccess.AuthorizeRole(
+				_, _, err := atlasClient.Client.CloudProviderAccessApi.AuthorizeCloudProviderAccessRole(
 					ctx,
 					projectID,
-					cloudProvider.RoleID,
-					&mongodbatlas.CloudProviderAccessRoleRequest{
+					cloudProvider.GetRoleId(),
+					&admin.CloudProviderAccessRole{
 						ProviderName:      "AWS",
-						IAMAssumedRoleARN: toptr.MakePtr(assumedRoleArn),
+						IamAssumedRoleArn: toptr.MakePtr(assumedRoleArn),
 					},
-				)
+				).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 			}).WithTimeout(time.Minute).WithPolling(time.Second * 15).Should(Succeed())
 
-			atlasRoleID = cloudProvider.RoleID
-			atlasAccountARN = cloudProvider.AtlasAWSAccountARN
+			atlasRoleID = cloudProvider.GetRoleId()
+			atlasAccountARN = cloudProvider.GetAtlasAWSAccountArn()
 		})
 
 		By("Adding Network peering to the project", func() {
@@ -149,83 +143,83 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			AwsVpcID, err = aws.InitNetwork(projectName, "10.0.0.0/24", "eu-west-2", map[string]string{"subnet-1": "10.0.0.0/24"}, true)
 			Expect(err).ToNot(HaveOccurred())
 
-			c, _, err := atlasClient.Client.Containers.Create(ctx, projectID, &mongodbatlas.Container{
-				ProviderName:   "AWS",
-				RegionName:     "EU_WEST_2",
-				AtlasCIDRBlock: "192.168.224.0/21",
-			})
+			c, _, err := atlasClient.Client.NetworkPeeringApi.CreatePeeringContainer(ctx, projectID, &admin.CloudProviderContainer{
+				ProviderName:   toptr.MakePtr("AWS"),
+				RegionName:     toptr.MakePtr("EU_WEST_2"),
+				AtlasCidrBlock: toptr.MakePtr("192.168.224.0/21"),
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
 
-			p, _, err := atlasClient.Client.Peers.Create(ctx, projectID, &mongodbatlas.Peer{
-				ProviderName:        "AWS",
-				AccepterRegionName:  "eu-west-2",
-				ContainerID:         c.ID,
-				AWSAccountID:        awsAccountID,
-				RouteTableCIDRBlock: "10.0.0.0/24",
-				VpcID:               AwsVpcID,
-			})
+			p, _, err := atlasClient.Client.NetworkPeeringApi.CreatePeeringConnection(ctx, projectID, &admin.BaseNetworkPeeringConnectionSettings{
+				ProviderName:        toptr.MakePtr("AWS"),
+				AccepterRegionName:  toptr.MakePtr("eu-west-2"),
+				ContainerId:         c.GetId(),
+				AwsAccountId:        toptr.MakePtr(awsAccountID),
+				RouteTableCidrBlock: toptr.MakePtr("10.0.0.0/24"),
+				VpcId:               toptr.MakePtr(AwsVpcID),
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(p).ToNot(BeNil())
 
 			Eventually(func(g Gomega) {
-				p, _, err = atlasClient.Client.Peers.Get(ctx, projectID, p.ID)
+				p, _, err = atlasClient.Client.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, p.GetId()).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(p).ToNot(BeNil())
-				g.Expect(p.StatusName).To(Equal("PENDING_ACCEPTANCE"))
+				g.Expect(p.GetStatusName()).To(Equal("PENDING_ACCEPTANCE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
-			Expect(aws.AcceptVpcPeeringConnection(p.ConnectionID, "eu-west-2")).To(Succeed())
+			Expect(aws.AcceptVpcPeeringConnection(p.GetConnectionId(), "eu-west-2")).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				pCheck, _, err := atlasClient.Client.Peers.Get(ctx, projectID, p.ID)
+				pCheck, _, err := atlasClient.Client.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, p.GetId()).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(pCheck).ToNot(BeNil())
-				g.Expect(pCheck.StatusName).To(Equal("AVAILABLE"))
+				g.Expect(pCheck.GetStatusName()).To(Equal("AVAILABLE"))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
-			networkPeerID = p.ID
+			networkPeerID = p.GetId()
 		})
 
 		By("Adding integration to the project", func() {
-			_, _, err := atlasClient.Client.Integrations.Create(
+			_, _, err := atlasClient.Client.ThirdPartyIntegrationsApi.CreateThirdPartyIntegration(
 				ctx,
-				projectID,
 				"PAGER_DUTY",
-				&mongodbatlas.ThirdPartyIntegration{
-					Type:       "PAGER_DUTY",
-					Region:     "EU",
-					ServiceKey: os.Getenv("PAGER_DUTY_SERVICE_KEY"),
+				projectID,
+				&admin.ThridPartyIntegration{
+					Type:       toptr.MakePtr("PAGER_DUTY"),
+					Region:     toptr.MakePtr("EU"),
+					ServiceKey: toptr.MakePtr(os.Getenv("PAGER_DUTY_SERVICE_KEY")),
 				},
-			)
+			).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Maintenance Window to the project", func() {
-			_, err := atlasClient.Client.MaintenanceWindows.Update(ctx, projectID, &mongodbatlas.MaintenanceWindow{
+			_, _, err := atlasClient.Client.MaintenanceWindowsApi.UpdateMaintenanceWindow(ctx, projectID, &admin.GroupMaintenanceWindow{
 				DayOfWeek: 7,
-				HourOfDay: toptr.MakePtr(20),
-			})
+				HourOfDay: 20,
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Auditing to the project", func() {
-			_, _, err := atlasClient.Client.Auditing.Configure(ctx, projectID, &mongodbatlas.Auditing{
-				AuditFilter: `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
+			_, _, err := atlasClient.Client.AuditingApi.UpdateAuditingConfiguration(ctx, projectID, &admin.AuditLog{
+				AuditFilter: toptr.MakePtr(`{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`),
 				Enabled:     toptr.MakePtr(true),
-			})
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Settings to the project", func() {
-			_, _, err := atlasClient.Client.Projects.UpdateProjectSettings(ctx, projectID, &mongodbatlas.ProjectSettings{
+			_, _, err := atlasClient.Client.ProjectsApi.UpdateProjectSettings(ctx, projectID, &admin.GroupSettings{
 				IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
 				IsDataExplorerEnabled:                       toptr.MakePtr(true),
 				IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
 				IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
 				IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
 				IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
-			})
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -235,70 +229,69 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			customerMasterKeyID, err = awsAction.CreateKMS(fmt.Sprintf("%s-kms", projectName), "eu-west-2", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, _, err = atlasClient.Client.EncryptionsAtRest.Create(ctx, &mongodbatlas.EncryptionAtRest{
-				GroupID: projectID,
-				AwsKms: mongodbatlas.AwsKms{
+			_, _, err = atlasClient.Client.EncryptionAtRestUsingCustomerKeyManagementApi.UpdateEncryptionAtRest(ctx, projectID, &admin.EncryptionAtRest{
+				AwsKms: &admin.AWSKMSConfiguration{
 					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: customerMasterKeyID,
-					Region:              "EU_WEST_2",
-					RoleID:              atlasRoleID,
+					CustomerMasterKeyID: toptr.MakePtr(customerMasterKeyID),
+					Region:              toptr.MakePtr("EU_WEST_2"),
+					RoleId:              toptr.MakePtr(atlasRoleID),
 				},
-			})
+			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Custom Roles to the project", func() {
-			_, _, err := atlasClient.Client.CustomDBRoles.Create(
+			_, _, err := atlasClient.Client.CustomDatabaseRolesApi.CreateCustomDatabaseRole(
 				ctx,
 				projectID,
-				&mongodbatlas.CustomDBRole{
+				&admin.UserCustomDBRole{
 					RoleName:       "testRole",
 					InheritedRoles: nil,
-					Actions: []mongodbatlas.Action{
+					Actions: []admin.DatabasePrivilegeAction{
 						{
 							Action: "INSERT",
-							Resources: []mongodbatlas.Resource{
+							Resources: []admin.DatabasePermittedNamespaceResource{
 								{
-									DB:         toptr.MakePtr("testDB"),
-									Collection: toptr.MakePtr("testCollection"),
+									Db:         "testDB",
+									Collection: "testCollection",
 								},
 							},
 						},
 					},
 				},
-			)
+			).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Assign team to the project", func() {
-			users, _, err := atlasClient.Client.AtlasUsers.List(ctx, projectID, &mongodbatlas.ListOptions{})
+			users, _, err := atlasClient.Client.OrganizationsApi.ListOrganizationUsers(ctx, atlasClient.OrgID).Execute()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(users).ToNot(BeEmpty())
+			Expect(users.GetTotalCount()).ToNot(Equal(0))
 
-			usernames = make([]string, 0, len(users))
-			for _, user := range users {
+			usernames = make([]string, 0, users.GetTotalCount())
+			for _, user := range users.GetResults() {
 				usernames = append(usernames, user.Username)
 			}
 
-			team := &mongodbatlas.Team{
+			team := &admin.Team{
 				Name:      fmt.Sprintf("%s-team", projectName),
 				Usernames: usernames,
 			}
 
-			team, _, err = atlasClient.Client.Teams.Create(ctx, os.Getenv("MCLI_ORG_ID"), team)
+			team, _, err = atlasClient.Client.TeamsApi.CreateTeam(ctx, atlasClient.OrgID, team).Execute()
 			Expect(err).ToNot(HaveOccurred())
-			teamID = team.ID
+			teamID = team.GetId()
 
-			_, _, err = atlasClient.Client.Projects.AddTeamsToProject(
+			_, _, err = atlasClient.Client.TeamsApi.AddAllTeamsToProject(
 				ctx,
 				projectID,
-				[]*mongodbatlas.ProjectTeam{
+				&[]admin.TeamRole{
 					{
-						TeamID:    team.ID,
+						TeamId:    team.Id,
 						RoleNames: []string{"GROUP_OWNER"},
 					},
 				},
-			)
+			).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -314,7 +307,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				},
 			}
 			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
-			Expect(testData.K8SClient.Create(ctx, testData.Teams[0]))
+			Expect(testData.K8SClient.Create(ctx, testData.Teams[0])).To(Succeed())
 
 			akoProject := &mdbv1.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -897,14 +890,14 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Deleting Team", func() {
 			if teamID != "" {
-				_, err := atlasClient.Client.Teams.RemoveTeamFromProject(ctx, projectID, teamID)
+				_, err := atlasClient.Client.TeamsApi.RemoveProjectTeam(ctx, projectID, teamID).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
-				_, err = atlasClient.Client.Teams.RemoveTeamFromOrganization(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
+				_, _, err = atlasClient.Client.TeamsApi.DeleteTeam(ctx, atlasClient.OrgID, teamID).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					_, _, err := atlasClient.Client.Teams.Get(ctx, os.Getenv("MCLI_ORG_ID"), teamID)
+					_, _, err := atlasClient.Client.TeamsApi.GetTeamById(ctx, atlasClient.OrgID, teamID).Execute()
 					g.Expect(err).To(HaveOccurred())
 				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 			}
@@ -912,11 +905,11 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Deleting Network Peering", func() {
 			if networkPeerID != "" {
-				_, err := atlasClient.Client.Peers.Delete(ctx, projectID, networkPeerID)
+				_, _, err := atlasClient.Client.NetworkPeeringApi.DeletePeeringConnection(ctx, projectID, networkPeerID).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					_, _, err := atlasClient.Client.Peers.Get(ctx, projectID, networkPeerID)
+					_, _, err := atlasClient.Client.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, networkPeerID).Execute()
 					g.Expect(err).To(HaveOccurred())
 				}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 			}
@@ -924,7 +917,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Deleting Project", func() {
 			Eventually(func(g Gomega) {
-				_, err := atlasClient.Client.Projects.Delete(ctx, projectID)
+				_, _, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, projectID).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})

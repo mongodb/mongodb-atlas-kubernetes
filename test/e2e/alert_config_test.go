@@ -6,10 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/types"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
@@ -158,14 +157,15 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertCo
 	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 	Expect(userData.Project.Status.AlertConfigurations).Should(HaveLen(len(alertConfigs)))
 
-	atlasClient := atlas.GetClientOrFail()
-	alertConfigurations, _, err := atlasClient.Client.AlertConfigurations.List(userData.Context, userData.Project.ID(), nil)
+	alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsApi.
+		ListAlertConfigurations(userData.Context, userData.Project.ID()).
+		Execute()
 	Expect(err).ShouldNot(HaveOccurred())
-	Expect(alertConfigurations).Should(HaveLen(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
+	Expect(alertConfigurations.GetTotalCount()).Should(Equal(len(alertConfigs)), "Atlas alert configurations", alertConfigurations)
 
-	atlasIDList := make([]string, 0, len(alertConfigurations))
-	for _, alertConfig := range alertConfigurations {
-		atlasIDList = append(atlasIDList, alertConfig.ID)
+	atlasIDList := make([]string, 0, alertConfigurations.GetTotalCount())
+	for _, alertConfig := range alertConfigurations.GetResults() {
+		atlasIDList = append(atlasIDList, alertConfig.GetId())
 	}
 	statusIDList := make([]string, 0, len(userData.Project.Status.AlertConfigurations))
 	for _, alertConfig := range userData.Project.Status.AlertConfigurations {
@@ -264,10 +264,12 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		By("Verifying the Datadog config in Atlas", func() {
 			atlasClient := atlas.GetClientOrFail()
 			Eventually(func(g Gomega) {
-				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurations.List(testData.Context, testData.Project.ID(), nil)
+				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurationsApi.
+					ListAlertConfigurations(testData.Context, testData.Project.ID()).
+					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(atlasAlertConfigs).Should(HaveLen(len(alertConfigs)))
-				g.Expect(atlasAlertConfigs[0].Notifications[0].DatadogAPIKey).ShouldNot(BeEmpty())
+				g.Expect(atlasAlertConfigs.GetTotalCount()).Should(Equal(len(alertConfigs)))
+				g.Expect(atlasAlertConfigs.GetResults()[0].Notifications[0].GetDatadogApiKey()).ShouldNot(BeEmpty())
 			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
 	})
