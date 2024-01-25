@@ -1,13 +1,15 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"testing"
 
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
 	"github.com/go-test/deep"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
@@ -15,10 +17,10 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		orgID := "test-org"
 		idpID := "test-idp"
 		projectName := "test-project"
-		projectId := "test-project-id"
+		projectID := "test-project-id"
 
 		projectNameToID := map[string]string{
-			projectName: projectId,
+			projectName: projectID,
 		}
 
 		spec := &AtlasFederatedAuthSpec{
@@ -58,7 +60,7 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 					Id:                &idpID,
 					RoleAssignments: &[]admin.RoleAssignment{
 						{
-							GroupId: &projectId,
+							GroupId: &projectID,
 							Role:    &spec.RoleMappings[0].RoleAssignments[0].Role,
 						},
 					},
