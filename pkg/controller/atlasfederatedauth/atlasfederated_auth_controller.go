@@ -47,16 +47,16 @@ type AtlasFederatedAuthReconciler struct {
 func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasfederatedauth", req.NamespacedName)
 
-	fedauth := mdbv1.AtlasFederatedAuth{}
-	result := customresource.PrepareResource(ctx, r.Client, req, &fedauth, log)
+	fedauth := &mdbv1.AtlasFederatedAuth{}
+	result := customresource.PrepareResource(ctx, r.Client, req, fedauth, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
-	if customresource.ReconciliationShouldBeSkipped(&fedauth) {
+	if customresource.ReconciliationShouldBeSkipped(fedauth) {
 		log.Infow(fmt.Sprintf("-> Skipping AtlasFederatedAuth reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", fedauth.Spec)
 		if !fedauth.GetDeletionTimestamp().IsZero() {
-			if err := customresource.ManageFinalizer(ctx, r.Client, &fedauth, customresource.UnsetFinalizer); err != nil {
+			if err := customresource.ManageFinalizer(ctx, r.Client, fedauth, customresource.UnsetFinalizer); err != nil {
 				result = workflow.Terminate(workflow.Internal, err.Error())
 				log.Errorw("Failed to remove finalizer", "error", err)
 				return result.ReconcileResult(), nil
@@ -65,18 +65,18 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return workflow.OK().ReconcileResult(), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, &fedauth, log, ctx)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, fedauth, log, ctx)
 	log.Infow("-> Starting AtlasFederatedAuth reconciliation")
 
-	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, &fedauth)
+	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, fedauth)
 
-	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, &fedauth, r.Log)
+	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, fedauth, r.Log)
 	if !resourceVersionIsValid.IsOk() {
 		r.Log.Debugf("federated auth validation result: %v", resourceVersionIsValid)
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	if !r.AtlasProvider.IsResourceSupported(&fedauth) {
+	if !r.AtlasProvider.IsResourceSupported(fedauth) {
 		result := workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasFederatedAuth is not supported by Atlas for government").
 			WithoutRetry()
 		setCondition(workflowCtx, status.FederatedAuthReadyType, result)
@@ -92,7 +92,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	workflowCtx.SdkClient = atlasClient
 	workflowCtx.OrgID = orgID
 
-	owner, err := customresource.IsOwner(&fedauth, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
+	owner, err := customresource.IsOwner(fedauth, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
@@ -112,7 +112,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return result.ReconcileResult(), nil
 	}
 
-	result = r.ensureFederatedAuth(workflowCtx, &fedauth)
+	result = r.ensureFederatedAuth(workflowCtx, fedauth)
 	workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
 	workflowCtx.SetConditionFromResult(status.ReadyType, result)
 
