@@ -114,7 +114,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 						Name:      connectionSecret.Name,
 						Namespace: connectionSecret.Namespace,
 					},
-					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com"),
+					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com", "mongodb.com"),
 					DomainRestrictionEnabled: toptr.MakePtr(true),
 					SSODebugEnabled:          toptr.MakePtr(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
@@ -137,7 +137,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			fedAuth := &mdbv1.AtlasFederatedAuth{}
 			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 
-			fedAuth.Spec.DomainAllowList = originalConnectedOrgConfig.GetDomainAllowList()
+			fedAuth.Spec.DomainAllowList = append(originalConnectedOrgConfig.GetDomainAllowList(), "mongodb.com")
 			fedAuth.Spec.DomainRestrictionEnabled = &originalConnectedOrgConfig.DomainRestrictionEnabled
 			fedAuth.Spec.SSODebugEnabled = originalIdp.SsoDebugEnabled
 			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.GetPostAuthRoleGrants()
