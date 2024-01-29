@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"path"
 	"strings"
 	"time"
 )
 
 const (
-	ghURL = "https://github.com"
+	ghURL = "https://github.com/"
 
 	akoAuthor = "mongodb"
 
@@ -57,7 +56,7 @@ func (tt TestType) String() string {
 type runID int64
 
 func (rid runID) String() string {
-	return path.Join(ghURL, fmt.Sprintf(runsPathFmt, akoAuthor, ako, rid))
+	return fmt.Sprintf("%s%s", ghURL, fmt.Sprintf(runsPathFmt, akoAuthor, ako, rid))
 }
 
 type jobID struct {
@@ -67,7 +66,7 @@ type jobID struct {
 }
 
 func (jid jobID) URL() string {
-	return path.Join(ghURL, fmt.Sprintf(jobsPathFmt, akoAuthor, ako, jid.RunID, jid.JobID))
+	return fmt.Sprintf("%s%s", ghURL, fmt.Sprintf(jobsPathFmt, akoAuthor, ako, jid.RunID, jid.JobID))
 }
 
 func (jid jobID) String() string {
