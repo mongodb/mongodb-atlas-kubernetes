@@ -1,9 +1,6 @@
 name: E2E Gov tests
 
 on:
-  pull_request:
-   types:
-      - closed
   workflow_call:
 
 jobs:

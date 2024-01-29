@@ -16,6 +16,7 @@ on:
     types: [labeled]
     paths-ignore:
       - 'docs/**'
+  merge_group:
   workflow_dispatch:
 
 concurrency:
@@ -45,7 +46,7 @@ jobs:
       - validate-manifests
       - check-licenses
       - cloud-tests-filter
-    if: (needs.cloud-tests-filter.outputs.run-cloud-tests == 'true')
+    if: (github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true')
     uses: ./.github/workflows/cloud-tests.yml
     secrets: inherit
     with:
