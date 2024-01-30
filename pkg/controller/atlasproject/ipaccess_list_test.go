@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -56,7 +56,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -72,7 +72,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{TotalCount: 0}, nil, nil
 				},
@@ -88,7 +88,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -123,7 +123,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -162,7 +162,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -203,7 +203,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 func TestEnsureIPAccessList(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed to retrieve data")
 				},
@@ -222,7 +222,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -271,7 +271,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 
 	t.Run("should reconcile successfully", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectIPAccessLists{
 						Results: []mongodbatlas.ProjectIPAccessList{
@@ -341,7 +341,7 @@ func TestSyncIPAccessList(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
 					return nil, errors.New("failed")
 				},
@@ -367,7 +367,7 @@ func TestSyncIPAccessList(t *testing.T) {
 			},
 		}
 		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlas_mock.ProjectIPAccessListClientMock{
+			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
 				CreateFunc: func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
 					return nil, nil, errors.New("failed")
 				},

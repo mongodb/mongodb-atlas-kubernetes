@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 
@@ -88,7 +88,7 @@ func TestReconcile(t *testing.T) {
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()
-		fedAuthAPI := atlas_mock.NewFederatedAuthenticationApiMock(t)
+		fedAuthAPI := atlasmock.NewFederatedAuthenticationApiMock(t)
 		fedAuthAPI.EXPECT().GetFederationSettings(context.Background(), orgID).
 			Return(admin.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
@@ -133,7 +133,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		groupAPI := atlas_mock.NewProjectsApiMock(t)
+		groupAPI := atlasmock.NewProjectsApiMock(t)
 		groupAPI.EXPECT().ListProjects(context.Background()).
 			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
 		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).
@@ -151,7 +151,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		atlasProvider := atlas_mock.TestProvider{
+		atlasProvider := atlasmock.TestProvider{
 			SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
 				return &admin.APIClient{
 					ProjectsApi:                groupAPI,

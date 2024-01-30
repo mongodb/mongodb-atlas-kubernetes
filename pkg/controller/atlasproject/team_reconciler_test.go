@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -42,7 +42,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource was not found in Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &atlas_mock.TeamsClientMock{
+			Teams: &atlasmock.TeamsClientMock{
 				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ResourceNotFound}
 				},
@@ -66,7 +66,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return error when failed to fetch the team from Atlas", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &atlas_mock.TeamsClientMock{
+			Teams: &atlasmock.TeamsClientMock{
 				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return nil, &mongodbatlas.Response{}, errors.New("unavailable")
 				},
@@ -90,7 +90,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return false when resource are equal", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &atlas_mock.TeamsClientMock{
+			Teams: &atlasmock.TeamsClientMock{
 				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Team{
 						ID:        "team-id-1",
@@ -122,7 +122,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 
 	t.Run("should return true when resource are different", func(t *testing.T) {
 		atlasClient := mongodbatlas.Client{
-			Teams: &atlas_mock.TeamsClientMock{
+			Teams: &atlasmock.TeamsClientMock{
 				GetFunc: func(orgID string, teamID string) (*mongodbatlas.Team, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Team{
 						ID:        "team-id-1",
