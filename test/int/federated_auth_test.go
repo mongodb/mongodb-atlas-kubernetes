@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +26,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	var originalConnectedOrgConfig *admin.ConnectedOrgConfig
 	var originalFederationSettings *admin.OrgFederationSettings
-	var originalIdp *admin.FederationSamlIdentityProvider
+	var originalIdp *admin.FederationIdentityProvider
 
 	resourceName := "fed-auth-test"
 	ctx := context.Background()
@@ -41,13 +41,17 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 		})
 
 		By("Getting original IDP", func() {
-			idp, _, err := atlasClient.FederatedAuthenticationApi.
-				GetIdentityProvider(ctx, originalFederationSettings.GetId(), originalFederationSettings.GetIdentityProviderId()).
-				Execute()
+			identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, originalFederationSettings.GetId()).Execute()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(idp).ShouldNot(BeNil())
 
-			originalIdp = idp
+			for _, identityProvider := range identityProviders.GetResults() {
+				idp := identityProvider
+				if identityProvider.GetOktaIdpId() == originalFederationSettings.GetIdentityProviderId() {
+					originalIdp = &idp
+				}
+			}
+
+			Expect(originalIdp).ShouldNot(BeNil())
 		})
 
 		By("Getting existing org config", func() {
@@ -110,7 +114,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 						Name:      connectionSecret.Name,
 						Namespace: connectionSecret.Namespace,
 					},
-					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com"),
+					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com", "mongodb.com"),
 					DomainRestrictionEnabled: toptr.MakePtr(true),
 					SSODebugEnabled:          toptr.MakePtr(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
@@ -133,7 +137,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			fedAuth := &mdbv1.AtlasFederatedAuth{}
 			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 
-			fedAuth.Spec.DomainAllowList = originalConnectedOrgConfig.GetDomainAllowList()
+			fedAuth.Spec.DomainAllowList = append(originalConnectedOrgConfig.GetDomainAllowList(), "mongodb.com")
 			fedAuth.Spec.DomainRestrictionEnabled = &originalConnectedOrgConfig.DomainRestrictionEnabled
 			fedAuth.Spec.SSODebugEnabled = originalIdp.SsoDebugEnabled
 			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.GetPostAuthRoleGrants()

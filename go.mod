@@ -24,7 +24,7 @@ require (
 	github.com/sethvargo/go-password v0.2.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/atlas v0.36.0
-	go.mongodb.org/atlas-sdk/v20231001002 v20231001002.0.0
+	go.mongodb.org/atlas-sdk/v20231115004 v20231115004.1.0
 	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.6.0
@@ -49,6 +49,7 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
 	go.opentelemetry.io/otel v1.22.0 // indirect

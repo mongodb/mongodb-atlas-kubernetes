@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -42,15 +42,15 @@ type AtlasFederatedAuthSpec struct {
 	RoleMappings []RoleMapping `json:"roleMappings,omitempty"`
 }
 
-func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID map[string]string) (*mongodbatlas.FederatedSettingsConnectedOrganization, error) {
+func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID map[string]string) (*admin.ConnectedOrgConfig, error) {
 	var errs []error
-	atlasRoleMappings := make([]*mongodbatlas.RoleMappings, 0, len(f.RoleMappings))
+	atlasRoleMappings := make([]admin.AuthFederationRoleMapping, 0, len(f.RoleMappings))
 
 	for i := range f.RoleMappings {
 		roleMapping := &f.RoleMappings[i]
-		atlasRoleAssignments := make([]*mongodbatlas.RoleAssignments, 0, len(roleMapping.RoleAssignments))
+		atlasRoleAssignments := make([]admin.RoleAssignment, 0, len(roleMapping.RoleAssignments))
 		for j := range roleMapping.RoleAssignments {
-			atlasRoleAssignment := &mongodbatlas.RoleAssignments{}
+			atlasRoleAssignment := admin.RoleAssignment{}
 			roleAssignment := &roleMapping.RoleAssignments[j]
 			if roleAssignment.ProjectName != "" {
 				id, ok := projectNameToID[roleAssignment.ProjectName]
@@ -58,27 +58,30 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 					errs = append(errs, fmt.Errorf("project name '%s' doesn't exists in the organization", roleAssignment.ProjectName))
 					continue
 				}
-				atlasRoleAssignment.GroupID = id
+				atlasRoleAssignment.SetGroupId(id)
 			} else {
-				atlasRoleAssignment.OrgID = orgID
+				atlasRoleAssignment.SetOrgId(orgID)
 			}
-			atlasRoleAssignment.Role = roleAssignment.Role
+			atlasRoleAssignment.SetRole(roleAssignment.Role)
 			atlasRoleAssignments = append(atlasRoleAssignments, atlasRoleAssignment)
 		}
-		atlasRoleMappings = append(atlasRoleMappings, &mongodbatlas.RoleMappings{
+		atlasRoleMappings = append(atlasRoleMappings, admin.AuthFederationRoleMapping{
 			ExternalGroupName: roleMapping.ExternalGroupName,
-			ID:                idpID,
-			RoleAssignments:   atlasRoleAssignments,
+			Id:                &idpID,
+			RoleAssignments:   &atlasRoleAssignments,
 		})
 	}
 
-	result := &mongodbatlas.FederatedSettingsConnectedOrganization{
-		DomainAllowList:          f.DomainAllowList,
-		DomainRestrictionEnabled: f.DomainRestrictionEnabled,
-		IdentityProviderID:       idpID,
-		OrgID:                    orgID,
-		PostAuthRoleGrants:       f.PostAuthRoleGrants,
-		RoleMappings:             atlasRoleMappings,
+	result := &admin.ConnectedOrgConfig{
+		DomainAllowList:          &f.DomainAllowList,
+		DomainRestrictionEnabled: *f.DomainRestrictionEnabled,
+		IdentityProviderId:       idpID,
+		OrgId:                    orgID,
+		PostAuthRoleGrants:       &f.PostAuthRoleGrants,
+	}
+
+	if len(atlasRoleMappings) > 0 {
+		result.SetRoleMappings(atlasRoleMappings)
 	}
 
 	return result, errors.Join(errs...)

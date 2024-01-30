@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	atlas_mock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -83,12 +83,12 @@ func TestDeploymentManaged(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ClusterNotFound}
 					},
 				},
-				ServerlessInstances: &atlas_mock.ServerlessInstancesClientMock{
+				ServerlessInstances: &atlasmock.ServerlessInstancesClientMock{
 					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceNotFound}
 					},
@@ -129,7 +129,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return tc.inAtlas, nil, nil
 					},
@@ -170,12 +170,12 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			project := testProject(fakeNamespace)
 			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceFromClusterAPI}
 					},
 				},
-				ServerlessInstances: &atlas_mock.ServerlessInstancesClientMock{
+				ServerlessInstances: &atlasmock.ServerlessInstancesClientMock{
 					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
 						return tc.inAtlas, nil, nil
 					},
@@ -275,7 +275,7 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
 				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
 					return nil, nil
 				},
@@ -322,7 +322,7 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
 				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
 					return nil, nil
 				},
@@ -374,7 +374,7 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			advancedClusterClient := &atlas_mock.AdvancedClustersClientMock{
+			advancedClusterClient := &atlasmock.AdvancedClustersClientMock{
 				DeleteFunc: func(groupID string, clusterName string) (*mongodbatlas.Response, error) {
 					return nil, nil
 				},
@@ -449,7 +449,7 @@ func TestCleanupBindings(t *testing.T) {
 	})
 
 	t.Run("last deployment's referenced backups finalizers are cleaned up", func(t *testing.T) {
-		atlasProvider := &atlas_mock.TestProvider{
+		atlasProvider := &atlasmock.TestProvider{
 			IsSupportedFunc: func() bool {
 				return true
 			},
@@ -481,7 +481,7 @@ func TestCleanupBindings(t *testing.T) {
 	})
 
 	t.Run("referenced backups finalizers are NOT cleaned up if reachable by other deployment", func(t *testing.T) {
-		atlasProvider := &atlas_mock.TestProvider{
+		atlasProvider := &atlasmock.TestProvider{
 			IsSupportedFunc: func() bool {
 				return true
 			},
@@ -518,7 +518,7 @@ func TestCleanupBindings(t *testing.T) {
 	})
 
 	t.Run("policy finalizer stays if still referenced", func(t *testing.T) {
-		atlasProvider := &atlas_mock.TestProvider{
+		atlasProvider := &atlasmock.TestProvider{
 			IsSupportedFunc: func() bool {
 				return true
 			},
@@ -869,10 +869,10 @@ func TestReconciliation(t *testing.T) {
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()
-		atlasProvider := &atlas_mock.TestProvider{
+		atlasProvider := &atlasmock.TestProvider{
 			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 				return &mongodbatlas.Client{
-					AdvancedClusters: &atlas_mock.AdvancedClustersClientMock{
+					AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
 						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
 							return &mongodbatlas.AdvancedCluster{
 								ID:            "123789",
@@ -904,12 +904,12 @@ func TestReconciliation(t *testing.T) {
 							return nil, nil
 						},
 					},
-					GlobalClusters: &atlas_mock.GlobalClustersClientMock{
+					GlobalClusters: &atlasmock.GlobalClustersClientMock{
 						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.GlobalCluster, *mongodbatlas.Response, error) {
 							return &mongodbatlas.GlobalCluster{}, nil, nil
 						},
 					},
-					CloudProviderSnapshotBackupPolicies: &atlas_mock.CloudProviderSnapshotBackupPoliciesClientMock{
+					CloudProviderSnapshotBackupPolicies: &atlasmock.CloudProviderSnapshotBackupPoliciesClientMock{
 						GetFunc: func(projectID string, clusterName string) (*mongodbatlas.CloudProviderSnapshotBackupPolicy, *mongodbatlas.Response, error) {
 							return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 								ClusterID:             "123789",

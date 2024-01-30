@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20231001002/admin"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -1413,7 +1413,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 								CloudProvider:    toptr.MakePtr("AWS"),
 								RegionName:       toptr.MakePtr("US_WEST_1"),
 								ShouldCopyOplogs: toptr.MakePtr(false),
-								Frequencies:      []string{"MONTHLY"},
+								Frequencies:      &[]string{"MONTHLY"},
 							},
 						},
 					)
@@ -1453,7 +1453,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 								CloudProvider:    toptr.MakePtr("AWS"),
 								RegionName:       toptr.MakePtr("US_WEST_1"),
 								ShouldCopyOplogs: toptr.MakePtr(false),
-								Frequencies:      []string{"MONTHLY"},
+								Frequencies:      &[]string{"MONTHLY"},
 							},
 						},
 					)

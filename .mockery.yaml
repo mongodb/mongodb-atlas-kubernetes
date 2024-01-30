@@ -1,0 +1,11 @@
+with-expecter: true
+disable-version-string: true
+dir: internal/mocks/atlas
+outpkg: atlas
+filename: "{{ .InterfaceName | snakecase }}.go"
+mockname: "{{.InterfaceName}}Mock"
+packages:
+  go.mongodb.org/atlas-sdk/v20231115004/admin:
+    interfaces:
+      ProjectsApi:
+      FederatedAuthenticationApi:

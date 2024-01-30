@@ -3,9 +3,10 @@ package v1
 import (
 	"testing"
 
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -16,9 +17,10 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		orgID := "test-org"
 		idpID := "test-idp"
 		projectName := "test-project"
+		projectID := "test-project-id"
 
 		projectNameToID := map[string]string{
-			projectName: "test-project-id",
+			projectName: projectID,
 		}
 
 		spec := &AtlasFederatedAuthSpec{
@@ -46,21 +48,20 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 		assert.NoError(t, err, "ToAtlas() failed")
 		assert.NotNil(t, result, "ToAtlas() result is nil")
 
-		expected := &mongodbatlas.FederatedSettingsConnectedOrganization{
-			DomainAllowList:          spec.DomainAllowList,
-			DomainRestrictionEnabled: spec.DomainRestrictionEnabled,
-			IdentityProviderID:       idpID,
-			OrgID:                    orgID,
-			PostAuthRoleGrants:       spec.PostAuthRoleGrants,
-			RoleMappings: []*mongodbatlas.RoleMappings{
+		expected := &admin.ConnectedOrgConfig{
+			DomainAllowList:          &spec.DomainAllowList,
+			DomainRestrictionEnabled: *spec.DomainRestrictionEnabled,
+			IdentityProviderId:       idpID,
+			OrgId:                    orgID,
+			PostAuthRoleGrants:       &spec.PostAuthRoleGrants,
+			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
-					ID:                idpID,
-					RoleAssignments: []*mongodbatlas.RoleAssignments{
+					Id:                &idpID,
+					RoleAssignments: &[]admin.RoleAssignment{
 						{
-							GroupID: projectNameToID[projectName],
-							OrgID:   "",
-							Role:    spec.RoleMappings[0].RoleAssignments[0].Role,
+							GroupId: &projectID,
+							Role:    &spec.RoleMappings[0].RoleAssignments[0].Role,
 						},
 					},
 				},
