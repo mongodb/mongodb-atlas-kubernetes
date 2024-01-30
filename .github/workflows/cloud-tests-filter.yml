@@ -18,7 +18,7 @@ jobs:
           run-cloud-tests: ${{ steps.tests-filter.outputs.run-cloud-tests }}
         steps:
         - uses: actions/checkout@v4
-        - uses: dorny/paths-filter@v2
+        - uses: dorny/paths-filter@v3
           id: paths-filter
           with:
             # production code also includes changes to e2e and int tests,
