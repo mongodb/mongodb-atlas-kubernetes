@@ -158,7 +158,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			mergedDeployment, atlasDeployment, err := mergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
+			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), &mergedDeployment, &atlasDeployment)
 			Expect(diff).To(BeEmpty())
 
 			for _, check := range additionalChecks {
@@ -177,7 +177,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			mergedDeployment, atlasDeployment, err := mergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.DeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
+			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), &mergedDeployment, &atlasDeployment)
 			Expect(diff).To(BeEmpty())
 
 			for _, check := range additionalChecks {
@@ -403,7 +403,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", func() {
+	Describe("Create/Update the deployment (more complex scenario)", Label("int", "create-update-complex-deployment", "slow"), func() {
 		It("Should be created", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = string(mdbv1.TypeReplicaSet)
@@ -688,7 +688,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
-				// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = toptr.MakePtr(true)
+				// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = pointer.MakePtr(true)
 				performUpdate(30 * time.Minute)
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.AdvancedClusterDescription) {
