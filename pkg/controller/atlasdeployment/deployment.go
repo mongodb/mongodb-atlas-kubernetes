@@ -58,14 +58,14 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 		fillDefaultReplicationSpec(legacy)
 	}
 
-	for _, legacyResplicationSpec := range legacy.ReplicationSpecs {
-		resplicationSpec := &mdbv1.AdvancedReplicationSpec{
-			NumShards:     *convertLegacyInt64(legacyResplicationSpec.NumShards),
-			ZoneName:      legacyResplicationSpec.ZoneName,
+	for _, legacyReplicationSpec := range legacy.ReplicationSpecs {
+		replicationSpec := &mdbv1.AdvancedReplicationSpec{
+			NumShards:     *convertLegacyInt64(legacyReplicationSpec.NumShards),
+			ZoneName:      legacyReplicationSpec.ZoneName,
 			RegionConfigs: []*mdbv1.AdvancedRegionConfig{},
 		}
 
-		for legacyRegion, legacyRegionConfig := range legacyResplicationSpec.RegionsConfig {
+		for legacyRegion, legacyRegionConfig := range legacyReplicationSpec.RegionsConfig {
 			regionConfig := mdbv1.AdvancedRegionConfig{
 				AnalyticsSpecs: &mdbv1.Specs{
 					DiskIOPS:      legacy.ProviderSettings.DiskIOPS,
@@ -92,10 +92,10 @@ func convertLegacyReplicationSpecs(legacy *mdbv1.DeploymentSpec) ([]*mdbv1.Advan
 				RegionName:          legacyRegion,
 			}
 
-			resplicationSpec.RegionConfigs = append(resplicationSpec.RegionConfigs, &regionConfig)
+			replicationSpec.RegionConfigs = append(replicationSpec.RegionConfigs, &regionConfig)
 		}
 
-		result = append(result, resplicationSpec)
+		result = append(result, replicationSpec)
 	}
 
 	return result, nil

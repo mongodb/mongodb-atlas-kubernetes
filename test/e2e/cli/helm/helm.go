@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
 
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/test/e2e/config"
@@ -229,4 +230,31 @@ func prepareHelmChartArgs(input model.UserInputs, chartName string) []string {
 // values for the  atlas-deployment helm chart https://github.com/mongodb/helm-charts/blob/main/charts/atlas-deployment/values.yaml
 func pathToAtlasDeploymentValuesFile(input model.UserInputs) string {
 	return path.Join(input.ProjectPath, "values.yaml")
+}
+
+func GetReleasedChartVersion() (string, error) {
+	session := cli.Execute("helm", "show", "chart", "mongodb/mongodb-atlas-operator")
+	Eventually(session).Should(gexec.Exit(0))
+	return getVersionFromChartYAML(session.Out.Contents())
+}
+
+func getVersionFromChartYAML(chartYAML []byte) (string, error) {
+	chartInfo := map[string]any{}
+	err := yaml.Unmarshal(chartYAML, chartInfo)
+	if err != nil {
+		return "", err
+	}
+	version, ok := (chartInfo["version"]).(string)
+	if !ok {
+		return "", fmt.Errorf("not a string at version: %v", chartInfo["version"])
+	}
+	return version, nil
+}
+
+func GetDevelopmentMayorVersion() (string, error) {
+	majorVersion, err := os.ReadFile(config.MajorVersionFile)
+	if err != nil {
+		return "", err
+	}
+	return string(majorVersion), nil
 }

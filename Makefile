@@ -79,6 +79,9 @@ OPERATOR_NAMESPACE = mongodb-atlas-system
 ATLAS_DOMAIN = https://cloud-qa.mongodb.com/
 ATLAS_KEY_SECRET_NAME = mongodb-atlas-operator-api-key
 
+# golangci-lint
+GOLANGCI_LINT_VERSION := v1.54.2
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -155,9 +158,13 @@ $(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1"
 manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
 
+golangci-lint:
+	@which $@ >/dev/null 2>&1 || \
+	go install "github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)"
+
 .PHONY: lint
-lint:
-	golangci-lint run
+lint: golangci-lint
+	golangci-lint run --timeout 10m
 
 $(TIMESTAMPS_DIR)/fmt: $(GO_SOURCES)
 	@echo "goimports -local github.com/mongodb/mongodb-atlas-kubernetes -l -w \$$(GO_SOURCES)"
