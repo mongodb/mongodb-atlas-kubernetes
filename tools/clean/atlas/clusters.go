@@ -18,7 +18,7 @@ func (c *Cleaner) listClusters(ctx context.Context, projectID string) []admin.Ad
 		return nil
 	}
 
-	return clusters.Results
+	return *clusters.Results
 }
 
 func (c *Cleaner) deleteClusters(ctx context.Context, projectID string, clusters []admin.AdvancedClusterDescription) {
@@ -48,7 +48,7 @@ func (c *Cleaner) listServerlessClusters(ctx context.Context, projectID string) 
 		return nil
 	}
 
-	return clusters.Results
+	return *clusters.Results
 }
 
 func (c *Cleaner) deleteServerlessClusters(ctx context.Context, projectID string, clusters []admin.ServerlessInstanceDescription) {

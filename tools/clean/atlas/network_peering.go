@@ -26,7 +26,7 @@ func (c *Cleaner) listNetworkPeeringForProvider(ctx context.Context, projectID, 
 		fmt.Println(text.FgRed.Sprintf("\tFailed to list %s networking peering for project %s: %s", providerName, projectID, err))
 		return []admin.BaseNetworkPeeringConnectionSettings{}
 	}
-	return peers.Results
+	return *peers.Results
 }
 
 func (c *Cleaner) getNetworkPeeringContainer(ctx context.Context, projectID, ID string) *admin.CloudProviderContainer {

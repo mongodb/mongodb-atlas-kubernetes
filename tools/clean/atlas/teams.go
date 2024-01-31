@@ -24,7 +24,7 @@ func (c *Cleaner) listTeamsByOrg(ctx context.Context, orgID string) []admin.Team
 		return nil
 	}
 
-	return teamsList.Results
+	return *teamsList.Results
 }
 
 func (c *Cleaner) deleteTeam(ctx context.Context, orgID string, team *admin.TeamResponse) {
