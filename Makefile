@@ -442,3 +442,18 @@ endif
 	@echo "Computing and sending $(REPORT_TYPE) report to Slack..."
 	@GITHUB_TOKEN=$(GITHUB_TOKEN) FORMAT=summary ./tools/metrics/metrics $(REPORT_TYPE) | \
 	./scripts/slackit.sh $(SLACK_WEBHOOK)
+
+.PHONY: test-clean
+test-clean:
+	cd tools/clean && go test ./...
+
+.PHONY: test-makejwt
+test-mekejwt:
+	cd tools/makejwt && go test ./...
+
+.PHONY: test-metrics
+test-metrics:
+	cd tools/metrics && go test ./...
+
+.PHONY: test-tools ## Test all tools
+test-tools: test-clean test-makejwt test-metrics

@@ -29,6 +29,9 @@ jobs:
       - name: Run testing
         run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
 
+      - name: Test tools
+        run: make test-tools
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:

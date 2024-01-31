@@ -25,7 +25,7 @@ func (c *Cleaner) listProjectsByOrg(ctx context.Context, orgID string) []admin.G
 		return nil
 	}
 
-	return projectsList.Results
+	return *projectsList.Results
 }
 
 func (c *Cleaner) deleteProject(ctx context.Context, p *admin.Group) {
