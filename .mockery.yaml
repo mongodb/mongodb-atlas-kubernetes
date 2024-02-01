@@ -9,3 +9,4 @@ packages:
     interfaces:
       ProjectsApi:
       FederatedAuthenticationApi:
+      ProjectIPAccessListApi:

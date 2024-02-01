@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -41,7 +42,7 @@ func TestFilterActiveIPAccessLists(t *testing.T) {
 
 func TestCanIPAccessListReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canIPAccessListReconcile(context.Background(), &mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{}, false, &mdbv1.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
@@ -49,59 +50,53 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canIPAccessListReconcile(context.Background(), &mongodbatlas.Client{}, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), nil, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
 		require.False(t, result)
 	})
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return nil, nil, errors.New("failed to retrieve data")
-				},
-			},
-		}
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			nil, nil, errors.New("failed to retrieve data"),
+		)
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
 		require.EqualError(t, err, "failed to retrieve data")
 		require.False(t, result)
 	})
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{TotalCount: 0}, nil, nil
-				},
-			},
-		}
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{}, nil, nil,
+		)
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								GroupID:   "123456",
-								CIDRBlock: "192.168.0.0/24",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("192.168.0.0/24"),
+					},
 				},
-			},
-		}
+				TotalCount: admin.PtrInt(1),
+			}, nil, nil,
+		)
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
@@ -115,32 +110,30 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								GroupID:   "123456",
-								CIDRBlock: "192.168.0.0/24",
-							},
-							{
-								GroupID:   "123456",
-								CIDRBlock: "10.0.0.0/24",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("192.168.0.0/24"),
+					},
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("10.0.0.0/24"),
+					},
 				},
-			},
-		}
+				TotalCount: admin.PtrInt(2),
+			}, nil, nil,
+		)
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
@@ -154,32 +147,30 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								GroupID:   "123456",
-								CIDRBlock: "192.168.0.0/24",
-							},
-							{
-								GroupID:   "123456",
-								CIDRBlock: "10.0.0.0/24",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("192.168.0.0/24"),
+					},
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("10.0.0.0/24"),
+					},
 				},
-			},
-		}
+				TotalCount: admin.PtrInt(2),
+			}, nil, nil,
+		)
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
@@ -193,7 +184,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 			},
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
-		result, err := canIPAccessListReconcile(context.Background(), &atlasClient, true, akoProject)
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
 		require.NoError(t, err)
 		require.False(t, result)
@@ -202,44 +193,42 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 func TestEnsureIPAccessList(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return nil, nil, errors.New("failed to retrieve data")
-				},
-			},
-		}
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			nil, nil, errors.New("failed to retrieve data"),
+		)
+		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
 		akoProject := &mdbv1.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
-			Context: context.Background(),
+			SdkClient: atlasClient,
+			Context:   context.Background(),
 		}
-		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
+		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(atlasClient), akoProject, true)
 
 		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								GroupID:   "123456",
-								CIDRBlock: "192.168.0.0/24",
-							},
-							{
-								GroupID:   "123456",
-								CIDRBlock: "10.1.0.0/24",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("192.168.0.0/24"),
+					},
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("10.1.0.0/24"),
+					},
 				},
-			},
-		}
+				TotalCount: admin.PtrInt(2),
+			}, nil, nil,
+		)
+		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
@@ -254,10 +243,10 @@ func TestEnsureIPAccessList(t *testing.T) {
 		}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"projectIpAccessList\":[{\"cidrBlock\":\"192.168.0.0/24\"}]}"})
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
-			Context: context.Background(),
+			SdkClient: atlasClient,
+			Context:   context.Background(),
 		}
-		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(&atlasClient), akoProject, true)
+		result := ensureIPAccessList(workflowCtx, atlas.CustomIPAccessListStatus(atlasClient), akoProject, true)
 
 		require.Equal(
 			t,
@@ -270,34 +259,35 @@ func TestEnsureIPAccessList(t *testing.T) {
 	})
 
 	t.Run("should reconcile successfully", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				ListFunc: func(projectID string) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								GroupID:   "123456",
-								CIDRBlock: "192.168.0.10/32",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
+		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						GroupId:   admin.PtrString("123456"),
+						CidrBlock: admin.PtrString("192.168.0.10/24"),
+					},
 				},
-				CreateFunc: func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return &mongodbatlas.ProjectIPAccessLists{
-						Results: []mongodbatlas.ProjectIPAccessList{
-							{
-								CIDRBlock: "192.168.0.0/24",
-							},
-						},
-						TotalCount: 1,
-					}, nil, nil
+				TotalCount: admin.PtrInt(1),
+			}, nil, nil,
+		)
+		m.EXPECT().CreateProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.CreateProjectIpAccessListApiRequest{ApiService: m})
+		m.EXPECT().CreateProjectIpAccessListExecute(mock.Anything).Return(
+			&admin.PaginatedNetworkAccess{
+				Results: &[]admin.NetworkPermissionEntry{
+					{
+						CidrBlock: admin.PtrString("192.168.0.0/24"),
+					},
 				},
-				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
-					return nil, nil
-				},
-			},
-		}
+				TotalCount: admin.PtrInt(1),
+			}, nil, nil,
+		)
+		m.EXPECT().DeleteProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: m})
+		m.EXPECT().DeleteProjectIpAccessListExecute(mock.Anything).Return(
+			nil, nil, nil,
+		)
+		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
@@ -312,8 +302,8 @@ func TestEnsureIPAccessList(t *testing.T) {
 			},
 		}
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
-			Context: context.Background(),
+			SdkClient: atlasClient,
+			Context:   context.Background(),
 		}
 		result := ensureIPAccessList(
 			workflowCtx,
@@ -340,16 +330,16 @@ func TestSyncIPAccessList(t *testing.T) {
 				CIDRBlock: "10.0.0.0/24",
 			},
 		}
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
-					return nil, errors.New("failed")
-				},
-			},
-		}
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().DeleteProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: m})
+		m.EXPECT().DeleteProjectIpAccessListExecute(mock.Anything).Return(
+			nil, nil, errors.New("failed"),
+		)
+		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
+
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
-			Context: context.Background(),
+			SdkClient: atlasClient,
+			Context:   context.Background(),
 		}
 
 		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
@@ -366,19 +356,19 @@ func TestSyncIPAccessList(t *testing.T) {
 				CIDRBlock: "10.0.0.0/24",
 			},
 		}
-		atlasClient := mongodbatlas.Client{
-			ProjectIPAccessList: &atlasmock.ProjectIPAccessListClientMock{
-				CreateFunc: func(projectID string, ipAccessLists []*mongodbatlas.ProjectIPAccessList) (*mongodbatlas.ProjectIPAccessLists, *mongodbatlas.Response, error) {
-					return nil, nil, errors.New("failed")
-				},
-				DeleteFunc: func(projectID, entry string) (*mongodbatlas.Response, error) {
-					return nil, nil
-				},
-			},
-		}
+		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m.EXPECT().CreateProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.CreateProjectIpAccessListApiRequest{ApiService: m})
+		m.EXPECT().CreateProjectIpAccessListExecute(mock.Anything).Return(
+			nil, nil, errors.New("failed"),
+		)
+		m.EXPECT().DeleteProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: m})
+		m.EXPECT().DeleteProjectIpAccessListExecute(mock.Anything).Return(
+			nil, nil, nil,
+		)
+		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
-			Context: context.Background(),
+			SdkClient: atlasClient,
+			Context:   context.Background(),
 		}
 
 		assert.ErrorContains(t, syncIPAccessList(workflowCtx, "projectID", current, desired), "failed")
@@ -395,9 +385,7 @@ func TestSyncIPAccessList(t *testing.T) {
 				IPAddress: "10.0.0.1",
 			},
 		}
-		atlasClient := mongodbatlas.Client{}
 		workflowCtx := &workflow.Context{
-			Client:  &atlasClient,
 			Context: context.Background(),
 		}
 
