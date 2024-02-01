@@ -1,9 +1,10 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 )
 
@@ -52,38 +53,57 @@ type NetworkPeer struct {
 	NetworkName string `json:"networkName,omitempty"`
 }
 
-func (in *NetworkPeer) ToAtlas() (*mongodbatlas.Peer, error) {
-	result := &mongodbatlas.Peer{}
+// NewNetworkPeerFromAtlas creates a network peer based off a network peering connection from Atlas.
+// Note: ContainerRegion and AtlasCIDRBlock are unset
+// as this information is not provided by Atlas for a peering connection.
+func NewNetworkPeerFromAtlas(atlasPeer admin.BaseNetworkPeeringConnectionSettings) *NetworkPeer {
+	return &NetworkPeer{
+		AccepterRegionName:  atlasPeer.GetAccepterRegionName(),
+		AWSAccountID:        atlasPeer.GetAwsAccountId(),
+		ContainerID:         atlasPeer.GetContainerId(),
+		ProviderName:        provider.ProviderName(atlasPeer.GetProviderName()),
+		RouteTableCIDRBlock: atlasPeer.GetRouteTableCidrBlock(),
+		VpcID:               atlasPeer.GetVpcId(),
+		AzureDirectoryID:    atlasPeer.GetAzureDirectoryId(),
+		AzureSubscriptionID: atlasPeer.GetAzureSubscriptionId(),
+		ResourceGroupName:   atlasPeer.GetResourceGroupName(),
+		VNetName:            atlasPeer.GetVnetName(),
+		GCPProjectID:        atlasPeer.GetGcpProjectId(),
+		NetworkName:         atlasPeer.GetNetworkName(),
+	}
+}
+func (in *NetworkPeer) ToAtlas() (*admin.BaseNetworkPeeringConnectionSettings, error) {
+	result := &admin.BaseNetworkPeeringConnectionSettings{}
 	err := compat.JSONCopy(result, in)
 	return result, err
 }
 
-func (in *NetworkPeer) ToAtlasPeer() *mongodbatlas.Peer {
+func (in *NetworkPeer) ToAtlasPeer() *admin.BaseNetworkPeeringConnectionSettings {
 	switch in.ProviderName {
 	case provider.ProviderAWS:
-		return &mongodbatlas.Peer{
-			AccepterRegionName:  in.AccepterRegionName,
-			AWSAccountID:        in.AWSAccountID,
-			ContainerID:         in.ContainerID,
-			ProviderName:        string(in.ProviderName),
-			RouteTableCIDRBlock: in.RouteTableCIDRBlock,
-			VpcID:               in.VpcID,
+		return &admin.BaseNetworkPeeringConnectionSettings{
+			AccepterRegionName:  pointer.SetOrNil(in.AccepterRegionName, ""),
+			AwsAccountId:        pointer.SetOrNil(in.AWSAccountID, ""),
+			ContainerId:         in.ContainerID,
+			ProviderName:        pointer.SetOrNil(string(in.ProviderName), ""),
+			RouteTableCidrBlock: pointer.SetOrNil(in.RouteTableCIDRBlock, ""),
+			VpcId:               pointer.SetOrNil(in.VpcID, ""),
 		}
 	case provider.ProviderGCP:
-		return &mongodbatlas.Peer{
-			ContainerID:  in.ContainerID,
-			ProviderName: string(in.ProviderName),
-			GCPProjectID: in.GCPProjectID,
-			NetworkName:  in.NetworkName,
+		return &admin.BaseNetworkPeeringConnectionSettings{
+			ContainerId:  in.ContainerID,
+			ProviderName: pointer.SetOrNil(string(in.ProviderName), ""),
+			GcpProjectId: pointer.SetOrNil(in.GCPProjectID, ""),
+			NetworkName:  pointer.SetOrNil(in.NetworkName, ""),
 		}
 	case provider.ProviderAzure:
-		return &mongodbatlas.Peer{
-			ContainerID:         in.ContainerID,
-			ProviderName:        string(in.ProviderName),
-			AzureDirectoryID:    in.AzureDirectoryID,
-			AzureSubscriptionID: in.AzureSubscriptionID,
-			ResourceGroupName:   in.ResourceGroupName,
-			VNetName:            in.VNetName,
+		return &admin.BaseNetworkPeeringConnectionSettings{
+			ContainerId:         in.ContainerID,
+			ProviderName:        pointer.SetOrNil(string(in.ProviderName), ""),
+			AzureDirectoryId:    pointer.SetOrNil(in.AzureDirectoryID, ""),
+			AzureSubscriptionId: pointer.SetOrNil(in.AzureSubscriptionID, ""),
+			ResourceGroupName:   pointer.SetOrNil(in.ResourceGroupName, ""),
+			VnetName:            pointer.SetOrNil(in.VNetName, ""),
 		}
 	}
 

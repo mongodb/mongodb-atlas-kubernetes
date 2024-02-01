@@ -1,7 +1,7 @@
 package status
 
 import (
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 )
@@ -38,22 +38,22 @@ type AtlasNetworkPeer struct {
 	ContainerID string `json:"containerId,omitempty"`
 }
 
-func NewNetworkPeerStatus(atlasPeer mongodbatlas.Peer, providerName provider.ProviderName, vpcName string, container mongodbatlas.Container) AtlasNetworkPeer {
+func NewNetworkPeerStatus(atlasPeer admin.BaseNetworkPeeringConnectionSettings, providerName provider.ProviderName, vpcName string, container admin.CloudProviderContainer) AtlasNetworkPeer {
 	return AtlasNetworkPeer{
-		ID:                atlasPeer.ID,
+		ID:                atlasPeer.GetId(),
 		ProviderName:      providerName,
-		Region:            atlasPeer.AccepterRegionName,
-		StatusName:        atlasPeer.StatusName,
-		ErrorMessage:      atlasPeer.ErrorMessage,
-		ErrorState:        atlasPeer.ErrorState,
-		ErrorStateName:    atlasPeer.ErrorStateName,
-		ConnectionID:      atlasPeer.ConnectionID,
-		Status:            atlasPeer.Status,
+		Region:            atlasPeer.GetAccepterRegionName(),
+		StatusName:        atlasPeer.GetStatusName(),
+		ErrorMessage:      atlasPeer.GetErrorMessage(),
+		ErrorState:        atlasPeer.GetErrorState(),
+		ErrorStateName:    atlasPeer.GetErrorStateName(),
+		ConnectionID:      atlasPeer.GetConnectionId(),
+		Status:            atlasPeer.GetStatus(),
 		VPC:               vpcName,
-		AtlasNetworkName:  container.NetworkName,
-		AtlasGCPProjectID: container.GCPProjectID,
-		ContainerID:       container.ID,
-		GCPProjectID:      atlasPeer.GCPProjectID,
+		AtlasNetworkName:  container.GetNetworkName(),
+		AtlasGCPProjectID: container.GetGcpProjectId(),
+		ContainerID:       container.GetId(),
+		GCPProjectID:      atlasPeer.GetGcpProjectId(),
 	}
 }
 

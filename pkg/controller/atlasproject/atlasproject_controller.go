@@ -249,7 +249,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.C
 					setCondition(workflowCtx, status.PrivateEndpointReadyType, result)
 					return result
 				}
-				if result = DeleteAllNetworkPeers(workflowCtx.Context, project.ID(), workflowCtx.Client.Peers, workflowCtx.Log); !result.IsOk() {
+				if result = DeleteAllNetworkPeers(workflowCtx.Context, project.ID(), workflowCtx.SdkClient.NetworkPeeringApi, workflowCtx.Log); !result.IsOk() {
 					setCondition(workflowCtx, status.NetworkPeerReadyType, result)
 					return result
 				}
