@@ -21,10 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -42,6 +39,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -133,7 +131,15 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return result.ReconcileResult(), nil
 	}
 
-	atlasClient, orgID, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	atlasSdkClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
+	if err != nil {
+		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
+		setCondition(workflowCtx, status.ProjectReadyType, result)
+		return result.ReconcileResult(), nil
+	}
+	workflowCtx.SdkClient = atlasSdkClient
+
+	atlasClient, _, err := r.AtlasProvider.Client(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
 		result := workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
 		setCondition(workflowCtx, status.ProjectReadyType, result)
