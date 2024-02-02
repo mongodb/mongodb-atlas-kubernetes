@@ -27,13 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 )
 
 func init() {
@@ -582,10 +581,10 @@ func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
 						ZoneName: "Zone 1",
 						RegionConfigs: []*AdvancedRegionConfig{
 							{
-								Priority: toptr.MakePtr(7),
+								Priority: pointer.MakePtr(7),
 								ElectableSpecs: &Specs{
 									InstanceSize: "M10",
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
 								ProviderName:        "AWS",
 								BackingProviderName: "AWS",
@@ -635,7 +634,7 @@ func addReplicaIfNotAdded(deployment *AtlasDeployment) {
 				{
 					ElectableSpecs:      &Specs{},
 					BackingProviderName: "",
-					Priority:            toptr.MakePtr(7),
+					Priority:            pointer.MakePtr(7),
 					ProviderName:        "",
 				},
 			},
@@ -646,7 +645,7 @@ func addReplicaIfNotAdded(deployment *AtlasDeployment) {
 		deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = append(deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs, &AdvancedRegionConfig{
 			ElectableSpecs:      &Specs{},
 			BackingProviderName: "",
-			Priority:            toptr.MakePtr(7),
+			Priority:            pointer.MakePtr(7),
 			ProviderName:        "",
 			RegionName:          "",
 		})
@@ -681,7 +680,7 @@ func (c *AtlasDeployment) WithRegionName(name string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasDeployment {
-	c.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+	c.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 	c.Spec.BackupScheduleRef = ref
 	return c
 }

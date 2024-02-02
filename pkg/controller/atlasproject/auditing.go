@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -68,7 +67,7 @@ func createOrDeleteAuditing(ctx *workflow.Context, projectID string, project *v1
 func prepareAuditingSpec(spec *v1.Auditing) *mongodbatlas.Auditing {
 	if isAuditingEmpty(spec) {
 		return &mongodbatlas.Auditing{
-			Enabled: toptr.MakePtr(false),
+			Enabled: pointer.MakePtr(false),
 		}
 	}
 
@@ -81,8 +80,8 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 	}
 
 	specAsAtlas := &mongodbatlas.Auditing{
-		AuditAuthorizationSuccess: toptr.MakePtr(false),
-		Enabled:                   toptr.MakePtr(false),
+		AuditAuthorizationSuccess: pointer.MakePtr(false),
+		Enabled:                   pointer.MakePtr(false),
 	}
 
 	if !isAuditingEmpty(spec) {
@@ -91,8 +90,8 @@ func auditingInSync(atlas *mongodbatlas.Auditing, spec *v1.Auditing) bool {
 
 	if isAuditingEmpty(atlas) {
 		atlas = &mongodbatlas.Auditing{
-			AuditAuthorizationSuccess: toptr.MakePtr(false),
-			Enabled:                   toptr.MakePtr(false),
+			AuditAuthorizationSuccess: pointer.MakePtr(false),
+			Enabled:                   pointer.MakePtr(false),
 		}
 	}
 

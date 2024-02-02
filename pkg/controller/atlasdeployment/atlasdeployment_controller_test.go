@@ -40,7 +40,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -845,7 +845,7 @@ func TestReconciliation(t *testing.T) {
 			},
 		}
 		deployment := v1.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
-		deployment.Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+		deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 		deployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 			Name:      bSchedule.Name,
 			Namespace: bSchedule.Namespace,
@@ -878,7 +878,7 @@ func TestReconciliation(t *testing.T) {
 								ID:            "123789",
 								Name:          clusterName,
 								GroupID:       projectID,
-								BackupEnabled: toptr.MakePtr(true),
+								BackupEnabled: pointer.MakePtr(true),
 								ClusterType:   "REPLICASET",
 								ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
 									{
@@ -890,9 +890,9 @@ func TestReconciliation(t *testing.T) {
 												RegionName:   "US_EAST_1",
 												ElectableSpecs: &mongodbatlas.Specs{
 													InstanceSize: "M10",
-													NodeCount:    toptr.MakePtr(3),
+													NodeCount:    pointer.MakePtr(3),
 												},
-												Priority: toptr.MakePtr(7),
+												Priority: pointer.MakePtr(7),
 											},
 										},
 									},
@@ -914,9 +914,9 @@ func TestReconciliation(t *testing.T) {
 							return &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 								ClusterID:             "123789",
 								ClusterName:           deployment.GetDeploymentName(),
-								ReferenceHourOfDay:    toptr.MakePtr(int64(20)),
-								ReferenceMinuteOfHour: toptr.MakePtr(int64(30)),
-								RestoreWindowDays:     toptr.MakePtr(int64(7)),
+								ReferenceHourOfDay:    pointer.MakePtr(int64(20)),
+								ReferenceMinuteOfHour: pointer.MakePtr(int64(30)),
+								RestoreWindowDays:     pointer.MakePtr(int64(7)),
 								Policies: []mongodbatlas.Policy{
 									{
 										ID: "456987",
@@ -931,8 +931,8 @@ func TestReconciliation(t *testing.T) {
 										},
 									},
 								},
-								AutoExportEnabled:                 toptr.MakePtr(false),
-								UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
+								AutoExportEnabled:                 pointer.MakePtr(false),
+								UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
 							}, nil, nil
 						},
 					},

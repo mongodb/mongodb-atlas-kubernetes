@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -44,11 +44,11 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
 			v1.ProjectSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(false),
-				IsDataExplorerEnabled:                       toptr.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 toptr.MakePtr(false),
-				IsRealtimePerformancePanelEnabled:           toptr.MakePtr(false),
-				IsSchemaAdvisorEnabled:                      toptr.MakePtr(false),
+				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
+				IsDataExplorerEnabled:                       pointer.MakePtr(false),
+				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(false),
+				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
+				IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
 			},
 		),
 	)

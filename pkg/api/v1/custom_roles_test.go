@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
@@ -33,14 +33,14 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Name: "testName",
 						Resources: []Resource{
 							{
-								Cluster:    toptr.MakePtr(false),
-								Database:   toptr.MakePtr("testDB"),
-								Collection: toptr.MakePtr("testCollection"),
+								Cluster:    pointer.MakePtr(false),
+								Database:   pointer.MakePtr("testDB"),
+								Collection: pointer.MakePtr("testCollection"),
 							},
 							{
-								Cluster:    toptr.MakePtr(false),
-								Database:   toptr.MakePtr("testDB2"),
-								Collection: toptr.MakePtr("testCollection2"),
+								Cluster:    pointer.MakePtr(false),
+								Database:   pointer.MakePtr("testDB2"),
+								Collection: pointer.MakePtr("testCollection2"),
 							},
 						},
 					},
@@ -48,7 +48,7 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Name: "testName2",
 						Resources: []Resource{
 							{
-								Cluster: toptr.MakePtr(true),
+								Cluster: pointer.MakePtr(true),
 							},
 						},
 					},
@@ -56,8 +56,8 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Name: "testName3",
 						Resources: []Resource{
 							{
-								Database:   toptr.MakePtr(""),
-								Collection: toptr.MakePtr(""),
+								Database:   pointer.MakePtr(""),
+								Collection: pointer.MakePtr(""),
 							},
 						},
 					},
@@ -77,13 +77,13 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Resources: []mongodbatlas.Resource{
 							{
 								Cluster:    nil,
-								DB:         toptr.MakePtr("testDB"),
-								Collection: toptr.MakePtr("testCollection"),
+								DB:         pointer.MakePtr("testDB"),
+								Collection: pointer.MakePtr("testCollection"),
 							},
 							{
 								Cluster:    nil,
-								DB:         toptr.MakePtr("testDB2"),
-								Collection: toptr.MakePtr("testCollection2"),
+								DB:         pointer.MakePtr("testDB2"),
+								Collection: pointer.MakePtr("testCollection2"),
 							},
 						},
 					},
@@ -91,7 +91,7 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Action: "testName2",
 						Resources: []mongodbatlas.Resource{
 							{
-								Cluster: toptr.MakePtr(true),
+								Cluster: pointer.MakePtr(true),
 							},
 						},
 					},
@@ -100,8 +100,8 @@ func TestAtlasCustomRoles_ToAtlas(t *testing.T) {
 						Resources: []mongodbatlas.Resource{
 							{
 								Cluster:    nil,
-								DB:         toptr.MakePtr(""),
-								Collection: toptr.MakePtr(""),
+								DB:         pointer.MakePtr(""),
+								Collection: pointer.MakePtr(""),
 							},
 						},
 					},

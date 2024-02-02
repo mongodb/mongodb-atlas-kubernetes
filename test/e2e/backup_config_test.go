@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -81,7 +81,7 @@ var _ = Describe("Deployment Backup Configuration", Label("backup-config"), func
 func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 	By("Enable backup for deployment", func() {
 		Expect(data.K8SClient.Get(data.Context, client.ObjectKeyFromObject(data.InitialDeployments[0]), data.InitialDeployments[0])).To(Succeed())
-		data.InitialDeployments[0].Spec.DeploymentSpec.BackupEnabled = toptr.MakePtr(true)
+		data.InitialDeployments[0].Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 		Expect(data.K8SClient.Update(data.Context, data.InitialDeployments[0])).To(Succeed())
 
 		Eventually(func(g Gomega) bool {

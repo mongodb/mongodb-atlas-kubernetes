@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -62,7 +62,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 							Name: "LIST_SESSIONS",
 							Resources: []v1.Resource{
 								{
-									Cluster: toptr.MakePtr(true),
+									Cluster: pointer.MakePtr(true),
 								},
 							},
 						},
@@ -70,7 +70,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 							Name: "KILL_ANY_SESSION",
 							Resources: []v1.Resource{
 								{
-									Cluster: toptr.MakePtr(true),
+									Cluster: pointer.MakePtr(true),
 								},
 							},
 						},
@@ -107,7 +107,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []v1.C
 			Name: "USE_UUID",
 			Resources: []v1.Resource{
 				{
-					Cluster: toptr.MakePtr(true),
+					Cluster: pointer.MakePtr(true),
 				},
 			},
 		})

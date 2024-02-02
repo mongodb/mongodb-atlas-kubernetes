@@ -8,7 +8,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
@@ -27,8 +27,8 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			Enabled:                  true,
 			ConnectionSecretRef:      common.ResourceRefNamespaced{},
 			DomainAllowList:          []string{"test.com"},
-			DomainRestrictionEnabled: toptr.MakePtr(true),
-			SSODebugEnabled:          toptr.MakePtr(true),
+			DomainRestrictionEnabled: pointer.MakePtr(true),
+			SSODebugEnabled:          pointer.MakePtr(true),
 			PostAuthRoleGrants:       []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{
@@ -84,8 +84,8 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			Enabled:                  true,
 			ConnectionSecretRef:      common.ResourceRefNamespaced{},
 			DomainAllowList:          []string{"test.com"},
-			DomainRestrictionEnabled: toptr.MakePtr(true),
-			SSODebugEnabled:          toptr.MakePtr(true),
+			DomainRestrictionEnabled: pointer.MakePtr(true),
+			SSODebugEnabled:          pointer.MakePtr(true),
 			PostAuthRoleGrants:       []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{

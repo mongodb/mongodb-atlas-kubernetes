@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 var (
@@ -54,17 +54,17 @@ func init() {
 
 func TestIsEqual(t *testing.T) {
 	operatorArgs := ProcessArgs{
-		JavascriptEnabled: toptr.MakePtr(true),
+		JavascriptEnabled: pointer.MakePtr(true),
 	}
 
 	atlasArgs := mongodbatlas.ProcessArgs{
-		JavascriptEnabled: toptr.MakePtr(false),
+		JavascriptEnabled: pointer.MakePtr(false),
 	}
 
 	areTheyEqual := operatorArgs.IsEqual(atlasArgs)
 	assert.False(t, areTheyEqual, "should NOT be equal if pointer values are different")
 
-	atlasArgs.JavascriptEnabled = toptr.MakePtr(true)
+	atlasArgs.JavascriptEnabled = pointer.MakePtr(true)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should be equal if all pointer values are the same")
@@ -82,18 +82,18 @@ func TestIsEqual(t *testing.T) {
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should work for non-pointer values")
 
-	operatorArgs.OplogSizeMB = toptr.MakePtr[int64](8)
+	operatorArgs.OplogSizeMB = pointer.MakePtr[int64](8)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.False(t, areTheyEqual, "should NOT be equal if Operator has more args")
 
-	atlasArgs.OplogSizeMB = toptr.MakePtr[int64](8)
+	atlasArgs.OplogSizeMB = pointer.MakePtr[int64](8)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should become equal")
 
 	operatorArgs.OplogMinRetentionHours = "2.0"
-	atlasArgs.OplogMinRetentionHours = toptr.MakePtr[float64](2)
+	atlasArgs.OplogMinRetentionHours = pointer.MakePtr[float64](2)
 
 	areTheyEqual = operatorArgs.IsEqual(atlasArgs)
 	assert.True(t, areTheyEqual, "should be equal when OplogMinRetentionHours field is the same")
@@ -101,7 +101,7 @@ func TestIsEqual(t *testing.T) {
 
 func TestToAtlas(t *testing.T) {
 	operatorArgs := ProcessArgs{
-		JavascriptEnabled:      toptr.MakePtr(true),
+		JavascriptEnabled:      pointer.MakePtr(true),
 		OplogMinRetentionHours: "2.0",
 	}
 

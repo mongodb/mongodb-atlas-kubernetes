@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -115,8 +115,8 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 						Namespace: connectionSecret.Namespace,
 					},
 					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com", "mongodb.com"),
-					DomainRestrictionEnabled: toptr.MakePtr(true),
-					SSODebugEnabled:          toptr.MakePtr(false),
+					DomainRestrictionEnabled: pointer.MakePtr(true),
+					SSODebugEnabled:          pointer.MakePtr(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
 					RoleMappings:             roles,
 				},

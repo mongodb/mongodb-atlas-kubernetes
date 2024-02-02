@@ -6,15 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -222,15 +220,15 @@ func canMaintenanceWindowReconcile(workflowCtx *workflow.Context, protected bool
 
 func isMaintenanceWindowConfigEqual(akoMWindow project.MaintenanceWindow, atlasMWindow mongodbatlas.MaintenanceWindow) bool {
 	if atlasMWindow.HourOfDay == nil {
-		atlasMWindow.HourOfDay = toptr.MakePtr(0)
+		atlasMWindow.HourOfDay = pointer.MakePtr(0)
 	}
 
 	if atlasMWindow.StartASAP == nil {
-		atlasMWindow.StartASAP = toptr.MakePtr(false)
+		atlasMWindow.StartASAP = pointer.MakePtr(false)
 	}
 
 	if atlasMWindow.AutoDeferOnceEnabled == nil {
-		atlasMWindow.AutoDeferOnceEnabled = toptr.MakePtr(false)
+		atlasMWindow.AutoDeferOnceEnabled = pointer.MakePtr(false)
 	}
 
 	return akoMWindow.DayOfWeek == atlasMWindow.DayOfWeek &&

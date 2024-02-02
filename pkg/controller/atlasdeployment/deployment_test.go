@@ -3,7 +3,7 @@ package atlasdeployment
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
@@ -28,12 +28,12 @@ func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 								AnalyticsSpecs: &v1.Specs{},
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: "M2",
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
 								ReadOnlySpecs:       &v1.Specs{},
 								AutoScaling:         &v1.AdvancedAutoScalingSpec{},
 								BackingProviderName: "AWS",
-								Priority:            toptr.MakePtr(7),
+								Priority:            pointer.MakePtr(7),
 								ProviderName:        "TENANT",
 								RegionName:          "US_EAST_1",
 							},

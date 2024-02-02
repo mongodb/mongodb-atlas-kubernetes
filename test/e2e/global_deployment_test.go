@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -63,8 +63,8 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 					Collection:             "somecollection",
 					Db:                     "somedb",
 					CustomShardKey:         "somekey",
-					PresplitHashedZones:    toptr.MakePtr(true),
-					IsCustomShardKeyHashed: toptr.MakePtr(true),
+					PresplitHashedZones:    pointer.MakePtr(true),
+					IsCustomShardKeyHashed: pointer.MakePtr(true),
 					NumInitialChunks:       4,
 				},
 			},

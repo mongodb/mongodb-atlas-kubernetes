@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -70,13 +70,13 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						AzureKeyVault: mongodbatlas.AzureKeyVault{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 					}, nil, nil
 				},
@@ -100,16 +100,16 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
-							Enabled:             toptr.MakePtr(true),
+							Enabled:             pointer.MakePtr(true),
 							CustomerMasterKeyID: "aws-kms-master-key",
 							Region:              "eu-west-1",
-							Valid:               toptr.MakePtr(true),
+							Valid:               pointer.MakePtr(true),
 						},
 						AzureKeyVault: mongodbatlas.AzureKeyVault{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 					}, nil, nil
 				},
@@ -119,7 +119,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "eu-west-2",
 						SecretRef: common.ResourceRefNamespaced{
 							Name:      "test-aws-secret",
@@ -152,16 +152,16 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
-							Enabled:             toptr.MakePtr(true),
+							Enabled:             pointer.MakePtr(true),
 							CustomerMasterKeyID: "aws-kms-master-key",
 							Region:              "eu-west-1",
-							Valid:               toptr.MakePtr(true),
+							Valid:               pointer.MakePtr(true),
 						},
 						AzureKeyVault: mongodbatlas.AzureKeyVault{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 					}, nil, nil
 				},
@@ -171,7 +171,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "eu-west-1",
 						SecretRef: common.ResourceRefNamespaced{
 							Name:      "test-aws-secret",
@@ -205,16 +205,16 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
-							Enabled:             toptr.MakePtr(true),
+							Enabled:             pointer.MakePtr(true),
 							CustomerMasterKeyID: "aws-kms-master-key",
 							Region:              "eu-west-1",
-							Valid:               toptr.MakePtr(true),
+							Valid:               pointer.MakePtr(true),
 						},
 						AzureKeyVault: mongodbatlas.AzureKeyVault{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 					}, nil, nil
 				},
@@ -224,7 +224,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "eu-central-1",
 						SecretRef: common.ResourceRefNamespaced{
 							Name:      "test-aws-secret",
@@ -282,16 +282,16 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.EncryptionAtRest, *mongodbatlas.Response, error) {
 					return &mongodbatlas.EncryptionAtRest{
 						AwsKms: mongodbatlas.AwsKms{
-							Enabled:             toptr.MakePtr(true),
+							Enabled:             pointer.MakePtr(true),
 							CustomerMasterKeyID: "aws-kms-master-key",
 							Region:              "eu-west-1",
-							Valid:               toptr.MakePtr(true),
+							Valid:               pointer.MakePtr(true),
 						},
 						AzureKeyVault: mongodbatlas.AzureKeyVault{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 						GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-							Enabled: toptr.MakePtr(false),
+							Enabled: pointer.MakePtr(false),
 						},
 					}, nil, nil
 				},
@@ -301,7 +301,7 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 			Spec: mdbv1.AtlasProjectSpec{
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "eu-central-1",
 						SecretRef: common.ResourceRefNamespaced{
 							Name:      "test-aws-secret",
@@ -387,7 +387,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			AwsKms: mdbv1.AwsKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name:      "aws-secret",
 					Namespace: "test",
@@ -429,7 +429,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			AwsKms: mdbv1.AwsKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "aws-secret",
 				},
@@ -468,7 +468,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			AwsKms: mdbv1.AwsKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name:      "aws-secret",
 					Namespace: "test",
@@ -504,7 +504,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			GoogleCloudKms: mdbv1.GoogleCloudKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
 				},
@@ -541,7 +541,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			GoogleCloudKms: mdbv1.GoogleCloudKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
 				},
@@ -578,7 +578,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			AzureKeyVault: mdbv1.AzureKeyVault{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "azure-secret",
 				},
@@ -620,7 +620,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		encRest := &mdbv1.EncryptionAtRest{
 			AzureKeyVault: mdbv1.AzureKeyVault{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
 				},
@@ -637,11 +637,11 @@ func TestIsEncryptionAtlasEmpty(t *testing.T) {
 	isEmpty := IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Empty spec should be empty")
 
-	spec.AwsKms.Enabled = toptr.MakePtr(true)
+	spec.AwsKms.Enabled = pointer.MakePtr(true)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.False(t, isEmpty, "Non-empty spec")
 
-	spec.AwsKms.Enabled = toptr.MakePtr(false)
+	spec.AwsKms.Enabled = pointer.MakePtr(false)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Enabled flag set to false is same as empty")
 }
@@ -655,12 +655,12 @@ func TestAtlasInSync(t *testing.T) {
 	atlas := mongodbatlas.EncryptionAtRest{
 		GroupID: groupID,
 		AwsKms: mongodbatlas.AwsKms{
-			Enabled: toptr.MakePtr(true),
+			Enabled: pointer.MakePtr(true),
 		},
 	}
 	spec := mdbv1.EncryptionAtRest{
 		AwsKms: mdbv1.AwsKms{
-			Enabled: toptr.MakePtr(true),
+			Enabled: pointer.MakePtr(true),
 		},
 	}
 
@@ -676,12 +676,12 @@ func TestAtlasInSync(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are the same")
 
-	spec.AwsKms.Enabled = toptr.MakePtr(false)
+	spec.AwsKms.Enabled = pointer.MakePtr(false)
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
 	assert.False(t, areInSync, "Atlas is disabled")
 
-	atlas.AwsKms.Enabled = toptr.MakePtr(false)
+	atlas.AwsKms.Enabled = pointer.MakePtr(false)
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are disabled")
@@ -691,36 +691,36 @@ func TestAtlasInSync(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are disabled but atlas RoleID field")
 
-	spec.AwsKms.Enabled = toptr.MakePtr(true)
+	spec.AwsKms.Enabled = pointer.MakePtr(true)
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
 	assert.False(t, areInSync, "Spec is re-enabled")
 
-	atlas.AwsKms.Enabled = toptr.MakePtr(true)
+	atlas.AwsKms.Enabled = pointer.MakePtr(true)
 	areInSync, err = AtlasInSync(&atlas, &spec)
 	assert.NoError(t, err)
 	assert.True(t, areInSync, "Both are re-enabled and only RoleID is different")
 
 	atlas = mongodbatlas.EncryptionAtRest{
 		AwsKms: mongodbatlas.AwsKms{
-			Enabled:             toptr.MakePtr(true),
+			Enabled:             pointer.MakePtr(true),
 			CustomerMasterKeyID: "testCustomerMasterKeyID",
 			Region:              "US_EAST_1",
 			RoleID:              "testRoleID",
-			Valid:               toptr.MakePtr(true),
+			Valid:               pointer.MakePtr(true),
 		},
 		AzureKeyVault: mongodbatlas.AzureKeyVault{
-			Enabled: toptr.MakePtr(false),
+			Enabled: pointer.MakePtr(false),
 		},
 		GoogleCloudKms: mongodbatlas.GoogleCloudKms{
-			Enabled: toptr.MakePtr(false),
+			Enabled: pointer.MakePtr(false),
 		},
 	}
 	spec = mdbv1.EncryptionAtRest{
 		AwsKms: mdbv1.AwsKms{
-			Enabled: toptr.MakePtr(true),
+			Enabled: pointer.MakePtr(true),
 			Region:  "US_EAST_1",
-			Valid:   toptr.MakePtr(true),
+			Valid:   pointer.MakePtr(true),
 		},
 		AzureKeyVault:  mdbv1.AzureKeyVault{},
 		GoogleCloudKms: mdbv1.GoogleCloudKms{},
@@ -746,14 +746,14 @@ func TestAreAzureConfigEqual(t *testing.T) {
 			name: "Azure configuration are equal",
 			args: args{
 				operator: mdbv1.AzureKeyVault{
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					ResourceGroupName: "resource group",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					SubscriptionID:    "sub id",
@@ -775,7 +775,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
-					Enabled:           toptr.MakePtr(false),
+					Enabled:           pointer.MakePtr(false),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					SubscriptionID:    "sub id",
@@ -791,14 +791,14 @@ func TestAreAzureConfigEqual(t *testing.T) {
 			name: "Azure configuration differ by enabled field",
 			args: args{
 				operator: mdbv1.AzureKeyVault{
-					Enabled:           toptr.MakePtr(false),
+					Enabled:           pointer.MakePtr(false),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					ResourceGroupName: "resource group",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					SubscriptionID:    "sub id",
@@ -814,14 +814,14 @@ func TestAreAzureConfigEqual(t *testing.T) {
 			name: "Azure configuration differ by other field",
 			args: args{
 				operator: mdbv1.AzureKeyVault{
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					ResourceGroupName: "resource group",
 					TenantID:          "tenant id",
 				},
 				atlas: mongodbatlas.AzureKeyVault{
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					SubscriptionID:    "sub id",
@@ -856,10 +856,10 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are equal",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(true),
+					Enabled:              pointer.MakePtr(true),
 					KeyVersionResourceID: "key version id",
 				},
 			},
@@ -870,7 +870,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			args: args{
 				operator: mdbv1.GoogleCloudKms{},
 				atlas: mongodbatlas.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(false),
+					Enabled:              pointer.MakePtr(false),
 					KeyVersionResourceID: "key version id",
 				},
 			},
@@ -880,10 +880,10 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are different by enable field",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(false),
+					Enabled:              pointer.MakePtr(false),
 					KeyVersionResourceID: "key version id",
 				},
 			},
@@ -893,10 +893,10 @@ func TestAreGCPConfigEqual(t *testing.T) {
 			name: "GCP configuration are different by another field",
 			args: args{
 				operator: mdbv1.GoogleCloudKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
-					Enabled:              toptr.MakePtr(true),
+					Enabled:              pointer.MakePtr(true),
 					KeyVersionResourceID: "key version resource id",
 				},
 			},
@@ -925,10 +925,10 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are equal",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
-					Enabled:             toptr.MakePtr(true),
+					Enabled:             pointer.MakePtr(true),
 					CustomerMasterKeyID: "customer master key",
 				},
 			},
@@ -939,7 +939,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			args: args{
 				operator: mdbv1.AwsKms{},
 				atlas: mongodbatlas.AwsKms{
-					Enabled:             toptr.MakePtr(false),
+					Enabled:             pointer.MakePtr(false),
 					CustomerMasterKeyID: "customer master key",
 				},
 			},
@@ -949,10 +949,10 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are different by enable field",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
-					Enabled:             toptr.MakePtr(false),
+					Enabled:             pointer.MakePtr(false),
 					CustomerMasterKeyID: "customer master key",
 				},
 			},
@@ -962,10 +962,10 @@ func TestAreAWSConfigEqual(t *testing.T) {
 			name: "AWS configuration are different by another field",
 			args: args{
 				operator: mdbv1.AwsKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
-					Enabled:             toptr.MakePtr(true),
+					Enabled:             pointer.MakePtr(true),
 					CustomerMasterKeyID: "customer master key id",
 				},
 			},

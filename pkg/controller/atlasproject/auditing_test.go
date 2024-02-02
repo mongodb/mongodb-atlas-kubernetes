@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -68,9 +68,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
-						Enabled:                   toptr.MakePtr(true),
+						Enabled:                   pointer.MakePtr(true),
 						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-						AuditAuthorizationSuccess: toptr.MakePtr(false),
+						AuditAuthorizationSuccess: pointer.MakePtr(false),
 					}, nil, nil
 				},
 			},
@@ -100,9 +100,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
-						Enabled:                   toptr.MakePtr(true),
+						Enabled:                   pointer.MakePtr(true),
 						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-						AuditAuthorizationSuccess: toptr.MakePtr(false),
+						AuditAuthorizationSuccess: pointer.MakePtr(false),
 					}, nil, nil
 				},
 			},
@@ -132,9 +132,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
-						Enabled:                   toptr.MakePtr(true),
+						Enabled:                   pointer.MakePtr(true),
 						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-						AuditAuthorizationSuccess: toptr.MakePtr(false),
+						AuditAuthorizationSuccess: pointer.MakePtr(false),
 					}, nil, nil
 				},
 			},
@@ -181,9 +181,9 @@ func TestEnsureAuditing(t *testing.T) {
 			Auditing: &atlas.AuditingClientMock{
 				GetFunc: func(projectID string) (*mongodbatlas.Auditing, *mongodbatlas.Response, error) {
 					return &mongodbatlas.Auditing{
-						Enabled:                   toptr.MakePtr(true),
+						Enabled:                   pointer.MakePtr(true),
 						AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
-						AuditAuthorizationSuccess: toptr.MakePtr(false),
+						AuditAuthorizationSuccess: pointer.MakePtr(false),
 					}, nil, nil
 				},
 			},
@@ -244,7 +244,7 @@ func TestAuditingInSync(t *testing.T) {
 		{
 			name: "Operator Auditing is empty and Atlas doesn't",
 			args: args{
-				atlas: &mongodbatlas.Auditing{Enabled: toptr.MakePtr(true)},
+				atlas: &mongodbatlas.Auditing{Enabled: pointer.MakePtr(true)},
 				spec:  nil,
 			},
 			want: false,
@@ -253,10 +253,10 @@ func TestAuditingInSync(t *testing.T) {
 			name: "Operator Auditing has different config from Atlas",
 			args: args{
 				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: toptr.MakePtr(false),
+					AuditAuthorizationSuccess: pointer.MakePtr(false),
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					ConfigurationType:         "ReadOnly",
-					Enabled:                   toptr.MakePtr(true),
+					Enabled:                   pointer.MakePtr(true),
 				},
 				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: true,
@@ -270,10 +270,10 @@ func TestAuditingInSync(t *testing.T) {
 			name: "Operator Auditing has different config filter from Atlas",
 			args: args{
 				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: toptr.MakePtr(false),
+					AuditAuthorizationSuccess: pointer.MakePtr(false),
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					ConfigurationType:         "ReadOnly",
-					Enabled:                   toptr.MakePtr(true),
+					Enabled:                   pointer.MakePtr(true),
 				},
 				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
@@ -287,10 +287,10 @@ func TestAuditingInSync(t *testing.T) {
 			name: "Operator Auditing are Equal",
 			args: args{
 				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: toptr.MakePtr(false),
+					AuditAuthorizationSuccess: pointer.MakePtr(false),
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					ConfigurationType:         "ReadOnly",
-					Enabled:                   toptr.MakePtr(true),
+					Enabled:                   pointer.MakePtr(true),
 				},
 				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
@@ -304,10 +304,10 @@ func TestAuditingInSync(t *testing.T) {
 			name: "Operator Auditing are Equal when filter has newline in the end",
 			args: args{
 				atlas: &mongodbatlas.Auditing{
-					AuditAuthorizationSuccess: toptr.MakePtr(false),
+					AuditAuthorizationSuccess: pointer.MakePtr(false),
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					ConfigurationType:         "ReadOnly",
-					Enabled:                   toptr.MakePtr(true),
+					Enabled:                   pointer.MakePtr(true),
 				},
 				spec: &mdbv1.Auditing{
 					AuditAuthorizationSuccess: false,
