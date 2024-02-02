@@ -6,7 +6,7 @@ import (
 	"github.com/go-test/deep"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func Test_BackupScheduleToAtlas(t *testing.T) {
@@ -38,12 +38,12 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 		output := &mongodbatlas.CloudProviderSnapshotBackupPolicy{
 			ClusterID:                         "test-id",
 			ClusterName:                       "testCluster",
-			AutoExportEnabled:                 toptr.MakePtr(true),
-			ReferenceHourOfDay:                toptr.MakePtr[int64](10),
-			ReferenceMinuteOfHour:             toptr.MakePtr[int64](10),
-			RestoreWindowDays:                 toptr.MakePtr[int64](7),
-			UpdateSnapshots:                   toptr.MakePtr(false),
-			UseOrgAndGroupNamesInExportPrefix: toptr.MakePtr(false),
+			AutoExportEnabled:                 pointer.MakePtr(true),
+			ReferenceHourOfDay:                pointer.MakePtr[int64](10),
+			ReferenceMinuteOfHour:             pointer.MakePtr[int64](10),
+			RestoreWindowDays:                 pointer.MakePtr[int64](7),
+			UpdateSnapshots:                   pointer.MakePtr(false),
+			UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
 			Policies: []mongodbatlas.Policy{
 				{
 					ID: "",

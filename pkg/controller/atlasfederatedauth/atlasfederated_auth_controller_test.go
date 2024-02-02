@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -18,15 +20,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 )
 
 func TestReconcile(t *testing.T) {
@@ -71,8 +69,8 @@ func TestReconcile(t *testing.T) {
 					Namespace: secret.Namespace,
 				},
 				DomainAllowList:          []string{"qa-27092023.com", "cloud-qa.mongodb.com"},
-				DomainRestrictionEnabled: toptr.MakePtr(true),
-				SSODebugEnabled:          toptr.MakePtr(false),
+				DomainRestrictionEnabled: pointer.MakePtr(true),
+				SSODebugEnabled:          pointer.MakePtr(false),
 				PostAuthRoleGrants:       []string{"ORG_OWNER"},
 			},
 		}
@@ -94,11 +92,11 @@ func TestReconcile(t *testing.T) {
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
 			Return(
 				&admin.OrgFederationSettings{
-					Id:                     toptr.MakePtr(fedSettingsID),
-					IdentityProviderId:     toptr.MakePtr("0oawce8e76SR9K7Tq357"),
+					Id:                     pointer.MakePtr(fedSettingsID),
+					IdentityProviderId:     pointer.MakePtr("0oawce8e76SR9K7Tq357"),
 					FederatedDomains:       &[]string{"qa-27092023.com", "cloud-qa.mongodb.com"},
-					HasRoleMappings:        toptr.MakePtr(false),
-					IdentityProviderStatus: toptr.MakePtr("ACTIVE"),
+					HasRoleMappings:        pointer.MakePtr(false),
+					IdentityProviderStatus: pointer.MakePtr("ACTIVE"),
 				},
 				&http.Response{},
 				nil,
@@ -114,7 +112,7 @@ func TestReconcile(t *testing.T) {
 							OktaIdpId: "0oawce8e76SR9K7Tq357",
 						},
 					},
-					TotalCount: toptr.MakePtr(1),
+					TotalCount: pointer.MakePtr(1),
 				},
 				&http.Response{},
 				nil,
@@ -142,11 +140,11 @@ func TestReconcile(t *testing.T) {
 				&admin.PaginatedAtlasGroup{
 					Results: &[]admin.Group{
 						{
-							Id:   toptr.MakePtr(projectID),
+							Id:   pointer.MakePtr(projectID),
 							Name: "MyProject",
 						},
 					},
-					TotalCount: toptr.MakePtr(1),
+					TotalCount: pointer.MakePtr(1),
 				},
 				&http.Response{},
 				nil,

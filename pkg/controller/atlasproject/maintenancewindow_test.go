@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -200,7 +200,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
-						HourOfDay: toptr.MakePtr(1),
+						HourOfDay: pointer.MakePtr(1),
 					}, nil, nil
 				},
 			},
@@ -230,7 +230,7 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
-						HourOfDay: toptr.MakePtr(1),
+						HourOfDay: pointer.MakePtr(1),
 					}, nil, nil
 				},
 			},
@@ -260,8 +260,8 @@ func TestCanMaintenanceWindowReconcile(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek: 1,
-						HourOfDay: toptr.MakePtr(1),
-						StartASAP: toptr.MakePtr(true),
+						HourOfDay: pointer.MakePtr(1),
+						StartASAP: pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},
@@ -312,9 +312,9 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 				GetFunc: func(projectID string) (*mongodbatlas.MaintenanceWindow, *mongodbatlas.Response, error) {
 					return &mongodbatlas.MaintenanceWindow{
 						DayOfWeek:            1,
-						HourOfDay:            toptr.MakePtr(1),
-						StartASAP:            toptr.MakePtr(true),
-						AutoDeferOnceEnabled: toptr.MakePtr(true),
+						HourOfDay:            pointer.MakePtr(1),
+						StartASAP:            pointer.MakePtr(true),
+						AutoDeferOnceEnabled: pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},

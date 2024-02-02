@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -311,8 +311,8 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											DB:         toptr.MakePtr("testDB"),
-											Collection: toptr.MakePtr("testCollection"),
+											DB:         pointer.MakePtr("testDB"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -333,8 +333,8 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Database:   toptr.MakePtr("testDB"),
-										Collection: toptr.MakePtr("testCollection"),
+										Database:   pointer.MakePtr("testDB"),
+										Collection: pointer.MakePtr("testCollection"),
 									},
 								},
 							},
@@ -367,8 +367,8 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											DB:         toptr.MakePtr("testDB"),
-											Collection: toptr.MakePtr("testCollection"),
+											DB:         pointer.MakePtr("testDB"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -389,8 +389,8 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Database:   toptr.MakePtr("testDB"),
-										Collection: toptr.MakePtr("testCollection"),
+										Database:   pointer.MakePtr("testDB"),
+										Collection: pointer.MakePtr("testCollection"),
 									},
 								},
 							},
@@ -423,9 +423,9 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											Cluster:    toptr.MakePtr(false),
-											DB:         toptr.MakePtr("testDB"),
-											Collection: toptr.MakePtr("testCollection"),
+											Cluster:    pointer.MakePtr(false),
+											DB:         pointer.MakePtr("testDB"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -446,9 +446,9 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Cluster:    toptr.MakePtr(false),
-										Database:   toptr.MakePtr("testDB"),
-										Collection: toptr.MakePtr("testCollection"),
+										Cluster:    pointer.MakePtr(false),
+										Database:   pointer.MakePtr("testDB"),
+										Collection: pointer.MakePtr("testCollection"),
 									},
 								},
 							},
@@ -502,9 +502,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 									Action: "INSERT",
 									Resources: []mongodbatlas.Resource{
 										{
-											Cluster:    toptr.MakePtr(false),
-											DB:         toptr.MakePtr("testDB"),
-											Collection: toptr.MakePtr("testCollection"),
+											Cluster:    pointer.MakePtr(false),
+											DB:         pointer.MakePtr("testDB"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -525,9 +525,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Name: "INSERT",
 								Resources: []mdbv1.Resource{
 									{
-										Cluster:    toptr.MakePtr(false),
-										Database:   toptr.MakePtr("testDB"),
-										Collection: toptr.MakePtr("testCollection"),
+										Cluster:    pointer.MakePtr(false),
+										Database:   pointer.MakePtr("testDB"),
+										Collection: pointer.MakePtr("testCollection"),
 									},
 								},
 							},

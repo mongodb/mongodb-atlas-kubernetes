@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -62,9 +62,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 					Notifications: []v1.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     toptr.MakePtr(5),
-							EmailEnabled: toptr.MakePtr(true),
-							SMSEnabled:   toptr.MakePtr(false),
+							DelayMin:     pointer.MakePtr(5),
+							EmailEnabled: pointer.MakePtr(true),
+							SMSEnabled:   pointer.MakePtr(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -83,9 +83,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 					Notifications: []v1.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     toptr.MakePtr(5),
-							EmailEnabled: toptr.MakePtr(true),
-							SMSEnabled:   toptr.MakePtr(false),
+							DelayMin:     pointer.MakePtr(5),
+							EmailEnabled: pointer.MakePtr(true),
+							SMSEnabled:   pointer.MakePtr(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -109,9 +109,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 					Notifications: []v1.Notification{
 						{
 							IntervalMin:  60,
-							DelayMin:     toptr.MakePtr(0),
-							EmailEnabled: toptr.MakePtr(true),
-							SMSEnabled:   toptr.MakePtr(false),
+							DelayMin:     pointer.MakePtr(0),
+							EmailEnabled: pointer.MakePtr(true),
+							SMSEnabled:   pointer.MakePtr(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -130,9 +130,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 					Notifications: []v1.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     toptr.MakePtr(5),
-							EmailEnabled: toptr.MakePtr(true),
-							SMSEnabled:   toptr.MakePtr(false),
+							DelayMin:     pointer.MakePtr(5),
+							EmailEnabled: pointer.MakePtr(true),
+							SMSEnabled:   pointer.MakePtr(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -193,9 +193,9 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 			Notifications: []v1.Notification{
 				{
 					IntervalMin:  5,
-					DelayMin:     toptr.MakePtr(5),
-					EmailEnabled: toptr.MakePtr(true),
-					SMSEnabled:   toptr.MakePtr(false),
+					DelayMin:     pointer.MakePtr(5),
+					EmailEnabled: pointer.MakePtr(true),
+					SMSEnabled:   pointer.MakePtr(false),
 					Roles: []string{
 						"GROUP_OWNER",
 					},

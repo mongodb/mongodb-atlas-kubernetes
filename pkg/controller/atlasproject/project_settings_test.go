@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -84,12 +84,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(true),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(true),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},
@@ -97,12 +97,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				Settings: &mdbv1.ProjectSettings{
-					IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-					IsDataExplorerEnabled:                       toptr.MakePtr(true),
-					IsExtendedStorageSizesEnabled:               toptr.MakePtr(true),
-					IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-					IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-					IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+					IsDataExplorerEnabled:                       pointer.MakePtr(true),
+					IsExtendedStorageSizesEnabled:               pointer.MakePtr(true),
+					IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+					IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+					IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 				},
 			},
 		}
@@ -133,12 +133,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(true),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(true),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},
@@ -146,12 +146,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				Settings: &mdbv1.ProjectSettings{
-					IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-					IsDataExplorerEnabled:                       toptr.MakePtr(true),
-					IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-					IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-					IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-					IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+					IsDataExplorerEnabled:                       pointer.MakePtr(true),
+					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+					IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+					IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+					IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 				},
 			},
 		}
@@ -183,12 +183,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(true),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(true),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},
@@ -196,12 +196,12 @@ func TestProjectSettingsReconcile(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				Settings: &mdbv1.ProjectSettings{
-					IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-					IsDataExplorerEnabled:                       toptr.MakePtr(false),
-					IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-					IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-					IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-					IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+					IsDataExplorerEnabled:                       pointer.MakePtr(false),
+					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+					IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+					IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+					IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 				},
 			},
 		}
@@ -254,12 +254,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 			Projects: &atlas.ProjectsClientMock{
 				GetProjectSettingsFunc: func(projectID string) (*mongodbatlas.ProjectSettings, *mongodbatlas.Response, error) {
 					return &mongodbatlas.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(true),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(true),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					}, nil, nil
 				},
 			},
@@ -267,12 +267,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 		akoProject := &mdbv1.AtlasProject{
 			Spec: mdbv1.AtlasProjectSpec{
 				Settings: &mdbv1.ProjectSettings{
-					IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-					IsDataExplorerEnabled:                       toptr.MakePtr(false),
-					IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-					IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-					IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-					IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+					IsDataExplorerEnabled:                       pointer.MakePtr(false),
+					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+					IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+					IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+					IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 				},
 			},
 		}
@@ -308,21 +308,21 @@ func TestEnsureProjectSettings(t *testing.T) {
 
 func TestAreSettingsInSync(t *testing.T) {
 	atlasDef := &mdbv1.ProjectSettings{
-		IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-		IsDataExplorerEnabled:                       toptr.MakePtr(true),
-		IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-		IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-		IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+		IsDataExplorerEnabled:                       pointer.MakePtr(true),
+		IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+		IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+		IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 	}
 	specDef := &mdbv1.ProjectSettings{
-		IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-		IsDataExplorerEnabled:                       toptr.MakePtr(true),
+		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+		IsDataExplorerEnabled:                       pointer.MakePtr(true),
 	}
 
 	areEqual := areSettingsInSync(atlasDef, specDef)
 	assert.True(t, areEqual, "Only fields which are set should be compared")
 
-	specDef.IsPerformanceAdvisorEnabled = toptr.MakePtr(false)
+	specDef.IsPerformanceAdvisorEnabled = pointer.MakePtr(false)
 	areEqual = areSettingsInSync(atlasDef, specDef)
 	assert.False(t, areEqual, "Field values should be the same ")
 }

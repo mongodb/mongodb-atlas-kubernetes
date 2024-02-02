@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
@@ -91,7 +91,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				projectID,
 				&[]admin.NetworkPermissionEntry{
 					{
-						CidrBlock: toptr.MakePtr("192.168.0.0/24"),
+						CidrBlock: pointer.MakePtr("192.168.0.0/24"),
 						GroupId:   &projectID,
 					},
 				},
@@ -123,7 +123,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 					cloudProvider.GetRoleId(),
 					&admin.CloudProviderAccessRole{
 						ProviderName:      "AWS",
-						IamAssumedRoleArn: toptr.MakePtr(assumedRoleArn),
+						IamAssumedRoleArn: pointer.MakePtr(assumedRoleArn),
 					},
 				).Execute()
 				g.Expect(err).ToNot(HaveOccurred())
@@ -144,20 +144,20 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 			Expect(err).ToNot(HaveOccurred())
 
 			c, _, err := atlasClient.Client.NetworkPeeringApi.CreatePeeringContainer(ctx, projectID, &admin.CloudProviderContainer{
-				ProviderName:   toptr.MakePtr("AWS"),
-				RegionName:     toptr.MakePtr("EU_WEST_2"),
-				AtlasCidrBlock: toptr.MakePtr("192.168.224.0/21"),
+				ProviderName:   pointer.MakePtr("AWS"),
+				RegionName:     pointer.MakePtr("EU_WEST_2"),
+				AtlasCidrBlock: pointer.MakePtr("192.168.224.0/21"),
 			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
 
 			p, _, err := atlasClient.Client.NetworkPeeringApi.CreatePeeringConnection(ctx, projectID, &admin.BaseNetworkPeeringConnectionSettings{
-				ProviderName:        toptr.MakePtr("AWS"),
-				AccepterRegionName:  toptr.MakePtr("eu-west-2"),
+				ProviderName:        pointer.MakePtr("AWS"),
+				AccepterRegionName:  pointer.MakePtr("eu-west-2"),
 				ContainerId:         c.GetId(),
-				AwsAccountId:        toptr.MakePtr(awsAccountID),
-				RouteTableCidrBlock: toptr.MakePtr("10.0.0.0/24"),
-				VpcId:               toptr.MakePtr(AwsVpcID),
+				AwsAccountId:        pointer.MakePtr(awsAccountID),
+				RouteTableCidrBlock: pointer.MakePtr("10.0.0.0/24"),
+				VpcId:               pointer.MakePtr(AwsVpcID),
 			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(p).ToNot(BeNil())
@@ -187,9 +187,9 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 				"PAGER_DUTY",
 				projectID,
 				&admin.ThridPartyIntegration{
-					Type:       toptr.MakePtr("PAGER_DUTY"),
-					Region:     toptr.MakePtr("EU"),
-					ServiceKey: toptr.MakePtr(os.Getenv("PAGER_DUTY_SERVICE_KEY")),
+					Type:       pointer.MakePtr("PAGER_DUTY"),
+					Region:     pointer.MakePtr("EU"),
+					ServiceKey: pointer.MakePtr(os.Getenv("PAGER_DUTY_SERVICE_KEY")),
 				},
 			).Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -205,20 +205,20 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Adding Auditing to the project", func() {
 			_, _, err := atlasClient.Client.AuditingApi.UpdateAuditingConfiguration(ctx, projectID, &admin.AuditLog{
-				AuditFilter: toptr.MakePtr(`{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`),
-				Enabled:     toptr.MakePtr(true),
+				AuditFilter: pointer.MakePtr(`{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`),
+				Enabled:     pointer.MakePtr(true),
 			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Adding Settings to the project", func() {
 			_, _, err := atlasClient.Client.ProjectsApi.UpdateProjectSettings(ctx, projectID, &admin.GroupSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-				IsDataExplorerEnabled:                       toptr.MakePtr(true),
-				IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-				IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-				IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+				IsDataExplorerEnabled:                       pointer.MakePtr(true),
+				IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+				IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -231,10 +231,10 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 			_, _, err = atlasClient.Client.EncryptionAtRestUsingCustomerKeyManagementApi.UpdateEncryptionAtRest(ctx, projectID, &admin.EncryptionAtRest{
 				AwsKms: &admin.AWSKMSConfiguration{
-					Enabled:             toptr.MakePtr(true),
-					CustomerMasterKeyID: toptr.MakePtr(customerMasterKeyID),
-					Region:              toptr.MakePtr("EU_WEST_2"),
-					RoleId:              toptr.MakePtr(atlasRoleID),
+					Enabled:             pointer.MakePtr(true),
+					CustomerMasterKeyID: pointer.MakePtr(customerMasterKeyID),
+					Region:              pointer.MakePtr("EU_WEST_2"),
+					RoleId:              pointer.MakePtr(atlasRoleID),
 				},
 			}).Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -356,16 +356,16 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 						Enabled:                   true,
 					},
 					Settings: &mdbv1.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(false),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(false),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					},
 					EncryptionAtRest: &mdbv1.EncryptionAtRest{
 						AwsKms: mdbv1.AwsKms{
-							Enabled: toptr.MakePtr(true),
+							Enabled: pointer.MakePtr(true),
 							Region:  "EU_WEST_1",
 							SecretRef: common.ResourceRefNamespaced{
 								Name:      "aws-secret",
@@ -382,8 +382,8 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 									Name: "INSERT",
 									Resources: []mdbv1.Resource{
 										{
-											Database:   toptr.MakePtr("testD"),
-											Collection: toptr.MakePtr("testCollection"),
+											Database:   pointer.MakePtr("testD"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -744,7 +744,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Maintenance Window is ready after configured properly", func() {
 			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.Settings.IsDataExplorerEnabled = toptr.MakePtr(true)
+			testData.Project.Spec.Settings.IsDataExplorerEnabled = pointer.MakePtr(true)
 			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -808,7 +808,7 @@ var _ = Describe("Project Deletion Protection", Label("project", "deletion-prote
 
 		By("Custom Roles is ready after configured properly", func() {
 			Expect(testData.K8SClient.Get(context.Background(), client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.CustomRoles[0].Actions[0].Resources[0].Database = toptr.MakePtr("testDB")
+			testData.Project.Spec.CustomRoles[0].Actions[0].Resources[0].Database = pointer.MakePtr("testDB")
 			Expect(testData.K8SClient.Update(context.Background(), testData.Project)).To(Succeed())
 
 			Eventually(func(g Gomega) {

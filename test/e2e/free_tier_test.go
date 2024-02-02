@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -70,19 +70,19 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 				userData.Project.ID(),
 				&admin.AdvancedClusterDescription{
 					Name:        &name,
-					ClusterType: toptr.MakePtr("REPLICASET"),
+					ClusterType: pointer.MakePtr("REPLICASET"),
 					ReplicationSpecs: &[]admin.ReplicationSpec{
 						{
-							ZoneName: toptr.MakePtr("Zone 1"),
+							ZoneName: pointer.MakePtr("Zone 1"),
 							RegionConfigs: &[]admin.CloudRegionConfig{
 								{
-									ProviderName:        toptr.MakePtr("TENANT"),
-									BackingProviderName: toptr.MakePtr("AWS"),
-									Priority:            toptr.MakePtr(7),
-									RegionName:          toptr.MakePtr("US_EAST_1"),
+									ProviderName:        pointer.MakePtr("TENANT"),
+									BackingProviderName: pointer.MakePtr("AWS"),
+									Priority:            pointer.MakePtr(7),
+									RegionName:          pointer.MakePtr("US_EAST_1"),
 									ElectableSpecs: &admin.HardwareSpec{
-										InstanceSize: toptr.MakePtr(data.InstanceSizeM0),
-										NodeCount:    toptr.MakePtr(3),
+										InstanceSize: pointer.MakePtr(data.InstanceSizeM0),
+										NodeCount:    pointer.MakePtr(3),
 									},
 								},
 							},

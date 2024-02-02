@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
@@ -126,12 +126,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						Enabled:                   true,
 					},
 					Settings: &mdbv1.ProjectSettings{
-						IsCollectDatabaseSpecificsStatisticsEnabled: toptr.MakePtr(true),
-						IsDataExplorerEnabled:                       toptr.MakePtr(false),
-						IsExtendedStorageSizesEnabled:               toptr.MakePtr(false),
-						IsPerformanceAdvisorEnabled:                 toptr.MakePtr(true),
-						IsRealtimePerformancePanelEnabled:           toptr.MakePtr(true),
-						IsSchemaAdvisorEnabled:                      toptr.MakePtr(true),
+						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
+						IsDataExplorerEnabled:                       pointer.MakePtr(false),
+						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
+						IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
+						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
+						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					},
 					CustomRoles: []mdbv1.CustomRole{
 						{
@@ -142,8 +142,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 									Name: "INSERT",
 									Resources: []mdbv1.Resource{
 										{
-											Database:   toptr.MakePtr("testD"),
-											Collection: toptr.MakePtr("testCollection"),
+											Database:   pointer.MakePtr("testD"),
+											Collection: pointer.MakePtr("testCollection"),
 										},
 									},
 								},
@@ -317,7 +317,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 			testData.Project.Spec.EncryptionAtRest = &mdbv1.EncryptionAtRest{
 				AwsKms: mdbv1.AwsKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 					Region:  "US_EAST_1",
 					SecretRef: common.ResourceRefNamespaced{
 						Name:      "aws-secret",
@@ -442,21 +442,21 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					},
 					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
 						Name:          clusterName,
-						BackupEnabled: toptr.MakePtr(true),
+						BackupEnabled: pointer.MakePtr(true),
 						BiConnector: &mdbv1.BiConnectorSpec{
-							Enabled:        toptr.MakePtr(true),
+							Enabled:        pointer.MakePtr(true),
 							ReadPreference: "secondary",
 						},
 						ClusterType:              "REPLICASET",
-						DiskSizeGB:               toptr.MakePtr(40),
+						DiskSizeGB:               pointer.MakePtr(40),
 						EncryptionAtRestProvider: "AWS",
 						Labels: []common.LabelSpec{
 							{Key: "type", Value: "e2e-test"},
 							{Key: "context", Value: "cloud-gov"},
 						},
 						MongoDBMajorVersion: "7.0",
-						Paused:              toptr.MakePtr(false),
-						PitEnabled:          toptr.MakePtr(true),
+						Paused:              pointer.MakePtr(false),
+						PitEnabled:          pointer.MakePtr(true),
 						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
 							{
 								NumShards: 1,
@@ -464,22 +464,22 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
 									{
 										ElectableSpecs: &mdbv1.Specs{
-											DiskIOPS:     toptr.MakePtr(int64(3000)),
+											DiskIOPS:     pointer.MakePtr(int64(3000)),
 											InstanceSize: "M20",
-											NodeCount:    toptr.MakePtr(3),
+											NodeCount:    pointer.MakePtr(3),
 										},
 										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 											DiskGB: &mdbv1.DiskGB{
-												Enabled: toptr.MakePtr(true),
+												Enabled: pointer.MakePtr(true),
 											},
 											Compute: &mdbv1.ComputeSpec{
-												Enabled:          toptr.MakePtr(true),
-												ScaleDownEnabled: toptr.MakePtr(true),
+												Enabled:          pointer.MakePtr(true),
+												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M20",
 												MaxInstanceSize:  "M40",
 											},
 										},
-										Priority:     toptr.MakePtr(7),
+										Priority:     pointer.MakePtr(7),
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
 									},
@@ -496,8 +496,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					ProcessArgs: &mdbv1.ProcessArgs{
 						DefaultReadConcern:        "available",
 						MinimumEnabledTLSProtocol: "TLS1_2",
-						JavascriptEnabled:         toptr.MakePtr(true),
-						NoTableScan:               toptr.MakePtr(false),
+						JavascriptEnabled:         pointer.MakePtr(true),
+						NoTableScan:               pointer.MakePtr(false),
 					},
 				},
 			}

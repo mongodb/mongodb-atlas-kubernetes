@@ -6,13 +6,12 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -115,15 +114,15 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 		a.resourceGroupName,
 		endpointName,
 		armnetwork.PrivateEndpoint{
-			Name:     toptr.MakePtr(endpointName),
-			Location: toptr.MakePtr(region),
+			Name:     pointer.MakePtr(endpointName),
+			Location: pointer.MakePtr(region),
 			Properties: &armnetwork.PrivateEndpointProperties{
 				Subnet: updatedSubnet,
 				ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{
 					{
-						Name: toptr.MakePtr(endpointName),
+						Name: pointer.MakePtr(endpointName),
 						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: toptr.MakePtr(serviceID),
+							PrivateLinkServiceID: pointer.MakePtr(serviceID),
 						},
 					},
 				},
@@ -210,9 +209,9 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 		subnetsSpec = append(
 			subnetsSpec,
 			&armnetwork.Subnet{
-				Name: toptr.MakePtr(name),
+				Name: pointer.MakePtr(name),
 				Properties: &armnetwork.SubnetPropertiesFormat{
-					AddressPrefix: toptr.MakePtr(ipRange),
+					AddressPrefix: pointer.MakePtr(ipRange),
 				},
 			},
 		)
@@ -223,17 +222,17 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 		a.resourceGroupName,
 		vpcName,
 		armnetwork.VirtualNetwork{
-			Location: toptr.MakePtr(region),
+			Location: pointer.MakePtr(region),
 			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 				AddressSpace: &armnetwork.AddressSpace{
 					AddressPrefixes: []*string{
-						toptr.MakePtr(cidr),
+						pointer.MakePtr(cidr),
 					},
 				},
 				Subnets: subnetsSpec,
 			},
 			Tags: map[string]*string{
-				"Name": toptr.MakePtr(vpcName),
+				"Name": pointer.MakePtr(vpcName),
 			},
 		},
 		nil,
@@ -279,9 +278,9 @@ func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipR
 		vpcName,
 		subnetName,
 		armnetwork.Subnet{
-			Name: toptr.MakePtr(subnetName),
+			Name: pointer.MakePtr(subnetName),
 			Properties: &armnetwork.SubnetPropertiesFormat{
-				AddressPrefix: toptr.MakePtr(ipRange),
+				AddressPrefix: pointer.MakePtr(ipRange),
 			},
 		},
 		nil,
@@ -327,7 +326,7 @@ func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName,
 		return nil, fmt.Errorf("subnet %s not found", subnetName)
 	}
 
-	subnet.Properties.PrivateEndpointNetworkPolicies = toptr.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled)
+	subnet.Properties.PrivateEndpointNetworkPolicies = pointer.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled)
 	op, err := subnetClient.BeginCreateOrUpdate(
 		ctx,
 		a.resourceGroupName,
@@ -357,7 +356,7 @@ func (a *AzureAction) enableSubnetPENetworkPolicy(ctx context.Context, vpcName, 
 		return nil, fmt.Errorf("subnet %s not found", subnetName)
 	}
 
-	subnet.Properties.PrivateEndpointNetworkPolicies = toptr.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesEnabled)
+	subnet.Properties.PrivateEndpointNetworkPolicies = pointer.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesEnabled)
 	op, err := subnetClient.BeginCreateOrUpdate(
 		ctx,
 		a.resourceGroupName,
@@ -406,7 +405,7 @@ func (a *AzureAction) CreateKeyVault(keyName string) (string, error) {
 
 	params := armkeyvault.KeyCreateParameters{
 		Properties: &armkeyvault.KeyProperties{
-			Kty: toptr.MakePtr(armkeyvault.JSONWebKeyTypeRSA),
+			Kty: pointer.MakePtr(armkeyvault.JSONWebKeyTypeRSA),
 		},
 	}
 

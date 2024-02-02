@@ -3,15 +3,12 @@ package validate
 import (
 	"testing"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-
 	"github.com/stretchr/testify/assert"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 func TestClusterValidation(t *testing.T) {
@@ -107,8 +104,8 @@ func TestClusterValidation(t *testing.T) {
 										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
 										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 											Compute: &mdbv1.ComputeSpec{
-												Enabled:          toptr.MakePtr(true),
-												ScaleDownEnabled: toptr.MakePtr(true),
+												Enabled:          pointer.MakePtr(true),
+												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M30",
 											},
@@ -138,8 +135,8 @@ func TestClusterValidation(t *testing.T) {
 										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
 										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 											Compute: &mdbv1.ComputeSpec{
-												Enabled:          toptr.MakePtr(true),
-												ScaleDownEnabled: toptr.MakePtr(true),
+												Enabled:          pointer.MakePtr(true),
+												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M30",
 											},
@@ -181,8 +178,8 @@ func TestClusterValidation(t *testing.T) {
 									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
 									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 										Compute: &mdbv1.ComputeSpec{
-											Enabled:          toptr.MakePtr(true),
-											ScaleDownEnabled: toptr.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M30",
 										},
@@ -198,8 +195,8 @@ func TestClusterValidation(t *testing.T) {
 									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
 									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 										Compute: &mdbv1.ComputeSpec{
-											Enabled:          toptr.MakePtr(true),
-											ScaleDownEnabled: toptr.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M30",
 										},
@@ -393,7 +390,7 @@ func TestProjectForGov(t *testing.T) {
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					GoogleCloudKms: mdbv1.GoogleCloudKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 					},
 				},
 			},
@@ -408,7 +405,7 @@ func TestProjectForGov(t *testing.T) {
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AzureKeyVault: mdbv1.AzureKeyVault{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 					},
 				},
 			},
@@ -423,7 +420,7 @@ func TestProjectForGov(t *testing.T) {
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "us-east-1",
 					},
 				},
@@ -480,7 +477,7 @@ func TestProjectForGov(t *testing.T) {
 				},
 				EncryptionAtRest: &mdbv1.EncryptionAtRest{
 					AwsKms: mdbv1.AwsKms{
-						Enabled: toptr.MakePtr(true),
+						Enabled: pointer.MakePtr(true),
 						Region:  "us-gov-east-1",
 					},
 				},
@@ -515,9 +512,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 			Spec: mdbv1.AtlasBackupScheduleSpec{
 				CopySettings: []mdbv1.CopySetting{
 					{
-						RegionName:       toptr.MakePtr("US_WEST_1"),
-						CloudProvider:    toptr.MakePtr("AWS"),
-						ShouldCopyOplogs: toptr.MakePtr(true),
+						RegionName:       pointer.MakePtr("US_WEST_1"),
+						CloudProvider:    pointer.MakePtr("AWS"),
+						ShouldCopyOplogs: pointer.MakePtr(true),
 						Frequencies:      []string{"WEEKLY"},
 					},
 				},
@@ -526,7 +523,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 		deployment := &mdbv1.AtlasDeployment{
 			Spec: mdbv1.AtlasDeploymentSpec{
 				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-					PitEnabled: toptr.MakePtr(true),
+					PitEnabled: pointer.MakePtr(true),
 				},
 			},
 		}
@@ -539,9 +536,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							RegionName:       toptr.MakePtr("US_WEST_1"),
-							CloudProvider:    toptr.MakePtr("AWS"),
-							ShouldCopyOplogs: toptr.MakePtr(true),
+							RegionName:       pointer.MakePtr("US_WEST_1"),
+							CloudProvider:    pointer.MakePtr("AWS"),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 							Frequencies:      []string{"WEEKLY"},
 						},
 					},
@@ -550,7 +547,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
 					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						PitEnabled: toptr.MakePtr(true),
+						PitEnabled: pointer.MakePtr(true),
 					},
 				},
 				Status: status.AtlasDeploymentStatus{
@@ -570,10 +567,10 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							ShouldCopyOplogs: toptr.MakePtr(true),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 						},
 						{
-							RegionName: toptr.MakePtr("US_WEST_1"),
+							RegionName: pointer.MakePtr("US_WEST_1"),
 						},
 					},
 				},
@@ -601,9 +598,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							RegionName:       toptr.MakePtr("US_WEST_1"),
-							CloudProvider:    toptr.MakePtr("AWS"),
-							ShouldCopyOplogs: toptr.MakePtr(true),
+							RegionName:       pointer.MakePtr("US_WEST_1"),
+							CloudProvider:    pointer.MakePtr("AWS"),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 							Frequencies:      []string{"WEEKLY"},
 						},
 					},
@@ -612,7 +609,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			deployment := &mdbv1.AtlasDeployment{
 				Spec: mdbv1.AtlasDeploymentSpec{
 					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						PitEnabled: toptr.MakePtr(true),
+						PitEnabled: pointer.MakePtr(true),
 					},
 				},
 				Status: status.AtlasDeploymentStatus{
@@ -632,10 +629,10 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: mdbv1.AtlasBackupScheduleSpec{
 					CopySettings: []mdbv1.CopySetting{
 						{
-							ShouldCopyOplogs: toptr.MakePtr(true),
+							ShouldCopyOplogs: pointer.MakePtr(true),
 						},
 						{
-							RegionName: toptr.MakePtr("US_WEST_1"),
+							RegionName: pointer.MakePtr("US_WEST_1"),
 						},
 					},
 				},
@@ -828,9 +825,9 @@ func sampleAlertConfig(typeName string) mdbv1.AlertConfiguration {
 		Notifications: []mdbv1.Notification{
 			{
 				IntervalMin:  5,
-				DelayMin:     toptr.MakePtr(5),
-				EmailEnabled: toptr.MakePtr(true),
-				SMSEnabled:   toptr.MakePtr(false),
+				DelayMin:     pointer.MakePtr(5),
+				EmailEnabled: pointer.MakePtr(true),
+				SMSEnabled:   pointer.MakePtr(false),
 				Roles: []string{
 					"GROUP_OWNER",
 				},
@@ -848,15 +845,15 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(0),
+							NodeCount:    pointer.MakePtr(0),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 				},
@@ -873,15 +870,15 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(0),
+							NodeCount:    pointer.MakePtr(0),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M20",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 				},
@@ -898,25 +895,25 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(0),
+							NodeCount:    pointer.MakePtr(0),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 					{
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M20",
-							NodeCount:    toptr.MakePtr(0),
+							NodeCount:    pointer.MakePtr(0),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M20",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 				},
@@ -935,15 +932,15 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 				},
@@ -960,20 +957,20 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M30",
 							},
@@ -993,20 +990,20 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M20",
 								MaxInstanceSize:  "M40",
 							},
@@ -1026,20 +1023,20 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 					{
 						ElectableSpecs: &mdbv1.Specs{
 							InstanceSize: "M40",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
 						ReadOnlySpecs: &mdbv1.Specs{
 							InstanceSize: "M40",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AnalyticsSpecs: &mdbv1.Specs{
 							InstanceSize: "M40",
-							NodeCount:    toptr.MakePtr(1),
+							NodeCount:    pointer.MakePtr(1),
 						},
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M30",
 							},
@@ -1061,11 +1058,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 					{
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							DiskGB: &mdbv1.DiskGB{
-								Enabled: toptr.MakePtr(true),
+								Enabled: pointer.MakePtr(true),
 							},
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M40",
 							},
@@ -1074,11 +1071,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 					{
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							DiskGB: &mdbv1.DiskGB{
-								Enabled: toptr.MakePtr(true),
+								Enabled: pointer.MakePtr(true),
 							},
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(false),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(false),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M40",
 							},
@@ -1098,11 +1095,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 					{
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							DiskGB: &mdbv1.DiskGB{
-								Enabled: toptr.MakePtr(false),
+								Enabled: pointer.MakePtr(false),
 							},
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M40",
 							},
@@ -1111,11 +1108,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 					{
 						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 							DiskGB: &mdbv1.DiskGB{
-								Enabled: toptr.MakePtr(true),
+								Enabled: pointer.MakePtr(true),
 							},
 							Compute: &mdbv1.ComputeSpec{
-								Enabled:          toptr.MakePtr(true),
-								ScaleDownEnabled: toptr.MakePtr(true),
+								Enabled:          pointer.MakePtr(true),
+								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M40",
 							},

@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -155,27 +153,27 @@ func areSettingsEqual(operator *v1.ProjectSettings, atlas *mongodbatlas.ProjectS
 	}
 
 	if operator.IsCollectDatabaseSpecificsStatisticsEnabled == nil {
-		operator.IsCollectDatabaseSpecificsStatisticsEnabled = toptr.MakePtr(true)
+		operator.IsCollectDatabaseSpecificsStatisticsEnabled = pointer.MakePtr(true)
 	}
 
 	if operator.IsDataExplorerEnabled == nil {
-		operator.IsDataExplorerEnabled = toptr.MakePtr(true)
+		operator.IsDataExplorerEnabled = pointer.MakePtr(true)
 	}
 
 	if operator.IsExtendedStorageSizesEnabled == nil {
-		operator.IsExtendedStorageSizesEnabled = toptr.MakePtr(false)
+		operator.IsExtendedStorageSizesEnabled = pointer.MakePtr(false)
 	}
 
 	if operator.IsPerformanceAdvisorEnabled == nil {
-		operator.IsPerformanceAdvisorEnabled = toptr.MakePtr(true)
+		operator.IsPerformanceAdvisorEnabled = pointer.MakePtr(true)
 	}
 
 	if operator.IsRealtimePerformancePanelEnabled == nil {
-		operator.IsRealtimePerformancePanelEnabled = toptr.MakePtr(true)
+		operator.IsRealtimePerformancePanelEnabled = pointer.MakePtr(true)
 	}
 
 	if operator.IsSchemaAdvisorEnabled == nil {
-		operator.IsSchemaAdvisorEnabled = toptr.MakePtr(true)
+		operator.IsSchemaAdvisorEnabled = pointer.MakePtr(true)
 	}
 
 	return *operator.IsCollectDatabaseSpecificsStatisticsEnabled == *atlas.IsCollectDatabaseSpecificsStatisticsEnabled &&

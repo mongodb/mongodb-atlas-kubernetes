@@ -1,12 +1,11 @@
 package atlasdeployment
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
@@ -125,17 +124,17 @@ func normalizeSpecs(regions []*mdbv1.AdvancedRegionConfig) {
 
 		if region.ElectableSpecs == nil {
 			region.ElectableSpecs = &notNilSpecs
-			region.ElectableSpecs.NodeCount = toptr.MakePtr(0)
+			region.ElectableSpecs.NodeCount = pointer.MakePtr(0)
 		}
 
 		if region.ReadOnlySpecs == nil {
 			region.ReadOnlySpecs = &notNilSpecs
-			region.ReadOnlySpecs.NodeCount = toptr.MakePtr(0)
+			region.ReadOnlySpecs.NodeCount = pointer.MakePtr(0)
 		}
 
 		if region.AnalyticsSpecs == nil {
 			region.AnalyticsSpecs = &notNilSpecs
-			region.AnalyticsSpecs.NodeCount = toptr.MakePtr(0)
+			region.AnalyticsSpecs.NodeCount = pointer.MakePtr(0)
 		}
 	}
 }

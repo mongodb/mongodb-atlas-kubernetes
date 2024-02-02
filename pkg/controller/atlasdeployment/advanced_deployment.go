@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -187,7 +187,7 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
 	var value *int
 	if atlas.DiskSizeGB != nil && *atlas.DiskSizeGB >= 1 {
-		value = toptr.MakePtr(int(*atlas.DiskSizeGB))
+		value = pointer.MakePtr(int(*atlas.DiskSizeGB))
 	}
 	result.DiskSizeGB = value
 	atlas.DiskSizeGB = nil

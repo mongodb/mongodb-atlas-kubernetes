@@ -8,19 +8,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-
+	"go.mongodb.org/atlas/mongodbatlas"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
-
-	"go.mongodb.org/atlas/mongodbatlas"
 )
 
 const (
@@ -279,13 +277,13 @@ func balanceAsymmetricalFields(atlas *mongodbatlas.EncryptionAtRest, spec *mongo
 	}
 
 	if isNotNilAndFalse(atlas.AwsKms.Enabled) {
-		spec.AwsKms.Enabled = toptr.MakePtr(false)
+		spec.AwsKms.Enabled = pointer.MakePtr(false)
 	}
 	if isNotNilAndFalse(atlas.AzureKeyVault.Enabled) {
-		spec.AzureKeyVault.Enabled = toptr.MakePtr(false)
+		spec.AzureKeyVault.Enabled = pointer.MakePtr(false)
 	}
 	if isNotNilAndFalse(atlas.GoogleCloudKms.Enabled) {
-		spec.GoogleCloudKms.Enabled = toptr.MakePtr(false)
+		spec.GoogleCloudKms.Enabled = pointer.MakePtr(false)
 	}
 
 	spec.Valid = atlas.Valid
@@ -339,7 +337,7 @@ func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
 	result = project.Spec.EncryptionAtRest.AwsKms.ToAtlas()
 
 	if (result == mongodbatlas.AwsKms{}) {
-		result.Enabled = toptr.MakePtr(false)
+		result.Enabled = pointer.MakePtr(false)
 	}
 
 	if result.RoleID == "" {
@@ -360,7 +358,7 @@ func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKey
 	result = project.Spec.EncryptionAtRest.AzureKeyVault.ToAtlas()
 
 	if (result == mongodbatlas.AzureKeyVault{}) {
-		result.Enabled = toptr.MakePtr(false)
+		result.Enabled = pointer.MakePtr(false)
 	}
 
 	return
@@ -374,7 +372,7 @@ func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleC
 	result = project.Spec.EncryptionAtRest.GoogleCloudKms.ToAtlas()
 
 	if (result == mongodbatlas.GoogleCloudKms{}) {
-		result.Enabled = toptr.MakePtr(false)
+		result.Enabled = pointer.MakePtr(false)
 	}
 
 	return
@@ -424,7 +422,7 @@ func areEaRConfigEqual(operator mdbv1.EncryptionAtRest, atlas *mongodbatlas.Encr
 
 func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
-		operator.Enabled = toptr.MakePtr(false)
+		operator.Enabled = pointer.MakePtr(false)
 	}
 
 	if lastApplied {
@@ -439,7 +437,7 @@ func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApp
 
 func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
-		operator.Enabled = toptr.MakePtr(false)
+		operator.Enabled = pointer.MakePtr(false)
 	}
 
 	if lastApplied {
@@ -453,7 +451,7 @@ func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleC
 
 func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault, lastApplied bool) bool {
 	if operator.Enabled == nil {
-		operator.Enabled = toptr.MakePtr(false)
+		operator.Enabled = pointer.MakePtr(false)
 	}
 
 	if lastApplied {

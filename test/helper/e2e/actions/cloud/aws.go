@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 type AwsAction struct {
@@ -434,7 +434,7 @@ func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (*string,
 			},
 		}},
 		VpcId:            aws.String(vpcID),
-		AvailabilityZone: toptr.MakePtr(fmt.Sprintf("%s%s", region, az)),
+		AvailabilityZone: pointer.MakePtr(fmt.Sprintf("%s%s", region, az)),
 	}
 	result, err := ec2Client.CreateSubnet(input)
 	if err != nil {

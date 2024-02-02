@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -78,7 +78,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				atlasProject := admin.Group{
 					OrgId:                     orgID,
 					Name:                      projectName,
-					WithDefaultAlertsSettings: toptr.MakePtr(true),
+					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
 				_, _, err := atlasClient.ProjectsApi.CreateProject(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())

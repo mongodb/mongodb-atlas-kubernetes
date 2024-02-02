@@ -3,12 +3,10 @@ package data
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 )
 
@@ -51,10 +49,10 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 							{
 								ProviderName: "AWS",
 								RegionName:   "US_EAST_1",
-								Priority:     toptr.MakePtr(7),
+								Priority:     pointer.MakePtr(7),
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
 							},
 						},
@@ -66,10 +64,10 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 							{
 								ProviderName: "AZURE",
 								RegionName:   "EUROPE_NORTH",
-								Priority:     toptr.MakePtr(7),
+								Priority:     pointer.MakePtr(7),
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
 							},
 						},
@@ -120,10 +118,10 @@ func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 							{
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: "M2",
-									NodeCount:    toptr.MakePtr(1),
+									NodeCount:    pointer.MakePtr(1),
 								},
 								BackingProviderName: "AWS",
-								Priority:            toptr.MakePtr(7),
+								Priority:            pointer.MakePtr(7),
 								ProviderName:        "TENANT",
 								RegionName:          "US_EAST_1",
 							},
@@ -147,7 +145,7 @@ func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
 			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				ClusterType:   "REPLICASET",
 				Name:          "deployment-backup",
-				BackupEnabled: toptr.MakePtr(true),
+				BackupEnabled: pointer.MakePtr(true),
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
 						ZoneName: "Zone 1",
@@ -155,9 +153,9 @@ func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
 							{
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
-								Priority:            toptr.MakePtr(7),
+								Priority:            pointer.MakePtr(7),
 								ProviderName:        "AWS",
 								BackingProviderName: "AWS",
 								RegionName:          "US_EAST_1",
@@ -178,7 +176,7 @@ func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
 		},
 		DeploymentSpec: &v1.AdvancedDeploymentSpec{
 			Name:          "deployment-backup",
-			BackupEnabled: toptr.MakePtr(false),
+			BackupEnabled: pointer.MakePtr(false),
 			ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 				{
 					ZoneName: "Zone 1",
@@ -186,9 +184,9 @@ func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
 						{
 							ElectableSpecs: &v1.Specs{
 								InstanceSize: InstanceSizeM20,
-								NodeCount:    toptr.MakePtr(3),
+								NodeCount:    pointer.MakePtr(3),
 							},
-							Priority:            toptr.MakePtr(7),
+							Priority:            pointer.MakePtr(7),
 							ProviderName:        "AWS",
 							BackingProviderName: "AWS",
 							RegionName:          "US_EAST_1",
@@ -237,7 +235,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 			},
 			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Name:          "deployment-multiregion",
-				BackupEnabled: toptr.MakePtr(true),
+				BackupEnabled: pointer.MakePtr(true),
 				ClusterType:   "REPLICASET",
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
 					{
@@ -247,20 +245,20 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 							{
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(2),
+									NodeCount:    pointer.MakePtr(2),
 								},
 								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
-								Priority:     toptr.MakePtr(7),
+								Priority:     pointer.MakePtr(7),
 								ProviderName: string(providerName),
 								RegionName:   regions[0],
 							},
 							{
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(1),
+									NodeCount:    pointer.MakePtr(1),
 								},
 								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
-								Priority:     toptr.MakePtr(6),
+								Priority:     pointer.MakePtr(6),
 								ProviderName: string(providerName),
 								RegionName:   regions[1],
 							},
@@ -295,7 +293,7 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM0,
 								},
-								Priority:            toptr.MakePtr(7),
+								Priority:            pointer.MakePtr(7),
 								ProviderName:        string(provider.ProviderTenant),
 								BackingProviderName: string(provider.ProviderAWS),
 								RegionName:          AWSRegion,
@@ -305,9 +303,9 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 				},
 			},
 			ProcessArgs: &v1.ProcessArgs{
-				JavascriptEnabled:         toptr.MakePtr(true),
+				JavascriptEnabled:         pointer.MakePtr(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				NoTableScan:               toptr.MakePtr(false),
+				NoTableScan:               pointer.MakePtr(false),
 			},
 		},
 	}
@@ -324,15 +322,15 @@ func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
 			},
 			DeploymentSpec: &v1.AdvancedDeploymentSpec{
 				Name:          name,
-				BackupEnabled: toptr.MakePtr(false),
+				BackupEnabled: pointer.MakePtr(false),
 				BiConnector: &v1.BiConnectorSpec{
-					Enabled:        toptr.MakePtr(false),
+					Enabled:        pointer.MakePtr(false),
 					ReadPreference: "secondary",
 				},
 				ClusterType:              string(v1.TypeReplicaSet),
 				EncryptionAtRestProvider: "NONE",
-				PitEnabled:               toptr.MakePtr(false),
-				Paused:                   toptr.MakePtr(false),
+				PitEnabled:               pointer.MakePtr(false),
+				Paused:                   pointer.MakePtr(false),
 				RootCertType:             "ISRGROOTX1",
 				VersionReleaseSystem:     "LTS",
 				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
@@ -343,9 +341,9 @@ func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
 							{
 								ElectableSpecs: &v1.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    toptr.MakePtr(3),
+									NodeCount:    pointer.MakePtr(3),
 								},
-								Priority:     toptr.MakePtr(7),
+								Priority:     pointer.MakePtr(7),
 								ProviderName: string(provider.ProviderAWS),
 								RegionName:   AWSRegion,
 							},
@@ -354,9 +352,9 @@ func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
 				},
 			},
 			ProcessArgs: &v1.ProcessArgs{
-				JavascriptEnabled:         toptr.MakePtr(true),
+				JavascriptEnabled:         pointer.MakePtr(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				NoTableScan:               toptr.MakePtr(false),
+				NoTableScan:               pointer.MakePtr(false),
 			},
 		},
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
@@ -113,7 +113,7 @@ func TestAtlasDataFederation_ToAtlas(t *testing.T) {
 								{
 									DataSources: []*mongodbatlas.DataFederationDataSource{
 										{
-											AllowInsecure:       toptr.MakePtr(true),
+											AllowInsecure:       pointer.MakePtr(true),
 											Collection:          "test-collection-1",
 											CollectionRegex:     "test-collection-regex",
 											Database:            "test-db-1",
@@ -122,7 +122,7 @@ func TestAtlasDataFederation_ToAtlas(t *testing.T) {
 											Path:                "test-path",
 											ProvenanceFieldName: "test-field-name",
 											StoreName:           "http-test",
-											Urls:                []*string{toptr.MakePtr[string]("https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv")},
+											Urls:                []*string{pointer.MakePtr[string]("https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv")},
 										},
 									},
 									Name: "test-collection-1",
@@ -143,13 +143,13 @@ func TestAtlasDataFederation_ToAtlas(t *testing.T) {
 						{
 							Name:                     "http-test",
 							Provider:                 "http",
-							AdditionalStorageClasses: []*string{toptr.MakePtr[string]("test-storage-class")},
+							AdditionalStorageClasses: []*string{pointer.MakePtr[string]("test-storage-class")},
 							Bucket:                   "test-bucket",
 							Delimiter:                ",",
-							IncludeTags:              toptr.MakePtr(true),
+							IncludeTags:              pointer.MakePtr(true),
 							Prefix:                   "test-prefix",
 							Region:                   "SYDNEY_AUS",
-							Public:                   toptr.MakePtr(true),
+							Public:                   pointer.MakePtr(true),
 						},
 					},
 				},

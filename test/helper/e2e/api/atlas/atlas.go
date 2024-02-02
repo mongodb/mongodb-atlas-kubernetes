@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/debug"
 )
@@ -161,7 +161,7 @@ func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin
 			projectID,
 			&admin.DiskBackupSnapshotAWSExportBucket{
 				BucketName:    &bucketName,
-				CloudProvider: toptr.MakePtr("AWS"),
+				CloudProvider: pointer.MakePtr("AWS"),
 				IamRoleId:     &roleID,
 			},
 		).Execute()

@@ -3,17 +3,14 @@ package atlasdeployment
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
-
+	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 )
 
 func TestMergedAdvancedDeployment(t *testing.T) {
@@ -76,9 +73,9 @@ func makeDefaultAtlasSpec() *mongodbatlas.AdvancedCluster {
 					{
 						ElectableSpecs: &mongodbatlas.Specs{
 							InstanceSize: "M10",
-							NodeCount:    toptr.MakePtr(3),
+							NodeCount:    pointer.MakePtr(3),
 						},
-						Priority:     toptr.MakePtr(7),
+						Priority:     pointer.MakePtr(7),
 						ProviderName: "AWS",
 						RegionName:   "US_EAST_1",
 					},
@@ -94,11 +91,11 @@ func fillInSpecs(regionConfig *mongodbatlas.AdvancedRegionConfig, instanceSize s
 	regionConfig.ElectableSpecs.InstanceSize = instanceSize
 	regionConfig.AnalyticsSpecs = &mongodbatlas.Specs{
 		InstanceSize: instanceSize,
-		NodeCount:    toptr.MakePtr(0),
+		NodeCount:    pointer.MakePtr(0),
 	}
 	regionConfig.ReadOnlySpecs = &mongodbatlas.Specs{
 		InstanceSize: instanceSize,
-		NodeCount:    toptr.MakePtr(0),
+		NodeCount:    pointer.MakePtr(0),
 	}
 }
 

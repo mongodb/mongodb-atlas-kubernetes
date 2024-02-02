@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -84,7 +84,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			).WithProject(data.DefaultProject()),
 			v1.EncryptionAtRest{
 				AwsKms: v1.AwsKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 					Region:  "US_EAST_1",
 				},
 			},
@@ -108,7 +108,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				AzureKeyVault: v1.AzureKeyVault{
 					AzureEnvironment:  AzureEnvironment,
 					ClientID:          os.Getenv(AzureClientID),
-					Enabled:           toptr.MakePtr(true),
+					Enabled:           pointer.MakePtr(true),
 					ResourceGroupName: cloud.ResourceGroupName,
 					TenantID:          os.Getenv(DirectoryID),
 				},
@@ -124,7 +124,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			).WithProject(data.DefaultProject()),
 			v1.EncryptionAtRest{
 				GoogleCloudKms: v1.GoogleCloudKms{
-					Enabled: toptr.MakePtr(true),
+					Enabled: pointer.MakePtr(true),
 				},
 			},
 			nil,
@@ -364,7 +364,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 		userData := testData
 		encAtRest := v1.EncryptionAtRest{
 			AwsKms: v1.AwsKms{
-				Enabled: toptr.MakePtr(true),
+				Enabled: pointer.MakePtr(true),
 				Region:  "US_EAST_1",
 			},
 		}

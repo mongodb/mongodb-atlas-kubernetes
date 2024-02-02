@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/toptr"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 // Auditing represents MongoDB Maintenance Windows
@@ -23,8 +23,8 @@ type Auditing struct {
 
 func (a Auditing) ToAtlas() *mongodbatlas.Auditing {
 	return &mongodbatlas.Auditing{
-		AuditAuthorizationSuccess: toptr.MakePtr(a.AuditAuthorizationSuccess),
+		AuditAuthorizationSuccess: pointer.MakePtr(a.AuditAuthorizationSuccess),
 		AuditFilter:               strings.Trim(a.AuditFilter, "\n"),
-		Enabled:                   toptr.MakePtr(a.Enabled),
+		Enabled:                   pointer.MakePtr(a.Enabled),
 	}
 }
