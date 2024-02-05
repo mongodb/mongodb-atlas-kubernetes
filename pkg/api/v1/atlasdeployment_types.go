@@ -127,6 +127,9 @@ type AdvancedDeploymentSpec struct {
 	CustomZoneMapping []CustomZoneMapping `json:"customZoneMapping,omitempty"`
 	// +optional
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
+	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
+	// +kubebuilder:default:=false
+	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
@@ -169,7 +172,7 @@ type ServerlessSpec struct {
 	// Serverless Backup Options
 	BackupOptions ServerlessBackupOptions `json:"backupOptions,omitempty"`
 
-	// TerminationProtectionEnabled flag
+	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
 }

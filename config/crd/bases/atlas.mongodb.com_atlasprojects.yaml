@@ -157,7 +157,7 @@ spec:
                               types.
                             type: boolean
                           flowName:
-                            description: Flowdock flow namse in lower-case letters.
+                            description: Flowdock flow name in lower-case letters.
                             type: string
                           flowdockApiTokenRef:
                             description: The Flowdock personal API token. Populated
@@ -185,7 +185,7 @@ spec:
                               are sent. Populated for the SMS notifications type.
                             type: string
                           opsGenieApiKeyRef:
-                            description: Opsgenie API Key. Populated for the OPS_GENIE
+                            description: OpsGenie API Key. Populated for the OPS_GENIE
                               notifications type. If the key later becomes invalid,
                               Atlas sends an email to the project owner and eventually
                               removes the token.
