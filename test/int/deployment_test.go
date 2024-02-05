@@ -159,7 +159,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.AdvancedDeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
+			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), &mergedDeployment, &atlasDeployment)
 			Expect(diff).To(BeEmpty())
 
 			createdDeployment.Spec.DeploymentSpec = legacyDeployment
@@ -182,7 +182,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			mergedDeployment, atlasDeployment, err := atlasdeployment.MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *createdDeployment.Spec.AdvancedDeploymentSpec)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), mergedDeployment, atlasDeployment)
+			_, diff := atlasdeployment.AdvancedDeploymentsEqual(zap.S(), &mergedDeployment, &atlasDeployment)
 			Expect(diff).To(BeEmpty())
 
 			for _, check := range additionalChecks {
@@ -377,7 +377,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", func() {
+	Describe("Create/Update the deployment (more complex scenario)", Label("int", "create-update-complex-deployment", "slow"), func() {
 		It("Should be created", func() {
 			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = mdbv1.TypeReplicaSet

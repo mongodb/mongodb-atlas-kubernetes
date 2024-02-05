@@ -50,15 +50,78 @@ func TestAdvancedDeploymentsEqual(t *testing.T) {
 	regionConfig := defaultAtlas.ReplicationSpecs[0].RegionConfigs[0]
 	fillInSpecs(regionConfig, "M10", "AWS")
 
-	t.Run("Test ", func(t *testing.T) {
+	t.Run("Test equal advanced deployments", func(t *testing.T) {
 		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
 
 		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
 		assert.NoError(t, err)
+		beforeSpec := merged.DeepCopy()
+		beforeAtlas := atlas.DeepCopy()
 
 		logger, _ := zap.NewProduction()
-		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), merged, atlas)
+		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), &merged, &atlas)
 		assert.True(t, areEqual, "Deployments should be equal")
+		assert.Equal(t, beforeSpec, &merged, "Comparison should not change original spec values")
+		assert.Equal(t, beforeAtlas, &atlas, "Comparison should not change original atlas values")
+	})
+
+	t.Run("Advanced deployments are equal when autoscaling is ON and only differ on instance sizes", func(t *testing.T) {
+		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
+		// set auto scaling ON
+		advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+			DiskGB: &mdbv1.DiskGB{
+				Enabled: toptr.MakePtr(false),
+			},
+			Compute: &mdbv1.ComputeSpec{
+				Enabled:          toptr.MakePtr(true),
+				ScaleDownEnabled: toptr.MakePtr(true),
+				MinInstanceSize:  "M10",
+				MaxInstanceSize:  "M30",
+			},
+		}
+
+		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		// copy autoscaling to atlas
+		k8sRegion := advancedCluster.Spec.AdvancedDeploymentSpec.ReplicationSpecs[0].RegionConfigs[0]
+		atlas.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &mdbv1.AdvancedAutoScalingSpec{
+			DiskGB: &mdbv1.DiskGB{
+				Enabled: k8sRegion.AutoScaling.DiskGB.Enabled,
+			},
+			Compute: &mdbv1.ComputeSpec{
+				Enabled:          k8sRegion.AutoScaling.Compute.Enabled,
+				ScaleDownEnabled: k8sRegion.AutoScaling.Compute.ScaleDownEnabled,
+				MinInstanceSize:  k8sRegion.AutoScaling.Compute.MinInstanceSize,
+				MaxInstanceSize:  k8sRegion.AutoScaling.Compute.MaxInstanceSize,
+			},
+		}
+		// inject difference
+		atlas.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "something-else"
+		assert.NoError(t, err)
+		beforeSpec := merged.DeepCopy()
+		beforeAtlas := atlas.DeepCopy()
+
+		logger, _ := zap.NewProduction()
+		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), &merged, &atlas)
+		assert.True(t, areEqual, "Deployments should be equal")
+		assert.Equal(t, beforeSpec, &merged, "Comparison should not change original spec values")
+		assert.Equal(t, beforeAtlas, &atlas, "Comparison should not change original atlas values")
+	})
+
+	t.Run("Advanced deployments are different when autoscaling is OFF and only differ on instance sizes", func(t *testing.T) {
+		advancedCluster := mdbv1.DefaultAwsAdvancedDeployment("default", "my-project")
+
+		merged, atlas, err := MergedAdvancedDeployment(*defaultAtlas, *advancedCluster.Spec.AdvancedDeploymentSpec)
+		// inject difference
+		atlas.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "something-else"
+		assert.NoError(t, err)
+		beforeSpec := merged.DeepCopy()
+		beforeAtlas := atlas.DeepCopy()
+
+		logger, _ := zap.NewProduction()
+		areEqual, _ := AdvancedDeploymentsEqual(logger.Sugar(), &merged, &atlas)
+		assert.False(t, areEqual, "Deployments should be different")
+		assert.Equal(t, beforeSpec, &merged, "Comparison should not change original spec values")
+		assert.Equal(t, beforeAtlas, &atlas, "Comparison should not change original atlas values")
 	})
 }
 
