@@ -12,6 +12,10 @@ on:
       version:
         description: "Release version (Be sure `Release-branch` is successful):"
         required: true
+      branch:
+        description: "Name of the branch to release, defaults to 'main'"
+        default: main
+        required: true
       image_repo:
         type: choice
         description: "Target image repository for built images"
@@ -21,17 +25,29 @@ on:
         - mongodb/mongodb-atlas-kubernetes-operator-prerelease
         - mongodb/mongodb-atlas-kubernetes-operator
       release_helm:
+        type: choice
         description: "Whether or not to trigger the Helm release as well. Skip by default for tests"
         default: 'false'
         required: true
+        options:
+        - true
+        - false
       certify:
+        type: choice
         description: "Whether or not to certify the OpenShift images. Skip by default for tests"
         default: 'false'
         required: true
+        options:
+          - true
+          - false
       release_to_github:
+        type: choice
         description: "Whether or not to create the GitHub release. Skip by default for tests"
         default: 'false'
         required: true
+        options:
+          - true
+          - false
 jobs:
   create-release:
     environment: release
@@ -43,6 +59,7 @@ jobs:
       RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
+      BRANCH: ${{ github.event.inputs.branch || 'main' }}
     steps:
       - name: Free disk space
         run: | 
@@ -54,7 +71,6 @@ jobs:
       - name: Print Env and Get version
         id: tag
         env:
-          BRANCH: ${{ github.head_ref }}
           VERSION: ${{ github.event.inputs.version }}
         run: |
           version=$VERSION
@@ -72,10 +88,17 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+          ref: ${{ env.BRANCH }}
       - name: Set up Go
+        if: ${{ env.RELEASE_HELM == 'true' }}
         uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/tools/makejwt/go.mod"
+          cache: false
+      - name: Set up Go (skip JWT)
+        if: ${{ env.RELEASE_HELM == 'false' }}
+        uses: actions/setup-go@v5
+        with:
           cache: false
       - name: Trigger helm post release workflow
         if: ${{ env.RELEASE_HELM == 'true' }}
@@ -95,7 +118,7 @@ jobs:
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
           make all-platforms VERSION=${{ github.event.inputs.version }}
-          # not all versiions Makefiles support the version check
+          # not all versions Makefiles support the version check
           if make | grep -q check-version; then
             make check-version VERSION=${{ github.event.inputs.version }}
           fi
