@@ -29,6 +29,7 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -42,9 +43,20 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
 		// check if it is actually enabled in Atlas
+		atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(ctx.Context, project.ID())
+		// TODO: check the returned error for 'compliance policy doesnt exist'
+		if err != nil {
+			ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
+			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
+		}
+		// if not in atlas, we can return OK
+		// atlas returns an empty object rather than an error
+		if (atlasCompliancePolicy == &mongodbatlas.BackupCompliancePolicy{}) {
+			return workflow.OK()
+		}
 		// if it is enabled in Atlas, we still have to signal here via the status condition
 		// that there is an not-deleted-yet backup compliance policy in Atlas
-		ctx.UnsetCondition(status.BackupComplianceReadyType)
+		ctx.SetConditionFalseMsg(status.BackupComplianceReadyType, "Backup Compliance Policy must be deleted via Support")
 		return workflow.OK()
 	}
 
@@ -65,6 +77,10 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 	}
 
+	if cmp.Equal(atlasCompliancePolicy, compliancePolicy.ToAtlas()) {
+		return workflow.OK()
+	}
+
 	// otherwise, create/update compliance policy...
 
 	// check existing backups meet requirements
@@ -80,7 +96,6 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		// TODO figure out appropriate status names/messages
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotMet, err.Error())
 	}
-	// otherwise, continue...
 
 	// enable finalizer on compliance policy CR (if doesn't already exist)
 	err = customresource.ManageFinalizer(ctx.Context, r.Client, compliancePolicy, customresource.SetFinalizer)
