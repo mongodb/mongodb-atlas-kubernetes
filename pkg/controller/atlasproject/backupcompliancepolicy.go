@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -29,7 +29,6 @@ import (
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -43,7 +42,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
 		// check if it is actually enabled in Atlas
-		atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(ctx.Context, project.ID())
+		atlasCompliancePolicy, _, err := ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(ctx.Context, project.ID()).Execute()
 		// TODO: check the returned error for 'compliance policy doesnt exist'
 		if err != nil {
 			ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
@@ -51,7 +50,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		}
 		// if not in atlas, we can return OK
 		// atlas returns an empty object rather than an error
-		if (atlasCompliancePolicy == &mongodbatlas.BackupCompliancePolicy{}) {
+		if (atlasCompliancePolicy == &admin.DataProtectionSettings20231001{}) {
 			return workflow.OK()
 		}
 		// if it is enabled in Atlas, we still have to signal here via the status condition
@@ -71,7 +70,8 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	}
 	// check if compliance policy exists in atlas (and matches)
 	// if match, return workflow.OK()
-	atlasCompliancePolicy, _, err := ctx.Client.BackupCompliancePolicy.Get(ctx.Context, project.ID())
+	atlasCompliancePolicy, _, err := ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(ctx.Context, project.ID()).Execute()
+
 	if err != nil {
 		ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
@@ -125,6 +125,12 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	return workflow.OK()
 }
 
+func IsBackupComplianceEmpty(backupCompliancePolicyRef *common.ResourceRefNamespaced) bool {
+	return (backupCompliancePolicyRef == nil) || (backupCompliancePolicyRef.Name == "")
+}
+
+// NOTE: below here is for checking existing backups, which may no longer be needed (CLOUDP-224474)
+
 // TODO: there is certainly a better way of doing this
 // can we annotate these separate resources to attribute them to projects/deployments?
 func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context, project *mdbv1.AtlasProject) ([]mdbv1.AtlasBackupPolicyItem, error) {
@@ -160,11 +166,11 @@ func (r *AtlasProjectReconciler) getBackupPoliciesInProject(ctx context.Context,
 }
 
 // syncBackupCompliancePolicy compares the compliance policy specified in Kubernetes to the one currently present in Atlas, updating Atlas should they differ.
-func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompliancePolicy mdbv1.AtlasBackupCompliancePolicy, atlasCompliancePolicy mongodbatlas.BackupCompliancePolicy) workflow.Result {
+func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompliancePolicy mdbv1.AtlasBackupCompliancePolicy, atlasCompliancePolicy admin.DataProtectionSettings20231001) workflow.Result {
 	// TODO do we need to check this, or can we just always update?
 	localCompliancePolicy := kubeCompliancePolicy.ToAtlas()
 	if cmp.Diff(localCompliancePolicy, atlasCompliancePolicy, cmpopts.EquateEmpty()) != "" {
-		_, _, err := ctx.Client.BackupCompliancePolicy.Update(ctx.Context, groupID, localCompliancePolicy)
+		_, _, err := ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(ctx.Context, groupID, localCompliancePolicy).Execute()
 		if err != nil {
 			ctx.Log.Errorf("failed to update backup compliance policy in atlas: %v", err)
 			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err.Error())
@@ -211,8 +217,4 @@ func normalizeRetention(policy mdbv1.AtlasBackupPolicyItem) int {
 		return policy.RetentionValue * 31
 	}
 	return -1
-}
-
-func IsBackupComplianceEmpty(backupCompliancePolicyRef *common.ResourceRefNamespaced) bool {
-	return (backupCompliancePolicyRef == nil) || (backupCompliancePolicyRef.Name == "")
 }
