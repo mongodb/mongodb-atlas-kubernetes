@@ -52,8 +52,11 @@ jobs:
           run: |
             # Evaluate whether or not cloud tests should run
             RUN_CLOUD_TESTS='false'
+            # push events run all tests when code was changed
+            if [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
+              RUN_CLOUD_TESTS='true'
             # cloud-tests label forces cloud tests to run, BUT only on AKO PRs, not from forked repos 
-            if [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
+            elif [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
               RUN_CLOUD_TESTS='true'
             # safe-to-test label forces clous tests to run, BUT only when the PR was just "labeled" safe to test
             elif [ "${SAFE_TO_TEST_LABEL}" == "true" ] && [ "${ACTION}" == "labeled" ];then
