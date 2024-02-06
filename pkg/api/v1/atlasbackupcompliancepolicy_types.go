@@ -28,6 +28,7 @@ type AtlasBackupCompliancePolicySpec struct {
 	AuthorizedUserLastName  string                  `json:"authorizedUserLastName"`
 	CopyProtectionEnabled   bool                    `json:"copyProtectionEnabled"`
 	EncryptionAtRestEnabled bool                    `json:"encryptionAtRestEnabled"`
+	Enforce                 bool                    `json:"enforce"`
 	PITEnabled              bool                    `json:"pointInTimeEnabled"`
 	RestoreWindowDays       int                     `json:"restoreWindowDays"`
 	ScheduledPolicyItems    []AtlasBackupPolicyItem `json:"scheduledPolicyItems"`
@@ -35,6 +36,7 @@ type AtlasBackupCompliancePolicySpec struct {
 }
 
 func (b *AtlasBackupCompliancePolicy) ToAtlas() *admin.DataProtectionSettings20231001 {
+	// TODO: add enforce flag once present in the API
 	result := &admin.DataProtectionSettings20231001{
 		AuthorizedEmail:         b.Spec.AuthorizedEmail,
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
