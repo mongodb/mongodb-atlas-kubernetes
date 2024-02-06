@@ -49,7 +49,7 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 			// policy thinks it covers project
 			if project.Spec.BackupCompliancePolicyRef.Name == policy.Name ||
 				project.Spec.BackupCompliancePolicyRef.Namespace == policy.Namespace {
-				// project is still using the BCP 
+				// project is still using the BCP
 				return nil
 			}
 			// if we reach here, the BCP has associated itself with the project,

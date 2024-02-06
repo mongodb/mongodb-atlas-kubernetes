@@ -43,13 +43,12 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
 		// check if it is actually enabled in Atlas
 		atlasCompliancePolicy, _, err := ctx.SdkClient.CloudBackupsApi.GetDataProtectionSettings(ctx.Context, project.ID()).Execute()
-		// TODO: check the returned error for 'compliance policy doesnt exist'
 		if err != nil {
 			ctx.Log.Errorf("failed to get backup compliance policy from atlas: %v", err)
 			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 		}
 		// if not in atlas, we can return OK
-		// atlas returns an empty object rather than an error
+		// atlas returns an empty object rather than an error TODO: check this check actually works
 		if (atlasCompliancePolicy == &admin.DataProtectionSettings20231001{}) {
 			return workflow.OK()
 		}
