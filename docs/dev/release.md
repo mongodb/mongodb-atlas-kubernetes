@@ -162,7 +162,7 @@ pointing to the directory where `certified-operators` repository: https://github
 
 Invoke the following script:
 ```
-IMAGE=<image hash pushed to scan.connect.redhat.com with sha had rather than tag> \
+IMG_SHA=<image hash pushed to scan.connect.redhat.com with sha had rather than tag> \
 VERSION=<image-version> \
 ./scripts/release-redhat-certified.sh
 ```
