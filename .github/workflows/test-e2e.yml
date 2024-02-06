@@ -276,7 +276,7 @@ jobs:
           path: output/**
       - name: Upload test results to codecov.io
         if: ${{ success() }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: test/e2e/coverprofile.out
           name: ${{ matrix.test }}
