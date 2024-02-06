@@ -3,11 +3,11 @@ package config
 const (
 
 	// Kubernetes configuration samples for users in deploy directory
-	DefaultDeployConfig              = "../../deploy/" // Released generated files
-	DefaultClusterWideCRDConfig      = "../../deploy/clusterwide/crds.yaml"
-	DefaultClusterWideOperatorConfig = "../../deploy/clusterwide/clusterwide-config.yaml"
-	DefaultNamespacedCRDConfig       = "../../deploy/namespaced/crds.yaml"
-	DefaultNamespacedOperatorConfig  = "../../deploy/namespaced/namespaced-config.yaml"
+	DefaultDeployConfig              = "../../deploy/e2e/" // Released generated files
+	DefaultClusterWideCRDConfig      = "../../deploy/e2e/clusterwide/crds.yaml"
+	DefaultClusterWideOperatorConfig = "../../deploy/e2e/clusterwide/clusterwide-config.yaml"
+	DefaultNamespacedCRDConfig       = "../../deploy/e2e/namespaced/crds.yaml"
+	DefaultNamespacedOperatorConfig  = "../../deploy/e2e/namespaced/namespaced-config.yaml"
 
 	// Default names/path for tests coordinates
 	DataGenFolder            = "data/gen" // for generated configs
@@ -41,5 +41,5 @@ const (
 	AzureRegionEU = "northeurope"
 
 	// GCP
-	FileNameSAGCP = "gcp_service_account.json"
+	FileNameSAGCP = "../../output/gcp_service_account.json"
 )
