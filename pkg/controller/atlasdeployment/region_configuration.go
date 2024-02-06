@@ -38,9 +38,20 @@ func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlas
 		// When compute auto-scaling is enabled, unset instance size to avoid override production workload
 		if isComputeAutoScalingEnabled(regionSpec.AutoScaling) {
 			if !regionsHasChanged {
-				regionSpec.ElectableSpecs.InstanceSize = ""
-				regionSpec.ReadOnlySpecs.InstanceSize = ""
-				regionSpec.AnalyticsSpecs.InstanceSize = ""
+				for _, arc := range atlasCluster.ReplicationSpecs[0].RegionConfigs {
+					if arc.RegionName == regionSpec.RegionName {
+						if regionSpec.ElectableSpecs != nil && arc.ElectableSpecs != nil {
+							regionSpec.ElectableSpecs.InstanceSize = arc.ElectableSpecs.InstanceSize
+						}
+						if regionSpec.ReadOnlySpecs != nil && arc.ReadOnlySpecs != nil {
+							regionSpec.ReadOnlySpecs.InstanceSize = arc.ReadOnlySpecs.InstanceSize
+						}
+						if regionSpec.AnalyticsSpecs != nil && arc.AnalyticsSpecs != nil {
+							regionSpec.AnalyticsSpecs.InstanceSize = arc.AnalyticsSpecs.InstanceSize
+						}
+						break
+					}
+				}
 			}
 		} else {
 			if regionSpec.AutoScaling != nil {
@@ -85,26 +96,53 @@ func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, at
 
 	mapDeploymentRegions := map[string]*mdbv1.AdvancedRegionConfig{}
 	for _, region := range deploymentRegions {
+		// do not compare instance sizes when autoscaling is ON
+		if isComputeAutoScalingEnabled(region.AutoScaling) {
+			region = ignoreInstanceSize(region.DeepCopy())
+		}
 		mapDeploymentRegions[region.RegionName] = region
 	}
 
 	for _, region := range atlasRegions {
-		if _, ok := mapDeploymentRegions[region.RegionName]; !ok {
+		k8sRegion, ok := mapDeploymentRegions[region.RegionName]
+		if !ok {
 			return true
 		}
 
 		var atlasAsOperatorRegion mdbv1.AdvancedRegionConfig
-		err := compat.JSONCopy(&atlasAsOperatorRegion, region)
+		var atlasRegion = &atlasAsOperatorRegion
+		err := compat.JSONCopy(atlasRegion, region)
 		if err != nil {
 			return true
 		}
 
-		if cmp.Diff(mapDeploymentRegions[region.RegionName], &atlasAsOperatorRegion) != "" {
+		// do not compare instance sizes when autoscaling is ON
+		if isComputeAutoScalingEnabled(k8sRegion.AutoScaling) {
+			atlasRegion = ignoreInstanceSize(atlasRegion.DeepCopy())
+		}
+
+		if diff := cmp.Diff(k8sRegion, atlasRegion); diff != "" {
 			return true
 		}
 	}
 
 	return false
+}
+
+func ignoreInstanceSize(rc *mdbv1.AdvancedRegionConfig) *mdbv1.AdvancedRegionConfig {
+	if rc == nil {
+		return rc
+	}
+	if rc.ElectableSpecs != nil {
+		rc.ElectableSpecs.InstanceSize = ""
+	}
+	if rc.ReadOnlySpecs != nil {
+		rc.ReadOnlySpecs.InstanceSize = ""
+	}
+	if rc.AnalyticsSpecs != nil {
+		rc.AnalyticsSpecs.InstanceSize = ""
+	}
+	return rc
 }
 
 func normalizeSpecs(regions []*mdbv1.AdvancedRegionConfig) {

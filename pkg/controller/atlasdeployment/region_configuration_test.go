@@ -348,7 +348,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
-	t.Run("should unset instance size for existing region with compute autoscaling enabled", func(t *testing.T) {
+	t.Run("should set Atlas instance sizes for existing region with compute autoscaling enabled", func(t *testing.T) {
 		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
 			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
@@ -379,6 +379,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 							},
 							Priority: pointer.MakePtr(7),
 						},
+						{
+							ProviderName: "AWS",
+							RegionName:   "EU_WEST1",
+							ElectableSpecs: &mdbv1.Specs{
+								InstanceSize: "M10",
+								NodeCount:    pointer.MakePtr(3),
+							},
+							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+								Compute: &mdbv1.ComputeSpec{
+									Enabled:          pointer.MakePtr(true),
+									ScaleDownEnabled: pointer.MakePtr(true),
+									MinInstanceSize:  "M10",
+									MaxInstanceSize:  "M30",
+								},
+							},
+							Priority: pointer.MakePtr(6),
+						},
 					},
 				},
 			},
@@ -392,13 +409,16 @@ func TestSyncComputeConfiguration(t *testing.T) {
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
 							ElectableSpecs: &mdbv1.Specs{
-								NodeCount: pointer.MakePtr(3),
+								InstanceSize: "M30",
+								NodeCount:    pointer.MakePtr(3),
 							},
 							ReadOnlySpecs: &mdbv1.Specs{
-								NodeCount: pointer.MakePtr(1),
+								InstanceSize: "M30",
+								NodeCount:    pointer.MakePtr(1),
 							},
 							AnalyticsSpecs: &mdbv1.Specs{
-								NodeCount: pointer.MakePtr(1),
+								InstanceSize: "M30",
+								NodeCount:    pointer.MakePtr(1),
 							},
 							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
 								Compute: &mdbv1.ComputeSpec{
@@ -409,6 +429,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 								},
 							},
 							Priority: pointer.MakePtr(7),
+						},
+						{
+							ProviderName: "AWS",
+							RegionName:   "EU_WEST1",
+							ElectableSpecs: &mdbv1.Specs{
+								InstanceSize: "M30",
+								NodeCount:    pointer.MakePtr(3),
+							},
+							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
+								Compute: &mdbv1.ComputeSpec{
+									Enabled:          pointer.MakePtr(true),
+									ScaleDownEnabled: pointer.MakePtr(true),
+									MinInstanceSize:  "M10",
+									MaxInstanceSize:  "M30",
+								},
+							},
+							Priority: pointer.MakePtr(6),
 						},
 					},
 				},
@@ -422,15 +459,15 @@ func TestSyncComputeConfiguration(t *testing.T) {
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
 							ElectableSpecs: &mongodbatlas.Specs{
-								InstanceSize: "M10",
+								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(3),
 							},
 							ReadOnlySpecs: &mongodbatlas.Specs{
-								InstanceSize: "M10",
+								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(1),
 							},
 							AnalyticsSpecs: &mongodbatlas.Specs{
-								InstanceSize: "M10",
+								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(1),
 							},
 							AutoScaling: &mongodbatlas.AdvancedAutoScaling{
@@ -442,6 +479,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 								},
 							},
 							Priority: pointer.MakePtr(7),
+						},
+						{
+							ProviderName: "AWS",
+							RegionName:   "EU_WEST1",
+							ElectableSpecs: &mongodbatlas.Specs{
+								InstanceSize: "M30",
+								NodeCount:    pointer.MakePtr(3),
+							},
+							AutoScaling: &mongodbatlas.AdvancedAutoScaling{
+								Compute: &mongodbatlas.Compute{
+									Enabled:          pointer.MakePtr(true),
+									ScaleDownEnabled: pointer.MakePtr(true),
+									MinInstanceSize:  "M10",
+									MaxInstanceSize:  "M30",
+								},
+							},
+							Priority: pointer.MakePtr(6),
 						},
 					},
 				},
@@ -535,8 +589,8 @@ func TestSyncComputeConfiguration(t *testing.T) {
 							},
 							AutoScaling: &mongodbatlas.AdvancedAutoScaling{
 								Compute: &mongodbatlas.Compute{
-									Enabled:          pointer.MakePtr(false),
-									ScaleDownEnabled: pointer.MakePtr(false),
+									Enabled:          pointer.MakePtr(true),
+									ScaleDownEnabled: pointer.MakePtr(true),
 									MinInstanceSize:  "M10",
 									MaxInstanceSize:  "M30",
 								},

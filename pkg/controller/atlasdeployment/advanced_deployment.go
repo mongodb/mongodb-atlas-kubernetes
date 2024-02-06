@@ -83,7 +83,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, specDeployment, atlasDeployment); areEqual {
+	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
 
@@ -194,10 +194,19 @@ func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbat
 }
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.AdvancedDeploymentSpec, deploymentAtlas mdbv1.AdvancedDeploymentSpec) (areEqual bool, diff string) {
-	deploymentAtlas = cleanupFieldsToCompare(deploymentAtlas, deploymentOperator)
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.AdvancedDeploymentSpec, deploymentAtlas *mdbv1.AdvancedDeploymentSpec) (areEqual bool, diff string) {
+	expected := deploymentOperator.DeepCopy()
+	actualCleaned := cleanupFieldsToCompare(deploymentAtlas.DeepCopy(), expected)
 
-	d := cmp.Diff(deploymentAtlas, deploymentOperator, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
+	// Ignore differences on auto-scaled region configs
+	for _, rs := range expected.ReplicationSpecs {
+		for _, rc := range rs.RegionConfigs {
+			if isComputeAutoScalingEnabled(rc.AutoScaling) {
+				ignoreInstanceSize(rc)
+			}
+		}
+	}
+	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
@@ -205,7 +214,7 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator mdbv1.A
 	return d == "", d
 }
 
-func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.AdvancedDeploymentSpec {
+func cleanupFieldsToCompare(atlas, operator *mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
 	if atlas.ReplicationSpecs == nil {
 		return atlas
 	}
@@ -232,6 +241,10 @@ func cleanupFieldsToCompare(atlas, operator mdbv1.AdvancedDeploymentSpec) mdbv1.
 				if configIdx < len(operator.ReplicationSpecs[specIdx].RegionConfigs) {
 					regionConfig.ReadOnlySpecs = operator.ReplicationSpecs[specIdx].RegionConfigs[configIdx].ReadOnlySpecs
 				}
+			}
+
+			if isComputeAutoScalingEnabled(regionConfig.AutoScaling) {
+				ignoreInstanceSize(regionConfig)
 			}
 		}
 	}
