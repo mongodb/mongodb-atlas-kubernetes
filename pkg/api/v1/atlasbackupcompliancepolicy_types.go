@@ -3,7 +3,7 @@ package v1
 import (
 	"strings"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -29,13 +29,13 @@ type AtlasBackupCompliancePolicySpec struct {
 	CopyProtectionEnabled   bool                    `json:"copyProtectionEnabled"`
 	EncryptionAtRestEnabled bool                    `json:"encryptionAtRestEnabled"`
 	PITEnabled              bool                    `json:"pointInTimeEnabled"`
-	RestoreWindowDays       int64                   `json:"restoreWindowDays"`
+	RestoreWindowDays       int                     `json:"restoreWindowDays"`
 	ScheduledPolicyItems    []AtlasBackupPolicyItem `json:"scheduledPolicyItems"`
 	OnDemandPolicy          AtlasBackupPolicyItem   `json:"onDemandPolicy"`
 }
 
-func (b *AtlasBackupCompliancePolicy) ToAtlas() *mongodbatlas.BackupCompliancePolicy {
-	result := &mongodbatlas.BackupCompliancePolicy{
+func (b *AtlasBackupCompliancePolicy) ToAtlas() *admin.DataProtectionSettings20231001 {
+	result := &admin.DataProtectionSettings20231001{
 		AuthorizedEmail:         b.Spec.AuthorizedEmail,
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
 		EncryptionAtRestEnabled: &b.Spec.EncryptionAtRestEnabled,
@@ -43,21 +43,23 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas() *mongodbatlas.BackupCompliancePo
 		RestoreWindowDays:       pointer.MakePtr(b.Spec.RestoreWindowDays),
 	}
 
-	result.OnDemandPolicyItem = mongodbatlas.PolicyItem{
+	result.OnDemandPolicyItem = &admin.BackupComplianceOnDemandPolicyItem{
 		FrequencyInterval: b.Spec.OnDemandPolicy.FrequencyInterval,
 		FrequencyType:     strings.ToLower(b.Spec.OnDemandPolicy.FrequencyType),
 		RetentionValue:    b.Spec.OnDemandPolicy.RetentionValue,
 		RetentionUnit:     strings.ToLower(b.Spec.OnDemandPolicy.RetentionUnit),
 	}
 
-	for _, policy := range b.Spec.ScheduledPolicyItems {
-		result.ScheduledPolicyItems = append(result.ScheduledPolicyItems, mongodbatlas.ScheduledPolicyItem{
+	temp := make([]admin.BackupComplianceScheduledPolicyItem, len(b.Spec.ScheduledPolicyItems))
+	for i, policy := range b.Spec.ScheduledPolicyItems {
+		temp[i] = admin.BackupComplianceScheduledPolicyItem{
 			FrequencyInterval: policy.FrequencyInterval,
 			FrequencyType:     policy.FrequencyType,
 			RetentionUnit:     policy.RetentionUnit,
 			RetentionValue:    policy.RetentionValue,
-		})
+		}
 	}
+	result.ScheduledPolicyItems = &temp
 
 	return result
 }
