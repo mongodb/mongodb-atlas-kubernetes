@@ -71,7 +71,7 @@ jobs:
           AKO_INT_TEST=1 ginkgo --label-filter="${TEST_NAME}" --timeout 90m --v --nodes="${PARALLEL_NODES}" --flake-attempts=1 --cover --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           name: ${{ matrix.test }}
           files: ${{ matrix.path }}/coverprofile.out
