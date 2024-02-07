@@ -214,6 +214,79 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		lastGeneration++
 	}
 
+	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("dedicated-termination-protection", "slow"), func() {
+		It("Should succeed", func() {
+			createdDeployment = mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+
+			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				createdDeployment.Spec.DeploymentSpec.TerminationProtectionEnabled = true
+
+				performCreate(createdDeployment, 30*time.Minute)
+
+				doDeploymentStatusChecks()
+				checkAtlasState()
+			})
+
+			By("Removing deployment", func() {
+				Expect(k8sClient.Delete(context.Background(), createdDeployment)).To(Succeed())
+			})
+
+			By("Verifying the deployment is still in Atlas", func() {
+				Eventually(func(g Gomega) {
+					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
+					defer cancelF()
+					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+						createdDeployment.GetDeploymentName()).Execute()
+					g.Expect(err).NotTo(HaveOccurred())
+					Expect(aCluster.GetName()).Should(BeEquivalentTo(createdDeployment.GetDeploymentName()))
+				}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second)
+			})
+
+			By("Disabling Termination protection", func() {
+				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancelF()
+				aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+					createdDeployment.GetDeploymentName()).Execute()
+				Expect(err).NotTo(HaveOccurred())
+				aCluster.TerminationProtectionEnabled = pointer.MakePtr(false)
+				aCluster.ConnectionStrings = nil
+				_, _, err = atlasClient.ClustersApi.UpdateCluster(ctx, createdProject.ID(), createdDeployment.GetDeploymentName(), aCluster).Execute()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			By("Waiting for Termination protection to be disabled", func() {
+				Eventually(func(g Gomega) {
+					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
+					defer cancelF()
+					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+						createdDeployment.GetDeploymentName()).Execute()
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(aCluster.TerminationProtectionEnabled).NotTo(BeNil())
+					g.Expect(*aCluster.TerminationProtectionEnabled).To(BeFalse())
+				}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second)
+			})
+
+			By("Manually deleting the cluster", func() {
+				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancelF()
+				_, err := atlasClient.ClustersApi.DeleteCluster(ctx, createdProject.ID(),
+					createdDeployment.GetDeploymentName()).Execute()
+				Expect(err).NotTo(HaveOccurred())
+				createdDeployment = nil
+			})
+
+			By("Waiting for Deployment termination", func() {
+				Eventually(func(g Gomega) {
+					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
+					defer cancelF()
+					_, resp, _ := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+						createdDeployment.GetDeploymentName()).Execute()
+					g.Expect(resp.Status).To(Equal(http.StatusNotFound))
+				}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second)
+			})
+		})
+	})
+
 	Describe("Deployment CR should exist if it is tried to delete and the token is not valid", func() {
 		It("Should Succeed", func() {
 			expectedDeployment := mdbv1.DefaultAWSDeployment(namespace.Name, createdProject.Name)
@@ -1639,7 +1712,7 @@ func deleteDeploymentFromKubernetes(project *mdbv1.AtlasProject, deployment *mdb
 func deleteProjectFromKubernetes(project *mdbv1.AtlasProject) {
 	By(fmt.Sprintf("Removing Atlas Project %s", project.Status.ID), func() {
 		Expect(k8sClient.Delete(context.Background(), project)).To(Succeed())
-		Eventually(checkAtlasProjectRemoved(project.Status.ID), 60, interval).Should(BeTrue())
+		Eventually(checkAtlasProjectRemoved(project.Status.ID), 240, interval).Should(BeTrue())
 	})
 }
 

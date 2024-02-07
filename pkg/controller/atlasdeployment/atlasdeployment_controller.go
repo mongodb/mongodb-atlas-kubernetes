@@ -288,11 +288,17 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 				if customresource.ResourceShouldBeLeftInAtlas(deployment) {
 					log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 				} else {
-					if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
-						log.Errorf("failed to remove deployment from Atlas: %s", err)
-						result := workflow.Terminate(workflow.Internal, err.Error())
-						workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-						return true, result
+					if isTerminationProtectionEnabled(deployment) {
+						msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deployment.GetName())
+						log.Info(msg)
+						r.EventRecorder.Event(deployment, "Warning", "AtlasDeploymentTermination", msg)
+					} else {
+						if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
+							log.Errorf("failed to remove deployment from Atlas: %s", err)
+							result := workflow.Terminate(workflow.Internal, err.Error())
+							workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+							return true, result
+						}
 					}
 				}
 			}
@@ -306,6 +312,12 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 		return true, prevResult
 	}
 	return false, workflow.OK()
+}
+
+func isTerminationProtectionEnabled(deployment *mdbv1.AtlasDeployment) bool {
+	return (deployment.Spec.DeploymentSpec != nil &&
+		deployment.Spec.DeploymentSpec.TerminationProtectionEnabled) || (deployment.Spec.ServerlessSpec != nil &&
+		deployment.Spec.ServerlessSpec.TerminationProtectionEnabled)
 }
 
 func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment *mdbv1.AtlasDeployment) error {
