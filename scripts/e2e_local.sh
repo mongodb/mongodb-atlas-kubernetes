@@ -22,18 +22,18 @@ export INPUT_IMAGE_URL="${image}"
 export INPUT_ENV=dev
 
 if [[ "${build}" == "true" ]]; then
-    ./.github/actions/gen-install-scripts/entrypoint.sh e2e
-    awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/e2e/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/e2e/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+    ./.github/actions/gen-install-scripts/entrypoint.sh
+    awk '{gsub(/cloud.mongodb.com/, "cloud-qa.mongodb.com", $0); print}' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > tmp && mv tmp bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
     docker build -t "${image}" .
     docker push "${image}"
 
     #bundles
-    docker build -f bundle/e2e/bundle.Dockerfile -t "${bundle_image}" .
+    docker build -f bundle.Dockerfile -t "${bundle_image}" .
     docker push "${bundle_image}"
 fi
 
-kubectl apply -f deploy/e2e/crds
+kubectl apply -f deploy/crds
 
 export MCLI_OPS_MANAGER_URL="https://cloud-qa.mongodb.com/"
 export MCLI_PUBLIC_API_KEY="${public_key}"
