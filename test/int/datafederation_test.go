@@ -84,7 +84,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 				By("Removing Atlas DataFederation " + createdDataFederation.Name)
 				Expect(k8sClient.Delete(context.Background(), createdDataFederation)).To(Succeed())
 				deploymentName := createdDataFederation.Name
-				if customresource.ResourceShouldBeLeftInAtlas(createdDataFederation) || customresource.ReconciliationShouldBeSkipped(createdDataFederation) {
+				if customresource.IsResourcePolicyKeep(createdDataFederation) || customresource.ReconciliationShouldBeSkipped(createdDataFederation) {
 					By("Removing Atlas DataFederation " + createdDataFederation.Name + " from Atlas manually")
 					Expect(deleteAtlasDataFederation(createdProject.Status.ID, deploymentName)).To(Succeed())
 				}

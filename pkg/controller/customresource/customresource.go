@@ -83,8 +83,16 @@ func MarkReconciliationStarted(client client.Client, resource mdbv1.AtlasCustomR
 	return ctx
 }
 
-// ResourceShouldBeLeftInAtlas returns 'true' if the resource should not be removed from Atlas on K8s resource removal.
-func ResourceShouldBeLeftInAtlas(resource mdbv1.AtlasCustomResource) bool {
+func IsResourcePolicyKeepOrDefault(resource mdbv1.AtlasCustomResource, protectionFlag bool) bool {
+	if policy, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
+		return policy == ResourcePolicyKeep
+	}
+
+	return protectionFlag
+}
+
+// IsResourcePolicyKeep returns 'true' if the resource should not be removed from Atlas on K8s resource removal.
+func IsResourcePolicyKeep(resource mdbv1.AtlasCustomResource) bool {
 	if v, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return v == ResourcePolicyKeep
 	}

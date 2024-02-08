@@ -130,7 +130,7 @@ func TestIsResourceProtected(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
-			assert.Equal(t, tc.expectedProtected, customresource.IsResourceProtected(tc.resource, tc.protectionFlag))
+			assert.Equal(t, tc.expectedProtected, customresource.IsResourcePolicyKeepOrDefault(tc.resource, tc.protectionFlag))
 		})
 	}
 }

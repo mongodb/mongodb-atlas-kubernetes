@@ -287,9 +287,9 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 	}
 
 	switch {
-	case customresource.IsResourceProtected(deployment, r.ObjectDeletionProtection):
+	case customresource.IsResourcePolicyKeepOrDefault(deployment, r.ObjectDeletionProtection):
 		log.Info("Not removing Atlas deployment from Atlas as per configuration")
-	case customresource.ResourceShouldBeLeftInAtlas(deployment):
+	case customresource.IsResourcePolicyKeep(deployment):
 		log.Infof("Not removing Atlas deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
 	case isTerminationProtectionEnabled(deployment):
 		msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deployment.GetName())

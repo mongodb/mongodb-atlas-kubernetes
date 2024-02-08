@@ -1701,7 +1701,7 @@ func deleteDeploymentFromKubernetes(project *mdbv1.AtlasProject, deployment *mdb
 	By(fmt.Sprintf("Removing Atlas Deployment %q", deployment.Name), func() {
 		Expect(k8sClient.Delete(context.Background(), deployment)).To(Succeed())
 		deploymentName := deployment.GetDeploymentName()
-		if customresource.ResourceShouldBeLeftInAtlas(deployment) || customresource.ReconciliationShouldBeSkipped(deployment) {
+		if customresource.IsResourcePolicyKeep(deployment) || customresource.ReconciliationShouldBeSkipped(deployment) {
 			By("Removing Atlas Deployment " + deployment.Name + " from Atlas manually")
 			Expect(deleteAtlasDeployment(project.Status.ID, deploymentName)).To(Succeed())
 		}
