@@ -272,46 +272,45 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 				return true, workflow.Terminate(workflow.Internal, err.Error())
 			}
 		}
+
+		return false, workflow.OK()
 	}
 
-	if !deployment.GetDeletionTimestamp().IsZero() {
-		if customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
-			if err := r.cleanupBindings(workflowCtx.Context, deployment); err != nil {
-				result := workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("failed to cleanup deployment bindings (backups)", "error", err)
-				return true, result
-			}
-			isProtected := customresource.IsResourceProtected(deployment, r.ObjectDeletionProtection)
-			if isProtected {
-				log.Info("Not removing Atlas deployment from Atlas as per configuration")
-			} else {
-				if customresource.ResourceShouldBeLeftInAtlas(deployment) {
-					log.Infof("Not removing Atlas Deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
-				} else {
-					if isTerminationProtectionEnabled(deployment) {
-						msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deployment.GetName())
-						log.Info(msg)
-						r.EventRecorder.Event(deployment, "Warning", "AtlasDeploymentTermination", msg)
-					} else {
-						if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
-							log.Errorf("failed to remove deployment from Atlas: %s", err)
-							result := workflow.Terminate(workflow.Internal, err.Error())
-							workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
-							return true, result
-						}
-					}
-				}
-			}
-			err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, deployment, customresource.UnsetFinalizer)
-			if err != nil {
-				result := workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("failed to remove finalizer", "error", err)
-				return true, result
-			}
-		}
+	if !customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
 		return true, prevResult
 	}
-	return false, workflow.OK()
+
+	if err := r.cleanupBindings(workflowCtx.Context, deployment); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		log.Errorw("failed to cleanup deployment bindings (backups)", "error", err)
+		return true, result
+	}
+
+	switch {
+	case customresource.IsResourceProtected(deployment, r.ObjectDeletionProtection):
+		log.Info("Not removing Atlas deployment from Atlas as per configuration")
+	case customresource.ResourceShouldBeLeftInAtlas(deployment):
+		log.Infof("Not removing Atlas deployment from Atlas as the '%s' annotation is set", customresource.ResourcePolicyAnnotation)
+	case isTerminationProtectionEnabled(deployment):
+		msg := fmt.Sprintf("Termination protection for %s deployment enabled. Deployment in Atlas won't be removed", deployment.GetName())
+		log.Info(msg)
+		r.EventRecorder.Event(deployment, "Warning", "AtlasDeploymentTermination", msg)
+	default:
+		if err := r.deleteDeploymentFromAtlas(workflowCtx, log, project, deployment); err != nil {
+			log.Errorf("failed to remove deployment from Atlas: %s", err)
+			result := workflow.Terminate(workflow.Internal, err.Error())
+			workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
+			return true, result
+		}
+	}
+
+	if err := customresource.ManageFinalizer(workflowCtx.Context, r.Client, deployment, customresource.UnsetFinalizer); err != nil {
+		result := workflow.Terminate(workflow.Internal, err.Error())
+		log.Errorw("failed to remove finalizer", "error", err)
+		return true, result
+	}
+
+	return true, prevResult
 }
 
 func isTerminationProtectionEnabled(deployment *mdbv1.AtlasDeployment) bool {
