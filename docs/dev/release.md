@@ -85,7 +85,7 @@ Assign the repo path to `RH_COMMUNITY_OPENSHIFT_REPO_PATH` env variable.
 Clone, if not done before, the MongoDB fork of [the Red Hat certified operators production catalog repo](https://github.com/redhat-openshift-ecosystem/certified-operators):
 
 ```bash
-git clone git@github.com:mongodb-forks/community-operators-prod.git
+git clone git@github.com:mongodb-forks/certified-operators.git
 ```
 
 Add the upstream repository as a remote one:
@@ -158,7 +158,7 @@ This is necessary for the Operator to appear on "operators" tab in Openshift clu
 pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
  - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
  - Use the image reference including the hash (`quay.io/mongodb/mongodb-atlas-kubernetes-operator:...@sha256:...`) from the [release process step "Push Atlas Operator to Quay.io"](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-post-merge.yml) as `IMG_SHA`
- - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without NPO `v`prefix.
+ - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without the `v`prefix.
 
 Invoke the following script:
 ```
