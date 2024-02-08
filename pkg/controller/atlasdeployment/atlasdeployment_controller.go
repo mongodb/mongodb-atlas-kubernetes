@@ -234,7 +234,7 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result
@@ -245,7 +245,7 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 			workflow.AtlasDeletionProtection,
 			"unable to reconcile Deployment due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		)
-		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
+		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		log.Error(result.GetMessage())
 
 		return result
