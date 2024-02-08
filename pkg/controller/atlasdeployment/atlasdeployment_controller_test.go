@@ -143,6 +143,10 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			if tc.expectedErr == "" {
 				assert.True(t, result.IsOk())
 			} else {
+				assert.NotNil(t, te.workflowCtx.LastCondition())
+				if te.workflowCtx.LastCondition() != nil {
+					assert.Equal(t, status.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
+				}
 				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
 			}
 		})
@@ -189,6 +193,10 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 			if tc.expectedErr == "" {
 				assert.True(t, result.IsOk())
 			} else {
+				assert.NotNil(t, te.workflowCtx.LastCondition())
+				if te.workflowCtx.LastCondition() != nil {
+					assert.Equal(t, status.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
+				}
 				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
 			}
 		})
