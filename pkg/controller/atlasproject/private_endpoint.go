@@ -190,12 +190,12 @@ func updatePEStatusOption(ctx *workflow.Context, projectID string, newConnection
 
 func addPEStatusOption(ctx *workflow.Context, projectID string, newPEs []atlasPE) {
 	statusPEs := convertAllToStatus(ctx, projectID, newPEs)
-	ctx.EnsureStatusOption(status.AtlasProjectAddPrivateEnpointsOption(statusPEs))
+	ctx.EnsureStatusOption(status.AtlasProjectAddPrivateEndpointsOption(statusPEs))
 }
 
 func setPEStatusOption(ctx *workflow.Context, projectID string, atlasPeConnections []atlasPE) {
 	statusPEs := convertAllToStatus(ctx, projectID, atlasPeConnections)
-	ctx.EnsureStatusOption(status.AtlasProjectSetPrivateEnpointsOption(statusPEs))
+	ctx.EnsureStatusOption(status.AtlasProjectSetPrivateEndpointsOption(statusPEs))
 }
 
 type atlasPE mongodbatlas.PrivateEndpointConnection

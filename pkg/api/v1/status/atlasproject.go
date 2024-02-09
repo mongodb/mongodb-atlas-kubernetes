@@ -22,13 +22,13 @@ func AtlasProjectExpiredIPAccessOption(lists []project.IPAccessList) AtlasProjec
 	}
 }
 
-func AtlasProjectAddPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectAddPrivateEndpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.PrivateEndpoints = append(s.PrivateEndpoints, privateEndpoints...)
 	}
 }
 
-func AtlasProjectSetPrivateEnpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
+func AtlasProjectSetPrivateEndpointsOption(privateEndpoints []ProjectPrivateEndpoint) AtlasProjectStatusOption {
 	return func(s *AtlasProjectStatus) {
 		s.PrivateEndpoints = privateEndpoints
 	}
