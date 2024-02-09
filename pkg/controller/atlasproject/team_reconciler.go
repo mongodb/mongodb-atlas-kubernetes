@@ -123,7 +123,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 		if !team.GetDeletionTimestamp().IsZero() {
 			if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
 				log.Warnf("team %s is assigned to a project. Remove it from all projects before delete", team.Name)
-			} else if customresource.IsResourceProtected(team, r.ObjectDeletionProtection) {
+			} else if customresource.IsResourcePolicyKeepOrDefault(team, r.ObjectDeletionProtection) {
 				log.Info("Not removing Team from Atlas as per configuration")
 				return workflow.OK().ReconcileResult(), nil
 			} else {

@@ -156,7 +156,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 
 	if !dataFederation.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(dataFederation, customresource.FinalizerLabel) {
-			if customresource.IsResourceProtected(dataFederation, r.ObjectDeletionProtection) {
+			if customresource.IsResourcePolicyKeepOrDefault(dataFederation, r.ObjectDeletionProtection) {
 				log.Info("Not removing AtlasDataFederation from Atlas as per configuration")
 			} else {
 				if err = r.deleteDataFederationFromAtlas(context, atlasClient, dataFederation, project, log); err != nil {

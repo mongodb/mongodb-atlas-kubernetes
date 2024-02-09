@@ -241,7 +241,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.C
 
 	if !project.GetDeletionTimestamp().IsZero() {
 		if customresource.HaveFinalizer(project, customresource.FinalizerLabel) {
-			if customresource.IsResourceProtected(project, r.ObjectDeletionProtection) {
+			if customresource.IsResourcePolicyKeepOrDefault(project, r.ObjectDeletionProtection) {
 				log.Info("Not removing Project from Atlas as per configuration")
 				result = workflow.OK()
 			} else {

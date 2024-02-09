@@ -39,14 +39,6 @@ func IsOwner(resource mdbv1.AtlasCustomResource, protectionFlag bool, operatorCh
 	return !existInAtlas, nil
 }
 
-func IsResourceProtected(resource mdbv1.AtlasCustomResource, protectionFlag bool) bool {
-	if policy, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
-		return policy == ResourcePolicyKeep
-	}
-
-	return protectionFlag
-}
-
 func ApplyLastConfigApplied(ctx context.Context, resource mdbv1.AtlasCustomResource, k8sClient client.Client) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {

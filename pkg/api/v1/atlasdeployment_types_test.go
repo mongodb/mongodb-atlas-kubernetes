@@ -33,7 +33,7 @@ func init() {
 	excludedClusterFieldsTheirs["replicationFactor"] = true
 
 	// Termination protection
-	excludedClusterFieldsTheirs["terminationProtectionEnabled"] = true
+	// excludedClusterFieldsTheirs["terminationProtectionEnabled"] = true
 
 	// Root cert type
 	excludedClusterFieldsTheirs["rootCertType"] = true

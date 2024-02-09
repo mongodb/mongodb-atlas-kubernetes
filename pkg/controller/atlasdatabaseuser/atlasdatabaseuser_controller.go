@@ -244,7 +244,7 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 		}
 	}
 
-	if customresource.IsResourceProtected(dbUser, r.ObjectDeletionProtection) {
+	if customresource.IsResourcePolicyKeepOrDefault(dbUser, r.ObjectDeletionProtection) {
 		log.Info("Not removing Atlas database user from Atlas as per configuration")
 
 		err := customresource.ManageFinalizer(ctx, r.Client, dbUser, customresource.UnsetFinalizer)
