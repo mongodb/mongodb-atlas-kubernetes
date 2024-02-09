@@ -64,7 +64,7 @@ jobs:
   test-e2e-gov:
     needs:
       - allowed
-    if: github.event_name == 'merge_group'
+    if: github.event_name == 'merge_group' || github.event_name == 'push'
     uses: ./.github/workflows/test-e2e-gov.yml
     secrets: inherit
 
