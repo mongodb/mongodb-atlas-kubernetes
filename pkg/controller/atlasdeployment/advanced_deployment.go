@@ -208,7 +208,7 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.
 	}
 	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
-		log.Debugf("Deployments are different: %s", d)
+		log.Infof("Deployments are different: %s", d)
 	}
 
 	return d == "", d

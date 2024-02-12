@@ -671,7 +671,7 @@ func serverlessDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodba
 
 	d := cmp.Diff(atlasSpec, &clusterMerged, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Serverless deployment differs from spec: %s", d)
+		log.Infof("Serverless deployment differs from spec: %s", d)
 	}
 
 	return d == "", nil
@@ -689,7 +689,7 @@ func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatl
 
 	d := cmp.Diff(atlasSpec, &clusterMerged, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Advanced deployment differs from spec: %s", d)
+		log.Infof("Advanced deployment differs from spec: %s", d)
 	}
 
 	return d == "", nil

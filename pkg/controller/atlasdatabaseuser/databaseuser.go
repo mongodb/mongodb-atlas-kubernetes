@@ -262,7 +262,7 @@ func userMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DatabaseUse
 	}
 	d := cmp.Diff(*atlasSpec, userMerged, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Debugf("Users differs from spec: %s", d)
+		log.Infof("Users differs from spec: %s", d)
 	}
 
 	return d == "", nil
