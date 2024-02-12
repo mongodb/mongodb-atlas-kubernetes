@@ -1,41 +1,20 @@
 package atlasproject
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
-	canReconcile, err := canCloudProviderIntegrationReconcile(workflowCtx, protected, project)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Cloud Provider Integrations due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.CloudProviderIntegrationReadyType, result)
-
-		return result
-	}
-
+func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	roleStatuses := project.Status.DeepCopy().CloudProviderIntegrations
 	roleSpecs := getCloudProviderIntegrations(project.Spec)
 
@@ -320,65 +299,6 @@ func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 		cpiStatus.Status = status.CloudProviderIntegrationStatusFailedToDeAuthorize
 		cpiStatus.ErrorMessage = err.Error()
 	}
-}
-
-func canCloudProviderIntegrationReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	list, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.
-		ListCloudProviderAccessRoles(workflowCtx.Context, akoProject.ID()).
-		Execute()
-	if err != nil {
-		return false, err
-	}
-
-	atlasList := make([]CloudProviderIntegrationIdentifiable, 0, len(list.GetAwsIamRoles()))
-	for _, r := range list.GetAwsIamRoles() {
-		if assumedRoleArn, ok := r.GetIamAssumedRoleArnOk(); ok {
-			atlasList = append(atlasList,
-				CloudProviderIntegrationIdentifiable{
-					ProviderName:      r.ProviderName,
-					IamAssumedRoleArn: *assumedRoleArn,
-				},
-			)
-		}
-	}
-
-	if len(atlasList) == 0 {
-		return true, nil
-	}
-
-	akoLastCPIs := getCloudProviderIntegrations(*latestConfig)
-	akoLastList := make([]CloudProviderIntegrationIdentifiable, len(akoLastCPIs))
-	for i, v := range akoLastCPIs {
-		akoLastList[i] = CloudProviderIntegrationIdentifiable(v)
-	}
-
-	diff := set.Difference(atlasList, akoLastList)
-
-	if len(diff) == 0 {
-		return true, nil
-	}
-
-	akoCurrentCPIs := getCloudProviderIntegrations(akoProject.Spec)
-	akoCurrentList := make([]CloudProviderIntegrationIdentifiable, len(akoCurrentCPIs))
-	for i, v := range akoCurrentCPIs {
-		akoCurrentList[i] = CloudProviderIntegrationIdentifiable(v)
-	}
-
-	diff = set.Difference(akoCurrentList, atlasList)
-
-	return len(diff) == 0, nil
 }
 
 type CloudProviderIntegrationIdentifiable akov2.CloudProviderIntegration
