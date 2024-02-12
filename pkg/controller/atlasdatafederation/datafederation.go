@@ -98,17 +98,3 @@ func getMergedSpec(atlasSpec, operatorSpec akov2.DataFederationSpec) (akov2.Data
 
 	return mergedSpec, nil
 }
-
-func dataFederationMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DataFederationInstance, operatorSpec *akov2.AtlasDataFederation) (bool, error) {
-	newAtlasSpec, err := DataFederationFromAtlas(atlasSpec)
-	if err != nil {
-		return false, err
-	}
-
-	equal, diff := dataFederationEqual(*newAtlasSpec, operatorSpec.Spec, log)
-	if !equal {
-		log.Debugf("DataFederation differs from spec: %s", diff)
-	}
-
-	return equal, nil
-}

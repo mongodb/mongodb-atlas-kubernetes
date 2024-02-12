@@ -104,27 +104,6 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	ctx.OrgID = orgID
 	ctx.Client = atlasClient
 
-	// Setting protection flag to static false because ownership detection is disabled.
-	owner, err := customresource.IsOwner(dataFederation, false, customresource.IsResourceManagedByOperator, managedByAtlas(context, atlasClient, project.ID(), log))
-	if err != nil {
-		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	if !owner {
-		result = workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile DataFederation: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled.",
-		)
-		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
 	if result = r.ensureDataFederation(ctx, project, dataFederation); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
@@ -260,28 +239,4 @@ func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.Dele
 	}
 
 	return nil
-}
-
-func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource api.AtlasCustomResource) (bool, error) {
-		dataFederation, ok := resource.(*akov2.AtlasDataFederation)
-		if !ok {
-			return false, errors.New("failed to match resource type as AtlasDataFederation")
-		}
-
-		atlasDataFederation, _, err := atlasClient.DataFederation.Get(ctx, projectID, dataFederation.Spec.Name)
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.DataFederationTenantNotFound || apiError.ErrorCode == atlas.ResourceNotFound) {
-				return false, nil
-			}
-			return false, err
-		}
-
-		isSame, err := dataFederationMatchesSpec(log, atlasDataFederation, dataFederation)
-		if err != nil {
-			return true, nil
-		}
-		return !isSame, nil
-	}
 }
