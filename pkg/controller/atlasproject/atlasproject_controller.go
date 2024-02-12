@@ -297,7 +297,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureMaintenanceWindow(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureMaintenanceWindow(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.MaintenanceWindowReadyType), "")
 	}
 	results = append(results, result)
