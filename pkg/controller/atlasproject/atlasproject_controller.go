@@ -150,35 +150,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
-	// Setting protection flag to static false because ownership detection is disabled.
-	owner, err := customresource.IsOwner(project, false, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
-		log.Error(result.GetMessage())
-
+	projectID, result := r.ensureProjectExists(workflowCtx, project)
+	if !result.IsOk() {
+		setCondition(workflowCtx, api.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
-	}
-
-	if !owner {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Project due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.ProjectReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	var projectID string
-	{
-		var result workflow.Result
-		projectID, result = r.ensureProjectExists(workflowCtx, project)
-		if !result.IsOk() {
-			setCondition(workflowCtx, api.ProjectReadyType, result)
-			return result.ReconcileResult(), nil
-		}
 	}
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
@@ -387,34 +362,5 @@ func setCondition(ctx *workflow.Context, condition api.ConditionType, result wor
 func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
-	}
-}
-
-func managedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource api.AtlasCustomResource) (bool, error) {
-		project, ok := resource.(*akov2.AtlasProject)
-		if !ok {
-			return false, errors.New("failed to match resource type as AtlasProject")
-		}
-
-		if project.ID() == "" {
-			return false, nil
-		}
-
-		atlasProject, _, err := workflowCtx.Client.Projects.GetOneProject(workflowCtx.Context, project.ID())
-		if err != nil {
-			var apiError *mongodbatlas.ErrorResponse
-			if errors.As(err, &apiError) && (apiError.ErrorCode == atlas.NotInGroup || apiError.ErrorCode == atlas.ResourceNotFound) {
-				return false, nil
-			}
-
-			return false, err
-		}
-
-		if project.Spec.Name == atlasProject.Name {
-			return false, err
-		}
-
-		return true, nil
 	}
 }
