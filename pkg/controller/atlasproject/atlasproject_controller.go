@@ -312,7 +312,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureProjectSettings(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureProjectSettings(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.ProjectSettingsReadyType), "")
 	}
 	results = append(results, result)
