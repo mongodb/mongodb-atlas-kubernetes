@@ -292,7 +292,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = r.ensureIntegration(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = r.ensureIntegration(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.IntegrationReadyType), "")
 	}
 	results = append(results, result)
