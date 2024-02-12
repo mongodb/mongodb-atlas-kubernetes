@@ -1,18 +1,9 @@
 package atlasproject
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	controllerruntime "sigs.k8s.io/controller-runtime"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
@@ -31,7 +22,7 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 
 	defer func() {
@@ -71,25 +62,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		teamsToAssign[team.Status.ID] = &assignedTeam
 	}
 
-	canReconcile, err := canAssignedTeamsReconcile(workflowCtx, r.Client, protected, project)
-	if err != nil {
-		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.ProjectTeamsReadyType, result)
-
-		return result
-	}
-
-	if !canReconcile {
-		result := workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile Assigned Teams due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.ProjectTeamsReadyType, result)
-
-		return result
-	}
-
-	err = r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
+	err := r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
 	if err != nil {
 		workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
 		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
@@ -270,86 +243,4 @@ func hasTeamRolesChanged(current []string, desired []akov2.TeamRole) bool {
 	}
 
 	return len(desiredMap) != 0
-}
-
-type assignedTeamInfo struct {
-	ID    string
-	Roles []string
-}
-
-func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.Client, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
-	if !protected {
-		return true, nil
-	}
-
-	latestConfig := &akov2.AtlasProjectSpec{}
-	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
-	if ok {
-		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
-			return false, err
-		}
-	}
-
-	atlasAssignedTeams, _, err := workflowCtx.Client.Projects.GetProjectTeamsAssigned(workflowCtx.Context, akoProject.ID())
-	if err != nil {
-		return false, err
-	}
-
-	if atlasAssignedTeams == nil || atlasAssignedTeams.TotalCount == 0 {
-		return true, nil
-	}
-
-	atlasAssignedTeamsInfo := make([]assignedTeamInfo, 0, atlasAssignedTeams.TotalCount)
-	for _, atlasAssignedTeam := range atlasAssignedTeams.Results {
-		if atlasAssignedTeam != nil {
-			atlasAssignedTeamsInfo = append(
-				atlasAssignedTeamsInfo,
-				assignedTeamInfo{
-					ID:    atlasAssignedTeam.TeamID,
-					Roles: atlasAssignedTeam.RoleNames,
-				},
-			)
-		}
-	}
-
-	lastAssignedTeamsInfo, err := collectTeams(workflowCtx.Context, k8sClient, latestConfig, akoProject.Namespace)
-	if err != nil {
-		return false, err
-	}
-
-	if cmp.Diff(atlasAssignedTeamsInfo, lastAssignedTeamsInfo, cmpopts.EquateEmpty()) == "" {
-		return true, nil
-	}
-
-	currentAssignedTeamsInfo, err := collectTeams(workflowCtx.Context, k8sClient, &akoProject.Spec, akoProject.Namespace)
-	if err != nil {
-		return false, err
-	}
-
-	return cmp.Diff(atlasAssignedTeamsInfo, currentAssignedTeamsInfo, cmpopts.EquateEmpty()) == "", nil
-}
-
-func collectTeams(ctx context.Context, k8sClient client.Client, projectSpec *akov2.AtlasProjectSpec, projectNamespace string) ([]assignedTeamInfo, error) {
-	teams := make([]assignedTeamInfo, 0, len(projectSpec.Teams))
-
-	for _, assignedTeam := range projectSpec.Teams {
-		team := &akov2.AtlasTeam{}
-		err := k8sClient.Get(ctx, *assignedTeam.TeamRef.GetObject(projectNamespace), team)
-		if err != nil {
-			if !apiErrors.IsNotFound(err) {
-				return nil, err
-			}
-		}
-
-		info := assignedTeamInfo{
-			ID: team.Status.ID,
-		}
-		for _, role := range assignedTeam.Roles {
-			info.Roles = append(info.Roles, string(role))
-		}
-
-		teams = append(teams, info)
-	}
-
-	return teams, nil
 }
