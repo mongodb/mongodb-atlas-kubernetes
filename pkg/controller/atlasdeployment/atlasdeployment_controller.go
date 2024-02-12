@@ -225,9 +225,10 @@ func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	project *mdbv1.AtlasProject,
 	deployment *mdbv1.AtlasDeployment,
 ) workflow.Result {
+	// Setting protection flag to static false because ownership detection is disabled.
 	owner, err := customresource.IsOwner(
 		deployment,
-		r.ObjectDeletionProtection,
+		false,
 		customresource.IsResourceManagedByOperator,
 		managedByAtlas(workflowCtx, project.ID(), log),
 	)

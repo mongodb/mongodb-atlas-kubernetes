@@ -17,7 +17,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -135,11 +134,10 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 
 				Eventually(func(g Gomega) bool {
 					expectedConditions := conditions.MatchConditions(
+						status.TrueCondition(status.ReadyType),
+						status.TrueCondition(status.ResourceVersionStatus),
 						status.TrueCondition(status.ValidationSucceeded),
-						status.FalseCondition(status.ReadyType),
-						status.FalseCondition(status.DatabaseUserReadyType).
-							WithReason(string(workflow.AtlasDeletionProtection)).
-							WithMessageRegexp("unable to reconcile database user: it already exists in Atlas, it was not previously managed by the operator, and the deletion protection is enabled."),
+						status.TrueCondition(status.DatabaseUserReadyType),
 					)
 
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDBUser3), testDBUser3, &client.GetOptions{}))

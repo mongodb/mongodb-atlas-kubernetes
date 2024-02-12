@@ -104,7 +104,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	ctx.OrgID = orgID
 	ctx.Client = atlasClient
 
-	owner, err := customresource.IsOwner(dataFederation, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(context, atlasClient, project.ID(), log))
+	// Setting protection flag to static false because ownership detection is disabled.
+	owner, err := customresource.IsOwner(dataFederation, false, customresource.IsResourceManagedByOperator, managedByAtlas(context, atlasClient, project.ID(), log))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
