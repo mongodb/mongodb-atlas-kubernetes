@@ -500,6 +500,7 @@ func testDeploymentReconciler(log *zap.SugaredLogger, k8sclient client.Client, p
 	}
 }
 
+//nolint:unparam
 func testProject(ns string) *akov2.AtlasProject {
 	return &akov2.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
