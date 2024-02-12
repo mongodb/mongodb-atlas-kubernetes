@@ -19,7 +19,6 @@ package atlasdeployment
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -49,11 +48,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/indexer"
@@ -66,141 +63,6 @@ const (
 	fakeDeployment = "fake-cluster"
 	fakeNamespace  = "fake-namespace"
 )
-
-func TestDeploymentManaged(t *testing.T) {
-	testCases := []struct {
-		title      string
-		protected  bool
-		managedTag bool
-	}{
-		{
-			title:      "unprotected means managed",
-			protected:  false,
-			managedTag: false,
-		},
-		{
-			title:      "protected and tagged means managed",
-			protected:  true,
-			managedTag: true,
-		},
-		{
-			title:      "protected not tagged and missing in Atlas means managed",
-			protected:  true,
-			managedTag: false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ClusterNotFound}
-					},
-				},
-				ServerlessInstances: &atlasmock.ServerlessInstancesClientMock{
-					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
-						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceNotFound}
-					},
-				},
-			}
-			project := testProject(fakeNamespace)
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, testK8sClient(), project, deployment)
-			if tc.managedTag {
-				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
-			}
-
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
-
-			assert.True(t, result.IsOk())
-		})
-	}
-}
-
-func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
-	testCases := []struct {
-		title       string
-		inAtlas     *mongodbatlas.AdvancedCluster
-		expectedErr string
-	}{
-		{
-			title:       "advanced deployment not tagged and same in Atlas STILL means managed",
-			inAtlas:     sameAdvancedDeployment(fakeDomain),
-			expectedErr: "",
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			project := testProject(fakeNamespace)
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-						return tc.inAtlas, nil, nil
-					},
-				},
-			}
-			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
-
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
-
-			if tc.expectedErr == "" {
-				assert.True(t, result.IsOk())
-			} else {
-				assert.NotNil(t, te.workflowCtx.LastCondition())
-				if te.workflowCtx.LastCondition() != nil {
-					assert.Equal(t, api.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
-				}
-				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
-			}
-		})
-	}
-}
-
-func TestProtectedServerlessManagedInAtlas(t *testing.T) {
-	testCases := []struct {
-		title       string
-		inAtlas     *mongodbatlas.Cluster
-		expectedErr string
-	}{
-		{
-			title:       "serverless deployment not tagged and same in Atlas STILL means managed",
-			inAtlas:     sameServerlessDeployment(fakeDomain),
-			expectedErr: "",
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			project := testProject(fakeNamespace)
-			atlasClient := mongodbatlas.Client{
-				AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
-					GetFunc: func(groupID string, clusterName string) (*mongodbatlas.AdvancedCluster, *mongodbatlas.Response, error) {
-						return nil, nil, &mongodbatlas.ErrorResponse{ErrorCode: atlas.ServerlessInstanceFromClusterAPI}
-					},
-				},
-				ServerlessInstances: &atlasmock.ServerlessInstancesClientMock{
-					GetFunc: func(groupID string, name string) (*mongodbatlas.Cluster, *mongodbatlas.Response, error) {
-						return tc.inAtlas, nil, nil
-					},
-				},
-			}
-			deployment := akov2.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
-			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
-
-			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
-
-			if tc.expectedErr == "" {
-				assert.True(t, result.IsOk())
-			} else {
-				assert.NotNil(t, te.workflowCtx.LastCondition())
-				if te.workflowCtx.LastCondition() != nil {
-					assert.Equal(t, api.DeploymentReadyType, te.workflowCtx.LastCondition().Type)
-				}
-				assert.Regexp(t, regexp.MustCompile(tc.expectedErr), result.GetMessage())
-			}
-		})
-	}
-}
 
 func TestFinalizerNotFound(t *testing.T) {
 	atlasClient := mongodbatlas.Client{}
@@ -572,19 +434,6 @@ func TestCleanupBindings(t *testing.T) {
 	})
 }
 
-func sameAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
-	project := testProject(ns)
-	deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-	advancedSpec := deployment.Spec.DeploymentSpec
-	return intoAdvancedAtlasCluster(advancedSpec)
-}
-
-func sameServerlessDeployment(ns string) *mongodbatlas.Cluster {
-	project := testProject(ns)
-	deployment := akov2.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
-	return intoServerlessAtlasCluster(deployment.Spec.ServerlessSpec)
-}
-
 type testDeploymentEnv struct {
 	reconciler  *AtlasDeploymentReconciler
 	workflowCtx *workflow.Context
@@ -661,22 +510,6 @@ func testProject(ns string) *akov2.AtlasProject {
 			ID: fakeProjectID,
 		},
 	}
-}
-
-func intoAdvancedAtlasCluster(advancedSpec *akov2.AdvancedDeploymentSpec) *mongodbatlas.AdvancedCluster {
-	ac, err := advancedSpec.ToAtlas()
-	if err != nil {
-		log.Fatalf("failed to convert advanced deployment to atlas: %v", err)
-	}
-	return ac
-}
-
-func intoServerlessAtlasCluster(serverlessSpec *akov2.ServerlessSpec) *mongodbatlas.Cluster {
-	ac, err := serverlessSpec.ToAtlas()
-	if err != nil {
-		log.Fatalf("failed to convert serverless deployment to atlas: %v", err)
-	}
-	return ac
 }
 
 func testDeploymentName(suffix string) types.NamespacedName {
