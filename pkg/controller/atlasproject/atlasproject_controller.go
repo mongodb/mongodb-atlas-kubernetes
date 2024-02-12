@@ -282,7 +282,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensureNetworkPeers(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensureNetworkPeers(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(api.NetworkPeerReadyType), "")
 	}
 	results = append(results, result)
