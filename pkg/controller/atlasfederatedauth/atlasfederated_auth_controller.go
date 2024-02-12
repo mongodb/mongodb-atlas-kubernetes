@@ -2,10 +2,8 @@ package atlasfederatedauth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,27 +90,6 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	workflowCtx.SdkClient = atlasClient
 	workflowCtx.OrgID = orgID
 
-	// Setting protection flag to static false because ownership detection is disabled.
-	owner, err := customresource.IsOwner(fedauth, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
-	if err != nil {
-		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
-		workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
-	if !owner {
-		result = workflow.Terminate(
-			workflow.AtlasDeletionProtection,
-			"unable to reconcile FederatedAuthConfig due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		)
-		workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
-		log.Error(result.GetMessage())
-
-		return result.ReconcileResult(), nil
-	}
-
 	result = r.ensureFederatedAuth(workflowCtx, fedauth)
 	workflowCtx.SetConditionFromResult(api.FederatedAuthReadyType, result)
 	workflowCtx.SetConditionFromResult(api.ReadyType, result)
@@ -136,38 +113,5 @@ func setCondition(ctx *workflow.Context, condition api.ConditionType, result wor
 func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	if result.IsWarning() {
 		ctx.Log.Warnw(result.GetMessage())
-	}
-}
-
-func managedByAtlas(ctx context.Context, atlasClient *admin.APIClient, orgID string) customresource.AtlasChecker {
-	return func(resource api.AtlasCustomResource) (bool, error) {
-		fedauth, ok := resource.(*akov2.AtlasFederatedAuth)
-		if !ok {
-			return false, errors.New("failed to match resource type as AtlasFederatedAuth")
-		}
-
-		atlasFedSettings, _, err := atlasClient.FederatedAuthenticationApi.GetFederationSettings(ctx, orgID).Execute()
-		if err != nil {
-			return false, err
-		}
-
-		atlasFedAuth, _, err := atlasClient.FederatedAuthenticationApi.
-			GetConnectedOrgConfig(ctx, atlasFedSettings.GetId(), orgID).
-			Execute()
-		if err != nil {
-			return false, err
-		}
-
-		projectlist, err := prepareProjectList(ctx, atlasClient)
-		if err != nil {
-			return false, err
-		}
-
-		convertedAuth, err := fedauth.Spec.ToAtlas(orgID, atlasFedAuth.GetIdentityProviderId(), projectlist)
-		if err != nil {
-			return false, err
-		}
-
-		return !federatedSettingsAreEqual(convertedAuth, atlasFedAuth), nil
 	}
 }
