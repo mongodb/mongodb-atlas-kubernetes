@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 	"go.uber.org/zap"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
