@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -73,7 +74,7 @@ func TestCalculateChanges(t *testing.T) {
 				},
 			},
 		},
-		calculateChanges(current, desired),
+		calculateChanges(zaptest.NewLogger(t).Sugar(), current, desired),
 	)
 }
 

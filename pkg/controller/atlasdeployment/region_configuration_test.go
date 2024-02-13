@@ -5,12 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestSyncComputeConfiguration(t *testing.T) {
+	logger := zaptest.NewLogger(t).Sugar()
+
 	t.Run("should not modify new region when there's no cluster in Atlas", func(t *testing.T) {
 		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
@@ -64,8 +67,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-
-		syncRegionConfiguration(advancedDeployment, nil)
+		syncRegionConfiguration(logger, advancedDeployment, nil)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -134,7 +136,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -203,7 +205,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -275,7 +277,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -344,7 +346,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -502,7 +504,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -602,7 +604,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -712,7 +714,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 
@@ -823,7 +825,7 @@ func TestSyncComputeConfiguration(t *testing.T) {
 			},
 		}
 
-		syncRegionConfiguration(advancedDeployment, atlasCluster)
+		syncRegionConfiguration(logger, advancedDeployment, atlasCluster)
 		assert.Equal(t, expected, advancedDeployment)
 	})
 }

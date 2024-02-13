@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.uber.org/zap"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -53,7 +54,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return result
 	}
 
-	if federatedSettingsAreEqual(operatorConf, orgConfig) {
+	if federatedSettingsAreEqual(service.Log, operatorConf, orgConfig) {
 		return workflow.OK()
 	}
 
@@ -117,10 +118,14 @@ func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, fe
 	return workflow.OK()
 }
 
-func federatedSettingsAreEqual(operator, atlas *admin.ConnectedOrgConfig) bool {
+func federatedSettingsAreEqual(log *zap.SugaredLogger, operator, atlas *admin.ConnectedOrgConfig) bool {
 	operator.UserConflicts = nil
 	atlas.UserConflicts = nil
-	return cmp.Diff(operator, atlas) == ""
+	if d := cmp.Diff(operator, atlas); d != "" {
+		log.Infof("Federated authentication settings differ from spec: %s", d)
+		return false
+	}
+	return true
 }
 
 func GetIdentityProviderForFederatedSettings(ctx context.Context, atlasClient *admin.APIClient, fedSettings *admin.OrgFederationSettings) (*admin.FederationIdentityProvider, error) {

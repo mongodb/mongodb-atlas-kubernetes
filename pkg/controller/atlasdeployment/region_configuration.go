@@ -3,13 +3,14 @@ package atlasdeployment
 import (
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlasCluster *mongodbatlas.AdvancedCluster) {
+func syncRegionConfiguration(log *zap.SugaredLogger, deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlasCluster *mongodbatlas.AdvancedCluster) {
 	// When there's no config to handle, do nothing
 	if deploymentSpec == nil || len(deploymentSpec.ReplicationSpecs) == 0 {
 		return
@@ -29,7 +30,7 @@ func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlas
 
 	// when editing a region, normalize change compute configuration
 	regionsHasChanged := false
-	if regionsConfigHasChanged(deploymentSpec.ReplicationSpecs[0].RegionConfigs, atlasCluster.ReplicationSpecs[0].RegionConfigs) {
+	if regionsConfigHasChanged(log, deploymentSpec.ReplicationSpecs[0].RegionConfigs, atlasCluster.ReplicationSpecs[0].RegionConfigs) {
 		regionsHasChanged = true
 		normalizeSpecs(deploymentSpec.ReplicationSpecs[0].RegionConfigs)
 	}
@@ -89,7 +90,7 @@ func hasDiskSizeChanged(deploymentDiskSize *int, clusterDiskSize *float64) bool 
 	return *deploymentDiskSize != int(*clusterDiskSize)
 }
 
-func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, atlasRegions []*mongodbatlas.AdvancedRegionConfig) bool {
+func regionsConfigHasChanged(log *zap.SugaredLogger, deploymentRegions []*mdbv1.AdvancedRegionConfig, atlasRegions []*mongodbatlas.AdvancedRegionConfig) bool {
 	if len(deploymentRegions) != len(atlasRegions) {
 		return true
 	}
@@ -122,6 +123,7 @@ func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, at
 		}
 
 		if diff := cmp.Diff(k8sRegion, atlasRegion); diff != "" {
+			log.Infof("Deployment regions do not match spec: %s", diff)
 			return true
 		}
 	}

@@ -76,7 +76,7 @@ func dataFederationEqual(atlasSpec, operatorSpec mdbv1.DataFederationSpec, log *
 
 	d := cmp.Diff(atlasSpec, mergedSpec, cmpopts.EquateEmpty())
 	if d != "" {
-		log.Infof("Data Federation diff: \n%s", d)
+		log.Infof("Data Federation differs from spec: \n%s", d)
 	}
 
 	return d == "", d

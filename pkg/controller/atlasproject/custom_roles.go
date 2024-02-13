@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"go.uber.org/zap"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -40,7 +41,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 		return workflow.Terminate(workflow.ProjectCustomRolesReady, err.Error())
 	}
 
-	ops := calculateChanges(currentCustomRoles, project.Spec.CustomRoles)
+	ops := calculateChanges(workflowCtx.Log, currentCustomRoles, project.Spec.CustomRoles)
 
 	deleteStatus := deleteCustomRoles(workflowCtx, project.ID(), ops.Delete)
 	updateStatus := updateCustomRoles(workflowCtx, project.ID(), ops.Update)
@@ -213,7 +214,7 @@ type CustomRolesOperations struct {
 	Delete map[string]v1.CustomRole
 }
 
-func calculateChanges(currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) CustomRolesOperations {
+func calculateChanges(log *zap.SugaredLogger, currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) CustomRolesOperations {
 	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
 	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
 	ops := CustomRolesOperations{
@@ -238,6 +239,7 @@ func calculateChanges(currentCustomRoles []v1.CustomRole, desiredCustomRoles []v
 		}
 
 		if d := cmp.Diff(desiredCustomRole, customRole, cmpopts.EquateEmpty()); d != "" {
+			log.Infof("Custom roles differ from spec: %s", d)
 			ops.Update[desiredCustomRole.Name] = desiredCustomRole
 		}
 	}
@@ -328,9 +330,10 @@ func canCustomRolesReconcile(workflowCtx *workflow.Context, protected bool, akoP
 
 	atlasCustomRoles := mapToOperator(atlasData)
 
-	if cmp.Diff(latestConfig.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()) == "" {
-		return true, nil
+	if d := cmp.Diff(latestConfig.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()); d != "" {
+		workflowCtx.Log.Infof("Custom roles differ from spec: %s", d)
+		return false, nil
 	}
 
-	return cmp.Diff(akoProject.Spec.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()) == "", nil
+	return true, nil
 }

@@ -93,7 +93,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	workflowCtx.OrgID = orgID
 
 	// Setting protection flag to static false because ownership detection is disabled.
-	owner, err := customresource.IsOwner(fedauth, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
+	owner, err := customresource.IsOwner(fedauth, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, log, atlasClient, orgID))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)
@@ -139,7 +139,7 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 	}
 }
 
-func managedByAtlas(ctx context.Context, atlasClient *admin.APIClient, orgID string) customresource.AtlasChecker {
+func managedByAtlas(ctx context.Context, log *zap.SugaredLogger, atlasClient *admin.APIClient, orgID string) customresource.AtlasChecker {
 	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
 		fedauth, ok := resource.(*mdbv1.AtlasFederatedAuth)
 		if !ok {
@@ -168,6 +168,6 @@ func managedByAtlas(ctx context.Context, atlasClient *admin.APIClient, orgID str
 			return false, err
 		}
 
-		return !federatedSettingsAreEqual(convertedAuth, atlasFedAuth), nil
+		return !federatedSettingsAreEqual(log, convertedAuth, atlasFedAuth), nil
 	}
 }

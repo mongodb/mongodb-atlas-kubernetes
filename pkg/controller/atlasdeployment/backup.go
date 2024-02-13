@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/validate"
+	"go.uber.org/zap"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -206,7 +207,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	// There is only one policy, always
 	apiScheduleReq.Policies[0].ID = currentSchedule.Policies[0].ID
 
-	equal, err := backupSchedulesAreEqual(currentSchedule, apiScheduleReq)
+	equal, err := backupSchedulesAreEqual(service.Log, currentSchedule, apiScheduleReq)
 	if err != nil {
 		return fmt.Errorf("can not compare BackupSchedule resources: %w", err)
 	}
@@ -224,7 +225,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	return nil
 }
 
-func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {
+func backupSchedulesAreEqual(log *zap.SugaredLogger, currentSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy, newSchedule *mongodbatlas.CloudProviderSnapshotBackupPolicy) (bool, error) {
 	currentCopy := mongodbatlas.CloudProviderSnapshotBackupPolicy{}
 	err := compat.JSONCopy(&currentCopy, currentSchedule)
 	if err != nil {
@@ -241,6 +242,7 @@ func backupSchedulesAreEqual(currentSchedule *mongodbatlas.CloudProviderSnapshot
 	normalizeBackupSchedule(&newCopy)
 	d := cmp.Diff(&currentCopy, &newCopy, cmpopts.EquateEmpty())
 	if d != "" {
+		log.Infof("Backup schedule differs from spec: %s", d)
 		return false, nil
 	}
 	return true, nil

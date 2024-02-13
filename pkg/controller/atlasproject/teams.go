@@ -326,7 +326,12 @@ func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.C
 		return false, err
 	}
 
-	return cmp.Diff(atlasAssignedTeamsInfo, currentAssignedTeamsInfo, cmpopts.EquateEmpty()) == "", nil
+	if d := cmp.Diff(atlasAssignedTeamsInfo, currentAssignedTeamsInfo, cmpopts.EquateEmpty()); d != "" {
+		workflowCtx.Log.Infof("Assigned teams differ from spec: %s", d)
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func collectTeams(ctx context.Context, k8sClient client.Client, projectSpec *v1.AtlasProjectSpec, projectNamespace string) ([]assignedTeamInfo, error) {

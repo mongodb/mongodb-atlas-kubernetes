@@ -348,7 +348,11 @@ func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChec
 		for _, username := range team.Spec.Usernames {
 			usernames = append(usernames, string(username))
 		}
-
-		return cmp.Diff(usernames, atlasTeam.Usernames) != "", nil
+		workflowCtx.Log.Infof("x")
+		if d := cmp.Diff(usernames, atlasTeam.Usernames); d != "" {
+			workflowCtx.Log.Infof("Atlas team usernames differ from spec: %s", d)
+			return true, nil
+		}
+		return false, nil
 	}
 }

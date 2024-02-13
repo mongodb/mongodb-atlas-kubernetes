@@ -58,7 +58,8 @@ func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessList
 	}
 
 	currentList := mapToOperatorSpec(list.GetResults())
-	if cmp.Diff(currentList, akoProject.Spec.ProjectIPAccessList, cmpopts.EquateEmpty()) != "" {
+	if d := cmp.Diff(currentList, akoProject.Spec.ProjectIPAccessList, cmpopts.EquateEmpty()); d != "" {
+		service.Log.Infof("IP Access List differs from spec: %s", d)
 		err = syncIPAccessList(service, akoProject.ID(), currentList, desiredList)
 		if err != nil {
 			result := workflow.Terminate(workflow.ProjectIPNotCreatedInAtlas, fmt.Sprintf("failed to sync desired state with Atlas: %s", err))

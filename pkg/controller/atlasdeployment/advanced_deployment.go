@@ -100,7 +100,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		}
 	}
 
-	syncRegionConfiguration(&specDeployment, atlasDeploymentAsAtlas)
+	syncRegionConfiguration(ctx.Log, &specDeployment, atlasDeploymentAsAtlas)
 
 	deploymentAsAtlas, err := specDeployment.ToAtlas()
 	if err != nil {
@@ -208,7 +208,7 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.
 	}
 	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
 	if d != "" {
-		log.Infof("Deployments are different: %s", d)
+		log.Infof("Deployment differs from spec: %s", d)
 	}
 
 	return d == "", d
