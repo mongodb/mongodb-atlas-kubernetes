@@ -114,6 +114,14 @@ jobs:
           else
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
+      - name: Check signing supported
+        id: check-signing-support
+        run: |
+            if test -f "./scripts/sign-multiarch.sh"; then
+              echo "sign=true" >> $GITHUB_OUTPUT
+            else
+              echo "sign=false" >> $GITHUB_OUTPUT
+            fi
       - name: Build all platforms & check version
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
@@ -148,6 +156,23 @@ jobs:
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
+      - name: Login to artifactory.corp.mongodb.com
+        if: steps.check-signing-support.outputs.sign == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: artifactory.corp.mongodb.com
+          username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
+          password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
+      - name: Sign images
+        if: steps.check-signing-support.outputs.sign == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          make sign IMG_TO_SIGN="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG_TO_SIGN="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG_TO_SIGN="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
       - name: Create configuration package
         run: |
           set -x

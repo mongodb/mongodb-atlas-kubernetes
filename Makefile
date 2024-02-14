@@ -63,6 +63,10 @@ ifndef IMG
 IMG := ${OPERATOR_REGISTRY}:${VERSION}
 endif
 
+# Image to be signed, including tag (but not SHAs)
+IMG_TO_SIGN ?= IMG
+SIGNATURE_REPO ?= OPERATOR_REGISTRY
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -457,3 +461,8 @@ test-metrics:
 
 .PHONY: test-tools ## Test all tools
 test-tools: test-clean test-makejwt test-metrics
+
+.PHONY: sign ## Sign an AKO multi-architecture image
+sign:
+	@echo "Signing multi-architecture image $(IMG_TO_SIGN)..."
+	IMG_TO_SIGN=$(IMG_TO_SIGN) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
