@@ -403,7 +403,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"customRoles":[{"name":"testRole1","actions":[{"name":"INSERT","resources":[{"database":"testDB","collection":"testCollection"}]}]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
-			Log: zaptest.NewLogger(t).Sugar(),
+			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.Background(),
 		}
 		result, err := canCustomRolesReconcile(workflowCtx, true, akoProject)
