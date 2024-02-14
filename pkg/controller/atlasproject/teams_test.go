@@ -108,6 +108,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
+			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)
@@ -248,6 +249,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: `{"teams":[{"teamRef":{"name":"team1","namespace":"default"},"roles":["GROUP_OWNER"]}]}`})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
+			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.Background(),
 		}
 		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, true, akoProject)

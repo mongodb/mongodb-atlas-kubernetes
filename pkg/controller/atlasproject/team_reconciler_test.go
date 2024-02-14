@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap/zaptest"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -144,6 +145,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID:   "orgID-1",
 			Client:  &atlasClient,
+			Log:     zaptest.NewLogger(t).Sugar(),
 			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)

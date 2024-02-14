@@ -331,10 +331,13 @@ func canCustomRolesReconcile(workflowCtx *workflow.Context, protected bool, akoP
 
 	atlasCustomRoles := mapToOperator(atlasData)
 
-	if d := cmp.Diff(latestConfig.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()); d != "" {
+	if cmp.Diff(latestConfig.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()) == "" {
+		return true, nil
+	}
+
+	if d := cmp.Diff(akoProject.Spec.CustomRoles, atlasCustomRoles, cmpopts.EquateEmpty()); d != "" {
 		workflowCtx.Log.Infof("Custom roles differ from spec: %s", d)
 		return false, nil
 	}
-
 	return true, nil
 }

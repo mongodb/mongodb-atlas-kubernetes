@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.uber.org/zap/zaptest"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -303,6 +304,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			SdkClient: atlasClient,
+			Log:       zaptest.NewLogger(t).Sugar(),
 			Context:   context.Background(),
 		}
 		result := ensureIPAccessList(
