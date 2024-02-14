@@ -148,7 +148,8 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.OrgID = orgID
 	workflowCtx.Client = atlasClient
 
-	owner, err := customresource.IsOwner(project, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
+	// Setting protection flag to static false because ownership detection is disabled.
+	owner, err := customresource.IsOwner(project, false, customresource.IsResourceManagedByOperator, managedByAtlas(workflowCtx))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.ProjectReadyType, result)

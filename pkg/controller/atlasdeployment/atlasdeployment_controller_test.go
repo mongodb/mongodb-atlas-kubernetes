@@ -119,11 +119,6 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 			inAtlas:     sameAdvancedDeployment(fakeDomain),
 			expectedErr: "",
 		},
-		{
-			title:       "advanced deployment not tagged and different in Atlas means unmanaged",
-			inAtlas:     differentAdvancedDeployment(fakeDomain),
-			expectedErr: "unable to reconcile Deployment due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
@@ -163,11 +158,6 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 			title:       "serverless deployment not tagged and same in Atlas STILL means managed",
 			inAtlas:     sameServerlessDeployment(fakeDomain),
 			expectedErr: "",
-		},
-		{
-			title:       "serverless deployment not tagged and different in Atlas means unmanaged",
-			inAtlas:     differentServerlessDeployment(fakeDomain),
-			expectedErr: "unable to reconcile Deployment due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
 		},
 	}
 	for _, tc := range testCases {
@@ -573,26 +563,11 @@ func TestCleanupBindings(t *testing.T) {
 	})
 }
 
-func differentAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
-	project := testProject(ns)
-	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
-	deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = "M2"
-	advancedSpec := deployment.Spec.DeploymentSpec
-	return intoAdvancedAtlasCluster(advancedSpec)
-}
-
 func sameAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
 	project := testProject(ns)
 	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 	advancedSpec := deployment.Spec.DeploymentSpec
 	return intoAdvancedAtlasCluster(advancedSpec)
-}
-
-func differentServerlessDeployment(ns string) *mongodbatlas.Cluster {
-	project := testProject(ns)
-	deployment := v1.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
-	deployment.Spec.ServerlessSpec.ProviderSettings.RegionName = "US_EAST_2"
-	return intoServerlessAtlasCluster(deployment.Spec.ServerlessSpec)
 }
 
 func sameServerlessDeployment(ns string) *mongodbatlas.Cluster {

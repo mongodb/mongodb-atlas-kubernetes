@@ -92,7 +92,8 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 	workflowCtx.SdkClient = atlasClient
 	workflowCtx.OrgID = orgID
 
-	owner, err := customresource.IsOwner(fedauth, r.ObjectDeletionProtection, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
+	// Setting protection flag to static false because ownership detection is disabled.
+	owner, err := customresource.IsOwner(fedauth, false, customresource.IsResourceManagedByOperator, managedByAtlas(ctx, atlasClient, orgID))
 	if err != nil {
 		result = workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
 		workflowCtx.SetConditionFromResult(status.FederatedAuthReadyType, result)

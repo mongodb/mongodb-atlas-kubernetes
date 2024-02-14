@@ -135,7 +135,6 @@ func TestReconcile(t *testing.T) {
 		groupAPI.EXPECT().ListProjects(context.Background()).
 			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
 		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).
-			Twice().
 			Return(
 				&admin.PaginatedAtlasGroup{
 					Results: &[]admin.Group{

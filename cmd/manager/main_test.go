@@ -34,7 +34,7 @@ func Test_configureDeletionProtection(t *testing.T) {
 			t,
 			Config{
 				ObjectDeletionProtection:    true,
-				SubObjectDeletionProtection: true,
+				SubObjectDeletionProtection: false,
 			},
 			config,
 		)

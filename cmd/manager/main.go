@@ -64,7 +64,8 @@ const (
 	objectDeletionProtectionEnvVar     = "OBJECT_DELETION_PROTECTION"
 	subobjectDeletionProtectionEnvVar  = "SUBOBJECT_DELETION_PROTECTION"
 	objectDeletionProtectionDefault    = true
-	subobjectDeletionProtectionDefault = true
+	subobjectDeletionProtectionDefault = false
+	subobjectDeletionProtectionMessage = "Note: sub-object deletion protection is IGNORED because it does not work deterministically."
 )
 
 var (
@@ -147,7 +148,7 @@ func main() {
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDeployment")
 		os.Exit(1)
@@ -162,7 +163,7 @@ func main() {
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasProject")
 		os.Exit(1)
@@ -177,7 +178,7 @@ func main() {
 		AtlasProvider:                 atlasProvider,
 		GlobalPredicates:              globalPredicates,
 		ObjectDeletionProtection:      config.ObjectDeletionProtection,
-		SubObjectDeletionProtection:   config.SubObjectDeletionProtection,
+		SubObjectDeletionProtection:   false,
 		FeaturePreviewOIDCAuthEnabled: config.FeatureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDatabaseUser")
@@ -193,7 +194,7 @@ func main() {
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDataFederation"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasDataFederation")
 		os.Exit(1)
@@ -208,7 +209,7 @@ func main() {
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasFederatedAuth"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
-		SubObjectDeletionProtection: config.SubObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasFederatedAuth")
 		os.Exit(1)
@@ -225,6 +226,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	setupLog.Info(subobjectDeletionProtectionMessage)
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -264,7 +266,7 @@ func parseConfiguration() Config {
 	flag.BoolVar(&config.ObjectDeletionProtection, objectDeletionProtectionFlag, objectDeletionProtectionDefault, "Defines if the operator deletes Atlas resource "+
 		"when a Custom Resource is deleted")
 	flag.BoolVar(&config.SubObjectDeletionProtection, subobjectDeletionProtectionFlag, subobjectDeletionProtectionDefault, "Defines if the operator overwrites "+
-		"(and consequently delete) subresources that were not previously created by the operator")
+		"(and consequently delete) subresources that were not previously created by the operator. "+subobjectDeletionProtectionMessage)
 	appVersion := flag.Bool("v", false, "prints application version")
 	flag.Parse()
 
