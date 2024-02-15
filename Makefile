@@ -63,10 +63,6 @@ ifndef IMG
 IMG := ${OPERATOR_REGISTRY}:${VERSION}
 endif
 
-# Image to be signed, including tag (but not SHAs)
-IMG_TO_SIGN ?= IMG
-SIGNATURE_REPO ?= OPERATOR_REGISTRY
-
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -94,6 +90,10 @@ GOLANGCI_LINT_VERSION := v1.54.2
 
 REPORT_TYPE = flakiness
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
+
+# Signature definitions
+SIGNATURE_REPO ?= OPERATOR_REGISTRY
+AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -462,7 +462,19 @@ test-metrics:
 .PHONY: test-tools ## Test all tools
 test-tools: test-clean test-makejwt test-metrics
 
-.PHONY: sign ## Sign an AKO multi-architecture image
-sign:
-	@echo "Signing multi-architecture image $(IMG_TO_SIGN)..."
-	IMG_TO_SIGN=$(IMG_TO_SIGN) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
+.PHONY: sign 
+sign: ## Sign an AKO multi-architecture image
+	@echo "Signing multi-architecture image $(IMG)..."
+	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
+
+cosign:
+	@which cosign || go install github.com/sigstore/cosign/cmd/cosign@latest
+
+./ako.pem:
+	curl $(AKO_SIGN_PUBKEY) > $@
+
+.PHONY: verify 
+verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
+	@echo "Verifying multi-architecture image signature $(IMG)..."
+	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
+	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"

@@ -48,3 +48,6 @@ tools/clean/clean
 tools/makejwt/makejwt
 tools/metrics/metrics
 
+# ignore the ako.siging key local copy
+ako.pem
+

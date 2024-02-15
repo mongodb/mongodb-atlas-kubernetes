@@ -170,9 +170,19 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          make sign IMG_TO_SIGN="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG_TO_SIGN="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG_TO_SIGN="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+      - name: Self-verify images
+        if: steps.check-signing-support.outputs.sign == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
       - name: Create configuration package
         run: |
           set -x
@@ -200,4 +210,3 @@ jobs:
           asset_path: ./atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_name: atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz
           asset_content_type: application/tgz
-

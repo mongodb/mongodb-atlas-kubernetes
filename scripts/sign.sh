@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO=${IMG_REPO:-docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease}
-img_to_sign=${IMG_TO_SIGN:-$REPO:$VERSION}
+img=${IMG:-$REPO:$VERSION}
 SIGNATURE_REPO=${SIGNATURE_REPO:-$REPO}
 TMPDIR=${TMPDIR:-/tmp}
 
@@ -31,4 +31,4 @@ docker run \
   -v "$(pwd):$(pwd)" \
   -w "$(pwd)" \
   artifactory.corp.mongodb.com/release-tools-container-registry-local/garasign-cosign \
-  cosign sign --key "${PKCS11_URI}" --tlog-upload=false "${img_to_sign}"
+  cosign sign --key "${PKCS11_URI}" --tlog-upload=false "${img}"
