@@ -23,31 +23,44 @@ type AtlasBackupCompliancePolicy struct {
 }
 
 type AtlasBackupCompliancePolicySpec struct {
-	AuthorizedEmail         string                  `json:"authorizedEmail"`
-	AuthorizedUserFirstName string                  `json:"authorizedUserFirstName"`
-	AuthorizedUserLastName  string                  `json:"authorizedUserLastName"`
-	CopyProtectionEnabled   bool                    `json:"copyProtectionEnabled"`
-	EncryptionAtRestEnabled bool                    `json:"encryptionAtRestEnabled"`
-	Enforce                 bool                    `json:"enforce"`
-	PITEnabled              bool                    `json:"pointInTimeEnabled"`
-	RestoreWindowDays       int                     `json:"restoreWindowDays"`
-	ScheduledPolicyItems    []AtlasBackupPolicyItem `json:"scheduledPolicyItems"`
-	OnDemandPolicy          AtlasBackupPolicyItem   `json:"onDemandPolicy"`
+	AuthorizedEmail         string `json:"authorizedEmail"`
+	AuthorizedUserFirstName string `json:"authorizedUserFirstName"`
+	AuthorizedUserLastName  string `json:"authorizedUserLastName"`
+	// +kubebuilder:validation:default:=false
+	CopyProtectionEnabled bool `json:"copyProtectionEnabled"`
+	// +kubebuilder:validation:default:=false
+	EncryptionAtRestEnabled bool `json:"encryptionAtRestEnabled"`
+	Enforce                 bool `json:"enforce"`
+	// +kubebuilder:validation:default:=false
+	PITEnabled           bool                    `json:"pointInTimeEnabled"`
+	RestoreWindowDays    int                     `json:"restoreWindowDays"`
+	ScheduledPolicyItems []AtlasBackupPolicyItem `json:"scheduledPolicyItems"`
+	OnDemandPolicy       AtlasOnDemandPolicy     `json:"onDemandPolicy"`
 }
 
-func (b *AtlasBackupCompliancePolicy) ToAtlas() *admin.DataProtectionSettings20231001 {
+type AtlasOnDemandPolicy struct {
+	// Scope of the backup policy item: days, weeks, or months
+	// +kubebuilder:validation:Enum:=days;weeks;months
+	RetentionUnit string `json:"retentionUnit"`
+
+	// Value to associate with RetentionUnit
+	RetentionValue int `json:"retentionValue"`
+}
+
+func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProtectionSettings20231001 {
 	// TODO: add enforce flag once present in the API
 	result := &admin.DataProtectionSettings20231001{
 		AuthorizedEmail:         b.Spec.AuthorizedEmail,
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
 		EncryptionAtRestEnabled: &b.Spec.EncryptionAtRestEnabled,
 		PitEnabled:              &b.Spec.PITEnabled,
+		ProjectId:               pointer.MakePtr(projectID),
 		RestoreWindowDays:       pointer.MakePtr(b.Spec.RestoreWindowDays),
 	}
 
 	result.OnDemandPolicyItem = &admin.BackupComplianceOnDemandPolicyItem{
-		FrequencyInterval: b.Spec.OnDemandPolicy.FrequencyInterval,
-		FrequencyType:     strings.ToLower(b.Spec.OnDemandPolicy.FrequencyType),
+		FrequencyInterval: 0,
+		FrequencyType:     "ondemand",
 		RetentionValue:    b.Spec.OnDemandPolicy.RetentionValue,
 		RetentionUnit:     strings.ToLower(b.Spec.OnDemandPolicy.RetentionUnit),
 	}
