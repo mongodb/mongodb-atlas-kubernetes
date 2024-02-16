@@ -127,12 +127,12 @@ metadata:
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.0.1
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.1.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.0.1
+  name: mongodb-atlas-kubernetes.v2.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -515,7 +515,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.0.1
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.1.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -600,5 +600,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.0.1
-  replaces: mongodb-atlas-kubernetes.v2.0.0
+  version: 2.1.0
+  replaces: mongodb-atlas-kubernetes.v2.0.1

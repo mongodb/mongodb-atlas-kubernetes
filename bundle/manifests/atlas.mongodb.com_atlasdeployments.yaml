@@ -393,6 +393,13 @@ spec:
                       type: object
                     maxItems: 50
                     type: array
+                  terminationProtectionEnabled:
+                    default: false
+                    description: Flag that indicates whether termination protection
+                      is enabled on the cluster. If set to true, MongoDB Cloud won't
+                      delete the cluster. If set to false, MongoDB Cloud will delete
+                      the cluster.
+                    type: boolean
                   versionReleaseSystem:
                     type: string
                 type: object
@@ -597,7 +604,10 @@ spec:
                     type: array
                   terminationProtectionEnabled:
                     default: false
-                    description: TerminationProtectionEnabled flag
+                    description: Flag that indicates whether termination protection
+                      is enabled on the cluster. If set to true, MongoDB Cloud won't
+                      delete the cluster. If set to false, MongoDB Cloud will delete
+                      the cluster.
                     type: boolean
                 required:
                 - name
