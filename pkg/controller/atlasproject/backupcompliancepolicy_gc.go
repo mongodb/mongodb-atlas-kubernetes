@@ -25,6 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 )
 
 func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Context, project *mdbv1.AtlasProject) error {
@@ -32,7 +33,7 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 
 	err := r.Client.List(ctx, policies)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve list of backup schedules: %w", err)
+		return fmt.Errorf("failed to retrieve list of backup compliance policies: %w", err)
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -50,16 +51,25 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 			if project.Spec.BackupCompliancePolicyRef.Name == policy.Name ||
 				project.Spec.BackupCompliancePolicyRef.Namespace == policy.Namespace {
 				// project is still using the BCP
+				r.Log.Debugw("adding deletion finalizer", "name", customresource.FinalizerLabel)
+				customresource.SetFinalizer(policy, customresource.FinalizerLabel)
 				return nil
 			}
-			// if we reach here, the BCP has associated itself with the project,
-			// but the project no longer references the BCP (i.e. deletion attempted)
 
-			// remove annotation
-			// set status on project about deletion of BCP
+			// TODO: remove project ID annotation
 
-			//if this is the last referenced
+			if policy.GetDeletionTimestamp().IsZero() {
+				if projects, ok := policy.Annotations[ProjectAnnotation]; ok {
+					if len(strings.Split(projects, ",")) == 0 {
+						r.Log.Debugw("removing deletion finalizer", "name", customresource.FinalizerLabel)
+						customresource.UnsetFinalizer(policy, customresource.FinalizerLabel)
+					}
+				}
+			}
 
+			if !policy.GetDeletionTimestamp().IsZero() && customresource.HaveFinalizer(policy, customresource.FinalizerLabel) {
+				r.Log.Warnf("backup compliance policy %s is assigned to at least one Project. Remove it from all Projects before deletion", policy.Name)
+			}
 			return nil
 		})
 	}
