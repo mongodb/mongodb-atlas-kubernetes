@@ -34,6 +34,8 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
 
   check-licenses:
+    # Dependabot changes do not update licenses, so will never pass this check
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     uses: ./.github/workflows/check-licenses.yml
   
   cloud-tests-filter:
