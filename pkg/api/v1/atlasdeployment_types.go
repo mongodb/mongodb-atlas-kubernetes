@@ -17,7 +17,6 @@ limitations under the License.
 package v1
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -159,17 +158,12 @@ func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() *[]admin.ApiSearchDeployme
 	}
 	result := make([]admin.ApiSearchDeploymentSpec, len(s.SearchNodes))
 
-	o, _ := json.MarshalIndent(s.SearchNodes, "", " ")
-	fmt.Println("AKO SEARCH NODES", string(o))
-
 	for i := 0; i < len(s.SearchNodes); i++ {
 		result[i] = admin.ApiSearchDeploymentSpec{
 			InstanceSize: s.SearchNodes[i].InstanceSize,
 			NodeCount:    int(s.SearchNodes[i].NodeCount),
 		}
 	}
-	d, _ := json.MarshalIndent(result, "", " ")
-	fmt.Println("SEARCH NODES", string(d))
 	return &result
 }
 
