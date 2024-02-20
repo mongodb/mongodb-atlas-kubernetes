@@ -10,7 +10,10 @@ import (
 // MultiNamespacedCacheBuilder returns a manager cache builder for a list of namespaces
 func MultiNamespacedCacheBuilder(namespaces []string) cache.NewCacheFunc {
 	return func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
-		opts.Namespaces = namespaces
+		opts.DefaultNamespaces = map[string]cache.Config{}
+		for _, ns := range namespaces {
+			opts.DefaultNamespaces[ns] = cache.Config{}
+		}
 		return cache.New(config, opts)
 	}
 }

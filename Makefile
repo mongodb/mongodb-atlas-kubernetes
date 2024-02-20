@@ -50,7 +50,6 @@ REGISTRY ?= quay.io/mongodb
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-bundle:$(VERSION)
 
-#IMG ?= mongodb-atlas-kubernetes-operator:latest
 #BUNDLE_REGISTRY ?= $(REGISTRY)/mongodb-atlas-operator-bundle
 OPERATOR_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease
 CATALOG_REGISTRY ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-catalog
@@ -199,15 +198,13 @@ uninstall: manifests kustomize ## Uninstall CRDs from a cluster
 deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	@./scripts/deploy.sh
  
-$(TIMESTAMPS_DIR)/manifests: $(GO_SOURCES)
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
-	@./scripts/split_roles_yaml.sh
-	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
-
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: fmt controller-gen $(TIMESTAMPS_DIR)/manifests ## Generate manifests e.g. CRD, RBAC etc.
+manifests: fmt controller-gen ## Generate manifests e.g. CRD, RBAC etc.
+	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./pkg/api/..." output:crd:artifacts:config=config/crd/bases
+	@./scripts/split_roles_yaml.sh
+	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
 
 $(TIMESTAMPS_DIR)/golangci-lint:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
@@ -240,19 +237,15 @@ $(TIMESTAMPS_DIR)/vet: $(GO_SOURCES)
 .PHONY: vet
 vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
-$(TIMESTAMPS_DIR)/generate: ${GO_SOURCES}
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
-	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
+.PHONY: controller-gen
+controller-gen: ## Download controller-gen locally if necessary
+	@which controller-gen || go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 
 .PHONY: generate
-generate: controller-gen $(TIMESTAMPS_DIR)/generate fmt ## Generate code
+generate: controller-gen ${GO_SOURCES} ## Generate code
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./pkg/api/..."
+	$(MAKE) fmt
 
-.PHONY: controller-gen
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
-controller-gen: ## Download controller-gen locally if necessary
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2)
-
-.PHONY: validate-manifests
 FILES = $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory)
 TEMP := $(shell echo "$(FILES)" | awk 'NF')
 LINES := $(shell echo "$(FILES)" | awk -F=' ' "{ print NF }")
@@ -269,6 +262,7 @@ endif
 	@echo "--------------------"
 	@echo "Check: PASS"
 
+.PHONY: validate-manifests
 validate-manifests: generate manifests check-missing-files
 
 .PHONY: kustomize
