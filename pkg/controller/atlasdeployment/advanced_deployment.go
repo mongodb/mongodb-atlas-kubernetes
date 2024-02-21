@@ -106,7 +106,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			ctx.Log.Debug("no search nodes in atlas found")
 			nodesInAtlasEmpty = true
 		default:
-			return fmt.Errorf("unable to get current search nodes status (%d): %v", httpResp.StatusCode, err)
+			return fmt.Errorf("unable to get current search nodes status (%d): %w", httpResp.StatusCode, err)
 		}
 	}
 
@@ -122,16 +122,17 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			ctx.Log.Debugf("unable to create search nodes: %v", err)
 			return err
 		}
-		break
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// TODO: verify nodes status
 
 		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
+		// TODO: compare one by one
 		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas) {
 			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
 			return nil
 		}
+
 		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancelF()
 		_, _, err = ctx.SdkClient.AtlasSearchApi.UpdateAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
@@ -141,8 +142,8 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			ctx.Log.Debugf("unable to update search nodes: %v", err)
 			return err
 		}
-		break
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
+		// TODO: add deletion protection
 		ctx.Log.Debug("deleting search nodes")
 		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancelF()
