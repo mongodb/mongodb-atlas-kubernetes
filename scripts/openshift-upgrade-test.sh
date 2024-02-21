@@ -60,8 +60,8 @@ cleanup() {
   set +e
   echo "Cleaning up..."
   # TODO: Added log collecting data if needed
-  oc delete namespace "${TEST_NAMESPACE}"
-  oc -n openshift-marketplace delete catalogsource "${OPERATOR_CATALOGSOURCE_NAME}" --ignore-not-found
+#  oc delete namespace "${TEST_NAMESPACE}"
+#  oc -n openshift-marketplace delete catalogsource "${OPERATOR_CATALOGSOURCE_NAME}" --ignore-not-found
   echo "Done"
   return ${exit_code}
 }

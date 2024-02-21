@@ -7,6 +7,7 @@ metadata:
     categories: Database
     description: The MongoDB Atlas Kubernetes Operator enables easy management of
       Clusters in MongoDB Atlas
+    olm.skipRange: '>=2.0.0 <2.1.0'
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported

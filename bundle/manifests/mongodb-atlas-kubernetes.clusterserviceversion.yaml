@@ -128,6 +128,7 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.1.0
+    olm.skipRange: '>=2.0.0 <2.1.0'
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
