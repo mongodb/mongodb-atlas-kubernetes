@@ -30,35 +30,31 @@ import (
 func WaitDeployment(data *model.TestDataProvider, generation int) {
 	input := data.Resources
 	if len(data.Resources.Deployments) > 0 {
-		GinkgoWriter.Printf("Checking for deployment to go to generation >= %d\n", generation)
 		EventuallyWithOffset(1,
 			func(g Gomega) int {
 				gen, err := k8s.GetDeploymentObservedGeneration(data.Context, data.K8SClient, input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
+		// Waiting for a particular generation can be brittle, to make it more robust
+		// wait for any progress to or beyond the expected generation
 		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
-		GinkgoWriter.Printf("Deployment at or passed deployment generation %d\n", generation)
 
-		GinkgoWriter.Printf("Deployment WaitDeploymentWithoutGenerationCheck...\n")
 		WaitDeploymentWithoutGenerationCheck(data)
-		GinkgoWriter.Printf("Deployment WaitDeploymentWithoutGenerationCheck OK\n")
 	}
 
 	if len(data.InitialDeployments) > 0 {
-		GinkgoWriter.Printf("Checking for init deployment to go to generation >= %d\n", generation)
 		EventuallyWithOffset(1,
 			func(g Gomega) int {
 				gen, err := k8s.GetDeploymentObservedGeneration(data.Context, data.K8SClient, input.Namespace, data.InitialDeployments[0].ObjectMeta.GetName())
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
+		// Waiting for a particular generation can be brittle, to make it more robust
+		// wait for any progress to or beyond the expected generation
 		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
-		GinkgoWriter.Printf("Init deployment at or passed deployment generation %d\n", generation)
 
-		GinkgoWriter.Printf("Init deployment WaitDeploymentWithoutGenerationCheckV2...\n")
 		WaitDeploymentWithoutGenerationCheckV2(data)
-		GinkgoWriter.Printf("Init deployment WaitDeploymentWithoutGenerationCheckV2 OK\n")
 	}
 }
 
