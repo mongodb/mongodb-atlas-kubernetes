@@ -6,6 +6,4 @@ type AtlasBackupCompliancePolicyStatusOption func(s *BackupCompliancePolicyStatu
 
 type BackupCompliancePolicyStatus struct {
 	Common `json:",inline"`
-
-	ProjectIDs []string `json:"projectID,omitempty"`
 }
