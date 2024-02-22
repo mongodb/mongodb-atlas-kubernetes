@@ -42,8 +42,10 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 		g.Go(func() error {
 			// get policy's associated projects
 			annotation := policy.Annotations[ProjectAnnotation]
-			annotations := strings.Split(annotation, ",")
-			if !slices.Contains(annotations, project.ID()) {
+			projects := strings.Split(annotation, ",")
+			// find current project in annotation
+			index := slices.Index(projects, project.ID())
+			if index >= 0 {
 				// project not covered by policy
 				return nil
 			}
@@ -56,7 +58,13 @@ func (r *AtlasProjectReconciler) garbageCollectBackupResource(ctx context.Contex
 				return nil
 			}
 
-			// TODO: remove project ID annotation
+			// remove project ID from annotation
+			projects = slices.Delete(projects, index, index)
+			annotation = strings.Join(projects, ",")
+			policy.Annotations[ProjectAnnotation] = annotation
+			if err := r.Client.Update(ctx, policy); err != nil {
+				return err
+			}
 
 			if policy.GetDeletionTimestamp().IsZero() {
 				if projects, ok := policy.Annotations[ProjectAnnotation]; ok {
