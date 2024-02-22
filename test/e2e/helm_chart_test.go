@@ -129,7 +129,6 @@ var _ = Describe("HELM charts", Ordered, func() {
 				},
 				30006,
 				[]func(*model.TestDataProvider){
-					actions.HelmDefaultUpgradeResources,
 					actions.HelmUpgradeUsersRoleAddAdminUser,
 					actions.HelmUpgradeDeleteFirstUser,
 				},
@@ -150,7 +149,9 @@ var _ = Describe("HELM charts", Ordered, func() {
 						WithAuthDatabase("admin"),
 				},
 				30014,
-				[]func(*model.TestDataProvider){},
+				[]func(*model.TestDataProvider){
+					actions.HelmDefaultUpgradeResources,
+				},
 			),
 			"advanced",
 		),
