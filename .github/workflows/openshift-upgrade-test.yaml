@@ -34,7 +34,6 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     environment: test
-    if: env.SKIP_OPENSHIFT != 'true'
     steps:
       - name: roo-test
         run: |
