@@ -30,6 +30,7 @@ jobs:
   e2e-tests:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
+    if: ${{ ! vars.SKIP_OPENSHIFT }}
     environment: test
     steps:
       - if: ${{ inputs.forked == false }}
@@ -48,13 +49,11 @@ jobs:
         id: prepare
         uses: ./.github/actions/set-tag
       - name: Setup Go
-        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
       - name: Download tools for openshift test
-        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
           tar xvf opm.tar.gz
@@ -78,13 +77,10 @@ jobs:
           oc version
           operator-sdk version
       - name: Install Go dependencies
-        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: go install golang.org/x/tools/cmd/goimports@latest
       - name: Login to registry
-        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
       - name: Run openshift upgrade test
-        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
