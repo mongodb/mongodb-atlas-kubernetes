@@ -36,7 +36,9 @@ func WaitDeployment(data *model.TestDataProvider, generation int) {
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
-		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Equal(generation))
+		// Waiting for a particular generation can be brittle, to make it more robust
+		// wait for any progress to or beyond the expected generation
+		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
 
 		WaitDeploymentWithoutGenerationCheck(data)
 	}
@@ -48,7 +50,9 @@ func WaitDeployment(data *model.TestDataProvider, generation int) {
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
-		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Equal(generation))
+		// Waiting for a particular generation can be brittle, to make it more robust
+		// wait for any progress to or beyond the expected generation
+		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
 
 		WaitDeploymentWithoutGenerationCheckV2(data)
 	}

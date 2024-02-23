@@ -12,7 +12,7 @@ spec:
       - zoneName: Zone 1
         regionConfigs:
           - electableSpecs:
-              instanceSize: M0
+              instanceSize: M2
               nodeCount: 1
             providerName: TENANT
             backingProviderName: "AWS"
