@@ -480,3 +480,10 @@ verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"
+
+akobot: recompute-licenses ## AKOBot checks for needed changes and create a PR if needed
+ifndef GITHUB_TOKEN
+	echo "Getting GitHub token..."
+	$(eval GITHUB_TOKEN := $(shell $(MAKE) -s github-token))
+endif
+	@REPO=mongodb/mongodb-atlas-kubernetes ./scripts/make-pr.sh

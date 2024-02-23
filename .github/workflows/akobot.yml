@@ -1,0 +1,23 @@
+name: AKOBot
+
+on:
+  schedule:
+    - cron: "0 7 * * 3,5" # At 7:00 on Wednesday and Friday
+  workflow_dispatch:
+
+jobs:
+  check-licenses:
+    name: AKO Bot
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          cache: false
+
+      - name: Run akobot
+        run: make akobot
