@@ -1,5 +1,4 @@
 name: Upgrade test on Openshift
-
 on:
   workflow_call:
     inputs:
@@ -24,15 +23,12 @@ on:
         type: boolean
         required: false
   workflow_dispatch:
-
 concurrency:
   group: test-openshift-operator-upgrade
   cancel-in-progress: true
-
 jobs:
   e2e-tests:
     name: Prepare E2E configuration and image
-    if: ${{  vars.OPENSHIFT_SKIP != true  }}
     runs-on: ubuntu-latest
     environment: test
     steps:
@@ -41,7 +37,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # required for tags
-
       - if: ${{ inputs.forked == true }}
         name: Check out code
         uses: actions/checkout@v4
@@ -49,18 +44,17 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0 # required for tags
-
       - name: Prepare tag
         id: prepare
         uses: ./.github/actions/set-tag
-
       - name: Setup Go
+        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
-
       - name: Download tools for openshift test
+        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-4.9/opm-linux.tar.gz -O opm.tar.gz -q
           tar xvf opm.tar.gz
@@ -83,19 +77,17 @@ jobs:
           opm version
           oc version
           operator-sdk version
-      
       - name: Install Go dependencies
+        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: go install golang.org/x/tools/cmd/goimports@latest
-
       - name: Login to registry
+        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: docker login -u="${{ secrets.OPENSHIFT_UPGRADE_BOT_USERNAME }}" -p="${{ secrets.OPENSHIFT_UPGRADE_BOT_PASSWORD }}" quay.io
-
       - name: Run openshift upgrade test
+        if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
         run: cd scripts && ./openshift-upgrade-test.sh
         env:
           OC_TOKEN: ${{ secrets.OPENSHIFT_UPGRADE_TOKEN }}
           CLUSTER_API_URL: ${{ secrets.OPENSHIFT_UPGRADE_SERVER_API }}
           LATEST_RELEASE_REGISTRY: ${{ github.event.inputs.previousReleaseRegistry }}
           REGISTRY: ${{ github.event.inputs.registryForNewRelease }}
-
-
