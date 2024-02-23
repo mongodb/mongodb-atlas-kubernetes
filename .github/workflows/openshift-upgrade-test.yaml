@@ -34,8 +34,12 @@ jobs:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
     environment: test
-    if: vars.SKIP_OPENSHIFT != 'true'
+    if: env.SKIP_OPENSHIFT != 'true'
     steps:
+      - name: roo-test
+        run: |
+          echo 'env:  ${{  env.SKIP_OPENSHIFT  }}'
+          echo 'vars: ${{  vars.SKIP_OPENSHIFT  }}'
       - if: ${{ inputs.forked == false }}
         name: Check out code
         uses: actions/checkout@v4
