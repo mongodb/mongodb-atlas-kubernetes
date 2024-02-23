@@ -95,6 +95,11 @@ SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 SIGNATURE_REPO ?= OPERATOR_REGISTRY
 AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 
+# Licenses status
+GOMOD_SHA := $(shell shasum -a 256 go.mod | awk '{print $$1}')
+LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
+GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -108,35 +113,32 @@ help: ## Show this help screen
 .PHONY: all
 all: manager ## Build all binaries
 
-$(TIMESTAMPS_DIR)/go-licenses-installed:
-	go install github.com/google/go-licenses@latest
-	@mkdir -p $(TIMESTAMPS_DIR) && touch $@
+go-licenses:
+	@which go-licenses || go install github.com/google/go-licenses@latest
 
-go-licenses: $(TIMESTAMPS_DIR)/go-licenses-installed
-
-licenses.csv: $(TIMESTAMPS_DIR)/go-licenses-installed go.mod ## Track licenses in a CSV file
+licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
 	@echo "========================================"
 	GOOS=linux GOARCH=amd64 go mod download
 	GOOS=linux GOARCH=amd64 $(GO_LICENSES) csv --include_tests $(BASE_GO_PACKAGE)/... > $@
+	echo $(GOMOD_SHA) > $(LICENSES_GOMOD_SHA_FILE)
 
-# We only check that go.mod is NOT newer than licenses.csv because the CI
-# tends to generate slightly different results, so content comparison wouldn't work
-licenses-tracked: ## Checks license.csv is up to date	
-	@if [ go.mod -nt licenses.csv ]; then \
-	echo "License.csv is stale! Please run 'make licenses.csv' and commit"; exit 1; \
-	else echo "License.csv OK (up to date)"; fi
-	
+recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was changed)
+	@[ "$(GOMOD_SHA)" == "$(GOMOD_LICENSES_SHA)" ] || $(MAKE) licenses.csv
+
+licenses-up-to-date:
+	@if [ "$(GOMOD_SHA)" != "$(GOMOD_LICENSES_SHA)" ]; then \
+	echo "licenses.csv needs ot be recalculated: run 'make licenses.csv'"; exit 1; else\
+	echo "licenses.csv is OK! (up to date)"; fi
+
 .PHONY: check-licenses
-check-license-compliance: licenses.csv  ## Check licenses are compliant with our restrictions
+check-licenses: go-licenses licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
 	GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests $(BASE_GO_PACKAGE)/... \
 	--disallowed_types $(DISALLOWED_LICENSES)
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
-
-check-licenses: licenses-tracked check-license-compliance ## Check license tracking & compliance
 
 .PHONY: unit-test
 unit-test:
@@ -176,7 +178,7 @@ bin/manager: bin/$(TARGET_OS)/$(TARGET_ARCH)/manager
 	cp bin/$(TARGET_OS)/$(TARGET_ARCH)/manager $@
 
 .PHONY: manager
-manager: generate fmt vet bin/manager ## Build manager binary
+manager: generate fmt vet bin/manager recompute-licenses ## Build manager binary
 
 .PHONY: run
 run: generate fmt vet manifests ## Run against the configured Kubernetes cluster in ~/.kube/config
@@ -452,7 +454,7 @@ test-clean:
 	cd tools/clean && go test ./...
 
 .PHONY: test-makejwt
-test-mekejwt:
+test-makejwt:
 	cd tools/makejwt && go test ./...
 
 .PHONY: test-metrics
