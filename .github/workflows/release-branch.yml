@@ -43,13 +43,6 @@ jobs:
       run: |
         go mod download
 
-    - name: Create the licence report file
-      run: |
-        export PATH="$GOPATH/bin:$PATH"
-        go install github.com/google/go-licenses@v1.5.0
-        cd cmd/manager
-        go-licenses csv .  --stderrthreshold 3 > ../../third_party_licenses.txt
-
     - name: Configure Git
       run: |
         git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPO }}.git
@@ -61,7 +54,7 @@ jobs:
         make check-major-version
         BRANCH="release/${VERSION}"
         git checkout -b $BRANCH
-        git add -f ./deploy third_party_licenses.txt ./bundle bundle.Dockerfile
+        git add -f ./deploy ./bundle bundle.Dockerfile
         git commit -m "Release ${VERSION}"
         git reset --hard
         git push --set-upstream origin $BRANCH
