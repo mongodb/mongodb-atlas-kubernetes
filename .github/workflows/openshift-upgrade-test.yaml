@@ -30,7 +30,7 @@ jobs:
   e2e-tests:
     name: Prepare E2E configuration and image
     runs-on: ubuntu-latest
-    if: ${{ ! vars.SKIP_OPENSHIFT }}
+    if: ${{ ! contains(vars.SKIP_OPENSHIFT, 'true') }}
     environment: test
     steps:
       - if: ${{ inputs.forked == false }}
