@@ -32,13 +32,10 @@ concurrency:
 jobs:
   e2e-tests:
     name: Prepare E2E configuration and image
+    if: ${{  vars.OPENSHIFT_SKIP != 'true'  }}
     runs-on: ubuntu-latest
     environment: test
     steps:
-      - name: roo-test
-        run: |
-          echo 'env:  ${{  env.SKIP_OPENSHIFT  }}'
-          echo 'vars: ${{  vars.SKIP_OPENSHIFT  }}'
       - if: ${{ inputs.forked == false }}
         name: Check out code
         uses: actions/checkout@v4
