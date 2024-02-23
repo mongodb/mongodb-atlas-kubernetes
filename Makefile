@@ -91,6 +91,10 @@ GOLANGCI_LINT_VERSION := v1.54.2
 REPORT_TYPE = flakiness
 SLACK_WEBHOOK ?= https://hooks.slack.com/services/...
 
+# Signature definitions
+SIGNATURE_REPO ?= OPERATOR_REGISTRY
+AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -457,3 +461,20 @@ test-metrics:
 
 .PHONY: test-tools ## Test all tools
 test-tools: test-clean test-makejwt test-metrics
+
+.PHONY: sign 
+sign: ## Sign an AKO multi-architecture image
+	@echo "Signing multi-architecture image $(IMG)..."
+	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
+
+cosign:
+	@which cosign || go install github.com/sigstore/cosign/cmd/cosign@latest
+
+./ako.pem:
+	curl $(AKO_SIGN_PUBKEY) > $@
+
+.PHONY: verify 
+verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
+	@echo "Verifying multi-architecture image signature $(IMG)..."
+	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
+	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"

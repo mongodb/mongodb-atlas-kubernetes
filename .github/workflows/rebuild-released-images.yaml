@@ -52,6 +52,7 @@ jobs:
           fi
   
   build-and-publish-image:
+    environment: release
     runs-on: ubuntu-latest
     needs:
       - read-versions
@@ -101,6 +102,14 @@ jobs:
           else
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
+      - name: Check signing supported
+        id: check-signing-support
+        run: |
+            if test -f "./scripts/sign-multiarch.sh"; then
+              echo "sign=true" >> $GITHUB_OUTPUT
+            else
+              echo "sign=false" >> $GITHUB_OUTPUT
+            fi
       - name: Build all platforms & check version
         if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile'
         run: |
@@ -143,3 +152,21 @@ jobs:
             ${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
+      - name: Sign images
+        if: steps.check-signing-support.outputs.sign == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+      - name: Self-verify images
+        if: steps.check-signing-support.outputs.sign == 'true'
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+        run: |
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
