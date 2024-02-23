@@ -22,6 +22,8 @@ On other occasions, project maintainers will want to enforce that **Cloud Tests*
 
 Note that in the case of the `safe-to-test` label, such label is automatically removed by the CI (see workflow `remove-label.yml`) to ensure re-inspection before running **Cloud Tests**.
 
+Additionally, the configuration variable in GitHub `SKIP_OPENSHIFT` can be set to `true` to skip the OpenShift upgrade test, should there be issues or maintenance with the cluster.
+
 ### CI Testing Flow
 
 The workflow `test.yml` is the main entry point for the whole test flow.
