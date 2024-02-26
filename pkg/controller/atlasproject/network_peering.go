@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
@@ -603,45 +602,45 @@ func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, a
 		}
 	}
 
-	containers, _, err := workflowCtx.Client.Containers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
+	containers, _, err := workflowCtx.SdkClient.NetworkPeeringApi.ListPeeringContainers(workflowCtx.Context, akoProject.ID()).Execute()
 	if err != nil {
 		return false, err
 	}
 
-	if len(containers) > 0 && !areContainersEqual(latestConfig.NetworkPeers, containers) && !areContainersEqual(akoProject.Spec.NetworkPeers, containers) {
+	if len(containers.GetResults()) > 0 && !areContainersEqual(latestConfig.NetworkPeers, containers.GetResults()) && !areContainersEqual(akoProject.Spec.NetworkPeers, containers.GetResults()) {
 		return false, nil
 	}
 
-	peers, _, err := workflowCtx.Client.Peers.List(workflowCtx.Context, akoProject.ID(), &mongodbatlas.ContainersListOptions{})
+	peers, _, err := workflowCtx.SdkClient.NetworkPeeringApi.ListPeeringConnections(workflowCtx.Context, akoProject.ID()).Execute()
 	if err != nil {
 		return false, err
 	}
 
-	if len(peers) == 0 {
+	if len(peers.GetResults()) == 0 {
 		return true, nil
 	}
 
-	if !arePeersEqual(latestConfig.NetworkPeers, peers) && !arePeersEqual(akoProject.Spec.NetworkPeers, peers) {
+	if !arePeersEqual(latestConfig.NetworkPeers, peers.GetResults()) && !arePeersEqual(akoProject.Spec.NetworkPeers, peers.GetResults()) {
 		return false, nil
 	}
 
 	return true, err
 }
 
-func areContainersEqual(operatorContainers []mdbv1.NetworkPeer, atlasContainers []mongodbatlas.Container) bool {
+func areContainersEqual(operatorContainers []mdbv1.NetworkPeer, atlasContainers []admin.CloudProviderContainer) bool {
 	if len(operatorContainers) != len(atlasContainers) {
 		return false
 	}
 
 	atlasContainersIDs := map[string]struct{}{}
 	for _, container := range atlasContainers {
-		switch container.ProviderName {
+		switch container.GetProviderName() {
 		case string(provider.ProviderAWS):
-			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.ProviderName, container.RegionName, container.AtlasCIDRBlock)] = struct{}{}
+			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.GetProviderName(), container.GetRegionName(), container.GetAtlasCidrBlock())] = struct{}{}
 		case string(provider.ProviderGCP):
-			atlasContainersIDs[fmt.Sprintf("%s.%s", container.ProviderName, container.AtlasCIDRBlock)] = struct{}{}
+			atlasContainersIDs[fmt.Sprintf("%s.%s", container.GetProviderName(), container.GetAtlasCidrBlock())] = struct{}{}
 		case string(provider.ProviderAzure):
-			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.ProviderName, container.Region, container.AtlasCIDRBlock)] = struct{}{}
+			atlasContainersIDs[fmt.Sprintf("%s.%s.%s", container.GetProviderName(), container.GetRegion(), container.GetAtlasCidrBlock())] = struct{}{}
 		}
 	}
 
@@ -659,20 +658,20 @@ func areContainersEqual(operatorContainers []mdbv1.NetworkPeer, atlasContainers 
 	return len(atlasContainersIDs) == 0
 }
 
-func arePeersEqual(operatorPeers []mdbv1.NetworkPeer, atlasPeers []mongodbatlas.Peer) bool {
+func arePeersEqual(operatorPeers []mdbv1.NetworkPeer, atlasPeers []admin.BaseNetworkPeeringConnectionSettings) bool {
 	if len(operatorPeers) != len(atlasPeers) {
 		return false
 	}
 
 	atlasPeersIDs := map[string]struct{}{}
 	for _, peer := range atlasPeers {
-		switch peer.ProviderName {
+		switch peer.GetProviderName() {
 		case string(provider.ProviderAWS):
-			atlasPeersIDs[fmt.Sprintf("%s.%s.%s", peer.AWSAccountID, peer.VpcID, peer.RouteTableCIDRBlock)] = struct{}{}
+			atlasPeersIDs[fmt.Sprintf("%s.%s.%s", peer.GetAwsAccountId(), peer.GetVpcId(), peer.GetRouteTableCidrBlock())] = struct{}{}
 		case string(provider.ProviderGCP):
-			atlasPeersIDs[fmt.Sprintf("%s.%s", peer.GCPProjectID, peer.NetworkName)] = struct{}{}
+			atlasPeersIDs[fmt.Sprintf("%s.%s", peer.GetGcpProjectId(), peer.GetNetworkName())] = struct{}{}
 		case string(provider.ProviderAzure):
-			atlasPeersIDs[fmt.Sprintf("%s.%s.%s.%s", peer.AzureSubscriptionID, peer.AzureDirectoryID, peer.ResourceGroupName, peer.VNetName)] = struct{}{}
+			atlasPeersIDs[fmt.Sprintf("%s.%s.%s.%s", peer.GetAzureSubscriptionId(), peer.GetAzureDirectoryId(), peer.GetResourceGroupName(), peer.GetVnetName())] = struct{}{}
 		}
 	}
 
