@@ -36,8 +36,10 @@ const ProjectAnnotation = "mongodbatlas/project"
 
 func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
 	defer func() {
-		// TODO set condition from error here
-		r.garbageCollectBackupResource(ctx.Context, project)
+		err := r.garbageCollectBackupResource(ctx.Context, project)
+		if err != nil {
+			ctx.SetConditionFalseMsg(status.BackupComplianceReadyType, "Failed to garbage collect backup compliance policy resources")
+		}
 	}()
 
 	if IsBackupComplianceEmpty(project.Spec.BackupCompliancePolicyRef) {
