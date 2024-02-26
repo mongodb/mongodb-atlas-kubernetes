@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"sort"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
+
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -67,12 +69,14 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *mdbv
 }
 
 func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []mdbv1.CloudProviderIntegration) (bool, error) {
-	atlasCPAs, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(workflowCtx.Context, projectID)
+	atlasCPAs, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.
+		ListCloudProviderAccessRoles(workflowCtx.Context, projectID).
+		Execute()
 	if err != nil {
 		return false, fmt.Errorf("unable to fetch cloud provider access from Atlas: %w", err)
 	}
 
-	AWSRoles := sortAtlasCPAsByRoleID(atlasCPAs.AWSIAMRoles)
+	AWSRoles := sortAtlasCPAsByRoleID(atlasCPAs.GetAwsIamRoles())
 	cpiStatuses := enrichStatuses(initiateStatuses(cpaSpecs), AWSRoles)
 	cpiStatusesToUpdate := make([]status.CloudProviderIntegration, 0, len(cpiStatuses))
 	withError := false
@@ -124,14 +128,14 @@ func initiateStatuses(cpiSpecs []mdbv1.CloudProviderIntegration) []*status.Cloud
 	return cpiStatuses
 }
 
-func enrichStatuses(cpiStatuses []*status.CloudProviderIntegration, atlasCPAs []mongodbatlas.CloudProviderAccessRole) []*status.CloudProviderIntegration {
+func enrichStatuses(cpiStatuses []*status.CloudProviderIntegration, atlasCPAs []admin.CloudProviderAccessAWSIAMRole) []*status.CloudProviderIntegration {
 	// find configured matches: containing IAM Assumed Role ARN
 	for _, cpiStatus := range cpiStatuses {
 		for _, atlasCPA := range atlasCPAs {
 			cpa := atlasCPA
 
 			if isMatch(cpiStatus, &cpa) {
-				copyCloudProviderAccessData(cpiStatus, &cpa)
+				copyCloudProviderAccessData(cpiStatus, cpa)
 
 				continue
 			}
@@ -139,12 +143,12 @@ func enrichStatuses(cpiStatuses []*status.CloudProviderIntegration, atlasCPAs []
 	}
 
 	// Separate created but not authorized entries: when having empty IAM Assumed Role ARN
-	noMatch := make([]*mongodbatlas.CloudProviderAccessRole, 0, len(cpiStatuses))
+	noMatch := make([]admin.CloudProviderAccessAWSIAMRole, 0, len(cpiStatuses))
 	for _, atlasCPA := range atlasCPAs {
 		cpa := atlasCPA
 
-		if cpa.IAMAssumedRoleARN == "" {
-			noMatch = append(noMatch, &cpa)
+		if _, ok := cpa.GetIamAssumedRoleArnOk(); !ok {
+			noMatch = append(noMatch, cpa)
 		}
 	}
 
@@ -174,20 +178,20 @@ func enrichStatuses(cpiStatuses []*status.CloudProviderIntegration, atlasCPAs []
 	for _, atlasCPA := range atlasCPAs {
 		cpa := atlasCPA
 
-		if cpa.IAMAssumedRoleARN == "" {
+		if _, ok := cpa.GetIamAssumedRoleArnOk(); !ok {
 			continue
 		}
 
-		if _, ok := cpiStatusesMap[fmt.Sprintf(cpiKey, cpa.ProviderName, cpa.IAMAssumedRoleARN)]; !ok {
-			deleteStatus := status.NewCloudProviderIntegration(cpa.ProviderName, cpa.IAMAssumedRoleARN)
-			copyCloudProviderAccessData(&deleteStatus, &cpa)
+		if _, ok := cpiStatusesMap[fmt.Sprintf(cpiKey, cpa.ProviderName, cpa.GetIamAssumedRoleArn())]; !ok {
+			deleteStatus := status.NewCloudProviderIntegration(cpa.ProviderName, cpa.GetIamAssumedRoleArn())
+			copyCloudProviderAccessData(&deleteStatus, cpa)
 			deleteStatus.Status = status.CloudProviderIntegrationStatusDeAuthorize
 			cpiStatuses = append(cpiStatuses, &deleteStatus)
 		}
 	}
 
 	for _, cpa := range noMatch {
-		deleteStatus := status.NewCloudProviderIntegration(cpa.ProviderName, cpa.IAMAssumedRoleARN)
+		deleteStatus := status.NewCloudProviderIntegration(cpa.ProviderName, cpa.GetIamAssumedRoleArn())
 		copyCloudProviderAccessData(&deleteStatus, cpa)
 		deleteStatus.Status = status.CloudProviderIntegrationStatusDeAuthorize
 		cpiStatuses = append(cpiStatuses, &deleteStatus)
@@ -196,18 +200,18 @@ func enrichStatuses(cpiStatuses []*status.CloudProviderIntegration, atlasCPAs []
 	return cpiStatuses
 }
 
-func sortAtlasCPAsByRoleID(atlasCPAs []mongodbatlas.CloudProviderAccessRole) []mongodbatlas.CloudProviderAccessRole {
+func sortAtlasCPAsByRoleID(atlasCPAs []admin.CloudProviderAccessAWSIAMRole) []admin.CloudProviderAccessAWSIAMRole {
 	sort.Slice(atlasCPAs, func(i, j int) bool {
-		return atlasCPAs[i].RoleID < atlasCPAs[j].RoleID
+		return atlasCPAs[i].GetRoleId() < atlasCPAs[j].GetRoleId()
 	})
 
 	return atlasCPAs
 }
 
-func isMatch(cpaSpec *status.CloudProviderIntegration, atlasCPA *mongodbatlas.CloudProviderAccessRole) bool {
-	return atlasCPA.IAMAssumedRoleARN != "" && cpaSpec.IamAssumedRoleArn != "" &&
+func isMatch(cpaSpec *status.CloudProviderIntegration, atlasCPA *admin.CloudProviderAccessAWSIAMRole) bool {
+	return atlasCPA.GetIamAssumedRoleArn() != "" && cpaSpec.IamAssumedRoleArn != "" &&
 		atlasCPA.ProviderName == cpaSpec.ProviderName &&
-		atlasCPA.IAMAssumedRoleARN == cpaSpec.IamAssumedRoleArn
+		atlasCPA.GetIamAssumedRoleArn() == cpaSpec.IamAssumedRoleArn
 }
 
 func getCloudProviderIntegrations(projectSpec mdbv1.AtlasProjectSpec) []mdbv1.CloudProviderIntegration {
@@ -224,37 +228,36 @@ func getCloudProviderIntegrations(projectSpec mdbv1.AtlasProjectSpec) []mdbv1.Cl
 	return projectSpec.CloudProviderIntegrations
 }
 
-func copyCloudProviderAccessData(cpiStatus *status.CloudProviderIntegration, atlasCPA *mongodbatlas.CloudProviderAccessRole) {
-	cpiStatus.AtlasAWSAccountArn = atlasCPA.AtlasAWSAccountARN
-	cpiStatus.AtlasAssumedRoleExternalID = atlasCPA.AtlasAssumedRoleExternalID
-	cpiStatus.RoleID = atlasCPA.RoleID
-	cpiStatus.CreatedDate = atlasCPA.CreatedDate
-	cpiStatus.AuthorizedDate = atlasCPA.AuthorizedDate
+func copyCloudProviderAccessData(cpiStatus *status.CloudProviderIntegration, atlasCPA admin.CloudProviderAccessAWSIAMRole) {
+	cpiStatus.AtlasAWSAccountArn = atlasCPA.GetAtlasAWSAccountArn()
+	cpiStatus.AtlasAssumedRoleExternalID = atlasCPA.GetAtlasAssumedRoleExternalId()
+	cpiStatus.RoleID = atlasCPA.GetRoleId()
+	cpiStatus.CreatedDate = timeutil.FormatISO8601(atlasCPA.GetCreatedDate())
+
+	if authorizedAt, ok := atlasCPA.GetAuthorizedDateOk(); ok {
+		cpiStatus.AuthorizedDate = timeutil.FormatISO8601(*authorizedAt)
+	}
 	cpiStatus.Status = status.CloudProviderIntegrationStatusCreated
 
-	if atlasCPA.AuthorizedDate != "" {
+	if _, ok := atlasCPA.GetAuthorizedDateOk(); ok {
 		cpiStatus.Status = status.CloudProviderIntegrationStatusAuthorized
 	}
 
-	if len(atlasCPA.FeatureUsages) > 0 {
-		cpiStatus.FeatureUsages = make([]status.FeatureUsage, 0, len(atlasCPA.FeatureUsages))
+	if len(atlasCPA.GetFeatureUsages()) > 0 {
+		cpiStatus.FeatureUsages = make([]status.FeatureUsage, 0, len(atlasCPA.GetFeatureUsages()))
 
-		for _, feature := range atlasCPA.FeatureUsages {
-			if feature == nil {
-				continue
-			}
-
+		for _, feature := range atlasCPA.GetFeatureUsages() {
 			id := ""
 
-			if feature.FeatureID != nil {
-				id = feature.FeatureID.(string)
+			if fID, ok := feature.GetFeatureIdOk(); ok {
+				id = fmt.Sprintf("%s.%s", fID.GetGroupId(), fID.GetBucketName())
 			}
 
 			cpiStatus.FeatureUsages = append(
 				cpiStatus.FeatureUsages,
 				status.FeatureUsage{
 					FeatureID:   id,
-					FeatureType: feature.FeatureType,
+					FeatureType: feature.GetFeatureType(),
 				},
 			)
 		}
@@ -262,13 +265,13 @@ func copyCloudProviderAccessData(cpiStatus *status.CloudProviderIntegration, atl
 }
 
 func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.Client.CloudProviderAccess.CreateRole(
+	cpa, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.CreateCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
-		&mongodbatlas.CloudProviderAccessRoleRequest{
+		&admin.CloudProviderAccessRole{
 			ProviderName: cpiStatus.ProviderName,
 		},
-	)
+	).Execute()
 	if err != nil {
 		workflowCtx.Log.Errorf("failed to start new cloud provider access: %s", err)
 		cpiStatus.Status = status.CloudProviderIntegrationStatusFailedToCreate
@@ -277,21 +280,21 @@ func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 		return cpiStatus
 	}
 
-	copyCloudProviderAccessData(cpiStatus, cpa)
+	copyCloudProviderAccessData(cpiStatus, convertCloudProviderAccessRole(*cpa))
 
 	return cpiStatus
 }
 
 func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.Client.CloudProviderAccess.AuthorizeRole(
+	cpa, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.AuthorizeCloudProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.RoleID,
-		&mongodbatlas.CloudProviderAccessRoleRequest{
+		&admin.CloudProviderAccessRole{
 			ProviderName:      cpiStatus.ProviderName,
-			IAMAssumedRoleARN: &cpiStatus.IamAssumedRoleArn,
+			IamAssumedRoleArn: &cpiStatus.IamAssumedRoleArn,
 		},
-	)
+	).Execute()
 	if err != nil {
 		workflowCtx.Log.Errorf(fmt.Sprintf("failed to authorize cloud provider access: %s", err))
 		cpiStatus.Status = status.CloudProviderIntegrationStatusFailedToAuthorize
@@ -300,20 +303,18 @@ func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID strin
 		return cpiStatus
 	}
 
-	copyCloudProviderAccessData(cpiStatus, cpa)
+	copyCloudProviderAccessData(cpiStatus, convertCloudProviderAccessRole(*cpa))
 
 	return cpiStatus
 }
 
 func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) {
-	_, err := workflowCtx.Client.CloudProviderAccess.DeauthorizeRole(
+	_, err := workflowCtx.SdkClient.CloudProviderAccessApi.DeauthorizeCloudProviderAccessRole(
 		workflowCtx.Context,
-		&mongodbatlas.CloudProviderDeauthorizationRequest{
-			ProviderName: cpiStatus.ProviderName,
-			GroupID:      projectID,
-			RoleID:       cpiStatus.RoleID,
-		},
-	)
+		projectID,
+		cpiStatus.ProviderName,
+		cpiStatus.RoleID,
+	).Execute()
 	if err != nil {
 		workflowCtx.Log.Errorf(fmt.Sprintf("failed to delete cloud provider access: %s", err))
 		cpiStatus.Status = status.CloudProviderIntegrationStatusFailedToDeAuthorize
@@ -334,18 +335,20 @@ func canCloudProviderIntegrationReconcile(workflowCtx *workflow.Context, protect
 		}
 	}
 
-	list, _, err := workflowCtx.Client.CloudProviderAccess.ListRoles(workflowCtx.Context, akoProject.ID())
+	list, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.
+		ListCloudProviderAccessRoles(workflowCtx.Context, akoProject.ID()).
+		Execute()
 	if err != nil {
 		return false, err
 	}
 
-	atlasList := make([]CloudProviderIntegrationIdentifiable, 0, len(list.AWSIAMRoles))
-	for _, r := range list.AWSIAMRoles {
-		if r.IAMAssumedRoleARN != "" {
+	atlasList := make([]CloudProviderIntegrationIdentifiable, 0, len(list.GetAwsIamRoles()))
+	for _, r := range list.GetAwsIamRoles() {
+		if assumedRoleArn, ok := r.GetIamAssumedRoleArnOk(); ok {
 			atlasList = append(atlasList,
 				CloudProviderIntegrationIdentifiable{
 					ProviderName:      r.ProviderName,
-					IamAssumedRoleArn: r.IAMAssumedRoleARN,
+					IamAssumedRoleArn: *assumedRoleArn,
 				},
 			)
 		}
@@ -382,4 +385,24 @@ type CloudProviderIntegrationIdentifiable mdbv1.CloudProviderIntegration
 
 func (cpa CloudProviderIntegrationIdentifiable) Identifier() interface{} {
 	return fmt.Sprintf("%s.%s", cpa.ProviderName, cpa.IamAssumedRoleArn)
+}
+
+func convertCloudProviderAccessRole(cpa admin.CloudProviderAccessRole) admin.CloudProviderAccessAWSIAMRole {
+	return admin.CloudProviderAccessAWSIAMRole{
+		Id:            cpa.Id,
+		ProviderName:  cpa.ProviderName,
+		FeatureUsages: cpa.FeatureUsages,
+		CreatedDate:   cpa.CreatedDate,
+
+		AtlasAWSAccountArn:         cpa.AtlasAWSAccountArn,
+		AtlasAssumedRoleExternalId: cpa.AtlasAssumedRoleExternalId,
+		AuthorizedDate:             cpa.AuthorizedDate,
+		IamAssumedRoleArn:          cpa.IamAssumedRoleArn,
+		RoleId:                     cpa.RoleId,
+
+		AtlasAzureAppId:    cpa.AtlasAzureAppId,
+		ServicePrincipalId: cpa.ServicePrincipalId,
+		TenantId:           cpa.TenantId,
+		LastUpdatedDate:    cpa.LastUpdatedDate,
+	}
 }
