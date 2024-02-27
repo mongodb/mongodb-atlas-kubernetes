@@ -92,7 +92,21 @@ func (c *Cleaner) Clean(ctx context.Context, lifetime int) error {
 		c.deleteTeam(ctx, c.orgID, &t)
 	}
 
-	return nil
+	return c.cleanOrphanResources(ctx, lifetime)
+}
+
+func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetime int) error {
+	region := envOrDefault("GCP_CLEANUP_REGION", "europe-west1")
+	subnet := envOrDefault("GCP_CLEANUP_SUBNET", "atlas-operator-e2e-test-subnet1")
+	done, skipped, err := c.gcp.DeleteOrphanPrivateEndpoints(ctx, lifetime, region, subnet)
+	for _, doneMsg := range done {
+		fmt.Println(text.FgGreen.Sprintf("%s", doneMsg))
+	}
+	for _, skippedMsg := range skipped {
+		fmt.Println(text.FgYellow.Sprintf("\t%s", skippedMsg))
+	}
+
+	return err
 }
 
 func NewCleaner(aws *provider.AWS, gcp *provider.GCP, azure *provider.Azure) (*Cleaner, error) {
@@ -132,4 +146,12 @@ func NewCleaner(aws *provider.AWS, gcp *provider.GCP, azure *provider.Azure) (*C
 
 func isGov(url string) bool {
 	return strings.HasSuffix(url, "mongodbgov.com")
+}
+
+func envOrDefault(name, defaultValue string) string {
+	value, defined := os.LookupEnv(name)
+	if !defined {
+		return defaultValue
+	}
+	return value
 }

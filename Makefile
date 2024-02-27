@@ -96,7 +96,7 @@ SIGNATURE_REPO ?= OPERATOR_REGISTRY
 AKO_SIGN_PUBKEY = https://cosign.mongodb.com/atlas-kubernetes-operator.pem
 
 # Licenses status
-GOMOD_SHA := $(shell shasum -a 256 go.mod | awk '{print $$1}')
+GOMOD_SHA := $(shell git ls-files -s go.mod | awk '{print $$1" "$$2" "$$4}')
 LICENSES_GOMOD_SHA_FILE := .licenses-gomod.sha256
 GOMOD_LICENSES_SHA := $(shell cat $(LICENSES_GOMOD_SHA_FILE))
 
@@ -128,15 +128,15 @@ recompute-licenses: ## Recompute the licenses.csv only if needed (gomod was chan
 
 licenses-up-to-date:
 	@if [ "$(GOMOD_SHA)" != "$(GOMOD_LICENSES_SHA)" ]; then \
-	echo "licenses.csv needs ot be recalculated: run 'make licenses.csv'"; exit 1; else\
-	echo "licenses.csv is OK! (up to date)"; fi
+	echo "licenses.csv needs to be recalculated: git rebase AND run 'make licenses.csv'"; exit 1; \
+	else echo "licenses.csv is OK! (up to date)"; fi
 
 .PHONY: check-licenses
 check-licenses: go-licenses licenses-up-to-date ## Check licenses are compliant with our restrictions
 	@echo "Checking licenses not to be: $(DISALLOWED_LICENSES)"
 	@echo "============================================"
-	GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests $(BASE_GO_PACKAGE)/... \
-	--disallowed_types $(DISALLOWED_LICENSES)
+	GOOS=linux GOARCH=amd64 $(GO_LICENSES) check --include_tests \
+	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
 
