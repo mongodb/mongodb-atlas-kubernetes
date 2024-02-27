@@ -59,3 +59,11 @@ Such version is set by parameterising the kind image tag within the **strategy**
         k8s: [ "v1.21.1-kind" ] # <K8sGitVersion>-<Platform>
         ...
 ```
+
+## Workflows
+
+### Update dependabot PR Licenses
+
+Workflow `.github/workflows/update-licenses.yml` run to patch `dependabot`'s go module update PRs.
+
+When `dependabot` updates go modules, dependencies change and license dependencies might also change. But `dependabot` does not know how to update your code when dependencies change. This workflow is triggered on `dependabot` PRs, runs `make recompute-licenses` and patches the PR as needed.
