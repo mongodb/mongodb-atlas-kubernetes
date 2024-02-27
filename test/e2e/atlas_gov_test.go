@@ -183,7 +183,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 				ListProjectUsers(ctx, testData.Project.ID()).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(users).ToNot(BeEmpty())
+			Expect(users.GetResults()).ToNot(BeEmpty())
 
 			usernames := make([]mdbv1.TeamUser, 0, users.GetTotalCount())
 			for _, user := range users.GetResults() {
