@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BRANCH: ${{ inputs.branch || github.ref_name  }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
