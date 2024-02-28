@@ -1,6 +1,10 @@
 name: Update dependabot PR Licenses
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to patch"
+        required: true
   push:
     branches:
       - dependabot/go_modules/**
@@ -12,8 +16,12 @@ jobs:
   run:
     name: Recompute licenses & update PR
     runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ inputs.branch || github.ref_name  }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -21,13 +29,18 @@ jobs:
           go-version-file: "${{ github.workspace }}/go.mod"
           cache: false
 
-      - name: recompute licenses
+      - name: Recompute licenses
         run: make recompute-licenses
 
-      - uses: stefanzweifel/git-auto-commit-action@v4.1.1
-        with:
-          commit_message: |
-            Updated dependency licenses
-
-            dependabot skip
-          branch: ${{ github.head_ref }}
+      - name: Commit as needed
+        run: |
+          if [[ $(git diff --stat) != '' ]]; then
+            echo 'Committing changes'
+            git config user.email "akobot@ako-team-fake.mongodb.com"
+            git config user.name "AKOBot"
+            git add .
+            git commit -m "Fix licenses after dependabot changes" -m "[dependabot skip]"
+            git push
+          else
+            echo 'Clean nothing to do'
+          fi
