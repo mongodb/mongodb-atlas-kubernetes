@@ -116,8 +116,12 @@ func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompl
 	// convert the CR type to atlas type, so we can compare
 	localCompliancePolicy := kubeCompliancePolicy.ToAtlas(groupID)
 	// sort the slices, so we can compare
-	slices.SortFunc(*localCompliancePolicy.ScheduledPolicyItems, compareSPI)
-	slices.SortFunc(*atlasCompliancePolicy.ScheduledPolicyItems, compareSPI)
+	if localCompliancePolicy.ScheduledPolicyItems != nil {
+		slices.SortFunc(*localCompliancePolicy.ScheduledPolicyItems, compareSPI)
+	}
+	if atlasCompliancePolicy.ScheduledPolicyItems != nil {
+		slices.SortFunc(*atlasCompliancePolicy.ScheduledPolicyItems, compareSPI)
+	}
 	// deep equal, now that the slices are sorted
 	if !equality.Semantic.DeepEqual(localCompliancePolicy, atlasCompliancePolicy) {
 		_, _, err := ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(ctx.Context, groupID, localCompliancePolicy).Execute()
