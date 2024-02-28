@@ -6,15 +6,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 )
 
 func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
