@@ -51,6 +51,8 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProte
 	// TODO: add enforce flag once present in the API
 	result := &admin.DataProtectionSettings20231001{
 		AuthorizedEmail:         b.Spec.AuthorizedEmail,
+		AuthorizedUserFirstName: b.Spec.AuthorizedUserFirstName,
+		AuthorizedUserLastName:  b.Spec.AuthorizedUserLastName,
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
 		EncryptionAtRestEnabled: &b.Spec.EncryptionAtRestEnabled,
 		PitEnabled:              &b.Spec.PITEnabled,
