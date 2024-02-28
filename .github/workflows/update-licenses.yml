@@ -1,0 +1,33 @@
+name: Update dependabot PR Licenses
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dependabot/go_modules/**
+  pull_request:
+    branches:
+      - dependabot/go_modules/**
+
+jobs:
+  run:
+    name: Recompute licenses & update PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "${{ github.workspace }}/go.mod"
+          cache: false
+
+      - name: recompute licenses
+        run: make recompute-licenses
+
+      - uses: stefanzweifel/git-auto-commit-action@v4.1.1
+        with:
+          commit_message: |
+            Updated dependency licenses
+
+            dependabot skip
+          branch: ${{ github.head_ref }}
