@@ -17,13 +17,12 @@ limitations under the License.
 package atlasproject
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/apimachinery/pkg/api/equality"
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -60,6 +59,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		return workflow.OK()
 	}
 
+	// watch compliance policies
 	compliancePolicy := &mdbv1.AtlasBackupCompliancePolicy{}
 	defer func() {
 		ctx.AddResourcesToWatch(watch.WatchedObject{ResourceKind: compliancePolicy.Kind, Resource: *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace)})
@@ -67,7 +67,6 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 	}()
 
 	// reference set
-	// TODO start watching backup compliance CR
 	// check reference points to existing compliance policy CR
 	err := r.Client.Get(ctx.Context, *project.Spec.BackupCompliancePolicyRef.GetObject(project.Namespace), compliancePolicy)
 	if err != nil {
@@ -101,12 +100,7 @@ func (r *AtlasProjectReconciler) ensureBackupCompliance(ctx *workflow.Context, p
 		return workflow.Terminate(workflow.ProjectBackupCompliancePolicyUnavailable, err.Error())
 	}
 
-	if cmp.Equal(atlasCompliancePolicy, compliancePolicy.ToAtlas(project.ID())) {
-		return workflow.OK()
-	}
-
 	// otherwise, create/update compliance policy...
-
 	// create compliance policy in atlas
 	result := syncBackupCompliancePolicy(ctx, project.ID(), *compliancePolicy, *atlasCompliancePolicy)
 	ctx.SetConditionFromResult(status.BackupComplianceReadyType, result)
@@ -119,16 +113,35 @@ func IsBackupComplianceEmpty(backupCompliancePolicyRef *common.ResourceRefNamesp
 
 // syncBackupCompliancePolicy compares the compliance policy specified in Kubernetes to the one currently present in Atlas, updating Atlas should they differ.
 func syncBackupCompliancePolicy(ctx *workflow.Context, groupID string, kubeCompliancePolicy mdbv1.AtlasBackupCompliancePolicy, atlasCompliancePolicy admin.DataProtectionSettings20231001) workflow.Result {
+	// convert the CR type to atlas type, so we can compare
 	localCompliancePolicy := kubeCompliancePolicy.ToAtlas(groupID)
-	// TODO diff will not work here - we need to implement a comparison ourselves
-	// also note that the API returns "unknown" for the first & last names, making it hard to compare
-	if cmp.Diff(localCompliancePolicy, atlasCompliancePolicy, cmpopts.EquateEmpty()) != "" {
+	// sort the slices, so we can compare
+	slices.SortFunc(*localCompliancePolicy.ScheduledPolicyItems, compareSPI)
+	slices.SortFunc(*atlasCompliancePolicy.ScheduledPolicyItems, compareSPI)
+	// deep equal, now that the slices are sorted
+	if !equality.Semantic.DeepEqual(localCompliancePolicy, atlasCompliancePolicy) {
 		_, _, err := ctx.SdkClient.CloudBackupsApi.UpdateDataProtectionSettings(ctx.Context, groupID, localCompliancePolicy).Execute()
 		if err != nil {
 			ctx.Log.Errorf("failed to update backup compliance policy in atlas: %v", err)
 			return workflow.Terminate(workflow.ProjectBackupCompliancePolicyNotCreatedInAtlas, err.Error())
 		}
 	}
-
 	return workflow.OK()
+}
+
+// compareSPI is a function for deciding if one instance is less than another, for use when sorting
+func compareSPI(a, b admin.BackupComplianceScheduledPolicyItem) int {
+	if a.FrequencyType != b.FrequencyType {
+		return cmp.Compare(a.FrequencyType, b.FrequencyType)
+	}
+	if x := a.FrequencyInterval - b.FrequencyInterval; x != 0 {
+		return x
+	}
+	if a.RetentionUnit != b.RetentionUnit {
+		return cmp.Compare(a.RetentionUnit, b.RetentionUnit)
+	}
+	if x := a.RetentionValue - b.RetentionValue; x != 0 {
+		return x
+	}
+	return 0
 }
