@@ -4,7 +4,7 @@ cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-
 cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.1.6/iam/LICENSE,Apache-2.0
 cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.15.7/kms/LICENSE,Apache-2.0
 github.com/Azure/azure-sdk-for-go,https://github.com/Azure/azure-sdk-for-go/blob/v68.0.0/LICENSE.txt,MIT
-github.com/Azure/azure-sdk-for-go/sdk/azcore,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azcore/v1.9.2/sdk/azcore/LICENSE.txt,MIT
+github.com/Azure/azure-sdk-for-go/sdk/azcore,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azcore/v1.10.0/sdk/azcore/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/azidentity,https://github.com/Azure/azure-sdk-for-go/blob/sdk/azidentity/v1.5.1/sdk/azidentity/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/internal,https://github.com/Azure/azure-sdk-for-go/blob/sdk/internal/v1.5.2/sdk/internal/LICENSE.txt,MIT
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/keyvault/armkeyvault,https://github.com/Azure/azure-sdk-for-go/blob/sdk/resourcemanager/keyvault/armkeyvault/v1.4.0/sdk/resourcemanager/keyvault/armkeyvault/LICENSE.txt,MIT
