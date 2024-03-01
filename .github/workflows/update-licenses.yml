@@ -12,6 +12,10 @@ on:
     branches:
       - dependabot/go_modules/**
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   run:
     name: Recompute licenses & update PR
