@@ -3,6 +3,11 @@ package v1
 import (
 	"fmt"
 	"strconv"
+	"strings"
+
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
+	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
@@ -25,6 +30,15 @@ type AlertConfiguration struct {
 	Notifications []Notification `json:"notifications,omitempty"`
 	// MetricThreshold  causes an alert to be triggered.
 	MetricThreshold *MetricThreshold `json:"metricThreshold,omitempty"`
+}
+
+func (in AlertConfiguration) Key() string {
+	return strconv.FormatBool(in.Enabled) +
+		in.EventTypeName + "|" +
+		internalcmp.SliceKey(in.Matchers) + "|" +
+		internalcmp.PointerKey(in.Threshold) + "|" +
+		internalcmp.SliceKey(in.Notifications) + "|" +
+		internalcmp.PointerKey(in.MetricThreshold)
 }
 
 func (in *AlertConfiguration) ToAtlas() (*mongodbatlas.AlertConfiguration, error) {
@@ -77,6 +91,10 @@ type Matcher struct {
 	Value string `json:"value,omitempty"`
 }
 
+func (in Matcher) Key() string {
+	return in.FieldName + "|" + in.Operator + "|" + in.Value
+}
+
 func (in *Matcher) IsEqual(matcher mongodbatlas.Matcher) bool {
 	if in == nil {
 		return false
@@ -93,6 +111,10 @@ type Threshold struct {
 	Units string `json:"units,omitempty"`
 	// Threshold value outside which an alert will be triggered.
 	Threshold string `json:"threshold,omitempty"`
+}
+
+func (in Threshold) Key() string {
+	return in.Operator + "|" + in.Units + "|" + in.Threshold
 }
 
 func (in *Threshold) IsEqual(threshold *mongodbatlas.Threshold) bool {
@@ -195,6 +217,31 @@ type Notification struct {
 	Roles []string `json:"roles,omitempty"`
 }
 
+func (in Notification) Key() string {
+	return in.APITokenRef.Key() + "|" +
+		in.ChannelName + "|" +
+		in.DatadogAPIKeyRef.Key() + "|" +
+		in.DatadogRegion + "|" +
+		strconv.Itoa(admin.GetOrDefault(in.DelayMin, 0)) + "|" +
+		in.EmailAddress + "|" +
+		strconv.FormatBool(admin.GetOrDefault(in.EmailEnabled, false)) + "|" +
+		in.FlowdockAPITokenRef.Key() + "|" +
+		in.FlowName + "|" +
+		strconv.Itoa(in.IntervalMin) + "|" +
+		in.MobileNumber + "|" +
+		in.OpsGenieAPIKeyRef.Key() + "|" +
+		in.OpsGenieRegion + "|" +
+		in.OrgName + "|" +
+		in.ServiceKeyRef.Key() + "|" +
+		strconv.FormatBool(admin.GetOrDefault(in.SMSEnabled, false)) + "|" +
+		in.TeamID + "|" +
+		in.TeamName + "|" +
+		in.TypeName + "|" +
+		in.Username + "|" +
+		in.VictorOpsSecretRef.Key() + "|" +
+		"[" + strings.Join(in.Roles, ",") + "]"
+}
+
 func (in *Notification) SetAPIToken(token string) {
 	in.apiToken = token
 }
@@ -287,6 +334,14 @@ type MetricThreshold struct {
 	Units string `json:"units,omitempty"`
 	// This must be set to AVERAGE. Atlas computes the current metric value as an average.
 	Mode string `json:"mode,omitempty"`
+}
+
+func (in MetricThreshold) Key() string {
+	return in.MetricName + "|" +
+		in.Operator + "|" +
+		in.Threshold + "|" +
+		in.Units + "|" +
+		in.Mode
 }
 
 func (in *MetricThreshold) IsEqual(threshold *mongodbatlas.MetricThreshold) bool {
