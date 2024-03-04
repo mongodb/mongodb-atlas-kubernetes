@@ -4,7 +4,19 @@ metadata:
   name: atlasbackuppolicy-sample
 spec:
   items:
-    - frequencyType: daily
-      frequencyInterval: 3
-      retentionUnit: weeks
+    - frequencyType: hourly
+      frequencyInterval: 6
+      retentionUnit: days
       retentionValue: 2
+    - frequencyType: daily
+      frequencyInterval: 1
+      retentionUnit: days
+      retentionValue: 7
+    - frequencyType: weekly
+      frequencyInterval: 1
+      retentionUnit: weeks
+      retentionValue: 4
+    - frequencyType: monthly
+      frequencyInterval: 15
+      retentionUnit: months
+      retentionValue: 12

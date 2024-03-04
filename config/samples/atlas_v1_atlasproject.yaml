@@ -7,4 +7,5 @@ spec:
   projectIpAccessList:
     - ipAddress: "192.0.2.15"
       comment: "IP address for Application Server A"
-
+    - cidrBlock: "203.0.113.0/24"
+      comment: "CIDR block for Application Server B - D"

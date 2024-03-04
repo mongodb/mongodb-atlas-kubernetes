@@ -11,10 +11,19 @@ The full documentation for the Operator can be found [here](https://docs.atlas.m
 
 ## Quick Start guide
 
+### Prerequisites to Install using kubectl
+
+Before you install the MongoDB Atlas Operator using `kubectl`, you must:
+
+1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+2. Have a Kubernetes solution available to use.
+   If you need a Kubernetes solution, see the [Kubernetes documentation on picking the right solution](https://kubernetes.io/docs/setup). For testing, MongoDB recommends [Kind](https://kind.sigs.k8s.io/).
+3. Choose the version of the operator you want to run
+
 ### Step 1. Deploy Kubernetes operator using all in one config file
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/main/deploy/all-in-one.yaml
+kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/<operator_version>/deploy/all-in-one.yaml
 ```
 
 ### Step 2. Create Atlas Deployment
@@ -42,43 +51,17 @@ The `AtlasProject` CustomResource represents Atlas Projects in our Kubernetes cl
 `projectIpAccessList` with the IP addresses or CIDR blocks of any hosts that will connect to the Atlas Deployment.
 
 ```
-cat <<EOF | kubectl apply -f -
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasProject
-metadata:
-  name: my-project
-spec:
-  name: Test Atlas Operator Project
-  projectIpAccessList:
-    - ipAddress: "192.0.2.15"
-      comment: "IP address for Application Server A"
-    - cidrBlock: "203.0.113.0/24"
-      comment: "CIDR block for Application Server B - D"
-EOF
+kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/<operator_version>/config/samples/atlas_v1_atlasproject.yaml
 ```
 
 **3.** Create an `AtlasDeployment` Custom Resource.
 
-The example below is a minimal configuration to create an M10 Atlas deployment in the AWS US East region. For a full list
+The example below is a configuration to create an M10 Atlas deployment in the AWS US East region. For a full list
 of properties, check
 `atlasdeployments.atlas.mongodb.com` [CRD specification](config/crd/bases/atlas.mongodb.com_atlasdeployments.yaml)):
 
 ```
-cat <<EOF | kubectl apply -f -
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasDeployment
-metadata:
-  name: my-atlas-deployment
-spec:
-  projectRef:
-    name: my-project
-  deploymentSpec:
-    name: test-deployment
-    providerSettings:
-      instanceSizeName: M10
-      providerName: AWS
-      regionName: US_EAST_1
-EOF
+kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/<operator_version>/config/samples/atlas_v1_atlasdeployment.yaml
 ```
 
 **4.** Create a database user password Kubernetes Secret
@@ -97,21 +80,7 @@ In order to connect to an Atlas Deployment the database user needs to be created
 reference the password Kubernetes Secret created in the previous step.
 
 ```
-cat <<EOF | kubectl apply -f -
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasDatabaseUser
-metadata:
-  name: my-database-user
-spec:
-  roles:
-    - roleName: "readWriteAnyDatabase"
-      databaseName: "admin"
-  projectRef:
-    name: my-project
-  username: theuser
-  passwordSecretRef:
-    name: the-user-password
-EOF
+kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-atlas-kubernetes/<operator_version>/config/samples/atlas_v1_atlasdatabaseuser.yaml
 ```
 
 **6.** Wait for the `AtlasDatabaseUser` Custom Resource to be ready
@@ -137,7 +106,7 @@ containers:
     - name: "CONNECTION_STRING"
       valueFrom:
         secretKeyRef:
-          name: test-atlas-operator-project-test-cluster-theuser
+          name: test-atlas-operator-project-test-deployment-theuser
           key: connectionStringStandardSrv
 
 ```

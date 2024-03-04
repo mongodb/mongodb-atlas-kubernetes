@@ -5,9 +5,22 @@ metadata:
 spec:
   projectRef:
     name: my-project
+  backupRef:
+    name: atlasbackupschedule-sample
   deploymentSpec:
     name: "test-deployment"
-    providerSettings:
-      instanceSizeName: M10
-      providerName: AWS
-      regionName: US_EAST_1
+    clusterType: REPLICASET
+    backupEnabled: true
+    mongoDBMajorVersion: "7.0"
+    replicationSpecs:
+      - zoneName: "Zone 1"
+        regionConfigs:
+          - providerName: AWS
+            regionName: US_EAST_1
+            priority: 7
+            electableSpecs:
+              instanceSize: M10
+              nodeCount: 3
+    tags:
+      - key: team
+        value: atlas-operator
