@@ -223,7 +223,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasProject"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: deletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -235,7 +235,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasDeployment"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: deletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -247,7 +247,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		AtlasProvider:                 atlasProvider,
 		GlobalPredicates:              globalPredicates,
 		ObjectDeletionProtection:      deletionProtection,
-		SubObjectDeletionProtection:   deletionProtection,
+		SubObjectDeletionProtection:   false,
 		FeaturePreviewOIDCAuthEnabled: featureFlags.IsFeaturePresent(featureflags.FeatureOIDC),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
@@ -260,7 +260,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		AtlasProvider:               atlasProvider,
 		GlobalPredicates:            globalPredicates,
 		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: deletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -272,7 +272,7 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		EventRecorder:               k8sManager.GetEventRecorderFor("AtlasFederatedAuth"),
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    deletionProtection,
-		SubObjectDeletionProtection: deletionProtection,
+		SubObjectDeletionProtection: false,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
