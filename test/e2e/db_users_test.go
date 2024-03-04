@@ -24,7 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namespace", Label("deployment-ns"), func() {
+var _ = Describe("Operator watch all namespace should create connection secrets for database users in any namespace", Label("users"), func() {
 	var testData *model.TestDataProvider
 	secondNamespace := "second-namespace"
 
@@ -83,6 +83,11 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 				GlobalAPISecret: client.ObjectKey{
 					Namespace: config.DefaultOperatorNS,
 					Name:      config.DefaultOperatorGlobalKey,
+				},
+				Namespace: config.DefaultOperatorNS,
+				WatchedNamespaces: map[string]bool{
+					config.DefaultOperatorNS: true,
+					secondNamespace:          true,
 				},
 				FeatureFlags: featureflags.NewFeatureFlags(func() []string { return []string{} }),
 			})

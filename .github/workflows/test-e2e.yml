@@ -134,6 +134,7 @@ jobs:
             "cloud-access-role",
             "deployment-annotations-ns",
             "deployment-ns",
+            "users",
             "users-oidc",
             "deployment-wide",
             "encryption-at-rest",
