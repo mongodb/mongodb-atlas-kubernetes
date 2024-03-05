@@ -44,7 +44,7 @@ jobs:
             git config user.email "akobot@ako-team-fake.mongodb.com"
             git config user.name "AKOBot"
             git add .
-            git commit -m "Fix licenses after dependabot changes" -m "[dependabot skip]"
+            git commit -m "Fix licenses after dependabot changes"
             git push
           else
             echo 'Clean nothing to do'
