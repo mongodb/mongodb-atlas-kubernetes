@@ -13,6 +13,7 @@ type testRegressions struct {
 
 type slotRegressions struct {
 	interval
+	runs        int
 	regressions map[string]*testRegressions
 }
 
@@ -53,18 +54,25 @@ func QueryRegressions(qc QueryClient, notAfter time.Time, period time.Duration, 
 			return srr, nil
 		}
 		for _, run := range wfRuns.WorkflowRuns {
+			if run.CreatedAt.Time.After(notAfter) {
+				continue // skip anything after the end date
+			}
 			if run.CreatedAt.Before(notBefore) {
 				return srr, nil // data is returned in chronological descendent order
 			}
-			if !strings.HasPrefix(*run.Name, "Test") || (run.Conclusion != nil && *run.Conclusion == "success") {
+			if !strings.HasPrefix(*run.Name, "Test") {
 				continue
 			}
 			rid := *run.ID
+			slot := slotForTimestamp(period, notAfter, run.CreatedAt.Time)
+			srr[slot].runs += 1
+			if run.Conclusion != nil && *run.Conclusion == "success" {
+				continue
+			}
 			failed, err := queryJobRegressions(qc, rid)
 			if err != nil {
 				return nil, err
 			}
-			slot := slotForTimestamp(period, notAfter, run.CreatedAt.Time)
 			for _, failure := range failed {
 				registerRegression(srr[slot], identify(failure), runID(rid))
 			}

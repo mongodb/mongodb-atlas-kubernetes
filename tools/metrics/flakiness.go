@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v57/github"
 )
 
 type FlakinessQuerier interface {
@@ -16,7 +18,8 @@ type testFlakiness struct {
 
 type slotFlakiness struct {
 	interval
-	flakyTests flakyRank
+	successfulCloudTestRuns int
+	flakyTests              flakyRank
 }
 
 func (sr slotFlakiness) count() int {
@@ -88,18 +91,32 @@ func QueryFlakiness(qc QueryClient, notAfter time.Time, period time.Duration, sl
 			return sfr, nil
 		}
 		for _, run := range wfRuns.WorkflowRuns {
+			if run.CreatedAt.Time.After(notAfter) {
+				continue // skip anything after the end date
+			}
 			if run.CreatedAt.Time.Before(notBefore) {
 				return sfr, nil // data is returned in chronological descendent order
 			}
-			if !strings.HasPrefix(*run.Name, "Test") || (run.Conclusion != nil && *run.Conclusion != "success") {
-				continue // if it failed completely, it is not flaky
+			if !strings.HasPrefix(*run.Name, "Test") {
+				continue // skip non tests
 			}
+			slot := slotForTimestamp(period, notAfter, run.CreatedAt.Time)
 			rid := *run.ID
-			failed, err := queryJobFlakiness(qc, rid)
+			jobs, err := queryAllJobs(qc, rid)
 			if err != nil {
 				return nil, err
 			}
-			slot := slotForTimestamp(period, notAfter, run.CreatedAt.Time)
+			if run.Conclusion != nil && *run.Conclusion != "success" {
+				// if it failed completely, it is not flaky
+				continue
+			}
+			if isCloudTest(jobs) {
+				sfr[slot].successfulCloudTestRuns += 1
+			}
+			failed, err := queryJobFlakiness(rid, jobs)
+			if err != nil {
+				return nil, err
+			}
 			for _, failure := range failed {
 				registerFlakiness(sfr[slot], failure)
 			}
@@ -107,7 +124,7 @@ func QueryFlakiness(qc QueryClient, notAfter time.Time, period time.Duration, sl
 	}
 }
 
-func queryJobFlakiness(qc QueryClient, rid int64) ([]jobID, error) {
+func queryAllJobs(qc QueryClient, rid int64) (*github.Jobs, error) {
 	jobs, err := qc.TestWorkflowRunJobs(rid, "all", 1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query job run %d: %w", rid, err)
@@ -115,6 +132,19 @@ func queryJobFlakiness(qc QueryClient, rid int64) ([]jobID, error) {
 	if len(jobs.Jobs) > PerPage {
 		return nil, fmt.Errorf("too many jobs in run (%d > %d)", len(jobs.Jobs), PerPage)
 	}
+	return jobs, nil
+}
+
+func isCloudTest(jobs *github.Jobs) bool {
+	for _, job := range jobs.Jobs {
+		if *job.Name == "cloud-tests" && job.Conclusion != nil && *job.Conclusion != "skipped" {
+			return true
+		}
+	}
+	return false
+}
+
+func queryJobFlakiness(rid int64, jobs *github.Jobs) ([]jobID, error) {
 	failed := []jobID{}
 	for _, job := range jobs.Jobs {
 		if job.Conclusion != nil && *job.Conclusion == "failure" {
