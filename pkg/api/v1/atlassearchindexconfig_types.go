@@ -31,30 +31,21 @@ type AtlasSearchIndexConfigList struct {
 }
 
 type AtlasSearchIndexConfigSpec struct {
-	Name string `json:"name"`
-	// TODO: Fields below are for the AtlasDeploymentSpec!
-	Database       string `json:"database"`
-	CollectionName string `json:"collectionName"`
-	// TODO: end
-	// +kubebuilder:validation:Enum:=search;vectorSearch
-	Type string `json:"type,omitempty"`
-	// +optional
-	Search *SearchIndex `json:"search,omitempty"`
-	// +optional
-	VectorSearch *VectorSearchIndex `json:"vectorSearch,omitempty"`
-}
-
-type VectorSearchIndex struct {
-	// Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-	Fields string `json:"fields,omitempty"`
-}
-
-type SearchIndex struct {
+	// Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:
+	// - extracting words
+	// - removing punctuation
+	// - removing accents
+	// - hanging to lowercase
+	// - removing common words
+	// - reducing words to their root form (stemming)
+	// - changing words to their base form (lemmatization) MongoDB Cloud uses the selected process to build the Atlas Search index
 	// +kubebuilder:validation:Enum:=lucene.standard;lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword;lucene.arabic;lucene.armenian;lucene.basque;lucene.bengali;lucene.brazilian;lucene.bulgarian;lucene.catalan;lucene.chinese;lucene.cjk;lucene.czech;lucene.danish;lucene.dutch;lucene.english;lucene.finnish;lucene.french;lucene.galician;lucene.german;lucene.greek;lucene.hindi;lucene.hungarian;lucene.indonesian;lucene.irish;lucene.italian;lucene.japanese;lucene.korean;lucene.kuromoji;lucene.latvian;lucene.lithuanian;lucene.morfologik;lucene.nori;lucene.norwegian;lucene.persian;lucene.portuguese;lucene.romanian;lucene.russian;lucene.smartcn;lucene.sorani;lucene.spanish;lucene.swedish;lucene.thai;lucene.turkish;lucene.ukrainian
 	// +optional
 	Analyzer string `json:"analyzer,omitempty"`
+	// List of user-defined methods to convert database field text into searchable words
 	// +optional
 	Analyzers []AtlasSearchIndexAnalyzer `json:"analyzers,omitempty"`
+	// Method applied to identify words when searching this index
 	// +optional
 	SearchAnalyzer string `json:"searchAnalyzer,omitempty"`
 	// Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search. Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search. To learn more, see documentation:
@@ -62,17 +53,21 @@ type SearchIndex struct {
 	// +optional
 	StoredSource string `json:"storedSource,omitempty"`
 	// Synonyms and mappings can be found in the AtlasDeployment resource spec
-
 }
 
 type AtlasSearchIndexAnalyzer struct {
 	// Human-readable name that identifies the custom analyzer. Names must be unique within an index, and must not start with any of the following strings:
 	// "lucene.", "builtin.", "mongodb."
 	Name string `json:"name"`
+	// Filter that performs operations such as:
+	// - Stemming, which reduces related words, such as "talking", "talked", and "talks" to their root word "talk".
+	// - Redaction, the removal of sensitive information from public documents
 	// +optional
 	TokenFilters []TokenFilter `json:"tokenFilters,omitempty"`
+	// Filters that examine text one character at a time and perform filtering operations
 	// +optional
 	CharFilters []CharFilter `json:"charFilters,omitempty"`
+	// Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing
 	// +required
 	Tokenizer *Tokenizer `json:"tokenizer"`
 }
