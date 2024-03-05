@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -99,7 +100,10 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
 	})
 
+	GinkgoLogr.Info("BEFORE Update team role in the project")
+
 	By("Update team role in the project", func() {
+		GinkgoLogr.Info("IN Update team role in the project")
 		userData.Project.Spec.Teams[0].Roles = []v1.TeamRole{v1.TeamRoleReadOnly}
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
@@ -110,7 +114,10 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 		actions.WaitForConditionsToBecomeTrue(userData, status.ProjectTeamsReadyType, status.ReadyType)
 	})
 
+	GinkgoLogr.Info("BEFORE Remove all teams from the project")
+
 	By("Remove all teams from the project", func() {
+		GinkgoLogr.Info("IN Remove all teams from the project")
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 
@@ -123,6 +130,8 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 
 		actions.CheckProjectConditionsNotSet(userData, status.ProjectTeamsReadyType)
 	})
+
+	GinkgoLogr.Info("AFTER Remove all teams from the project")
 }
 
 func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []v1.Team, check func(res *v1.AtlasTeam) bool) bool {
@@ -139,9 +148,11 @@ func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []v1.Tea
 }
 
 func teamWasCreated(team *v1.AtlasTeam) bool {
+	GinkgoLogr.Info("asserting teamWasCreated for team", fmt.Sprintf("%+v", team))
 	return team.Status.ID != ""
 }
 
 func teamWasRemoved(team *v1.AtlasTeam) bool {
+	GinkgoLogr.Info("asserting teamWasRemoved for team", fmt.Sprintf("%+v", team))
 	return team.Status.ID == ""
 }
