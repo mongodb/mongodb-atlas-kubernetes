@@ -5,6 +5,9 @@ on:
       branch:
         description: "Branch to patch"
         required: true
+      pr-number:
+        description: "PR number to apply the label to"
+        required: true
   push:
     branches:
       - dependabot/go_modules/**
@@ -23,6 +26,7 @@ jobs:
     env:
       BRANCH: ${{ inputs.branch || github.ref_name  }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ inputs.pr-number || github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,8 +48,12 @@ jobs:
             git config user.email "akobot@ako-team-fake.mongodb.com"
             git config user.name "AKOBot"
             git add .
-            git commit -m "Fix licenses after dependabot changes"
+            git commit -m "Fix licenses after dependabot changes" -m "[dependabot skip]"
             git push
           else
             echo 'Clean nothing to do'
           fi
+
+      - uses: actions/labeler@v5
+        with:
+          pr-number: ${{ env.PR_NUMBER }}

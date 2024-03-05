@@ -1,0 +1,3 @@
+retest:
+- changed-files:
+  - any-glob-to-any-file: [ 'licenses.csv' ]

@@ -1,6 +1,8 @@
 name: Test
 
 on:
+  label:
+    types: [created]
   push:
     branches:
       - 'main'
