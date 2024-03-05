@@ -16,9 +16,8 @@ The full documentation for the Operator can be found [here](https://docs.atlas.m
 Before you install the MongoDB Atlas Operator using `kubectl`, you must:
 
 1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
-2. Have a Kubernetes solution available to use.
-   If you need a Kubernetes solution, see the [Kubernetes documentation on picking the right solution](https://kubernetes.io/docs/setup). For testing, MongoDB recommends [Kind](https://kind.sigs.k8s.io/).
-3. Choose the version of the operator you want to run
+2. Have Kubernetes installed, i.e. [Kind](https://kind.sigs.k8s.io/)
+3. Choose the [version of the operator](https://github.com/mongodb/mongodb-atlas-kubernetes/releases) you want to run
 
 ### Step 1. Deploy Kubernetes operator using all in one config file
 
