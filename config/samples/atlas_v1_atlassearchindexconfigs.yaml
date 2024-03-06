@@ -1,0 +1,16 @@
+apiVersion: atlas.mongodb.com/v1
+kind: AtlasSearchIndexConfig
+metadata:
+  name: atlassearchindexconfig-sample
+spec:
+  analyzer: lucene.standard
+  analyzers:
+    - name: test-analyzer
+      tokenizer:
+        type: whiteSpace
+        whitespace:
+          maxTokenLenght: 200
+      tokenFilters:
+        - type: asciiFolding
+          asciiFolding:
+            originalTokens: omit
