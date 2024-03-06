@@ -78,6 +78,11 @@ spec:
       kind: AtlasTeam
       name: atlasteams.atlas.mongodb.com
       version: v1
+    - description: Atlas Search Index Config is the Schema for the Atlas Teams API
+      displayName: Atlas Search Index Config
+      kind: AtlasSearchIndexConfig
+      name: atlassearchindexconfigs.atlas.mongodb.com
+      version: v1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB
     Atlas — the only multi-cloud document database service that gives you the versatility you need to build sophisticated

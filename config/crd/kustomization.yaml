@@ -12,5 +12,6 @@ resources:
   - bases/atlas.mongodb.com_atlasfederatedauths.yaml
   - bases/atlas.mongodb.com_atlasstreaminstances.yaml
   - bases/atlas.mongodb.com_atlasstreamconnections.yaml
+  - bases/atlas.mongodb.com_atlassearchindexconfigs.yaml
 configurations:
   - kustomizeconfig.yaml
