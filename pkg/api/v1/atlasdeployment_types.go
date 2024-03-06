@@ -213,13 +213,13 @@ type SearchIndex struct {
 type Search struct {
 	// Rule sets that map words to their synonyms in this index
 	// +optional
-	Synonyms []Synonym
+	Synonyms []Synonym `json:"synonyms,omitempty"`
 	// Index specifications for the collection's fields
 	// +optional
-	Mappings []Mapping
+	Mappings []Mapping `json:"mappings,omitempty"`
 	// +required
 	// A reference to the AtlasSearchIndexConfig custom resource
-	SearchConfiguration types.NamespacedName `json:"searchConfiguration"`
+	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
 }
 
 type Synonym struct {

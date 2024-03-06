@@ -1,0 +1,409 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: atlassearchindexconfigs.atlas.mongodb.com
+spec:
+  group: atlas.mongodb.com
+  names:
+    kind: AtlasSearchIndexConfig
+    listKind: AtlasSearchIndexConfigList
+    plural: atlassearchindexconfigs
+    singular: atlassearchindexconfig
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              analyzer:
+                description: 'Specific pre-defined method chosen to convert database
+                  field text into searchable words. This conversion reduces the text
+                  of fields into the smallest units of text. These units are called
+                  a term or token. This process, known as tokenization, involves a
+                  variety of changes made to the text in fields: - extracting words
+                  - removing punctuation - removing accents - hanging to lowercase
+                  - removing common words - reducing words to their root form (stemming)
+                  - changing words to their base form (lemmatization) MongoDB Cloud
+                  uses the selected process to build the Atlas Search index'
+                enum:
+                - lucene.standard
+                - lucene.standard
+                - lucene.simple
+                - lucene.whitespace
+                - lucene.keyword
+                - lucene.arabic
+                - lucene.armenian
+                - lucene.basque
+                - lucene.bengali
+                - lucene.brazilian
+                - lucene.bulgarian
+                - lucene.catalan
+                - lucene.chinese
+                - lucene.cjk
+                - lucene.czech
+                - lucene.danish
+                - lucene.dutch
+                - lucene.english
+                - lucene.finnish
+                - lucene.french
+                - lucene.galician
+                - lucene.german
+                - lucene.greek
+                - lucene.hindi
+                - lucene.hungarian
+                - lucene.indonesian
+                - lucene.irish
+                - lucene.italian
+                - lucene.japanese
+                - lucene.korean
+                - lucene.kuromoji
+                - lucene.latvian
+                - lucene.lithuanian
+                - lucene.morfologik
+                - lucene.nori
+                - lucene.norwegian
+                - lucene.persian
+                - lucene.portuguese
+                - lucene.romanian
+                - lucene.russian
+                - lucene.smartcn
+                - lucene.sorani
+                - lucene.spanish
+                - lucene.swedish
+                - lucene.thai
+                - lucene.turkish
+                - lucene.ukrainian
+                type: string
+              analyzers:
+                description: List of user-defined methods to convert database field
+                  text into searchable words
+                items:
+                  properties:
+                    charFilters:
+                      description: Filters that examine text one character at a time
+                        and perform filtering operations
+                      items:
+                        properties:
+                          htmlNormalize:
+                            properties:
+                              ignoreTags:
+                                description: The HTML tags that you want to exclude
+                                  from filtering.
+                                items:
+                                  type: string
+                                type: array
+                            type: object
+                          icuNormalize:
+                            type: string
+                          mapping:
+                            properties:
+                              mappings:
+                                description: 'Comma-separated list of mappings. A
+                                  mapping indicates that one character or group of
+                                  characters should be substituted for another, using
+                                  the following format: <original> : <replacement>'
+                                type: string
+                            required:
+                            - mappings
+                            type: object
+                          persian:
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - type
+                        type: object
+                      type: array
+                    name:
+                      description: 'Human-readable name that identifies the custom
+                        analyzer. Names must be unique within an index, and must not
+                        start with any of the following strings: "lucene.", "builtin.",
+                        "mongodb."'
+                      type: string
+                    tokenFilters:
+                      description: 'Filter that performs operations such as: - Stemming,
+                        which reduces related words, such as "talking", "talked",
+                        and "talks" to their root word "talk". - Redaction, the removal
+                        of sensitive information from public documents'
+                      items:
+                        properties:
+                          asciiFolding:
+                            properties:
+                              originalTokens:
+                                default: omit
+                                type: string
+                            type: object
+                          daitchMokotoffSoundex:
+                            properties:
+                              originalTokens:
+                                default: include
+                                type: string
+                            type: object
+                          edgeGram:
+                            properties:
+                              maxGram:
+                                type: integer
+                              minGram:
+                                type: integer
+                              termNotInBounds:
+                                enum:
+                                - omit
+                                - include
+                                type: string
+                            required:
+                            - maxGram
+                            - minGram
+                            type: object
+                          icuNormalizer:
+                            properties:
+                              normalizationForm:
+                                default: nfc
+                                enum:
+                                - nfc
+                                - nfkd
+                                - nfkc
+                                type: string
+                            type: object
+                          length:
+                            properties:
+                              max:
+                                description: kubebuilder:default:=255
+                                type: integer
+                              min:
+                                description: kubebuilder:default:=0
+                                type: integer
+                            type: object
+                          nGram:
+                            properties:
+                              maxGram:
+                                type: integer
+                              minGram:
+                                type: integer
+                              termNotInBounds:
+                                enum:
+                                - omit
+                                - include
+                                type: string
+                            required:
+                            - maxGram
+                            - minGram
+                            type: object
+                          regex:
+                            properties:
+                              matches:
+                                enum:
+                                - all
+                                - first
+                                type: string
+                              pattern:
+                                type: string
+                              replacement:
+                                type: string
+                            required:
+                            - matches
+                            - pattern
+                            - replacement
+                            type: object
+                          shingle:
+                            properties:
+                              maxShingleSize:
+                                type: integer
+                              minShingleSize:
+                                type: integer
+                            required:
+                            - maxShingleSize
+                            - minShingleSize
+                            type: object
+                          snowballStemming:
+                            properties:
+                              stemmerName:
+                                enum:
+                                - arabic
+                                - armenian
+                                - basque
+                                - catalan
+                                - danish
+                                - dutch
+                                - english
+                                - finnish
+                                - french
+                                - german
+                                - german2
+                                - hungarian
+                                - irish
+                                - italian
+                                - kp
+                                - lithuanian
+                                - lovins
+                                - norwegian
+                                - porter
+                                - portuguese
+                                - romanian
+                                - russian
+                                - spanish
+                                - swedish
+                                - turkish
+                                type: string
+                            required:
+                            - stemmerName
+                            type: object
+                          stopword:
+                            properties:
+                              ignoreCase:
+                                default: true
+                                type: boolean
+                              tokens:
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - tokens
+                            type: object
+                          type:
+                            description: Human-readable label that identifies this
+                              token filter type
+                            type: string
+                        type: object
+                      type: array
+                    tokenizer:
+                      description: Tokenizer that you want to use to create tokens.
+                        Tokens determine how Atlas Search splits up text into discrete
+                        chunks for indexing
+                      properties:
+                        NGram:
+                          properties:
+                            maxGram:
+                              description: Characters to include in the longest token
+                                that Atlas Search creates
+                              type: integer
+                            minGram:
+                              description: Characters to include in the shortest token
+                                that Atlas Search creates
+                              type: integer
+                          required:
+                          - maxGram
+                          - minGram
+                          type: object
+                        edgeGram:
+                          properties:
+                            maxGram:
+                              description: Characters to include in the longest token
+                                that Atlas Search creates
+                              type: integer
+                            minGram:
+                              description: Characters to include in the shortest token
+                                that Atlas Search creates
+                              type: integer
+                          required:
+                          - maxGram
+                          - minGram
+                          type: object
+                        regexCaptureGroup:
+                          properties:
+                            group:
+                              description: Index of the character group within the
+                                matching expression to extract into tokens. Use 0
+                                to extract all character groups
+                              type: integer
+                            pattern:
+                              description: Regular expression to match against
+                              type: string
+                          required:
+                          - group
+                          - pattern
+                          type: object
+                        regexSplit:
+                          properties:
+                            pattern:
+                              description: Regular expression to match against
+                              type: string
+                          required:
+                          - pattern
+                          type: object
+                        standard:
+                          properties:
+                            maxTokenLength:
+                              default: 255
+                              description: Maximum number of characters in a single
+                                token. Tokens greater than this length are split at
+                                this length into multiple tokens.
+                              type: integer
+                          type: object
+                        type:
+                          enum:
+                          - whiteSpace
+                          - uaxUrlEmail
+                          - standard
+                          - regexSplit
+                          - regexCaptureGroup
+                          - nGram
+                          - keyword
+                          - edgeGram
+                          type: string
+                        uaxUrlEmail:
+                          properties:
+                            maxTokenLength:
+                              default: 255
+                              description: Maximum number of characters in a single
+                                token. Tokens greater than this length are split at
+                                this length into multiple tokens.
+                              type: integer
+                          type: object
+                        whitespace:
+                          description: 'Applied for following types: Whitespace, UaxUrlEmail,
+                            Standard'
+                          properties:
+                            maxTokenLength:
+                              default: 255
+                              description: Maximum number of characters in a single
+                                token. Tokens greater than this length are split at
+                                this length into multiple tokens.
+                              type: integer
+                          type: object
+                      required:
+                      - type
+                      type: object
+                  required:
+                  - name
+                  - tokenizer
+                  type: object
+                type: array
+              searchAnalyzer:
+                description: Method applied to identify words when searching this
+                  index
+                type: string
+              storedSource:
+                description: 'Flag that indicates whether to store all fields (true)
+                  on Atlas Search. By default, Atlas doesn''t store (false) the fields
+                  on Atlas Search. Alternatively, you can specify an object that only
+                  contains the list of fields to store (include) or not store (exclude)
+                  on Atlas Search. To learn more, see documentation: https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/'
+                type: string
+            type: object
+          status:
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
