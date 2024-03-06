@@ -23,8 +23,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -183,13 +181,13 @@ type SearchIndex struct {
 type Search struct {
 	// Rule sets that map words to their synonyms in this index
 	// +optional
-	Synonyms []Synonym
+	Synonyms []Synonym `json:"synonyms,omitempty"`
 	// Index specifications for the collection's fields
 	// +optional
-	Mappings []Mapping
+	Mappings []Mapping `json:"mappings,omitempty"`
 	// +required
 	// A reference to the AtlasSearchIndexConfig custom resource
-	SearchConfiguration types.NamespacedName `json:"searchConfiguration"`
+	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
 }
 
 type Synonym struct {
