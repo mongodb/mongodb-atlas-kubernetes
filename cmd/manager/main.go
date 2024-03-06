@@ -27,6 +27,7 @@ import (
 
 	"go.uber.org/zap/zapcore"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
@@ -44,6 +45,8 @@ import (
 
 	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
+
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -114,14 +117,18 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     config.MetricsAddr,
-		Port:                   9443,
-		Namespace:              config.Namespace,
+		Scheme:  scheme,
+		Metrics: metricsserver.Options{BindAddress: config.MetricsAddr},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port: 9443,
+		}),
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{config.Namespace: {}},
+			SyncPeriod:        &syncPeriod,
+		},
 		HealthProbeBindAddress: config.ProbeAddr,
 		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "06d035fb.mongodb.com",
-		SyncPeriod:             &syncPeriod,
 		NewCache:               cacheFunc,
 	})
 	if err != nil {

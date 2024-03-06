@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -124,8 +125,10 @@ var _ = BeforeSuite(func() {
 		syncPeriod := time.Minute * 30
 		// The manager watches ALL namespaces
 		k8sManager, err := ctrl.NewManager(testEnv.Config, ctrl.Options{
-			Scheme:     scheme.Scheme,
-			SyncPeriod: &syncPeriod,
+			Scheme: scheme.Scheme,
+			Cache: cache.Options{
+				SyncPeriod: &syncPeriod,
+			},
 		})
 		Expect(err).ToNot(HaveOccurred())
 
