@@ -29,6 +29,11 @@ spec:
       kind: AtlasFederatedAuth
       name: atlasfederatedauths.atlas.mongodb.com
       version: v1
+    - description: Atlas Search Index Config is the Schema for the Atlas Teams API
+      displayName: Atlas Search Index Config
+      kind: AtlasSearchIndexConfig
+      name: atlassearchindexconfigs.atlas.mongodb.com
+      version: v1
     - description: AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
       displayName: Atlas Backup Policy
       kind: AtlasBackupPolicy
@@ -77,11 +82,6 @@ spec:
       displayName: Atlas Team
       kind: AtlasTeam
       name: atlasteams.atlas.mongodb.com
-      version: v1
-    - description: Atlas Search Index Config is the Schema for the Atlas Teams API
-      displayName: Atlas Search Index Config
-      kind: AtlasSearchIndexConfig
-      name: atlassearchindexconfigs.atlas.mongodb.com
       version: v1
   description: |
     The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB
