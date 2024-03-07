@@ -12,7 +12,7 @@ import (
 )
 
 // MatchMaintenanceWindow returns the GomegaMatcher that checks if the 'actual' mongodbatlas.MaintenanceWindow matches
-// the 'expected' mdbv1.MaintenanceWindow one.
+// the 'expected' akov2.MaintenanceWindow one.
 // Note, that we cannot compare them by all the fields as Atlas tends to set default fields after MaintenanceWindow
 // requests execution so we need to compare only the fields that remain in the same state
 func MatchMaintenanceWindow(expected project.MaintenanceWindow) types.GomegaMatcher {

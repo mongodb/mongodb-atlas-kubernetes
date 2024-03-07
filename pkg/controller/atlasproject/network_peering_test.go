@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -21,13 +21,13 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canNetworkPeeringReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canNetworkPeeringReconcile(workflowCtx, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -46,7 +46,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -71,7 +71,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -96,7 +96,7 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"networkPeers\":[{\"providerName\":\"AWS\",\"accepterRegionName\":\"eu-west-1\",\"atlasCidrBlock\":\"192.168.0.0/24\"}]}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -136,9 +136,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAWS,
 							AccepterRegionName:  "eu-west-1",
@@ -190,9 +190,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:       provider.ProviderGCP,
 							AccepterRegionName: "europe-west-1",
@@ -246,9 +246,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAzure,
 							AccepterRegionName:  "GERMANY_CENTRAL",
@@ -305,9 +305,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAWS,
 							AccepterRegionName:  "eu-west-1",
@@ -359,9 +359,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:       provider.ProviderGCP,
 							AccepterRegionName: "europe-west-1",
@@ -415,9 +415,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAzure,
 							AccepterRegionName:  "GERMANY_CENTRAL",
@@ -474,9 +474,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAWS,
 							AccepterRegionName:  "eu-west-1",
@@ -528,9 +528,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:       provider.ProviderGCP,
 							AccepterRegionName: "europe-west-1",
@@ -583,9 +583,9 @@ func TestCanNetworkPeeringReconcile(t *testing.T) {
 					},
 				},
 			}
-			akoProject := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					NetworkPeers: []mdbv1.NetworkPeer{
+			akoProject := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					NetworkPeers: []akov2.NetworkPeer{
 						{
 							ProviderName:        provider.ProviderAzure,
 							AccepterRegionName:  "GERMANY_CENTRAL",
@@ -624,7 +624,7 @@ func TestEnsureNetworkPeers(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -662,9 +662,9 @@ func TestEnsureNetworkPeers(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				NetworkPeers: []mdbv1.NetworkPeer{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				NetworkPeers: []akov2.NetworkPeer{
 					{
 						ProviderName:        provider.ProviderAWS,
 						AccepterRegionName:  "eu-west-1",

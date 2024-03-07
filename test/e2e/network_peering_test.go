@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -59,7 +59,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 	})
 
 	DescribeTable("NetworkPeering",
-		func(test *model.TestDataProvider, networkPeers []v1.NetworkPeer) {
+		func(test *model.TestDataProvider, networkPeers []akov2.NetworkPeer) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			networkPeerFlow(test, networkPeers)
@@ -72,7 +72,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.NetworkPeer{
+			[]akov2.NetworkPeer{
 				{
 					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionUS,
@@ -90,7 +90,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.NetworkPeer{
+			[]akov2.NetworkPeer{
 				{
 					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionEU,
@@ -108,7 +108,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.NetworkPeer{
+			[]akov2.NetworkPeer{
 				{
 					ProviderName:        provider.ProviderAWS,
 					AccepterRegionName:  config.AWSRegionEU,
@@ -132,7 +132,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.NetworkPeer{
+			[]akov2.NetworkPeer{
 				{
 					ProviderName:        provider.ProviderGCP,
 					AccepterRegionName:  config.GCPRegion,
@@ -151,7 +151,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.NetworkPeer{
+			[]akov2.NetworkPeer{
 				{
 					ProviderName:        provider.ProviderAzure,
 					AccepterRegionName:  "US_EAST_2",
@@ -167,7 +167,7 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), func() {
 
 })
 
-func networkPeerFlow(userData *model.TestDataProvider, peers []v1.NetworkPeer) {
+func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer) {
 	providerActions := make([]cloud.Provider, len(peers))
 
 	By("Prepare network peers cloud infrastructure", func() {

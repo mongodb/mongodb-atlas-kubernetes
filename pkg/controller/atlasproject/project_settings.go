@@ -8,13 +8,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func ensureProjectSettings(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) (result workflow.Result) {
+func ensureProjectSettings(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) (result workflow.Result) {
 	canReconcile, err := canProjectSettingsReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -47,7 +47,7 @@ func ensureProjectSettings(workflowCtx *workflow.Context, project *v1.AtlasProje
 	return workflow.OK()
 }
 
-func syncProjectSettings(ctx *workflow.Context, projectID string, project *v1.AtlasProject) workflow.Result {
+func syncProjectSettings(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
 	spec := project.Spec.Settings
 
 	atlas, err := fetchSettings(ctx, projectID)
@@ -64,11 +64,11 @@ func syncProjectSettings(ctx *workflow.Context, projectID string, project *v1.At
 	return workflow.OK()
 }
 
-func areSettingsInSync(atlas, spec *v1.ProjectSettings) bool {
+func areSettingsInSync(atlas, spec *akov2.ProjectSettings) bool {
 	return isOneContainedInOther(spec, atlas)
 }
 
-func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSettings) error {
+func patchSettings(ctx *workflow.Context, projectID string, spec *akov2.ProjectSettings) error {
 	specAsAtlas, err := spec.ToAtlas()
 	if err != nil {
 		return err
@@ -78,18 +78,18 @@ func patchSettings(ctx *workflow.Context, projectID string, spec *v1.ProjectSett
 	return err
 }
 
-func fetchSettings(ctx *workflow.Context, projectID string) (*v1.ProjectSettings, error) {
+func fetchSettings(ctx *workflow.Context, projectID string) (*akov2.ProjectSettings, error) {
 	data, _, err := ctx.Client.Projects.GetProjectSettings(ctx.Context, projectID)
 	if err != nil {
 		return nil, err
 	}
 	ctx.Log.Debugw("Got Project Settings", "data", data)
 
-	settings := v1.ProjectSettings(*data)
+	settings := akov2.ProjectSettings(*data)
 	return &settings, nil
 }
 
-func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
+func isOneContainedInOther(one, other *akov2.ProjectSettings) bool {
 	if one == nil {
 		return true
 	}
@@ -117,12 +117,12 @@ func isOneContainedInOther(one, other *v1.ProjectSettings) bool {
 	return true
 }
 
-func canProjectSettingsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canProjectSettingsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -143,13 +143,13 @@ func canProjectSettingsReconcile(workflowCtx *workflow.Context, protected bool, 
 		areSettingsEqual(akoProject.Spec.Settings, settings), nil
 }
 
-func areSettingsEqual(operator *v1.ProjectSettings, atlas *mongodbatlas.ProjectSettings) bool {
+func areSettingsEqual(operator *akov2.ProjectSettings, atlas *mongodbatlas.ProjectSettings) bool {
 	if operator == nil && atlas == nil {
 		return true
 	}
 
 	if operator == nil {
-		operator = &v1.ProjectSettings{}
+		operator = &akov2.ProjectSettings{}
 	}
 
 	if operator.IsCollectDatabaseSpecificsStatisticsEnabled == nil {

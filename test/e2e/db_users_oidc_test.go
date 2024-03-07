@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	dbuserController "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -100,7 +100,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 		})
 		By("Try to enabled the OIDC feature for the user", func() {
-			currentUser := &mdbv1.AtlasDatabaseUser{}
+			currentUser := &akov2.AtlasDatabaseUser{}
 			Expect(testData.K8SClient.Get(context.Background(),
 				types.NamespacedName{
 					Name:      testData.Users[0].Name,
@@ -112,7 +112,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 		})
 
 		By("Verify if user is ready. It shouldn't be", func() {
-			currentUser := &mdbv1.AtlasDatabaseUser{}
+			currentUser := &akov2.AtlasDatabaseUser{}
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(context.Background(),
 					types.NamespacedName{
@@ -193,7 +193,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 	// 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 	// 	})
 	// 	By("Try to enabled the OIDC feature for the user", func() {
-	// 		currentUser := &mdbv1.AtlasDatabaseUser{}
+	// 		currentUser := &akov2.AtlasDatabaseUser{}
 	// 		Expect(testData.K8SClient.Get(context.Background(),
 	// 			types.NamespacedName{
 	// 				Name:      testData.Users[0].Name,
@@ -205,7 +205,7 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags", Ordered,
 	// 	})
 
 	// 	By("Verify if user is ready", func() {
-	// 		currentUser := &mdbv1.AtlasDatabaseUser{}
+	// 		currentUser := &akov2.AtlasDatabaseUser{}
 	// 		Eventually(func(g Gomega) {
 	// 			g.Expect(testData.K8SClient.Get(context.Background(),
 	// 				types.NamespacedName{

@@ -3,7 +3,7 @@ package model
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
@@ -11,7 +11,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
-type ProjectSpec v1.AtlasProjectSpec
+type ProjectSpec akov2.AtlasProjectSpec
 
 type AProject struct {
 	metav1.TypeMeta `json:",inline"`
@@ -67,7 +67,7 @@ func (p *AProject) WithIpAccess(cidrBlock, comment string) *AProject {
 }
 
 func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string) *AProject {
-	link := v1.PrivateEndpoint{
+	link := akov2.PrivateEndpoint{
 		Provider: provider,
 		Region:   region,
 	}
@@ -75,17 +75,17 @@ func (p *AProject) WithPrivateLink(provider provider.ProviderName, region string
 	return p
 }
 
-func (p *AProject) WithNetworkPeer(peer v1.NetworkPeer) *AProject {
+func (p *AProject) WithNetworkPeer(peer akov2.NetworkPeer) *AProject {
 	p.Spec.NetworkPeers = append(p.Spec.NetworkPeers, peer)
 	return p
 }
 
-func (p *AProject) WithEncryptionAtRest(spec *v1.EncryptionAtRest) *AProject {
+func (p *AProject) WithEncryptionAtRest(spec *akov2.EncryptionAtRest) *AProject {
 	p.Spec.EncryptionAtRest = spec
 	return p
 }
 
-func (p *AProject) WithCloudProviderIntegration(role v1.CloudProviderIntegration) *AProject {
+func (p *AProject) WithCloudProviderIntegration(role akov2.CloudProviderIntegration) *AProject {
 	p.Spec.CloudProviderIntegrations = append(p.Spec.CloudProviderIntegrations, role)
 	return p
 }
@@ -100,7 +100,7 @@ func (p *AProject) WithX509(certRef *common.ResourceRefNamespaced) *AProject {
 	return p
 }
 
-func (p *AProject) WithAuditing(auditing *v1.Auditing) *AProject {
+func (p *AProject) WithAuditing(auditing *akov2.Auditing) *AProject {
 	p.Spec.Auditing = auditing
 	return p
 }
@@ -110,7 +110,7 @@ func (p *AProject) UpdatePrivateLinkByOrder(i int, id string) *AProject {
 	return p
 }
 
-func (p *AProject) UpdatePrivateLinkID(test v1.PrivateEndpoint) *AProject {
+func (p *AProject) UpdatePrivateLinkID(test akov2.PrivateEndpoint) *AProject {
 	for i, peItem := range p.Spec.PrivateEndpoints {
 		if (peItem.Provider == test.Provider) && (peItem.Region == test.Region) {
 			p.Spec.PrivateEndpoints[i] = test
@@ -127,7 +127,7 @@ func (p *AProject) GetPrivateIDByProviderRegion(statusItem status.ProjectPrivate
 }
 
 func (p *AProject) DeletePrivateLink(id string) *AProject {
-	var peList []v1.PrivateEndpoint
+	var peList []akov2.PrivateEndpoint
 	for _, peItem := range p.Spec.PrivateEndpoints {
 		if peItem.ID != id {
 			peList = append(peList, peItem)

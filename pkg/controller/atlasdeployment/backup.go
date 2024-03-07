@@ -22,13 +22,13 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	service *workflow.Context,
 	projectID string,
-	deployment *mdbv1.AtlasDeployment,
+	deployment *akov2.AtlasDeployment,
 	isEnabled bool,
 ) error {
 	if deployment.Spec.BackupScheduleRef.Name == "" {
@@ -66,11 +66,11 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 
 func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 	service *workflow.Context,
-	deployment *mdbv1.AtlasDeployment,
+	deployment *akov2.AtlasDeployment,
 	resourcesToWatch *[]watch.WatchedObject,
-) (*mdbv1.AtlasBackupSchedule, error) {
+) (*akov2.AtlasBackupSchedule, error) {
 	backupScheduleRef := deployment.Spec.BackupScheduleRef.GetObject(deployment.Namespace)
-	bSchedule := &mdbv1.AtlasBackupSchedule{}
+	bSchedule := &akov2.AtlasBackupSchedule{}
 	err := r.Client.Get(service.Context, *backupScheduleRef, bSchedule)
 	if err != nil {
 		return nil, fmt.Errorf("%v AtlasBackupSchedule resource is not found. e: %w", *backupScheduleRef, err)
@@ -124,11 +124,11 @@ func (r *AtlasDeploymentReconciler) ensureBackupSchedule(
 
 func (r *AtlasDeploymentReconciler) ensureBackupPolicy(
 	service *workflow.Context,
-	bSchedule *mdbv1.AtlasBackupSchedule,
+	bSchedule *akov2.AtlasBackupSchedule,
 	resourcesToWatch *[]watch.WatchedObject,
-) (*mdbv1.AtlasBackupPolicy, error) {
+) (*akov2.AtlasBackupPolicy, error) {
 	bPolicyRef := *bSchedule.Spec.PolicyRef.GetObject(bSchedule.Namespace)
-	bPolicy := &mdbv1.AtlasBackupPolicy{}
+	bPolicy := &akov2.AtlasBackupPolicy{}
 	err := r.Client.Get(service.Context, bPolicyRef, bPolicy)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get AtlasBackupPolicy resource %s. e: %w", bPolicyRef.String(), err)
@@ -181,9 +181,9 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(
 	ctx context.Context,
 	service *workflow.Context,
 	projectID string,
-	deployment *mdbv1.AtlasDeployment,
-	bSchedule *mdbv1.AtlasBackupSchedule,
-	bPolicy *mdbv1.AtlasBackupPolicy,
+	deployment *akov2.AtlasDeployment,
+	bSchedule *akov2.AtlasBackupSchedule,
+	bPolicy *akov2.AtlasBackupPolicy,
 ) error {
 	clusterName := deployment.GetDeploymentName()
 	currentSchedule, response, err := service.Client.CloudProviderSnapshotBackupPolicies.Get(ctx, projectID, clusterName)
@@ -264,7 +264,7 @@ func normalizeBackupSchedule(s *mongodbatlas.CloudProviderSnapshotBackupPolicy) 
 }
 
 func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Context, clusterName string) error {
-	schedules := &mdbv1.AtlasBackupScheduleList{}
+	schedules := &akov2.AtlasBackupScheduleList{}
 
 	err := r.Client.List(ctx, schedules)
 	if err != nil {
@@ -303,7 +303,7 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 					continue
 				}
 
-				bPolicy := &mdbv1.AtlasBackupPolicy{}
+				bPolicy := &akov2.AtlasBackupPolicy{}
 				bPolicyRef := *backupSchedule.Spec.PolicyRef.GetObject(backupSchedule.Namespace)
 				err = r.Client.Get(ctx, bPolicyRef, bPolicy)
 				if err != nil {

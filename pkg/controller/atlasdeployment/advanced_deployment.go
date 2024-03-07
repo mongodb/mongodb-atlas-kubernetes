@@ -16,7 +16,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -24,7 +24,7 @@ import (
 
 const FreeTier = "M0"
 
-func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	advancedDeploymentSpec := deployment.Spec.DeploymentSpec
 
 	advancedDeployment, resp, err := ctx.Client.AdvancedClusters.Get(ctx.Context, project.Status.ID, advancedDeploymentSpec.Name)
@@ -77,7 +77,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.DeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
@@ -91,7 +91,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 		if atlasDeployment.Paused == nil || *atlasDeployment.Paused != *specDeployment.Paused {
 			// paused is different from Atlas
 			// we need to first send a special (un)pause request before reconciling everything else
-			specDeployment = mdbv1.AdvancedDeploymentSpec{
+			specDeployment = akov2.AdvancedDeploymentSpec{
 				Paused: deployment.Spec.DeploymentSpec.Paused,
 			}
 		} else {
@@ -118,7 +118,7 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *mdbv1.AtlasProject, 
 }
 
 // MergedAdvancedDeployment will return the result of merging AtlasDeploymentSpec with Atlas Advanced Deployment
-func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment mdbv1.AdvancedDeploymentSpec) (mergedDeployment mdbv1.AdvancedDeploymentSpec, atlasDeployment mdbv1.AdvancedDeploymentSpec, err error) {
+func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluster, specDeployment akov2.AdvancedDeploymentSpec) (mergedDeployment akov2.AdvancedDeploymentSpec, atlasDeployment akov2.AdvancedDeploymentSpec, err error) {
 	if IsFreeTierAdvancedDeployment(&atlasDeploymentAsAtlas) {
 		atlasDeploymentAsAtlas.DiskSizeGB = nil
 	}
@@ -130,7 +130,7 @@ func MergedAdvancedDeployment(atlasDeploymentAsAtlas mongodbatlas.AdvancedCluste
 
 	normalizeSpecs(specDeployment.ReplicationSpecs[0].RegionConfigs)
 
-	mergedDeployment = mdbv1.AdvancedDeploymentSpec{}
+	mergedDeployment = akov2.AdvancedDeploymentSpec{}
 
 	if err = compat.JSONCopy(&mergedDeployment, atlasDeployment); err != nil {
 		return
@@ -173,8 +173,8 @@ func IsFreeTierAdvancedDeployment(deployment *mongodbatlas.AdvancedCluster) bool
 	return false
 }
 
-func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (mdbv1.AdvancedDeploymentSpec, error) {
-	result := mdbv1.AdvancedDeploymentSpec{}
+func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster) (akov2.AdvancedDeploymentSpec, error) {
+	result := akov2.AdvancedDeploymentSpec{}
 
 	convertDiskSizeField(&result, &advancedDeployment)
 	if err := compat.JSONCopy(&result, advancedDeployment); err != nil {
@@ -184,7 +184,7 @@ func AdvancedDeploymentFromAtlas(advancedDeployment mongodbatlas.AdvancedCluster
 	return result, nil
 }
 
-func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
+func convertDiskSizeField(result *akov2.AdvancedDeploymentSpec, atlas *mongodbatlas.AdvancedCluster) {
 	var value *int
 	if atlas.DiskSizeGB != nil && *atlas.DiskSizeGB >= 1 {
 		value = pointer.MakePtr(int(*atlas.DiskSizeGB))
@@ -194,7 +194,7 @@ func convertDiskSizeField(result *mdbv1.AdvancedDeploymentSpec, atlas *mongodbat
 }
 
 // AdvancedDeploymentsEqual compares two Atlas Advanced Deployments
-func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.AdvancedDeploymentSpec, deploymentAtlas *mdbv1.AdvancedDeploymentSpec) (areEqual bool, diff string) {
+func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *akov2.AdvancedDeploymentSpec, deploymentAtlas *akov2.AdvancedDeploymentSpec) (areEqual bool, diff string) {
 	expected := deploymentOperator.DeepCopy()
 	actualCleaned := cleanupFieldsToCompare(deploymentAtlas.DeepCopy(), expected)
 
@@ -206,7 +206,7 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.
 			}
 		}
 	}
-	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(mdbv1.LessAD))
+	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(akov2.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)
 	}
@@ -214,7 +214,7 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *mdbv1.
 	return d == "", d
 }
 
-func cleanupFieldsToCompare(atlas, operator *mdbv1.AdvancedDeploymentSpec) *mdbv1.AdvancedDeploymentSpec {
+func cleanupFieldsToCompare(atlas, operator *akov2.AdvancedDeploymentSpec) *akov2.AdvancedDeploymentSpec {
 	if atlas.ReplicationSpecs == nil {
 		return atlas
 	}
@@ -268,8 +268,8 @@ func GetAllDeploymentNames(ctx context.Context, client *mongodbatlas.Client, pro
 	return deploymentNames, nil
 }
 
-func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *mdbv1.AtlasDeployment) workflow.Result {
-	databaseUsers := mdbv1.AtlasDatabaseUserList{}
+func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *akov2.AtlasProject, name string, connectionStrings *mongodbatlas.ConnectionStrings, deploymentResource *akov2.AtlasDeployment) workflow.Result {
+	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -296,7 +296,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			continue
 		}
 
-		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
 		if len(scopes) != 0 && !stringutil.Contains(scopes, name) {
 			continue
 		}
@@ -330,7 +330,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 	return workflow.OK()
 }
 
-func dbUserBelongsToProject(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) bool {
+func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) bool {
 	if dbUser.Spec.Project.Name != project.Name {
 		return false
 	}

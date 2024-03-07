@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -53,7 +53,7 @@ type AtlasDataFederationReconciler struct {
 func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasdatafederation", req.NamespacedName)
 
-	dataFederation := &mdbv1.AtlasDataFederation{}
+	dataFederation := &akov2.AtlasDataFederation{}
 	result := customresource.PrepareResource(context, r.Client, req, dataFederation, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -89,7 +89,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		return result.ReconcileResult(), nil
 	}
 
-	project := &mdbv1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	if result := r.readProjectResource(context, dataFederation, project); !result.IsOk() {
 		ctx.SetConditionFromResult(status.DataFederationReadyType, result)
 		return result.ReconcileResult(), nil
@@ -190,7 +190,7 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx context.Context, client *mongodbatlas.Client, df *mdbv1.AtlasDataFederation, project *mdbv1.AtlasProject, log *zap.SugaredLogger) error {
+func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx context.Context, client *mongodbatlas.Client, df *akov2.AtlasDataFederation, project *akov2.AtlasProject, log *zap.SugaredLogger) error {
 	log.Infof("Deleting DataFederation instance: %s from Atlas", df.Spec.Name)
 
 	_, err := client.DataFederation.Delete(ctx, project.ID(), df.Spec.Name)
@@ -209,7 +209,7 @@ func (r *AtlasDataFederationReconciler) deleteDataFederationFromAtlas(ctx contex
 	return nil
 }
 
-func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context, dataFederation *mdbv1.AtlasDataFederation, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context, dataFederation *akov2.AtlasDataFederation, project *akov2.AtlasProject) workflow.Result {
 	if err := r.Client.Get(ctx, dataFederation.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -219,16 +219,16 @@ func (r *AtlasDataFederationReconciler) readProjectResource(ctx context.Context,
 func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDataFederation").
-		Watches(&mdbv1.AtlasDataFederation{}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
-		For(&mdbv1.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
+		Watches(&akov2.AtlasDataFederation{}, &watch.EventHandlerWithDelete{Controller: r}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(&akov2.AtlasDataFederation{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Complete(r)
 }
 
 // Delete implements a handler for the Delete event
 func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.DeleteEvent) error {
-	dataFederation, ok := e.Object.(*mdbv1.AtlasDataFederation)
+	dataFederation, ok := e.Object.(*akov2.AtlasDataFederation)
 	if !ok {
-		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &mdbv1.AtlasDeployment{}, e.Object)
+		r.Log.Errorf("Ignoring malformed Delete() call (expected type %T, got %T)", &akov2.AtlasDeployment{}, e.Object)
 		return nil
 	}
 
@@ -236,7 +236,7 @@ func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.Dele
 
 	log.Infow("-> Starting AtlasDataFederation deletion", "spec", dataFederation.Spec)
 
-	project := &mdbv1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 
 	if result := r.readProjectResource(ctx, dataFederation, project); !result.IsOk() {
 		return errors.New("cannot read project resource")
@@ -263,8 +263,8 @@ func (r *AtlasDataFederationReconciler) Delete(ctx context.Context, e event.Dele
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		dataFederation, ok := resource.(*mdbv1.AtlasDataFederation)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		dataFederation, ok := resource.(*akov2.AtlasDataFederation)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDataFederation")
 		}

@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -26,7 +26,7 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 			&workflow.Context{},
 			false,
 			"fake-project-id-wont-be-checked",
-			&v1.AtlasDeployment{})
+			&akov2.AtlasDeployment{})
 
 		require.NoError(t, err)
 		assert.True(t, result)
@@ -100,7 +100,7 @@ func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
 		}
 		deployment := sampleAnnotatedServerlessDeployment(endpointsFrom(endpointsConfig))
 		// remove all PEs in the current desired setup
-		deployment.Spec.ServerlessSpec.PrivateEndpoints = []v1.ServerlessPrivateEndpoint{}
+		deployment.Spec.ServerlessSpec.PrivateEndpoints = []akov2.ServerlessPrivateEndpoint{}
 		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
 
 		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
@@ -212,17 +212,17 @@ func TestCanReconcileServerlessPrivateEndpointsFail(t *testing.T) {
 	})
 }
 
-func sampleServerlessDeployment() *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
-		Spec: v1.AtlasDeploymentSpec{
-			ServerlessSpec: &v1.ServerlessSpec{Name: fakeInstanceName},
+func sampleServerlessDeployment() *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
+		Spec: akov2.AtlasDeploymentSpec{
+			ServerlessSpec: &akov2.ServerlessSpec{Name: fakeInstanceName},
 		},
 	}
 }
 
-func sampleAnnotatedServerlessDeployment(endpoints []v1.ServerlessPrivateEndpoint) *v1.AtlasDeployment {
-	deployment := &v1.AtlasDeployment{
-		Spec: v1.AtlasDeploymentSpec{ServerlessSpec: &v1.ServerlessSpec{
+func sampleAnnotatedServerlessDeployment(endpoints []akov2.ServerlessPrivateEndpoint) *akov2.AtlasDeployment {
+	deployment := &akov2.AtlasDeployment{
+		Spec: akov2.AtlasDeploymentSpec{ServerlessSpec: &akov2.ServerlessSpec{
 			Name:             fakeInstanceName,
 			PrivateEndpoints: endpoints,
 		}},
@@ -253,10 +253,10 @@ func sampleAtlasSPEConfig() []mongodbatlas.ServerlessPrivateEndpointConnection {
 	}
 }
 
-func endpointsFrom(configs []mongodbatlas.ServerlessPrivateEndpointConnection) []v1.ServerlessPrivateEndpoint {
-	endpoints := []v1.ServerlessPrivateEndpoint{}
+func endpointsFrom(configs []mongodbatlas.ServerlessPrivateEndpointConnection) []akov2.ServerlessPrivateEndpoint {
+	endpoints := []akov2.ServerlessPrivateEndpoint{}
 	for _, cfg := range configs {
-		endpoints = append(endpoints, v1.ServerlessPrivateEndpoint{
+		endpoints = append(endpoints, akov2.ServerlessPrivateEndpoint{
 			Name:                     cfg.Comment,
 			CloudProviderEndpointID:  cfg.CloudProviderEndpointID,
 			PrivateEndpointIPAddress: cfg.PrivateEndpointIPAddress,
@@ -265,8 +265,8 @@ func endpointsFrom(configs []mongodbatlas.ServerlessPrivateEndpointConnection) [
 	return endpoints
 }
 
-func reverse(endpoints []v1.ServerlessPrivateEndpoint) []v1.ServerlessPrivateEndpoint {
-	reversed := make([]v1.ServerlessPrivateEndpoint, 0, len(endpoints))
+func reverse(endpoints []akov2.ServerlessPrivateEndpoint) []akov2.ServerlessPrivateEndpoint {
+	reversed := make([]akov2.ServerlessPrivateEndpoint, 0, len(endpoints))
 	for i := len(endpoints) - 1; i >= 0; i-- {
 		reversed = append(reversed, endpoints[i])
 	}

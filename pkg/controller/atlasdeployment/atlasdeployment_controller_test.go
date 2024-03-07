@@ -41,7 +41,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -95,7 +95,7 @@ func TestDeploymentManaged(t *testing.T) {
 				},
 			}
 			project := testProject(fakeNamespace)
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			te := newTestDeploymentEnv(t, tc.protected, &atlasClient, testK8sClient(), project, deployment)
 			if tc.managedTag {
 				customresource.SetAnnotation(te.deployment, customresource.AnnotationLastAppliedConfiguration, "")
@@ -130,7 +130,7 @@ func TestProtectedAdvancedDeploymentManagedInAtlas(t *testing.T) {
 					},
 				},
 			}
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
@@ -175,7 +175,7 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 					},
 				},
 			}
-			deployment := v1.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
+			deployment := akov2.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
 			te := newTestDeploymentEnv(t, true, &atlasClient, testK8sClient(), project, deployment)
 
 			result := te.reconciler.checkDeploymentIsManaged(te.workflowCtx, te.log, te.project, te.deployment)
@@ -196,7 +196,7 @@ func TestProtectedServerlessManagedInAtlas(t *testing.T) {
 func TestFinalizerNotFound(t *testing.T) {
 	atlasClient := mongodbatlas.Client{}
 	project := testProject(fakeNamespace)
-	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+	deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 	k8sclient := testK8sClient()
 	te := newTestDeploymentEnv(t, false, &atlasClient, k8sclient, project, deployment)
 
@@ -230,7 +230,7 @@ func TestFinalizerGetsSet(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			atlasClient := mongodbatlas.Client{}
 			project := testProject(fakeNamespace)
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			if tc.haveFinalizer {
 				customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			}
@@ -247,7 +247,7 @@ func TestFinalizerGetsSet(t *testing.T) {
 			)
 
 			require.False(t, deletionRequest)
-			finalDeployment := &v1.AtlasDeployment{}
+			finalDeployment := &akov2.AtlasDeployment{}
 			require.NoError(t, te.reconciler.Client.Get(context.Background(), client.ObjectKeyFromObject(te.deployment), finalDeployment))
 			assert.True(t, customresource.HaveFinalizer(finalDeployment, customresource.FinalizerLabel))
 		})
@@ -282,7 +282,7 @@ func TestDeploymentDeletionProtection(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
 				AdvancedClusters: advancedClusterClient,
 			}
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			k8sclient := testK8sClient()
 			customresource.SetFinalizer(deployment, customresource.FinalizerLabel)
 			require.NoError(t, k8sclient.Create(context.Background(), deployment))
@@ -329,7 +329,7 @@ func TestKeepAnnotatedDeploymentAlwaysRemain(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
 				AdvancedClusters: advancedClusterClient,
 			}
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			customresource.SetAnnotation(deployment,
 				customresource.ResourcePolicyAnnotation,
 				customresource.ResourcePolicyKeep,
@@ -381,7 +381,7 @@ func TestDeleteAnnotatedDeploymentGetRemoved(t *testing.T) {
 			atlasClient := mongodbatlas.Client{
 				AdvancedClusters: advancedClusterClient,
 			}
-			deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+			deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 			customresource.SetAnnotation(deployment,
 				customresource.ResourcePolicyAnnotation,
 				customresource.ResourcePolicyDelete,
@@ -414,7 +414,7 @@ func TestCleanupBindings(t *testing.T) {
 			Log:    testLog(t),
 			Client: testK8sClient(),
 		}
-		d := &v1.AtlasDeployment{} // dummy deployment
+		d := &akov2.AtlasDeployment{} // dummy deployment
 
 		// test cleanup
 		assert.NoError(t, r.cleanupBindings(context.Background(), d))
@@ -426,7 +426,7 @@ func TestCleanupBindings(t *testing.T) {
 			Client: testK8sClient(),
 		}
 		dn := testDeploymentName("") // deployment, schedule, policy (NOT connected)
-		deployment := &v1.AtlasDeployment{
+		deployment := &akov2.AtlasDeployment{
 			ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
 		}
 		require.NoError(t, r.Client.Create(context.Background(), deployment))
@@ -438,10 +438,10 @@ func TestCleanupBindings(t *testing.T) {
 		// test cleanup
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
-		endPolicy := &v1.AtlasBackupPolicy{}
+		endPolicy := &akov2.AtlasBackupPolicy{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
 		assert.Equal(t, []string{customresource.FinalizerLabel}, endPolicy.Finalizers)
-		endSchedule := &v1.AtlasBackupSchedule{}
+		endSchedule := &akov2.AtlasBackupSchedule{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
 		assert.Equal(t, []string{customresource.FinalizerLabel}, endSchedule.Finalizers)
 	})
@@ -470,10 +470,10 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
-		endPolicy := &v1.AtlasBackupPolicy{}
+		endPolicy := &akov2.AtlasBackupPolicy{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
 		assert.Empty(t, endPolicy.Finalizers, "policy should end up with no finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
+		endSchedule := &akov2.AtlasBackupSchedule{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
 		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
 	})
@@ -507,10 +507,10 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
-		endPolicy := &v1.AtlasBackupPolicy{}
+		endPolicy := &akov2.AtlasBackupPolicy{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(policy), endPolicy))
 		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
+		endSchedule := &akov2.AtlasBackupSchedule{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKeyFromObject(schedule), endSchedule))
 		assert.NotEmpty(t, endSchedule.Finalizers, "schedule should keep the finalizer")
 	})
@@ -554,10 +554,10 @@ func TestCleanupBindings(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, r.cleanupBindings(context.Background(), deployment))
 
-		endPolicy := &v1.AtlasBackupPolicy{}
+		endPolicy := &akov2.AtlasBackupPolicy{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(policy.Namespace, policy.Name), endPolicy))
 		assert.NotEmpty(t, endPolicy.Finalizers, "policy should keep the finalizer")
-		endSchedule := &v1.AtlasBackupSchedule{}
+		endSchedule := &akov2.AtlasBackupSchedule{}
 		require.NoError(t, r.Client.Get(context.Background(), kube.ObjectKey(schedule.Namespace, schedule.Name), endSchedule))
 		assert.Empty(t, endSchedule.Finalizers, "schedule should end up with no finalizer")
 	})
@@ -565,14 +565,14 @@ func TestCleanupBindings(t *testing.T) {
 
 func sameAdvancedDeployment(ns string) *mongodbatlas.AdvancedCluster {
 	project := testProject(ns)
-	deployment := v1.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
+	deployment := akov2.NewDeployment(project.Namespace, fakeDeployment, fakeDeployment)
 	advancedSpec := deployment.Spec.DeploymentSpec
 	return intoAdvancedAtlasCluster(advancedSpec)
 }
 
 func sameServerlessDeployment(ns string) *mongodbatlas.Cluster {
 	project := testProject(ns)
-	deployment := v1.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
+	deployment := akov2.NewDefaultAWSServerlessInstance(project.Namespace, project.Name)
 	return intoServerlessAtlasCluster(deployment.Spec.ServerlessSpec)
 }
 
@@ -581,16 +581,16 @@ type testDeploymentEnv struct {
 	workflowCtx *workflow.Context
 	log         *zap.SugaredLogger
 	prevResult  workflow.Result
-	project     *v1.AtlasProject
-	deployment  *v1.AtlasDeployment
+	project     *akov2.AtlasProject
+	deployment  *akov2.AtlasDeployment
 }
 
 func newTestDeploymentEnv(t *testing.T,
 	protected bool,
 	atlasClient *mongodbatlas.Client,
 	k8sclient client.Client,
-	project *v1.AtlasProject,
-	deployment *v1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 ) *testDeploymentEnv {
 	t.Helper()
 
@@ -614,13 +614,13 @@ func testK8sClient() client.Client {
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	sch := runtime.NewScheme()
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDeployment{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupSchedule{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupScheduleList{})
-	sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupPolicy{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
+	sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
 	sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
 	return fake.NewClientBuilder().WithScheme(sch).
-		WithStatusSubresource(&v1.AtlasBackupSchedule{}, &v1.AtlasBackupPolicy{}).
+		WithStatusSubresource(&akov2.AtlasBackupSchedule{}, &akov2.AtlasBackupPolicy{}).
 		Build()
 }
 
@@ -642,8 +642,8 @@ func testDeploymentReconciler(log *zap.SugaredLogger, k8sclient client.Client, p
 	}
 }
 
-func testProject(ns string) *v1.AtlasProject {
-	return &v1.AtlasProject{
+func testProject(ns string) *akov2.AtlasProject {
+	return &akov2.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fakeProject,
 			Namespace: ns,
@@ -654,7 +654,7 @@ func testProject(ns string) *v1.AtlasProject {
 	}
 }
 
-func intoAdvancedAtlasCluster(advancedSpec *v1.AdvancedDeploymentSpec) *mongodbatlas.AdvancedCluster {
+func intoAdvancedAtlasCluster(advancedSpec *akov2.AdvancedDeploymentSpec) *mongodbatlas.AdvancedCluster {
 	ac, err := advancedSpec.ToAtlas()
 	if err != nil {
 		log.Fatalf("failed to convert advanced deployment to atlas: %v", err)
@@ -662,7 +662,7 @@ func intoAdvancedAtlasCluster(advancedSpec *v1.AdvancedDeploymentSpec) *mongodba
 	return ac
 }
 
-func intoServerlessAtlasCluster(serverlessSpec *v1.ServerlessSpec) *mongodbatlas.Cluster {
+func intoServerlessAtlasCluster(serverlessSpec *akov2.ServerlessSpec) *mongodbatlas.Cluster {
 	ac, err := serverlessSpec.ToAtlas()
 	if err != nil {
 		log.Fatalf("failed to convert serverless deployment to atlas: %v", err)
@@ -677,12 +677,12 @@ func testDeploymentName(suffix string) types.NamespacedName {
 	}
 }
 
-func testDeployment(suffix string, schedule *v1.AtlasBackupSchedule) *v1.AtlasDeployment {
+func testDeployment(suffix string, schedule *akov2.AtlasBackupSchedule) *akov2.AtlasDeployment {
 	dn := testDeploymentName(suffix)
-	return &v1.AtlasDeployment{
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
-		Spec: v1.AtlasDeploymentSpec{
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name: fmt.Sprintf("atlas-%s", dn.Name),
 			},
 			BackupScheduleRef: common.ResourceRefNamespaced{
@@ -693,28 +693,28 @@ func testDeployment(suffix string, schedule *v1.AtlasBackupSchedule) *v1.AtlasDe
 	}
 }
 
-func testBackupSchedule(suffix string, policy *v1.AtlasBackupPolicy) *v1.AtlasBackupSchedule {
-	return &v1.AtlasBackupSchedule{
+func testBackupSchedule(suffix string, policy *akov2.AtlasBackupPolicy) *akov2.AtlasBackupSchedule {
+	return &akov2.AtlasBackupSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
 			Namespace:  "test-namespace",
 			Finalizers: []string{customresource.FinalizerLabel},
 		},
-		Spec: v1.AtlasBackupScheduleSpec{
+		Spec: akov2.AtlasBackupScheduleSpec{
 			PolicyRef: common.ResourceRefNamespaced{Name: policy.Name, Namespace: policy.Namespace},
 		},
 	}
 }
 
-func testBackupPolicy() *v1.AtlasBackupPolicy {
-	return &v1.AtlasBackupPolicy{
+func testBackupPolicy() *akov2.AtlasBackupPolicy {
+	return &akov2.AtlasBackupPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "test-backup-policy",
 			Namespace:  "test-namespace",
 			Finalizers: []string{customresource.FinalizerLabel},
 		},
-		Spec: v1.AtlasBackupPolicySpec{
-			Items: []v1.AtlasBackupPolicyItem{
+		Spec: akov2.AtlasBackupPolicySpec{
+			Items: []akov2.AtlasBackupPolicyItem{
 				{
 					FrequencyType:     "weekly",
 					FrequencyInterval: 1,
@@ -728,36 +728,36 @@ func testBackupPolicy() *v1.AtlasBackupPolicy {
 
 func TestUniqueKey(t *testing.T) {
 	t.Run("Test duplicates in Advanced Deployment", func(t *testing.T) {
-		deploymentSpec := &v1.AtlasDeploymentSpec{
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
-				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "foo", Value: "false"}},
+		deploymentSpec := &akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "foo", Value: "false"}},
 			},
 		}
 		err := uniqueKey(deploymentSpec)
 		assert.Error(t, err)
 	})
 	t.Run("Test no duplicates in Advanced Deployment", func(t *testing.T) {
-		deploymentSpec := &v1.AtlasDeploymentSpec{
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
-				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foobar", Value: "false"}},
+		deploymentSpec := &akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foobar", Value: "false"}},
 			},
 		}
 		err := uniqueKey(deploymentSpec)
 		assert.NoError(t, err)
 	})
 	t.Run("Test duplicates in Serverless Instance", func(t *testing.T) {
-		deploymentSpec := &v1.AtlasDeploymentSpec{
-			ServerlessSpec: &v1.ServerlessSpec{
-				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foo", Value: "false"}},
+		deploymentSpec := &akov2.AtlasDeploymentSpec{
+			ServerlessSpec: &akov2.ServerlessSpec{
+				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}, {Key: "foo", Value: "false"}},
 			},
 		}
 		err := uniqueKey(deploymentSpec)
 		assert.Error(t, err)
 	})
 	t.Run("Test no duplicates in Serverless Instance", func(t *testing.T) {
-		deploymentSpec := &v1.AtlasDeploymentSpec{
-			ServerlessSpec: &v1.ServerlessSpec{
-				Tags: []*v1.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}},
+		deploymentSpec := &akov2.AtlasDeploymentSpec{
+			ServerlessSpec: &akov2.ServerlessSpec{
+				Tags: []*akov2.TagSpec{{Key: "foo", Value: "true"}, {Key: "bar", Value: "false"}},
 			},
 		}
 		err := uniqueKey(deploymentSpec)
@@ -782,12 +782,12 @@ func TestReconciliation(t *testing.T) {
 			},
 			Type: "Opaque",
 		}
-		project := &v1.AtlasProject{
+		project := &akov2.AtlasProject{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-project",
 				Namespace: "default",
 			},
-			Spec: v1.AtlasProjectSpec{
+			Spec: akov2.AtlasProjectSpec{
 				Name: "MyProject",
 				ConnectionSecret: &common.ResourceRefNamespaced{
 					Name:      secret.Name,
@@ -796,13 +796,13 @@ func TestReconciliation(t *testing.T) {
 			},
 			Status: status.AtlasProjectStatus{ID: "abc123"},
 		}
-		bPolicy := &v1.AtlasBackupPolicy{
+		bPolicy := &akov2.AtlasBackupPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-policy",
 				Namespace: project.Namespace,
 			},
-			Spec: v1.AtlasBackupPolicySpec{
-				Items: []v1.AtlasBackupPolicyItem{
+			Spec: akov2.AtlasBackupPolicySpec{
+				Items: []akov2.AtlasBackupPolicyItem{
 					{
 						FrequencyType:     "days",
 						FrequencyInterval: 1,
@@ -812,12 +812,12 @@ func TestReconciliation(t *testing.T) {
 				},
 			},
 		}
-		bSchedule := &v1.AtlasBackupSchedule{
+		bSchedule := &akov2.AtlasBackupSchedule{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-schedule",
 				Namespace: project.Namespace,
 			},
-			Spec: v1.AtlasBackupScheduleSpec{
+			Spec: akov2.AtlasBackupScheduleSpec{
 				PolicyRef: common.ResourceRefNamespaced{
 					Name:      bPolicy.Name,
 					Namespace: bPolicy.Namespace,
@@ -827,7 +827,7 @@ func TestReconciliation(t *testing.T) {
 				RestoreWindowDays:     7,
 			},
 		}
-		deployment := v1.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
+		deployment := akov2.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
 		deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 		deployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 			Name:      bSchedule.Name,
@@ -837,12 +837,12 @@ func TestReconciliation(t *testing.T) {
 		sch := runtime.NewScheme()
 		sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.Secret{})
 		sch.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.SecretList{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasProject{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDeployment{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupSchedule{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupScheduleList{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasBackupPolicy{})
-		sch.AddKnownTypes(v1.GroupVersion, &v1.AtlasDatabaseUserList{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDeployment{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupSchedule{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupScheduleList{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasBackupPolicy{})
+		sch.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasDatabaseUserList{})
 		// Subresources need to be explicitly set now since controller-runtime 1.15
 		// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 		k8sClient := fake.NewClientBuilder().

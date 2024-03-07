@@ -6,6 +6,7 @@ import (
 
 	kubecli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -24,7 +24,7 @@ import (
 
 func DeleteDeploymentCRWithKeepAnnotation(testData *model.TestDataProvider) {
 	By("Check that deployment CR have keep annotation", func() {
-		deployment := &v1.AtlasDeployment{}
+		deployment := &akov2.AtlasDeployment{}
 		err := testData.K8SClient.Get(testData.Context, client.ObjectKey{Namespace: testData.Resources.Namespace,
 			Name: testData.InitialDeployments[0].GetName()}, deployment)
 		Expect(err).NotTo(HaveOccurred())
@@ -50,7 +50,7 @@ func RedeployDeployment(testData *model.TestDataProvider) {
 		Eventually(func() error {
 			return testData.K8SClient.Create(testData.Context, deployment)
 		}).WithTimeout(5 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
-		deploymentForCheck := &v1.AtlasDeployment{}
+		deploymentForCheck := &akov2.AtlasDeployment{}
 		Eventually(func() bool {
 			err := testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: deployment.GetName(), Namespace: deployment.GetNamespace()}, deploymentForCheck)
 			Expect(err).Should(BeNil(), fmt.Sprintf("Deployment not found: %v", deploymentForCheck))
@@ -63,7 +63,7 @@ func RedeployDeployment(testData *model.TestDataProvider) {
 func RemoveKeepAnnotation(testData *model.TestDataProvider) {
 	// Remove annotation so actions.AfterEachFinalCleanup can cleanup successfully
 	By("Removing keep annotation", func() {
-		deploymentUpdate := &v1.AtlasDeployment{}
+		deploymentUpdate := &akov2.AtlasDeployment{}
 		err := testData.K8SClient.Get(testData.Context, client.ObjectKey{Namespace: testData.Resources.Namespace,
 			Name: testData.InitialDeployments[0].GetName()}, deploymentUpdate)
 		Expect(err).NotTo(HaveOccurred())
@@ -77,7 +77,7 @@ func RemoveKeepAnnotation(testData *model.TestDataProvider) {
 	})
 
 	By("Checking that keep annotation was removed", func() {
-		deployment := &v1.AtlasDeployment{}
+		deployment := &akov2.AtlasDeployment{}
 		err := testData.K8SClient.Get(testData.Context, client.ObjectKey{Namespace: testData.Resources.Namespace,
 			Name: testData.InitialDeployments[0].GetName()}, deployment)
 		Expect(err).NotTo(HaveOccurred())

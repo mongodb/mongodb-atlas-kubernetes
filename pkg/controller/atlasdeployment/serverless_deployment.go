@@ -8,11 +8,11 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
+func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment) (atlasDeployment *mongodbatlas.Cluster, _ workflow.Result) {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
 		return nil, workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}

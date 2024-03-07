@@ -15,7 +15,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -27,13 +27,13 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canEncryptionAtRestReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canEncryptionAtRestReconcile(workflowCtx, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -52,7 +52,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -82,7 +82,7 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -115,10 +115,10 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "eu-west-2",
 						SecretRef: common.ResourceRefNamespaced{
@@ -126,8 +126,8 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 							Namespace: "test-namespace",
 						},
 					},
-					AzureKeyVault:  mdbv1.AzureKeyVault{},
-					GoogleCloudKms: mdbv1.GoogleCloudKms{},
+					AzureKeyVault:  akov2.AzureKeyVault{},
+					GoogleCloudKms: akov2.GoogleCloudKms{},
 				},
 			},
 		}
@@ -167,10 +167,10 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "eu-west-1",
 						SecretRef: common.ResourceRefNamespaced{
@@ -178,8 +178,8 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 							Namespace: "test-namespace",
 						},
 					},
-					AzureKeyVault:  mdbv1.AzureKeyVault{},
-					GoogleCloudKms: mdbv1.GoogleCloudKms{},
+					AzureKeyVault:  akov2.AzureKeyVault{},
+					GoogleCloudKms: akov2.GoogleCloudKms{},
 				},
 			},
 		}
@@ -220,10 +220,10 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "eu-central-1",
 						SecretRef: common.ResourceRefNamespaced{
@@ -231,8 +231,8 @@ func TestCanEncryptionAtRestReconcile(t *testing.T) {
 							Namespace: "test-namespace",
 						},
 					},
-					AzureKeyVault:  mdbv1.AzureKeyVault{},
-					GoogleCloudKms: mdbv1.GoogleCloudKms{},
+					AzureKeyVault:  akov2.AzureKeyVault{},
+					GoogleCloudKms: akov2.GoogleCloudKms{},
 				},
 			},
 		}
@@ -262,7 +262,7 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -297,10 +297,10 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "eu-central-1",
 						SecretRef: common.ResourceRefNamespaced{
@@ -308,8 +308,8 @@ func TestEnsureEncryptionAtRest(t *testing.T) {
 							Namespace: "test-namespace",
 						},
 					},
-					AzureKeyVault:  mdbv1.AzureKeyVault{},
-					GoogleCloudKms: mdbv1.GoogleCloudKms{},
+					AzureKeyVault:  akov2.AzureKeyVault{},
+					GoogleCloudKms: akov2.GoogleCloudKms{},
 				},
 			},
 		}
@@ -385,8 +385,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			AwsKms: mdbv1.AwsKms{
+		encRest := &akov2.EncryptionAtRest{
+			AwsKms: akov2.AwsKms{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name:      "aws-secret",
@@ -427,8 +427,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			AwsKms: mdbv1.AwsKms{
+		encRest := &akov2.EncryptionAtRest{
+			AwsKms: akov2.AwsKms{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "aws-secret",
@@ -466,8 +466,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			AwsKms: mdbv1.AwsKms{
+		encRest := &akov2.EncryptionAtRest{
+			AwsKms: akov2.AwsKms{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name:      "aws-secret",
@@ -502,8 +502,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			GoogleCloudKms: mdbv1.GoogleCloudKms{
+		encRest := &akov2.EncryptionAtRest{
+			GoogleCloudKms: akov2.GoogleCloudKms{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
@@ -539,8 +539,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			GoogleCloudKms: mdbv1.GoogleCloudKms{
+		encRest := &akov2.EncryptionAtRest{
+			GoogleCloudKms: akov2.GoogleCloudKms{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
@@ -576,8 +576,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			AzureKeyVault: mdbv1.AzureKeyVault{
+		encRest := &akov2.EncryptionAtRest{
+			AzureKeyVault: akov2.AzureKeyVault{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "azure-secret",
@@ -618,8 +618,8 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		service := &workflow.Context{}
 
-		encRest := &mdbv1.EncryptionAtRest{
-			AzureKeyVault: mdbv1.AzureKeyVault{
+		encRest := &akov2.EncryptionAtRest{
+			AzureKeyVault: akov2.AzureKeyVault{
 				Enabled: pointer.MakePtr(true),
 				SecretRef: common.ResourceRefNamespaced{
 					Name: "gcp-secret",
@@ -633,7 +633,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 }
 
 func TestIsEncryptionAtlasEmpty(t *testing.T) {
-	spec := &mdbv1.EncryptionAtRest{}
+	spec := &akov2.EncryptionAtRest{}
 	isEmpty := IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Empty spec should be empty")
 
@@ -658,8 +658,8 @@ func TestAtlasInSync(t *testing.T) {
 			Enabled: pointer.MakePtr(true),
 		},
 	}
-	spec := mdbv1.EncryptionAtRest{
-		AwsKms: mdbv1.AwsKms{
+	spec := akov2.EncryptionAtRest{
+		AwsKms: akov2.AwsKms{
 			Enabled: pointer.MakePtr(true),
 		},
 	}
@@ -716,14 +716,14 @@ func TestAtlasInSync(t *testing.T) {
 			Enabled: pointer.MakePtr(false),
 		},
 	}
-	spec = mdbv1.EncryptionAtRest{
-		AwsKms: mdbv1.AwsKms{
+	spec = akov2.EncryptionAtRest{
+		AwsKms: akov2.AwsKms{
 			Enabled: pointer.MakePtr(true),
 			Region:  "US_EAST_1",
 			Valid:   pointer.MakePtr(true),
 		},
-		AzureKeyVault:  mdbv1.AzureKeyVault{},
-		GoogleCloudKms: mdbv1.GoogleCloudKms{},
+		AzureKeyVault:  akov2.AzureKeyVault{},
+		GoogleCloudKms: akov2.GoogleCloudKms{},
 	}
 	spec.AwsKms.SetSecrets("testCustomerMasterKeyID", "testRoleID")
 
@@ -734,7 +734,7 @@ func TestAtlasInSync(t *testing.T) {
 
 func TestAreAzureConfigEqual(t *testing.T) {
 	type args struct {
-		operator mdbv1.AzureKeyVault
+		operator akov2.AzureKeyVault
 		atlas    mongodbatlas.AzureKeyVault
 	}
 	tests := []struct {
@@ -745,7 +745,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 		{
 			name: "Azure configuration are equal",
 			args: args{
-				operator: mdbv1.AzureKeyVault{
+				operator: akov2.AzureKeyVault{
 					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
@@ -768,7 +768,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 		{
 			name: "Azure configuration are equal when disabled and nullable",
 			args: args{
-				operator: mdbv1.AzureKeyVault{
+				operator: akov2.AzureKeyVault{
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
 					ResourceGroupName: "resource group",
@@ -790,7 +790,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 		{
 			name: "Azure configuration differ by enabled field",
 			args: args{
-				operator: mdbv1.AzureKeyVault{
+				operator: akov2.AzureKeyVault{
 					Enabled:           pointer.MakePtr(false),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
@@ -813,7 +813,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 		{
 			name: "Azure configuration differ by other field",
 			args: args{
-				operator: mdbv1.AzureKeyVault{
+				operator: akov2.AzureKeyVault{
 					Enabled:           pointer.MakePtr(true),
 					ClientID:          "client id",
 					AzureEnvironment:  "azure env",
@@ -844,7 +844,7 @@ func TestAreAzureConfigEqual(t *testing.T) {
 
 func TestAreGCPConfigEqual(t *testing.T) {
 	type args struct {
-		operator mdbv1.GoogleCloudKms
+		operator akov2.GoogleCloudKms
 		atlas    mongodbatlas.GoogleCloudKms
 	}
 	tests := []struct {
@@ -855,7 +855,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 		{
 			name: "GCP configuration are equal",
 			args: args{
-				operator: mdbv1.GoogleCloudKms{
+				operator: akov2.GoogleCloudKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
@@ -868,7 +868,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 		{
 			name: "GCP configuration are equal when disabled and nullable",
 			args: args{
-				operator: mdbv1.GoogleCloudKms{},
+				operator: akov2.GoogleCloudKms{},
 				atlas: mongodbatlas.GoogleCloudKms{
 					Enabled:              pointer.MakePtr(false),
 					KeyVersionResourceID: "key version id",
@@ -879,7 +879,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 		{
 			name: "GCP configuration are different by enable field",
 			args: args{
-				operator: mdbv1.GoogleCloudKms{
+				operator: akov2.GoogleCloudKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
@@ -892,7 +892,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 		{
 			name: "GCP configuration are different by another field",
 			args: args{
-				operator: mdbv1.GoogleCloudKms{
+				operator: akov2.GoogleCloudKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.GoogleCloudKms{
@@ -913,7 +913,7 @@ func TestAreGCPConfigEqual(t *testing.T) {
 
 func TestAreAWSConfigEqual(t *testing.T) {
 	type args struct {
-		operator mdbv1.AwsKms
+		operator akov2.AwsKms
 		atlas    mongodbatlas.AwsKms
 	}
 	tests := []struct {
@@ -924,7 +924,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 		{
 			name: "AWS configuration are equal",
 			args: args{
-				operator: mdbv1.AwsKms{
+				operator: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
@@ -937,7 +937,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 		{
 			name: "AWS configuration are equal when disabled and nullable",
 			args: args{
-				operator: mdbv1.AwsKms{},
+				operator: akov2.AwsKms{},
 				atlas: mongodbatlas.AwsKms{
 					Enabled:             pointer.MakePtr(false),
 					CustomerMasterKeyID: "customer master key",
@@ -948,7 +948,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 		{
 			name: "AWS configuration are different by enable field",
 			args: args{
-				operator: mdbv1.AwsKms{
+				operator: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{
@@ -961,7 +961,7 @@ func TestAreAWSConfigEqual(t *testing.T) {
 		{
 			name: "AWS configuration are different by another field",
 			args: args{
-				operator: mdbv1.AwsKms{
+				operator: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 				},
 				atlas: mongodbatlas.AwsKms{

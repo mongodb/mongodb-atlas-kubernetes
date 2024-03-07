@@ -6,13 +6,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 // Update performs the update (in the form of patch) for the Atlas Custom Resource status.
 // It should be a common method for all the controllers
-func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder record.EventRecorder, resource mdbv1.AtlasCustomResource) {
+func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder record.EventRecorder, resource akov2.AtlasCustomResource) {
 	if ctx.LastCondition() != nil {
 		logEvent(ctx, eventRecorder, resource)
 	}
@@ -34,7 +34,7 @@ func Update(ctx *workflow.Context, kubeClient client.Client, eventRecorder recor
 // Some tradeoffs about event submission: the Event always requires the 'reason' and 'message' though our Status
 // conditions may lack that in case the condition is successful ("true"). In this case we leave the message empty
 // and use the ConditionType as the reason.
-func logEvent(ctx *workflow.Context, eventRecorder record.EventRecorder, resource mdbv1.AtlasCustomResource) {
+func logEvent(ctx *workflow.Context, eventRecorder record.EventRecorder, resource akov2.AtlasCustomResource) {
 	ctx.Log.Infow("Status update", "lastCondition", ctx.LastCondition())
 
 	eventType := "Normal"

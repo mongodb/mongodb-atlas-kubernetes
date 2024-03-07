@@ -13,7 +13,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -29,11 +29,11 @@ const (
 
 type networkPeerDiff struct {
 	PeersToDelete []string
-	PeersToCreate []mdbv1.NetworkPeer
+	PeersToCreate []akov2.NetworkPeer
 	PeersToUpdate []admin.BaseNetworkPeeringConnectionSettings
 }
 
-func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject, subobjectProtect bool) workflow.Result {
 	canReconcile, err := canNetworkPeeringReconcile(workflowCtx, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -68,7 +68,7 @@ func ensureNetworkPeers(workflowCtx *workflow.Context, akoProject *mdbv1.AtlasPr
 	return result
 }
 
-func failedPeerStatus(errMessage string, peer mdbv1.NetworkPeer) status.AtlasNetworkPeer {
+func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNetworkPeer {
 	var vpc string
 	switch peer.ProviderName {
 	case provider.ProviderGCP:
@@ -86,7 +86,7 @@ func failedPeerStatus(errMessage string, peer mdbv1.NetworkPeer) status.AtlasNet
 	}
 }
 
-func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []mdbv1.NetworkPeer) (workflow.Result, status.ConditionType) {
+func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer) (workflow.Result, status.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
 	mongoClient := workflowCtx.SdkClient
@@ -236,7 +236,7 @@ func ensurePeerStatus(peerStatuses []status.AtlasNetworkPeer, lenOfSpec int, log
 	return workflow.OK(), status.NetworkPeerReadyType
 }
 
-func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, groupID string, peers []mdbv1.NetworkPeer, logger *zap.SugaredLogger) []status.AtlasNetworkPeer {
+func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, groupID string, peers []akov2.NetworkPeer, logger *zap.SugaredLogger) []status.AtlasNetworkPeer {
 	var newPeerStatuses []status.AtlasNetworkPeer
 	for _, peer := range peers {
 		err := validateInitNetworkPeer(peer)
@@ -324,13 +324,13 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	return peersList, nil
 }
 
-func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, expectedPeers []mdbv1.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringApi, groupID string) *networkPeerDiff {
+func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, expectedPeers []akov2.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringApi, groupID string) *networkPeerDiff {
 	var diff networkPeerDiff
-	var peersToUpdate []mdbv1.NetworkPeer
+	var peersToUpdate []akov2.NetworkPeer
 	for _, existedPeer := range existedPeers {
 		needToDelete := true
 		for _, expectedPeer := range expectedPeers {
-			if comparePeersPair(ctx, *mdbv1.NewNetworkPeerFromAtlas(existedPeer), expectedPeer, containerService, groupID) {
+			if comparePeersPair(ctx, *akov2.NewNetworkPeerFromAtlas(existedPeer), expectedPeer, containerService, groupID) {
 				existedPeer.AccepterRegionName = pointer.SetOrNil(expectedPeer.AccepterRegionName, "")
 				diff.PeersToUpdate = append(diff.PeersToUpdate, existedPeer)
 				peersToUpdate = append(peersToUpdate, expectedPeer)
@@ -365,7 +365,7 @@ func isPeerDeleting(peer admin.BaseNetworkPeeringConnectionSettings) bool {
 	return peer.GetStatus() == StatusDeleting || peer.GetStatusName() == StatusDeleting || peer.GetStatusName() == StatusTerminating
 }
 
-func comparePeersPair(ctx context.Context, existedPeer, expectedPeer mdbv1.NetworkPeer, containerService admin.NetworkPeeringApi, groupID string) bool {
+func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.NetworkPeer, containerService admin.NetworkPeeringApi, groupID string) bool {
 	if expectedPeer.ProviderName == "" {
 		expectedPeer.ProviderName = provider.ProviderAWS
 	}
@@ -460,7 +460,7 @@ func awsRegionMatcher(regionName string) string {
 	return strings.ToUpper(result)
 }
 
-func createContainer(ctx context.Context, containerService admin.NetworkPeeringApi, groupID string, peer mdbv1.NetworkPeer, logger *zap.SugaredLogger) (string, error) {
+func createContainer(ctx context.Context, containerService admin.NetworkPeeringApi, groupID string, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (string, error) {
 	container := &admin.CloudProviderContainer{
 		AtlasCidrBlock: pointer.SetOrNil(peer.AtlasCIDRBlock, ""),
 		ProviderName:   pointer.SetOrNil(string(peer.ProviderName), ""),
@@ -505,7 +505,7 @@ func createContainer(ctx context.Context, containerService admin.NetworkPeeringA
 	return create.GetId(), nil
 }
 
-func createNetworkPeer(ctx context.Context, groupID string, service admin.NetworkPeeringApi, peer mdbv1.NetworkPeer, logger *zap.SugaredLogger) (*admin.BaseNetworkPeeringConnectionSettings, error) {
+func createNetworkPeer(ctx context.Context, groupID string, service admin.NetworkPeeringApi, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (*admin.BaseNetworkPeeringConnectionSettings, error) {
 	p, _, err := service.CreatePeeringConnection(ctx, groupID, peer.ToAtlasPeer()).Execute()
 	if err != nil {
 		logger.Errorf("failed to create network peer %v: %v", peer, err)
@@ -515,7 +515,7 @@ func createNetworkPeer(ctx context.Context, groupID string, service admin.Networ
 }
 
 // validateInitNetworkPeer is validation according https://www.mongodb.com/docs/atlas/reference/api/vpc-create-peering-connection/
-func validateInitNetworkPeer(peer mdbv1.NetworkPeer) error {
+func validateInitNetworkPeer(peer akov2.NetworkPeer) error {
 	if peer.ProviderName == "" {
 		peer.ProviderName = provider.ProviderAWS
 	}
@@ -590,12 +590,12 @@ func deleteAllNetworkPeers(ctx context.Context, groupID string, service admin.Ne
 	return nil
 }
 
-func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -628,7 +628,7 @@ func canNetworkPeeringReconcile(workflowCtx *workflow.Context, protected bool, a
 	return true, err
 }
 
-func areContainersEqual(operatorContainers []mdbv1.NetworkPeer, atlasContainers []mongodbatlas.Container) bool {
+func areContainersEqual(operatorContainers []akov2.NetworkPeer, atlasContainers []mongodbatlas.Container) bool {
 	if len(operatorContainers) != len(atlasContainers) {
 		return false
 	}
@@ -659,7 +659,7 @@ func areContainersEqual(operatorContainers []mdbv1.NetworkPeer, atlasContainers 
 	return len(atlasContainersIDs) == 0
 }
 
-func arePeersEqual(operatorPeers []mdbv1.NetworkPeer, atlasPeers []mongodbatlas.Peer) bool {
+func arePeersEqual(operatorPeers []akov2.NetworkPeer, atlasPeers []mongodbatlas.Peer) bool {
 	if len(operatorPeers) != len(atlasPeers) {
 		return false
 	}

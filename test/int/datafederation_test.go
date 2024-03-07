@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -29,8 +29,8 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 
 	var (
 		connectionSecret      corev1.Secret
-		createdProject        *mdbv1.AtlasProject
-		createdDataFederation *mdbv1.AtlasDataFederation
+		createdProject        *akov2.AtlasProject
+		createdDataFederation *akov2.AtlasDataFederation
 		manualDeletion        bool
 	)
 
@@ -52,7 +52,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
-		createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+		createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 		if DeploymentDevMode {
 			// While developing tests we need to reuse the same project
 			createdProject.Spec.Name = "dev-test atlas-project"
@@ -101,7 +101,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 	Describe("DataFederation can be created with stores and databases", func() {
 		It("Should Succeed", func() {
 			By("Creating a DataFederation instance with DB and STORE", func() {
-				createdDataFederation = mdbv1.NewDataFederationInstance(createdProject.Name, dataFederationInstanceName, namespace.Name)
+				createdDataFederation = akov2.NewDataFederationInstance(createdProject.Name, dataFederationInstanceName, namespace.Name)
 				Expect(k8sClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
@@ -114,20 +114,20 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 			})
 
 			By("Adding a new DB and STORE", func() {
-				df := &mdbv1.AtlasDataFederation{}
+				df := &akov2.AtlasDataFederation{}
 				Expect(k8sClient.Get(context.Background(), types.NamespacedName{
 					Namespace: namespace.Name,
 					Name:      dataFederationInstanceName,
 				}, df)).To(Succeed())
 
-				dfu := df.WithStorage(&mdbv1.Storage{
-					Databases: []mdbv1.Database{
+				dfu := df.WithStorage(&akov2.Storage{
+					Databases: []akov2.Database{
 						{
 							Name: "test-db-1",
-							Collections: []mdbv1.Collection{
+							Collections: []akov2.Collection{
 								{
 									Name: "test-collection-1",
-									DataSources: []mdbv1.DataSource{
+									DataSources: []akov2.DataSource{
 										{
 											StoreName: "http-test",
 											Urls: []string{
@@ -139,7 +139,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 							},
 						},
 					},
-					Stores: []mdbv1.Store{
+					Stores: []akov2.Store{
 						{
 							Name:     "http-test",
 							Provider: "http",
@@ -150,7 +150,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 			})
 
 			By("Checking the DataFederation is ready", func() {
-				df := &mdbv1.AtlasDataFederation{}
+				df := &akov2.AtlasDataFederation{}
 				Expect(k8sClient.Get(context.Background(), types.NamespacedName{
 					Namespace: namespace.Name,
 					Name:      dataFederationInstanceName,

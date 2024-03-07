@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -14,6 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 // WatchedObject is the  object watched by controller. Includes its type and namespace+name
@@ -77,12 +77,12 @@ func shouldHandleUpdate(e event.UpdateEvent) bool {
 		return !reflect.DeepEqual(v.Data, e.ObjectNew.(*corev1.ConfigMap).Data)
 	case *corev1.Secret:
 		return !reflect.DeepEqual(v.Data, e.ObjectNew.(*corev1.Secret).Data)
-	case *v1.AtlasTeam:
-		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasTeam).Spec)
-	case *v1.AtlasBackupSchedule:
-		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasBackupSchedule).Spec)
-	case *v1.AtlasBackupPolicy:
-		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*v1.AtlasBackupPolicy).Spec)
+	case *akov2.AtlasTeam:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*akov2.AtlasTeam).Spec)
+	case *akov2.AtlasBackupSchedule:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*akov2.AtlasBackupSchedule).Spec)
+	case *akov2.AtlasBackupPolicy:
+		return !reflect.DeepEqual(v.Spec, e.ObjectNew.(*akov2.AtlasBackupPolicy).Spec)
 	}
 	return true
 }

@@ -14,10 +14,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
+func DeploymentSpec(deploymentSpec *akov2.AtlasDeploymentSpec, isGov bool, regionUsageRestrictions string) error {
 	var err error
 
 	if allAreNil(deploymentSpec.ServerlessSpec, deploymentSpec.DeploymentSpec) {
@@ -54,7 +54,7 @@ func DeploymentSpec(deploymentSpec *mdbv1.AtlasDeploymentSpec, isGov bool, regio
 	return err
 }
 
-func deploymentForGov(deployment *mdbv1.AtlasDeploymentSpec, regionUsageRestrictions string) error {
+func deploymentForGov(deployment *akov2.AtlasDeploymentSpec, regionUsageRestrictions string) error {
 	var err error
 
 	if deployment.DeploymentSpec != nil {
@@ -71,7 +71,7 @@ func deploymentForGov(deployment *mdbv1.AtlasDeploymentSpec, regionUsageRestrict
 	return err
 }
 
-func Project(project *mdbv1.AtlasProject, isGov bool) error {
+func Project(project *akov2.AtlasProject, isGov bool) error {
 	if !isGov && project.Spec.RegionUsageRestrictions != "" && project.Spec.RegionUsageRestrictions != "NONE" {
 		return errors.New("regionUsageRestriction can be used only with Atlas for government")
 	}
@@ -99,7 +99,7 @@ func Project(project *mdbv1.AtlasProject, isGov bool) error {
 	return nil
 }
 
-func projectForGov(project *mdbv1.AtlasProject) error {
+func projectForGov(project *akov2.AtlasProject) error {
 	var err error
 
 	if len(project.Spec.NetworkPeers) > 0 {
@@ -180,11 +180,11 @@ func validCloudGovRegion(restriction, region string) error {
 	return nil
 }
 
-func DatabaseUser(_ *mdbv1.AtlasDatabaseUser) error {
+func DatabaseUser(_ *akov2.AtlasDatabaseUser) error {
 	return nil
 }
 
-func BackupSchedule(bSchedule *mdbv1.AtlasBackupSchedule, deployment *mdbv1.AtlasDeployment) error {
+func BackupSchedule(bSchedule *akov2.AtlasBackupSchedule, deployment *akov2.AtlasDeployment) error {
 	var err error
 
 	if bSchedule.Spec.Export == nil && bSchedule.Spec.AutoExportEnabled {
@@ -239,11 +239,11 @@ func moreThanOneIsNonNil(values ...interface{}) bool {
 	return getNonNilCount(values...) > 1
 }
 
-func instanceSizeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
+func instanceSizeForAdvancedDeployment(replicationSpecs []*akov2.AdvancedReplicationSpec) error {
 	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment")
 
 	instanceSize := ""
-	firstNonEmptySize := func(region *mdbv1.AdvancedRegionConfig) string {
+	firstNonEmptySize := func(region *akov2.AdvancedRegionConfig) string {
 		if instanceSize != "" {
 			return instanceSize
 		}
@@ -284,7 +284,7 @@ func instanceSizeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplica
 	return nil
 }
 
-func instanceSizeRangeForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
+func instanceSizeRangeForAdvancedDeployment(replicationSpecs []*akov2.AdvancedReplicationSpec) error {
 	var err error
 	for _, replicationSpec := range replicationSpecs {
 		for _, regionSpec := range replicationSpec.RegionConfigs {
@@ -354,8 +354,8 @@ func advancedInstanceSizeInRange(currentInstanceSize, minInstanceSize, maxInstan
 	return nil
 }
 
-func autoscalingForAdvancedDeployment(replicationSpecs []*mdbv1.AdvancedReplicationSpec) error {
-	var autoscaling *mdbv1.AdvancedAutoScalingSpec
+func autoscalingForAdvancedDeployment(replicationSpecs []*akov2.AdvancedReplicationSpec) error {
+	var autoscaling *akov2.AdvancedAutoScalingSpec
 	first := true
 
 	for _, replicationSpec := range replicationSpecs {
@@ -429,7 +429,7 @@ func projectIPAccessList(ipAccessList []project.IPAccessList) error {
 	return err
 }
 
-func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
+func projectCustomRoles(customRoles []akov2.CustomRole) error {
 	if len(customRoles) == 0 {
 		return nil
 	}
@@ -448,8 +448,8 @@ func projectCustomRoles(customRoles []mdbv1.CustomRole) error {
 	return err
 }
 
-func alertConfigs(alertConfigs []mdbv1.AlertConfiguration) error {
-	seenConfigs := []mdbv1.AlertConfiguration{}
+func alertConfigs(alertConfigs []akov2.AlertConfiguration) error {
+	seenConfigs := []akov2.AlertConfiguration{}
 	for j, cfg := range alertConfigs {
 		for i, seenCfg := range seenConfigs {
 			if reflect.DeepEqual(seenCfg, cfg) {

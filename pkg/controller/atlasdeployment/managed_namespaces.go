@@ -7,13 +7,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []mdbv1.ManagedNamespace, deploymentName string) workflow.Result {
-	if clusterType != string(mdbv1.TypeGeoSharded) && managedNamespace != nil {
+func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterType string, managedNamespace []akov2.ManagedNamespace, deploymentName string) workflow.Result {
+	if clusterType != string(akov2.TypeGeoSharded) && managedNamespace != nil {
 		return workflow.Terminate(workflow.ManagedNamespacesReady, "Managed namespace is only supported by GeoSharded clusters")
 	}
 
@@ -32,7 +32,7 @@ func EnsureManagedNamespaces(service *workflow.Context, groupID string, clusterT
 	return result
 }
 
-func syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []mdbv1.ManagedNamespace) workflow.Result {
+func syncManagedNamespaces(service *workflow.Context, groupID string, deploymentName string, managedNamespaces []akov2.ManagedNamespace) workflow.Result {
 	logger := service.Log
 	existingManagedNamespaces, _, err := GetGlobalDeploymentState(service.Context, service.Client.GlobalClusters, groupID, deploymentName)
 	logger.Debugf("Syncing managed namespaces %s", deploymentName)
@@ -65,7 +65,7 @@ func checkManagedNamespaceStatus(managedNamespaces []status.ManagedNamespace) wo
 	return workflow.OK()
 }
 
-func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []mdbv1.ManagedNamespace) NamespaceDiff {
+func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []akov2.ManagedNamespace) NamespaceDiff {
 	var result NamespaceDiff
 	for _, d := range desired {
 		found := false
@@ -97,7 +97,7 @@ func sortManagedNamespaces(existing []mongodbatlas.ManagedNamespace, desired []m
 	return result
 }
 
-func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desired mdbv1.ManagedNamespace) bool {
+func isManagedNamespaceStateMatch(existing mongodbatlas.ManagedNamespace, desired akov2.ManagedNamespace) bool {
 	if existing.Db == desired.Db &&
 		existing.Collection == desired.Collection &&
 		existing.CustomShardKey == desired.CustomShardKey &&

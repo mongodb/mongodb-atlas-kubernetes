@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -79,12 +79,12 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	It("Should be able to update existing Organization's federations settings", func() {
 		By("Creating a FederatedAuthConfig resource", func() {
 			atlasRoleMappings := originalConnectedOrgConfig.GetRoleMappings()
-			roles := make([]mdbv1.RoleMapping, 0, len(atlasRoleMappings))
+			roles := make([]akov2.RoleMapping, 0, len(atlasRoleMappings))
 			for i := range atlasRoleMappings {
 				atlasRole := atlasRoleMappings[i]
-				newRole := mdbv1.RoleMapping{
+				newRole := akov2.RoleMapping{
 					ExternalGroupName: atlasRole.ExternalGroupName,
-					RoleAssignments:   []mdbv1.RoleAssignment{},
+					RoleAssignments:   []akov2.RoleAssignment{},
 				}
 
 				atlasRoleAssignments := atlasRole.GetRoleAssignments()
@@ -94,7 +94,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 					Expect(err).NotTo(HaveOccurred())
 					Expect(project).NotTo(BeNil())
 
-					newRS := mdbv1.RoleAssignment{
+					newRS := akov2.RoleAssignment{
 						ProjectName: project.Name,
 						Role:        atlasRS.GetRole(),
 					}
@@ -103,12 +103,12 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 				roles = append(roles, newRole)
 			}
 
-			fedAuth := &mdbv1.AtlasFederatedAuth{
+			fedAuth := &akov2.AtlasFederatedAuth{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
 					Namespace: testNamespace.Name,
 				},
-				Spec: mdbv1.AtlasFederatedAuthSpec{
+				Spec: akov2.AtlasFederatedAuthSpec{
 					Enabled: true,
 					ConnectionSecretRef: common.ResourceRefNamespaced{
 						Name:      connectionSecret.Name,
@@ -127,14 +127,14 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 		By("Federated Auth is ready", func() {
 			Eventually(func(g Gomega) {
-				fedAuth := &mdbv1.AtlasFederatedAuth{}
+				fedAuth := &akov2.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 
 		By("Set initial config back", func() {
-			fedAuth := &mdbv1.AtlasFederatedAuth{}
+			fedAuth := &akov2.AtlasFederatedAuth{}
 			Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 
 			fedAuth.Spec.DomainAllowList = append(originalConnectedOrgConfig.GetDomainAllowList(), "mongodb.com")
@@ -147,7 +147,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 		By("Federated Auth is ready", func() {
 			Eventually(func(g Gomega) {
-				fedAuth := &mdbv1.AtlasFederatedAuth{}
+				fedAuth := &akov2.AtlasFederatedAuth{}
 				g.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: resourceName, Namespace: testNamespace.Name}, fedAuth)).To(Succeed())
 				g.Expect(resources.CheckCondition(k8sClient, fedAuth, status.TrueCondition(status.ReadyType))).To(BeTrue())
 			}).WithTimeout(10 * time.Minute).WithPolling(PollingInterval).Should(Succeed())

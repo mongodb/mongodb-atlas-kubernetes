@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -27,7 +27,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		var testNamespace *corev1.Namespace
 		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
-		var testProject *mdbv1.AtlasProject
+		var testProject *akov2.AtlasProject
 
 		BeforeAll(func() {
 			By("Starting the operator with protection ON", func() {
@@ -42,7 +42,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 			})
 
 			By("Creating a project with deletion annotation", func() {
-				testProject = mdbv1.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+				testProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 				customresource.SetAnnotation( // this test project must be deleted
 					testProject,
 					customresource.ResourcePolicyAnnotation,
@@ -78,7 +78,7 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		It("removing advanced cluster from Kubernetes when protection is ON leaves it in Atlas",
 			Label("preserving-advanced-cluster"),
 			func() {
-				testDeployment := mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
+				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
@@ -86,14 +86,14 @@ var _ = Describe("AtlasDeployment Deletion Protected",
 		It("removing serverless instance from Kubernetes when protection is ON leaves it in Atlas",
 			Label("preserving-serverless-instance"),
 			func() {
-				testDeployment := mdbv1.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
+				testDeployment := akov2.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
 				preserveDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
 	},
 )
 
-func preserveDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDeployment *mdbv1.AtlasDeployment) {
+func preserveDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDeployment *akov2.AtlasDeployment) {
 	By("Creating deployment in Kubernetes", func() {
 		Expect(k8sClient.Create(context.Background(), testDeployment, &client.CreateOptions{})).To(Succeed())
 	})
@@ -107,7 +107,7 @@ func preserveDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDepl
 	By("Deleting the deployment from Kubernetes", func() {
 		Expect(k8sClient.Delete(context.Background(), testDeployment, &client.DeleteOptions{})).To(Succeed())
 		Eventually(func() bool {
-			deployment := mdbv1.AtlasDeployment{}
+			deployment := akov2.AtlasDeployment{}
 			err := k8sClient.Get(context.Background(), kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
 			return k8serrors.IsNotFound(err)
 		}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())

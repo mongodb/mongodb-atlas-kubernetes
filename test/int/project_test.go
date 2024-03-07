@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -38,13 +38,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 	var (
 		connectionSecret corev1.Secret
-		createdProject   *mdbv1.AtlasProject
+		createdProject   *akov2.AtlasProject
 	)
 
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		createdProject = &mdbv1.AtlasProject{}
+		createdProject = &akov2.AtlasProject{}
 
 		connectionSecret = buildConnectionSecret("my-atlas-key")
 		By(fmt.Sprintf("Creating the Secret %s", kube.ObjectKeyFromObject(&connectionSecret)))
@@ -99,7 +99,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 	Describe("Creating the project", func() {
 		It("Should Succeed", func() {
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -121,7 +121,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Succeed with previous version of the operator", func() {
 			version.Version = "1.0.0"
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
 				customresource.ResourceVersion: "0.0.1",
 			})
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
@@ -143,7 +143,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Succeed with current version of the operator", func() {
 			version.Version = "1.0.0"
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
 				customresource.ResourceVersion: version.Version,
 			})
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
@@ -165,7 +165,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Fail with newer version of the operator", func() {
 			version.Version = "1.0.0"
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
 				customresource.ResourceVersion: "2.3.0",
 			})
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
@@ -186,7 +186,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Succeed with newer version of the operator and the override label", func() {
 			version.Version = "1.0.0"
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithLabels(map[string]string{
 				customresource.ResourceVersion: "2.3.0",
 			}).WithAnnotations(map[string]string{
 				customresource.ResourceVersionOverride: customresource.ResourceVersionAllow,
@@ -209,7 +209,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			events.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
 		})
 		It("Should fail if Secret is wrong", func() {
-			expectedProject := mdbv1.DefaultProject(namespace.Name, "non-existent-secret")
+			expectedProject := akov2.DefaultProject(namespace.Name, "non-existent-secret")
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -242,7 +242,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	Describe("Deleting the project (not cleaning Atlas)", func() {
 		It("Should Succeed", func() {
 			By(`Creating the project with retention policy "keep" first`, func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name)
 				createdProject.ObjectMeta.Annotations = map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep}
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -266,7 +266,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	Describe("Deleting the project twice", func() {
 		It("Should Succeed", func() {
 			By(`Creating the project`, func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
 				Eventually(func() bool {
@@ -289,7 +289,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			const totalProject = 10
 			var wg sync.WaitGroup
 			wg.Add(totalProject)
-			createdProjects := make([]*mdbv1.AtlasProject, totalProject)
+			createdProjects := make([]*akov2.AtlasProject, totalProject)
 			projectPrefix := fmt.Sprintf("project-%s", namespace.Name)
 
 			By("Creating global key", func() {
@@ -304,7 +304,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					projectName := fmt.Sprintf("%s-%v", projectPrefix, i)
 
 					By(fmt.Sprintf("Creating several projects: %s", projectName))
-					createdProjects[i] = mdbv1.DefaultProject(namespace.Name, "").WithAtlasName(projectName).WithName(projectName)
+					createdProjects[i] = akov2.DefaultProject(namespace.Name, "").WithAtlasName(projectName).WithName(projectName)
 					Expect(k8sClient.Create(context.Background(), createdProjects[i])).ShouldNot(HaveOccurred())
 					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
 
@@ -336,7 +336,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		It("Should Succeed", func() {
 			By("Creating the project first")
 
-			expectedProject := mdbv1.DefaultProject(namespace.Name, connectionSecret.Name)
+			expectedProject := akov2.DefaultProject(namespace.Name, connectionSecret.Name)
 			createdProject.ObjectMeta = expectedProject.ObjectMeta
 			Expect(k8sClient.Create(context.Background(), expectedProject)).ToNot(HaveOccurred())
 
@@ -372,13 +372,13 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	})
 
 	Describe("Two projects watching the Connection Secret", func() {
-		var secondProject *mdbv1.AtlasProject
+		var secondProject *akov2.AtlasProject
 		It("Should Succeed", func() {
 			By("Creating two projects first", func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("first-project")
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithName("first-project")
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
-				secondProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
+				secondProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithName("second-project").WithAtlasName("second-project")
 				Expect(k8sClient.Create(context.Background(), secondProject)).ToNot(HaveOccurred())
 
 				Eventually(func() bool {
@@ -394,11 +394,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				connectionSecret.StringData["publicApiKey"] = "non-existing"
 				Expect(k8sClient.Update(context.Background(), &connectionSecret)).To(Succeed())
 
-				Eventually(updateK8sObject[*mdbv1.AtlasProject](createdProject, func(createdProject *mdbv1.AtlasProject) {
+				Eventually(updateK8sObject[*akov2.AtlasProject](createdProject, func(createdProject *akov2.AtlasProject) {
 					createdProject.Spec.AlertConfigurationSyncEnabled = true
 				})).WithPolling(interval).WithTimeout(20 * time.Second).Should(BeTrue())
 
-				Eventually(updateK8sObject[*mdbv1.AtlasProject](secondProject, func(secondProject *mdbv1.AtlasProject) {
+				Eventually(updateK8sObject[*akov2.AtlasProject](secondProject, func(secondProject *akov2.AtlasProject) {
 					secondProject.Spec.AlertConfigurationSyncEnabled = true
 				})).WithPolling(interval).WithTimeout(20 * time.Second).Should(BeTrue())
 
@@ -434,7 +434,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 	Describe("Creating the project IP access list", func() {
 		It("Should Succeed (single)", func() {
-			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+			createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithIP("192.0.2.15"))
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -448,7 +448,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Succeed (multiple)", func() {
 			tenHoursLater := time.Now().Add(time.Hour * 10).Format("2006-01-02T15:04:05-0700")
-			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+			createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithCIDR("203.0.113.0/24").WithDeleteAfterDate(tenHoursLater)).
 				WithIPAccessList(project.NewIPAccessList().WithComment("foo").WithIP("192.0.2.20"))
 
@@ -467,7 +467,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			expiredList := project.IPAccessList{Comment: "bla", CIDRBlock: "203.0.113.0/24", DeleteAfterDate: tenHoursBefore}
 			activeList := project.IPAccessList{Comment: "foo", IPAddress: "192.0.2.20"}
 
-			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(expiredList).WithIPAccessList(activeList)
+			createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).WithIPAccessList(expiredList).WithIPAccessList(activeList)
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -488,7 +488,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(list.GetResults()[0]).To(access.MatchIPAccessList(activeList))
 		})
 		It("Should Fail (AWS security group not supported without VPC)", func() {
-			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+			createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().WithAWSGroup("sg-0026348ec11780bd1"))
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
@@ -517,7 +517,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
 				tenMinutesLater := time.Now().Add(time.Minute * 10).Format("2006-01-02T15:04:05-0700")
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 					WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithIP("192.0.2.15").WithDeleteAfterDate(tenMinutesLater))
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
@@ -545,7 +545,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		It("Should Succeed (multiple)", func() {
 			By("Creating the project first", func() {
 				thirtyHoursLater := time.Now().Add(time.Hour * 30).Format("2006-01-02T15:04:05-0700")
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 					WithIPAccessList(project.NewIPAccessList().WithComment("bla").WithCIDR("203.0.113.0/24").WithDeleteAfterDate(thirtyHoursLater)).
 					WithIPAccessList(project.NewIPAccessList().WithComment("foo").WithIP("192.0.2.20"))
 
@@ -578,7 +578,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	Describe("Updating the project Maintenance Window", func() {
 		It("Should Succeed (single)", func() {
 			By("Creating the project first", func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+				createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 					WithMaintenanceWindow(project.NewMaintenanceWindow().WithDay(2).WithHour(2).WithAutoDefer(false))
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
@@ -620,7 +620,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
 
 			// We don't specify the connection Secret per project - the global one must be used
-			createdProject = mdbv1.DefaultProject(namespace.Name, "")
+			createdProject = akov2.DefaultProject(namespace.Name, "")
 
 			Expect(k8sClient.Create(context.Background(), createdProject)).To(Succeed())
 
@@ -638,7 +638,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 		})
 		It("Should Fail if the global Secret doesn't exist", func() {
 			By("Creating without a global Secret", func() {
-				createdProject = mdbv1.DefaultProject(namespace.Name, "").WithName("project-no-secret")
+				createdProject = akov2.DefaultProject(namespace.Name, "").WithName("project-no-secret")
 
 				Expect(k8sClient.Create(context.Background(), createdProject)).ToNot(HaveOccurred())
 
@@ -697,9 +697,9 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 
 // validateNoErrorsIPAccessListDuringCreate performs check that no problems happen to IP Access list during the creation.
 // This allows the test to fail fast instead by timeout if there are any troubles.
-func validateNoErrorsIPAccessListDuringCreate(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsIPAccessListDuringCreate(g Gomega) func(a akov2.AtlasCustomResource) {
+	return func(a akov2.AtlasCustomResource) {
+		c := a.(*akov2.AtlasProject)
 
 		if condition, ok := conditions.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType); ok {
 			g.Expect(condition.Status).To(Equal(status.TrueCondition(status.IPAccessListReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
@@ -708,9 +708,9 @@ func validateNoErrorsIPAccessListDuringCreate(g Gomega) func(a mdbv1.AtlasCustom
 }
 
 // validateNoErrorsIPAccessListDuringUpdate performs check that no problems happen to IP Access list during the update.
-func validateNoErrorsIPAccessListDuringUpdate(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsIPAccessListDuringUpdate(g Gomega) func(a akov2.AtlasCustomResource) {
+	return func(a akov2.AtlasCustomResource) {
+		c := a.(*akov2.AtlasProject)
 		condition, ok := conditions.FindConditionByType(c.Status.Conditions, status.IPAccessListReadyType)
 		g.Expect(ok).To(BeTrue())
 		g.Expect(condition.Reason).To(BeEmpty())
@@ -719,9 +719,9 @@ func validateNoErrorsIPAccessListDuringUpdate(g Gomega) func(a mdbv1.AtlasCustom
 
 // validateNoErrorsMaintenanceWindowDuringCreate performs check that no problems happen to Maintenance Window during the creation.
 // This allows the test to fail fast instead by timeout if there are any troubles.
-func validateNoErrorsMaintenanceWindowDuringCreate(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsMaintenanceWindowDuringCreate(g Gomega) func(a akov2.AtlasCustomResource) {
+	return func(a akov2.AtlasCustomResource) {
+		c := a.(*akov2.AtlasProject)
 
 		if condition, ok := conditions.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType); ok {
 			g.Expect(condition.Status).To(Equal(status.TrueCondition(status.MaintenanceWindowReadyType).Status), fmt.Sprintf("Unexpected condition: %v", condition))
@@ -730,9 +730,9 @@ func validateNoErrorsMaintenanceWindowDuringCreate(g Gomega) func(a mdbv1.AtlasC
 }
 
 // validateNoErrorsMaintenanceWindowDuringUpdate performs check that no problems happen to Maintenance Window during the update.
-func validateNoErrorsMaintenanceWindowDuringUpdate(g Gomega) func(a mdbv1.AtlasCustomResource) {
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasProject)
+func validateNoErrorsMaintenanceWindowDuringUpdate(g Gomega) func(a akov2.AtlasCustomResource) {
+	return func(a akov2.AtlasCustomResource) {
+		c := a.(*akov2.AtlasProject)
 		condition, ok := conditions.FindConditionByType(c.Status.Conditions, status.MaintenanceWindowReadyType)
 		g.Expect(ok).To(BeTrue())
 		g.Expect(condition.Reason).To(BeEmpty())

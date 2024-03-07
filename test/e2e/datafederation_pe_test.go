@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -78,7 +78,7 @@ var _ = Describe("UserLogin", Label("datafederation"), func() {
 })
 
 func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requstedPE []privateEndpoint) {
-	var createdDataFederation *v1.AtlasDataFederation
+	var createdDataFederation *akov2.AtlasDataFederation
 	const dataFederationInstanceName = "test-data-federation-aws"
 
 	By("Create Private Link and the rest users resources", func() {
@@ -86,7 +86,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, pe := range requstedPE {
 			userData.Project.Spec.PrivateEndpoints = append(userData.Project.Spec.PrivateEndpoints,
-				v1.PrivateEndpoint{
+				akov2.PrivateEndpoint{
 					Provider: pe.provider,
 					Region:   pe.region,
 				})
@@ -164,12 +164,12 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 					peItem.EndpointGroupName = pe.EndpointGroupName
 
 					if len(pe.Endpoints) > 0 {
-						peItem.Endpoints = make([]v1.GCPEndpoint, 0, len(pe.Endpoints))
+						peItem.Endpoints = make([]akov2.GCPEndpoint, 0, len(pe.Endpoints))
 
 						for _, ep := range pe.Endpoints {
 							peItem.Endpoints = append(
 								peItem.Endpoints,
-								v1.GCPEndpoint{
+								akov2.GCPEndpoint{
 									EndpointName: ep.Name,
 									IPAddress:    ep.IP,
 								},
@@ -200,7 +200,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 
 	By("Creating DataFederation with a PrivateEndpoint", func() {
 		peData := userData.Project.Status.PrivateEndpoints[0]
-		createdDataFederation = v1.NewDataFederationInstance(
+		createdDataFederation = akov2.NewDataFederationInstance(
 			userData.Project.Name,
 			dataFederationInstanceName,
 			userData.Project.Namespace).WithPrivateEndpoint(GetPrivateEndpointID(peData), "AWS", "DATA_LAKE")
@@ -216,7 +216,7 @@ func dataFederationFlow(userData *model.TestDataProvider, providerAction cloud.P
 	})
 
 	By("Checking the DataFederation is ready", func() {
-		df := &v1.AtlasDataFederation{}
+		df := &akov2.AtlasDataFederation{}
 		Expect(userData.K8SClient.Get(context.Background(), types.NamespacedName{
 			Namespace: userData.Project.Namespace,
 			Name:      dataFederationInstanceName,

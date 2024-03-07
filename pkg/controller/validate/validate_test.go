@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -14,24 +14,24 @@ import (
 func TestClusterValidation(t *testing.T) {
 	t.Run("Invalid cluster specs", func(t *testing.T) {
 		t.Run("Multiple specs specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, ServerlessSpec: &mdbv1.ServerlessSpec{}}
+			spec := akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{}, ServerlessSpec: &akov2.ServerlessSpec{}}
 			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("No specs specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: nil}
+			spec := akov2.AtlasDeploymentSpec{DeploymentSpec: nil}
 			assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("different instance sizes for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in the same region", func(t *testing.T) {
-				spec := mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+				spec := akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M20"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M20"},
 									},
 								},
 							},
@@ -41,20 +41,20 @@ func TestClusterValidation(t *testing.T) {
 				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different instance size in different regions", func(t *testing.T) {
-				spec := mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+				spec := akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M20"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M20"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 								},
 							},
@@ -64,24 +64,24 @@ func TestClusterValidation(t *testing.T) {
 				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different instance size in different replications", func(t *testing.T) {
-				spec := mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+				spec := akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 								},
 							},
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M20"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M20"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 								},
 							},
@@ -93,17 +93,17 @@ func TestClusterValidation(t *testing.T) {
 		})
 		t.Run("different autoscaling for advanced deployment", func(t *testing.T) {
 			t.Run("different instance size in different regions", func(t *testing.T) {
-				spec := mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+				spec := akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-											Compute: &mdbv1.ComputeSpec{
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											Compute: &akov2.ComputeSpec{
 												Enabled:          pointer.MakePtr(true),
 												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M10",
@@ -112,9 +112,9 @@ func TestClusterValidation(t *testing.T) {
 										},
 									},
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 								},
 							},
@@ -124,17 +124,17 @@ func TestClusterValidation(t *testing.T) {
 				assert.Error(t, DeploymentSpec(&spec, false, "NONE"))
 			})
 			t.Run("different autoscaling in different replications", func(t *testing.T) {
-				spec := mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+				spec := akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-											Compute: &mdbv1.ComputeSpec{
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											Compute: &akov2.ComputeSpec{
 												Enabled:          pointer.MakePtr(true),
 												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M10",
@@ -145,11 +145,11 @@ func TestClusterValidation(t *testing.T) {
 								},
 							},
 							{
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{InstanceSize: "M20"},
-										ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-										AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
+										ElectableSpecs: &akov2.Specs{InstanceSize: "M20"},
+										ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+										AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
 									},
 								},
 							},
@@ -162,22 +162,22 @@ func TestClusterValidation(t *testing.T) {
 	})
 	t.Run("Valid cluster specs", func(t *testing.T) {
 		t.Run("Advanced cluster spec specified", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{}, ServerlessSpec: nil}
+			spec := akov2.AtlasDeploymentSpec{DeploymentSpec: &akov2.AdvancedDeploymentSpec{}, ServerlessSpec: nil}
 			assert.NoError(t, DeploymentSpec(&spec, false, "NONE"))
 			assert.Nil(t, DeploymentSpec(&spec, false, "NONE"))
 		})
 		t.Run("Advanced cluster with replication config", func(t *testing.T) {
-			spec := mdbv1.AtlasDeploymentSpec{
-				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-					ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			spec := akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
-							RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
 								{
-									ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-									ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-										Compute: &mdbv1.ComputeSpec{
+									ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+									ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+									AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
 											Enabled:          pointer.MakePtr(true),
 											ScaleDownEnabled: pointer.MakePtr(true),
 											MinInstanceSize:  "M10",
@@ -188,13 +188,13 @@ func TestClusterValidation(t *testing.T) {
 							},
 						},
 						{
-							RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
 								{
-									ElectableSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-									ReadOnlySpecs:  &mdbv1.Specs{InstanceSize: "M10"},
-									AnalyticsSpecs: &mdbv1.Specs{InstanceSize: "M10"},
-									AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-										Compute: &mdbv1.ComputeSpec{
+									ElectableSpecs: &akov2.Specs{InstanceSize: "M10"},
+									ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M10"},
+									AnalyticsSpecs: &akov2.Specs{InstanceSize: "M10"},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										Compute: &akov2.ComputeSpec{
 											Enabled:          pointer.MakePtr(true),
 											ScaleDownEnabled: pointer.MakePtr(true),
 											MinInstanceSize:  "M10",
@@ -215,13 +215,13 @@ func TestClusterValidation(t *testing.T) {
 
 func TestDeploymentForGov(t *testing.T) {
 	t.Run("should fail when deployment is configured to non-gov region", func(t *testing.T) {
-		deploy := mdbv1.AtlasDeploymentSpec{
-			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+		deploy := akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName:  "Zone EU",
 						NumShards: 1,
-						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
 								RegionName: "EU_EAST_1",
 							},
@@ -235,11 +235,11 @@ func TestDeploymentForGov(t *testing.T) {
 	})
 
 	t.Run("should fail when advanced deployment is configured to non-gov region", func(t *testing.T) {
-		deploy := mdbv1.AtlasDeploymentSpec{
-			DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
-				ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+		deploy := akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
-						RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
 								RegionName: "EU_EAST_1",
 							},
@@ -255,8 +255,8 @@ func TestDeploymentForGov(t *testing.T) {
 
 func TestProjectValidation(t *testing.T) {
 	t.Run("should fail when commercial Atlas sets region restriction field to GOV_REGIONS_ONLY", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
 			},
 		}
@@ -265,8 +265,8 @@ func TestProjectValidation(t *testing.T) {
 	})
 
 	t.Run("should fail when commercial Atlas sets region restriction field to COMMERCIAL_FEDRAMP_REGIONS_ONLY", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "COMMERCIAL_FEDRAMP_REGIONS_ONLY",
 			},
 		}
@@ -275,16 +275,16 @@ func TestProjectValidation(t *testing.T) {
 	})
 
 	t.Run("should not fail if commercial Atlas sets region restriction field to empty", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{},
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{},
 		}
 
 		assert.NoError(t, Project(akoProject, false))
 	})
 
 	t.Run("should not fail if commercial Atlas sets region restriction field to NONE", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "NONE",
 			},
 		}
@@ -294,15 +294,15 @@ func TestProjectValidation(t *testing.T) {
 
 	t.Run("custom roles spec", func(t *testing.T) {
 		t.Run("empty custom roles spec", func(t *testing.T) {
-			spec := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{},
+			spec := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{},
 			}
 			assert.NoError(t, Project(spec, false))
 		})
 		t.Run("valid custom roles spec", func(t *testing.T) {
-			spec := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					CustomRoles: []mdbv1.CustomRole{
+			spec := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					CustomRoles: []akov2.CustomRole{
 						{
 							Name: "cr-1",
 						},
@@ -318,9 +318,9 @@ func TestProjectValidation(t *testing.T) {
 			assert.NoError(t, Project(spec, false))
 		})
 		t.Run("invalid custom roles spec", func(t *testing.T) {
-			spec := &mdbv1.AtlasProject{
-				Spec: mdbv1.AtlasProjectSpec{
-					CustomRoles: []mdbv1.CustomRole{
+			spec := &akov2.AtlasProject{
+				Spec: akov2.AtlasProjectSpec{
+					CustomRoles: []akov2.CustomRole{
 						{
 							Name: "cr-1",
 						},
@@ -346,10 +346,10 @@ func TestProjectValidation(t *testing.T) {
 
 func TestProjectForGov(t *testing.T) {
 	t.Run("should fail if there's non AWS network peering config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				NetworkPeers: []mdbv1.NetworkPeer{
+				NetworkPeers: []akov2.NetworkPeer{
 					{
 						ProviderName:        "GCP",
 						AccepterRegionName:  "europe-west-1",
@@ -366,10 +366,10 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's no gov region in network peering config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				NetworkPeers: []mdbv1.NetworkPeer{
+				NetworkPeers: []akov2.NetworkPeer{
 					{
 						ProviderName:        "AWS",
 						AccepterRegionName:  "us-east-1",
@@ -385,11 +385,11 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's a GCP encryption at rest config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					GoogleCloudKms: mdbv1.GoogleCloudKms{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					GoogleCloudKms: akov2.GoogleCloudKms{
 						Enabled: pointer.MakePtr(true),
 					},
 				},
@@ -400,11 +400,11 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's a Azure encryption at rest config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AzureKeyVault: mdbv1.AzureKeyVault{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AzureKeyVault: akov2.AzureKeyVault{
 						Enabled: pointer.MakePtr(true),
 					},
 				},
@@ -415,11 +415,11 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's a AWS encryption at rest config with wrong region", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "us-east-1",
 					},
@@ -431,10 +431,10 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's non AWS private endpoint config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: "GCP",
 						Region:   "europe-west-1",
@@ -447,10 +447,10 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should fail if there's no gov region in private endpoint config", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "COMMERCIAL_FEDRAMP_REGIONS_ONLY",
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: "AWS",
 						Region:   "eu-east-1",
@@ -463,10 +463,10 @@ func TestProjectForGov(t *testing.T) {
 	})
 
 	t.Run("should succeed if resources are properly configured", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				RegionUsageRestrictions: "GOV_REGIONS_ONLY",
-				NetworkPeers: []mdbv1.NetworkPeer{
+				NetworkPeers: []akov2.NetworkPeer{
 					{
 						ProviderName:        "AWS",
 						AccepterRegionName:  "us-gov-east-1",
@@ -475,13 +475,13 @@ func TestProjectForGov(t *testing.T) {
 						AtlasCIDRBlock:      "10.8.0.0/22",
 					},
 				},
-				EncryptionAtRest: &mdbv1.EncryptionAtRest{
-					AwsKms: mdbv1.AwsKms{
+				EncryptionAtRest: &akov2.EncryptionAtRest{
+					AwsKms: akov2.AwsKms{
 						Enabled: pointer.MakePtr(true),
 						Region:  "us-gov-east-1",
 					},
 				},
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: "AWS",
 						Region:   "us-gov-east-1",
@@ -496,21 +496,21 @@ func TestProjectForGov(t *testing.T) {
 
 func TestBackupScheduleValidation(t *testing.T) {
 	t.Run("auto export is enabled without export policy", func(t *testing.T) {
-		bSchedule := &mdbv1.AtlasBackupSchedule{
-			Spec: mdbv1.AtlasBackupScheduleSpec{
+		bSchedule := &akov2.AtlasBackupSchedule{
+			Spec: akov2.AtlasBackupScheduleSpec{
 				AutoExportEnabled: true,
 			},
 		}
-		deployment := &mdbv1.AtlasDeployment{
+		deployment := &akov2.AtlasDeployment{
 			Status: status.AtlasDeploymentStatus{},
 		}
 		assert.Error(t, BackupSchedule(bSchedule, deployment))
 	})
 
 	t.Run("copy setting is set but replica-set id is not available", func(t *testing.T) {
-		bSchedule := &mdbv1.AtlasBackupSchedule{
-			Spec: mdbv1.AtlasBackupScheduleSpec{
-				CopySettings: []mdbv1.CopySetting{
+		bSchedule := &akov2.AtlasBackupSchedule{
+			Spec: akov2.AtlasBackupScheduleSpec{
+				CopySettings: []akov2.CopySetting{
 					{
 						RegionName:       pointer.MakePtr("US_WEST_1"),
 						CloudProvider:    pointer.MakePtr("AWS"),
@@ -520,9 +520,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 				},
 			},
 		}
-		deployment := &mdbv1.AtlasDeployment{
-			Spec: mdbv1.AtlasDeploymentSpec{
-				DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+		deployment := &akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					PitEnabled: pointer.MakePtr(true),
 				},
 			},
@@ -532,9 +532,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 
 	t.Run("copy settings on advanced deployment", func(t *testing.T) {
 		t.Run("copy settings is valid", func(t *testing.T) {
-			bSchedule := &mdbv1.AtlasBackupSchedule{
-				Spec: mdbv1.AtlasBackupScheduleSpec{
-					CopySettings: []mdbv1.CopySetting{
+			bSchedule := &akov2.AtlasBackupSchedule{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					CopySettings: []akov2.CopySetting{
 						{
 							RegionName:       pointer.MakePtr("US_WEST_1"),
 							CloudProvider:    pointer.MakePtr("AWS"),
@@ -544,9 +544,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 					},
 				},
 			}
-			deployment := &mdbv1.AtlasDeployment{
-				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+			deployment := &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						PitEnabled: pointer.MakePtr(true),
 					},
 				},
@@ -563,9 +563,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 		})
 
 		t.Run("copy settings is invalid", func(t *testing.T) {
-			bSchedule := &mdbv1.AtlasBackupSchedule{
-				Spec: mdbv1.AtlasBackupScheduleSpec{
-					CopySettings: []mdbv1.CopySetting{
+			bSchedule := &akov2.AtlasBackupSchedule{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					CopySettings: []akov2.CopySetting{
 						{
 							ShouldCopyOplogs: pointer.MakePtr(true),
 						},
@@ -575,9 +575,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 					},
 				},
 			}
-			deployment := &mdbv1.AtlasDeployment{
-				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
+			deployment := &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
 				},
 				Status: status.AtlasDeploymentStatus{
 					ReplicaSets: []status.ReplicaSet{
@@ -594,9 +594,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 
 	t.Run("copy settings on legacy deployment", func(t *testing.T) {
 		t.Run("copy settings is valid", func(t *testing.T) {
-			bSchedule := &mdbv1.AtlasBackupSchedule{
-				Spec: mdbv1.AtlasBackupScheduleSpec{
-					CopySettings: []mdbv1.CopySetting{
+			bSchedule := &akov2.AtlasBackupSchedule{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					CopySettings: []akov2.CopySetting{
 						{
 							RegionName:       pointer.MakePtr("US_WEST_1"),
 							CloudProvider:    pointer.MakePtr("AWS"),
@@ -606,9 +606,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 					},
 				},
 			}
-			deployment := &mdbv1.AtlasDeployment{
-				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+			deployment := &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						PitEnabled: pointer.MakePtr(true),
 					},
 				},
@@ -625,9 +625,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 		})
 
 		t.Run("copy settings is invalid", func(t *testing.T) {
-			bSchedule := &mdbv1.AtlasBackupSchedule{
-				Spec: mdbv1.AtlasBackupScheduleSpec{
-					CopySettings: []mdbv1.CopySetting{
+			bSchedule := &akov2.AtlasBackupSchedule{
+				Spec: akov2.AtlasBackupScheduleSpec{
+					CopySettings: []akov2.CopySetting{
 						{
 							ShouldCopyOplogs: pointer.MakePtr(true),
 						},
@@ -637,9 +637,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 					},
 				},
 			}
-			deployment := &mdbv1.AtlasDeployment{
-				Spec: mdbv1.AtlasDeploymentSpec{
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{},
+			deployment := &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
 				},
 				Status: status.AtlasDeploymentStatus{
 					ReplicaSets: []status.ReplicaSet{
@@ -755,9 +755,9 @@ func TestProjectIpAccessList(t *testing.T) {
 
 func TestProjectAlertConfigs(t *testing.T) {
 	t.Run("should not fail on duplications when alert config is disabled", func(t *testing.T) {
-		prj := mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				AlertConfigurations: []mdbv1.AlertConfiguration{
+		prj := akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				AlertConfigurations: []akov2.AlertConfiguration{
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 				},
@@ -768,9 +768,9 @@ func TestProjectAlertConfigs(t *testing.T) {
 	})
 
 	t.Run("should fail on duplications when alert config is enabled", func(t *testing.T) {
-		prj := mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				AlertConfigurations: []mdbv1.AlertConfiguration{
+		prj := akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				AlertConfigurations: []akov2.AlertConfiguration{
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 				},
@@ -782,9 +782,9 @@ func TestProjectAlertConfigs(t *testing.T) {
 	})
 
 	t.Run("should fail on first duplication in when alert config is enabled", func(t *testing.T) {
-		prj := mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				AlertConfigurations: []mdbv1.AlertConfiguration{
+		prj := akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				AlertConfigurations: []akov2.AlertConfiguration{
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 					sampleAlertConfig("JOINED_GROUP"),
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
@@ -798,9 +798,9 @@ func TestProjectAlertConfigs(t *testing.T) {
 	})
 
 	t.Run("should succeed on absence of duplications in when alert config is enabled", func(t *testing.T) {
-		prj := mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				AlertConfigurations: []mdbv1.AlertConfiguration{
+		prj := akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				AlertConfigurations: []akov2.AlertConfiguration{
 					sampleAlertConfig("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 					sampleAlertConfig("JOINED_GROUP"),
 					sampleAlertConfig("invented_event_3"),
@@ -813,16 +813,16 @@ func TestProjectAlertConfigs(t *testing.T) {
 	})
 }
 
-func sampleAlertConfig(typeName string) mdbv1.AlertConfiguration {
-	return mdbv1.AlertConfiguration{
+func sampleAlertConfig(typeName string) akov2.AlertConfiguration {
+	return akov2.AlertConfiguration{
 		EventTypeName: typeName,
 		Enabled:       true,
-		Threshold: &mdbv1.Threshold{
+		Threshold: &akov2.Threshold{
 			Operator:  "LESS_THAN",
 			Threshold: "1",
 			Units:     "HOURS",
 		},
-		Notifications: []mdbv1.Notification{
+		Notifications: []akov2.Notification{
 			{
 				IntervalMin:  5,
 				DelayMin:     pointer.MakePtr(5),
@@ -839,19 +839,19 @@ func sampleAlertConfig(typeName string) mdbv1.AlertConfiguration {
 
 func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 	t.Run("should succeed when instance size are the same for all node types", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(0),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
@@ -864,19 +864,19 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should fail when instance size are different between node types", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(0),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M20",
 							NodeCount:    pointer.MakePtr(1),
 						},
@@ -889,29 +889,29 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should fail when instance size are different across regions", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(0),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
 					},
 					{
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M20",
 							NodeCount:    pointer.MakePtr(0),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M20",
 							NodeCount:    pointer.MakePtr(1),
 						},
@@ -926,19 +926,19 @@ func TestInstanceSizeForAdvancedDeployment(t *testing.T) {
 
 func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 	t.Run("should succeed when region has no autoscaling config", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
@@ -951,24 +951,24 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should succeed when instance size is with autoscaling range", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							Compute: &mdbv1.ComputeSpec{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
@@ -984,24 +984,24 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should fail when instance size is below autoscaling range", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M10",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							Compute: &mdbv1.ComputeSpec{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M20",
@@ -1017,24 +1017,24 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should fail when instance size is above autoscaling range", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						ElectableSpecs: &mdbv1.Specs{
+						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M40",
 							NodeCount:    pointer.MakePtr(3),
 						},
-						ReadOnlySpecs: &mdbv1.Specs{
+						ReadOnlySpecs: &akov2.Specs{
 							InstanceSize: "M40",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AnalyticsSpecs: &mdbv1.Specs{
+						AnalyticsSpecs: &akov2.Specs{
 							InstanceSize: "M40",
 							NodeCount:    pointer.MakePtr(1),
 						},
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							Compute: &mdbv1.ComputeSpec{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
@@ -1052,15 +1052,15 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 
 func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 	t.Run("should fail when different compute autoscaling config are set", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							DiskGB: &mdbv1.DiskGB{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							DiskGB: &akov2.DiskGB{
 								Enabled: pointer.MakePtr(true),
 							},
-							Compute: &mdbv1.ComputeSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
@@ -1069,11 +1069,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 						},
 					},
 					{
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							DiskGB: &mdbv1.DiskGB{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							DiskGB: &akov2.DiskGB{
 								Enabled: pointer.MakePtr(true),
 							},
-							Compute: &mdbv1.ComputeSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(false),
 								MinInstanceSize:  "M10",
@@ -1089,15 +1089,15 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 	})
 
 	t.Run("should fail when different disc autoscaling config are set", func(t *testing.T) {
-		replicationSpecs := []*mdbv1.AdvancedReplicationSpec{
+		replicationSpecs := []*akov2.AdvancedReplicationSpec{
 			{
-				RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+				RegionConfigs: []*akov2.AdvancedRegionConfig{
 					{
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							DiskGB: &mdbv1.DiskGB{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							DiskGB: &akov2.DiskGB{
 								Enabled: pointer.MakePtr(false),
 							},
-							Compute: &mdbv1.ComputeSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",
@@ -1106,11 +1106,11 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 						},
 					},
 					{
-						AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-							DiskGB: &mdbv1.DiskGB{
+						AutoScaling: &akov2.AdvancedAutoScalingSpec{
+							DiskGB: &akov2.DiskGB{
 								Enabled: pointer.MakePtr(true),
 							},
-							Compute: &mdbv1.ComputeSpec{
+							Compute: &akov2.ComputeSpec{
 								Enabled:          pointer.MakePtr(true),
 								ScaleDownEnabled: pointer.MakePtr(true),
 								MinInstanceSize:  "M10",

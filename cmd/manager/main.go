@@ -43,7 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller"
 
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -78,7 +78,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(mdbv1.AddToScheme(scheme))
+	utilruntime.Must(akov2.AddToScheme(scheme))
 }
 
 func main() {

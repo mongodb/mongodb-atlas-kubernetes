@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -106,7 +106,7 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("Setup test dependencies", func() {
-		err := mdbv1.AddToScheme(scheme.Scheme)
+		err := akov2.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		// It's recommended to construct the client directly for tests

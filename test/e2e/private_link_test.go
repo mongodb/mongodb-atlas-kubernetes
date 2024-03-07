@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -154,7 +154,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 			Namespace: userData.Resources.Namespace}, userData.Project)).To(Succeed())
 		for _, pe := range requestedPE {
 			userData.Project.Spec.PrivateEndpoints = append(userData.Project.Spec.PrivateEndpoints,
-				v1.PrivateEndpoint{
+				akov2.PrivateEndpoint{
 					Provider: pe.provider,
 					Region:   pe.region,
 				})
@@ -234,12 +234,12 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 					peItem.EndpointGroupName = pe.EndpointGroupName
 
 					if len(pe.Endpoints) > 0 {
-						peItem.Endpoints = make([]v1.GCPEndpoint, 0, len(pe.Endpoints))
+						peItem.Endpoints = make([]akov2.GCPEndpoint, 0, len(pe.Endpoints))
 
 						for _, ep := range pe.Endpoints {
 							peItem.Endpoints = append(
 								peItem.Endpoints,
-								v1.GCPEndpoint{
+								akov2.GCPEndpoint{
 									EndpointName: ep.Name,
 									IPAddress:    ep.IP,
 								},

@@ -12,12 +12,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) (authmode.AuthModes, workflow.Result) {
+func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) (authmode.AuthModes, workflow.Result) {
 	log := ctx.Log
 
 	var specCert string

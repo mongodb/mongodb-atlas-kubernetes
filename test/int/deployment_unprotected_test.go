@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -25,7 +25,7 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		var testNamespace *corev1.Namespace
 		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
-		var testProject *mdbv1.AtlasProject
+		var testProject *akov2.AtlasProject
 
 		BeforeAll(func() {
 			By("Starting the operator with protection OFF", func() {
@@ -40,7 +40,7 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 			})
 
 			By("Creating a project", func() {
-				testProject = mdbv1.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+				testProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
 				Eventually(func() bool {
@@ -71,7 +71,7 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		It("removing advanced cluster from Kubernetes when protection is OFF wipes it from Atlas",
 			Label("wiping-advanced-cluster"),
 			func() {
-				testDeployment := mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
+				testDeployment := akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name).Lightweight()
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
@@ -79,16 +79,16 @@ var _ = Describe("AtlasDeployment Deletion Unprotected",
 		It("removing serverless instance from Kubernetes when protection is OFF wipes it from Atlas",
 			Label("wiping-serverless-instance"),
 			func() {
-				testDeployment := mdbv1.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
+				testDeployment := akov2.NewDefaultAWSServerlessInstance(testNamespace.Name, testProject.Name)
 				wipeDeploymentFlow(testNamespace.Name, testProject, testDeployment)
 			},
 		)
 	},
 )
 
-func wipeDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDeployment *mdbv1.AtlasDeployment) {
+func wipeDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDeployment *akov2.AtlasDeployment) {
 	By("Creating a deployment in the cluster with annotation set to delete", func() {
-		testDeployment = mdbv1.DefaultAWSDeployment(ns, testProject.Name).Lightweight()
+		testDeployment = akov2.DefaultAWSDeployment(ns, testProject.Name).Lightweight()
 		Expect(k8sClient.Create(context.Background(), testDeployment, &client.CreateOptions{})).To(Succeed())
 	})
 
@@ -101,7 +101,7 @@ func wipeDeploymentFlow(ns string, testProject *mdbv1.AtlasProject, testDeployme
 	By("Deleting the deployment from Kubernetes", func() {
 		Expect(k8sClient.Delete(context.Background(), testDeployment, &client.DeleteOptions{})).To(Succeed())
 		Eventually(func() bool {
-			deployment := mdbv1.AtlasDeployment{}
+			deployment := akov2.AtlasDeployment{}
 			err := k8sClient.Get(context.Background(), kube.ObjectKey(ns, testDeployment.Name), &deployment, &client.GetOptions{})
 			return k8serrors.IsNotFound(err)
 		}).WithTimeout(2 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())

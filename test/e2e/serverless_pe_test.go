@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
@@ -49,7 +49,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
+		func(test *model.TestDataProvider, spe []akov2.ServerlessPrivateEndpoint) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			speFlow(test, providerAction, spe)
@@ -61,7 +61,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-1", "AWS", "US_EAST_1")),
-			[]v1.ServerlessPrivateEndpoint{
+			[]akov2.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
 				},
@@ -74,7 +74,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-2", "AZURE", "US_EAST_2")),
-			[]v1.ServerlessPrivateEndpoint{
+			[]akov2.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
 				},
@@ -87,7 +87,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-3", "AZURE", "US_EAST_2")),
-			[]v1.ServerlessPrivateEndpoint{
+			[]akov2.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
 				},
@@ -105,7 +105,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test4-protected", "AWS", "US_EAST_1")).WithSubObjectDeletionProtection(true),
-			[]v1.ServerlessPrivateEndpoint{
+			[]akov2.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
 				},
@@ -118,7 +118,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-5-protected", "AZURE", "US_EAST_2")).WithSubObjectDeletionProtection(true),
-			[]v1.ServerlessPrivateEndpoint{
+			[]akov2.ServerlessPrivateEndpoint{
 				{
 					Name: newRandomName("pe"),
 				},
@@ -127,7 +127,7 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 	)
 })
 
-func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, spe []v1.ServerlessPrivateEndpoint) {
+func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, spe []akov2.ServerlessPrivateEndpoint) {
 	By("Apply deployment", func() {
 		Expect(userData.InitialDeployments).ShouldNot(BeEmpty())
 		userData.InitialDeployments[0].Namespace = userData.Resources.Namespace
@@ -191,7 +191,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 	})
 
 	By("Delete Private Endpoints", func() {
-		updateSPE(userData, []v1.ServerlessPrivateEndpoint{})
+		updateSPE(userData, []akov2.ServerlessPrivateEndpoint{})
 		Eventually(func(g Gomega) {
 			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 				Name:      userData.InitialDeployments[0].Name,
@@ -205,7 +205,7 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 	})
 }
 
-func invalidSPEFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
+func invalidSPEFlow(userData *model.TestDataProvider, spe []akov2.ServerlessPrivateEndpoint) {
 	// check that spe is valid
 	isValid := true
 	for _, pe := range spe {
@@ -239,7 +239,7 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []v1.ServerlessPrivate
 	}
 }
 
-func updateSPE(userData *model.TestDataProvider, spe []v1.ServerlessPrivateEndpoint) {
+func updateSPE(userData *model.TestDataProvider, spe []akov2.ServerlessPrivateEndpoint) {
 	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.InitialDeployments[0].Name,
 		Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
 	userData.InitialDeployments[0].Spec.ServerlessSpec.PrivateEndpoints = spe

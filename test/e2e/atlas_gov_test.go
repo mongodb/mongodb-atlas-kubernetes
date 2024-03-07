@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -94,12 +94,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Creating a project to be managed by the operator", func() {
-			akoProject := &mdbv1.AtlasProject{
+			akoProject := &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      projectName,
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasProjectSpec{
+				Spec: akov2.AtlasProjectSpec{
 					Name:                    projectName,
 					RegionUsageRestrictions: "NONE",
 					ProjectIPAccessList: []project.IPAccessList{
@@ -120,12 +120,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						DayOfWeek: 1,
 						HourOfDay: 20,
 					},
-					Auditing: &mdbv1.Auditing{
+					Auditing: &akov2.Auditing{
 						AuditAuthorizationSuccess: false,
 						AuditFilter:               `{"$or":[{"users":[]},{"$and":[{"users":{"$elemMatch":{"$or":[{"db":"admin"}]}}},{"atype":{"$in":["authenticate","dropDatabase","createUser","dropUser","dropAllUsersFromDatabase","dropAllRolesFromDatabase","shutdown"]}}]}]}`,
 						Enabled:                   true,
 					},
-					Settings: &mdbv1.ProjectSettings{
+					Settings: &akov2.ProjectSettings{
 						IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 						IsDataExplorerEnabled:                       pointer.MakePtr(false),
 						IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
@@ -133,14 +133,14 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
 						IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 					},
-					CustomRoles: []mdbv1.CustomRole{
+					CustomRoles: []akov2.CustomRole{
 						{
 							Name:           "testRole",
 							InheritedRoles: nil,
-							Actions: []mdbv1.Action{
+							Actions: []akov2.Action{
 								{
 									Name: "INSERT",
-									Resources: []mdbv1.Resource{
+									Resources: []akov2.Resource{
 										{
 											Database:   pointer.MakePtr("testD"),
 											Collection: pointer.MakePtr("testCollection"),
@@ -185,31 +185,31 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(users.GetResults()).ToNot(BeEmpty())
 
-			usernames := make([]mdbv1.TeamUser, 0, users.GetTotalCount())
+			usernames := make([]akov2.TeamUser, 0, users.GetTotalCount())
 			for _, user := range users.GetResults() {
-				usernames = append(usernames, mdbv1.TeamUser(user.GetUsername()))
+				usernames = append(usernames, akov2.TeamUser(user.GetUsername()))
 			}
 
-			akoTeam := &mdbv1.AtlasTeam{
+			akoTeam := &akov2.AtlasTeam{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-team", projectName),
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.TeamSpec{
+				Spec: akov2.TeamSpec{
 					Name:      fmt.Sprintf("%s-team", projectName),
 					Usernames: usernames,
 				},
 			}
-			testData.Teams = []*mdbv1.AtlasTeam{akoTeam}
+			testData.Teams = []*akov2.AtlasTeam{akoTeam}
 			Expect(testData.K8SClient.Create(ctx, testData.Teams[0]))
 
-			testData.Project.Spec.Teams = []mdbv1.Team{
+			testData.Project.Spec.Teams = []akov2.Team{
 				{
 					TeamRef: common.ResourceRefNamespaced{
 						Name:      fmt.Sprintf("%s-team", projectName),
 						Namespace: testData.Resources.Namespace,
 					},
-					Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+					Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 				},
 			}
 			Expect(testData.K8SClient.Update(ctx, testData.Project)).To(Succeed())
@@ -225,7 +225,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.CloudProviderIntegrations = []mdbv1.CloudProviderIntegration{
+			testData.Project.Spec.CloudProviderIntegrations = []akov2.CloudProviderIntegration{
 				{
 					ProviderName:      "AWS",
 					IamAssumedRoleArn: assumedRoleArn,
@@ -261,7 +261,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.NetworkPeers = []mdbv1.NetworkPeer{
+			testData.Project.Spec.NetworkPeers = []akov2.NetworkPeer{
 				{
 					ProviderName:        "AWS",
 					AccepterRegionName:  "us-east-1",
@@ -315,8 +315,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}
 			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
 
-			testData.Project.Spec.EncryptionAtRest = &mdbv1.EncryptionAtRest{
-				AwsKms: mdbv1.AwsKms{
+			testData.Project.Spec.EncryptionAtRest = &akov2.EncryptionAtRest{
+				AwsKms: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 					Region:  "US_EAST_1",
 					SecretRef: common.ResourceRefNamespaced{
@@ -335,7 +335,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Configuring Private Endpoint", func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			testData.Project.Spec.PrivateEndpoints = []mdbv1.PrivateEndpoint{
+			testData.Project.Spec.PrivateEndpoints = []akov2.PrivateEndpoint{
 				{
 					Provider: "AWS",
 					Region:   "us-east-1",
@@ -390,13 +390,13 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Creating a Cluster", func() {
-			akoBackupPolicy := &mdbv1.AtlasBackupPolicy{
+			akoBackupPolicy := &akov2.AtlasBackupPolicy{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-policy", clusterName),
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasBackupPolicySpec{
-					Items: []mdbv1.AtlasBackupPolicyItem{
+				Spec: akov2.AtlasBackupPolicySpec{
+					Items: []akov2.AtlasBackupPolicyItem{
 						{
 							FrequencyType:     "hourly",
 							FrequencyInterval: 12,
@@ -408,12 +408,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}
 			Expect(testData.K8SClient.Create(ctx, akoBackupPolicy))
 
-			akoBackupSchedule := &mdbv1.AtlasBackupSchedule{
+			akoBackupSchedule := &akov2.AtlasBackupSchedule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-schedule", clusterName),
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasBackupScheduleSpec{
+				Spec: akov2.AtlasBackupScheduleSpec{
 					PolicyRef: common.ResourceRefNamespaced{
 						Name:      fmt.Sprintf("%s-policy", clusterName),
 						Namespace: testData.Resources.Namespace,
@@ -430,20 +430,20 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}
 			Expect(testData.K8SClient.Create(ctx, akoBackupSchedule))
 
-			akoDeployment := &mdbv1.AtlasDeployment{
+			akoDeployment := &akov2.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      clusterName,
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasDeploymentSpec{
+				Spec: akov2.AtlasDeploymentSpec{
 					Project: common.ResourceRefNamespaced{
 						Name:      projectName,
 						Namespace: testData.Resources.Namespace,
 					},
-					DeploymentSpec: &mdbv1.AdvancedDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          clusterName,
 						BackupEnabled: pointer.MakePtr(true),
-						BiConnector: &mdbv1.BiConnectorSpec{
+						BiConnector: &akov2.BiConnectorSpec{
 							Enabled:        pointer.MakePtr(true),
 							ReadPreference: "secondary",
 						},
@@ -457,22 +457,22 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						MongoDBMajorVersion: "7.0",
 						Paused:              pointer.MakePtr(false),
 						PitEnabled:          pointer.MakePtr(true),
-						ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
 								NumShards: 1,
 								ZoneName:  "GOV1",
-								RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
 									{
-										ElectableSpecs: &mdbv1.Specs{
+										ElectableSpecs: &akov2.Specs{
 											DiskIOPS:     pointer.MakePtr(int64(3000)),
 											InstanceSize: "M20",
 											NodeCount:    pointer.MakePtr(3),
 										},
-										AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-											DiskGB: &mdbv1.DiskGB{
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											DiskGB: &akov2.DiskGB{
 												Enabled: pointer.MakePtr(true),
 											},
-											Compute: &mdbv1.ComputeSpec{
+											Compute: &akov2.ComputeSpec{
 												Enabled:          pointer.MakePtr(true),
 												ScaleDownEnabled: pointer.MakePtr(true),
 												MinInstanceSize:  "M20",
@@ -493,7 +493,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						Name:      fmt.Sprintf("%s-schedule", clusterName),
 						Namespace: testData.Resources.Namespace,
 					},
-					ProcessArgs: &mdbv1.ProcessArgs{
+					ProcessArgs: &akov2.ProcessArgs{
 						DefaultReadConcern:        "available",
 						MinimumEnabledTLSProtocol: "TLS1_2",
 						JavascriptEnabled:         pointer.MakePtr(true),
@@ -513,7 +513,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 
 			Eventually(func(g Gomega) {
-				akoDeployment := &mdbv1.AtlasDeployment{}
+				akoDeployment := &akov2.AtlasDeployment{}
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: clusterName}, akoDeployment)).To(Succeed())
 				g.Expect(akoDeployment.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 45).WithPolling(time.Second * 20).Should(Succeed())
@@ -531,12 +531,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 				StringData: map[string]string{"password": "myHardPass2MyDB"},
 			}
 			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
-			akoDBUser := &mdbv1.AtlasDatabaseUser{
+			akoDBUser := &akov2.AtlasDatabaseUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-dbuser", projectName),
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasDatabaseUserSpec{
+				Spec: akov2.AtlasDatabaseUserSpec{
 					Project: common.ResourceRefNamespaced{
 						Name:      projectName,
 						Namespace: testData.Resources.Namespace,
@@ -546,16 +546,16 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 						{Key: "type", Value: "e2e-test"},
 						{Key: "context", Value: "cloud-gov"},
 					},
-					Roles: []mdbv1.RoleSpec{
+					Roles: []akov2.RoleSpec{
 						{
 							RoleName:     "readAnyDatabase",
 							DatabaseName: "admin",
 						},
 					},
-					Scopes: []mdbv1.ScopeSpec{
+					Scopes: []akov2.ScopeSpec{
 						{
 							Name: clusterName,
-							Type: mdbv1.DeploymentScopeType,
+							Type: akov2.DeploymentScopeType,
 						},
 					},
 					Username: fmt.Sprintf("%s-dbuser", projectName),
@@ -575,7 +575,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 
 			Eventually(func(g Gomega) {
-				akoDBUser := &mdbv1.AtlasDatabaseUser{}
+				akoDBUser := &akov2.AtlasDatabaseUser{}
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: fmt.Sprintf("%s-dbuser", projectName)}, akoDBUser)).To(Succeed())
 				g.Expect(akoDBUser.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 10).WithPolling(time.Second * 20).Should(Succeed())
@@ -584,12 +584,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 	It("Fail to manage when there are non supported features for Atlas for Government", func() {
 		By("Creating a project to be managed by the operator", func() {
-			akoProject := &mdbv1.AtlasProject{
+			akoProject := &akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      projectName,
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasProjectSpec{
+				Spec: akov2.AtlasProjectSpec{
 					Name:                    projectName,
 					RegionUsageRestrictions: "GOV_REGIONS_ONLY",
 				},
@@ -613,19 +613,19 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Creating a Serverless Cluster", func() {
-			akoDeployment := &mdbv1.AtlasDeployment{
+			akoDeployment := &akov2.AtlasDeployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      clusterName,
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.AtlasDeploymentSpec{
+				Spec: akov2.AtlasDeploymentSpec{
 					Project: common.ResourceRefNamespaced{
 						Name:      projectName,
 						Namespace: testData.Resources.Namespace,
 					},
-					ServerlessSpec: &mdbv1.ServerlessSpec{
+					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: clusterName,
-						ProviderSettings: &mdbv1.ProviderSettingsSpec{
+						ProviderSettings: &akov2.ProviderSettingsSpec{
 							BackingProviderName: "AWS",
 							ProviderName:        "SERVERLESS",
 							RegionName:          "US_GOV_EAST_1",
@@ -645,32 +645,32 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 
 			Eventually(func(g Gomega) {
-				akoDeployment := &mdbv1.AtlasDeployment{}
+				akoDeployment := &akov2.AtlasDeployment{}
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: clusterName}, akoDeployment)).To(Succeed())
 				g.Expect(akoDeployment.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 		})
 
 		By("Creating a Data Federation", func() {
-			akoDataFederation := &mdbv1.AtlasDataFederation{
+			akoDataFederation := &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-data-federation", projectName),
 					Namespace: testData.Resources.Namespace,
 				},
-				Spec: mdbv1.DataFederationSpec{
+				Spec: akov2.DataFederationSpec{
 					Project: common.ResourceRefNamespaced{
 						Name:      projectName,
 						Namespace: testData.Resources.Namespace,
 					},
 					Name: fmt.Sprintf("%s-data-federation", projectName),
-					Storage: &mdbv1.Storage{
-						Databases: []mdbv1.Database{
+					Storage: &akov2.Storage{
+						Databases: []akov2.Database{
 							{
 								Name: "test-db-1",
-								Collections: []mdbv1.Collection{
+								Collections: []akov2.Collection{
 									{
 										Name: "test-collection-1",
-										DataSources: []mdbv1.DataSource{
+										DataSources: []akov2.DataSource{
 											{
 												StoreName: "http-test",
 												Urls: []string{
@@ -682,7 +682,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 								},
 							},
 						},
-						Stores: []mdbv1.Store{
+						Stores: []akov2.Store{
 							{
 								Name:     "http-test",
 								Provider: "http",
@@ -701,7 +701,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 
 			Eventually(func(g Gomega) {
-				akoDataFederation := &mdbv1.AtlasDataFederation{}
+				akoDataFederation := &akov2.AtlasDataFederation{}
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: fmt.Sprintf("%s-data-federation", projectName)}, akoDataFederation)).To(Succeed())
 				g.Expect(akoDataFederation.Status.Conditions).To(ContainElements(expectedConditions))
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
@@ -710,7 +710,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 	AfterEach(func() {
 		By("Deleting DataFederation from the operator", func() {
-			akoDataFederation := &mdbv1.AtlasDataFederation{}
+			akoDataFederation := &akov2.AtlasDataFederation{}
 			err := testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: fmt.Sprintf("%s-data-federation", projectName)}, akoDataFederation)
 			if err == nil {
 				Expect(testData.K8SClient.Delete(ctx, akoDataFederation)).To(Succeed())
@@ -722,7 +722,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Deleting DatabaseUser from the operator", func() {
-			akoDBUser := &mdbv1.AtlasDatabaseUser{}
+			akoDBUser := &akov2.AtlasDatabaseUser{}
 			err := testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: fmt.Sprintf("%s-dbuser", projectName)}, akoDBUser)
 			if err == nil {
 				Expect(testData.K8SClient.Delete(ctx, akoDBUser)).To(Succeed())
@@ -735,7 +735,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Deleting cluster from the operator", func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-			akoDeployment := &mdbv1.AtlasDeployment{}
+			akoDeployment := &akov2.AtlasDeployment{}
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Namespace: testData.Resources.Namespace, Name: clusterName}, akoDeployment)).To(Succeed())
 			Expect(testData.K8SClient.Delete(ctx, akoDeployment)).To(Succeed())
 
@@ -745,11 +745,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}).WithTimeout(time.Minute * 30).WithPolling(time.Second * 20).Should(Succeed())
 
 			if akoDeployment.Spec.BackupScheduleRef.Name != "" {
-				akoBackupSchedule := &mdbv1.AtlasBackupSchedule{}
+				akoBackupSchedule := &akov2.AtlasBackupSchedule{}
 				Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s-schedule", clusterName), Namespace: testData.Resources.Namespace}, akoBackupSchedule)).To(Succeed())
 				Expect(testData.K8SClient.Delete(ctx, akoBackupSchedule)).To(Succeed())
 
-				akoBackupPolicy := &mdbv1.AtlasBackupPolicy{}
+				akoBackupPolicy := &akov2.AtlasBackupPolicy{}
 				Expect(testData.K8SClient.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s-policy", clusterName), Namespace: testData.Resources.Namespace}, akoBackupPolicy)).To(Succeed())
 				Expect(testData.K8SClient.Delete(ctx, akoBackupPolicy)).To(Succeed())
 			}

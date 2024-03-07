@@ -12,13 +12,13 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 
-func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser) workflow.Result {
+func CreateOrUpdateConnectionSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser) workflow.Result {
 	advancedDeployments, _, err := ctx.Client.AdvancedClusters.List(ctx.Context, project.ID(), &mongodbatlas.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.DatabaseUserConnectionSecretsNotCreated, err.Error())
@@ -68,12 +68,12 @@ type deploymentSecret struct {
 	connectionStrings *mongodbatlas.ConnectionStrings
 }
 
-func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project mdbv1.AtlasProject, dbUser mdbv1.AtlasDatabaseUser, deploymentSecrets []deploymentSecret) workflow.Result {
+func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context, k8sClient client.Client, recorder record.EventRecorder, project akov2.AtlasProject, dbUser akov2.AtlasDatabaseUser, deploymentSecrets []deploymentSecret) workflow.Result {
 	requeue := false
 	secrets := make([]string, 0)
 
 	for _, ds := range deploymentSecrets {
-		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
 		if len(scopes) != 0 && !stringutil.Contains(scopes, ds.name) {
 			continue
 		}
@@ -118,7 +118,7 @@ func createOrUpdateConnectionSecretsFromDeploymentSecrets(ctx *workflow.Context,
 	return workflow.OK()
 }
 
-func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
+func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, projectID string, user akov2.AtlasDatabaseUser) error {
 	if err := removeStaleByScope(ctx, k8sClient, projectID, user); err != nil {
 		return err
 	}
@@ -131,8 +131,8 @@ func cleanupStaleSecrets(ctx *workflow.Context, k8sClient client.Client, project
 }
 
 // removeStaleByScope removes the secrets that are not relevant due to changes to 'scopes' field for the AtlasDatabaseUser.
-func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectID string, user mdbv1.AtlasDatabaseUser) error {
-	scopes := user.GetScopes(mdbv1.DeploymentScopeType)
+func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectID string, user akov2.AtlasDatabaseUser) error {
+	scopes := user.GetScopes(akov2.DeploymentScopeType)
 	if len(scopes) == 0 {
 		return nil
 	}
@@ -156,7 +156,7 @@ func removeStaleByScope(ctx *workflow.Context, k8sClient client.Client, projectI
 }
 
 // RemoveStaleSecretsByUserName removes the stale secrets when the database user name changes (as it's used as a part of Secret name)
-func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, projectID, userName string, user mdbv1.AtlasDatabaseUser, log *zap.SugaredLogger) error {
+func RemoveStaleSecretsByUserName(ctx context.Context, k8sClient client.Client, projectID, userName string, user akov2.AtlasDatabaseUser, log *zap.SugaredLogger) error {
 	secrets, err := ListByUserName(ctx, k8sClient, user.Namespace, projectID, userName)
 	if err != nil {
 		return err

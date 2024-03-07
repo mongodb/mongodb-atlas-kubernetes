@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -73,7 +73,7 @@ type AtlasDatabaseUserReconciler struct {
 func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasdatabaseuser", req.NamespacedName)
 
-	databaseUser := &mdbv1.AtlasDatabaseUser{}
+	databaseUser := &akov2.AtlasDatabaseUser{}
 	result := customresource.PrepareResource(ctx, r.Client, req, databaseUser, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -116,7 +116,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return result.ReconcileResult(), nil
 	}
 
-	project := &mdbv1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	if result = r.readProjectResource(ctx, databaseUser, project); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DatabaseUserReadyType, result)
 
@@ -198,7 +198,7 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return result.ReconcileResult(), nil
 }
 
-func (r *AtlasDatabaseUserReconciler) handleFeatureFlags(dbuser *mdbv1.AtlasDatabaseUser) error {
+func (r *AtlasDatabaseUserReconciler) handleFeatureFlags(dbuser *akov2.AtlasDatabaseUser) error {
 	err := handleOIDCPreview(r.FeaturePreviewOIDCAuthEnabled, dbuser)
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (r *AtlasDatabaseUserReconciler) handleFeatureFlags(dbuser *mdbv1.AtlasData
 }
 
 // TODO: Remove after the OIDC feature becomes stable
-func handleOIDCPreview(OIDCEnabled bool, dbuser *mdbv1.AtlasDatabaseUser) error {
+func handleOIDCPreview(OIDCEnabled bool, dbuser *akov2.AtlasDatabaseUser) error {
 	if dbuser == nil {
 		return nil
 	}
@@ -220,7 +220,7 @@ func handleOIDCPreview(OIDCEnabled bool, dbuser *mdbv1.AtlasDatabaseUser) error 
 	return nil
 }
 
-func (r *AtlasDatabaseUserReconciler) readProjectResource(ctx context.Context, user *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasDatabaseUserReconciler) readProjectResource(ctx context.Context, user *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) workflow.Result {
 	if err := r.Client.Get(ctx, user.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -229,8 +229,8 @@ func (r *AtlasDatabaseUserReconciler) readProjectResource(ctx context.Context, u
 
 func (r *AtlasDatabaseUserReconciler) handleDeletion(
 	ctx context.Context,
-	dbUser *mdbv1.AtlasDatabaseUser,
-	project *mdbv1.AtlasProject,
+	dbUser *akov2.AtlasDatabaseUser,
+	project *akov2.AtlasProject,
 	atlasClient *mongodbatlas.Client,
 	log *zap.SugaredLogger,
 ) (bool, workflow.Result) {
@@ -277,14 +277,14 @@ func (r *AtlasDatabaseUserReconciler) handleDeletion(
 func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDatabaseUser").
-		For(&mdbv1.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(&akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
 		Complete(r)
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *mongodbatlas.Client, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		dbUser, ok := resource.(*mdbv1.AtlasDatabaseUser)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		dbUser, ok := resource.(*akov2.AtlasDatabaseUser)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDatabaseUser")
 		}

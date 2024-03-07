@@ -7,14 +7,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const FinalizerLabel = "mongodbatlas/finalizer"
 
-type FinalizerOperator func(resource mdbv1.AtlasCustomResource, finalizer string)
+type FinalizerOperator func(resource akov2.AtlasCustomResource, finalizer string)
 
-func HaveFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) bool {
+func HaveFinalizer(resource akov2.AtlasCustomResource, finalizer string) bool {
 	for _, f := range resource.GetFinalizers() {
 		if f == finalizer {
 			return true
@@ -25,14 +25,14 @@ func HaveFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) bool {
 }
 
 // SetFinalizer Add the given finalizer to the list of resource finalizer
-func SetFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) {
+func SetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
 	if !HaveFinalizer(resource, finalizer) {
 		resource.SetFinalizers(append(resource.GetFinalizers(), finalizer))
 	}
 }
 
 // UnsetFinalizer remove the given finalizer from the list of resource finalizer
-func UnsetFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) {
+func UnsetFinalizer(resource akov2.AtlasCustomResource, finalizer string) {
 	finalizers := make([]string, 0, len(resource.GetFinalizers()))
 
 	for _, f := range resource.GetFinalizers() {
@@ -47,7 +47,7 @@ func UnsetFinalizer(resource mdbv1.AtlasCustomResource, finalizer string) {
 func ManageFinalizer(
 	ctx context.Context,
 	client client.Client,
-	resource mdbv1.AtlasCustomResource,
+	resource akov2.AtlasCustomResource,
 	op FinalizerOperator,
 ) error {
 	err := client.Get(ctx, kube.ObjectKeyFromObject(resource), resource)

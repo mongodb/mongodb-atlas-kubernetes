@@ -10,12 +10,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Context, project *mdbv1.AtlasProject, dataFederation *mdbv1.AtlasDataFederation) workflow.Result {
+func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Context, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.Result {
 	log := ctx.Log
 
 	projectID := project.ID()
@@ -61,13 +61,13 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 	return workflow.InProgress(workflow.DataFederationUpdating, "Data Federation is being updated")
 }
 
-func DataFederationFromAtlas(atlasDF *mongodbatlas.DataFederationInstance) (*mdbv1.DataFederationSpec, error) {
-	dfSpec := &mdbv1.DataFederationSpec{}
+func DataFederationFromAtlas(atlasDF *mongodbatlas.DataFederationInstance) (*akov2.DataFederationSpec, error) {
+	dfSpec := &akov2.DataFederationSpec{}
 	err := compat.JSONCopy(dfSpec, atlasDF)
 	return dfSpec, err
 }
 
-func dataFederationEqual(atlasSpec, operatorSpec mdbv1.DataFederationSpec, log *zap.SugaredLogger) (areEqual bool, diff string) {
+func dataFederationEqual(atlasSpec, operatorSpec akov2.DataFederationSpec, log *zap.SugaredLogger) (areEqual bool, diff string) {
 	mergedSpec, err := getMergedSpec(atlasSpec, operatorSpec)
 	if err != nil {
 		log.Errorf("failed to merge Data Federation specs: %s", err.Error())
@@ -82,10 +82,10 @@ func dataFederationEqual(atlasSpec, operatorSpec mdbv1.DataFederationSpec, log *
 	return d == "", d
 }
 
-func getMergedSpec(atlasSpec, operatorSpec mdbv1.DataFederationSpec) (mdbv1.DataFederationSpec, error) {
-	mergedSpec := mdbv1.DataFederationSpec{}
+func getMergedSpec(atlasSpec, operatorSpec akov2.DataFederationSpec) (akov2.DataFederationSpec, error) {
+	mergedSpec := akov2.DataFederationSpec{}
 
-	operatorSpec.PrivateEndpoints = []mdbv1.DataFederationPE{}
+	operatorSpec.PrivateEndpoints = []akov2.DataFederationPE{}
 
 	if err := compat.JSONCopy(&mergedSpec, atlasSpec); err != nil {
 		return mergedSpec, err
@@ -99,7 +99,7 @@ func getMergedSpec(atlasSpec, operatorSpec mdbv1.DataFederationSpec) (mdbv1.Data
 	return mergedSpec, nil
 }
 
-func dataFederationMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DataFederationInstance, operatorSpec *mdbv1.AtlasDataFederation) (bool, error) {
+func dataFederationMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.DataFederationInstance, operatorSpec *akov2.AtlasDataFederation) (bool, error) {
 	newAtlasSpec, err := DataFederationFromAtlas(atlasSpec)
 	if err != nil {
 		return false, err

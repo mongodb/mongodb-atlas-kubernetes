@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/authmode"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -77,7 +77,7 @@ type AtlasProjectReconciler struct {
 func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasproject", req.NamespacedName)
 
-	project := &mdbv1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	result := customresource.PrepareResource(ctx, r.Client, req, project, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -228,7 +228,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (result workflow.Result) {
+func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *akov2.AtlasProject) (result workflow.Result) {
 	log := workflowCtx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
@@ -273,7 +273,7 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.C
 }
 
 // ensureProjectResources ensures IP Access List, Private Endpoints, Integrations, Maintenance Window and Encryption at Rest
-func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *mdbv1.AtlasProject) (results []workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Context, project *akov2.AtlasProject) (results []workflow.Result) {
 	for k, v := range project.Annotations {
 		workflowCtx.Log.Debugf(k)
 		workflowCtx.Log.Debugf(v)
@@ -343,7 +343,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	return results
 }
 
-func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient *mongodbatlas.Client, project *mdbv1.AtlasProject) (err error) {
+func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasClient *mongodbatlas.Client, project *akov2.AtlasProject) (err error) {
 	log := r.Log.With("atlasproject", kube.ObjectKeyFromObject(project))
 	log.Infow("-> Starting AtlasProject deletion", "spec", project.Spec)
 
@@ -360,9 +360,9 @@ func (r *AtlasProjectReconciler) deleteAtlasProject(ctx context.Context, atlasCl
 func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
-		For(&mdbv1.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
-		Watches(&mdbv1.AtlasTeam{}, watch.NewAtlasTeamHandler(r.WatchedResources)).
+		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(r.WatchedResources)).
 		Complete(r)
 }
 
@@ -379,8 +379,8 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 }
 
 func managedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		project, ok := resource.(*mdbv1.AtlasProject)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		project, ok := resource.(*akov2.AtlasProject)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasProject")
 		}

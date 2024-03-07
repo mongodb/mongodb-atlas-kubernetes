@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, project *mdbv1.AtlasProject, dataFederation *mdbv1.AtlasDataFederation) workflow.Result {
+func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Context, project *akov2.AtlasProject, dataFederation *akov2.AtlasDataFederation) workflow.Result {
 	clientDF := NewClient(ctx.Client)
 
 	projectID := project.ID()
@@ -29,11 +29,11 @@ func (r *AtlasDataFederationReconciler) ensurePrivateEndpoints(ctx *workflow.Con
 	return workflow.OK()
 }
 
-func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, clientDF *DataFederationServiceOp, projectID string, specPEs, atlasPEs []mdbv1.DataFederationPE) workflow.Result {
+func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, clientDF *DataFederationServiceOp, projectID string, specPEs, atlasPEs []akov2.DataFederationPE) workflow.Result {
 	endpointsToCreate := set.Difference(specPEs, atlasPEs)
 	ctx.Log.Debugw("Data Federation PEs to Create", "endpoints", endpointsToCreate)
 	for _, e := range endpointsToCreate {
-		endpoint := e.(mdbv1.DataFederationPE)
+		endpoint := e.(akov2.DataFederationPE)
 		if _, _, err := clientDF.CreateOnePrivateEndpoint(ctx.Context, projectID, endpoint); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -42,7 +42,7 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, clientDF *DataFederati
 	endpointsToDelete := set.Difference(atlasPEs, specPEs)
 	ctx.Log.Debugw("Data Federation PEs to Delete", "endpoints", endpointsToDelete)
 	for _, item := range endpointsToDelete {
-		endpoint := item.(mdbv1.DataFederationPE)
+		endpoint := item.(akov2.DataFederationPE)
 		if _, _, err := clientDF.DeleteOnePrivateEndpoint(ctx.Context, projectID, endpoint.EndpointID); err != nil {
 			return workflow.Terminate(workflow.Internal, err.Error())
 		}
@@ -51,10 +51,10 @@ func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, clientDF *DataFederati
 	return workflow.OK()
 }
 
-func getAllDataFederationPEs(ctx context.Context, client *DataFederationServiceOp, projectID string) (endpoints []mdbv1.DataFederationPE, err error) {
+func getAllDataFederationPEs(ctx context.Context, client *DataFederationServiceOp, projectID string) (endpoints []akov2.DataFederationPE, err error) {
 	endpoints, _, err = client.GetAllPrivateEndpoints(ctx, projectID)
 	if endpoints == nil {
-		endpoints = make([]mdbv1.DataFederationPE, 0)
+		endpoints = make([]akov2.DataFederationPE, 0)
 	}
 	return
 }

@@ -6,12 +6,12 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZoneMappings []mdbv1.CustomZoneMapping, deploymentName string) workflow.Result {
+func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZoneMappings []akov2.CustomZoneMapping, deploymentName string) workflow.Result {
 	result := syncCustomZoneMapping(service, groupID, deploymentName, customZoneMappings)
 	if !result.IsOk() {
 		service.SetConditionFromResult(status.CustomZoneMappingReadyType, result)
@@ -28,7 +28,7 @@ func EnsureCustomZoneMapping(service *workflow.Context, groupID string, customZo
 	return result
 }
 
-func syncCustomZoneMapping(service *workflow.Context, groupID string, deploymentName string, customZoneMappings []mdbv1.CustomZoneMapping) workflow.Result {
+func syncCustomZoneMapping(service *workflow.Context, groupID string, deploymentName string, customZoneMappings []akov2.CustomZoneMapping) workflow.Result {
 	logger := service.Log
 	err := verifyZoneMapping(customZoneMappings)
 	if err != nil {
@@ -78,7 +78,7 @@ func syncCustomZoneMapping(service *workflow.Context, groupID string, deployment
 	return checkCustomZoneMapping(customZoneMappingStatus)
 }
 
-func verifyZoneMapping(desired []mdbv1.CustomZoneMapping) error {
+func verifyZoneMapping(desired []akov2.CustomZoneMapping) error {
 	locations := make(map[string]bool)
 	for _, m := range desired {
 		if _, ok := locations[m.Location]; ok {
@@ -98,7 +98,7 @@ func deleteZoneMapping(ctx context.Context, client mongodbatlas.GlobalClustersSe
 	return nil
 }
 
-func createZoneMapping(ctx context.Context, client mongodbatlas.GlobalClustersService, groupID string, deploymentName string, mappings []mdbv1.CustomZoneMapping) (map[string]string, error) {
+func createZoneMapping(ctx context.Context, client mongodbatlas.GlobalClustersService, groupID string, deploymentName string, mappings []akov2.CustomZoneMapping) (map[string]string, error) {
 	var atlasMappings []mongodbatlas.CustomZoneMapping
 	for _, m := range mappings {
 		atlasMappings = append(atlasMappings, m.ToAtlas())
@@ -129,7 +129,7 @@ func getZoneMappingMap(ctx context.Context, client *mongodbatlas.Client, groupID
 	return result, nil
 }
 
-func compareZoneMappingStates(existing map[string]string, desired []mdbv1.CustomZoneMapping, zoneMappingMap map[string]string) (bool, bool) {
+func compareZoneMappingStates(existing map[string]string, desired []akov2.CustomZoneMapping, zoneMappingMap map[string]string) (bool, bool) {
 	shouldAdd, shouldDelete := false, false
 
 	if len(desired) < len(existing) {

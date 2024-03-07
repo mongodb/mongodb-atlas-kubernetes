@@ -13,7 +13,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -27,7 +27,7 @@ const ipAccessStatusFailed = "FAILED"
 // ensureIPAccessList ensures that the state of the Atlas IP Access List matches the
 // state of the IP Access list specified in the project CR. Any Access Lists which exist
 // in Atlas but are not specified in the CR are deleted.
-func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *mdbv1.AtlasProject, subobjectProtect bool) workflow.Result {
+func ensureIPAccessList(service *workflow.Context, statusFunc atlas.IPAccessListStatus, akoProject *akov2.AtlasProject, subobjectProtect bool) workflow.Result {
 	canReconcile, err := canIPAccessListReconcile(service.Context, service.SdkClient, subobjectProtect, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -226,12 +226,12 @@ func filterActiveIPAccessLists(accessLists []project.IPAccessList) ([]project.IP
 	return active, expired
 }
 
-func canIPAccessListReconcile(ctx context.Context, atlasClient *admin.APIClient, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canIPAccessListReconcile(ctx context.Context, atlasClient *admin.APIClient, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {

@@ -14,13 +14,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	canReconcile, err := canPrivateEndpointReconcile(workflowCtx.Context, workflowCtx.Client, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -86,7 +86,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *mdbv1.AtlasPr
 	return interfaceStatus
 }
 
-func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) (workflow.Result, status.ConditionType) {
+func syncPrivateEndpointsWithAtlas(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) (workflow.Result, status.ConditionType) {
 	log := ctx.Log
 
 	log.Debugw("PE Connections", "atlasPEs", atlasPEs, "specPEs", specPEs)
@@ -133,7 +133,7 @@ func getStatusForServices(ctx *workflow.Context, atlasPEs []atlasPE) workflow.Re
 	return workflow.OK()
 }
 
-func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) workflow.Result {
+func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) workflow.Result {
 	totalInterfaceCount := 0
 
 	for _, atlasPeService := range atlasPEs {
@@ -240,7 +240,7 @@ func getAllPrivateEndpoints(ctx context.Context, client *mongodbatlas.Client, pr
 	return
 }
 
-func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []mdbv1.PrivateEndpoint, endpointCounts []int) (newConnections []atlasPE, err error) {
+func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []akov2.PrivateEndpoint, endpointCounts []int) (newConnections []atlasPE, err error) {
 	newConnections = make([]atlasPE, 0)
 	for idx, pe := range endpointsToCreate {
 		conn, _, err := ctx.Client.PrivateEndpoints.Create(ctx.Context, projectID, &mongodbatlas.PrivateEndpointConnection{
@@ -299,7 +299,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 	return
 }
 
-func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService atlasPE) bool {
+func endpointNeedsUpdating(specPeService akov2.PrivateEndpoint, atlasPeService atlasPE) bool {
 	if isAvailable(atlasPeService.Status) && endpointDefinedInSpec(specPeService) {
 		switch specPeService.Provider {
 		case provider.ProviderAWS, provider.ProviderAzure:
@@ -312,7 +312,7 @@ func endpointNeedsUpdating(specPeService mdbv1.PrivateEndpoint, atlasPeService a
 	return false
 }
 
-func countNotConfiguredEndpoints(endpoints []mdbv1.PrivateEndpoint) (count int) {
+func countNotConfiguredEndpoints(endpoints []akov2.PrivateEndpoint) (count int) {
 	for _, pe := range endpoints {
 		if !endpointDefinedInSpec(pe) {
 			count++
@@ -322,7 +322,7 @@ func countNotConfiguredEndpoints(endpoints []mdbv1.PrivateEndpoint) (count int) 
 	return count
 }
 
-func endpointDefinedInSpec(specEndpoint mdbv1.PrivateEndpoint) bool {
+func endpointDefinedInSpec(specEndpoint akov2.PrivateEndpoint) bool {
 	return specEndpoint.ID != "" || specEndpoint.EndpointGroupName != ""
 }
 
@@ -332,7 +332,7 @@ func DeleteAllPrivateEndpoints(ctx *workflow.Context, projectID string) workflow
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	endpointsToDelete := getEndpointsNotInSpec([]mdbv1.PrivateEndpoint{}, atlasPEs)
+	endpointsToDelete := getEndpointsNotInSpec([]akov2.PrivateEndpoint{}, atlasPEs)
 	return deletePrivateEndpointsFromAtlas(ctx, projectID, endpointsToDelete)
 }
 
@@ -494,12 +494,12 @@ func terminateWithError(ctx *workflow.Context, conditionType status.ConditionTyp
 var notReadyServiceResult = workflow.InProgress(workflow.ProjectPEServiceIsNotReadyInAtlas, "Private Endpoint Service is not ready")
 var notReadyInterfaceResult = workflow.InProgress(workflow.ProjectPEInterfaceIsNotReadyInAtlas, "Interface Private Endpoint is not ready")
 
-func getEndpointsNotInSpec(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []atlasPE {
+func getEndpointsNotInSpec(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) []atlasPE {
 	uniqueItems, _ := getUniqueDifference(atlasPEs, specPEs)
 	return uniqueItems
 }
 
-func getEndpointsNotInAtlas(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) (toCreate []mdbv1.PrivateEndpoint, counts []int) {
+func getEndpointsNotInAtlas(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) (toCreate []akov2.PrivateEndpoint, counts []int) {
 	return getUniqueDifference(specPEs, atlasPEs)
 }
 
@@ -533,12 +533,12 @@ type itemCount struct {
 	Count int
 }
 
-func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
+func getEndpointsIntersection(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
 	intersection := set.Intersection(specPEs, atlasPEs)
 	result := []intersectionPair{}
 	for _, item := range intersection {
 		pair := intersectionPair{}
-		pair.spec = item[0].(mdbv1.PrivateEndpoint)
+		pair.spec = item[0].(akov2.PrivateEndpoint)
 		pair.atlas = item[1].(atlasPE)
 		result = append(result, pair)
 	}
@@ -546,16 +546,16 @@ func getEndpointsIntersection(specPEs []mdbv1.PrivateEndpoint, atlasPEs []atlasP
 }
 
 type intersectionPair struct {
-	spec  mdbv1.PrivateEndpoint
+	spec  akov2.PrivateEndpoint
 	atlas atlasPE
 }
 
-func canPrivateEndpointReconcile(ctx context.Context, atlasClient *mongodbatlas.Client, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canPrivateEndpointReconcile(ctx context.Context, atlasClient *mongodbatlas.Client, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {

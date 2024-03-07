@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -32,7 +32,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, customRoles []v1.CustomRole) {
+		func(test *model.TestDataProvider, customRoles []akov2.CustomRole) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			projectCustomRolesFlow(test, customRoles)
@@ -44,10 +44,10 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.CustomRole{
+			[]akov2.CustomRole{
 				{
 					Name: "ShardingAdmin",
-					InheritedRoles: []v1.Role{
+					InheritedRoles: []akov2.Role{
 						{
 							Name:     "enableSharding",
 							Database: "admin",
@@ -57,10 +57,10 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 							Database: "admin",
 						},
 					},
-					Actions: []v1.Action{
+					Actions: []akov2.Action{
 						{
 							Name: "LIST_SESSIONS",
-							Resources: []v1.Resource{
+							Resources: []akov2.Resource{
 								{
 									Cluster: pointer.MakePtr(true),
 								},
@@ -68,7 +68,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 						},
 						{
 							Name: "KILL_ANY_SESSION",
-							Resources: []v1.Resource{
+							Resources: []akov2.Resource{
 								{
 									Cluster: pointer.MakePtr(true),
 								},
@@ -78,7 +78,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 				},
 				{
 					Name: "test",
-					InheritedRoles: []v1.Role{
+					InheritedRoles: []akov2.Role{
 						{
 							Name:     "readWrite",
 							Database: "test",
@@ -94,7 +94,7 @@ var _ = Describe("UserLogin", Label("custom-roles"), func() {
 	)
 })
 
-func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []v1.CustomRole) {
+func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov2.CustomRole) {
 	By("Add Custom Roles to the project", func() {
 		userData.Project.Spec.CustomRoles = customRoles
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
@@ -103,9 +103,9 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []v1.C
 
 	By("Update Custom Role from the project", func() {
 		crActions := userData.Project.Spec.CustomRoles[0].Actions
-		crActions = append(crActions, v1.Action{
+		crActions = append(crActions, akov2.Action{
 			Name: "USE_UUID",
-			Resources: []v1.Resource{
+			Resources: []akov2.Resource{
 				{
 					Cluster: pointer.MakePtr(true),
 				},

@@ -8,8 +8,6 @@ import (
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -17,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -26,19 +25,19 @@ import (
 )
 
 type TeamDataContainer struct {
-	ProjectTeam *v1.Team
-	Team        *v1.AtlasTeam
+	ProjectTeam *akov2.Team
+	Team        *akov2.AtlasTeam
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
 	}()
 
-	teamsToAssign := map[string]*v1.Team{}
+	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry
 
@@ -52,7 +51,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 			assignedTeam.TeamRef.Namespace = project.Namespace
 		}
 
-		team := &v1.AtlasTeam{}
+		team := &akov2.AtlasTeam{}
 		teamReconciler := r.teamReconcile(team, project.ConnectionSecretObjectKey())
 		_, err := teamReconciler(
 			workflowCtx.Context,
@@ -105,7 +104,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *v1.AtlasProject, teamsToAssign map[string]*v1.Team) error {
+func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projectID string, project *akov2.AtlasProject, teamsToAssign map[string]*akov2.Team) error {
 	ctx.Log.Debug("fetching assigned teams from atlas")
 	atlasAssignedTeams, _, err := ctx.Client.Projects.GetProjectTeamsAssigned(ctx.Context, projectID)
 	if err != nil {
@@ -196,8 +195,8 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, projec
 	return nil
 }
 
-func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *v1.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
-	team := &v1.AtlasTeam{}
+func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project *akov2.AtlasProject, teamRef *common.ResourceRefNamespaced, isRemoval bool) error {
+	team := &akov2.AtlasTeam{}
 	objKey := kube.ObjectKey(teamRef.Namespace, teamRef.Name)
 	err := r.Client.Get(ctx.Context, objKey, team)
 	if err != nil {
@@ -249,7 +248,7 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 	return nil
 }
 
-func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *common.ResourceRefNamespaced {
+func getTeamRefFromProjectStatus(project *akov2.AtlasProject, teamID string) *common.ResourceRefNamespaced {
 	for _, stat := range project.Status.Teams {
 		if stat.ID == teamID {
 			return &stat.TeamRef
@@ -259,7 +258,7 @@ func getTeamRefFromProjectStatus(project *v1.AtlasProject, teamID string) *commo
 	return nil
 }
 
-func hasTeamRolesChanged(current []string, desired []v1.TeamRole) bool {
+func hasTeamRolesChanged(current []string, desired []akov2.TeamRole) bool {
 	desiredMap := map[string]struct{}{}
 	for _, desiredRole := range desired {
 		desiredMap[string(desiredRole)] = struct{}{}
@@ -277,12 +276,12 @@ type assignedTeamInfo struct {
 	Roles []string
 }
 
-func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.Client, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.Client, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -329,11 +328,11 @@ func canAssignedTeamsReconcile(workflowCtx *workflow.Context, k8sClient client.C
 	return cmp.Diff(atlasAssignedTeamsInfo, currentAssignedTeamsInfo, cmpopts.EquateEmpty()) == "", nil
 }
 
-func collectTeams(ctx context.Context, k8sClient client.Client, projectSpec *v1.AtlasProjectSpec, projectNamespace string) ([]assignedTeamInfo, error) {
+func collectTeams(ctx context.Context, k8sClient client.Client, projectSpec *akov2.AtlasProjectSpec, projectNamespace string) ([]assignedTeamInfo, error) {
 	teams := make([]assignedTeamInfo, 0, len(projectSpec.Teams))
 
 	for _, assignedTeam := range projectSpec.Teams {
-		team := &v1.AtlasTeam{}
+		team := &akov2.AtlasTeam{}
 		err := k8sClient.Get(ctx, *assignedTeam.TeamRef.GetObject(projectNamespace), team)
 		if err != nil {
 			if !apiErrors.IsNotFound(err) {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -38,7 +38,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, alertConfigurations []v1.AlertConfiguration) {
+		func(test *model.TestDataProvider, alertConfigurations []akov2.AlertConfiguration) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			alertConfigFlow(test, alertConfigurations)
@@ -50,16 +50,16 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.AlertConfiguration{
+			[]akov2.AlertConfiguration{
 				{
 					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
 					Enabled:       true,
-					Threshold: &v1.Threshold{
+					Threshold: &akov2.Threshold{
 						Operator:  "LESS_THAN",
 						Threshold: "1",
 						Units:     "HOURS",
 					},
-					Notifications: []v1.Notification{
+					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
 							DelayMin:     pointer.MakePtr(5),
@@ -75,12 +75,12 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 				{
 					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
 					Enabled:       true,
-					Threshold: &v1.Threshold{
+					Threshold: &akov2.Threshold{
 						Operator:  "LESS_THAN",
 						Threshold: "2", // make it a different alert config
 						Units:     "HOURS",
 					},
-					Notifications: []v1.Notification{
+					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
 							DelayMin:     pointer.MakePtr(5),
@@ -102,11 +102,11 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.AlertConfiguration{
+			[]akov2.AlertConfiguration{
 				{
 					EventTypeName: "JOINED_GROUP",
 					Enabled:       true,
-					Notifications: []v1.Notification{
+					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  60,
 							DelayMin:     pointer.MakePtr(0),
@@ -122,12 +122,12 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 				{
 					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
 					Enabled:       true,
-					Threshold: &v1.Threshold{
+					Threshold: &akov2.Threshold{
 						Operator:  "LESS_THAN",
 						Threshold: "1",
 						Units:     "HOURS",
 					},
-					Notifications: []v1.Notification{
+					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
 							DelayMin:     pointer.MakePtr(5),
@@ -146,7 +146,7 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 
 })
 
-func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []v1.AlertConfiguration) {
+func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.AlertConfiguration) {
 	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 		Namespace: userData.Project.Namespace}, userData.Project)).Should(Succeed())
 	userData.Project.Spec.AlertConfigurationSyncEnabled = true
@@ -181,16 +181,16 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config"),
 		Expect(os.Getenv("DATADOG_KEY")).ShouldNot(BeEmpty(), "Please setup DATADOG_KEY environment variable")
 	})
 
-	alertConfigs := []v1.AlertConfiguration{
+	alertConfigs := []akov2.AlertConfiguration{
 		{
 			EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
 			Enabled:       true,
-			Threshold: &v1.Threshold{
+			Threshold: &akov2.Threshold{
 				Operator:  "LESS_THAN",
 				Threshold: "1",
 				Units:     "HOURS",
 			},
-			Notifications: []v1.Notification{
+			Notifications: []akov2.Notification{
 				{
 					IntervalMin:  5,
 					DelayMin:     pointer.MakePtr(5),

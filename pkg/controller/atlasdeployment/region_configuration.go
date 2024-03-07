@@ -6,10 +6,10 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
-func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlasCluster *mongodbatlas.AdvancedCluster) {
+func syncRegionConfiguration(deploymentSpec *akov2.AdvancedDeploymentSpec, atlasCluster *mongodbatlas.AdvancedCluster) {
 	// When there's no config to handle, do nothing
 	if deploymentSpec == nil || len(deploymentSpec.ReplicationSpecs) == 0 {
 		return
@@ -61,11 +61,11 @@ func syncRegionConfiguration(deploymentSpec *mdbv1.AdvancedDeploymentSpec, atlas
 	}
 }
 
-func isComputeAutoScalingEnabled(autoScalingSpec *mdbv1.AdvancedAutoScalingSpec) bool {
+func isComputeAutoScalingEnabled(autoScalingSpec *akov2.AdvancedAutoScalingSpec) bool {
 	return autoScalingSpec != nil && autoScalingSpec.Compute != nil && autoScalingSpec.Compute.Enabled != nil && *autoScalingSpec.Compute.Enabled
 }
 
-func isDiskAutoScalingEnabled(autoScalingSpec *mdbv1.AdvancedAutoScalingSpec) bool {
+func isDiskAutoScalingEnabled(autoScalingSpec *akov2.AdvancedAutoScalingSpec) bool {
 	return autoScalingSpec != nil && autoScalingSpec.DiskGB != nil && autoScalingSpec.DiskGB.Enabled != nil && *autoScalingSpec.DiskGB.Enabled
 }
 
@@ -89,12 +89,12 @@ func hasDiskSizeChanged(deploymentDiskSize *int, clusterDiskSize *float64) bool 
 	return *deploymentDiskSize != int(*clusterDiskSize)
 }
 
-func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, atlasRegions []*mongodbatlas.AdvancedRegionConfig) bool {
+func regionsConfigHasChanged(deploymentRegions []*akov2.AdvancedRegionConfig, atlasRegions []*mongodbatlas.AdvancedRegionConfig) bool {
 	if len(deploymentRegions) != len(atlasRegions) {
 		return true
 	}
 
-	mapDeploymentRegions := map[string]*mdbv1.AdvancedRegionConfig{}
+	mapDeploymentRegions := map[string]*akov2.AdvancedRegionConfig{}
 	for _, region := range deploymentRegions {
 		// do not compare instance sizes when autoscaling is ON
 		if isComputeAutoScalingEnabled(region.AutoScaling) {
@@ -109,7 +109,7 @@ func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, at
 			return true
 		}
 
-		var atlasAsOperatorRegion mdbv1.AdvancedRegionConfig
+		var atlasAsOperatorRegion akov2.AdvancedRegionConfig
 		var atlasRegion = &atlasAsOperatorRegion
 		err := compat.JSONCopy(atlasRegion, region)
 		if err != nil {
@@ -129,7 +129,7 @@ func regionsConfigHasChanged(deploymentRegions []*mdbv1.AdvancedRegionConfig, at
 	return false
 }
 
-func ignoreInstanceSize(rc *mdbv1.AdvancedRegionConfig) *mdbv1.AdvancedRegionConfig {
+func ignoreInstanceSize(rc *akov2.AdvancedRegionConfig) *akov2.AdvancedRegionConfig {
 	if rc == nil {
 		return rc
 	}
@@ -145,13 +145,13 @@ func ignoreInstanceSize(rc *mdbv1.AdvancedRegionConfig) *mdbv1.AdvancedRegionCon
 	return rc
 }
 
-func normalizeSpecs(regions []*mdbv1.AdvancedRegionConfig) {
+func normalizeSpecs(regions []*akov2.AdvancedRegionConfig) {
 	for _, region := range regions {
 		if region == nil {
 			return
 		}
 
-		var notNilSpecs mdbv1.Specs
+		var notNilSpecs akov2.Specs
 		if region.ElectableSpecs != nil {
 			notNilSpecs = *region.ElectableSpecs
 		} else if region.ReadOnlySpecs != nil {

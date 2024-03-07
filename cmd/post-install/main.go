@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +47,7 @@ func createK8sClient() (client.Client, error) {
 		return nil, err
 	}
 
-	k8sClient.Scheme().AddKnownTypes(schema.GroupVersion{Group: "atlas.mongodb.com", Version: "v1"}, &mdbv1.AtlasDeployment{}, &mdbv1.AtlasDeploymentList{})
+	k8sClient.Scheme().AddKnownTypes(schema.GroupVersion{Group: "atlas.mongodb.com", Version: "v1"}, &akov2.AtlasDeployment{}, &akov2.AtlasDeploymentList{})
 	return k8sClient, nil
 }
 
@@ -72,7 +72,7 @@ func isDeploymentReady(ctx context.Context, logger *zap.SugaredLogger) (bool, er
 		}
 		totalTime += pollingInterval
 
-		atlasDeployment := mdbv1.AtlasDeployment{}
+		atlasDeployment := akov2.AtlasDeployment{}
 		if err := k8sClient.Get(ctx, kube.ObjectKey(namespace, deploymentName), &atlasDeployment); err != nil {
 			return false, err
 		}

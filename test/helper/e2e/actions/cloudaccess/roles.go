@@ -3,14 +3,14 @@ package cloudaccess
 import (
 	"fmt"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 type Role struct {
 	Name       string
-	AccessRole v1.CloudProviderIntegration
+	AccessRole akov2.CloudProviderIntegration
 }
 
 func CreateRoles(roles []Role) error {
@@ -45,7 +45,7 @@ func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderIn
 	return nil
 }
 
-func DeleteCloudProviderIntegrations(roles []v1.CloudProviderIntegration) []error {
+func DeleteCloudProviderIntegrations(roles []akov2.CloudProviderIntegration) []error {
 	var errorList []error
 	for _, role := range roles {
 		switch role.ProviderName {

@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -21,7 +21,7 @@ const (
 	ServerlessProviderName = "SERVERLESS"
 )
 
-func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
+func CreateDeploymentWithKeepPolicy(name string) *akov2.AtlasDeployment {
 	deployment := CreateBasicDeployment(name)
 	deployment.SetAnnotations(map[string]string{
 		customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
@@ -29,28 +29,28 @@ func CreateDeploymentWithKeepPolicy(name string) *v1.AtlasDeployment {
 	return deployment
 }
 
-func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
+func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType: "GEOSHARDED",
 				Name:        name,
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "Zone 1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
 								ProviderName: "AWS",
 								RegionName:   "US_EAST_1",
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -60,12 +60,12 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 					{
 						NumShards: 1,
 						ZoneName:  "Zone 2",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
 								ProviderName: "AZURE",
 								RegionName:   "EUROPE_NORTH",
 								Priority:     pointer.MakePtr(7),
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -78,18 +78,18 @@ func CreateAdvancedGeoshardedDeployment(name string) *v1.AtlasDeployment {
 	}
 }
 
-func CreateServerlessDeployment(name string, providerName string, regionName string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
+func CreateServerlessDeployment(name string, providerName string, regionName string) *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			ServerlessSpec: &v1.ServerlessSpec{
+			ServerlessSpec: &akov2.ServerlessSpec{
 				Name: name,
-				ProviderSettings: &v1.ProviderSettingsSpec{
+				ProviderSettings: &akov2.ProviderSettingsSpec{
 					ProviderName:        ServerlessProviderName,
 					BackingProviderName: providerName,
 					RegionName:          regionName,
@@ -99,24 +99,24 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 	}
 }
 
-func CreateBasicDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
+func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType: "REPLICASET",
 				Name:        "cluster-basics",
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName: "test zone 1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: "M2",
 									NodeCount:    pointer.MakePtr(1),
 								},
@@ -133,25 +133,25 @@ func CreateBasicDeployment(name string) *v1.AtlasDeployment {
 	}
 }
 
-func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
-	deployment := &v1.AtlasDeployment{
+func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
+	deployment := &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType:   "REPLICASET",
 				Name:          "deployment-backup",
 				BackupEnabled: pointer.MakePtr(true),
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName: "Zone 1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -169,20 +169,20 @@ func CreateDeploymentWithBackup(name string) *v1.AtlasDeployment {
 	return deployment
 }
 
-func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
-	return v1.AtlasDeploymentSpec{
+func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
+	return akov2.AtlasDeploymentSpec{
 		Project: common.ResourceRefNamespaced{
 			Name: ProjectName,
 		},
-		DeploymentSpec: &v1.AdvancedDeploymentSpec{
+		DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:          "deployment-backup",
 			BackupEnabled: pointer.MakePtr(false),
-			ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
 					ZoneName: "Zone 1",
-					RegionConfigs: []*v1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
-							ElectableSpecs: &v1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: InstanceSizeM20,
 								NodeCount:    pointer.MakePtr(3),
 							},
@@ -198,19 +198,19 @@ func NewDeploymentWithBackupSpec() v1.AtlasDeploymentSpec {
 	}
 }
 
-func CreateDeploymentWithMultiregionAWS(name string) *v1.AtlasDeployment {
+func CreateDeploymentWithMultiregionAWS(name string) *akov2.AtlasDeployment {
 	return CreateDeploymentWithMultiregion(name, provider.ProviderAWS)
 }
 
-func CreateDeploymentWithMultiregionAzure(name string) *v1.AtlasDeployment {
+func CreateDeploymentWithMultiregionAzure(name string) *akov2.AtlasDeployment {
 	return CreateDeploymentWithMultiregion(name, provider.ProviderAzure)
 }
 
-func CreateDeploymentWithMultiregionGCP(name string) *v1.AtlasDeployment {
+func CreateDeploymentWithMultiregionGCP(name string) *akov2.AtlasDeployment {
 	return CreateDeploymentWithMultiregion(name, provider.ProviderGCP)
 }
 
-func CreateDeploymentWithMultiregion(name string, providerName provider.ProviderName) *v1.AtlasDeployment {
+func CreateDeploymentWithMultiregion(name string, providerName provider.ProviderName) *akov2.AtlasDeployment {
 	var regions []string
 	switch providerName {
 	case provider.ProviderAWS:
@@ -225,39 +225,39 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 		panic("unknown provider")
 	}
 
-	return &v1.AtlasDeployment{
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          "deployment-multiregion",
 				BackupEnabled: pointer.MakePtr(true),
 				ClusterType:   "REPLICASET",
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "US-Zone",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(2),
 								},
-								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
+								AutoScaling:  &akov2.AdvancedAutoScalingSpec{},
 								Priority:     pointer.MakePtr(7),
 								ProviderName: string(providerName),
 								RegionName:   regions[0],
 							},
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(1),
 								},
-								AutoScaling:  &v1.AdvancedAutoScalingSpec{},
+								AutoScaling:  &akov2.AdvancedAutoScalingSpec{},
 								Priority:     pointer.MakePtr(6),
 								ProviderName: string(providerName),
 								RegionName:   regions[1],
@@ -270,27 +270,27 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 	}
 }
 
-func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
+func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:                 name,
-				ClusterType:          string(v1.TypeReplicaSet),
+				ClusterType:          string(akov2.TypeReplicaSet),
 				RootCertType:         "ISRGROOTX1",
 				VersionReleaseSystem: "LTS",
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "Zone 1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM0,
 								},
 								Priority:            pointer.MakePtr(7),
@@ -302,7 +302,7 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 					},
 				},
 			},
-			ProcessArgs: &v1.ProcessArgs{
+			ProcessArgs: &akov2.ProcessArgs{
 				JavascriptEnabled:         pointer.MakePtr(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
 				NoTableScan:               pointer.MakePtr(false),
@@ -311,35 +311,35 @@ func CreateFreeAdvancedDeployment(name string) *v1.AtlasDeployment {
 	}
 }
 
-func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
-	return &v1.AtlasDeployment{
+func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
+	return &akov2.AtlasDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: v1.AtlasDeploymentSpec{
+		Spec: akov2.AtlasDeploymentSpec{
 			Project: common.ResourceRefNamespaced{
 				Name: ProjectName,
 			},
-			DeploymentSpec: &v1.AdvancedDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          name,
 				BackupEnabled: pointer.MakePtr(false),
-				BiConnector: &v1.BiConnectorSpec{
+				BiConnector: &akov2.BiConnectorSpec{
 					Enabled:        pointer.MakePtr(false),
 					ReadPreference: "secondary",
 				},
-				ClusterType:              string(v1.TypeReplicaSet),
+				ClusterType:              string(akov2.TypeReplicaSet),
 				EncryptionAtRestProvider: "NONE",
 				PitEnabled:               pointer.MakePtr(false),
 				Paused:                   pointer.MakePtr(false),
 				RootCertType:             "ISRGROOTX1",
 				VersionReleaseSystem:     "LTS",
-				ReplicationSpecs: []*v1.AdvancedReplicationSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						NumShards: 1,
 						ZoneName:  "Zone 1",
-						RegionConfigs: []*v1.AdvancedRegionConfig{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
 							{
-								ElectableSpecs: &v1.Specs{
+								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
 									NodeCount:    pointer.MakePtr(3),
 								},
@@ -351,7 +351,7 @@ func CreateAdvancedDeployment(name string) *v1.AtlasDeployment {
 					},
 				},
 			},
-			ProcessArgs: &v1.ProcessArgs{
+			ProcessArgs: &akov2.ProcessArgs{
 				JavascriptEnabled:         pointer.MakePtr(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
 				NoTableScan:               pointer.MakePtr(false),

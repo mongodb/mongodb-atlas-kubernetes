@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -23,7 +23,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
-		result, err := checker(&v1.AtlasProject{})
+		result, err := checker(&akov2.AtlasProject{})
 		assert.EqualError(t, err, "failed to match resource type as AtlasTeams")
 		assert.False(t, result)
 	})
@@ -35,7 +35,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 			Context: context.Background(),
 		}
 		checker := teamsManagedByAtlas(workflowCtx)
-		result, err := checker(&v1.AtlasTeam{})
+		result, err := checker(&akov2.AtlasTeam{})
 		assert.NoError(t, err)
 		assert.False(t, result)
 	})
@@ -48,7 +48,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				},
 			},
 		}
-		team := &v1.AtlasTeam{
+		team := &akov2.AtlasTeam{
 			Status: status.TeamStatus{
 				ID: "team-id-1",
 			},
@@ -72,7 +72,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				},
 			},
 		}
-		team := &v1.AtlasTeam{
+		team := &akov2.AtlasTeam{
 			Status: status.TeamStatus{
 				ID: "team-id-1",
 			},
@@ -100,10 +100,10 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				},
 			},
 		}
-		team := &v1.AtlasTeam{
-			Spec: v1.TeamSpec{
+		team := &akov2.AtlasTeam{
+			Spec: akov2.TeamSpec{
 				Name:      "My Team",
-				Usernames: []v1.TeamUser{"user1@mongodb.com", "user2@mongodb.com"},
+				Usernames: []akov2.TeamUser{"user1@mongodb.com", "user2@mongodb.com"},
 			},
 			Status: status.TeamStatus{
 				ID: "team-id-1",
@@ -132,10 +132,10 @@ func TestTeamManagedByAtlas(t *testing.T) {
 				},
 			},
 		}
-		team := &v1.AtlasTeam{
-			Spec: v1.TeamSpec{
+		team := &akov2.AtlasTeam{
+			Spec: akov2.TeamSpec{
 				Name:      "My Team",
-				Usernames: []v1.TeamUser{"user1@mongodb.com"},
+				Usernames: []akov2.TeamUser{"user1@mongodb.com"},
 			},
 			Status: status.TeamStatus{
 				ID: "team-id-1",
