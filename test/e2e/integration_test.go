@@ -114,6 +114,22 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 				integration.APIKeyRef = ref
 			},
 		),
+		Entry("Users can integrate DATADOG on region AP1", Label("project-integration"),
+			model.DataProvider(
+				"datatog-ap1",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				30018,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			project.Integration{
+				Type:   "DATADOG",
+				Region: "AP1",
+			},
+			datadogEnvKey,
+			func(integration *project.Integration, ref common.ResourceRefNamespaced) {
+				integration.APIKeyRef = ref
+			},
+		),
 		Entry("Users can integrate PagerDuty on region US", Label("project-integration"),
 			model.DataProvider(
 				"pager-duty-us",
