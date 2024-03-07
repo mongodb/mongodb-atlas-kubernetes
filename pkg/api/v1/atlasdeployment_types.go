@@ -147,7 +147,7 @@ type AdvancedDeploymentSpec struct {
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	SearchNodes []SearchNode `json:"searchNodes,omitempty"`
-	// A list of atlas search indexes configurations
+	// A list of atlas search indexes configuration for the current deployment
 	// +optional
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
 }
