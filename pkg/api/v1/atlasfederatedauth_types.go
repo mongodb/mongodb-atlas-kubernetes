@@ -67,7 +67,6 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 		}
 		atlasRoleMappings = append(atlasRoleMappings, admin.AuthFederationRoleMapping{
 			ExternalGroupName: roleMapping.ExternalGroupName,
-			Id:                &idpID,
 			RoleAssignments:   &atlasRoleAssignments,
 		})
 	}
