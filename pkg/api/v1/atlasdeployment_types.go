@@ -130,7 +130,7 @@ type AdvancedDeploymentSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
-	// A list of atlas search indexes configurations
+	// A list of atlas search indexes configuration for the current deployment
 	// +optional
 	SearchIndexes []SearchIndex `json:"searchIndexes,omitempty"`
 }
