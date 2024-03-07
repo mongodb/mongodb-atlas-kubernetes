@@ -126,6 +126,12 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 						RetentionValue:    12,
 						RetentionUnit:     "months",
 					},
+					{
+						FrequencyInterval: 1,
+						FrequencyType:     "yearly",
+						RetentionValue:    1,
+						RetentionUnit:     "years",
+					},
 				},
 			},
 		}

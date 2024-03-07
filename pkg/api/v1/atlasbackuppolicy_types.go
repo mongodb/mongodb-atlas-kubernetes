@@ -22,7 +22,7 @@ type AtlasBackupPolicySpec struct {
 
 type AtlasBackupPolicyItem struct {
 	// Frequency associated with the backup policy item. One of the following values: hourly, daily, weekly or monthly. You cannot specify multiple hourly and daily backup policy items.
-	// +kubebuilder:validation:Enum:=hourly;daily;weekly;monthly
+	// +kubebuilder:validation:Enum:=hourly;daily;weekly;monthly;yearly
 	FrequencyType string `json:"frequencyType"`
 
 	// Desired frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
@@ -31,7 +31,7 @@ type AtlasBackupPolicyItem struct {
 	FrequencyInterval int `json:"frequencyInterval"`
 
 	// Scope of the backup policy item: days, weeks, or months
-	// +kubebuilder:validation:Enum:=days;weeks;months
+	// +kubebuilder:validation:Enum:=days;weeks;months;years
 	RetentionUnit string `json:"retentionUnit"`
 
 	// Value to associate with RetentionUnit
