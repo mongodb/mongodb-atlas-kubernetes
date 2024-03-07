@@ -19,7 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = FDescribe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
+var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
