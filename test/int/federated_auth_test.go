@@ -104,9 +104,9 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			}
 			roles = append(
 				roles,
-				mdbv1.RoleMapping{
+				akov2.RoleMapping{
 					ExternalGroupName: "ako_team",
-					RoleAssignments: []mdbv1.RoleAssignment{
+					RoleAssignments: []akov2.RoleAssignment{
 						{Role: "ORG_OWNER"},
 					},
 				},
@@ -154,10 +154,10 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 			if len(originalConnectedOrgConfig.GetRoleMappings()) > 0 {
 				GinkgoWriter.Println("HAS ROLE MAPPINGS", len(originalConnectedOrgConfig.GetRoleMappings()), originalConnectedOrgConfig.GetRoleMappings()[0])
-				roles := make([]mdbv1.RoleMapping, len(originalConnectedOrgConfig.GetRoleMappings()))
+				roles := make([]akov2.RoleMapping, len(originalConnectedOrgConfig.GetRoleMappings()))
 
 				for _, roleMapping := range originalConnectedOrgConfig.GetRoleMappings() {
-					assignments := make([]mdbv1.RoleAssignment, len(roleMapping.GetRoleAssignments()))
+					assignments := make([]akov2.RoleAssignment, len(roleMapping.GetRoleAssignments()))
 					for _, roleAssignment := range roleMapping.GetRoleAssignments() {
 						var projectName string
 
@@ -171,7 +171,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 						assignments = append(
 							assignments,
-							mdbv1.RoleAssignment{
+							akov2.RoleAssignment{
 								ProjectName: projectName,
 								Role:        roleAssignment.GetRole(),
 							},
@@ -180,7 +180,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 					roles = append(
 						roles,
-						mdbv1.RoleMapping{
+						akov2.RoleMapping{
 							ExternalGroupName: roleMapping.GetExternalGroupName(),
 							RoleAssignments:   assignments,
 						},
