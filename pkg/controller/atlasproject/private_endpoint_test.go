@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -19,7 +19,7 @@ import (
 func TestGetEndpointsNotInAtlas(t *testing.T) {
 	const region1 = "SOME_REGION"
 	const region2 = "OTHER_REGION"
-	specPEs := []mdbv1.PrivateEndpoint{
+	specPEs := []akov2.PrivateEndpoint{
 		{
 			Provider: provider.ProviderAWS,
 			Region:   region1,
@@ -52,7 +52,7 @@ func TestGetEndpointsNotInAtlas(t *testing.T) {
 func TestGetEndpointsNotInSpec(t *testing.T) {
 	const region1 = "SOME_REGION"
 	const region2 = "OTHER_REGION"
-	specPEs := []mdbv1.PrivateEndpoint{
+	specPEs := []akov2.PrivateEndpoint{
 		{
 			Provider: provider.ProviderAWS,
 			Region:   region1,
@@ -86,13 +86,13 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 
 func TestCanPrivateEndpointReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, false, &mdbv1.AtlasProject{})
+		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -107,7 +107,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
@@ -123,7 +123,7 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
 
@@ -150,9 +150,9 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: provider.ProviderAWS,
 						Region:   "eu-west-2",
@@ -195,9 +195,9 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: provider.ProviderAWS,
 						Region:   "eu-west-2",
@@ -240,9 +240,9 @@ func TestCanPrivateEndpointReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: provider.ProviderAWS,
 						Region:   "eu-west-2",
@@ -271,7 +271,7 @@ func TestEnsurePrivateEndpoint(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client: &atlasClient,
@@ -305,9 +305,9 @@ func TestEnsurePrivateEndpoint(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				PrivateEndpoints: []mdbv1.PrivateEndpoint{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				PrivateEndpoints: []akov2.PrivateEndpoint{
 					{
 						Provider: provider.ProviderAWS,
 						Region:   "eu-west-2",

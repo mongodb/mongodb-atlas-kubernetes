@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
@@ -65,7 +65,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 	})
 
 	DescribeTable("Encryption at rest for AWS, GCP, Azure",
-		func(test *model.TestDataProvider, encAtRest v1.EncryptionAtRest, roles []cloudaccess.Role) {
+		func(test *model.TestDataProvider, encAtRest akov2.EncryptionAtRest, roles []cloudaccess.Role) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 
@@ -82,8 +82,8 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			v1.EncryptionAtRest{
-				AwsKms: v1.AwsKms{
+			akov2.EncryptionAtRest{
+				AwsKms: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
 					Region:  "US_EAST_1",
 				},
@@ -91,7 +91,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderIntegration{
+					AccessRole: akov2.CloudProviderIntegration{
 						ProviderName: "AWS",
 					},
 				},
@@ -104,8 +104,8 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			v1.EncryptionAtRest{
-				AzureKeyVault: v1.AzureKeyVault{
+			akov2.EncryptionAtRest{
+				AzureKeyVault: akov2.AzureKeyVault{
 					AzureEnvironment:  AzureEnvironment,
 					ClientID:          os.Getenv(AzureClientID),
 					Enabled:           pointer.MakePtr(true),
@@ -122,8 +122,8 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			v1.EncryptionAtRest{
-				GoogleCloudKms: v1.GoogleCloudKms{
+			akov2.EncryptionAtRest{
+				GoogleCloudKms: akov2.GoogleCloudKms{
 					Enabled: pointer.MakePtr(true),
 				},
 			},
@@ -132,7 +132,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 	)
 })
 
-func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.EncryptionAtRest) {
+func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.EncryptionAtRest) {
 	By("Create KMS", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name,
 			Namespace: userData.Resources.Namespace}, userData.Project)).Should(Succeed())
@@ -177,8 +177,8 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest v1.Encrypt
 	})
 }
 
-func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
-	if (encAtRest.AwsKms == v1.AwsKms{}) {
+func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
+	if (encAtRest.AwsKms == akov2.AwsKms{}) {
 		return
 	}
 
@@ -217,8 +217,8 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtR
 	}
 }
 
-func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest) {
-	if (encAtRest.AzureKeyVault == v1.AzureKeyVault{}) {
+func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest) {
+	if (encAtRest.AzureKeyVault == akov2.AzureKeyVault{}) {
 		return
 	}
 
@@ -255,8 +255,8 @@ func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *v1.Encryptio
 	}
 }
 
-func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtRest) {
-	if (encAtRest.GoogleCloudKms == v1.GoogleCloudKms{}) {
+func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest) {
+	if (encAtRest.GoogleCloudKms == akov2.GoogleCloudKms{}) {
 		return
 	}
 
@@ -291,10 +291,10 @@ func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *v1.EncryptionAtR
 	}
 }
 
-func removeAllEncryptionsSeparately(encAtRest *v1.EncryptionAtRest) {
-	encAtRest.AwsKms = v1.AwsKms{}
-	encAtRest.AzureKeyVault = v1.AzureKeyVault{}
-	encAtRest.GoogleCloudKms = v1.GoogleCloudKms{}
+func removeAllEncryptionsSeparately(encAtRest *akov2.EncryptionAtRest) {
+	encAtRest.AwsKms = akov2.AwsKms{}
+	encAtRest.AzureKeyVault = akov2.AzureKeyVault{}
+	encAtRest.GoogleCloudKms = akov2.GoogleCloudKms{}
 }
 
 func checkIfEncryptionsAreDisabled(projectID string) (areEmpty bool, err error) {
@@ -356,14 +356,14 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest", "encrypti
 		roles := []cloudaccess.Role{
 			{
 				Name: utils.RandomName(awsRoleNameBase),
-				AccessRole: v1.CloudProviderIntegration{
+				AccessRole: akov2.CloudProviderIntegration{
 					ProviderName: "AWS",
 				},
 			},
 		}
 		userData := testData
-		encAtRest := v1.EncryptionAtRest{
-			AwsKms: v1.AwsKms{
+		encAtRest := akov2.EncryptionAtRest{
+			AwsKms: akov2.AwsKms{
 				Enabled: pointer.MakePtr(true),
 				Region:  "US_EAST_1",
 			},

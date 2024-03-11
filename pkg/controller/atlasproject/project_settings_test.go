@@ -11,7 +11,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -22,13 +22,13 @@ func TestProjectSettingsReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canProjectSettingsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canProjectSettingsReconcile(workflowCtx, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -47,7 +47,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -67,7 +67,7 @@ func TestProjectSettingsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -94,9 +94,9 @@ func TestProjectSettingsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Settings: &mdbv1.ProjectSettings{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Settings: &akov2.ProjectSettings{
 					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 					IsDataExplorerEnabled:                       pointer.MakePtr(true),
 					IsExtendedStorageSizesEnabled:               pointer.MakePtr(true),
@@ -143,9 +143,9 @@ func TestProjectSettingsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Settings: &mdbv1.ProjectSettings{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Settings: &akov2.ProjectSettings{
 					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 					IsDataExplorerEnabled:                       pointer.MakePtr(true),
 					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
@@ -193,9 +193,9 @@ func TestProjectSettingsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Settings: &mdbv1.ProjectSettings{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Settings: &akov2.ProjectSettings{
 					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 					IsDataExplorerEnabled:                       pointer.MakePtr(false),
 					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
@@ -238,7 +238,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -264,9 +264,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Settings: &mdbv1.ProjectSettings{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Settings: &akov2.ProjectSettings{
 					IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 					IsDataExplorerEnabled:                       pointer.MakePtr(false),
 					IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
@@ -307,14 +307,14 @@ func TestEnsureProjectSettings(t *testing.T) {
 }
 
 func TestAreSettingsInSync(t *testing.T) {
-	atlasDef := &mdbv1.ProjectSettings{
+	atlasDef := &akov2.ProjectSettings{
 		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 		IsDataExplorerEnabled:                       pointer.MakePtr(true),
 		IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
 		IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
 		IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
 	}
-	specDef := &mdbv1.ProjectSettings{
+	specDef := &akov2.ProjectSettings{
 		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
 		IsDataExplorerEnabled:                       pointer.MakePtr(true),
 	}

@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -27,7 +27,7 @@ func CreateNewClient() (client.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = v1.AddToScheme(scheme.Scheme)
+	err = akov2.AddToScheme(scheme.Scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func GetPodStatus(ctx context.Context, k8sClient client.Client, ns string) (stri
 }
 
 func GetDeploymentObservedGeneration(ctx context.Context, k8sClient client.Client, ns, resourceName string) (int, error) {
-	deployment := &v1.AtlasDeployment{}
+	deployment := &akov2.AtlasDeployment{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: resourceName}, deployment)
 	if err != nil {
 		return 0, err
@@ -61,7 +61,7 @@ func GetDeploymentObservedGeneration(ctx context.Context, k8sClient client.Clien
 }
 
 func GetProjectObservedGeneration(ctx context.Context, k8sClient client.Client, ns, resourceName string) (int, error) {
-	project := &v1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: resourceName}, project)
 	if err != nil {
 		return 0, err
@@ -70,7 +70,7 @@ func GetProjectObservedGeneration(ctx context.Context, k8sClient client.Client, 
 }
 
 func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
-	project := &v1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, project)
 	if err != nil {
 		return "", err
@@ -84,7 +84,7 @@ func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, sta
 }
 
 func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
-	deployment := &v1.AtlasDeployment{}
+	deployment := &akov2.AtlasDeployment{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, deployment)
 	if err != nil {
 		return "", err
@@ -98,7 +98,7 @@ func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, 
 }
 
 func GetDBUserStatusCondition(ctx context.Context, k8sClient client.Client, statusType status.ConditionType, ns string, name string) (string, error) {
-	user := &v1.AtlasDatabaseUser{}
+	user := &akov2.AtlasDatabaseUser{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, user)
 	if err != nil {
 		return "", err
@@ -123,9 +123,9 @@ func GetPodStatusPhaseByLabel(ctx context.Context, k8sClient client.Client, ns, 
 	return string(pod.Items[0].Status.Phase), nil
 }
 
-func GetDeploymentResource(ctx context.Context, k8sClient client.Client, namespace, rName string) (*v1.AtlasDeployment, error) {
-	deployment := &v1.AtlasDeployment{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: rName}, &v1.AtlasDeployment{})
+func GetDeploymentResource(ctx context.Context, k8sClient client.Client, namespace, rName string) (*akov2.AtlasDeployment, error) {
+	deployment := &akov2.AtlasDeployment{}
+	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: rName}, &akov2.AtlasDeployment{})
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func GetDeploymentResource(ctx context.Context, k8sClient client.Client, namespa
 }
 
 func GetK8sDeploymentStateName(ctx context.Context, k8sClient client.Client, ns, rName string) (string, error) {
-	deployment := &v1.AtlasDeployment{}
+	deployment := &akov2.AtlasDeployment{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: rName}, deployment)
 	if err != nil {
 		return "", err
@@ -155,7 +155,7 @@ func DeleteNamespace(ctx context.Context, k8sClient client.Client, ns string) er
 }
 
 func DeleteDeployment(ctx context.Context, k8sClient client.Client, ns, name string) error {
-	deployment := &v1.AtlasDeployment{}
+	deployment := &akov2.AtlasDeployment{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, deployment)
 	if err != nil {
 		return err
@@ -298,7 +298,7 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 }
 
 func ProjectListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
-	projectList := &v1.AtlasProjectList{}
+	projectList := &akov2.AtlasProjectList{}
 	err := k8sClient.List(ctx, projectList, client.InNamespace(ns))
 	if err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func ProjectListYaml(ctx context.Context, k8sClient client.Client, ns string) ([
 }
 
 func UserListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
-	userList := &v1.AtlasDatabaseUserList{}
+	userList := &akov2.AtlasDatabaseUserList{}
 	err := k8sClient.List(ctx, userList, client.InNamespace(ns))
 	if err != nil {
 		return nil, err
@@ -316,7 +316,7 @@ func UserListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]by
 }
 
 func TeamListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
-	teamList := &v1.AtlasTeamList{}
+	teamList := &akov2.AtlasTeamList{}
 	err := k8sClient.List(ctx, teamList, client.InNamespace(ns))
 	if err != nil {
 		return nil, err
@@ -325,7 +325,7 @@ func TeamListYaml(ctx context.Context, k8sClient client.Client, ns string) ([]by
 }
 
 func DeploymentListYml(ctx context.Context, k8sClient client.Client, ns string) ([]byte, error) {
-	deploymentList := &v1.AtlasDeploymentList{}
+	deploymentList := &akov2.AtlasDeploymentList{}
 	err := k8sClient.List(ctx, deploymentList, client.InNamespace(ns))
 	if err != nil {
 		return nil, err

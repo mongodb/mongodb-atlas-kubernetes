@@ -11,20 +11,20 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestCanAuditingReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canAuditingReconcile(testWorkFlowContext(mongodbatlas.Client{}), false, &mdbv1.AtlasProject{})
+		result, err := canAuditingReconcile(testWorkFlowContext(mongodbatlas.Client{}), false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		result, err := canAuditingReconcile(testWorkFlowContext(mongodbatlas.Client{}), true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -39,7 +39,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
@@ -55,7 +55,7 @@ func TestCanAuditingReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canAuditingReconcile(testWorkFlowContext(atlasClient), true, akoProject)
 
@@ -75,9 +75,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Auditing: &mdbv1.Auditing{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Auditing: &akov2.Auditing{
 					Enabled:                   true,
 					AuditFilter:               `{"atype":"authenticate","param":{"db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					AuditAuthorizationSuccess: false,
@@ -107,9 +107,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Auditing: &mdbv1.Auditing{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Auditing: &akov2.Auditing{
 					Enabled:                   true,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					AuditAuthorizationSuccess: false,
@@ -139,9 +139,9 @@ func TestCanAuditingReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Auditing: &mdbv1.Auditing{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Auditing: &akov2.Auditing{
 					Enabled:                   true,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					AuditAuthorizationSuccess: true,
@@ -169,7 +169,7 @@ func TestEnsureAuditing(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result := ensureAuditing(testWorkFlowContext(atlasClient), akoProject, true)
 
@@ -188,9 +188,9 @@ func TestEnsureAuditing(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Auditing: &mdbv1.Auditing{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Auditing: &akov2.Auditing{
 					Enabled:                   true,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					AuditAuthorizationSuccess: true,
@@ -218,7 +218,7 @@ func TestEnsureAuditing(t *testing.T) {
 func TestAuditingInSync(t *testing.T) {
 	type args struct {
 		atlas *mongodbatlas.Auditing
-		spec  *mdbv1.Auditing
+		spec  *akov2.Auditing
 	}
 	tests := []struct {
 		name string
@@ -237,7 +237,7 @@ func TestAuditingInSync(t *testing.T) {
 			name: "Atlas Auditing is empty and Operator doesn't",
 			args: args{
 				atlas: nil,
-				spec:  &mdbv1.Auditing{Enabled: true},
+				spec:  &akov2.Auditing{Enabled: true},
 			},
 			want: false,
 		},
@@ -258,7 +258,7 @@ func TestAuditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   pointer.MakePtr(true),
 				},
-				spec: &mdbv1.Auditing{
+				spec: &akov2.Auditing{
 					AuditAuthorizationSuccess: true,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -275,7 +275,7 @@ func TestAuditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   pointer.MakePtr(true),
 				},
-				spec: &mdbv1.Auditing{
+				spec: &akov2.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               `{"atype":"authenticate","param":{"db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -292,7 +292,7 @@ func TestAuditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   pointer.MakePtr(true),
 				},
-				spec: &mdbv1.Auditing{
+				spec: &akov2.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               `{"atype":"authenticate","param":{"user":"auditReadOnly","db":"admin","mechanism":"SCRAM-SHA-1"}}`,
 					Enabled:                   true,
@@ -309,7 +309,7 @@ func TestAuditingInSync(t *testing.T) {
 					ConfigurationType:         "ReadOnly",
 					Enabled:                   pointer.MakePtr(true),
 				},
-				spec: &mdbv1.Auditing{
+				spec: &akov2.Auditing{
 					AuditAuthorizationSuccess: false,
 					AuditFilter:               "{\"atype\":\"authenticate\",\"param\":{\"user\":\"auditReadOnly\",\"db\":\"admin\",\"mechanism\":\"SCRAM-SHA-1\"}}\n",
 					Enabled:                   true,

@@ -7,28 +7,28 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestSyncComputeConfiguration(t *testing.T) {
 	t.Run("should not modify new region when there's no cluster in Atlas", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -38,23 +38,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -70,23 +70,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should not modify new region without autoscaling", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -96,23 +96,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -139,23 +139,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should not modify new region with autoscaling", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -165,23 +165,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -208,23 +208,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should not modify when removing a region", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -234,23 +234,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -280,23 +280,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should not modify existing region without autoscaling", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -306,23 +306,23 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
@@ -349,28 +349,28 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should set Atlas instance sizes for existing region with compute autoscaling enabled", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								Compute: &mdbv1.ComputeSpec{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(true),
 									ScaleDownEnabled: pointer.MakePtr(true),
 									MinInstanceSize:  "M10",
@@ -382,12 +382,12 @@ func TestSyncComputeConfiguration(t *testing.T) {
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST1",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								Compute: &mdbv1.ComputeSpec{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(true),
 									ScaleDownEnabled: pointer.MakePtr(true),
 									MinInstanceSize:  "M10",
@@ -400,28 +400,28 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								Compute: &mdbv1.ComputeSpec{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(true),
 									ScaleDownEnabled: pointer.MakePtr(true),
 									MinInstanceSize:  "M10",
@@ -433,12 +433,12 @@ func TestSyncComputeConfiguration(t *testing.T) {
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST1",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M30",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								Compute: &mdbv1.ComputeSpec{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(true),
 									ScaleDownEnabled: pointer.MakePtr(true),
 									MinInstanceSize:  "M10",
@@ -507,28 +507,28 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should unset compute autoscaling for existing region when it is disabled", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								Compute: &mdbv1.ComputeSpec{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(false),
 									ScaleDownEnabled: pointer.MakePtr(false),
 									MinInstanceSize:  "M10",
@@ -541,27 +541,27 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{},
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{},
 							Priority:    pointer.MakePtr(7),
 						},
 					},
@@ -607,31 +607,31 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should unset disc size for existing region with disc autoscaling enabled and disk size has not be changed", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(20),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								DiskGB: &mdbv1.DiskGB{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								DiskGB: &akov2.DiskGB{
 									Enabled: pointer.MakePtr(true),
 								},
-								Compute: &mdbv1.ComputeSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(false),
 									ScaleDownEnabled: pointer.MakePtr(false),
 									MinInstanceSize:  "M10",
@@ -644,27 +644,27 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								DiskGB: &mdbv1.DiskGB{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								DiskGB: &akov2.DiskGB{
 									Enabled: pointer.MakePtr(true),
 								},
 							},
@@ -717,31 +717,31 @@ func TestSyncComputeConfiguration(t *testing.T) {
 	})
 
 	t.Run("should keep disc size for existing region with disc autoscaling enabled but disk size has be changed", func(t *testing.T) {
-		advancedDeployment := &mdbv1.AdvancedDeploymentSpec{
+		advancedDeployment := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(30),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								DiskGB: &mdbv1.DiskGB{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								DiskGB: &akov2.DiskGB{
 									Enabled: pointer.MakePtr(true),
 								},
-								Compute: &mdbv1.ComputeSpec{
+								Compute: &akov2.ComputeSpec{
 									Enabled:          pointer.MakePtr(false),
 									ScaleDownEnabled: pointer.MakePtr(false),
 									MinInstanceSize:  "M10",
@@ -754,28 +754,28 @@ func TestSyncComputeConfiguration(t *testing.T) {
 				},
 			},
 		}
-		expected := &mdbv1.AdvancedDeploymentSpec{
+		expected := &akov2.AdvancedDeploymentSpec{
 			DiskSizeGB: pointer.MakePtr(30),
-			ReplicationSpecs: []*mdbv1.AdvancedReplicationSpec{
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
-					RegionConfigs: []*mdbv1.AdvancedRegionConfig{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
 							RegionName:   "EU_WEST2",
-							ElectableSpecs: &mdbv1.Specs{
+							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(3),
 							},
-							ReadOnlySpecs: &mdbv1.Specs{
+							ReadOnlySpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AnalyticsSpecs: &mdbv1.Specs{
+							AnalyticsSpecs: &akov2.Specs{
 								InstanceSize: "M10",
 								NodeCount:    pointer.MakePtr(1),
 							},
-							AutoScaling: &mdbv1.AdvancedAutoScalingSpec{
-								DiskGB: &mdbv1.DiskGB{
+							AutoScaling: &akov2.AdvancedAutoScalingSpec{
+								DiskGB: &akov2.DiskGB{
 									Enabled: pointer.MakePtr(true),
 								},
 							},
@@ -830,21 +830,21 @@ func TestSyncComputeConfiguration(t *testing.T) {
 
 func TestNormalizeSpecs(t *testing.T) {
 	t.Run("should do no action for a nil slice", func(t *testing.T) {
-		var regions []*mdbv1.AdvancedRegionConfig
+		var regions []*akov2.AdvancedRegionConfig
 		normalizeSpecs(regions)
 
 		assert.Nil(t, regions)
 	})
 
 	t.Run("should do no action for a nil entry in the slice", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			nil,
 		}
 		normalizeSpecs(regions)
 
 		assert.Equal(
 			t,
-			[]*mdbv1.AdvancedRegionConfig{
+			[]*akov2.AdvancedRegionConfig{
 				nil,
 			},
 			regions,
@@ -852,33 +852,33 @@ func TestNormalizeSpecs(t *testing.T) {
 	})
 
 	t.Run("should do no action when all specs are not nil", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(2),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(1),
 				},
 			},
 		}
-		expected := []*mdbv1.AdvancedRegionConfig{
+		expected := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(2),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(1),
 				},
@@ -894,25 +894,25 @@ func TestNormalizeSpecs(t *testing.T) {
 	})
 
 	t.Run("should use electable spec as base when not nil", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
 			},
 		}
-		expected := []*mdbv1.AdvancedRegionConfig{
+		expected := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
@@ -928,25 +928,25 @@ func TestNormalizeSpecs(t *testing.T) {
 	})
 
 	t.Run("should use read only spec as base when not nil", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			{
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
 			},
 		}
-		expected := []*mdbv1.AdvancedRegionConfig{
+		expected := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
@@ -962,25 +962,25 @@ func TestNormalizeSpecs(t *testing.T) {
 	})
 
 	t.Run("should use analytics spec as base when not nil", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			{
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
 			},
 		}
-		expected := []*mdbv1.AdvancedRegionConfig{
+		expected := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
@@ -996,29 +996,29 @@ func TestNormalizeSpecs(t *testing.T) {
 	})
 
 	t.Run("should use read only spec as base when analytics is also not nil", func(t *testing.T) {
-		regions := []*mdbv1.AdvancedRegionConfig{
+		regions := []*akov2.AdvancedRegionConfig{
 			{
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(2),
 				},
 			},
 		}
-		expected := []*mdbv1.AdvancedRegionConfig{
+		expected := []*akov2.AdvancedRegionConfig{
 			{
-				ElectableSpecs: &mdbv1.Specs{
+				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(0),
 				},
-				ReadOnlySpecs: &mdbv1.Specs{
+				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(3),
 				},
-				AnalyticsSpecs: &mdbv1.Specs{
+				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
 					NodeCount:    pointer.MakePtr(2),
 				},

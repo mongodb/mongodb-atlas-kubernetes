@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -30,7 +30,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, auditing v1.Auditing) {
+		func(test *model.TestDataProvider, auditing akov2.Auditing) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			auditingFlow(test, &auditing)
@@ -42,7 +42,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			v1.Auditing{
+			akov2.Auditing{
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               exampleFilter(),
 				Enabled:                   true,
@@ -51,7 +51,7 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 	)
 })
 
-func auditingFlow(userData *model.TestDataProvider, auditing *v1.Auditing) {
+func auditingFlow(userData *model.TestDataProvider, auditing *akov2.Auditing) {
 	By("Add auditing to the project", func() {
 		userData.Project.Spec.Auditing = auditing
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())

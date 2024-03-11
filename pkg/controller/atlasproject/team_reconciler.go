@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"sync"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -24,7 +23,7 @@ import (
 )
 
 func (r *AtlasProjectReconciler) teamReconcile(
-	team *v1.AtlasTeam,
+	team *akov2.AtlasTeam,
 	connectionSecretKey *client.ObjectKey,
 ) reconcile.Func {
 	return func(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
@@ -151,7 +150,7 @@ func (r *AtlasProjectReconciler) teamReconcile(
 	}
 }
 
-func ensureTeamState(workflowCtx *workflow.Context, team *v1.AtlasTeam) (string, workflow.Result) {
+func ensureTeamState(workflowCtx *workflow.Context, team *akov2.AtlasTeam) (string, workflow.Result) {
 	var atlasTeam *mongodbatlas.Team
 	var err error
 
@@ -194,7 +193,7 @@ func ensureTeamState(workflowCtx *workflow.Context, team *v1.AtlasTeam) (string,
 	return atlasTeam.ID, workflow.OK()
 }
 
-func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *v1.AtlasTeam) workflow.Result {
+func ensureTeamUsersAreInSync(workflowCtx *workflow.Context, teamID string, team *akov2.AtlasTeam) workflow.Result {
 	atlasUsers, _, err := workflowCtx.Client.Teams.GetTeamUsersAssigned(workflowCtx.Context, workflowCtx.OrgID, teamID)
 	if err != nil {
 		return workflow.Terminate(workflow.TeamUsersNotReady, err.Error())
@@ -320,8 +319,8 @@ func renameTeam(workflowCtx *workflow.Context, atlasTeam *mongodbatlas.Team, new
 }
 
 func teamsManagedByAtlas(workflowCtx *workflow.Context) customresource.AtlasChecker {
-	return func(resource v1.AtlasCustomResource) (bool, error) {
-		team, ok := resource.(*v1.AtlasTeam)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		team, ok := resource.(*akov2.AtlasTeam)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasTeams")
 		}

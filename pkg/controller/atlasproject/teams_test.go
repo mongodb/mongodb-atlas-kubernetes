@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -27,7 +27,7 @@ import (
 )
 
 func TestCanAssignedTeamsReconcile(t *testing.T) {
-	team1 := &mdbv1.AtlasTeam{
+	team1 := &akov2.AtlasTeam{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "team1",
 			Namespace: "default",
@@ -36,7 +36,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 			ID: "team1",
 		},
 	}
-	team2 := &mdbv1.AtlasTeam{
+	team2 := &akov2.AtlasTeam{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "team2",
 			Namespace: "default",
@@ -47,8 +47,8 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 	}
 
 	testScheme := runtime.NewScheme()
-	testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasProject{})
-	testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasTeam{})
+	testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+	testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
 	k8sClient := fake.NewClientBuilder().
 		WithScheme(testScheme).
 		WithObjects(team1, team2).
@@ -59,13 +59,13 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, false, &mdbv1.AtlasProject{})
+		result, err := canAssignedTeamsReconcile(workflowCtx, k8sClient, false, &akov2.AtlasProject{})
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -84,7 +84,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -104,7 +104,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -124,7 +124,7 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -152,15 +152,15 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Teams: []mdbv1.Team{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Teams: []akov2.Team{
 					{
 						TeamRef: common.ResourceRefNamespaced{
 							Name:      "team2",
 							Namespace: "default",
 						},
-						Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+						Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 					},
 				},
 			},
@@ -192,15 +192,15 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Teams: []mdbv1.Team{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Teams: []akov2.Team{
 					{
 						TeamRef: common.ResourceRefNamespaced{
 							Name:      "team2",
 							Namespace: "default",
 						},
-						Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+						Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 					},
 				},
 			},
@@ -232,15 +232,15 @@ func TestCanAssignedTeamsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Teams: []mdbv1.Team{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Teams: []akov2.Team{
 					{
 						TeamRef: common.ResourceRefNamespaced{
 							Name:      "team3",
 							Namespace: "default",
 						},
-						Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+						Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 					},
 				},
 			},
@@ -266,7 +266,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		logger := zaptest.NewLogger(t).Sugar()
 		workflowCtx := &workflow.Context{
@@ -283,7 +283,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
-		team1 := &mdbv1.AtlasTeam{
+		team1 := &akov2.AtlasTeam{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "team1",
 				Namespace: "default",
@@ -292,7 +292,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 				ID: "team1",
 			},
 		}
-		team2 := &mdbv1.AtlasTeam{
+		team2 := &akov2.AtlasTeam{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "team2",
 				Namespace: "default",
@@ -303,8 +303,8 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		}
 
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasProject{})
-		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasTeam{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(team1, team2).
@@ -325,15 +325,15 @@ func TestEnsureAssignedTeams(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				Teams: []mdbv1.Team{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Teams: []akov2.Team{
 					{
 						TeamRef: common.ResourceRefNamespaced{
 							Name:      "team3",
 							Namespace: "default",
 						},
-						Roles: []mdbv1.TeamRole{"GROUP_READ_ONLY"},
+						Roles: []akov2.TeamRole{"GROUP_READ_ONLY"},
 					},
 				},
 			},
@@ -370,9 +370,9 @@ func TestUpdateTeamState(t *testing.T) {
 			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasProject{})
-		testScheme.AddKnownTypes(mdbv1.GroupVersion, &mdbv1.AtlasTeam{})
-		testScheme.AddKnownTypes(mdbv1.GroupVersion, &corev1.Secret{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &corev1.Secret{})
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",
@@ -384,8 +384,8 @@ func TestUpdateTeamState(t *testing.T) {
 			},
 			Type: "Opaque",
 		}
-		project := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		project := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				Name: "projectName",
 				ConnectionSecret: &common.ResourceRefNamespaced{
 					Name: "my-secret",
@@ -395,7 +395,7 @@ func TestUpdateTeamState(t *testing.T) {
 				ID: "projectID",
 			},
 		}
-		team := &mdbv1.AtlasTeam{
+		team := &akov2.AtlasTeam{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testTeam",
 				Namespace: "testNS",

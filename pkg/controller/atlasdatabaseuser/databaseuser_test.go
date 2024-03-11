@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -29,18 +29,18 @@ func init() {
 }
 
 func TestFilterScopeClusters(t *testing.T) {
-	scopeSpecs := []mdbv1.ScopeSpec{{
+	scopeSpecs := []akov2.ScopeSpec{{
 		Name: "dbLake",
-		Type: mdbv1.DataLakeScopeType,
+		Type: akov2.DataLakeScopeType,
 	}, {
 		Name: "cluster1",
-		Type: mdbv1.DeploymentScopeType,
+		Type: akov2.DeploymentScopeType,
 	}, {
 		Name: "cluster2",
-		Type: mdbv1.DeploymentScopeType,
+		Type: akov2.DeploymentScopeType,
 	}}
 	clusters := []string{"cluster1", "cluster4", "cluster5"}
-	scopeClusters := filterScopeDeployments(mdbv1.AtlasDatabaseUser{Spec: mdbv1.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
+	scopeClusters := filterScopeDeployments(akov2.AtlasDatabaseUser{Spec: akov2.AtlasDatabaseUserSpec{Scopes: scopeSpecs}}, clusters)
 	assert.Equal(t, []string{"cluster1"}, scopeClusters)
 }
 
@@ -48,15 +48,15 @@ func TestCheckUserExpired(t *testing.T) {
 	// Fake client
 	scheme := runtime.NewScheme()
 	utilruntime.Must(corev1.AddToScheme(scheme))
-	utilruntime.Must(mdbv1.AddToScheme(scheme))
+	utilruntime.Must(akov2.AddToScheme(scheme))
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	t.Run("Validate DeleteAfterDate", func(t *testing.T) {
-		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("foo"))
+		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "", *akov2.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("foo"))
 		assert.False(t, result.IsOk())
 		assert.Equal(t, reconcile.Result{}, result.ReconcileResult())
 
-		result = checkUserExpired(context.Background(), zap.S(), fakeClient, "", *mdbv1.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("2021/11/30T15:04:05"))
+		result = checkUserExpired(context.Background(), zap.S(), fakeClient, "", *akov2.DefaultDBUser("ns", "theuser", "").WithDeleteAfterDate("2021/11/30T15:04:05"))
 		assert.False(t, result.IsOk())
 	})
 	t.Run("User Marked Expired", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestCheckUserExpired(t *testing.T) {
 		assert.NoError(t, err)
 
 		before := time.Now().UTC().Add(time.Minute * -1).Format("2006-01-02T15:04:05.999Z")
-		user := *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(before)
+		user := *akov2.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(before)
 		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "603e7bf38a94956835659ae5", user)
 		assert.False(t, result.IsOk())
 		assert.Equal(t, reconcile.Result{}, result.ReconcileResult())
@@ -91,7 +91,7 @@ func TestCheckUserExpired(t *testing.T) {
 		_, err := connectionsecret.Ensure(context.Background(), fakeClient, "testNs", "project1", "603e7bf38a94956835659ae5", "cluster1", data)
 		assert.NoError(t, err)
 		after := time.Now().UTC().Add(time.Minute * 1).Format("2006-01-02T15:04:05")
-		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "603e7bf38a94956835659ae5", *mdbv1.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(after))
+		result := checkUserExpired(context.Background(), zap.S(), fakeClient, "603e7bf38a94956835659ae5", *akov2.DefaultDBUser("testNs", data.DBUserName, "").WithDeleteAfterDate(after))
 		assert.True(t, result.IsOk())
 
 		// The secret is still there
@@ -104,7 +104,7 @@ func TestCheckUserExpired(t *testing.T) {
 
 func TestHandleUserNameChange(t *testing.T) {
 	t.Run("Only one user after name change", func(t *testing.T) {
-		user := *mdbv1.DefaultDBUser("ns", "theuser", "project1")
+		user := *akov2.DefaultDBUser("ns", "theuser", "project1")
 		user.Spec.Username = "differentuser"
 		user.Status.UserName = "theuser"
 		ctx := workflow.NewContext(zap.S(), []status.Condition{}, nil)

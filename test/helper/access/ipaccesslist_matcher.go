@@ -10,7 +10,7 @@ import (
 )
 
 // MatchIPAccessList returns the GomegaMatcher that checks if the 'actual' mongodbatlas.ProjectIPAccessList matches
-// the 'expected' mdbv1.ProjectIPAccessList  one.
+// the 'expected' akov2.ProjectIPAccessList  one.
 // Note, that we cannot compare them by all the fields as Atlas tends to set default fields after IPAccessList creation
 // so we need to compare only the fields that the Operator has set
 func MatchIPAccessList(expected project.IPAccessList) types.GomegaMatcher {

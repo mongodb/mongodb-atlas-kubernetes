@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	helper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
@@ -71,7 +71,7 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 	ProjectCreationFlow(testData)
 
 	By("Configure cloud provider access", func() {
-		testData.Project.Spec.CloudProviderIntegrations = []mdbv1.CloudProviderIntegration{
+		testData.Project.Spec.CloudProviderIntegrations = []akov2.CloudProviderIntegration{
 			{
 				ProviderName: "AWS",
 			},

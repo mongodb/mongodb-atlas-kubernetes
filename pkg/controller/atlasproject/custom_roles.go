@@ -5,18 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.mongodb.org/atlas/mongodbatlas"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, protected bool) workflow.Result {
+func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	canReconcile, err := canCustomRolesReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -63,14 +62,14 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *v1.AtlasProject, 
 	return result
 }
 
-func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole, error) {
+func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]akov2.CustomRole, error) {
 	data, _, err := ctx.Client.CustomDBRoles.List(ctx.Context, projectID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve custom roles from atlas: %w", err)
 	}
 
 	if data == nil {
-		return []v1.CustomRole{}, nil
+		return []akov2.CustomRole{}, nil
 	}
 
 	ctx.Log.Debugw("Got Custom Roles", "NumItems", len(*data))
@@ -78,39 +77,39 @@ func fetchCustomRoles(ctx *workflow.Context, projectID string) ([]v1.CustomRole,
 	return mapToOperator(data), nil
 }
 
-func mapToOperator(atlasCustomRoles *[]mongodbatlas.CustomDBRole) []v1.CustomRole {
-	customRoles := make([]v1.CustomRole, 0, len(*atlasCustomRoles))
+func mapToOperator(atlasCustomRoles *[]mongodbatlas.CustomDBRole) []akov2.CustomRole {
+	customRoles := make([]akov2.CustomRole, 0, len(*atlasCustomRoles))
 
 	for _, atlasCustomRole := range *atlasCustomRoles {
-		inheritedRoles := make([]v1.Role, 0, len(atlasCustomRole.InheritedRoles))
+		inheritedRoles := make([]akov2.Role, 0, len(atlasCustomRole.InheritedRoles))
 
 		for _, atlasInheritedRole := range atlasCustomRole.InheritedRoles {
-			inheritedRoles = append(inheritedRoles, v1.Role{
+			inheritedRoles = append(inheritedRoles, akov2.Role{
 				Name:     atlasInheritedRole.Role,
 				Database: atlasInheritedRole.Db,
 			})
 		}
 
-		actions := make([]v1.Action, 0, len(atlasCustomRole.Actions))
+		actions := make([]akov2.Action, 0, len(atlasCustomRole.Actions))
 
 		for _, atlasAction := range atlasCustomRole.Actions {
-			resources := make([]v1.Resource, 0, len(atlasAction.Resources))
+			resources := make([]akov2.Resource, 0, len(atlasAction.Resources))
 
 			for _, atlasResource := range atlasAction.Resources {
-				resources = append(resources, v1.Resource{
+				resources = append(resources, akov2.Resource{
 					Cluster:    atlasResource.Cluster,
 					Database:   atlasResource.DB,
 					Collection: atlasResource.Collection,
 				})
 			}
 
-			actions = append(actions, v1.Action{
+			actions = append(actions, akov2.Action{
 				Name:      atlasAction.Action,
 				Resources: resources,
 			})
 		}
 
-		customRoles = append(customRoles, v1.CustomRole{
+		customRoles = append(customRoles, akov2.CustomRole{
 			Actions:        actions,
 			InheritedRoles: inheritedRoles,
 			Name:           atlasCustomRole.RoleName,
@@ -120,7 +119,7 @@ func mapToOperator(atlasCustomRoles *[]mongodbatlas.CustomDBRole) []v1.CustomRol
 	return customRoles
 }
 
-func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[string]v1.CustomRole) map[string]status.CustomRole {
+func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[string]akov2.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be deleted", "NumItems", len(toDelete))
 
 	statuses := map[string]status.CustomRole{}
@@ -144,7 +143,7 @@ func deleteCustomRoles(ctx *workflow.Context, projectID string, toDelete map[str
 	return statuses
 }
 
-func updateCustomRoles(ctx *workflow.Context, projectID string, toUpdate map[string]v1.CustomRole) map[string]status.CustomRole {
+func updateCustomRoles(ctx *workflow.Context, projectID string, toUpdate map[string]akov2.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be updated", "NumItems", len(toUpdate))
 
 	statuses := map[string]status.CustomRole{}
@@ -172,7 +171,7 @@ func updateCustomRoles(ctx *workflow.Context, projectID string, toUpdate map[str
 	return statuses
 }
 
-func createCustomRoles(ctx *workflow.Context, projectID string, toCreate map[string]v1.CustomRole) map[string]status.CustomRole {
+func createCustomRoles(ctx *workflow.Context, projectID string, toCreate map[string]akov2.CustomRole) map[string]status.CustomRole {
 	ctx.Log.Debugw("Custom Roles to be added", "NumItems", len(toCreate))
 
 	statuses := map[string]status.CustomRole{}
@@ -197,8 +196,8 @@ func createCustomRoles(ctx *workflow.Context, projectID string, toCreate map[str
 	return statuses
 }
 
-func mapCustomRolesByName(customRoles []v1.CustomRole) map[string]v1.CustomRole {
-	customRolesByName := map[string]v1.CustomRole{}
+func mapCustomRolesByName(customRoles []akov2.CustomRole) map[string]akov2.CustomRole {
+	customRolesByName := map[string]akov2.CustomRole{}
 
 	for _, customRole := range customRoles {
 		customRolesByName[customRole.Name] = customRole
@@ -208,18 +207,18 @@ func mapCustomRolesByName(customRoles []v1.CustomRole) map[string]v1.CustomRole 
 }
 
 type CustomRolesOperations struct {
-	Create map[string]v1.CustomRole
-	Update map[string]v1.CustomRole
-	Delete map[string]v1.CustomRole
+	Create map[string]akov2.CustomRole
+	Update map[string]akov2.CustomRole
+	Delete map[string]akov2.CustomRole
 }
 
-func calculateChanges(currentCustomRoles []v1.CustomRole, desiredCustomRoles []v1.CustomRole) CustomRolesOperations {
+func calculateChanges(currentCustomRoles []akov2.CustomRole, desiredCustomRoles []akov2.CustomRole) CustomRolesOperations {
 	currentCustomRolesByName := mapCustomRolesByName(currentCustomRoles)
 	desiredCustomRolesByName := mapCustomRolesByName(desiredCustomRoles)
 	ops := CustomRolesOperations{
-		Create: map[string]v1.CustomRole{},
-		Update: map[string]v1.CustomRole{},
-		Delete: map[string]v1.CustomRole{},
+		Create: map[string]akov2.CustomRole{},
+		Update: map[string]akov2.CustomRole{},
+		Delete: map[string]akov2.CustomRole{},
 	}
 
 	for _, currentCustomRole := range currentCustomRoles {
@@ -253,7 +252,7 @@ func evaluateOperation(err error) (status.CustomRoleStatus, string) {
 	return status.CustomRoleStatusOK, ""
 }
 
-func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.CustomRole, created, updated, deleted map[string]status.CustomRole) workflow.Result {
+func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []akov2.CustomRole, created, updated, deleted map[string]status.CustomRole) workflow.Result {
 	statuses := make([]status.CustomRole, 0, len(desiredCustomRoles))
 	var err error
 
@@ -304,12 +303,12 @@ func syncCustomRolesStatus(ctx *workflow.Context, desiredCustomRoles []v1.Custom
 	return workflow.OK()
 }
 
-func canCustomRolesReconcile(workflowCtx *workflow.Context, protected bool, akoProject *v1.AtlasProject) (bool, error) {
+func canCustomRolesReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &v1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {

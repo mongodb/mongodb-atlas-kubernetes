@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -36,7 +36,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, mapping []v1.CustomZoneMapping, ns []v1.ManagedNamespace) {
+		func(test *model.TestDataProvider, mapping []akov2.CustomZoneMapping, ns []akov2.ManagedNamespace) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			globalClusterFlow(test, mapping, ns)
@@ -48,7 +48,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedGeoshardedDeployment("gc-advanced-deployment")),
-			[]v1.CustomZoneMapping{
+			[]akov2.CustomZoneMapping{
 				{
 					Zone:     "Zone 1",
 					Location: "AO",
@@ -58,7 +58,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 					Location: "CA",
 				},
 			},
-			[]v1.ManagedNamespace{
+			[]akov2.ManagedNamespace{
 				{
 					Collection:             "somecollection",
 					Db:                     "somedb",
@@ -72,7 +72,7 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 	)
 })
 
-func globalClusterFlow(userData *model.TestDataProvider, mapping []v1.CustomZoneMapping, managedNamespace []v1.ManagedNamespace) {
+func globalClusterFlow(userData *model.TestDataProvider, mapping []akov2.CustomZoneMapping, managedNamespace []akov2.ManagedNamespace) {
 	By("Apply deployment", func() {
 		Expect(userData.InitialDeployments).ShouldNot(BeEmpty())
 		userData.InitialDeployments[0].Namespace = userData.Resources.Namespace

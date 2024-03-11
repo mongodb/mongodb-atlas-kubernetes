@@ -3,7 +3,7 @@ package atlas
 import (
 	"context"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -30,6 +30,6 @@ func (f *TestProvider) IsCloudGov() bool {
 	return f.IsCloudGovFunc()
 }
 
-func (f *TestProvider) IsResourceSupported(_ mdbv1.AtlasCustomResource) bool {
+func (f *TestProvider) IsResourceSupported(_ akov2.AtlasCustomResource) bool {
 	return f.IsSupportedFunc()
 }

@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -42,13 +42,13 @@ func TestFilterActiveIPAccessLists(t *testing.T) {
 
 func TestCanIPAccessListReconcile(t *testing.T) {
 	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{}, false, &mdbv1.AtlasProject{})
+		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{}, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		result, err := canIPAccessListReconcile(context.Background(), nil, true, akoProject)
 		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
@@ -61,7 +61,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			nil, nil, errors.New("failed to retrieve data"),
 		)
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
@@ -75,7 +75,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{}, nil, nil,
 		)
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		result, err := canIPAccessListReconcile(context.Background(), &admin.APIClient{ProjectIPAccessListApi: m}, true, akoProject)
 
@@ -97,8 +97,8 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 				TotalCount: admin.PtrInt(1),
 			}, nil, nil,
 		)
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
 					{
 						CIDRBlock: "192.168.0.0/24",
@@ -134,8 +134,8 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 				TotalCount: admin.PtrInt(2),
 			}, nil, nil,
 		)
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
 					{
 						CIDRBlock: "192.168.0.0/24",
@@ -171,8 +171,8 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 				TotalCount: admin.PtrInt(2),
 			}, nil, nil,
 		)
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
 					{
 						CIDRBlock: "192.168.0.0/24",
@@ -199,7 +199,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 			nil, nil, errors.New("failed to retrieve data"),
 		)
 		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			SdkClient: atlasClient,
@@ -229,8 +229,8 @@ func TestEnsureIPAccessList(t *testing.T) {
 			}, nil, nil,
 		)
 		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
 					{
 						CIDRBlock: "192.168.0.0/24",
@@ -288,8 +288,8 @@ func TestEnsureIPAccessList(t *testing.T) {
 			nil, nil, nil,
 		)
 		atlasClient := &admin.APIClient{ProjectIPAccessListApi: m}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				ProjectIPAccessList: []project.IPAccessList{
 					{
 						CIDRBlock: "192.168.0.0/24",

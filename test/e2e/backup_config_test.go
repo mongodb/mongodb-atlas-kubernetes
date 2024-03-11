@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -95,13 +95,13 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 	})
 
 	By("Configure backup schedule and policy for the deployment", func() {
-		bkpPolicy := &mdbv1.AtlasBackupPolicy{
+		bkpPolicy := &akov2.AtlasBackupPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: data.Project.Namespace,
 				Name:      fmt.Sprintf("%s-bkp-policy", data.Project.Name),
 			},
-			Spec: mdbv1.AtlasBackupPolicySpec{
-				Items: []mdbv1.AtlasBackupPolicyItem{
+			Spec: akov2.AtlasBackupPolicySpec{
+				Items: []akov2.AtlasBackupPolicyItem{
 					{
 						FrequencyInterval: 6,
 						FrequencyType:     "hourly",
@@ -137,12 +137,12 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		}
 		Expect(data.K8SClient.Create(data.Context, bkpPolicy)).To(Succeed())
 
-		bkpSchedule := &mdbv1.AtlasBackupSchedule{
+		bkpSchedule := &akov2.AtlasBackupSchedule{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: data.Project.Namespace,
 				Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
 			},
-			Spec: mdbv1.AtlasBackupScheduleSpec{
+			Spec: akov2.AtlasBackupScheduleSpec{
 				PolicyRef: common.ResourceRefNamespaced{
 					Namespace: data.Project.Namespace,
 					Name:      fmt.Sprintf("%s-bkp-policy", data.Project.Name),
@@ -182,7 +182,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		Expect(err).Should(BeNil())
 		Expect(exportBucket).ShouldNot(BeNil())
 
-		backupSchedule := &mdbv1.AtlasBackupSchedule{
+		backupSchedule := &akov2.AtlasBackupSchedule{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: data.Project.Namespace,
 				Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
@@ -191,7 +191,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		Expect(data.K8SClient.Get(data.Context, client.ObjectKeyFromObject(backupSchedule), backupSchedule)).To(Succeed())
 
 		backupSchedule.Spec.AutoExportEnabled = true
-		backupSchedule.Spec.Export = &mdbv1.AtlasBackupExportSpec{
+		backupSchedule.Spec.Export = &akov2.AtlasBackupExportSpec{
 			ExportBucketID: exportBucket.GetId(),
 			FrequencyType:  "monthly",
 		}

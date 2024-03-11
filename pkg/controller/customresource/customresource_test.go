@@ -4,22 +4,21 @@ import (
 	"fmt"
 	"testing"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 	t.Run("Empty annotations", func(t *testing.T) {
-		assert.False(t, IsResourcePolicyKeep(&v1.AtlasDatabaseUser{}))
+		assert.False(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{}))
 	})
 
 	t.Run("Other annotations", func(t *testing.T) {
-		assert.False(t, IsResourcePolicyKeep(&v1.AtlasDatabaseUser{
+		assert.False(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"foo": "bar"},
 			},
@@ -27,7 +26,7 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 	})
 
 	t.Run("Annotation present, resources should be removed", func(t *testing.T) {
-		assert.False(t, IsResourcePolicyKeep(&v1.AtlasDatabaseUser{
+		assert.False(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
 			ObjectMeta: metav1.ObjectMeta{
 				// Any other value except for "keep" is considered as "purge"
 				Annotations: map[string]string{ResourcePolicyAnnotation: "foobar"},
@@ -36,7 +35,7 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 	})
 
 	t.Run("Annotation present, resources should be kept", func(t *testing.T) {
-		assert.True(t, IsResourcePolicyKeep(&v1.AtlasDatabaseUser{
+		assert.True(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{ResourcePolicyAnnotation: ResourcePolicyKeep},
 			},
@@ -45,11 +44,11 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 }
 
 func TestReconciliationShouldBeSkipped(t *testing.T) {
-	newResourceTypes := func() []v1.AtlasCustomResource {
-		return []v1.AtlasCustomResource{
-			&v1.AtlasDeployment{},
-			&v1.AtlasDatabaseUser{},
-			&v1.AtlasProject{},
+	newResourceTypes := func() []akov2.AtlasCustomResource {
+		return []akov2.AtlasCustomResource{
+			&akov2.AtlasDeployment{},
+			&akov2.AtlasDatabaseUser{},
+			&akov2.AtlasProject{},
 		}
 	}
 
@@ -84,14 +83,14 @@ func TestReconciliationShouldBeSkipped(t *testing.T) {
 func TestResourceVersionIsValid(t *testing.T) {
 	tests := []struct {
 		name            string
-		resource        v1.AtlasCustomResource
+		resource        akov2.AtlasCustomResource
 		want            bool
 		wantErr         assert.ErrorAssertionFunc
 		operatorVersion string
 	}{
 		{
 			name: "Resource version is LOWER than operator version",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -102,7 +101,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersion: "1.3.0",
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            true,
@@ -111,7 +110,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 		},
 		{
 			name: "Resource version is EQUAL to the operator version",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -122,7 +121,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersion: "1.3.0",
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            true,
@@ -131,7 +130,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 		},
 		{
 			name: "Resource version is GREATER than the operator version",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -142,7 +141,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersion: "1.5.0",
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            false,
@@ -151,7 +150,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 		},
 		{
 			name: "Resource version is GREATER than the operator version with ALLOWED OVERRIDE",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -165,7 +164,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersionOverride: ResourceVersionAllow,
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            true,
@@ -174,7 +173,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 		},
 		{
 			name: "Resource version is GREATER than the operator version with DISALLOWED OVERRIDE",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -188,7 +187,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersionOverride: "someValue",
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            false,
@@ -197,7 +196,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 		},
 		{
 			name: "Resource version is INCORRECT, should return an error",
-			resource: &v1.AtlasProject{
+			resource: &akov2.AtlasProject{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "AtlasProject",
 					APIVersion: "atlas.mongodb.com/v1",
@@ -208,7 +207,7 @@ func TestResourceVersionIsValid(t *testing.T) {
 						ResourceVersion: "1.incorrect.semantic.version",
 					},
 				},
-				Spec:   v1.AtlasProjectSpec{},
+				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
 			},
 			want:            false,

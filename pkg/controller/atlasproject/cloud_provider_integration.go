@@ -10,13 +10,13 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	canReconcile, err := canCloudProviderIntegrationReconcile(workflowCtx, protected, project)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -67,7 +67,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *mdbv
 	return workflow.OK()
 }
 
-func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []mdbv1.CloudProviderIntegration) (bool, error) {
+func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []akov2.CloudProviderIntegration) (bool, error) {
 	atlasCPAs, _, err := workflowCtx.SdkClient.CloudProviderAccessApi.
 		ListCloudProviderAccessRoles(workflowCtx.Context, projectID).
 		Execute()
@@ -116,7 +116,7 @@ func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID strin
 	return true, nil
 }
 
-func initiateStatuses(cpiSpecs []mdbv1.CloudProviderIntegration) []*status.CloudProviderIntegration {
+func initiateStatuses(cpiSpecs []akov2.CloudProviderIntegration) []*status.CloudProviderIntegration {
 	cpiStatuses := make([]*status.CloudProviderIntegration, 0, len(cpiSpecs))
 
 	for _, cpiSpec := range cpiSpecs {
@@ -213,12 +213,12 @@ func isMatch(cpaSpec *status.CloudProviderIntegration, atlasCPA *admin.CloudProv
 		atlasCPA.GetIamAssumedRoleArn() == cpaSpec.IamAssumedRoleArn
 }
 
-func getCloudProviderIntegrations(projectSpec mdbv1.AtlasProjectSpec) []mdbv1.CloudProviderIntegration {
+func getCloudProviderIntegrations(projectSpec akov2.AtlasProjectSpec) []akov2.CloudProviderIntegration {
 	if len(projectSpec.CloudProviderAccessRoles) > 0 {
-		cpis := make([]mdbv1.CloudProviderIntegration, 0, len(projectSpec.CloudProviderIntegrations))
+		cpis := make([]akov2.CloudProviderIntegration, 0, len(projectSpec.CloudProviderIntegrations))
 
 		for _, cpa := range projectSpec.CloudProviderAccessRoles {
-			cpis = append(cpis, mdbv1.CloudProviderIntegration(cpa))
+			cpis = append(cpis, akov2.CloudProviderIntegration(cpa))
 		}
 
 		return cpis
@@ -321,12 +321,12 @@ func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 	}
 }
 
-func canCloudProviderIntegrationReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canCloudProviderIntegrationReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -380,7 +380,7 @@ func canCloudProviderIntegrationReconcile(workflowCtx *workflow.Context, protect
 	return len(diff) == 0, nil
 }
 
-type CloudProviderIntegrationIdentifiable mdbv1.CloudProviderIntegration
+type CloudProviderIntegrationIdentifiable akov2.CloudProviderIntegration
 
 func (cpa CloudProviderIntegrationIdentifiable) Identifier() interface{} {
 	return fmt.Sprintf("%s.%s", cpa.ProviderName, cpa.IamAssumedRoleArn)

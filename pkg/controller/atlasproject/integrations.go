@@ -11,7 +11,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
@@ -19,7 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context, akoProject *mdbv1.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context, akoProject *akov2.AtlasProject, protected bool) workflow.Result {
 	canReconcile, err := canIntegrationsReconcile(workflowCtx, protected, akoProject)
 	if err != nil {
 		result := workflow.Terminate(workflow.Internal, fmt.Sprintf("unable to resolve ownership for deletion protection: %s", err))
@@ -53,7 +53,7 @@ func (r *AtlasProjectReconciler) ensureIntegration(workflowCtx *workflow.Context
 	return workflow.OK()
 }
 
-func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) createOrDeleteIntegrations(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
 	integrationsInAtlas, err := fetchIntegrations(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.ProjectIntegrationInternal, err.Error())
@@ -220,7 +220,7 @@ func toAliasThirdPartyIntegration(list []*mongodbatlas.ThirdPartyIntegration) []
 	return result
 }
 
-func syncPrometheusStatus(ctx *workflow.Context, project *mdbv1.AtlasProject, integrationPairs [][]set.Identifiable) {
+func syncPrometheusStatus(ctx *workflow.Context, project *akov2.AtlasProject, integrationPairs [][]set.Identifiable) {
 	prometheusIntegration, found := searchAtlasIntegration(integrationPairs, isPrometheusType)
 	if !found {
 		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
@@ -260,12 +260,12 @@ func buildPrometheusDiscoveryURL(baseURL *url.URL, projectID string) string {
 	return fmt.Sprintf("%s/groups/%s/discovery", api, projectID)
 }
 
-func canIntegrationsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canIntegrationsReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {

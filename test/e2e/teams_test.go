@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -37,7 +37,7 @@ var _ = Describe("Teams", Label("teams"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, teams []v1.Team) {
+		func(test *model.TestDataProvider, teams []akov2.Team) {
 			testData = test
 			actions.ProjectCreationFlow(test)
 			actions.AddTeamResourcesWithNUsers(test, teams, 1)
@@ -50,21 +50,21 @@ var _ = Describe("Teams", Label("teams"), func() {
 				40000,
 				[]func(*model.TestDataProvider){},
 			).WithProject(data.DefaultProject()),
-			[]v1.Team{
+			[]akov2.Team{
 				{
 					TeamRef: common.ResourceRefNamespaced{
 						Name: "my-team-1",
 					},
-					Roles: []v1.TeamRole{
-						v1.TeamRoleOwner,
+					Roles: []akov2.TeamRole{
+						akov2.TeamRoleOwner,
 					},
 				},
 				{
 					TeamRef: common.ResourceRefNamespaced{
 						Name: "my-team-2",
 					},
-					Roles: []v1.TeamRole{
-						v1.TeamRoleOwner,
+					Roles: []akov2.TeamRole{
+						akov2.TeamRoleOwner,
 					},
 				},
 			},
@@ -72,7 +72,7 @@ var _ = Describe("Teams", Label("teams"), func() {
 	)
 })
 
-func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
+func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 	By("Add Teams to project", func() {
 		Expect(userData.K8SClient.Get(userData.Context, client.ObjectKeyFromObject(userData.Project), userData.Project)).Should(Succeed())
 		userData.Project.Spec.Teams = teams
@@ -100,7 +100,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 	})
 
 	By("Update team role in the project", func() {
-		userData.Project.Spec.Teams[0].Roles = []v1.TeamRole{v1.TeamRoleReadOnly}
+		userData.Project.Spec.Teams[0].Roles = []akov2.TeamRole{akov2.TeamRoleReadOnly}
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
@@ -125,9 +125,9 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []v1.Team) {
 	})
 }
 
-func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []v1.Team, check func(res *v1.AtlasTeam) bool) bool {
+func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []akov2.Team, check func(res *akov2.AtlasTeam) bool) bool {
 	for _, team := range teams {
-		resource := &v1.AtlasTeam{}
+		resource := &akov2.AtlasTeam{}
 		g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: team.TeamRef.Name, Namespace: testData.Resources.Namespace}, resource)).Should(Succeed())
 
 		if !check(resource) {
@@ -138,10 +138,10 @@ func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []v1.Tea
 	return true
 }
 
-func teamWasCreated(team *v1.AtlasTeam) bool {
+func teamWasCreated(team *akov2.AtlasTeam) bool {
 	return team.Status.ID != ""
 }
 
-func teamWasRemoved(team *v1.AtlasTeam) bool {
+func teamWasRemoved(team *akov2.AtlasTeam) bool {
 	return team.Status.ID == ""
 }

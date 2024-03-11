@@ -5,12 +5,12 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
 
-type UserSpec v1.AtlasDatabaseUserSpec
+type UserSpec akov2.AtlasDatabaseUserSpec
 
 type DBUser struct {
 	metav1.TypeMeta `json:",inline"`
@@ -73,7 +73,7 @@ func (s *DBUser) WithX509(username string) *DBUser {
 }
 
 func (s *DBUser) AddBuildInAdminRole() *DBUser {
-	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+	s.Spec.Roles = append(s.Spec.Roles, akov2.RoleSpec{
 		RoleName:       RoleBuildInAdmin,
 		DatabaseName:   "admin",
 		CollectionName: "",
@@ -82,7 +82,7 @@ func (s *DBUser) AddBuildInAdminRole() *DBUser {
 }
 
 func (s *DBUser) AddBuildInReadAnyRole() *DBUser {
-	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+	s.Spec.Roles = append(s.Spec.Roles, akov2.RoleSpec{
 		RoleName:       RoleBuildInReadAny,
 		DatabaseName:   "admin",
 		CollectionName: "",
@@ -91,7 +91,7 @@ func (s *DBUser) AddBuildInReadAnyRole() *DBUser {
 }
 
 func (s *DBUser) AddBuildInReadWriteRole() *DBUser {
-	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+	s.Spec.Roles = append(s.Spec.Roles, akov2.RoleSpec{
 		RoleName:       RoleBuildInReadWriteAny,
 		DatabaseName:   "admin",
 		CollectionName: "",
@@ -100,7 +100,7 @@ func (s *DBUser) AddBuildInReadWriteRole() *DBUser {
 }
 
 func (s *DBUser) AddCustomRole(role UserCustomRoleType, db string, collection string) *DBUser {
-	s.Spec.Roles = append(s.Spec.Roles, v1.RoleSpec{
+	s.Spec.Roles = append(s.Spec.Roles, akov2.RoleSpec{
 		RoleName:       string(role),
 		DatabaseName:   db,
 		CollectionName: collection,
@@ -109,7 +109,7 @@ func (s *DBUser) AddCustomRole(role UserCustomRoleType, db string, collection st
 }
 
 func (s *DBUser) DeleteAllRoles() *DBUser {
-	s.Spec.Roles = []v1.RoleSpec{}
+	s.Spec.Roles = []akov2.RoleSpec{}
 	return s
 }
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -28,8 +28,8 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 		var testNamespace *corev1.Namespace
 		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
-		var testProject *mdbv1.AtlasProject
-		var testDeployment *mdbv1.AtlasDeployment
+		var testProject *akov2.AtlasProject
+		var testDeployment *akov2.AtlasDeployment
 
 		BeforeAll(func() {
 			By("Starting the operator with protection ON", func() {
@@ -44,7 +44,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 			})
 
 			By("Creating a project with deletion annotation", func() {
-				testProject = mdbv1.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+				testProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 				customresource.SetAnnotation( // this test project must be deleted
 					testProject,
 					customresource.ResourcePolicyAnnotation,
@@ -87,10 +87,10 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 		})
 
 		It("Should process BackupSchedule with deletion protection ON", func() {
-			var bsPolicy *mdbv1.AtlasBackupPolicy
-			var bsSchedule *mdbv1.AtlasBackupSchedule
+			var bsPolicy *akov2.AtlasBackupPolicy
+			var bsSchedule *akov2.AtlasBackupSchedule
 			By("Creating AtlasBackupPolicy resource", func() {
-				bsPolicy = &mdbv1.AtlasBackupPolicy{
+				bsPolicy = &akov2.AtlasBackupPolicy{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "atlas.mongodb.com/v1",
 						APIVersion: "AtlasBackupPolicy",
@@ -101,8 +101,8 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						Labels:      map[string]string{},
 						Annotations: map[string]string{},
 					},
-					Spec: mdbv1.AtlasBackupPolicySpec{
-						Items: []mdbv1.AtlasBackupPolicyItem{
+					Spec: akov2.AtlasBackupPolicySpec{
+						Items: []akov2.AtlasBackupPolicyItem{
 							{
 								FrequencyType:     "daily",
 								FrequencyInterval: 1,
@@ -116,7 +116,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 			})
 
 			By("Creating AtlasBackupSchedule resource", func() {
-				bsSchedule = &mdbv1.AtlasBackupSchedule{
+				bsSchedule = &akov2.AtlasBackupSchedule{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "atlas.mongodb.com/v1",
 						APIVersion: "AtlasBackupSchedule",
@@ -125,7 +125,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						Name:      "bs-schedule",
 						Namespace: testNamespace.Name,
 					},
-					Spec: mdbv1.AtlasBackupScheduleSpec{
+					Spec: akov2.AtlasBackupScheduleSpec{
 						AutoExportEnabled: false,
 						PolicyRef: common.ResourceRefNamespaced{
 							Name:      bsPolicy.Name,
@@ -136,14 +136,14 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 						RestoreWindowDays:                 2,
 						UpdateSnapshots:                   false,
 						UseOrgAndGroupNamesInExportPrefix: false,
-						CopySettings:                      []mdbv1.CopySetting{},
+						CopySettings:                      []akov2.CopySetting{},
 					},
 				}
 				Expect(k8sClient.Create(context.Background(), bsSchedule)).To(Succeed())
 			})
 
 			By("Creating a deployment with backups enabled (default)", func() {
-				testDeployment = mdbv1.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
+				testDeployment = akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
 				testDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
 				Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
 			})
@@ -156,7 +156,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 
 			By("Add custom BackupSchedule for the Deployment", func() {
 				Eventually(func(g Gomega) {
-					deployment := &mdbv1.AtlasDeployment{}
+					deployment := &akov2.AtlasDeployment{}
 					g.Expect(
 						k8sClient.Get(context.Background(),
 							kube.ObjectKeyFromObject(testDeployment),

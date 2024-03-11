@@ -8,14 +8,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *mdbv1.AtlasProject, df *mdbv1.AtlasDataFederation) workflow.Result {
-	databaseUsers := mdbv1.AtlasDatabaseUserList{}
+func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Context, project *akov2.AtlasProject, df *akov2.AtlasDataFederation) workflow.Result {
+	databaseUsers := akov2.AtlasDatabaseUserList{}
 	err := r.Client.List(ctx.Context, &databaseUsers, &client.ListOptions{})
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -49,7 +49,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 			continue
 		}
 
-		scopes := dbUser.GetScopes(mdbv1.DeploymentScopeType)
+		scopes := dbUser.GetScopes(akov2.DeploymentScopeType)
 		if len(scopes) != 0 && !stringutil.Contains(scopes, df.Spec.Name) {
 			continue
 		}
@@ -86,7 +86,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 	return workflow.OK()
 }
 
-func dbUserBelongsToProject(dbUser *mdbv1.AtlasDatabaseUser, project *mdbv1.AtlasProject) bool {
+func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) bool {
 	if dbUser.Spec.Project.Name != project.Name {
 		return false
 	}

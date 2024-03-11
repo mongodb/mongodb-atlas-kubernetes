@@ -12,12 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 func Test_PatchUpdateStatus(t *testing.T) {
-	existingProject := &mdbv1.AtlasProject{
+	existingProject := &akov2.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "some-project",
 			Namespace: "test-ns",
@@ -31,7 +31,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	}
 	// Fake client
 	scheme := runtime.NewScheme()
-	utilruntime.Must(mdbv1.AddToScheme(scheme))
+	utilruntime.Must(akov2.AddToScheme(scheme))
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(existingProject).
@@ -43,7 +43,7 @@ func Test_PatchUpdateStatus(t *testing.T) {
 	updatedProject.Status.ID = "theId"
 	assert.NoError(t, patchUpdateStatus(context.Background(), fakeClient, updatedProject))
 
-	projectAfterPatch := &mdbv1.AtlasProject{}
+	projectAfterPatch := &akov2.AtlasProject{}
 	assert.NoError(t, fakeClient.Get(context.Background(), kube.ObjectKeyFromObject(updatedProject), projectAfterPatch))
 	assert.Equal(t, []status.Condition{{Type: status.IPAccessListReadyType, Status: corev1.ConditionTrue}}, projectAfterPatch.Status.Common.Conditions)
 	assert.Equal(t, "theId", projectAfterPatch.Status.ID)

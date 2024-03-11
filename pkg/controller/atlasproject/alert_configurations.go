@@ -10,14 +10,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Context, project *akov2.AtlasProject) workflow.Result {
 	service.Log.Debug("starting alert configurations processing")
 	defer service.Log.Debug("finished alert configurations processing")
 
@@ -48,7 +48,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 }
 
 // This method reads secrets refs and fills the secret data for the related Notification
-func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *mdbv1.AtlasProject, service *workflow.Context, alertConfigs []mdbv1.AlertConfiguration) error {
+func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *akov2.AtlasProject, service *workflow.Context, alertConfigs []akov2.AlertConfiguration) error {
 	resourcesToWatch := make([]watch.WatchedObject, 0)
 	projectNs := project.Namespace
 	defer func() {
@@ -140,7 +140,7 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 	return string(val), obj, nil
 }
 
-func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) workflow.Result {
+func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
 	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(service.Context, groupID, nil)
 	if err != nil {
@@ -190,7 +190,7 @@ func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConf
 	return nil
 }
 
-func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec []mdbv1.AlertConfiguration) []status.AlertConfiguration {
+func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) []status.AlertConfiguration {
 	logger := workflowCtx.Log
 	var result []status.AlertConfiguration
 	for _, alert := range alertSpec {
@@ -222,7 +222,7 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 	return result
 }
 
-func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []mdbv1.AlertConfiguration, atlasAlertConfigs []mongodbatlas.AlertConfiguration) alertConfigurationDiff {
+func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []akov2.AlertConfiguration, atlasAlertConfigs []mongodbatlas.AlertConfiguration) alertConfigurationDiff {
 	var result alertConfigurationDiff
 	for _, alertConfigSpec := range alertConfigSpecs {
 		found := false
@@ -255,12 +255,12 @@ func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []mdbv1.AlertC
 }
 
 type alertConfigurationDiff struct {
-	Create       []mdbv1.AlertConfiguration
+	Create       []akov2.AlertConfiguration
 	Delete       []string
 	CreateStatus []mongodbatlas.AlertConfiguration
 }
 
-func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec mdbv1.AlertConfiguration, atlasAlertConfig mongodbatlas.AlertConfiguration) bool {
+func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec akov2.AlertConfiguration, atlasAlertConfig mongodbatlas.AlertConfiguration) bool {
 	if alertConfigSpec.EventTypeName != atlasAlertConfig.EventTypeName {
 		return false
 	}

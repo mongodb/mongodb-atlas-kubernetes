@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -47,7 +47,7 @@ type AtlasFederatedAuthReconciler struct {
 func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasfederatedauth", req.NamespacedName)
 
-	fedauth := &mdbv1.AtlasFederatedAuth{}
+	fedauth := &akov2.AtlasFederatedAuth{}
 	result := customresource.PrepareResource(ctx, r.Client, req, fedauth, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -123,7 +123,7 @@ func (r *AtlasFederatedAuthReconciler) Reconcile(ctx context.Context, req ctrl.R
 func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasFederatedAuth").
-		For(&mdbv1.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
+		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
 		Complete(r)
 }
@@ -140,8 +140,8 @@ func logIfWarning(ctx *workflow.Context, result workflow.Result) {
 }
 
 func managedByAtlas(ctx context.Context, atlasClient *admin.APIClient, orgID string) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		fedauth, ok := resource.(*mdbv1.AtlasFederatedAuth)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		fedauth, ok := resource.(*akov2.AtlasFederatedAuth)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasFederatedAuth")
 		}

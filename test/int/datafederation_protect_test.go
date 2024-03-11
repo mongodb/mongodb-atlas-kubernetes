@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -26,10 +26,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 	var (
 		connectionSecret       corev1.Secret
-		testProject            *mdbv1.AtlasProject
+		testProject            *akov2.AtlasProject
 		testNamespace          *corev1.Namespace
 		stopManager            context.CancelFunc
-		testDataFederation     *mdbv1.AtlasDataFederation
+		testDataFederation     *akov2.AtlasDataFederation
 		testDataFederationName string
 		manualDeletion         bool
 	)
@@ -47,7 +47,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 		})
 
 		By("Creating a project in the cluster", func() {
-			testProject = mdbv1.DefaultProject(testNamespace.Name, connectionSecret.Name).
+			testProject = akov2.DefaultProject(testNamespace.Name, connectionSecret.Name).
 				WithIPAccessList(project.NewIPAccessList().
 					WithCIDR("0.0.0.0/0"))
 			Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
@@ -58,7 +58,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 		})
 
 		By("Setting up DataFederation struct", func() {
-			testDataFederation = &mdbv1.AtlasDataFederation{}
+			testDataFederation = &akov2.AtlasDataFederation{}
 			testDataFederationName = fmt.Sprintf(dataFederationBaseName, testNamespace.Name)
 		})
 
@@ -94,7 +94,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 	Describe("Operator is running with deletion protection enabled", func() {
 		It("Creates a data federation and protects it from deletion", func() {
 			By("Creating a DataFederation instance", func() {
-				testDataFederation = mdbv1.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
+				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
@@ -142,7 +142,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 			})
 
 			By("Creating a data federation instance in the cluster", func() {
-				testDataFederation = mdbv1.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
+				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name)
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func() bool {
@@ -167,7 +167,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection
 
 		It("Creates a data federation instance and annotates it for deletion", func() {
 			By("Creating a data federation instance in the cluster", func() {
-				testDataFederation = mdbv1.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name).
+				testDataFederation = akov2.NewDataFederationInstance(testProject.Name, testDataFederationName, testNamespace.Name).
 					WithAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete})
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 

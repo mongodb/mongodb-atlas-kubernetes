@@ -14,7 +14,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -31,7 +31,7 @@ const (
 	SPEStatusFailed     = "FAILED"     //stage 2
 )
 
-func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string, deployment *mdbv1.AtlasDeployment, deploymentName string, protected bool) workflow.Result {
+func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string, deployment *akov2.AtlasDeployment, deploymentName string, protected bool) workflow.Result {
 	if deployment == nil || deployment.Spec.ServerlessSpec == nil {
 		return workflow.Terminate(workflow.ServerlessPrivateEndpointReady, "deployment spec is empty")
 	}
@@ -80,12 +80,12 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, groupID string,
 	return result
 }
 
-func canServerlessPrivateEndpointsReconcile(service *workflow.Context, protected bool, groupID string, deployment *mdbv1.AtlasDeployment) (bool, error) {
+func canServerlessPrivateEndpointsReconcile(service *workflow.Context, protected bool, groupID string, deployment *akov2.AtlasDeployment) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasDeploymentSpec{}
+	latestConfig := &akov2.AtlasDeploymentSpec{}
 	latestConfigString, ok := deployment.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -112,7 +112,7 @@ func canServerlessPrivateEndpointsReconcile(service *workflow.Context, protected
 	return false, nil
 }
 
-func sortedK8sPENames(spes []mdbv1.ServerlessPrivateEndpoint) []string {
+func sortedK8sPENames(spes []akov2.ServerlessPrivateEndpoint) []string {
 	names := make([]string, 0, len(spes))
 	for _, spe := range spes {
 		names = append(names, spe.Name)
@@ -130,7 +130,7 @@ func sortedAtlasPENames(atlasPEs []mongodbatlas.ServerlessPrivateEndpointConnect
 	return names
 }
 
-func matchingPEs(logger *zap.SugaredLogger, spes []mdbv1.ServerlessPrivateEndpoint, atlasPEs []mongodbatlas.ServerlessPrivateEndpointConnection) bool {
+func matchingPEs(logger *zap.SugaredLogger, spes []akov2.ServerlessPrivateEndpoint, atlasPEs []mongodbatlas.ServerlessPrivateEndpointConnection) bool {
 	k8sPENames := sortedK8sPENames(spes)
 	atlasPENames := sortedAtlasPENames(atlasPEs)
 	if len(k8sPENames) != len(atlasPEs) {
@@ -149,21 +149,21 @@ func matchingPEs(logger *zap.SugaredLogger, spes []mdbv1.ServerlessPrivateEndpoi
 	return true
 }
 
-func prevPEConfig(deploymentSpec *mdbv1.AtlasDeploymentSpec) []mdbv1.ServerlessPrivateEndpoint {
+func prevPEConfig(deploymentSpec *akov2.AtlasDeploymentSpec) []akov2.ServerlessPrivateEndpoint {
 	if deploymentSpec.ServerlessSpec == nil || deploymentSpec.ServerlessSpec.PrivateEndpoints == nil {
-		return []mdbv1.ServerlessPrivateEndpoint{}
+		return []akov2.ServerlessPrivateEndpoint{}
 	}
 	return deploymentSpec.ServerlessSpec.PrivateEndpoints
 }
 
-func GetServerlessProvider(deploymentSpec *mdbv1.ServerlessSpec) provider.ProviderName {
+func GetServerlessProvider(deploymentSpec *akov2.ServerlessSpec) provider.ProviderName {
 	if deploymentSpec.ProviderSettings.ProviderName != provider.ProviderServerless {
 		return deploymentSpec.ProviderSettings.ProviderName
 	}
 	return provider.ProviderName(deploymentSpec.ProviderSettings.BackingProviderName)
 }
 
-func syncServerlessPrivateEndpoints(service *workflow.Context, groupID, deploymentName string, providerName provider.ProviderName, desiredPE []mdbv1.ServerlessPrivateEndpoint) workflow.Result {
+func syncServerlessPrivateEndpoints(service *workflow.Context, groupID, deploymentName string, providerName provider.ProviderName, desiredPE []akov2.ServerlessPrivateEndpoint) workflow.Result {
 	logger := service.Log
 	client := service.Client.ServerlessPrivateEndpoints
 	logger.Debugf("Syncing serverless private endpoints for deployment %s", deploymentName)
@@ -245,7 +245,7 @@ func connectSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbat
 	return result
 }
 
-func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatlas.ServerlessPrivateEndpointsService, groupID, deploymentName string, pe []mdbv1.ServerlessPrivateEndpoint) []status.ServerlessPrivateEndpoint {
+func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatlas.ServerlessPrivateEndpointsService, groupID, deploymentName string, pe []akov2.ServerlessPrivateEndpoint) []status.ServerlessPrivateEndpoint {
 	var result []status.ServerlessPrivateEndpoint
 	for _, endpoint := range pe {
 		created, _, err := client.Create(ctx, groupID, deploymentName, newServerlessEndpoint(endpoint))
@@ -259,21 +259,21 @@ func createSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbatl
 	return result
 }
 
-func newServerlessEndpoint(pe mdbv1.ServerlessPrivateEndpoint) *mongodbatlas.ServerlessPrivateEndpointConnection {
+func newServerlessEndpoint(pe akov2.ServerlessPrivateEndpoint) *mongodbatlas.ServerlessPrivateEndpointConnection {
 	return &mongodbatlas.ServerlessPrivateEndpointConnection{
 		Comment: pe.Name,
 	}
 }
 
 type SPEDiff struct {
-	PEToCreate        []mdbv1.ServerlessPrivateEndpoint
+	PEToCreate        []akov2.ServerlessPrivateEndpoint
 	PEToConnect       []mongodbatlas.ServerlessPrivateEndpointConnection
 	PEToUpdateStatus  []mongodbatlas.ServerlessPrivateEndpointConnection
 	PEToDelete        []string
-	DuplicateToCreate []mdbv1.ServerlessPrivateEndpoint
+	DuplicateToCreate []akov2.ServerlessPrivateEndpoint
 }
 
-func (d *SPEDiff) appendToCreate(pe mdbv1.ServerlessPrivateEndpoint) {
+func (d *SPEDiff) appendToCreate(pe akov2.ServerlessPrivateEndpoint) {
 	for _, p := range d.PEToCreate {
 		if p.Name == pe.Name {
 			d.DuplicateToCreate = append(d.DuplicateToCreate, pe)
@@ -283,13 +283,13 @@ func (d *SPEDiff) appendToCreate(pe mdbv1.ServerlessPrivateEndpoint) {
 	d.PEToCreate = append(d.PEToCreate, pe)
 }
 
-func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPE []mdbv1.ServerlessPrivateEndpoint) *SPEDiff {
+func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPE []akov2.ServerlessPrivateEndpoint) *SPEDiff {
 	existingPEToCreate := make([]mongodbatlas.ServerlessPrivateEndpointConnection, 0)
 	existingReadyPE := make([]mongodbatlas.ServerlessPrivateEndpointConnection, 0)
 	existingReservedPE := make([]mongodbatlas.ServerlessPrivateEndpointConnection, 0)
 
-	desiredPEToCreate := make([]mdbv1.ServerlessPrivateEndpoint, 0)
-	desiredReadyPE := make([]mdbv1.ServerlessPrivateEndpoint, 0)
+	desiredPEToCreate := make([]akov2.ServerlessPrivateEndpoint, 0)
+	desiredReadyPE := make([]akov2.ServerlessPrivateEndpoint, 0)
 
 	for _, pe := range existedPE {
 		switch pe.Status {
@@ -354,7 +354,7 @@ func sortServerlessPE(logger *zap.SugaredLogger, existedPE []mongodbatlas.Server
 	return mergedDiff
 }
 
-func preparePEForConnection(atlasPE mongodbatlas.ServerlessPrivateEndpointConnection, pe mdbv1.ServerlessPrivateEndpoint) mongodbatlas.ServerlessPrivateEndpointConnection {
+func preparePEForConnection(atlasPE mongodbatlas.ServerlessPrivateEndpointConnection, pe akov2.ServerlessPrivateEndpoint) mongodbatlas.ServerlessPrivateEndpointConnection {
 	return mongodbatlas.ServerlessPrivateEndpointConnection{
 		ID:                       atlasPE.ID,
 		Comment:                  pe.Name,
@@ -364,7 +364,7 @@ func preparePEForConnection(atlasPE mongodbatlas.ServerlessPrivateEndpointConnec
 	}
 }
 
-func sortReadySPE(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []mdbv1.ServerlessPrivateEndpoint) *SPEDiff {
+func sortReadySPE(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []akov2.ServerlessPrivateEndpoint) *SPEDiff {
 	var result SPEDiff
 
 	for _, desiredPE := range desiredPEs {
@@ -407,11 +407,11 @@ func sortReadySPE(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection
 	return &result
 }
 
-func isReadySPEEqual(existingPE mongodbatlas.ServerlessPrivateEndpointConnection, desiredPE mdbv1.ServerlessPrivateEndpoint) bool {
+func isReadySPEEqual(existingPE mongodbatlas.ServerlessPrivateEndpointConnection, desiredPE akov2.ServerlessPrivateEndpoint) bool {
 	return existingPE.Comment == desiredPE.Name && desiredPE.CloudProviderEndpointID == existingPE.CloudProviderEndpointID && desiredPE.PrivateEndpointIPAddress == existingPE.PrivateEndpointIPAddress
 }
 
-func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []mdbv1.ServerlessPrivateEndpoint, uniqueComments []string) *SPEDiff {
+func sortSPEToConnect(existingPEs []mongodbatlas.ServerlessPrivateEndpointConnection, desiredPEs []akov2.ServerlessPrivateEndpoint, uniqueComments []string) *SPEDiff {
 	var result SPEDiff
 	for _, desiredPE := range desiredPEs {
 		if stringutil.Contains(uniqueComments, desiredPE.Name) {

@@ -8,11 +8,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Context, fedauth *mdbv1.AtlasFederatedAuth) workflow.Result {
+func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Context, fedauth *akov2.AtlasFederatedAuth) workflow.Result {
 	// If disabled, skip with no error
 	if !fedauth.Spec.Enabled {
 		return workflow.OK().WithMessage(string(workflow.FederatedAuthIsNotEnabledInCR))
@@ -95,7 +95,7 @@ func prepareProjectList(ctx context.Context, client *admin.APIClient) (map[strin
 	return result, nil
 }
 
-func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, federationSettingsID string, idp *admin.FederationIdentityProvider, fedauth *mdbv1.AtlasFederatedAuth, client *admin.APIClient) workflow.Result {
+func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, federationSettingsID string, idp *admin.FederationIdentityProvider, fedauth *akov2.AtlasFederatedAuth, client *admin.APIClient) workflow.Result {
 	if fedauth.Spec.SSODebugEnabled != nil {
 		if idp.GetSsoDebugEnabled() == *fedauth.Spec.SSODebugEnabled {
 			return workflow.OK()

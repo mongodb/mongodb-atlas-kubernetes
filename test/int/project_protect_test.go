@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -39,11 +39,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 
 	Describe("Operator is running with deletion protection enabled", func() {
 		It("Creates a project and protect it to be deleted", func() {
-			testProject := &mdbv1.AtlasProject{}
+			testProject := &akov2.AtlasProject{}
 			projectName := fmt.Sprintf("new-project-%s", testNamespace.Name)
 
 			By("Creating a project in the cluster", func() {
-				testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
+				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithConnectionSecret(connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
@@ -71,7 +71,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 		})
 
 		It("Adds an existing Atlas project and protect it to be deleted", func() {
-			testProject := &mdbv1.AtlasProject{}
+			testProject := &akov2.AtlasProject{}
 			projectName := fmt.Sprintf("existing-project-%s", testNamespace.Name)
 
 			By("Creating a project in Atlas", func() {
@@ -85,7 +85,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 			})
 
 			By("Creating a project in the cluster", func() {
-				testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
+				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithConnectionSecret(connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())
 
@@ -113,11 +113,11 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 		})
 
 		It("Creates a project and annotate it to be deleted", func() {
-			testProject := &mdbv1.AtlasProject{}
+			testProject := &akov2.AtlasProject{}
 			projectName := fmt.Sprintf("new-project-%s", testNamespace.Name)
 
 			By("Creating a project in the cluster", func() {
-				testProject = mdbv1.NewProject(testNamespace.Name, projectName, projectName).
+				testProject = akov2.NewProject(testNamespace.Name, projectName, projectName).
 					WithAnnotations(map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete}).
 					WithConnectionSecret(connectionSecret.Name)
 				Expect(k8sClient.Create(context.Background(), testProject, &client.CreateOptions{})).To(Succeed())

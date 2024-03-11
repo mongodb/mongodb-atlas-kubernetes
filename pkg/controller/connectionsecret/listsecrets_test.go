@@ -10,7 +10,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 func TestListConnectionSecrets(t *testing.T) {
@@ -18,7 +18,7 @@ func TestListConnectionSecrets(t *testing.T) {
 		// Fake client
 		scheme := runtime.NewScheme()
 		utilruntime.Must(corev1.AddToScheme(scheme))
-		utilruntime.Must(mdbv1.AddToScheme(scheme))
+		utilruntime.Must(akov2.AddToScheme(scheme))
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 		// c1, user1
@@ -79,7 +79,7 @@ func TestListConnectionSecrets(t *testing.T) {
 		// Fake client
 		scheme := runtime.NewScheme()
 		utilruntime.Must(corev1.AddToScheme(scheme))
-		utilruntime.Must(mdbv1.AddToScheme(scheme))
+		utilruntime.Must(akov2.AddToScheme(scheme))
 		fakeClient := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 		data := dataForSecret()

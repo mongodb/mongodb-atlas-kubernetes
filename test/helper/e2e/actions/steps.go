@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -36,8 +36,8 @@ func WaitDeployment(data *model.TestDataProvider, generation int) {
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
-		// Waiting for a particular generation can be brittle, to make it more robust
-		// wait for any progress to or beyond the expected generation
+			// Waiting for a particular generation can be brittle, to make it more robust
+			// wait for any progress to or beyond the expected generation
 		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
 
 		WaitDeploymentWithoutGenerationCheck(data)
@@ -50,8 +50,8 @@ func WaitDeployment(data *model.TestDataProvider, generation int) {
 				g.Expect(err).ToNot(HaveOccurred())
 				return gen
 			},
-		// Waiting for a particular generation can be brittle, to make it more robust
-		// wait for any progress to or beyond the expected generation
+			// Waiting for a particular generation can be brittle, to make it more robust
+			// wait for any progress to or beyond the expected generation
 		).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeNumerically(">=", generation))
 
 		WaitDeploymentWithoutGenerationCheckV2(data)
@@ -269,7 +269,7 @@ func SaveTestAppLogs(input model.UserInputs) {
 func CheckUsersAttributes(data *model.TestDataProvider) {
 	input := data.Resources
 	aClient := atlas.GetClientOrFail()
-	userDBResourceName := func(deploymentName string, user *v1.AtlasDatabaseUser) string { // user name helmkind or kube-test-kind
+	userDBResourceName := func(deploymentName string, user *akov2.AtlasDatabaseUser) string { // user name helmkind or kube-test-kind
 		if input.KeyName[0:4] == "helm" {
 			return fmt.Sprintf("%s-%s", deploymentName, user.Spec.Username)
 		}
@@ -430,7 +430,7 @@ func DeleteTestDataProject(data *model.TestDataProvider) {
 
 func DeleteTestDataTeams(data *model.TestDataProvider) {
 	By("Delete teams", func() {
-		teams := &v1.AtlasTeamList{}
+		teams := &akov2.AtlasTeamList{}
 		Expect(data.K8SClient.List(data.Context, teams, &client.ListOptions{Namespace: data.Resources.Namespace})).Should(Succeed())
 		for i := range teams.Items {
 			Expect(data.K8SClient.Delete(data.Context, &teams.Items[i])).Should(Succeed())

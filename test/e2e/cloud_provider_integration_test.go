@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloudaccess"
@@ -58,14 +58,14 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderIntegration{
+					AccessRole: akov2.CloudProviderIntegration{
 						ProviderName: "AWS",
 						// IamAssumedRoleArn will be filled after role creation
 					},
 				},
 				{
 					Name: utils.RandomName(awsRoleNameBase),
-					AccessRole: v1.CloudProviderIntegration{
+					AccessRole: akov2.CloudProviderIntegration{
 						ProviderName: "AWS",
 						// IamAssumedRoleArn will be filled after role creation
 					},
@@ -101,7 +101,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 			EnsureAllRolesCreated(g, *userData, len(roles))
 		}).WithTimeout(5*time.Minute).WithPolling(20*time.Second).Should(Succeed(), "Cloud access roles are not created")
 
-		project := &v1.AtlasProject{}
+		project := &akov2.AtlasProject{}
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
 
 		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderIntegrations)
@@ -117,7 +117,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 }
 
 func EnsureAllRolesCreated(g Gomega, testData model.TestDataProvider, rolesLen int) {
-	project := &v1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, project)).Should(Succeed())
 	g.Expect(project.Status.CloudProviderIntegrations).Should(HaveLen(rolesLen))
 

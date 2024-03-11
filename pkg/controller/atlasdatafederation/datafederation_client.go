@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 )
@@ -27,7 +27,7 @@ func NewClient(client *mongodbatlas.Client) *DataFederationServiceOp {
 	}
 }
 
-func (s *DataFederationServiceOp) Get(ctx context.Context, groupID string, tenantName string) (*mdbv1.DataFederationSpec, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) Get(ctx context.Context, groupID string, tenantName string) (*akov2.DataFederationSpec, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -42,7 +42,7 @@ func (s *DataFederationServiceOp) Get(ctx context.Context, groupID string, tenan
 		return nil, nil, err
 	}
 
-	root := new(mdbv1.DataFederationSpec)
+	root := new(akov2.DataFederationSpec)
 	resp, err := s.Client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
@@ -51,7 +51,7 @@ func (s *DataFederationServiceOp) Get(ctx context.Context, groupID string, tenan
 	return root, resp, err
 }
 
-func (s *DataFederationServiceOp) Create(ctx context.Context, groupID string, spec *mdbv1.DataFederationSpec) (*mdbv1.DataFederationSpec, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) Create(ctx context.Context, groupID string, spec *akov2.DataFederationSpec) (*akov2.DataFederationSpec, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -63,7 +63,7 @@ func (s *DataFederationServiceOp) Create(ctx context.Context, groupID string, sp
 		return nil, nil, err
 	}
 
-	root := new(mdbv1.DataFederationSpec)
+	root := new(akov2.DataFederationSpec)
 	resp, err := s.Client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
@@ -72,7 +72,7 @@ func (s *DataFederationServiceOp) Create(ctx context.Context, groupID string, sp
 	return root, resp, err
 }
 
-func (s *DataFederationServiceOp) Update(ctx context.Context, groupID string, spec *mdbv1.DataFederationSpec) (*mdbv1.DataFederationSpec, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) Update(ctx context.Context, groupID string, spec *akov2.DataFederationSpec) (*akov2.DataFederationSpec, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -84,7 +84,7 @@ func (s *DataFederationServiceOp) Update(ctx context.Context, groupID string, sp
 		return nil, nil, err
 	}
 
-	root := new(mdbv1.DataFederationSpec)
+	root := new(akov2.DataFederationSpec)
 	resp, err := s.Client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
@@ -118,11 +118,11 @@ func (s *DataFederationServiceOp) Delete(ctx context.Context, groupID string, te
 
 type PrivateEndpointsResponse struct {
 	Links      []*mongodbatlas.Link     `json:"links,omitempty"`
-	Results    []mdbv1.DataFederationPE `json:"results,omitempty"`
+	Results    []akov2.DataFederationPE `json:"results,omitempty"`
 	TotalCount int                      `json:"totalCount,omitempty"`
 }
 
-func (s *DataFederationServiceOp) GetAllPrivateEndpoints(ctx context.Context, groupID string) ([]mdbv1.DataFederationPE, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) GetAllPrivateEndpoints(ctx context.Context, groupID string) ([]akov2.DataFederationPE, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -143,7 +143,7 @@ func (s *DataFederationServiceOp) GetAllPrivateEndpoints(ctx context.Context, gr
 	return root.Results, resp, nil
 }
 
-func (s *DataFederationServiceOp) CreateOnePrivateEndpoint(ctx context.Context, groupID string, endpoint mdbv1.DataFederationPE) (*mdbv1.DataFederationPE, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) CreateOnePrivateEndpoint(ctx context.Context, groupID string, endpoint akov2.DataFederationPE) (*akov2.DataFederationPE, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -155,7 +155,7 @@ func (s *DataFederationServiceOp) CreateOnePrivateEndpoint(ctx context.Context, 
 		return nil, nil, err
 	}
 
-	root := new(mdbv1.DataFederationPE)
+	root := new(akov2.DataFederationPE)
 	resp, err := s.Client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
@@ -164,7 +164,7 @@ func (s *DataFederationServiceOp) CreateOnePrivateEndpoint(ctx context.Context, 
 	return root, resp, err
 }
 
-func (s *DataFederationServiceOp) DeleteOnePrivateEndpoint(ctx context.Context, groupID string, endpointID string) (*mdbv1.DataFederationPE, *mongodbatlas.Response, error) {
+func (s *DataFederationServiceOp) DeleteOnePrivateEndpoint(ctx context.Context, groupID string, endpointID string) (*akov2.DataFederationPE, *mongodbatlas.Response, error) {
 	if groupID == "" {
 		return nil, nil, errors.New("groupID must be set")
 	}
@@ -179,7 +179,7 @@ func (s *DataFederationServiceOp) DeleteOnePrivateEndpoint(ctx context.Context, 
 		return nil, nil, err
 	}
 
-	root := new(mdbv1.DataFederationPE)
+	root := new(akov2.DataFederationPE)
 	resp, err := s.Client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err

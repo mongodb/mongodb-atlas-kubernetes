@@ -5,13 +5,13 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 // ensureProjectExists creates the project if it doesn't exist yet. Returns the project ID
-func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, project *mdbv1.AtlasProject) (string, workflow.Result) {
+func (r *AtlasProjectReconciler) ensureProjectExists(ctx *workflow.Context, project *akov2.AtlasProject) (string, workflow.Result) {
 	// Try to find the project
 	p, _, err := ctx.Client.Projects.GetOneProjectByName(ctx.Context, project.Spec.Name)
 	if err != nil {

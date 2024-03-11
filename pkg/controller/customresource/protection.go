@@ -7,17 +7,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const (
 	AnnotationLastAppliedConfiguration = "mongodb.com/last-applied-configuration"
 )
 
-type OperatorChecker func(resource mdbv1.AtlasCustomResource) (bool, error)
-type AtlasChecker func(resource mdbv1.AtlasCustomResource) (bool, error)
+type OperatorChecker func(resource akov2.AtlasCustomResource) (bool, error)
+type AtlasChecker func(resource akov2.AtlasCustomResource) (bool, error)
 
-func IsOwner(resource mdbv1.AtlasCustomResource, protectionFlag bool, operatorChecker OperatorChecker, atlasChecker AtlasChecker) (bool, error) {
+func IsOwner(resource akov2.AtlasCustomResource, protectionFlag bool, operatorChecker OperatorChecker, atlasChecker AtlasChecker) (bool, error) {
 	if !protectionFlag {
 		return true, nil
 	}
@@ -39,7 +39,7 @@ func IsOwner(resource mdbv1.AtlasCustomResource, protectionFlag bool, operatorCh
 	return !existInAtlas, nil
 }
 
-func ApplyLastConfigApplied(ctx context.Context, resource mdbv1.AtlasCustomResource, k8sClient client.Client) error {
+func ApplyLastConfigApplied(ctx context.Context, resource akov2.AtlasCustomResource, k8sClient client.Client) error {
 	uObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func ApplyLastConfigApplied(ctx context.Context, resource mdbv1.AtlasCustomResou
 	return k8sClient.Update(ctx, resource, &client.UpdateOptions{})
 }
 
-func IsResourceManagedByOperator(resource mdbv1.AtlasCustomResource) (bool, error) {
+func IsResourceManagedByOperator(resource akov2.AtlasCustomResource) (bool, error) {
 	annotations := resource.GetAnnotations()
 	if annotations == nil {
 		return false, nil

@@ -46,7 +46,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatabaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdatafederation"
@@ -143,7 +143,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 			atlasDomain = domain
 		}
 
-		err = mdbv1.AddToScheme(scheme.Scheme)
+		err = akov2.AddToScheme(scheme.Scheme)
 		Expect(err).ToNot(HaveOccurred())
 
 		// It's recommended to construct the client directly for tests
@@ -174,7 +174,7 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
-	err := mdbv1.AddToScheme(scheme.Scheme)
+	err := akov2.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	namespace = corev1.Namespace{

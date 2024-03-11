@@ -5,18 +5,18 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 )
 
 const ProjectName = "my-project"
 
-func DefaultProject() *v1.AtlasProject {
-	return &v1.AtlasProject{
+func DefaultProject() *akov2.AtlasProject {
+	return &akov2.AtlasProject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ProjectName,
 		},
-		Spec: v1.AtlasProjectSpec{
+		Spec: akov2.AtlasProjectSpec{
 			Name: utils.RandomName("Test Atlas Operator Project"),
 			ProjectIPAccessList: []project.IPAccessList{
 				{

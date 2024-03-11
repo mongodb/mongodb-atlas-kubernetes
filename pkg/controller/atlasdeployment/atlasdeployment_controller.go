@@ -40,7 +40,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -85,7 +85,7 @@ type AtlasDeploymentReconciler struct {
 func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasdeployment", req.NamespacedName)
 
-	deployment := &mdbv1.AtlasDeployment{}
+	deployment := &akov2.AtlasDeployment{}
 	result := customresource.PrepareResource(context, r.Client, req, deployment, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
@@ -118,7 +118,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 		return resourceVersionIsValid.ReconcileResult(), nil
 	}
 
-	project := &mdbv1.AtlasProject{}
+	project := &akov2.AtlasProject{}
 	if result := r.readProjectResource(context, deployment, project); !result.IsOk() {
 		workflowCtx.SetConditionFromResult(status.DeploymentReadyType, result)
 		return result.ReconcileResult(), nil
@@ -189,7 +189,7 @@ func (r *AtlasDeploymentReconciler) Reconcile(context context.Context, req ctrl.
 func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 	workflowCtx *workflow.Context,
 	log *zap.SugaredLogger,
-	deployment *mdbv1.AtlasDeployment, // this must be the original non converted deployment
+	deployment *akov2.AtlasDeployment, // this must be the original non converted deployment
 	result workflow.Result) ctrl.Result {
 	if result.IsOk() || result.IsInProgress() {
 		err := customresource.ApplyLastConfigApplied(workflowCtx.Context, deployment, r.Client)
@@ -204,8 +204,8 @@ func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 	return result.ReconcileResult()
 }
 
-func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *mdbv1.AtlasDeployment) {
-	var pSettings *mdbv1.ProviderSettingsSpec
+func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *akov2.AtlasDeployment) {
+	var pSettings *akov2.ProviderSettingsSpec
 	var deploymentType string
 
 	if deployment.Spec.ServerlessSpec != nil {
@@ -222,8 +222,8 @@ func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *mdbv1.AtlasD
 func (r *AtlasDeploymentReconciler) checkDeploymentIsManaged(
 	workflowCtx *workflow.Context,
 	log *zap.SugaredLogger,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 ) workflow.Result {
 	// Setting protection flag to static false because ownership detection is disabled.
 	owner, err := customresource.IsOwner(
@@ -259,8 +259,8 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 	workflowCtx *workflow.Context,
 	log *zap.SugaredLogger,
 	prevResult workflow.Result,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment, // this must be the original non converted deployment
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment, // this must be the original non converted deployment
 ) (bool, workflow.Result) {
 	if deployment.GetDeletionTimestamp().IsZero() {
 		if !customresource.HaveFinalizer(deployment, customresource.FinalizerLabel) {
@@ -314,19 +314,19 @@ func (r *AtlasDeploymentReconciler) handleDeletion(
 	return true, prevResult
 }
 
-func isTerminationProtectionEnabled(deployment *mdbv1.AtlasDeployment) bool {
+func isTerminationProtectionEnabled(deployment *akov2.AtlasDeployment) bool {
 	return (deployment.Spec.DeploymentSpec != nil &&
 		deployment.Spec.DeploymentSpec.TerminationProtectionEnabled) || (deployment.Spec.ServerlessSpec != nil &&
 		deployment.Spec.ServerlessSpec.TerminationProtectionEnabled)
 }
 
-func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment *mdbv1.AtlasDeployment) error {
+func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment *akov2.AtlasDeployment) error {
 	r.Log.Debug("Cleaning up deployment bindings (backup)")
 
 	return r.garbageCollectBackupResource(context, deployment.GetDeploymentName())
 }
 
-func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, deploymentType string) {
+func modifyProviderSettings(pSettings *akov2.ProviderSettingsSpec, deploymentType string) {
 	if pSettings == nil || string(pSettings.ProviderName) == deploymentType {
 		return
 	}
@@ -344,7 +344,7 @@ func modifyProviderSettings(pSettings *mdbv1.ProviderSettingsSpec, deploymentTyp
 	}
 }
 
-func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.AtlasDeployment) deploymentHandlerFunc {
+func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *akov2.AtlasDeployment) deploymentHandlerFunc {
 	if deployment.IsServerless() {
 		return r.handleServerlessInstance
 	}
@@ -354,8 +354,8 @@ func (r *AtlasDeploymentReconciler) selectDeploymentHandler(deployment *mdbv1.At
 // handleAdvancedDeployment ensures the state of the deployment using the Advanced Deployment API
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
 	workflowCtx *workflow.Context,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 	req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureAdvancedDeploymentState(workflowCtx, project, deployment)
 	if c != nil && c.StateName != "" {
@@ -410,8 +410,8 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(
 // handleServerlessInstance ensures the state of the serverless instance using the serverless API
 func (r *AtlasDeploymentReconciler) handleServerlessInstance(
 	workflowCtx *workflow.Context,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 	req reconcile.Request) (workflow.Result, error) {
 	c, result := r.ensureServerlessInstanceState(workflowCtx, project, deployment)
 	return r.ensureConnectionSecretsAndSetStatusOptions(workflowCtx, project, deployment, result, c)
@@ -421,8 +421,8 @@ func (r *AtlasDeploymentReconciler) handleServerlessInstance(
 // status options to the given context. This function can be used for regular deployments and serverless instances
 func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(
 	ctx *workflow.Context,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 	result workflow.Result,
 	d *mongodbatlas.Cluster) (workflow.Result, error) {
 	if d != nil && d.StateName != "" {
@@ -449,8 +449,8 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecretsAndSetStatusOptions(
 
 func (r *AtlasDeploymentReconciler) handleAdvancedOptions(
 	ctx *workflow.Context,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment) workflow.Result {
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment) workflow.Result {
 	if deployment.Spec.ProcessArgs == nil {
 		return workflow.OK()
 	}
@@ -481,7 +481,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedOptions(
 	return workflow.OK()
 }
 
-func (r *AtlasDeploymentReconciler) readProjectResource(ctx context.Context, deployment *mdbv1.AtlasDeployment, project *mdbv1.AtlasProject) workflow.Result {
+func (r *AtlasDeploymentReconciler) readProjectResource(ctx context.Context, deployment *akov2.AtlasDeployment, project *akov2.AtlasProject) workflow.Result {
 	if err := r.Client.Get(ctx, deployment.AtlasProjectObjectKey(), project); err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
 	}
@@ -495,19 +495,19 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to primary resource AtlasDeployment & handle delete separately
-	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasDeployment{}), &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasDeployment{}), &handler.EnqueueRequestForObject{}, r.GlobalPredicates...)
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup schedules
-	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup policies
-	err = c.Watch(source.Kind(mgr.GetCache(), &mdbv1.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(r.WatchedResources))
 	if err != nil {
 		return err
 	}
@@ -519,8 +519,8 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *AtlasDeploymentReconciler) deleteConnectionStrings(
 	context context.Context,
 	log *zap.SugaredLogger,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 ) error {
 	// We always remove the connection secrets even if the deployment is not removed from Atlas
 	secrets, err := connectionsecret.ListByDeploymentName(context, r.Client, "", project.ID(), deployment.GetDeploymentName())
@@ -543,8 +543,8 @@ func (r *AtlasDeploymentReconciler) deleteConnectionStrings(
 func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 	workflowCtx *workflow.Context,
 	log *zap.SugaredLogger,
-	project *mdbv1.AtlasProject,
-	deployment *mdbv1.AtlasDeployment,
+	project *akov2.AtlasProject,
+	deployment *akov2.AtlasDeployment,
 ) error {
 	log.Infow("-> Starting AtlasDeployment deletion", "spec", deployment.Spec)
 
@@ -574,7 +574,7 @@ func (r *AtlasDeploymentReconciler) deleteDeploymentFromAtlas(
 	return nil
 }
 
-func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Context, deployment *mdbv1.AtlasDeployment) error {
+func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Context, deployment *akov2.AtlasDeployment) error {
 	err := r.Client.Get(context, kube.ObjectKeyFromObject(deployment), deployment)
 	if err != nil {
 		return fmt.Errorf("cannot get AtlasDeployment while adding finalizer: %w", err)
@@ -587,7 +587,7 @@ func (r *AtlasDeploymentReconciler) removeDeletionFinalizer(context context.Cont
 	return nil
 }
 
-type deploymentHandlerFunc func(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, deployment *mdbv1.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
+type deploymentHandlerFunc func(workflowCtx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, req reconcile.Request) (workflow.Result, error)
 
 type atlasClusterType int
 
@@ -604,8 +604,8 @@ type atlasTypedCluster struct {
 }
 
 func managedByAtlas(workflowCtx *workflow.Context, projectID string, log *zap.SugaredLogger) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
-		deployment, ok := resource.(*mdbv1.AtlasDeployment)
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
+		deployment, ok := resource.(*akov2.AtlasDeployment)
 		if !ok {
 			return false, errors.New("failed to match resource type as AtlasDeployment")
 		}
@@ -646,7 +646,7 @@ func findTypedAtlasCluster(workflowCtx *workflow.Context, projectID, deploymentN
 	return nil, err
 }
 
-func deploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *atlasTypedCluster, deployment *mdbv1.AtlasDeployment) (bool, error) {
+func deploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *atlasTypedCluster, deployment *akov2.AtlasDeployment) (bool, error) {
 	if deployment.IsServerless() {
 		if atlasSpec.clusterType != Serverless {
 			return false, nil
@@ -659,7 +659,7 @@ func deploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *atlasTypedCluster,
 	return advancedDeploymentMatchesSpec(log, atlasSpec.advanced, deployment.Spec.DeploymentSpec)
 }
 
-func serverlessDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.Cluster, operatorSpec *mdbv1.ServerlessSpec) (bool, error) {
+func serverlessDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.Cluster, operatorSpec *akov2.ServerlessSpec) (bool, error) {
 	clusterMerged := mongodbatlas.Cluster{}
 	if err := compat.JSONCopy(&clusterMerged, atlasSpec); err != nil {
 		return false, err
@@ -677,7 +677,7 @@ func serverlessDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodba
 	return d == "", nil
 }
 
-func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.AdvancedCluster, operatorSpec *mdbv1.AdvancedDeploymentSpec) (bool, error) {
+func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatlas.AdvancedCluster, operatorSpec *akov2.AdvancedDeploymentSpec) (bool, error) {
 	clusterMerged := mongodbatlas.AdvancedCluster{}
 	if err := compat.JSONCopy(&clusterMerged, atlasSpec); err != nil {
 		return false, err
@@ -696,9 +696,9 @@ func advancedDeploymentMatchesSpec(log *zap.SugaredLogger, atlasSpec *mongodbatl
 }
 
 // Parse through tags and verify that all keys are unique. Return error otherwise.
-func uniqueKey(deploymentSpec *mdbv1.AtlasDeploymentSpec) error {
+func uniqueKey(deploymentSpec *akov2.AtlasDeploymentSpec) error {
 	store := make(map[string]string)
-	var arrTags []*mdbv1.TagSpec
+	var arrTags []*akov2.TagSpec
 
 	if deploymentSpec.DeploymentSpec != nil {
 		arrTags = deploymentSpec.DeploymentSpec.Tags

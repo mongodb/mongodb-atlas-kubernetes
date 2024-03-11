@@ -3,11 +3,11 @@ package atlasdeployment
 import (
 	"testing"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 type CMZTestData struct {
-	desired             []v1.CustomZoneMapping
+	desired             []akov2.CustomZoneMapping
 	existing            map[string]string
 	czmMap              map[string]string
 	expectedToCreate    bool
@@ -36,7 +36,7 @@ func TestCompareZoneMappingStates(t *testing.T) {
 	tests := []*CMZTestData{
 		{
 			name: "All synced. No changes needed",
-			desired: []v1.CustomZoneMapping{
+			desired: []akov2.CustomZoneMapping{
 				{
 					Zone:     zone1,
 					Location: location1,
@@ -59,7 +59,7 @@ func TestCompareZoneMappingStates(t *testing.T) {
 		},
 		{
 			name: "Wrong zone. Should be recreated",
-			desired: []v1.CustomZoneMapping{
+			desired: []akov2.CustomZoneMapping{
 				{
 					Zone:     zone1,
 					Location: location1,
@@ -82,7 +82,7 @@ func TestCompareZoneMappingStates(t *testing.T) {
 		},
 		{
 			name: "Exist more than needed. Should be recreated",
-			desired: []v1.CustomZoneMapping{
+			desired: []akov2.CustomZoneMapping{
 				{
 					Zone:     zone1,
 					Location: location1,
@@ -101,7 +101,7 @@ func TestCompareZoneMappingStates(t *testing.T) {
 		},
 		{
 			name:    "Empty desired. Should be deleted",
-			desired: []v1.CustomZoneMapping{},
+			desired: []akov2.CustomZoneMapping{},
 			existing: map[string]string{
 				location1: "1",
 				location2: "2",
@@ -115,7 +115,7 @@ func TestCompareZoneMappingStates(t *testing.T) {
 		},
 		{
 			name: "Exist less than needed. Should be created",
-			desired: []v1.CustomZoneMapping{
+			desired: []akov2.CustomZoneMapping{
 				{
 					Zone:     zone1,
 					Location: location1,

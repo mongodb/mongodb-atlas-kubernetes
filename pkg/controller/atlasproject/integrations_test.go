@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -55,13 +55,13 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canIntegrationsReconcile(workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canIntegrationsReconcile(workflowCtx, false, &akov2.AtlasProject{})
 		require.NoError(t, err)
 		require.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -80,7 +80,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -100,7 +100,7 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -129,8 +129,8 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				Integrations: []project.Integration{
 					{
 						Type: "DATADOG",
@@ -175,8 +175,8 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				Integrations: []project.Integration{
 					{
 						Type: "DATADOG",
@@ -221,8 +221,8 @@ func TestCanIntegrationsReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
 				Integrations: []project.Integration{
 					{
 						Type: "PAGER_DUTY",

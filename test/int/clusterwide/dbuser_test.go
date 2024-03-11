@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -34,24 +34,24 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 	var (
 		connectionSecret     corev1.Secret
-		createdProject       *mdbv1.AtlasProject
-		createdDeploymentAWS *mdbv1.AtlasDeployment
-		createdDBUser        *mdbv1.AtlasDatabaseUser
-		secondDBUser         *mdbv1.AtlasDatabaseUser
+		createdProject       *akov2.AtlasProject
+		createdDeploymentAWS *akov2.AtlasDeployment
+		createdDBUser        *akov2.AtlasDatabaseUser
+		secondDBUser         *akov2.AtlasDatabaseUser
 	)
 
 	BeforeEach(func() {
 		namespace = corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "test"}}
 		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
-		createdDBUser = &mdbv1.AtlasDatabaseUser{}
+		createdDBUser = &akov2.AtlasDatabaseUser{}
 
 		connectionSecret = buildConnectionSecret("my-atlas-key")
 		Expect(k8sClient.Create(context.Background(), &connectionSecret)).To(Succeed())
 
 		By("Creating the project", func() {
 			// adding whitespace to the name to check normalization for connection secrets names
-			createdProject = mdbv1.DefaultProject(namespace.Name, connectionSecret.Name).
+			createdProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
 				WithAtlasName(namespace.Name + " some").
 				WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
 			if DevMode {
@@ -78,7 +78,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 		}
 
 		if createdProject != nil && createdProject.ID() != "" {
-			list := mdbv1.AtlasDeploymentList{}
+			list := akov2.AtlasDeploymentList{}
 			Expect(k8sClient.List(context.Background(), &list, client.InNamespace(namespace.Name))).To(Succeed())
 
 			for i := range list.Items {
@@ -107,7 +107,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 			passwordSecret := buildPasswordSecret(userNS.Name, UserPasswordSecret, DBUserPassword)
 			Expect(k8sClient.Create(context.Background(), &passwordSecret)).To(Succeed())
 
-			createdDeploymentAWS = mdbv1.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
+			createdDeploymentAWS = akov2.DefaultAWSDeployment(deploymentNS.Name, createdProject.Name).Lightweight()
 			// The project namespace is different from the deployment one - need to specify explicitly
 			createdDeploymentAWS.Spec.Project.Namespace = namespace.Name
 
@@ -117,7 +117,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 				return resources.CheckCondition(k8sClient, createdDeploymentAWS, status.TrueCondition(status.ReadyType), validateDeploymentCreatingFunc(g))
 			}).WithTimeout(30 * time.Minute).WithPolling(interval).Should(BeTrue())
 
-			createdDBUser = mdbv1.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
+			createdDBUser = akov2.DefaultDBUser(userNS.Name, "test-db-user", createdProject.Name).WithPasswordSecret(UserPasswordSecret)
 			createdDBUser.Spec.Project.Namespace = namespace.Name
 			Expect(k8sClient.Create(context.Background(), createdDBUser)).To(Succeed())
 			Eventually(func() bool {
@@ -152,7 +152,7 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 	}
 }
 
-func checkAtlasDatabaseUserRemoved(projectID string, user mdbv1.AtlasDatabaseUser) func() bool {
+func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUser) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.DatabaseUsersApi.
 			GetDatabaseUser(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username).
@@ -194,10 +194,10 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	}
 }
 
-func validateDeploymentCreatingFunc(g Gomega) func(a mdbv1.AtlasCustomResource) {
+func validateDeploymentCreatingFunc(g Gomega) func(a akov2.AtlasCustomResource) {
 	startedCreation := false
-	return func(a mdbv1.AtlasCustomResource) {
-		c := a.(*mdbv1.AtlasDeployment)
+	return func(a akov2.AtlasCustomResource) {
+		c := a.(*akov2.AtlasDeployment)
 		if c.Status.StateName != "" {
 			startedCreation = true
 		}

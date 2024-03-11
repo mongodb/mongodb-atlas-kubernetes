@@ -12,20 +12,20 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestCalculateChanges(t *testing.T) {
-	desired := []mdbv1.CustomRole{
+	desired := []akov2.CustomRole{
 		{
 			Name: "cr-1",
 		},
 		{
 			Name: "cr-3",
-			InheritedRoles: []mdbv1.Role{
+			InheritedRoles: []akov2.Role{
 				{
 					Name:     "admin",
 					Database: "test",
@@ -36,7 +36,7 @@ func TestCalculateChanges(t *testing.T) {
 			Name: "cr-4",
 		},
 	}
-	current := []mdbv1.CustomRole{
+	current := []akov2.CustomRole{
 		{
 			Name: "cr-1",
 		},
@@ -51,15 +51,15 @@ func TestCalculateChanges(t *testing.T) {
 	assert.Equal(
 		t,
 		CustomRolesOperations{
-			Create: map[string]mdbv1.CustomRole{
+			Create: map[string]akov2.CustomRole{
 				"cr-4": {
 					Name: "cr-4",
 				},
 			},
-			Update: map[string]mdbv1.CustomRole{
+			Update: map[string]akov2.CustomRole{
 				"cr-3": {
 					Name: "cr-3",
-					InheritedRoles: []mdbv1.Role{
+					InheritedRoles: []akov2.Role{
 						{
 							Name:     "admin",
 							Database: "test",
@@ -67,7 +67,7 @@ func TestCalculateChanges(t *testing.T) {
 					},
 				},
 			},
-			Delete: map[string]mdbv1.CustomRole{
+			Delete: map[string]akov2.CustomRole{
 				"cr-2": {
 					Name: "cr-2",
 				},
@@ -79,13 +79,13 @@ func TestCalculateChanges(t *testing.T) {
 
 func TestSyncCustomRolesStatus(t *testing.T) {
 	t.Run("sync status when all operations were done successfully", func(t *testing.T) {
-		desired := []mdbv1.CustomRole{
+		desired := []akov2.CustomRole{
 			{
 				Name: "cr-1",
 			},
 			{
 				Name: "cr-3",
-				InheritedRoles: []mdbv1.Role{
+				InheritedRoles: []akov2.Role{
 					{
 						Name:     "admin",
 						Database: "test",
@@ -146,13 +146,13 @@ func TestSyncCustomRolesStatus(t *testing.T) {
 	})
 
 	t.Run("sync status when a operation fails", func(t *testing.T) {
-		desired := []mdbv1.CustomRole{
+		desired := []akov2.CustomRole{
 			{
 				Name: "cr-1",
 			},
 			{
 				Name: "cr-3",
-				InheritedRoles: []mdbv1.Role{
+				InheritedRoles: []akov2.Role{
 					{
 						Name:     "admin",
 						Database: "test",
@@ -221,13 +221,13 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 			Client:  &mongodbatlas.Client{},
 			Context: context.Background(),
 		}
-		result, err := canCustomRolesReconcile(&workflowCtx, false, &mdbv1.AtlasProject{})
+		result, err := canCustomRolesReconcile(&workflowCtx, false, &akov2.AtlasProject{})
 		assert.NoError(t, err)
 		assert.True(t, result)
 	})
 
 	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
 		workflowCtx := &workflow.Context{
 			Client:  &mongodbatlas.Client{},
@@ -246,7 +246,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -266,7 +266,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -286,7 +286,7 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -322,16 +322,16 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				CustomRoles: []mdbv1.CustomRole{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				CustomRoles: []akov2.CustomRole{
 					{
 						Name:           "testRole",
 						InheritedRoles: nil,
-						Actions: []mdbv1.Action{
+						Actions: []akov2.Action{
 							{
 								Name: "INSERT",
-								Resources: []mdbv1.Resource{
+								Resources: []akov2.Resource{
 									{
 										Database:   pointer.MakePtr("testDB"),
 										Collection: pointer.MakePtr("testCollection"),
@@ -378,16 +378,16 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				CustomRoles: []mdbv1.CustomRole{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				CustomRoles: []akov2.CustomRole{
 					{
 						Name:           "testRole",
 						InheritedRoles: nil,
-						Actions: []mdbv1.Action{
+						Actions: []akov2.Action{
 							{
 								Name: "INSERT",
-								Resources: []mdbv1.Resource{
+								Resources: []akov2.Resource{
 									{
 										Database:   pointer.MakePtr("testDB"),
 										Collection: pointer.MakePtr("testCollection"),
@@ -435,16 +435,16 @@ func TestCanCustomRolesReconcile(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				CustomRoles: []mdbv1.CustomRole{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				CustomRoles: []akov2.CustomRole{
 					{
 						Name:           "testRole2",
 						InheritedRoles: nil,
-						Actions: []mdbv1.Action{
+						Actions: []akov2.Action{
 							{
 								Name: "INSERT",
-								Resources: []mdbv1.Resource{
+								Resources: []akov2.Resource{
 									{
 										Cluster:    pointer.MakePtr(false),
 										Database:   pointer.MakePtr("testDB"),
@@ -478,7 +478,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{}
+		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
@@ -514,16 +514,16 @@ func TestEnsureCustomRoles(t *testing.T) {
 				},
 			},
 		}
-		akoProject := &mdbv1.AtlasProject{
-			Spec: mdbv1.AtlasProjectSpec{
-				CustomRoles: []mdbv1.CustomRole{
+		akoProject := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				CustomRoles: []akov2.CustomRole{
 					{
 						Name:           "testRole2",
 						InheritedRoles: nil,
-						Actions: []mdbv1.Action{
+						Actions: []akov2.Action{
 							{
 								Name: "INSERT",
-								Resources: []mdbv1.Resource{
+								Resources: []akov2.Resource{
 									{
 										Cluster:    pointer.MakePtr(false),
 										Database:   pointer.MakePtr("testDB"),

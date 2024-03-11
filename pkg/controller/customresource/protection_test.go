@@ -10,17 +10,17 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 )
 
-func sampleResource() *mdbv1.AtlasDatabaseUser {
-	return &mdbv1.AtlasDatabaseUser{
-		Spec: mdbv1.AtlasDatabaseUserSpec{},
+func sampleResource() *akov2.AtlasDatabaseUser {
+	return &akov2.AtlasDatabaseUser{
+		Spec: akov2.AtlasDatabaseUserSpec{},
 	}
 }
 
-func taggedResource(tag, value string) *mdbv1.AtlasDatabaseUser {
+func taggedResource(tag, value string) *akov2.AtlasDatabaseUser {
 	dbUser := sampleResource()
 	annot := map[string]string{}
 	annot[tag] = value
@@ -29,13 +29,13 @@ func taggedResource(tag, value string) *mdbv1.AtlasDatabaseUser {
 }
 
 func testOpChecker(reply bool) customresource.OperatorChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
 		return reply, nil
 	}
 }
 
 func testAtlasChecker(reply bool) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
 		return reply, nil
 	}
 }
@@ -43,7 +43,7 @@ func testAtlasChecker(reply bool) customresource.AtlasChecker {
 var ErrOpChecker = fmt.Errorf("operator checker failed")
 
 func failedOpChecker(err error) customresource.OperatorChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
 		return false, err
 	}
 }
@@ -51,7 +51,7 @@ func failedOpChecker(err error) customresource.OperatorChecker {
 var ErrAtlasChecker = fmt.Errorf("atlas checker failed")
 
 func failedAtlasChecker(err error) customresource.AtlasChecker {
-	return func(resource mdbv1.AtlasCustomResource) (bool, error) {
+	return func(resource akov2.AtlasCustomResource) (bool, error) {
 		return false, err
 	}
 }
@@ -104,7 +104,7 @@ func TestIsResourceProtected(t *testing.T) {
 	tests := []struct {
 		title             string
 		protectionFlag    bool
-		resource          mdbv1.AtlasCustomResource
+		resource          akov2.AtlasCustomResource
 		expectedProtected bool
 	}{
 		{"Resource without tags with the flag set is protected", true, sampleResource(), true},

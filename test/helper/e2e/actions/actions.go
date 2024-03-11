@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
 
-func UpdateSpecOfSelectedDeployment(spec v1.AtlasDeploymentSpec, indexOfDeployment int) func(data *model.TestDataProvider) {
+func UpdateSpecOfSelectedDeployment(spec akov2.AtlasDeploymentSpec, indexOfDeployment int) func(data *model.TestDataProvider) {
 	return func(data *model.TestDataProvider) {
 		if len(data.InitialDeployments) < indexOfDeployment+1 {
 			Fail("Index is out of range")
@@ -88,7 +88,7 @@ func DeleteFirstUser(data *model.TestDataProvider) {
 	})
 }
 
-func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []v1.Team, n int) {
+func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []akov2.Team, n int) {
 	By("Setup Teams", func() {
 		aClient := atlas.GetClientOrFail()
 		users, err := aClient.GetOrgUsers()
@@ -97,9 +97,9 @@ func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []v1.Team, n
 
 		for _, team := range teams {
 			By(fmt.Sprintf("Add Team \"%s\" resource to k8s", team.TeamRef.Name), func() {
-				usernames := make([]v1.TeamUser, 0, n)
+				usernames := make([]akov2.TeamUser, 0, n)
 				for i := 0; i < n; i++ {
-					usernames = append(usernames, v1.TeamUser(users[i].Username))
+					usernames = append(usernames, akov2.TeamUser(users[i].Username))
 				}
 
 				resource := model.NewTeam(team.TeamRef.Name, data.Resources.Namespace)

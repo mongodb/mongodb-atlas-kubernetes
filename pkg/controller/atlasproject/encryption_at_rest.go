@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
@@ -25,7 +25,7 @@ const (
 	ObjectIDRegex = "^([a-f0-9]{24})$"
 )
 
-func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *mdbv1.AtlasProject, protected bool) workflow.Result {
+func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	if err := readEncryptionAtRestSecrets(r.Client, workflowCtx, project.Spec.EncryptionAtRest, project.Namespace); err != nil {
 		workflowCtx.UnsetCondition(status.EncryptionAtRestReadyType)
 		return workflow.Terminate(workflow.ProjectEncryptionAtRestReady, err.Error())
@@ -64,7 +64,7 @@ func (r *AtlasProjectReconciler) ensureEncryptionAtRest(workflowCtx *workflow.Co
 	return workflow.OK()
 }
 
-func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Context, encRest *mdbv1.EncryptionAtRest, parentNs string) error {
+func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Context, encRest *akov2.EncryptionAtRest, parentNs string) error {
 	if encRest == nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ func readEncryptionAtRestSecrets(kubeClient client.Client, service *workflow.Con
 	return nil
 }
 
-func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentNs string, awsKms *mdbv1.AwsKms) (*watch.WatchedObject, error) {
+func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentNs string, awsKms *akov2.AwsKms) (*watch.WatchedObject, error) {
 	fieldData, watchObj, err := readSecretData(ctx, kubeClient, awsKms.SecretRef, parentNs, "CustomerMasterKeyID", "RoleID")
 	if err != nil {
 		return watchObj, err
@@ -107,7 +107,7 @@ func readAndFillAWSSecret(ctx context.Context, kubeClient client.Client, parentN
 	return watchObj, nil
 }
 
-func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, parentNs string, gkms *mdbv1.GoogleCloudKms) (*watch.WatchedObject, error) {
+func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, parentNs string, gkms *akov2.GoogleCloudKms) (*watch.WatchedObject, error) {
 	fieldData, watchObj, err := readSecretData(ctx, kubeClient, gkms.SecretRef, parentNs, "ServiceAccountKey", "KeyVersionResourceID")
 	if err != nil {
 		return watchObj, err
@@ -118,7 +118,7 @@ func readAndFillGoogleSecret(ctx context.Context, kubeClient client.Client, pare
 	return watchObj, nil
 }
 
-func readAndFillAzureSecret(ctx context.Context, kubeClient client.Client, parentNs string, azureVault *mdbv1.AzureKeyVault) (*watch.WatchedObject, error) {
+func readAndFillAzureSecret(ctx context.Context, kubeClient client.Client, parentNs string, azureVault *akov2.AzureKeyVault) (*watch.WatchedObject, error) {
 	fieldData, watchObj, err := readSecretData(ctx, kubeClient, azureVault.SecretRef, parentNs, "Secret", "SubscriptionID", "KeyVaultName", "KeyIdentifier")
 	if err != nil {
 		return watchObj, err
@@ -164,7 +164,7 @@ func readSecretData(ctx context.Context, kubeClient client.Client, res common.Re
 	return result, obj, nil
 }
 
-func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) workflow.Result {
+func createOrDeleteEncryptionAtRests(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) workflow.Result {
 	encryptionAtRestsInAtlas, err := fetchEncryptionAtRests(ctx, projectID)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err.Error())
@@ -195,7 +195,7 @@ func fetchEncryptionAtRests(ctx *workflow.Context, projectID string) (*mongodbat
 	return encryptionAtRestsInAtlas, nil
 }
 
-func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *mdbv1.AtlasProject) error {
+func syncEncryptionAtRestsInAtlas(ctx *workflow.Context, projectID string, project *akov2.AtlasProject) error {
 	requestBody := mongodbatlas.EncryptionAtRest{
 		GroupID:        projectID,
 		AwsKms:         getAwsKMS(project),
@@ -246,7 +246,7 @@ func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *mongodbatl
 	return fmt.Errorf("can not use '%s' aws roleID for encryption at rest. AWS ARN not configured as Cloud Provider Access", awsKms.RoleID)
 }
 
-func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *mdbv1.EncryptionAtRest) (bool, error) {
+func AtlasInSync(atlas *mongodbatlas.EncryptionAtRest, spec *akov2.EncryptionAtRest) (bool, error) {
 	if IsEncryptionAtlasEmpty(atlas) && IsEncryptionSpecEmpty(spec) {
 		return true, nil
 	}
@@ -289,7 +289,7 @@ func balanceAsymmetricalFields(atlas *mongodbatlas.EncryptionAtRest, spec *mongo
 	spec.Valid = atlas.Valid
 }
 
-func IsEncryptionSpecEmpty(spec *mdbv1.EncryptionAtRest) bool {
+func IsEncryptionSpecEmpty(spec *akov2.EncryptionAtRest) bool {
 	if spec == nil {
 		return true
 	}
@@ -329,7 +329,7 @@ func isNotNilAndFalse(val *bool) bool {
 	return val != nil && !*val
 }
 
-func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
+func getAwsKMS(project *akov2.AtlasProject) (result mongodbatlas.AwsKms) {
 	if project.Spec.EncryptionAtRest == nil {
 		return
 	}
@@ -350,7 +350,7 @@ func getAwsKMS(project *mdbv1.AtlasProject) (result mongodbatlas.AwsKms) {
 	return
 }
 
-func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKeyVault) {
+func getAzureKeyVault(project *akov2.AtlasProject) (result mongodbatlas.AzureKeyVault) {
 	if project.Spec.EncryptionAtRest == nil {
 		return
 	}
@@ -364,7 +364,7 @@ func getAzureKeyVault(project *mdbv1.AtlasProject) (result mongodbatlas.AzureKey
 	return
 }
 
-func getGoogleCloudKms(project *mdbv1.AtlasProject) (result mongodbatlas.GoogleCloudKms) {
+func getGoogleCloudKms(project *akov2.AtlasProject) (result mongodbatlas.GoogleCloudKms) {
 	if project.Spec.EncryptionAtRest == nil {
 		return
 	}
@@ -388,12 +388,12 @@ func selectRole(accessRoles []status.CloudProviderIntegration, providerName stri
 	return
 }
 
-func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool, akoProject *mdbv1.AtlasProject) (bool, error) {
+func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool, akoProject *akov2.AtlasProject) (bool, error) {
 	if !protected {
 		return true, nil
 	}
 
-	latestConfig := &mdbv1.AtlasProjectSpec{}
+	latestConfig := &akov2.AtlasProjectSpec{}
 	latestConfigString, ok := akoProject.Annotations[customresource.AnnotationLastAppliedConfiguration]
 	if ok {
 		if err := json.Unmarshal([]byte(latestConfigString), latestConfig); err != nil {
@@ -414,13 +414,13 @@ func canEncryptionAtRestReconcile(workflowCtx *workflow.Context, protected bool,
 		areEaRConfigEqual(*akoProject.Spec.EncryptionAtRest, ear, false), nil
 }
 
-func areEaRConfigEqual(operator mdbv1.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest, lastApplied bool) bool {
+func areEaRConfigEqual(operator akov2.EncryptionAtRest, atlas *mongodbatlas.EncryptionAtRest, lastApplied bool) bool {
 	return areAWSConfigEqual(operator.AwsKms, atlas.AwsKms, lastApplied) &&
 		areGCPConfigEqual(operator.GoogleCloudKms, atlas.GoogleCloudKms, lastApplied) &&
 		areAzureConfigEqual(operator.AzureKeyVault, atlas.AzureKeyVault, lastApplied)
 }
 
-func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApplied bool) bool {
+func areAWSConfigEqual(operator akov2.AwsKms, atlas mongodbatlas.AwsKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = pointer.MakePtr(false)
 	}
@@ -435,7 +435,7 @@ func areAWSConfigEqual(operator mdbv1.AwsKms, atlas mongodbatlas.AwsKms, lastApp
 		operator.Region == atlas.Region
 }
 
-func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms, lastApplied bool) bool {
+func areGCPConfigEqual(operator akov2.GoogleCloudKms, atlas mongodbatlas.GoogleCloudKms, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = pointer.MakePtr(false)
 	}
@@ -449,7 +449,7 @@ func areGCPConfigEqual(operator mdbv1.GoogleCloudKms, atlas mongodbatlas.GoogleC
 		operator.KeyVersionResourceID() == atlas.KeyVersionResourceID
 }
 
-func areAzureConfigEqual(operator mdbv1.AzureKeyVault, atlas mongodbatlas.AzureKeyVault, lastApplied bool) bool {
+func areAzureConfigEqual(operator akov2.AzureKeyVault, atlas mongodbatlas.AzureKeyVault, lastApplied bool) bool {
 	if operator.Enabled == nil {
 		operator.Enabled = pointer.MakePtr(false)
 	}
