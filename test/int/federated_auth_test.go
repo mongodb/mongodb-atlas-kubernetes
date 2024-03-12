@@ -102,6 +102,15 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 				}
 				roles = append(roles, newRole)
 			}
+			roles = append(
+				roles,
+				akov2.RoleMapping{
+					ExternalGroupName: "ako_team",
+					RoleAssignments: []akov2.RoleAssignment{
+						{Role: "ORG_OWNER"},
+					},
+				},
+			)
 
 			fedAuth := &akov2.AtlasFederatedAuth{
 				ObjectMeta: metav1.ObjectMeta{
@@ -141,6 +150,58 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			fedAuth.Spec.DomainRestrictionEnabled = &originalConnectedOrgConfig.DomainRestrictionEnabled
 			fedAuth.Spec.SSODebugEnabled = originalIdp.SsoDebugEnabled
 			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.GetPostAuthRoleGrants()
+			fedAuth.Spec.RoleMappings = nil
+
+			if len(originalConnectedOrgConfig.GetRoleMappings()) > 0 {
+				GinkgoWriter.Println("HAS ROLE MAPPINGS", len(originalConnectedOrgConfig.GetRoleMappings()), originalConnectedOrgConfig.GetRoleMappings()[0])
+				roles := make([]akov2.RoleMapping, len(originalConnectedOrgConfig.GetRoleMappings()))
+
+				for _, roleMapping := range originalConnectedOrgConfig.GetRoleMappings() {
+					assignments := make([]akov2.RoleAssignment, len(roleMapping.GetRoleAssignments()))
+					for _, roleAssignment := range roleMapping.GetRoleAssignments() {
+						var projectName string
+
+						if pID, ok := roleAssignment.GetGroupIdOk(); ok {
+							project, _, err := atlasClient.ProjectsApi.GetProject(ctx, *pID).Execute()
+							Expect(err).ToNot(HaveOccurred())
+							Expect(project).NotTo(BeNil())
+
+							projectName = project.GetName()
+						}
+
+						assignments = append(
+							assignments,
+							akov2.RoleAssignment{
+								ProjectName: projectName,
+								Role:        roleAssignment.GetRole(),
+							},
+						)
+					}
+
+					roles = append(
+						roles,
+						akov2.RoleMapping{
+							ExternalGroupName: roleMapping.GetExternalGroupName(),
+							RoleAssignments:   assignments,
+						},
+					)
+				}
+
+				fedAuth.Spec.RoleMappings = roles
+			} else {
+				roleMappings, _, err := atlasClient.FederatedAuthenticationApi.
+					ListRoleMappings(ctx, originalFederationSettings.GetId(), orgID).
+					Execute()
+				Expect(err).ToNot(HaveOccurred())
+
+				for _, roleMapping := range roleMappings.GetResults() {
+					GinkgoWriter.Println("DELETING ROLE MAPPING", roleMapping.GetId())
+					_, err := atlasClient.FederatedAuthenticationApi.
+						DeleteRoleMapping(ctx, originalFederationSettings.GetId(), roleMapping.GetId(), orgID).
+						Execute()
+					Expect(err).ToNot(HaveOccurred())
+				}
+			}
 
 			Expect(k8sClient.Update(ctx, fedAuth)).NotTo(HaveOccurred())
 		})
