@@ -15,7 +15,7 @@ RUN cd /usr/local/bin &&\
 RUN CONTROLLER_GEN_TMP_DIR=$(mktemp -d) && \
     cd $CONTROLLER_GEN_TMP_DIR && \
     go mod init tmp && \
-    go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2 && \
+    go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 && \
     rm -rf $CONTROLLER_GEN_TMP_DIR && \
     CONTROLLER_GEN=${GOBIN}/controller-gen
 
