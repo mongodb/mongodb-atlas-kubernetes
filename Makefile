@@ -113,7 +113,7 @@ help: ## Show this help screen
 all: manager ## Build all binaries
 
 go-licenses:
-	@which go-licenses || go install github.com/google/go-licenses@latest
+	go install github.com/google/go-licenses@latest
 
 licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
