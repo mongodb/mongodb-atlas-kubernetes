@@ -92,7 +92,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum', '**/go.mod') }}
       - name: Get go dependencies if cache is missed
         if: steps.cache-go.outputs.cache-hit != 'true'
         run: |
@@ -180,7 +180,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-full-${{ hashFiles('**/go.sum', '**/go.mod') }}
       - name: Get go dependencies if cache is missed
         if: steps.get-go-deps.outputs.cache-hit != 'true'
         run: |

@@ -81,7 +81,7 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
     - name: Download go build dependencies
       shell: bash
       run: |
