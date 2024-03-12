@@ -1,5 +1,5 @@
 # TODO: Eventually replace main Dockerfile
-FROM golang:1.21 as certs-source
+FROM golang:1.22 as certs-source
 
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
