@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
 const (
@@ -19,9 +20,13 @@ var (
 	WipeResources = contract.BoolEnv("WIPE_RESOURCES", false)
 )
 
-var resources *contract.Resources
+var resources *contract.TestResources
 
 func TestMain(m *testing.M) {
+	if !control.Enabled("AKO_CONTRACT_TEST") {
+		log.Print("Skipping e2e tests, AKO_CONTRACT_TEST is not set")
+		return
+	}
 	ctx := context.Background()
 	beforeAll(ctx)
 	code := m.Run()
