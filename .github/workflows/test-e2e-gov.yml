@@ -13,6 +13,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref }}
           submodules: true
       - name: Create k8s Kind Cluster
         if: ${{ !env.ACT }}
