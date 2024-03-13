@@ -6,16 +6,29 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+)
+
+const (
+	ProtocolPrefix = "mongodb+srv://"
 )
 
 // TestResources keeps track of all resourced for a given named test to allow
 // reuse or consistent cleanup
 type TestResources struct {
-	Name           string `json:"name"`
+	Name string `json:"name"`
+
 	ProjectID      string `json:"projectId"`
 	ServerlessName string `json:"deploymentName"`
+	ClusterURL     string `json:"clusterURL"`
+	UserDB         string `json:"userDB"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+
+	DatabaseName   string `json:"databaseName"`
+	CollectionName string `json:"collectionName"`
 }
 
 // OptResourceFunc allows to add and setup optional resources
@@ -32,7 +45,7 @@ func MustDeployTestResources(ctx context.Context, name string, wipe bool, projec
 func DeployTestResources(ctx context.Context, name string, wipe bool, project *admin.Group, optResourcesFn ...OptResourceFunc) (*TestResources, error) {
 	existing, err := LoadResources(name)
 	if err == nil {
-		log.Printf("Reusing existing resources:\n%v", existing)
+		log.Printf("Reusing existing resources\n")
 		return existing, nil
 	}
 
@@ -51,7 +64,7 @@ func DeployTestResources(ctx context.Context, name string, wipe bool, project *a
 			return nil, fmt.Errorf("failed to create optional test resource for %s: %w", name, err)
 		}
 	}
-
+	log.Printf("Created new resources\n")
 	return resources, nil
 }
 
@@ -71,12 +84,33 @@ func LoadResources(name string) (*TestResources, error) {
 }
 
 func (resources *TestResources) String() string {
-	return fmt.Sprintf("Name: %s\nProjectID: %s\nServerlessName: %s",
-		resources.Name, resources.ProjectID, resources.ServerlessName)
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "Name: %s\n", resources.Name)
+	fmt.Fprintf(&buf, "  ProjectID       %s\n", resources.ProjectID)
+	fmt.Fprintf(&buf, "  ServerlessName  %s\n", resources.ServerlessName)
+	fmt.Fprintf(&buf, "  ClusterURL      %s\n", resources.ClusterURL)
+	fmt.Fprintf(&buf, "  UserDB          %s\n", resources.UserDB)
+	fmt.Fprintf(&buf, "  Username        %s\n", resources.Username)
+	fmt.Fprintf(&buf, "  Password        *******\n")
+	fmt.Fprintf(&buf, "  DatabaseName    %s\n", resources.DatabaseName)
+	fmt.Fprintf(&buf, "  CollectionName  %s\n", resources.CollectionName)
+	return buf.String()
 }
 
 func (resources *TestResources) Filename() string {
 	return fmt.Sprintf(".%s-resources.json", resources.Name)
+}
+
+func (resources *TestResources) URI() string {
+	return fmt.Sprintf("%s%s:%s@%s/?retryWrites=true&writeConcern=majority",
+		ProtocolPrefix, resources.Username, resources.Password, host(resources.ClusterURL))
+}
+
+func host(url string) string {
+	if strings.HasPrefix(url, ProtocolPrefix) {
+		return url[len(ProtocolPrefix):]
+	}
+	return url
 }
 
 func (resources *TestResources) MustRecycle(ctx context.Context, wipe bool) {
@@ -98,6 +132,12 @@ func (resources *TestResources) Recycle(ctx context.Context, wipe bool) error {
 	}
 	log.Printf("Wiping %s test resources...", resources.Name)
 	resources.wipe()
+	if resources.ProjectID != "" && resources.Username != "" {
+		err := removeUser(ctx, resources.ProjectID, resources.UserDB, resources.Username)
+		if err != nil {
+			return err
+		}
+	}
 	if resources.ProjectID != "" && resources.ServerlessName != "" {
 		err := removeServerless(ctx, resources.ProjectID, resources.ServerlessName)
 		if err != nil {
@@ -139,7 +179,12 @@ func (resources *TestResources) check() error {
 	}
 	if resources.ProjectID != "" && resources.ServerlessName != "" {
 		if err := checkServerless(ctx, resources.ProjectID, resources.ServerlessName); err != nil {
-			return fmt.Errorf("failed to check deployment %s: %w", resources.ServerlessName, err)
+			return fmt.Errorf("failed to check serverless deployment %s: %w", resources.ServerlessName, err)
+		}
+	}
+	if resources.ProjectID != "" && resources.Username != "" {
+		if err := checkUser(ctx, resources.ProjectID, resources.UserDB, resources.Username); err != nil {
+			return fmt.Errorf("failed to check user %s: %w", resources.ServerlessName, err)
 		}
 	}
 	return nil

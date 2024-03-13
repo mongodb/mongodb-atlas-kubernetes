@@ -2,10 +2,12 @@ package search
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -40,7 +42,10 @@ func beforeAll(ctx context.Context) {
 		TestName,
 		WipeResources,
 		contract.DefaultProject(TestName),
-		contract.WithServerless(contract.DefaultServerless(TestName)))
+		contract.WithServerless(contract.DefaultServerless(TestName)),
+		contract.WithUser(contract.DefaultUser(TestName)),
+		contract.WithDatabase(TestName),
+	)
 	log.Printf("Resources ready:\n%v", resources)
 }
 
@@ -49,5 +54,26 @@ func afterAll(ctx context.Context) {
 }
 
 func TestCreateSearchIndex(t *testing.T) {
-	fmt.Printf("yay!\n")
+	//ctx := context.Background()
+	apiClient, err := contract.NewAPIClient()
+	require.NoError(t, err)
+	assert.NotNil(t, apiClient)
+	// apiClient.AtlasSearchApi.CreateAtlasSearchIndex(
+	// 	ctx,
+	// 	resources.ProjectID,
+	// 	resources.ServerlessName,
+	// 	&admin.ClusterSearchIndex{
+	// 		CollectionName: resources.CollectionName,
+	// 		Database:       resources.DatabaseName,
+	// 		IndexID:        new(string),
+	// 		Name:           TestName,
+	// 		Status:         new(string),
+	// 		Type:           new(string),
+	// 		Analyzer:       new(string),
+	// 		Analyzers:      &[]admin.ApiAtlasFTSAnalyzers{},
+	// 		Mappings:       &admin.ApiAtlasFTSMappings{},
+	// 		SearchAnalyzer: new(string),
+	// 		Synonyms:       &[]admin.SearchSynonymMappingDefinition{},
+	// 		Fields:         &[]map[string]interface{}{},
+	// 	}).Execute()
 }

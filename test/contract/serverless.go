@@ -26,40 +26,53 @@ func DefaultServerless(prefix string) *admin.ServerlessInstanceDescriptionCreate
 
 func WithServerless(serverless *admin.ServerlessInstanceDescriptionCreate) OptResourceFunc {
 	return func(ctx context.Context, resources *TestResources) (*TestResources, error) {
-		deploymentName, err := createServerless(ctx, resources.ProjectID, serverless)
+		deployment, err := createServerless(ctx, resources.ProjectID, serverless)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create serverless deployment %s: %w", serverless.Name, err)
 		}
-		resources.ServerlessName = deploymentName
+		resources.ServerlessName = *deployment.Name
 		if err := waitServerless(ctx, resources.ProjectID, resources.ServerlessName, "IDLE", ServerlessDeploymentTimeout); err != nil {
 			return nil, fmt.Errorf("failed to get serverless deployment %s up and running: %w", serverless.Name, err)
 		}
+		readyDeployment, err := getServerless(ctx, resources.ProjectID, resources.ServerlessName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query ready serverless deployment %s: %w", serverless.Name, err)
+		}
+		if readyDeployment.ConnectionStrings == nil || readyDeployment.ConnectionStrings.StandardSrv == nil {
+			return nil, fmt.Errorf("missing connection string for serverless %s: %w", serverless.Name, err)
+		}
+		resources.ClusterURL = *readyDeployment.ConnectionStrings.StandardSrv
 		return resources, nil
 	}
 }
 
 func checkServerless(ctx context.Context, projectID, serverlessName string) error {
-	apiClient, err := NewAPIClient()
-	if err != nil {
-		return err
-	}
-	_, _, err = apiClient.ServerlessInstancesApi.GetServerlessInstance(ctx, projectID, serverlessName).Execute()
+	_, err := getServerless(ctx, projectID, serverlessName)
 	return err
 }
 
-func createServerless(ctx context.Context, projectID string, serverless *admin.ServerlessInstanceDescriptionCreate) (string, error) {
+func getServerless(ctx context.Context, projectID, serverlessName string) (*admin.ServerlessInstanceDescription, error) {
+	apiClient, err := NewAPIClient()
+	if err != nil {
+		return nil, err
+	}
+	serverless, _, err := apiClient.ServerlessInstancesApi.GetServerlessInstance(ctx, projectID, serverlessName).Execute()
+	return serverless, err
+}
+
+func createServerless(ctx context.Context, projectID string, serverless *admin.ServerlessInstanceDescriptionCreate) (*admin.ServerlessInstanceDescription, error) {
 	log.Printf("Creating serverless deployment %s...", serverless.Name)
 	apiClient, err := NewAPIClient()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	deployment, _, err :=
 		apiClient.ServerlessInstancesApi.CreateServerlessInstance(ctx, projectID, serverless).Execute()
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed to create serverless instance %s: %w", serverless.Name, err)
 	}
 	log.Printf("Created serverless deployment %s ID=%s", serverless.Name, *deployment.Id)
-	return serverless.Name, nil
+	return deployment, nil
 }
 
 func removeServerless(ctx context.Context, projectID, serverlessName string) error {

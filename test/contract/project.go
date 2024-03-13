@@ -32,7 +32,7 @@ func createProject(ctx context.Context, project *admin.Group) (string, error) {
 	}
 	newProject, _, err := apiClient.ProjectsApi.CreateProject(ctx, project).Execute()
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to create project %s: %w", project.Name, err)
 	}
 	log.Printf("Created project %s ID=%s", newProject.Name, *newProject.Id)
 	return *newProject.Id, nil
