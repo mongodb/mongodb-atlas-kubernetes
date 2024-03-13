@@ -57,7 +57,7 @@ func BoolEnv(name string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	return value == strings.ToLower("true")
+	return value == strings.ToLower("1")
 }
 
 func mustGetEnv(name string) string {
