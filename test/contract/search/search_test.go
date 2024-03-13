@@ -6,24 +6,20 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
 )
 
 const (
-	TestTitle = "search"
-
-	DeploymentTimeout = 6 * time.Minute
-
-	// ReuseDeployed stores deployed resource references for reuse on next run
-	ReuseDeployed = false
+	TestName = "search"
 )
 
 var (
-	projectID      string
-	deploymentName string
+	// WipeResources removes resources at test cleanup time, no reuse will be possible afterwards
+	WipeResources = contract.BoolEnv("WIPE_RESOURCES", false)
 )
+
+var resources *contract.Resources
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -34,30 +30,17 @@ func TestMain(m *testing.M) {
 }
 
 func beforeAll(ctx context.Context) {
-	if status := contract.LoadDeployedStatus(TestTitle); status.Error == nil {
-		projectID = status.ProjectID
-		deploymentName = status.DeploymentName
-		log.Printf("Reusing project ID %s and deployment %s", projectID, deploymentName)
-		return
-	}
-	projectID = contract.MustCreateDefaultProject(ctx, TestTitle)
-	deploymentName = contract.MustCreateDefaultDeployment(ctx, projectID, TestTitle)
-	contract.Must(contract.CreateDeploymentInTime(ctx, projectID, deploymentName, DeploymentTimeout))
-	log.Printf("Project ID %s and deployment %s are ready", projectID, deploymentName)
+	log.Printf("WipeResources set to %v", WipeResources)
+	resources = contract.MustDeployTestResources(ctx,
+		TestName,
+		WipeResources,
+		contract.DefaultProject(TestName),
+		contract.WithServerless(contract.DefaultServerless(TestName)))
+	log.Printf("Resources ready:\n%v", resources)
 }
 
 func afterAll(ctx context.Context) {
-	if ReuseDeployed {
-		contract.StoreDeployedStatus(TestTitle, &contract.DeployedStatus{
-			ProjectID:      projectID,
-			DeploymentName: deploymentName,
-		})
-	} else {
-		contract.RemoveDeployment(ctx, projectID, deploymentName)
-		contract.Report(contract.WaitDeploymentRemoved(ctx, projectID, deploymentName, DeploymentTimeout))
-		contract.RemoveProject(ctx, projectID)
-		log.Printf("Project ID %s and deployment %s were removed", projectID, deploymentName)
-	}
+	resources.MustRecycle(ctx, WipeResources)
 }
 
 func TestCreateSearchIndex(t *testing.T) {
