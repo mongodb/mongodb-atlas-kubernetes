@@ -28,6 +28,8 @@ jobs:
       - if: ${{ inputs.forked == false }}
         name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
 
       - if: ${{ inputs.forked == true }}
         name: Check out code

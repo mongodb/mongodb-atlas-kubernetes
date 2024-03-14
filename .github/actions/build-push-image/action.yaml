@@ -76,7 +76,7 @@ runs:
         cache: false
     - name: Setup cache
       if: ${{ inputs.get-existing-cache == 'false' }}
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build

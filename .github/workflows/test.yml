@@ -7,13 +7,12 @@ on:
     paths-ignore:
       - 'docs/**'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled]
     branches:
       - '**'
     paths-ignore:
       - 'docs/**'
-  pull_request_target: # for forked repos changes labeled 'safe-to-test' or 'cloud-tests'
-    types: [labeled]
+  pull_request_target:
     paths-ignore:
       - 'docs/**'
   merge_group:
