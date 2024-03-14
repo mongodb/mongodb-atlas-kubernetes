@@ -20,7 +20,7 @@ jobs:
         name: Check out code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
       - if: ${{ inputs.forked == true }}
@@ -56,7 +56,7 @@ jobs:
         name: Check out code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
       - if: ${{ inputs.forked == true }}
@@ -170,7 +170,7 @@ jobs:
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{github.event.pull_request.head.sha}}
           submodules: true
           fetch-depth: 0
       - name: Get all go dependencies
