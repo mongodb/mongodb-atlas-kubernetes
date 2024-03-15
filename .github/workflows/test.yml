@@ -12,9 +12,6 @@ on:
       - '**'
     paths-ignore:
       - 'docs/**'
-  pull_request_target:
-    paths-ignore:
-      - 'docs/**'
   merge_group:
   workflow_dispatch:
 
@@ -23,19 +20,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    # Contributions do NOT run any testing by default, a label is needed to allow testing
+    if: |
+      github.event.pull_request.base.repo.full_name == github.event.pull_request.head.repo.full_name ||
+      contains(github.event.pull_request.labels.*.name, 'safe-to-test') ||
+      contains(github.event.pull_request.labels.*.name, 'cloud-tests') ||
+      contains(github.event.pull_request.labels.*.name, 'retest')
+    steps:
+      - name: allowed message
+        run: echo "Allowed to run tests"
+
   lint:
+    needs:
+      - run-tests
     uses: ./.github/workflows/lint.yaml
 
   validate-manifests:
+    needs:
+      - run-tests
     uses: ./.github/workflows/validate-manifests.yml
   
   unit-tests:
+    needs:
+      - run-tests
     uses: ./.github/workflows/test-unit.yml
 
   check-licenses:
+    needs:
+      - run-tests
     uses: ./.github/workflows/check-licenses.yml
   
   cloud-tests-filter:
+    needs:
+      - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
 
   cloud-tests:
