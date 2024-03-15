@@ -31,6 +31,7 @@ func WithUser(user *admin.CloudDatabaseUser) OptResourceFunc {
 		}
 		resources.UserDB = newUser.DatabaseName
 		resources.Username = newUser.Username
+		log.Printf("usr=%#+v", newUser)
 		if user.Password == nil {
 			return nil, fmt.Errorf("no password for username %s: %w", newUser.Username, err)
 		}
