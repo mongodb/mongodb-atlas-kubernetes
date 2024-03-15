@@ -1,15 +1,20 @@
 package contract
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strings"
+	"testing"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/version"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
 func NewAPIClient() (*admin.APIClient, error) {
@@ -71,4 +76,26 @@ func mustGetEnv(name string) string {
 func newRandomName(prefix string) string {
 	randomSuffix := uuid.New().String()[0:6]
 	return fmt.Sprintf("%s-%s", prefix, randomSuffix)
+}
+
+func Jsonize(obj any) string {
+	jsonBytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(jsonBytes)
+}
+
+type ActionFunc func(ctx context.Context)
+
+func TestMain(m *testing.M, setup, clear ActionFunc) {
+	if !control.Enabled("AKO_CONTRACT_TEST") {
+		log.Print("Skipping contract tests, AKO_CONTRACT_TEST is not set")
+		return
+	}
+	ctx := context.Background()
+	setup(ctx)
+	code := m.Run()
+	clear(ctx)
+	os.Exit(code)
 }

@@ -23,8 +23,8 @@ func WithDatabase(prefix string) OptResourceFunc {
 		resources.CollectionName = collectionName
 		_, err = collection.InsertOne(ctx, resources)
 		if err != nil {
-			return nil, fmt.Errorf("failed to insert test data into MongoDB %s.%s: %w",
-				prefix, collectionName, err)
+			return nil, fmt.Errorf("failed to insert test data into MongoDB %s at %s.%s: %w",
+				uri, prefix, collectionName, err)
 		}
 		defer func() {
 			if err = client.Disconnect(ctx); err != nil {

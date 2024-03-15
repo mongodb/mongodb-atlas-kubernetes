@@ -3,14 +3,12 @@ package search
 import (
 	"context"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 )
 
 const (
@@ -25,33 +23,23 @@ var (
 var resources *contract.TestResources
 
 func TestMain(m *testing.M) {
-	if !control.Enabled("AKO_CONTRACT_TEST") {
-		log.Print("Skipping e2e tests, AKO_CONTRACT_TEST is not set")
-		return
-	}
-	ctx := context.Background()
-	beforeAll(ctx)
-	code := m.Run()
-	afterAll(ctx)
-	os.Exit(code)
-}
-
-func beforeAll(ctx context.Context) {
-	log.Printf("WipeResources set to %v", WipeResources)
-	resources = contract.MustDeployTestResources(ctx,
-		TestName,
-		WipeResources,
-		contract.DefaultProject(TestName),
-		contract.WithIPAccessList(contract.DefaultIPAccessList()),
-		contract.WithServerless(contract.DefaultServerless(TestName)),
-		contract.WithUser(contract.DefaultUser(TestName)),
-		contract.WithDatabase(TestName),
+	contract.TestMain(m,
+		func(ctx context.Context) {
+			log.Printf("WipeResources set to %v", WipeResources)
+			resources = contract.MustDeployTestResources(ctx,
+				TestName,
+				WipeResources,
+				contract.DefaultProject(TestName),
+				contract.WithIPAccessList(contract.DefaultIPAccessList()),
+				contract.WithServerless(contract.DefaultServerless(TestName)),
+				contract.WithUser(contract.DefaultUser(TestName)),
+				contract.WithDatabase(TestName),
+			)
+		},
+		func(ctx context.Context) {
+			resources.MustRecycle(ctx, WipeResources)
+		},
 	)
-	log.Printf("Resources ready:\n%v", resources)
-}
-
-func afterAll(ctx context.Context) {
-	resources.MustRecycle(ctx, WipeResources)
 }
 
 func TestCreateSearchIndex(t *testing.T) {
