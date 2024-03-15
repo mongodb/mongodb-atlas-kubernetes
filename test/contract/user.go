@@ -9,7 +9,8 @@ import (
 )
 
 func DefaultUser(prefix string) *admin.CloudDatabaseUser {
-	password := newRandomName(fmt.Sprintf("%s-passwd", prefix))
+	//password := newRandomName(fmt.Sprintf("%s-passwd", prefix))
+	password := "somepassword"
 	return &admin.CloudDatabaseUser{
 		Roles: &[]admin.DatabaseUserRole{
 			{
@@ -18,7 +19,7 @@ func DefaultUser(prefix string) *admin.CloudDatabaseUser {
 			},
 		},
 		DatabaseName: "admin",
-		Username:     newRandomName(fmt.Sprintf("%s-user", prefix)),
+		Username:     fmt.Sprintf("%s-usero", prefix),
 		Password:     &password,
 	}
 }
@@ -31,7 +32,6 @@ func WithUser(user *admin.CloudDatabaseUser) OptResourceFunc {
 		}
 		resources.UserDB = newUser.DatabaseName
 		resources.Username = newUser.Username
-		log.Printf("usr=%#+v", newUser)
 		if user.Password == nil {
 			return nil, fmt.Errorf("no password for username %s: %w", newUser.Username, err)
 		}
@@ -56,12 +56,18 @@ func createUser(ctx context.Context, projectID string, user *admin.CloudDatabase
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("user to create: %#+v", user)
 	newUser, _, err := apiClient.DatabaseUsersApi.CreateDatabaseUser(ctx, projectID, user).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user %s: %w", user.Username, err)
 	}
 	log.Printf("Created user %s", newUser.Username)
 	return newUser, nil
+}
+
+// TODO: remove
+func RemoveUser(ctx context.Context, projectID string, userDB, username string) error {
+	return removeUser(ctx, projectID, userDB, username)
 }
 
 func removeUser(ctx context.Context, projectID string, userDB, username string) error {
