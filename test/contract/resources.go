@@ -149,7 +149,11 @@ func (resources *TestResources) Recycle(ctx context.Context, wipe bool) error {
 		}
 	}
 	if resources.ProjectID != "" {
-		err := removeProject(ctx, resources.ProjectID)
+		err := clearIPAccessList(ctx, resources.ProjectID)
+		if err != nil {
+			return err
+		}
+		err = removeProject(ctx, resources.ProjectID)
 		if err != nil {
 			return err
 		}

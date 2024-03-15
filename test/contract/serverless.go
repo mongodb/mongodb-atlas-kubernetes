@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ServerlessDeploymentTimeout = 5 * time.Minute
+	ServerlessDeploymentTimeout = 10 * time.Minute
 )
 
 func DefaultServerless(prefix string) *admin.ServerlessInstanceDescriptionCreate {

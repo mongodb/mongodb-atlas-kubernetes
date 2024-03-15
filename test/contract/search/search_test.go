@@ -42,6 +42,7 @@ func beforeAll(ctx context.Context) {
 		TestName,
 		WipeResources,
 		contract.DefaultProject(TestName),
+		contract.WithIPAccessList(contract.DefaultIPAccessList()),
 		contract.WithServerless(contract.DefaultServerless(TestName)),
 		contract.WithUser(contract.DefaultUser(TestName)),
 		contract.WithDatabase(TestName),

@@ -10,8 +10,8 @@ import (
 
 func DefaultProject(prefix string) *admin.Group {
 	return &admin.Group{
-		Name:  newRandomName(prefix),
-		OrgId: OrgID(),
+		Name:                      newRandomName(prefix),
+		OrgId:                     OrgID(),
 	}
 }
 
