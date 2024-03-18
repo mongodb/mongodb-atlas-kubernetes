@@ -13,9 +13,9 @@ The full documentation for the Operator can be found [here](https://docs.atlas.m
 
 ### Supported features
 
-* Create and configure a project, or connect to an existing one.
-* Deploy, manage, scale, and tear down clusters.
-* Support for serverless instances.
+* Create and configure an Atlas Project, or connect to an existing one.
+* Deploy, manage, scale, and tear down Atlas clusters.
+* Support for Atlas serverless instances.
 * Create and edit database users.
 * Manage IP Access Lists, network peering and private endpoints.
 * Configure and control Atlas’s fully managed cloud backup.
@@ -24,7 +24,7 @@ The full documentation for the Operator can be found [here](https://docs.atlas.m
 
 ... and more.
 
-To view the list of custom resources and each CR's schema, visit our [reference](https://www.mongodb.com/docs/atlas/operator/stable/custom-resources/) 
+To view the list of custom resources and their respective schemas, visit our [reference](https://www.mongodb.com/docs/atlas/operator/stable/custom-resources/) 
 documentation. See the [Quickstart](https://www.mongodb.com/docs/atlas/operator/stable/ak8so-quick-start/) to get started
 with Atlas Kubernetes Operator.
 
