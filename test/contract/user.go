@@ -8,9 +8,9 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 )
 
-func DefaultUser(prefix string) *admin.CloudDatabaseUser {
+func DefaultUser(username string) *admin.CloudDatabaseUser {
 	//password := newRandomName(fmt.Sprintf("%s-passwd", prefix))
-	password := "somepassword"
+	password := NewRandomName("some-password")
 	return &admin.CloudDatabaseUser{
 		Roles: &[]admin.DatabaseUserRole{
 			{
@@ -19,7 +19,7 @@ func DefaultUser(prefix string) *admin.CloudDatabaseUser {
 			},
 		},
 		DatabaseName: "admin",
-		Username:     fmt.Sprintf("%s-usero", prefix),
+		Username:     username,
 		Password:     &password,
 	}
 }
@@ -63,11 +63,6 @@ func createUser(ctx context.Context, projectID string, user *admin.CloudDatabase
 	}
 	log.Printf("Created user %s", newUser.Username)
 	return newUser, nil
-}
-
-// TODO: remove
-func RemoveUser(ctx context.Context, projectID string, userDB, username string) error {
-	return removeUser(ctx, projectID, userDB, username)
 }
 
 func removeUser(ctx context.Context, projectID string, userDB, username string) error {

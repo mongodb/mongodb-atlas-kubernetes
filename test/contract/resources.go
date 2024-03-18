@@ -20,6 +20,8 @@ const (
 type TestResources struct {
 	Name string `json:"name"`
 
+	WipeResources bool `json:""`
+
 	ProjectID      string `json:"projectId"`
 	ServerlessName string `json:"deploymentName"`
 	ClusterURL     string `json:"clusterURL"`
@@ -34,15 +36,8 @@ type TestResources struct {
 // OptResourceFunc allows to add and setup optional resources
 type OptResourceFunc func(ctx context.Context, resources *TestResources) (*TestResources, error)
 
-func MustDeployTestResources(ctx context.Context, name string, wipe bool, project *admin.Group, optResourcesFn ...OptResourceFunc) *TestResources {
-	resources, err := DeployTestResources(ctx, name, wipe, project, optResourcesFn...)
-	if err != nil {
-		panic(err)
-	}
-	return resources
-}
-
 func DeployTestResources(ctx context.Context, name string, wipe bool, project *admin.Group, optResourcesFn ...OptResourceFunc) (*TestResources, error) {
+	log.Printf("Wipe resources set to %v", wipe)
 	existing, err := LoadResources(name)
 	if err == nil {
 		log.Printf("Reusing existing resources\n")
@@ -50,7 +45,7 @@ func DeployTestResources(ctx context.Context, name string, wipe bool, project *a
 	}
 
 	log.Printf("Cannot reuse resources: %v", err)
-	resources := &TestResources{Name: name}
+	resources := &TestResources{Name: name, WipeResources: wipe}
 
 	id, err := createProject(ctx, project)
 	if err != nil {
@@ -65,6 +60,11 @@ func DeployTestResources(ctx context.Context, name string, wipe bool, project *a
 		}
 	}
 	log.Printf("Created new resources\n")
+	log.Printf("Trying to stored %s test resource references for reuse...", resources.Name)
+	if err := resources.store(); err != nil {
+		return nil, fmt.Errorf("failed to wipe store resources: %w", err)
+	}
+	log.Printf("Stored %s test resource references for reuse", resources.Name)
 	return resources, nil
 }
 
@@ -101,27 +101,8 @@ func (resources *TestResources) Filename() string {
 	return fmt.Sprintf(".%s-resources.json", resources.Name)
 }
 
-func (resources *TestResources) URI() string {
-	return fmt.Sprintf("%s%s:%s@%s/?retryWrites=true&writeConcern=majority",
-		ProtocolPrefix, resources.Username, resources.Password, host(resources.ClusterURL))
-}
-
-func host(url string) string {
-	if strings.HasPrefix(url, ProtocolPrefix) {
-		return url[len(ProtocolPrefix):]
-	}
-	return url
-}
-
-func (resources *TestResources) MustRecycle(ctx context.Context, wipe bool) {
-	err := resources.Recycle(ctx, wipe)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (resources *TestResources) Recycle(ctx context.Context, wipe bool) error {
-	if !wipe {
+func (resources *TestResources) Recycle(ctx context.Context) error {
+	if !resources.WipeResources {
 		log.Printf("Trying to stored %s test resource references for reuse...", resources.Name)
 		err := resources.store()
 		if err != nil {
