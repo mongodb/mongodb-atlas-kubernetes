@@ -29,6 +29,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	var originalIdp *admin.FederationIdentityProvider
 
 	resourceName := "fed-auth-test"
+	newRoleMapName := "ako_team"
 	ctx := context.Background()
 
 	BeforeEach(func() {
@@ -78,6 +79,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 
 	It("Should be able to update existing Organization's federations settings", func() {
 		By("Creating a FederatedAuthConfig resource", func() {
+			// Construct list of role mappings from pre-existing configuration
 			atlasRoleMappings := originalConnectedOrgConfig.GetRoleMappings()
 			roles := make([]akov2.RoleMapping, 0, len(atlasRoleMappings))
 			for i := range atlasRoleMappings {
@@ -102,10 +104,11 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 				}
 				roles = append(roles, newRole)
 			}
+			// Add new role mapping
 			roles = append(
 				roles,
 				akov2.RoleMapping{
-					ExternalGroupName: "ako_team",
+					ExternalGroupName: newRoleMapName,
 					RoleAssignments: []akov2.RoleAssignment{
 						{Role: "ORG_OWNER"},
 					},
@@ -151,9 +154,10 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			fedAuth.Spec.SSODebugEnabled = originalIdp.SsoDebugEnabled
 			fedAuth.Spec.PostAuthRoleGrants = originalConnectedOrgConfig.GetPostAuthRoleGrants()
 
+			// Delete role mapping added for test
 			roleMappings := make([]akov2.RoleMapping, 0, len(fedAuth.Spec.RoleMappings))
 			for _, roleMap := range fedAuth.Spec.RoleMappings {
-				if roleMap.ExternalGroupName != "ako_team" {
+				if roleMap.ExternalGroupName != newRoleMapName {
 					roleMappings = append(roleMappings, roleMap)
 				}
 			}
