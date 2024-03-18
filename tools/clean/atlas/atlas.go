@@ -48,7 +48,7 @@ func (pd *ProjectDependencies) Length() int {
 		len(pd.Clusters) + len(pd.ServerlessClusters) + len(pd.FederatedDatabases)
 }
 
-func (c *Cleaner) Clean(ctx context.Context, lifetime int) error {
+func (c *Cleaner) Clean(ctx context.Context, lifetimeHours int) error {
 	projects := c.listProjectsByOrg(ctx, c.orgID)
 
 	if len(projects) > 0 {
@@ -60,9 +60,8 @@ func (c *Cleaner) Clean(ctx context.Context, lifetime int) error {
 
 		fmt.Println(text.FgHiWhite.Sprintf("\tStarting deletion of project %s(%s) (created at %v)...", p.GetName(), p.GetId(), p.Created))
 
-		if time.Since(p.Created) < time.Duration(lifetime)*time.Hour {
-			fmt.Println(text.FgYellow.Sprintf("\tProject %s(%s) skipped once created less than %d hour ago", p.GetName(), p.GetId(), lifetime))
-
+		if time.Since(p.Created) < time.Duration(lifetimeHours)*time.Hour {
+			fmt.Println(text.FgYellow.Sprintf("\tProject %s(%s) skipped once created less than %d hour ago", p.GetName(), p.GetId(), lifetimeHours))
 			continue
 		}
 
@@ -92,21 +91,42 @@ func (c *Cleaner) Clean(ctx context.Context, lifetime int) error {
 		c.deleteTeam(ctx, c.orgID, &t)
 	}
 
-	return c.cleanOrphanResources(ctx, lifetime)
+	c.cleanOrphanResources(ctx, lifetimeHours)
+	return nil
 }
 
-func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetime int) error {
+func (c *Cleaner) cleanOrphanResources(ctx context.Context, lifetimeHours int) {
 	region := envOrDefault("GCP_CLEANUP_REGION", "europe-west1")
 	subnet := envOrDefault("GCP_CLEANUP_SUBNET", "atlas-operator-e2e-test-subnet1")
-	done, skipped, err := c.gcp.DeleteOrphanPrivateEndpoints(ctx, lifetime, region, subnet)
+	vpcPrefix := envOrDefault("GCP_CLEANUP_VPC_NAME_PREFIX", "network-peering-gcp-1-vpc")
+
+	var done, skipped []string
+	var errs []error
+
+	addResults := func(f func() ([]string, []string, []error)) {
+		d, s, e := f()
+		done = append(done, d...)
+		skipped = append(skipped, s...)
+		errs = append(errs, e...)
+	}
+
+	addResults(func() ([]string, []string, []error) {
+		return c.gcp.DeleteOrphanPrivateEndpoints(ctx, lifetimeHours, region, subnet)
+	})
+
+	addResults(func() ([]string, []string, []error) {
+		return c.gcp.DeleteOrphanVPCs(ctx, lifetimeHours, vpcPrefix)
+	})
+
 	for _, doneMsg := range done {
 		fmt.Println(text.FgGreen.Sprintf("%s", doneMsg))
 	}
 	for _, skippedMsg := range skipped {
 		fmt.Println(text.FgYellow.Sprintf("\t%s", skippedMsg))
 	}
-
-	return err
+	for _, err := range errs {
+		fmt.Println(text.FgRed.Sprintf(err.Error()))
+	}
 }
 
 func NewCleaner(aws *provider.AWS, gcp *provider.GCP, azure *provider.Azure) (*Cleaner, error) {

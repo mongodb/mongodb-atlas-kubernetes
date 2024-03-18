@@ -36,14 +36,15 @@ func main() {
 		return
 	}
 
-	lifetime, err := strconv.Atoi(os.Getenv("PROJECT_LIFETIME"))
+	lifetimeHours, err := strconv.Atoi(os.Getenv("PROJECT_LIFETIME"))
 	if err != nil {
+		err = fmt.Errorf("error parsing PROJECT_LIFETIME environment variable: %w", err)
 		fmt.Println(text.FgRed.Sprintf(err.Error()))
 
 		return
 	}
 
-	err = c.Clean(ctx, lifetime)
+	err = c.Clean(ctx, lifetimeHours)
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf(err.Error()))
 	}
