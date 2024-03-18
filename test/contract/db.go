@@ -11,14 +11,21 @@ import (
 
 func WithDatabase(prefix string) OptResourceFunc {
 	return func(ctx context.Context, resources *TestResources) (*TestResources, error) {
-		uri := resources.URI()
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+		//
+		auth := options.Credential{
+			AuthMechanism: "SCRAM-SHA-1",
+			AuthSource:    resources.UserDB,
+			Username:      resources.Username,
+			Password:      resources.Password,
+		}
+		uri := resources.ClusterURL
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(auth))
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to MongoDB at %s: %w", uri, err)
 		}
 		db := client.Database(prefix)
 		resources.DatabaseName = prefix
-		collectionName := newRandomName(fmt.Sprintf("%s-collection", prefix))
+		collectionName := NewRandomName(fmt.Sprintf("%s-collection", prefix))
 		collection := db.Collection(collectionName)
 		resources.CollectionName = collectionName
 		_, err = collection.InsertOne(ctx, resources)

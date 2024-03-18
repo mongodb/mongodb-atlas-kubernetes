@@ -2,7 +2,7 @@ package search
 
 import (
 	"context"
-	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,23 +23,17 @@ var (
 var resources *contract.TestResources
 
 func TestMain(m *testing.M) {
-	contract.TestMain(m,
-		func(ctx context.Context) {
-			log.Printf("WipeResources set to %v", WipeResources)
-			resources = contract.MustDeployTestResources(ctx,
-				TestName,
-				WipeResources,
-				contract.DefaultProject(TestName),
-				contract.WithIPAccessList(contract.DefaultIPAccessList()),
-				contract.WithServerless(contract.DefaultServerless(TestName)),
-				contract.WithUser(contract.DefaultUser(TestName)),
-				contract.WithDatabase(TestName),
-			)
-		},
-		func(ctx context.Context) {
-			resources.MustRecycle(ctx, WipeResources)
-		},
-	)
+	os.Exit(contract.RunTests(m, &resources, func(ctx context.Context) (*contract.TestResources, error) {
+		return contract.DeployTestResources(ctx,
+			TestName,
+			WipeResources,
+			contract.DefaultProject(TestName),
+			contract.WithIPAccessList(contract.DefaultIPAccessList()),
+			contract.WithServerless(contract.DefaultServerless(TestName)),
+			contract.WithUser(contract.DefaultUser(TestName)),
+			contract.WithDatabase(TestName),
+		)
+	}))
 }
 
 func TestCreateSearchIndex(t *testing.T) {

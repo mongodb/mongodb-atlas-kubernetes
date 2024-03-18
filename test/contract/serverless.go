@@ -16,7 +16,7 @@ const (
 
 func DefaultServerless(prefix string) *admin.ServerlessInstanceDescriptionCreate {
 	return &admin.ServerlessInstanceDescriptionCreate{
-		Name: newRandomName(fmt.Sprintf("%s-serverless", prefix)),
+		Name: NewRandomName(fmt.Sprintf("%s-serverless", prefix)),
 		ProviderSettings: admin.ServerlessProviderSettings{
 			BackingProviderName: DefaultProviderName(),
 			RegionName:          DefaultRegion(),

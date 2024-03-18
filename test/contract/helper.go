@@ -73,7 +73,7 @@ func mustGetEnv(name string) string {
 	return value
 }
 
-func newRandomName(prefix string) string {
+func NewRandomName(prefix string) string {
 	randomSuffix := uuid.New().String()[0:6]
 	return fmt.Sprintf("%s-%s", prefix, randomSuffix)
 }
@@ -86,16 +86,27 @@ func Jsonize(obj any) string {
 	return string(jsonBytes)
 }
 
-type ActionFunc func(ctx context.Context)
-
-func TestMain(m *testing.M, setup, clear ActionFunc) {
+func SkipContractTesting() bool {
 	if !control.Enabled("AKO_CONTRACT_TEST") {
 		log.Print("Skipping contract tests, AKO_CONTRACT_TEST is not set")
-		return
+		return true
+	}
+	return false
+}
+
+type setupFunc func(context.Context) (*TestResources, error)
+
+func RunTests(m *testing.M, resourcesVar **TestResources, setupFn setupFunc) int {
+	if SkipContractTesting() {
+		return 0
 	}
 	ctx := context.Background()
-	setup(ctx)
-	code := m.Run()
-	clear(ctx)
-	os.Exit(code)
+	resources, err := setupFn(ctx)
+	if err != nil {
+		log.Print(err.Error())
+		return 1
+	}
+	*resourcesVar = resources
+	defer resources.Recycle(ctx)
+	return m.Run()
 }
