@@ -2,8 +2,6 @@ module tools/clean
 
 go 1.22.1
 
-toolchain go1.22.1
-
 require (
 	cloud.google.com/go/compute v1.23.0
 	cloud.google.com/go/kms v1.15.2
