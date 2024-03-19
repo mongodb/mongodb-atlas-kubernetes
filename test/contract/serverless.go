@@ -26,29 +26,36 @@ func DefaultServerless(prefix string) *admin.ServerlessInstanceDescriptionCreate
 
 func WithServerless(serverless *admin.ServerlessInstanceDescriptionCreate) OptResourceFunc {
 	return func(ctx context.Context, resources *TestResources) (*TestResources, error) {
-		deployment, err := createServerless(ctx, resources.ProjectID, serverless)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create serverless deployment %s: %w", serverless.Name, err)
+		if resources.ClusterName == "" || resources.ClusterURL == "" {
+			deployment, err := createServerless(ctx, resources.ProjectID, serverless)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create serverless deployment %s: %w", serverless.Name, err)
+			}
+			resources.ClusterName = *deployment.Name
+			resources.Serverless = true
+			if err := waitServerless(ctx, resources.ProjectID, resources.ClusterName, "IDLE", ServerlessDeploymentTimeout); err != nil {
+				return nil, fmt.Errorf("failed to get serverless deployment %s up and running: %w", serverless.Name, err)
+			}
+			readyDeployment, err := getServerless(ctx, resources.ProjectID, resources.ClusterName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to query ready serverless deployment %s: %w", serverless.Name, err)
+			}
+			if readyDeployment.ConnectionStrings == nil || readyDeployment.ConnectionStrings.StandardSrv == nil {
+				return nil, fmt.Errorf("missing connection string for serverless %s: %w", serverless.Name, err)
+			}
+			resources.ClusterURL = *readyDeployment.ConnectionStrings.StandardSrv
+		} else {
+			if err := checkServerless(ctx, resources.ProjectID, resources.ClusterName); err != nil {
+				return nil, err
+			}
 		}
-		resources.ServerlessName = *deployment.Name
-		if err := waitServerless(ctx, resources.ProjectID, resources.ServerlessName, "IDLE", ServerlessDeploymentTimeout); err != nil {
-			return nil, fmt.Errorf("failed to get serverless deployment %s up and running: %w", serverless.Name, err)
-		}
-		readyDeployment, err := getServerless(ctx, resources.ProjectID, resources.ServerlessName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query ready serverless deployment %s: %w", serverless.Name, err)
-		}
-		if readyDeployment.ConnectionStrings == nil || readyDeployment.ConnectionStrings.StandardSrv == nil {
-			return nil, fmt.Errorf("missing connection string for serverless %s: %w", serverless.Name, err)
-		}
-		resources.ClusterURL = *readyDeployment.ConnectionStrings.StandardSrv
 
 		resources.pushCleanup(func() error {
-			if err := removeServerless(ctx, resources.ProjectID, resources.ServerlessName); err != nil {
+			if err := removeServerless(ctx, resources.ProjectID, resources.ClusterName); err != nil {
 				return err
 			}
-			if err = waitServerlessRemoval(ctx, resources.ProjectID, resources.ServerlessName, ServerlessDeploymentTimeout); err != nil {
-				return fmt.Errorf("failed to get serverless deployment %s removed: %w", resources.ServerlessName, err)
+			if err := waitServerlessRemoval(ctx, resources.ProjectID, resources.ClusterName, ServerlessDeploymentTimeout); err != nil {
+				return fmt.Errorf("failed to get serverless deployment %s removed: %w", resources.ClusterName, err)
 			}
 			return nil
 		})
@@ -58,7 +65,10 @@ func WithServerless(serverless *admin.ServerlessInstanceDescriptionCreate) OptRe
 
 func checkServerless(ctx context.Context, projectID, serverlessName string) error {
 	_, err := getServerless(ctx, projectID, serverlessName)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to check serverless %s: %w", serverlessName, err)
+	}
+	return nil
 }
 
 func getServerless(ctx context.Context, projectID, serverlessName string) (*admin.ServerlessInstanceDescription, error) {
