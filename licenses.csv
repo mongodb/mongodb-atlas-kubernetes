@@ -70,7 +70,7 @@ github.com/mongodb/mongodb-atlas-kubernetes/v2,https://github.com/mongodb/mongod
 github.com/montanaflynn/stats,https://github.com/montanaflynn/stats/blob/v0.7.0/LICENSE,MIT
 github.com/munnerz/goautoneg,https://github.com/munnerz/goautoneg/blob/a7dc8b61c822/LICENSE,BSD-3-Clause
 github.com/onsi/ginkgo/v2,https://github.com/onsi/ginkgo/blob/v2.16.0/LICENSE,MIT
-github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.31.1/LICENSE,MIT
+github.com/onsi/gomega,https://github.com/onsi/gomega/blob/v1.32.0/LICENSE,MIT
 github.com/pkg/browser,https://github.com/pkg/browser/blob/5ac0b6a4141c/LICENSE,BSD-2-Clause
 github.com/pkg/errors,https://github.com/pkg/errors/blob/v0.9.1/LICENSE,BSD-2-Clause
 github.com/pmezard/go-difflib/difflib,https://github.com/pmezard/go-difflib/blob/v1.0.0/LICENSE,BSD-3-Clause
