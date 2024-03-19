@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func DefaultIPAccessList() []admin.NetworkPermissionEntry {
-	anyAccess := "0.0.0.0/0"
-	return []admin.NetworkPermissionEntry{{CidrBlock: &anyAccess}}
+	return []admin.NetworkPermissionEntry{{CidrBlock: pointer.MakePtr("0.0.0.0/0")}}
 }
 
 func WithIPAccessList(ipAccessList []admin.NetworkPermissionEntry) OptResourceFunc {

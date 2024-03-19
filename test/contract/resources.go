@@ -15,6 +15,8 @@ const (
 	ProtocolPrefix = "mongodb+srv://"
 )
 
+type cleanupFunc func() error
+
 // TestResources keeps track of all resourced for a given named test to allow
 // reuse or consistent cleanup
 type TestResources struct {
@@ -24,6 +26,7 @@ type TestResources struct {
 
 	ProjectID      string `json:"projectId"`
 	ServerlessName string `json:"deploymentName"`
+	ClusterName    string `json:"clusterName"`
 	ClusterURL     string `json:"clusterURL"`
 	UserDB         string `json:"userDB"`
 	Username       string `json:"username"`
@@ -31,6 +34,8 @@ type TestResources struct {
 
 	DatabaseName   string `json:"databaseName"`
 	CollectionName string `json:"collectionName"`
+
+	cleanups []cleanupFunc
 }
 
 // OptResourceFunc allows to add and setup optional resources
@@ -97,6 +102,20 @@ func (resources *TestResources) String() string {
 	return buf.String()
 }
 
+func (resources *TestResources) pushCleanup(cleanupFn cleanupFunc) {
+	resources.cleanups = append(resources.cleanups, cleanupFn)
+}
+
+func (resources *TestResources) popCleanup() cleanupFunc {
+	if len(resources.cleanups) == 0 {
+		return nil
+	}
+	last := len(resources.cleanups) - 1
+	cleanupFn := resources.cleanups[last]
+	resources.cleanups = resources.cleanups[:last-1]
+	return cleanupFn
+}
+
 func (resources *TestResources) Filename() string {
 	return fmt.Sprintf(".%s-resources.json", resources.Name)
 }
@@ -113,20 +132,13 @@ func (resources *TestResources) Recycle(ctx context.Context) error {
 	}
 	log.Printf("Wiping %s test resources...", resources.Name)
 	resources.wipe()
-	if resources.ProjectID != "" && resources.Username != "" {
-		err := removeUser(ctx, resources.ProjectID, resources.UserDB, resources.Username)
-		if err != nil {
-			return err
+	for {
+		cleanupFunc := resources.popCleanup()
+		if cleanupFunc == nil {
+			break
 		}
-	}
-	if resources.ProjectID != "" && resources.ServerlessName != "" {
-		err := removeServerless(ctx, resources.ProjectID, resources.ServerlessName)
-		if err != nil {
+		if err := cleanupFunc(); err != nil {
 			return err
-		}
-		err = waitServerlessRemoval(ctx, resources.ProjectID, resources.ServerlessName, ServerlessDeploymentTimeout)
-		if err != nil {
-			return fmt.Errorf("failed to get serverless deployment %s removed: %w", resources.ServerlessName, err)
 		}
 	}
 	if resources.ProjectID != "" {

@@ -11,7 +11,6 @@ import (
 
 func WithDatabase(prefix string) OptResourceFunc {
 	return func(ctx context.Context, resources *TestResources) (*TestResources, error) {
-		//
 		auth := options.Credential{
 			AuthMechanism: "SCRAM-SHA-1",
 			AuthSource:    resources.UserDB,
