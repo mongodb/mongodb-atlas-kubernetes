@@ -232,7 +232,7 @@ func connectSPE(ctx context.Context, logger *zap.SugaredLogger, client mongodbat
 			CloudProviderEndpointID:  endpoint.CloudProviderEndpointID,
 			ProviderName:             string(providerName),
 		}
-		logger.Debugf("Connecting serverless private endpoint %s", id)
+		logger.Debugf("Connecting serverless private endpoint %q, cloudProviderEndpointId %q", id, endpoint.CloudProviderEndpointID)
 		resultPE, _, err := client.Update(ctx, groupID, deploymentName, id, &req)
 		if err != nil {
 			logger.Errorf("Failed to connect serverless private endpoint %s: %v", id, err)
