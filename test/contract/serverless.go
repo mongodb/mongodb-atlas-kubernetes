@@ -42,6 +42,16 @@ func WithServerless(serverless *admin.ServerlessInstanceDescriptionCreate) OptRe
 			return nil, fmt.Errorf("missing connection string for serverless %s: %w", serverless.Name, err)
 		}
 		resources.ClusterURL = *readyDeployment.ConnectionStrings.StandardSrv
+
+		resources.pushCleanup(func() error {
+			if err := removeServerless(ctx, resources.ProjectID, resources.ServerlessName); err != nil {
+				return err
+			}
+			if err = waitServerlessRemoval(ctx, resources.ProjectID, resources.ServerlessName, ServerlessDeploymentTimeout); err != nil {
+				return fmt.Errorf("failed to get serverless deployment %s removed: %w", resources.ServerlessName, err)
+			}
+			return nil
+		})
 		return resources, nil
 	}
 }

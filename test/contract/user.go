@@ -2,15 +2,25 @@ package contract
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+)
+
+const (
+	InitialRetryWait = time.Second
+
+	MaxRetries = 5
 )
 
 func DefaultUser(username string) *admin.CloudDatabaseUser {
-	//password := newRandomName(fmt.Sprintf("%s-passwd", prefix))
-	password := NewRandomName("some-password")
 	return &admin.CloudDatabaseUser{
 		Roles: &[]admin.DatabaseUserRole{
 			{
@@ -20,7 +30,7 @@ func DefaultUser(username string) *admin.CloudDatabaseUser {
 		},
 		DatabaseName: "admin",
 		Username:     username,
-		Password:     &password,
+		Password:     pointer.MakePtr(NewRandomName("some-password")),
 	}
 }
 
@@ -35,7 +45,13 @@ func WithUser(user *admin.CloudDatabaseUser) OptResourceFunc {
 		if user.Password == nil {
 			return nil, fmt.Errorf("no password for username %s: %w", newUser.Username, err)
 		}
+		if err := waitUserPassword(ctx, resources.ClusterURL, user, InitialRetryWait, MaxRetries); err != nil {
+			return nil, err
+		}
 		resources.Password = *user.Password
+		resources.pushCleanup(func() error {
+			return removeUser(ctx, resources.ProjectID, user.DatabaseName, user.Username)
+		})
 		return resources, nil
 	}
 }
@@ -56,13 +72,75 @@ func createUser(ctx context.Context, projectID string, user *admin.CloudDatabase
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("user to create: %#+v", user)
 	newUser, _, err := apiClient.DatabaseUsersApi.CreateDatabaseUser(ctx, projectID, user).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user %s: %w", user.Username, err)
 	}
 	log.Printf("Created user %s", newUser.Username)
 	return newUser, nil
+}
+
+func EnsureUser(ctx context.Context, projectID, uri string, user *admin.CloudDatabaseUser) error {
+	_, err := createUser(ctx, projectID, user)
+	detailedError := &admin.GenericOpenAPIError{}
+	if errors.As(err, &detailedError) {
+		apiErr := detailedError.Model()
+		if (&apiErr).GetErrorCode() == "USER_ALREADY_EXISTS" {
+			log.Printf("User %s already created, updating password", user.Username)
+			if err := updateUser(ctx, projectID, user); err != nil {
+				return err
+			}
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to create user %s with admin API: %w", user.Username, err)
+	}
+	return waitUserPassword(ctx, uri, user, InitialRetryWait, MaxRetries)
+}
+
+func updateUser(ctx context.Context, projectID string, user *admin.CloudDatabaseUser) error {
+	apiClient, err := NewAPIClient()
+	if err != nil {
+		return fmt.Errorf("failed to get an api client: %w", err)
+	}
+	_, _, err = apiClient.DatabaseUsersApi.UpdateDatabaseUser(
+		ctx, projectID, user.DatabaseName, user.Username, user).Execute()
+	if err != nil {
+		return fmt.Errorf("failed to update existing user %s: %w", user.Username, err)
+	}
+	return nil
+}
+
+// waitUserPassword waits for the password to settle.
+// When the admin API creates or updates a user password this is not applied immediately,
+// if you try to access the database right away with automation code you might get auth errors.
+// See https://jira.mongodb.org/browse/CLOUDP-238496 for more details
+func waitUserPassword(ctx context.Context, uri string, user *admin.CloudDatabaseUser, initialRetryWait time.Duration, maxRetries int) error {
+	credentials := options.Credential{
+		AuthMechanism: "SCRAM-SHA-1",
+		Username:      user.Username,
+		Password:      *user.Password,
+	}
+	retryWait := initialRetryWait
+	var client *mongo.Client
+	var err error
+	defer func() {
+		if client != nil {
+			client.Disconnect(ctx)
+		}
+	}()
+	for retries := maxRetries; retries > 0; retries-- {
+		client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(credentials))
+		if err != nil {
+			return fmt.Errorf("failed to re-connect to MongoDB at %s: %w", uri, err)
+		}
+		if err := client.Ping(ctx, nil); err != nil {
+			time.Sleep(retryWait)
+			retryWait *= 2
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("timed out waiting for user %s password to be applied", user.Username)
 }
 
 func removeUser(ctx context.Context, projectID string, userDB, username string) error {

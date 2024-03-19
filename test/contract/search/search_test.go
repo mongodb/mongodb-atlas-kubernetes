@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/contract"
 )
@@ -29,7 +30,7 @@ func TestMain(m *testing.M) {
 			WipeResources,
 			contract.DefaultProject(TestName),
 			contract.WithIPAccessList(contract.DefaultIPAccessList()),
-			contract.WithServerless(contract.DefaultServerless(TestName)),
+			contract.WithCluster(contract.DefaultM0(TestName)),
 			contract.WithUser(contract.DefaultUser(TestName)),
 			contract.WithDatabase(TestName),
 		)
@@ -37,26 +38,25 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateSearchIndex(t *testing.T) {
-	//ctx := context.Background()
+	ctx := context.Background()
 	apiClient, err := contract.NewAPIClient()
 	require.NoError(t, err)
 	assert.NotNil(t, apiClient)
-	// apiClient.AtlasSearchApi.CreateAtlasSearchIndex(
-	// 	ctx,
-	// 	resources.ProjectID,
-	// 	resources.ServerlessName,
-	// 	&admin.ClusterSearchIndex{
-	// 		CollectionName: resources.CollectionName,
-	// 		Database:       resources.DatabaseName,
-	// 		IndexID:        new(string),
-	// 		Name:           TestName,
-	// 		Status:         new(string),
-	// 		Type:           new(string),
-	// 		Analyzer:       new(string),
-	// 		Analyzers:      &[]admin.ApiAtlasFTSAnalyzers{},
-	// 		Mappings:       &admin.ApiAtlasFTSMappings{},
-	// 		SearchAnalyzer: new(string),
-	// 		Synonyms:       &[]admin.SearchSynonymMappingDefinition{},
-	// 		Fields:         &[]map[string]interface{}{},
-	// 	}).Execute()
+	dynamic := true
+	csi, _, err := apiClient.AtlasSearchApi.CreateAtlasSearchIndex(
+		ctx,
+		resources.ProjectID,
+		resources.ClusterName,
+		&admin.ClusterSearchIndex{
+			CollectionName: resources.CollectionName,
+			Database:       resources.DatabaseName,
+			Name:           TestName,
+			Mappings:       &admin.ApiAtlasFTSMappings{Dynamic: &dynamic},
+		}).Execute()
+	require.NoError(t, err)
+	assert.NotNil(t, csi)
+
+	_, _, err = apiClient.AtlasSearchApi.DeleteAtlasSearchIndex(
+		ctx, resources.ProjectID, resources.ClusterName, *csi.IndexID).Execute()
+	require.NoError(t, err)
 }
