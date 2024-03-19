@@ -1,5 +1,5 @@
-cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.25.0/compute/apiv1/license_codes_client.go,Apache-2.0
-cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.25.0/compute/LICENSE,Apache-2.0
+cloud.google.com/go/compute/apiv1,https://github.com/googleapis/google-cloud-go/blob/compute/v1.25.1/compute/apiv1/license_codes_client.go,Apache-2.0
+cloud.google.com/go/compute/internal,https://github.com/googleapis/google-cloud-go/blob/compute/v1.25.1/compute/LICENSE,Apache-2.0
 cloud.google.com/go/compute/metadata,https://github.com/googleapis/google-cloud-go/blob/compute/metadata/v0.2.3/compute/metadata/LICENSE,Apache-2.0
 cloud.google.com/go/iam,https://github.com/googleapis/google-cloud-go/blob/iam/v1.1.6/iam/LICENSE,Apache-2.0
 cloud.google.com/go/kms,https://github.com/googleapis/google-cloud-go/blob/kms/v1.15.8/kms/LICENSE,Apache-2.0
