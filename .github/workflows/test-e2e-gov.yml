@@ -53,7 +53,7 @@ jobs:
           cd test/e2e
           ginkgo labels
           echo 'Running: AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10  --flake-attempts=1 --randomize-all --cover --v --trace --show-nodes-events --output-interceptor-mode=none' && \
-          AKO_E2E_TEST=1 ginkgo --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
+          AKO_E2E_TEST=1 ginkgo --output-interceptor-mode=none --label-filter="atlas-gov" --timeout 120m --nodes=10 --flake-attempts=1 --randomize-all --cover --v --trace --show-node-events --output-interceptor-mode=none --coverpkg=github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/...
       - name: Upload operator logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
