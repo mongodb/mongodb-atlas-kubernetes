@@ -17,17 +17,20 @@ func DefaultIPAccessList() []admin.NetworkPermissionEntry {
 
 func WithIPAccessList(ipAccessList []admin.NetworkPermissionEntry) OptResourceFunc {
 	return func(ctx context.Context, resources *TestResources) (*TestResources, error) {
-		log.Printf("Setting up IP Access list %s...", display(ipAccessList))
-		apiClient, err := NewAPIClient()
-		if err != nil {
-			return nil, err
+		if resources.IPAccessList == "" {
+			log.Printf("Setting up IP Access list %s...", display(ipAccessList))
+			apiClient, err := NewAPIClient()
+			if err != nil {
+				return nil, err
+			}
+			_, _, err = apiClient.ProjectIPAccessListApi.CreateProjectIpAccessList(
+				ctx, resources.ProjectID, &ipAccessList).Execute()
+			if err != nil {
+				return nil, fmt.Errorf("failed to setup IP access list %s: %w", display(ipAccessList), err)
+			}
+			resources.IPAccessList = display(ipAccessList)
+			log.Printf("IP access list %s setup", resources.IPAccessList)
 		}
-		_, _, err = apiClient.ProjectIPAccessListApi.CreateProjectIpAccessList(
-			ctx, resources.ProjectID, &ipAccessList).Execute()
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup IP access list %s: %w", display(ipAccessList), err)
-		}
-		log.Printf("IP access list %s setup", display(ipAccessList))
 		return resources, nil
 	}
 }

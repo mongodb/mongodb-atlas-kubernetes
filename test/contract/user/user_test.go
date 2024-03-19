@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 func TestUser(t *testing.T) {
 	ctx := context.Background()
 	user := contract.DefaultUser(TestName)
-	require.NoError(t, contract.EnsureUser(ctx, resources.ProjectID, resources.ClusterURL, user))
+	require.NoError(t, contract.EnsureUser(ctx, resources.ProjectID, resources.ClusterName, user))
 
 	credentials := options.Credential{
 		AuthMechanism: "SCRAM-SHA-1",
