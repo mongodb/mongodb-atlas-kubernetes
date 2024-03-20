@@ -86,6 +86,7 @@ spec:
                       - daily
                       - weekly
                       - monthly
+                      - yearly
                       type: string
                     retentionUnit:
                       description: 'Scope of the backup policy item: days, weeks,
@@ -94,6 +95,7 @@ spec:
                       - days
                       - weeks
                       - months
+                      - years
                       type: string
                     retentionValue:
                       description: Value to associate with RetentionUnit
