@@ -186,9 +186,11 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          make sign IMG="${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
-          make sign IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
-          make sign IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures
+          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures
       - name: Self-verify images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
@@ -196,9 +198,11 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          make verify IMG="${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
-          make verify IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
-          make verify IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=mongodb/signatures
+          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=mongodb/signatures
       - name: Create configuration package
         run: |
           set -x
