@@ -1,4 +1,4 @@
-# GitHub workflow for createing release.
+# GitHub workflow for creating release.
 # Trigger release branch should be merge into main
 # TODO add e2e/smoke test for autogen configuration
 
@@ -6,7 +6,8 @@ name: Create Release
 
 on:
   pull_request:
-    types: [ closed ]
+    types:
+      - closed
   workflow_dispatch:
     inputs:
       version:
@@ -52,14 +53,14 @@ jobs:
   create-release:
     environment: release
     name: Create Release
-    if: ${{ (github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != '' }}
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
+      IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo }}
       RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
-      BRANCH: ${{ github.event.inputs.branch || 'main' }}
+      BRANCH: ${{ github.event.inputs.branch || github.head_ref || github.ref_name || 'main' }}
+      VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Free disk space
         run: | 
@@ -68,21 +69,36 @@ jobs:
           sudo apt clean
           docker rmi $(docker image ls -aq)
           df -h
-      - name: Print Env and Get version
+      - name: Check release and show environment & version
         id: tag
-        env:
-          VERSION: ${{ github.event.inputs.version }}
         run: |
-          version=$VERSION
+          version="$VERSION"
           if [[ "$version" == "" ]]; then
-            version=$(echo $BRANCH | awk -F '/' '{print $2}')
+            version=$(echo "$BRANCH" | awk -F '/' '{print $2}')
+            release=$(echo "$BRANCH" | awk -F '/' '{print $1}')
+            if [[ "$release" == "release" ]]; then
+              echo "Releasing version $version..."
+              repo="mongodb/mongodb-atlas-kubernetes-operator"
+            elif [[ "$release" == "pre-release" ]]; then
+              echo "Pre-releasing version $version..."
+              repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+              RELEASE_HELM=false
+              CERTIFY=false
+              RELEASE_TO_GITHUB=true
+            else
+              echo "Release branch must be 'release/...' or 'pre-release/...' but got: $release"
+              exit 1
+            fi
           fi
-          echo "VERSION:$version"
           tag="v${version}"
           certified_version="${version}-certified"
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "tag=$tag" >> $GITHUB_OUTPUT
-          echo "certified_version=$certified_version" >> $GITHUB_OUTPUT
+          echo "release_helm=$RELEASE_HELM" >> "$GITHUB_OUTPUT"
+          echo "certify=$CERTIFY" >> "$GITHUB_OUTPUT"
+          echo "release_to_github=$RELEASE_TO_GITHUB" >> "$GITHUB_OUTPUT"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "certified_version=$certified_version" >> "$GITHUB_OUTPUT"
       - name: Check out code
         uses: actions/checkout@v4
         with:
@@ -90,18 +106,18 @@ jobs:
           fetch-depth: 0
           ref: ${{ env.BRANCH }}
       - name: Set up Go
-        if: ${{ env.RELEASE_HELM == 'true' }}
+        if: ${{ steps.tag.outputs.release_helm == 'true' }}
         uses: actions/setup-go@v5
         with:
           go-version-file: "${{ github.workspace }}/tools/makejwt/go.mod"
           cache: false
       - name: Set up Go (skip JWT)
-        if: ${{ env.RELEASE_HELM == 'false' }}
+        if: ${{ steps.tag.outputs.release_helm == 'false' }}
         uses: actions/setup-go@v5
         with:
           cache: false
       - name: Trigger helm post release workflow
-        if: ${{ env.RELEASE_HELM == 'true' }}
+        if: ${{ steps.tag.outputs.release_helm == 'true' }}
         run: |
           make release-helm JWT_RSA_PEM_KEY_BASE64="${{ secrets.AKO_RELEASER_RSA_KEY_BASE64 }}" \
             JWT_APP_ID="${{ secrets.AKO_RELEASER_APP_ID }}" \
@@ -133,7 +149,7 @@ jobs:
       - name: Build and Push image
         uses: ./.github/actions/build-push-image
         with:
-          repository: ${{ env.IMAGE_REPOSITORY }}
+          repository: ${{ steps.tag.outputs.repo }}
           file: ${{ steps.pick-dockerfile.outputs.dockerfile }}
           version: ${{ steps.tag.outputs.version }}
           certified_version: ${{ steps.tag.outputs.certified_version }}
@@ -144,14 +160,14 @@ jobs:
           quay_username: mongodb+mongodb_atlas_kubernetes
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           tags: |
-            ${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}
-            quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}
-            quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified
+            ${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
+            quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}
+            quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified
       - name: Certify Openshift images
-        if: ${{ env.CERTIFY == 'true' }}
+        if: ${{ steps.tag.outputs.certify == 'true' }}
         uses: ./.github/actions/certify-openshift-images
         with:
-          repository: ${{ env.IMAGE_REPOSITORY }}
+          repository: ${{ steps.tag.outputs.repo }}
           version: ${{ steps.tag.outputs.certified_version }}
           quay_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
@@ -170,9 +186,9 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make sign IMG="${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make sign IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make sign IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
       - name: Self-verify images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
@@ -180,15 +196,15 @@ jobs:
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
         run: |
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
+          make verify IMG="${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make verify IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
+          make verify IMG="quay.io/${{ steps.tag.outputs.repo }}:${{ steps.tag.outputs.version }}-certified" SIGNATURE_REPO=${{ steps.tag.outputs.repo }}
       - name: Create configuration package
         run: |
           set -x
           tar czvf atlas-operator-all-in-one-${{ steps.tag.outputs.version }}.tar.gz -C deploy all-in-one.yaml
       - name: Create Release
-        if: ${{ env.RELEASE_TO_GITHUB == 'true' }}
+        if: steps.tag.outputs.release_to_github == 'true'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -200,7 +216,7 @@ jobs:
           draft: true
           prerelease: false
       - name: Upload Release Asset
-        if: ${{ env.RELEASE_TO_GITHUB == 'true' }}
+        if: steps.tag.outputs.release_to_github == 'true'
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
