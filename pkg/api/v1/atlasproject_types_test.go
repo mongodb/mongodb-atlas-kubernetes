@@ -2,7 +2,7 @@ package v1
 
 import (
 	"encoding/json"
-	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +14,20 @@ import (
 
 func TestSpecEquality(t *testing.T) {
 	ref := &AtlasProjectSpec{
+		PrivateEndpoints: []PrivateEndpoint{
+			{
+				Endpoints: GCPEndpoints{
+					{
+						EndpointName: "foo",
+						IPAddress:    "bar",
+					},
+					{
+						EndpointName: "123",
+						IPAddress:    "456",
+					},
+				},
+			},
+		},
 		AlertConfigurations: []AlertConfiguration{
 			{
 				Enabled:       true,
@@ -29,7 +43,7 @@ func TestSpecEquality(t *testing.T) {
 					{
 						ChannelName: "foo",
 						DelayMin:    admin.PtrInt(2),
-						Roles:       []string{"1", "2", "3"},
+						Roles:       []string{"2", "3", "1"},
 					},
 					{
 						ChannelName: "foo",
@@ -59,12 +73,6 @@ func TestSpecEquality(t *testing.T) {
 			{
 				Enabled:       true,
 				EventTypeName: "foo",
-				Matchers:      []Matcher{},
-			},
-			{
-				Enabled:       true,
-				EventTypeName: "foo",
-				Matchers:      nil,
 			},
 			{
 				Enabled:       true,
@@ -73,23 +81,13 @@ func TestSpecEquality(t *testing.T) {
 		},
 	}
 
-	perm := ref.DeepCopy()
+	internalcmp.Normalize(ref)
 	for i := 0; i < 1_000; i++ {
-		perm.AlertConfigurations = permute(perm.AlertConfigurations)
+		perm := ref.DeepCopy()
+		internalcmp.PermuteOrder(perm)
+		internalcmp.Normalize(perm)
 
-		for i := range perm.AlertConfigurations {
-			perm.AlertConfigurations[i].Notifications = permute(perm.AlertConfigurations[i].Notifications)
-
-			for j := range perm.AlertConfigurations[i].Notifications {
-				perm.AlertConfigurations[i].Notifications[j].Roles = permute(perm.AlertConfigurations[i].Notifications[j].Roles)
-			}
-		}
-
-		for i := range perm.AlertConfigurations {
-			perm.AlertConfigurations[i].Matchers = permute(perm.AlertConfigurations[i].Matchers)
-		}
-
-		if !internalcmp.SemanticEqual(ref, perm) {
+		if !reflect.DeepEqual(ref, perm) {
 			jRef, _ := json.MarshalIndent(ref, "", "\t")
 			jPermutedCopy, _ := json.MarshalIndent(perm, "", "\t")
 			t.Errorf("expected reference:\n%v\nto be equal to the reordered copy:\n%v\nbut it isn't, diff:\n%v",
@@ -98,15 +96,4 @@ func TestSpecEquality(t *testing.T) {
 			return
 		}
 	}
-}
-
-func permute[T any](in []T) []T {
-	if len(in) == 0 {
-		return nil
-	}
-	result := make([]T, len(in))
-	for i, j := range rand.Perm(len(in)) {
-		result[i] = in[j]
-	}
-	return result
 }
