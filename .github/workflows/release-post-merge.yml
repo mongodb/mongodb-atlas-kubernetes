@@ -1,4 +1,4 @@
-# GitHub workflow for createing release.
+# GitHub workflow for creating release.
 # Trigger release branch should be merge into main
 # TODO add e2e/smoke test for autogen configuration
 
@@ -7,6 +7,9 @@ name: Create Release
 on:
   pull_request:
     types: [ closed ]
+    branches:
+      - release/**
+      - pre-release/**
   workflow_dispatch:
     inputs:
       version:
@@ -52,14 +55,14 @@ jobs:
   create-release:
     environment: release
     name: Create Release
-    if: ${{ (github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')) || github.event.inputs.version != '' }}
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo || 'mongodb/mongodb-atlas-kubernetes-operator' }}
+      IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo }}
       RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
-      BRANCH: ${{ github.event.inputs.branch || 'main' }}
+      BRANCH: ${{ github.event.inputs.branch || github.head_ref || github.ref_name || 'main' }}
+      VERSION: ${{ github.event.inputs.version }}
     steps:
       - name: Free disk space
         run: | 
@@ -68,16 +71,27 @@ jobs:
           sudo apt clean
           docker rmi $(docker image ls -aq)
           df -h
-      - name: Print Env and Get version
+      - name: Check release and show environment & version
         id: tag
-        env:
-          VERSION: ${{ github.event.inputs.version }}
         run: |
           version=$VERSION
           if [[ "$version" == "" ]]; then
             version=$(echo $BRANCH | awk -F '/' '{print $2}')
+            release-type=$(echo $BRANCH | awk -F '/' '{print $1}')
+            if [[ "$release-type" == "release"]]; then
+              echo "Releasing version $version..."
+              repo="mongodb/mongodb-atlas-kubernetes-operator"
+            elsif [[ "$release-type" == "pre-release"]]; then
+              echo "Pre-releasing version $version..."
+              repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+              RELEASE_HELM=false
+              CERTIFY=false
+              RELEASE_TO_GITHUB=true
+            else
+              echo "Release branch must be `release/...' or 'pre-release/...'' but got $release-type"
+              exit 1
+            fi
           fi
-          echo "VERSION:$version"
           tag="v${version}"
           certified_version="${version}-certified"
           echo "version=$version" >> $GITHUB_OUTPUT
