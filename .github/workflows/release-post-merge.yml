@@ -5,7 +5,9 @@
 name: Create Release
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - release/**
       - pre-release/**
@@ -77,10 +79,10 @@ jobs:
           if [[ "$version" == "" ]]; then
             version=$(echo $BRANCH | awk -F '/' '{print $2}')
             release-type=$(echo $BRANCH | awk -F '/' '{print $1}')
-            if [[ "$release-type" == "release"]]; then
+            if [[ "$release-type" == "release" ]]; then
               echo "Releasing version $version..."
               repo="mongodb/mongodb-atlas-kubernetes-operator"
-            elsif [[ "$release-type" == "pre-release"]]; then
+            elsif [[ "$release-type" == "pre-release" ]]; then
               echo "Pre-releasing version $version..."
               repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
               RELEASE_HELM=false
