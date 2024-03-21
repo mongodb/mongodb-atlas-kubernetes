@@ -128,9 +128,6 @@ This is necessary for the Operator to appear on "operators" tab in Openshift clu
 Ensure you have the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
 pointing to the directory where `community-operators-prod` repository was cloned in the previous step.
 
-*(This is temporary, to be fixed)
-Change the `mongodb-atlas-kubernetes.clusterserviceversion.yaml` file and change the `replaces:` setting the previous version
-
 Invoke the following script with <version> like `1.0.0` (no `v` prefix):
 ```
 ./scripts/release-redhat-openshift.sh <version>
@@ -154,32 +151,31 @@ After the PR is approved it will soon appear in the [Atlas Operator openshift cl
 This is necessary for the Operator to appear on "operators" tab in Openshift clusters in the "certified" section.
 
 **Prerequisites**:
- - Ensure you have the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
-pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
- - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
- - Use the image reference including the hash (`quay.io/mongodb/mongodb-atlas-kubernetes-operator:...@sha256:...`) from the [release process step "Push Atlas Operator to Quay.io"](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-post-merge.yml) as `IMG_SHA`
+ - Ensure you have the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable set pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
+ - Set the image SHA environment variables of the **certified** images. To get the SHAs, go to https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images and copy the **certified** image SHAs of the **amd64** and the **arm64** image:
+
+![img.png](certified-image-sha.png)
+
+```
+export IMG_SHA_AMD64=sha256:c997f8ab49ed5680c258ee4a3e6a9e5bbd8d8d0eef26574345d4c78a4f728186
+export IMG_SHA_ARM64=sha256:aa3ed7b73f8409dda9ac32375dfddb25ee52d7ea172e08a54ecd144d52fe44da
+```
+
  - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without the `v`prefix.
+
+```
+export VERSION=<image-version>
+```
 
 Invoke the following script:
 ```
-IMG_SHA=<image hash pushed to scan.connect.redhat.com with sha had rather than tag> \
-VERSION=<image-version> \
 ./scripts/release-redhat-certified.sh
 ```
-
-If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) here https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images
 
 Then go the GitHub and create a PR
 from the `mongodb-fork` repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).
 
-Before posting the PR there are manual changes you need to make:
-
-1. Ensure to add the `quay.io/` prefix in all Operator image references.
-1. Add a missing `com.redhat.openshift.versions: "v4.8"` line at the end of `metadata/annotations.yaml`.
-1. Ensure all image references, including `containerImage`, do NOT use the version *tag*. They **should only use the SHA of the AMD image**, NEVER the multi arch SHA.
-1. Add the missing`spec.relatedImages` section in `manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml`, to pin all the images per architecture.
-
-For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
+Note: For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
 
 You can see an [example fixed PR here for certified version 1.9.1](https://github.com/redhat-openshift-ecosystem/certified-operators/pull/3020).
 
