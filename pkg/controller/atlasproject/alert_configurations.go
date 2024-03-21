@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/unstructured"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -142,19 +143,21 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.Result {
 	logger := service.Log
-	existedAlertConfigs, _, err := service.Client.AlertConfigurations.List(service.Context, groupID, nil)
+	existedAlertConfigs, _, err := service.SdkClient.AlertConfigurationsApi.
+		ListAlertConfigurations(service.Context, groupID).
+		Execute()
 	if err != nil {
 		logger.Errorf("failed to list alert configurations: %v", err)
 		return workflow.Terminate(workflow.ProjectAlertConfigurationIsNotReadyInAtlas, fmt.Sprintf("failed to list alert configurations: %v", err))
 	}
 
-	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs)
+	diff := sortAlertConfigs(logger, alertSpec, existedAlertConfigs.GetResults())
 	logger.Debugf("to create %v, to create statuses %v, to delete %v", len(diff.Create), len(diff.CreateStatus), len(diff.Delete))
 
 	newStatuses := createAlertConfigs(service, groupID, diff.Create)
 
 	for _, existedAlertConfig := range diff.CreateStatus {
-		newStatuses = append(newStatuses, status.ParseAlertConfiguration(existedAlertConfig))
+		newStatuses = append(newStatuses, status.ParseAlertConfiguration(existedAlertConfig, service.Log))
 	}
 
 	service.EnsureStatusOption(status.AtlasProjectSetAlertConfigOption(&newStatuses))
@@ -180,13 +183,16 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConfigIDs []string) error {
 	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
-		_, err := workflowCtx.Client.AlertConfigurations.Delete(workflowCtx.Context, groupID, alertConfigID)
+		_, err := workflowCtx.SdkClient.AlertConfigurationsApi.
+			DeleteAlertConfiguration(workflowCtx.Context, groupID, alertConfigID).
+			Execute()
 		if err != nil {
 			logger.Errorf("failed to delete alert configuration: %v", err)
 			return err
 		}
 		logger.Infof("Alert configuration %s deleted.", alertConfigID)
 	}
+
 	return nil
 }
 
@@ -206,30 +212,32 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 			continue
 		}
 
-		alertConfiguration, _, err := workflowCtx.Client.AlertConfigurations.Create(workflowCtx.Context, groupID, atlasAlert)
+		alertConfiguration, _, err := workflowCtx.SdkClient.AlertConfigurationsApi.
+			CreateAlertConfiguration(workflowCtx.Context, groupID, atlasAlert).
+			Execute()
 		if err != nil {
 			logger.Errorf("failed to create alert configuration: %v", err)
-			result = append(result, status.NewIncorrectAlertConfigStatus(fmt.Sprintf("failed to create atlas alert configuration: %v", err), atlasAlert))
+			result = append(result, status.NewIncorrectAlertConfigStatus(fmt.Sprintf("failed to create atlas alert configuration: %v", err), atlasAlert, workflowCtx.Log))
 		} else {
 			if alertConfiguration == nil {
 				logger.Errorf("failed to create alert configuration: %v", err)
-				result = append(result, status.NewIncorrectAlertConfigStatus(fmt.Sprintf("failed to create atlas alert configuration: %v", err), atlasAlert))
+				result = append(result, status.NewIncorrectAlertConfigStatus(fmt.Sprintf("failed to create atlas alert configuration: %v", err), atlasAlert, workflowCtx.Log))
 			} else {
-				result = append(result, status.ParseAlertConfiguration(*alertConfiguration))
+				result = append(result, status.ParseAlertConfiguration(*alertConfiguration, workflowCtx.Log))
 			}
 		}
 	}
 	return result
 }
 
-func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []akov2.AlertConfiguration, atlasAlertConfigs []mongodbatlas.AlertConfiguration) alertConfigurationDiff {
+func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []akov2.AlertConfiguration, atlasAlertConfigs []admin.GroupAlertsConfig) alertConfigurationDiff {
 	var result alertConfigurationDiff
 	for _, alertConfigSpec := range alertConfigSpecs {
 		found := false
 		for _, atlasAlertConfig := range atlasAlertConfigs {
 			if isAlertConfigSpecEqualToAtlas(logger, alertConfigSpec, atlasAlertConfig) {
 				found = true
-				logger.Debugf("Alert configuration %s already exists.", atlasAlertConfig.ID)
+				logger.Debugf("Alert configuration %s already exists.", atlasAlertConfig.GetId())
 				result.CreateStatus = append(result.CreateStatus, atlasAlertConfig)
 				break
 			}
@@ -242,12 +250,12 @@ func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []akov2.AlertC
 	for _, atlasAlertConfig := range atlasAlertConfigs {
 		found := false
 		for _, alertConfigSpec := range result.CreateStatus {
-			if atlasAlertConfig.ID == alertConfigSpec.ID {
+			if atlasAlertConfig.GetId() == alertConfigSpec.GetId() {
 				found = true
 			}
 		}
 		if !found {
-			result.Delete = append(result.Delete, atlasAlertConfig.ID)
+			result.Delete = append(result.Delete, atlasAlertConfig.GetId())
 		}
 	}
 
@@ -257,18 +265,18 @@ func sortAlertConfigs(logger *zap.SugaredLogger, alertConfigSpecs []akov2.AlertC
 type alertConfigurationDiff struct {
 	Create       []akov2.AlertConfiguration
 	Delete       []string
-	CreateStatus []mongodbatlas.AlertConfiguration
+	CreateStatus []admin.GroupAlertsConfig
 }
 
-func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec akov2.AlertConfiguration, atlasAlertConfig mongodbatlas.AlertConfiguration) bool {
-	if alertConfigSpec.EventTypeName != atlasAlertConfig.EventTypeName {
+func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec akov2.AlertConfiguration, atlasAlertConfig admin.GroupAlertsConfig) bool {
+	if alertConfigSpec.EventTypeName != atlasAlertConfig.GetEventTypeName() {
 		return false
 	}
 	if atlasAlertConfig.Enabled == nil {
-		logger.Debugf("Alert configuration %s is not nil", atlasAlertConfig.ID)
+		logger.Debugf("Alert configuration %s is not nil", atlasAlertConfig.GetId())
 		return false
 	}
-	if alertConfigSpec.Enabled != *atlasAlertConfig.Enabled {
+	if alertConfigSpec.Enabled != atlasAlertConfig.GetEnabled() {
 		logger.Debugf("alertConfigSpec.Enabled %v != *atlasAlertConfig.Enabled %v", alertConfigSpec.Enabled, *atlasAlertConfig.Enabled)
 		return false
 	}
@@ -284,13 +292,13 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec ak
 	}
 
 	// Notifications
-	if len(alertConfigSpec.Notifications) != len(atlasAlertConfig.Notifications) {
-		logger.Debugf("len(alertConfigSpec.NotificationTokenNames) %v != len(atlasAlertConfig.NotificationTokenNames) %v", len(alertConfigSpec.Notifications), len(atlasAlertConfig.Notifications))
+	if len(alertConfigSpec.Notifications) != len(atlasAlertConfig.GetNotifications()) {
+		logger.Debugf("len(alertConfigSpec.NotificationTokenNames) %v != len(atlasAlertConfig.NotificationTokenNames) %v", len(alertConfigSpec.Notifications), len(atlasAlertConfig.GetNotifications()))
 		return false
 	}
 	for _, notification := range alertConfigSpec.Notifications {
 		found := false
-		for _, atlasNotification := range atlasAlertConfig.Notifications {
+		for _, atlasNotification := range atlasAlertConfig.GetNotifications() {
 			if notification.IsEqual(atlasNotification) {
 				found = true
 			}
@@ -302,13 +310,18 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec ak
 	}
 
 	// Matchers
-	if len(alertConfigSpec.Matchers) != len(atlasAlertConfig.Matchers) {
-		logger.Debugf("len(alertConfigSpec.Matchers) %v != len(atlasAlertConfig.Matchers) %v", len(alertConfigSpec.Matchers), len(atlasAlertConfig.Matchers))
+	if len(alertConfigSpec.Matchers) != len(atlasAlertConfig.GetMatchers()) {
+		logger.Debugf("len(alertConfigSpec.Matchers) %v != len(atlasAlertConfig.Matchers) %v", len(alertConfigSpec.Matchers), len(atlasAlertConfig.GetMatchers()))
+		return false
+	}
+	atlasMatchers, err := unstructured.TypedFromUnstructured[[]map[string]interface{}, []akov2.Matcher](atlasAlertConfig.GetMatchers())
+	if err != nil {
+		logger.Errorf("unable to convert matchers to structured type: %s", err)
 		return false
 	}
 	for _, matcher := range alertConfigSpec.Matchers {
 		found := false
-		for _, atlasMatcher := range atlasAlertConfig.Matchers {
+		for _, atlasMatcher := range *atlasMatchers {
 			if matcher.IsEqual(atlasMatcher) {
 				found = true
 			}

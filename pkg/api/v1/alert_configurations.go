@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
@@ -27,44 +27,50 @@ type AlertConfiguration struct {
 	MetricThreshold *MetricThreshold `json:"metricThreshold,omitempty"`
 }
 
-func (in *AlertConfiguration) ToAtlas() (*mongodbatlas.AlertConfiguration, error) {
+func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 	if in == nil {
 		return nil, nil
 	}
-	// Some field can be converted directly
-	result := &mongodbatlas.AlertConfiguration{
-		Enabled:       &in.Enabled,
-		EventTypeName: in.EventTypeName,
-	}
 
+	result := admin.NewGroupAlertsConfig()
+	result.SetEnabled(in.Enabled)
+	result.SetEventTypeName(in.EventTypeName)
+
+	matchers := make([]map[string]interface{}, 0, len(in.Matchers))
 	for _, m := range in.Matchers {
-		matcher := mongodbatlas.Matcher{
-			FieldName: m.FieldName,
-			Operator:  m.Operator,
-			Value:     m.Value,
-		}
-		result.Matchers = append(result.Matchers, matcher)
+		matchers = append(
+			matchers,
+			map[string]interface{}{
+				"FieldName": m.FieldName,
+				"Operator":  m.Operator,
+				"Value":     m.Value,
+			},
+		)
 	}
+	result.SetMatchers(matchers)
 
+	notifications := make([]admin.AlertsNotificationRootForGroup, 0, len(in.Notifications))
 	for _, n := range in.Notifications {
 		notification, err := n.ToAtlas()
 		if err != nil {
 			return nil, err
 		}
-		result.Notifications = append(result.Notifications, *notification)
+		notifications = append(notifications, *notification)
 	}
+	result.SetNotifications(notifications)
 
-	// Some fields require special conversion
 	tr, err := in.Threshold.ToAtlas()
 	if err != nil {
 		return nil, err
 	}
-	result.Threshold = tr
+	result.SetThreshold(*tr)
+
 	metricThreshold, err := in.MetricThreshold.ToAtlas()
 	if err != nil {
 		return nil, err
 	}
-	result.MetricThreshold = metricThreshold
+	result.SetMetricThreshold(*metricThreshold)
+
 	return result, err
 }
 
@@ -77,7 +83,7 @@ type Matcher struct {
 	Value string `json:"value,omitempty"`
 }
 
-func (in *Matcher) IsEqual(matcher mongodbatlas.Matcher) bool {
+func (in *Matcher) IsEqual(matcher Matcher) bool {
 	if in == nil {
 		return false
 	}
@@ -95,7 +101,7 @@ type Threshold struct {
 	Threshold string `json:"threshold,omitempty"`
 }
 
-func (in *Threshold) IsEqual(threshold *mongodbatlas.Threshold) bool {
+func (in *Threshold) IsEqual(threshold *admin.GreaterThanRawThreshold) bool {
 	logger := zap.NewExample().Sugar()
 	if in == nil {
 		return threshold == nil
@@ -104,34 +110,41 @@ func (in *Threshold) IsEqual(threshold *mongodbatlas.Threshold) bool {
 		return false
 	}
 	logger.Debugf("threshold: %v", threshold)
-	if in.Operator != threshold.Operator {
+	if in.Operator != threshold.GetOperator() {
 		logger.Debugf("operator: %s != %s", in.Operator, threshold.Operator)
 		return false
 	}
-	if in.Units != threshold.Units {
+	if in.Units != threshold.GetUnits() {
 		logger.Debugf("units: %s != %s", in.Units, threshold.Units)
 		return false
 	}
-	if in.Threshold != strconv.FormatFloat(threshold.Threshold, 'f', -1, 64) {
-		logger.Debugf("threshold: %s != %s", in.Threshold, strconv.FormatFloat(threshold.Threshold, 'f', -1, 64))
+
+	thresholdValue := strconv.FormatInt(int64(threshold.GetThreshold()), 10)
+	if in.Threshold != thresholdValue {
+		logger.Debugf("threshold: %s != %s", in.Threshold, thresholdValue)
 		return false
 	}
+
 	return true
 }
 
-func (in *Threshold) ToAtlas() (*mongodbatlas.Threshold, error) {
+func (in *Threshold) ToAtlas() (*admin.GreaterThanRawThreshold, error) {
 	if in == nil {
-		return nil, nil
+		return &admin.GreaterThanRawThreshold{}, nil
 	}
-	tr, err := strconv.ParseFloat(in.Threshold, 64)
+
+	tr64, err := strconv.ParseInt(in.Threshold, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
-	result := &mongodbatlas.Threshold{
-		Operator:  in.Operator,
-		Units:     in.Units,
-		Threshold: tr,
+
+	tr := int(tr64)
+	result := &admin.GreaterThanRawThreshold{
+		Operator:  &in.Operator,
+		Units:     &in.Units,
+		Threshold: &tr,
 	}
+
 	return result, nil
 }
 
@@ -223,55 +236,54 @@ func (in *Notification) SetVictorOpsRoutingKey(token string) {
 	in.victorOpsRoutingKey = token
 }
 
-func (in *Notification) IsEqual(notification mongodbatlas.Notification) bool {
+func (in *Notification) IsEqual(notification admin.AlertsNotificationRootForGroup) bool {
 	if in == nil {
 		return false
 	}
-	if in.apiToken != notification.APIToken ||
-		in.ChannelName != notification.ChannelName ||
-		in.datadogAPIKey != notification.DatadogAPIKey ||
-		in.DatadogRegion != notification.DatadogRegion ||
+	if in.apiToken != notification.GetApiToken() ||
+		in.ChannelName != notification.GetChannelName() ||
+		in.datadogAPIKey != notification.GetDatadogApiKey() ||
+		in.DatadogRegion != notification.GetDatadogRegion() ||
 		!compare.PtrValuesEqual(in.DelayMin, notification.DelayMin) ||
-		in.EmailAddress != notification.EmailAddress ||
+		in.EmailAddress != notification.GetEmailAddress() ||
 		!compare.PtrValuesEqual(in.EmailEnabled, notification.EmailEnabled) ||
-		in.flowdockAPIToken != notification.FlowdockAPIToken ||
-		in.FlowName != notification.FlowName ||
-		in.IntervalMin != notification.IntervalMin ||
-		in.MobileNumber != notification.MobileNumber ||
-		in.opsGenieAPIKey != notification.OpsGenieAPIKey ||
-		in.OpsGenieRegion != notification.OpsGenieRegion ||
-		in.OrgName != notification.OrgName ||
-		in.serviceKey != notification.ServiceKey ||
-		!compare.PtrValuesEqual(in.SMSEnabled, notification.SMSEnabled) ||
-		in.TeamID != notification.TeamID ||
-		in.TeamName != notification.TeamName ||
-		in.TypeName != notification.TypeName ||
-		in.Username != notification.Username ||
-		in.victorOpsAPIKey != notification.VictorOpsAPIKey ||
-		in.victorOpsRoutingKey != notification.VictorOpsRoutingKey {
+		in.IntervalMin != notification.GetIntervalMin() ||
+		in.MobileNumber != notification.GetMobileNumber() ||
+		in.opsGenieAPIKey != notification.GetOpsGenieApiKey() ||
+		in.OpsGenieRegion != notification.GetOpsGenieRegion() ||
+		in.serviceKey != notification.GetServiceKey() ||
+		!compare.PtrValuesEqual(in.SMSEnabled, notification.SmsEnabled) ||
+		in.TeamID != notification.GetTeamId() ||
+		in.TeamName != notification.GetTeamName() ||
+		in.TypeName != notification.GetTypeName() ||
+		in.Username != notification.GetUsername() ||
+		in.victorOpsAPIKey != notification.GetVictorOpsApiKey() ||
+		in.victorOpsRoutingKey != notification.GetVictorOpsRoutingKey() {
 		return false
 	}
 
-	if !compare.IsEqualWithoutOrder(in.Roles, notification.Roles) {
+	if !compare.IsEqualWithoutOrder(in.Roles, notification.GetRoles()) {
 		return false
 	}
 
 	return true
 }
 
-func (in *Notification) ToAtlas() (*mongodbatlas.Notification, error) {
-	result := &mongodbatlas.Notification{}
+func (in *Notification) ToAtlas() (*admin.AlertsNotificationRootForGroup, error) {
+	result := &admin.AlertsNotificationRootForGroup{}
+	admin.NewAlertsNotificationRootForGroup()
 	err := compat.JSONCopy(result, in)
 	if err != nil {
 		return nil, err
 	}
-	result.APIToken = in.apiToken
-	result.DatadogAPIKey = in.datadogAPIKey
-	result.FlowdockAPIToken = in.flowdockAPIToken
-	result.OpsGenieAPIKey = in.opsGenieAPIKey
-	result.ServiceKey = in.serviceKey
-	result.VictorOpsAPIKey = in.victorOpsAPIKey
-	result.VictorOpsRoutingKey = in.victorOpsRoutingKey
+
+	result.SetApiToken(in.apiToken)
+	result.SetDatadogApiKey(in.datadogAPIKey)
+	result.SetOpsGenieApiKey(in.opsGenieAPIKey)
+	result.SetServiceKey(in.serviceKey)
+	result.SetVictorOpsApiKey(in.victorOpsAPIKey)
+	result.SetVictorOpsRoutingKey(in.victorOpsRoutingKey)
+
 	return result, nil
 }
 
@@ -289,34 +301,37 @@ type MetricThreshold struct {
 	Mode string `json:"mode,omitempty"`
 }
 
-func (in *MetricThreshold) IsEqual(threshold *mongodbatlas.MetricThreshold) bool {
+func (in *MetricThreshold) IsEqual(threshold *admin.ServerlessMetricThreshold) bool {
 	if in == nil {
 		return threshold == nil
 	}
 	if threshold == nil {
 		return false
 	}
-	return in.MetricName == threshold.MetricName &&
-		in.Operator == threshold.Operator &&
-		in.Threshold == strconv.FormatFloat(threshold.Threshold, 'f', -1, 64) &&
-		in.Units == threshold.Units &&
-		in.Mode == threshold.Mode
+	return in.MetricName == threshold.GetMetricName() &&
+		in.Operator == threshold.GetOperator() &&
+		in.Threshold == strconv.FormatInt(int64(threshold.GetThreshold()), 10) &&
+		in.Units == threshold.GetUnits() &&
+		in.Mode == threshold.GetMode()
 }
 
-func (in *MetricThreshold) ToAtlas() (*mongodbatlas.MetricThreshold, error) {
+func (in *MetricThreshold) ToAtlas() (*admin.ServerlessMetricThreshold, error) {
 	if in == nil {
-		return nil, nil
+		return &admin.ServerlessMetricThreshold{}, nil
 	}
+
 	tr, err := strconv.ParseFloat(in.Threshold, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
-	result := &mongodbatlas.MetricThreshold{
+
+	result := &admin.ServerlessMetricThreshold{
 		MetricName: in.MetricName,
-		Operator:   in.Operator,
-		Threshold:  tr,
-		Units:      in.Units,
-		Mode:       in.Mode,
+		Operator:   &in.Operator,
+		Threshold:  &tr,
+		Units:      &in.Units,
+		Mode:       &in.Mode,
 	}
+
 	return result, nil
 }
