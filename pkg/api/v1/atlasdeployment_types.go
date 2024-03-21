@@ -75,7 +75,7 @@ type AtlasDeploymentSpec struct {
 type SearchNode struct {
 	// +kubebuilder:validation:Enum:=S20_HIGHCPU_NVME;S30_HIGHCPU_NVME;S40_HIGHCPU_NVME;S50_HIGHCPU_NVME;S60_HIGHCPU_NVME;S70_HIGHCPU_NVME;S80_HIGHCPU_NVME;S30_LOWCPU_NVME;S40_LOWCPU_NVME;S50_LOWCPU_NVME;S60_LOWCPU_NVME;S80_LOWCPU_NVME;S90_LOWCPU_NVME;S100_LOWCPU_NVME;S110_LOWCPU_NVME
 	InstanceSize string `json:"instanceSize,omitempty"`
-	// +kubebuilder:validation:Mininum:=2
+	// +kubebuilder:validation:Minimum:=2
 	// +kubebuilder:validation:Maximum:=32
 	NodeCount uint8 `json:"nodeCount,omitempty"`
 }

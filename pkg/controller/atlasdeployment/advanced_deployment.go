@@ -101,7 +101,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}
 
 		switch httpResp.StatusCode {
-		// TODO: Should be only NotFound. Talk to APIx!
+		// TODO: Should be only NotFound: CLOUDP-239015
 		case http.StatusBadRequest, http.StatusNotFound:
 			ctx.Log.Debug("no search nodes in atlas found")
 			nodesInAtlasEmpty = true
@@ -127,7 +127,6 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 
 		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
-		// TODO: compare one by one
 		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas) {
 			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
 			return nil
@@ -143,7 +142,6 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			return err
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
-		// TODO: add deletion protection
 		ctx.Log.Debug("deleting search nodes")
 		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancelF()
