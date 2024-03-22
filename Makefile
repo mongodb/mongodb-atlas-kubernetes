@@ -113,7 +113,7 @@ help: ## Show this help screen
 all: manager ## Build all binaries
 
 go-licenses:
-	@which go-licenses || go install github.com/google/go-licenses@latest
+	go install github.com/google/go-licenses@latest
 
 licenses.csv: go-licenses go.mod ## Track licenses in a CSV file
 	@echo "Tracking licenses into file $@"
@@ -239,7 +239,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary
-	@which controller-gen || go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
 
 .PHONY: generate
 generate: controller-gen ${GO_SOURCES} ## Generate code
