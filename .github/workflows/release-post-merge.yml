@@ -6,6 +6,9 @@ name: Create Release
 
 on:
   pull_request:
+    branches:
+      - pre-release/**
+      - release/**
     types:
       - closed
   workflow_dispatch:
@@ -53,6 +56,7 @@ jobs:
   create-release:
     environment: release
     name: Create Release
+    if: github.event.pull_request.merged == true || github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo }}
@@ -84,7 +88,7 @@ jobs:
               repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
               RELEASE_HELM=false
               CERTIFY=false
-              RELEASE_TO_GITHUB=true
+              RELEASE_TO_GITHUB=false
             else
               echo "Release branch must be 'release/...' or 'pre-release/...' but got: $release"
               exit 1
