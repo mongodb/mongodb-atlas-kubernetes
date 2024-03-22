@@ -1,6 +1,25 @@
 apiVersion: atlas.mongodb.com/v1
 kind: AtlasFederatedAuth
 metadata:
-  name: atlasfederatedauth-sample
+  name: atlas-default-federated-auth
+  namespace: mongodb-atlas-system
 spec:
-  # TODO(user): Add fields here
+  enabled: true
+  connectionSecretRef:
+    name: my-org-secret
+    namespace: mongodb-atlas-system
+  domainAllowList:
+    - my-org-domain.com
+  domainRestrictionEnabled: true
+  ssoDebugEnabled: false
+  postAuthRoleGrants:
+    - ORG_MEMBER
+  roleMappings:
+    - externalGroupName: org-admin
+      roleAssignments:
+        - role: ORG_OWNER
+    - externalGroupName: dev-team
+      roleAssignments:
+        - role: ORG_GROUP_CREATOR
+        - projectName: dev-project
+          role: GROUP_OWNER
