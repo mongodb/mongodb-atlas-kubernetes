@@ -15,6 +15,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -24,6 +25,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
 
+	var akoProject *akov2.AtlasProject
 	var originalConnectedOrgConfig *admin.ConnectedOrgConfig
 	var originalFederationSettings *admin.OrgFederationSettings
 	var originalIdp *admin.FederationIdentityProvider
@@ -75,6 +77,16 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 			connectionSecret = buildConnectionSecret(fmt.Sprintf("%s-atlas-key", testNamespace.Name))
 			Expect(k8sClient.Create(ctx, &connectionSecret)).To(Succeed())
 		})
+
+		By("Creating a project", func() {
+			akoProject = akov2.DefaultProject(namespace.Name, connectionSecret.Name).
+				WithIPAccessList(project.NewIPAccessList().WithCIDR("0.0.0.0/0"))
+
+			Expect(k8sClient.Create(context.Background(), akoProject)).To(Succeed())
+			Eventually(func() bool {
+				return resources.CheckCondition(k8sClient, akoProject, status.TrueCondition(status.ReadyType))
+			}).WithTimeout(5 * time.Minute).WithPolling(interval).Should(BeTrue())
+		})
 	})
 
 	It("Should be able to update existing Organization's federations settings", func() {
@@ -111,6 +123,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 					ExternalGroupName: newRoleMapName,
 					RoleAssignments: []akov2.RoleAssignment{
 						{Role: "ORG_OWNER"},
+						{Role: "GROUP_OWNER", ProjectName: akoProject.Spec.Name},
 					},
 				},
 			)
@@ -176,6 +189,12 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 	})
 
 	AfterEach(func() {
+		By("Should delete project", func() {
+			Expect(k8sClient.Delete(ctx, akoProject)).To(Succeed())
+
+			Eventually(checkAtlasProjectRemoved(akoProject.ID())).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+		})
+
 		By("Should delete connection secret", func() {
 			Expect(k8sClient.Delete(ctx, &connectionSecret)).To(Succeed())
 		})
