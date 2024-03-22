@@ -29,7 +29,7 @@ jobs:
       - run: go version
 
       - name: Run testing
-        run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e') -coverprofile=coverage.out
+        run: CGO_ENABLED=0 go test -v $(go list ./... |grep -v 'test/int\|test/e2e\|test/contract') -coverprofile=coverage.out
 
       - name: Test tools
         run: make test-tools

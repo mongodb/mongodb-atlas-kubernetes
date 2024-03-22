@@ -1,0 +1,178 @@
+package contract
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+)
+
+const (
+	ProtocolPrefix = "mongodb+srv://"
+)
+
+type cleanupFunc func() error
+
+// TestResources keeps track of all resourced for a given named test to allow
+// reuse or consistent cleanup
+type TestResources struct {
+	Name string `json:"name"`
+
+	WipeResources bool `json:""`
+
+	ProjectID    string `json:"projectId"`
+	ClusterName  string `json:"clusterName"`
+	ClusterURL   string `json:"clusterURL"`
+	Serverless   bool   `json:"serverless"`
+	IPAccessList string `json:"ipAccessList"`
+	UserDB       string `json:"userDB"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+
+	DatabaseName   string `json:"databaseName"`
+	CollectionName string `json:"collectionName"`
+
+	cleanups []cleanupFunc
+}
+
+// OptResourceFunc allows to add and setup optional resources
+type OptResourceFunc func(ctx context.Context, resources *TestResources) (*TestResources, error)
+
+func DeployTestResources(ctx context.Context, name string, wipe bool, project *admin.Group, optResourcesFn ...OptResourceFunc) (*TestResources, error) {
+	log.Printf("Wipe resources set to %v", wipe)
+	resources, err := LoadResources(name)
+	reusing := false
+	if err == nil {
+		log.Printf("Reusing existing resources\n")
+		reusing = true
+	} else {
+		log.Printf("Cannot reuse resources: %v", err)
+		resources = &TestResources{Name: name, WipeResources: wipe}
+	}
+
+	if reusing {
+		if err := checkProject(ctx, resources.ProjectID); err != nil {
+			return nil, fmt.Errorf("failed to check project: %w", err)
+		}
+	} else {
+		id, err := createProject(ctx, project)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create test project for %s: %w", name, err)
+		}
+		resources.ProjectID = id
+	}
+
+	for _, optResourceFn := range optResourcesFn {
+		var err error
+		resources, err = optResourceFn(ctx, resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create optional test resource for %s: %w", name, err)
+		}
+	}
+	if !reusing {
+		log.Printf("Created new resources\n")
+		log.Printf("Trying to stored %s test resource references for reuse...", resources.Name)
+		if err := resources.store(); err != nil {
+			return nil, fmt.Errorf("failed to wipe store resources: %w", err)
+		}
+		log.Printf("Stored %s test resource references for reuse", resources.Name)
+	}
+	return resources, nil
+}
+
+func LoadResources(name string) (*TestResources, error) {
+	resources := TestResources{Name: name}
+	jsonData, err := os.ReadFile(resources.Filename())
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(jsonData, &resources)
+	if err != nil {
+		return nil, err
+	}
+	return &resources, nil
+}
+
+func (resources *TestResources) String() string {
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "Name: %s\n", resources.Name)
+	fmt.Fprintf(&buf, "  ProjectID       %s\n", resources.ProjectID)
+	fmt.Fprintf(&buf, "  ClusterName     %s\n", resources.ClusterName)
+	fmt.Fprintf(&buf, "  ClusterURL      %s\n", resources.ClusterURL)
+	fmt.Fprintf(&buf, "  Serverless      %v\n", resources.Serverless)
+	fmt.Fprintf(&buf, "  IPAccessList    %s\n", resources.IPAccessList)
+	fmt.Fprintf(&buf, "  UserDB          %s\n", resources.UserDB)
+	fmt.Fprintf(&buf, "  Username        %s\n", resources.Username)
+	fmt.Fprintf(&buf, "  Password        *******\n")
+	fmt.Fprintf(&buf, "  DatabaseName    %s\n", resources.DatabaseName)
+	fmt.Fprintf(&buf, "  CollectionName  %s\n", resources.CollectionName)
+	return buf.String()
+}
+
+func (resources *TestResources) pushCleanup(cleanupFn cleanupFunc) {
+	resources.cleanups = append(resources.cleanups, cleanupFn)
+}
+
+func (resources *TestResources) popCleanup() cleanupFunc {
+	if len(resources.cleanups) == 0 {
+		return nil
+	}
+	last := len(resources.cleanups) - 1
+	resources.cleanups = resources.cleanups[:last-1]
+	return resources.cleanups[last]
+}
+
+func (resources *TestResources) Filename() string {
+	return fmt.Sprintf(".%s-resources.json", resources.Name)
+}
+
+func (resources *TestResources) Recycle(ctx context.Context) error {
+	if !resources.WipeResources {
+		log.Printf("Trying to stored %s test resource references for reuse...", resources.Name)
+		err := resources.store()
+		if err != nil {
+			return fmt.Errorf("failed to wipe store resources: %w", err)
+		}
+		log.Printf("Stored %s test resource references for reuse", resources.Name)
+		return nil
+	}
+	log.Printf("Wiping %s test resources...", resources.Name)
+	resources.wipe()
+	for {
+		cleanupFunc := resources.popCleanup()
+		if cleanupFunc == nil {
+			break
+		}
+		if err := cleanupFunc(); err != nil {
+			return err
+		}
+	}
+	if resources.ProjectID != "" {
+		err := clearIPAccessList(ctx, resources.ProjectID)
+		if err != nil {
+			return err
+		}
+		err = removeProject(ctx, resources.ProjectID)
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("Removed %s test resources", resources.Name)
+	return nil
+}
+
+func (resources *TestResources) store() error {
+	jsonData, err := json.Marshal(resources)
+	if err != nil {
+		return fmt.Errorf("failed to marshal to JSON: %w", err)
+	}
+	return os.WriteFile(resources.Filename(), jsonData, 0600)
+}
+
+func (resources *TestResources) wipe() error {
+	return os.Remove(resources.Filename())
+}
