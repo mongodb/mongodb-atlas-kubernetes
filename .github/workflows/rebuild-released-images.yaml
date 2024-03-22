@@ -152,6 +152,13 @@ jobs:
             ${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
+      - name: Login to artifactory.corp.mongodb.com
+        if: steps.check-signing-support.outputs.sign == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: artifactory.corp.mongodb.com
+          username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
+          password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
       - name: Sign images
         if: steps.check-signing-support.outputs.sign == 'true'
         env:
