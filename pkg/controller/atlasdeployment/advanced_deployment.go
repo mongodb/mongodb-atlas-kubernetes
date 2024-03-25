@@ -81,7 +81,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) error {
+func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
 	// Get the current state from Atlas
 	// If no nodes configured in atlas, but some in the operator - create them. If not - do nothing
 	// If nodes already configured in atlas and in the operator - update them. If not - delete them
@@ -97,7 +97,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 	if err != nil {
 		if httpResp == nil {
 			ctx.Log.Debugf("unable to get current search nodes status: %v", err)
-			return err
+			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 
 		switch httpResp.StatusCode {
@@ -106,8 +106,12 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			ctx.Log.Debug("no search nodes in atlas found")
 			nodesInAtlasEmpty = true
 		default:
-			return fmt.Errorf("unable to get current search nodes status (%d): %w", httpResp.StatusCode, err)
+			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
+	}
+
+	if !nodesInAtlasEmpty && currentNodesInAtlas.GetStateName() != "IDLE" {
+		return workflow.InProgress(workflow.SearchNodesReady, "search nodes are not ready")
 	}
 
 	switch {
@@ -120,7 +124,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}).Execute()
 		if err != nil {
 			ctx.Log.Debugf("unable to create search nodes: %v", err)
-			return err
+			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// TODO: verify nodes status
@@ -129,7 +133,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas) {
 			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
-			return nil
+			return workflow.OK()
 		}
 
 		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
@@ -139,7 +143,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}).Execute()
 		if err != nil {
 			ctx.Log.Debugf("unable to update search nodes: %v", err)
-			return err
+			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
 		ctx.Log.Debug("deleting search nodes")
@@ -148,11 +152,11 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName()).Execute()
 		if err != nil {
 			ctx.Log.Debugf("unable to delete search nodes: %v", err)
-			return err
+			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	}
 
-	return nil
+	return workflow.OK()
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
@@ -161,9 +165,10 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, 
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
 	}
 
-	err = handleSearchNodes(ctx, deployment, project.ID())
-	if err != nil {
-		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.SearchNodesReady, err.Error())
+	searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
+	ctx.SetConditionFromResult(status.SearchNodesReadyType, searchNodeResult)
+	if !searchNodeResult.IsOk() {
+		return atlasDeploymentAsAtlas, searchNodeResult
 	}
 
 	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
