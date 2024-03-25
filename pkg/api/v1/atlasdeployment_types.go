@@ -189,68 +189,6 @@ func LessAD(a, b interface{}) bool {
 	}
 }
 
-type SearchIndex struct {
-	// Human-readable label that identifies this index. Within each namespace, names of all indexes in the namespace must be unique
-	// +required
-	Name string `json:"name"`
-	// Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes
-	// +required
-	DBName string `json:"DBName"`
-	// Human-readable label that identifies the collection that contains one or more Atlas Search indexes
-	// +required
-	CollectionName string `json:"collectionName"`
-	// Type of the index. Default type is search
-	// +kubebuilder:validation:Enum:=search;vectorSearch
-	Type string `json:"type,omitempty"`
-	// +optional
-	// Atlas search index configuration
-	Search *Search `json:"search,omitempty"`
-	// +optional
-	// Atlas vector search index configuration
-	VectorSearch *VectorSearch `json:"vectorSearch,omitempty"`
-}
-
-type Search struct {
-	// Rule sets that map words to their synonyms in this index
-	// +optional
-	Synonyms []Synonym `json:"synonyms,omitempty"`
-	// Index specifications for the collection's fields
-	// +optional
-	Mappings []Mapping `json:"mappings,omitempty"`
-	// +required
-	// A reference to the AtlasSearchIndexConfig custom resource
-	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
-}
-
-type Synonym struct {
-	// Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition
-	// +required
-	Name string `json:"name"`
-	// Specific pre-defined method chosen to apply to the synonyms to be searched
-	// +kubebuilder:validation:Enum:=lucene.standard;lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword;lucene.arabic;lucene.armenian;lucene.basque;lucene.bengali;lucene.brazilian;lucene.bulgarian;lucene.catalan;lucene.chinese;lucene.cjk;lucene.czech;lucene.danish;lucene.dutch;lucene.english;lucene.finnish;lucene.french;lucene.galician;lucene.german;lucene.greek;lucene.hindi;lucene.hungarian;lucene.indonesian;lucene.irish;lucene.italian;lucene.japanese;lucene.korean;lucene.kuromoji;lucene.latvian;lucene.lithuanian;lucene.morfologik;lucene.nori;lucene.norwegian;lucene.persian;lucene.portuguese;lucene.romanian;lucene.russian;lucene.smartcn;lucene.sorani;lucene.spanish;lucene.swedish;lucene.thai;lucene.turkish;lucene.ukrainian
-	// +required
-	Analyzer string `json:"analyzer"`
-	// Data set that stores the mapping one or more words map to one or more synonyms of those words
-	Source *Source `json:"source"`
-}
-
-type Source struct {
-	// Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms
-	Collection string `json:"collection"`
-}
-
-type Mapping struct {
-	// Flag that indicates whether the index uses dynamic or static mappings. Required if mapping.fields is omitted.
-	Dynamic bool `json:"dynamic,omitempty"`
-	// One or more field specifications for the Atlas Search index. Required if mapping.dynamic is omitted or set to false.
-	Fields string `json:"fields,omitempty"`
-}
-
-type VectorSearch struct {
-	// Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-	Fields string `json:"fields,omitempty"`
-}
-
 // ServerlessSpec defines the desired state of Atlas Serverless Instance
 type ServerlessSpec struct {
 	// Name of the serverless deployment as it appears in Atlas.

@@ -62,7 +62,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 
 	switch advancedDeployment.StateName {
 	case "IDLE":
-		return advancedDeploymentIdle(ctx, project, deployment, advancedDeployment)
+		return advancedDeploymentIdle(ctx, r.Client, project, deployment, advancedDeployment)
 
 	case "CREATING":
 		return advancedDeployment, workflow.InProgress(workflow.DeploymentCreating, "deployment is provisioning")
@@ -77,7 +77,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	}
 }
 
-func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
+func advancedDeploymentIdle(ctx *workflow.Context, k8sClient client.Client, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {
 	specDeployment, atlasDeployment, err := MergedAdvancedDeployment(*atlasDeploymentAsAtlas, *deployment.Spec.DeploymentSpec)
 	if err != nil {
 		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.Internal, err.Error())
@@ -88,6 +88,11 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, 
 		return atlasDeploymentAsAtlas, searchNodeResult
 	}
 
+	// process search indices configuration
+	err = handleSearchIndices(ctx, k8sClient, deployment, project.ID())
+	if err != nil {
+		return atlasDeploymentAsAtlas, workflow.Terminate(workflow.SearchIndexesReady, err.Error())
+	}
 	if areEqual, _ := AdvancedDeploymentsEqual(ctx.Log, &specDeployment, &atlasDeployment); areEqual {
 		return atlasDeploymentAsAtlas, workflow.OK()
 	}
@@ -213,6 +218,10 @@ func AdvancedDeploymentsEqual(log *zap.SugaredLogger, deploymentOperator *akov2.
 			}
 		}
 	}
+
+	// Cleanup search index as it is not part of the Deployment struct in Atlas
+	expected.SearchIndexes = nil
+
 	d := cmp.Diff(actualCleaned, expected, cmpopts.EquateEmpty(), cmpopts.SortSlices(akov2.LessAD))
 	if d != "" {
 		log.Debugf("Deployments are different: %s", d)

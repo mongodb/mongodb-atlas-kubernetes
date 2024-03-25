@@ -396,7 +396,8 @@ spec:
                     maxItems: 1
                     type: array
                   searchIndexes:
-                    description: A list of atlas search indexes configurations
+                    description: A list of atlas search indexes configuration for
+                      the current deployment
                     items:
                       properties:
                         DBName:
@@ -408,10 +409,23 @@ spec:
                           description: Human-readable label that identifies the collection
                             that contains one or more Atlas Search indexes
                           type: string
+                        indexConfigRef:
+                          description: A name and a namespace of the AtlasSearchIndexConfig
+                            resource
+                          properties:
+                            name:
+                              description: Name is the name of the Kubernetes Resource
+                              type: string
+                            namespace:
+                              description: Namespace is the namespace of the Kubernetes
+                                Resource
+                              type: string
+                          required:
+                          - name
+                          type: object
                         name:
                           description: Human-readable label that identifies this index.
-                            Within each namespace, names of all indexes in the namespace
-                            must be unique
+                            Must be unique for a deployment
                           type: string
                         search:
                           description: Atlas search index configuration
@@ -419,20 +433,21 @@ spec:
                             mappings:
                               description: Index specifications for the collection's
                                 fields
-                              items:
-                                properties:
-                                  dynamic:
-                                    description: Flag that indicates whether the index
-                                      uses dynamic or static mappings. Required if
-                                      mapping.fields is omitted.
-                                    type: boolean
-                                  fields:
-                                    description: One or more field specifications
-                                      for the Atlas Search index. Required if mapping.dynamic
-                                      is omitted or set to false.
-                                    type: string
-                                type: object
-                              type: array
+                              properties:
+                                dynamic:
+                                  description: Flag that indicates whether the index
+                                    uses dynamic or static mappings. Required if mapping.fields
+                                    is omitted.
+                                  type: boolean
+                                fields:
+                                  additionalProperties:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  description: One or more field specifications for
+                                    the Atlas Search index. Required if mapping.dynamic
+                                    is omitted or set to false. Fields map[string]runtime.RawExtension
+                                    `json:"fields,omitempty"`
+                                  type: object
+                              type: object
                             searchConfigurationRef:
                               description: A reference to the AtlasSearchIndexConfig
                                 custom resource
@@ -543,7 +558,19 @@ spec:
                           properties:
                             fields:
                               description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-                              type: string
+                              items:
+                                properties:
+                                  dimensions:
+                                    type: integer
+                                  path:
+                                    type: string
+                                  similarity:
+                                    type: string
+                                  type:
+                                    default: vector
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                       required:
                       - DBName
