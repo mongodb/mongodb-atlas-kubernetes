@@ -67,7 +67,7 @@ jobs:
           tar xvf kustomize.tar.gz
           chmod +x kustomize && mkdir -p ./bin/ && mv kustomize ./bin/kustomize
 
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.22.2/operator-sdk_linux_amd64 -O operator-sdk -q
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.34.1/operator-sdk_linux_amd64 -O operator-sdk -q
           chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/operator-sdk
 
           wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64 -O yq -q
