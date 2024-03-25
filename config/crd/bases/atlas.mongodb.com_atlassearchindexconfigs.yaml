@@ -104,34 +104,29 @@ spec:
                         and perform filtering operations
                       items:
                         properties:
-                          htmlNormalize:
-                            properties:
-                              ignoreTags:
-                                description: The HTML tags that you want to exclude
-                                  from filtering.
-                                items:
-                                  type: string
-                                type: array
+                          ignoreTags:
+                            description: Used when type is "htmlStrip". The HTML tags
+                              that you want to exclude from filtering.
+                            items:
+                              type: string
+                            type: array
+                          mappings:
+                            additionalProperties:
+                              type: string
+                            description: 'Used when type is "mapping". Comma-separated
+                              list of mappings. A mapping indicates that one character
+                              or group of characters should be substituted for another,
+                              using the following format: <original> : <replacement>'
                             type: object
-                          icuNormalize:
-                            type: string
-                          mapping:
-                            properties:
-                              mappings:
-                                description: 'Comma-separated list of mappings. A
-                                  mapping indicates that one character or group of
-                                  characters should be substituted for another, using
-                                  the following format: <original> : <replacement>'
-                                type: string
-                            required:
-                            - mappings
-                            type: object
-                          persian:
-                            type: string
                           type:
+                            description: Human-readable label that identifies this
+                              character filter type
+                            enum:
+                            - htmlStrip
+                            - icuNormalize
+                            - mapping
+                            - persian
                             type: string
-                        required:
-                        - type
                         type: object
                       type: array
                     name:
@@ -147,141 +142,129 @@ spec:
                         of sensitive information from public documents'
                       items:
                         properties:
-                          asciiFolding:
-                            properties:
-                              originalTokens:
-                                default: omit
-                                type: string
-                            type: object
-                          daitchMokotoffSoundex:
-                            properties:
-                              originalTokens:
-                                default: include
-                                type: string
-                            type: object
-                          edgeGram:
-                            properties:
-                              maxGram:
-                                type: integer
-                              minGram:
-                                type: integer
-                              termNotInBounds:
-                                enum:
-                                - omit
-                                - include
-                                type: string
-                            required:
-                            - maxGram
-                            - minGram
-                            type: object
-                          icuNormalizer:
-                            properties:
-                              normalizationForm:
-                                default: nfc
-                                enum:
-                                - nfc
-                                - nfkd
-                                - nfkc
-                                type: string
-                            type: object
-                          length:
-                            properties:
-                              max:
-                                description: kubebuilder:default:=255
-                                type: integer
-                              min:
-                                description: kubebuilder:default:=0
-                                type: integer
-                            type: object
-                          nGram:
-                            properties:
-                              maxGram:
-                                type: integer
-                              minGram:
-                                type: integer
-                              termNotInBounds:
-                                enum:
-                                - omit
-                                - include
-                                type: string
-                            required:
-                            - maxGram
-                            - minGram
-                            type: object
-                          regex:
-                            properties:
-                              matches:
-                                enum:
-                                - all
-                                - first
-                                type: string
-                              pattern:
-                                type: string
-                              replacement:
-                                type: string
-                            required:
-                            - matches
-                            - pattern
-                            - replacement
-                            type: object
-                          shingle:
-                            properties:
-                              maxShingleSize:
-                                type: integer
-                              minShingleSize:
-                                type: integer
-                            required:
-                            - maxShingleSize
-                            - minShingleSize
-                            type: object
-                          snowballStemming:
-                            properties:
-                              stemmerName:
-                                enum:
-                                - arabic
-                                - armenian
-                                - basque
-                                - catalan
-                                - danish
-                                - dutch
-                                - english
-                                - finnish
-                                - french
-                                - german
-                                - german2
-                                - hungarian
-                                - irish
-                                - italian
-                                - kp
-                                - lithuanian
-                                - lovins
-                                - norwegian
-                                - porter
-                                - portuguese
-                                - romanian
-                                - russian
-                                - spanish
-                                - swedish
-                                - turkish
-                                type: string
-                            required:
-                            - stemmerName
-                            type: object
-                          stopword:
-                            properties:
-                              ignoreCase:
-                                default: true
-                                type: boolean
-                              tokens:
-                                items:
-                                  type: string
-                                type: array
-                            required:
-                            - tokens
-                            type: object
+                          ignoreCase:
+                            description: Flag that indicates whether to ignore the
+                              case of stop words when filtering the tokens to remove
+                            type: boolean
+                          matches:
+                            description: Value that indicates whether to replace only
+                              the first matching pattern or all matching patterns
+                            enum:
+                            - all
+                            - first
+                            type: string
+                          max:
+                            description: Number that specifies the maximum length
+                              of a token. Value must be greater than or equal to min
+                              kubebuilder:default:=255
+                            type: integer
+                          maxGram:
+                            description: Value that specifies the maximum length of
+                              generated n-grams. This value must be greater than or
+                              equal to minGram
+                            type: integer
+                          maxShingleSize:
+                            description: Value that specifies the maximum number of
+                              tokens per shingle. This value must be greater than
+                              or equal to minShingleSize
+                            type: integer
+                          min:
+                            description: Number that specifies the minimum length
+                              of a token. This value must be less than or equal to
+                              max kubebuilder:default:=0
+                            type: integer
+                          minGram:
+                            description: Value that specifies the minimum length of
+                              generated n-grams. This value must be less than or equal
+                              to maxGram
+                            type: integer
+                          minShingleSize:
+                            description: Value that specifies the minimum number of
+                              tokens per shingle. This value must be less than or
+                              equal to maxShingleSize
+                            type: integer
+                          normalizationForm:
+                            enum:
+                            - nfc
+                            - nfkd
+                            - nfkc
+                            type: string
+                          originalTokens:
+                            description: Value that indicates whether to include or
+                              omit the original tokens in the output of the token
+                              filter. Choose include if you want to support queries
+                              on both the original tokens as well as the converted
+                              forms.
+                            enum:
+                            - omit
+                            - include
+                            type: string
+                          pattern:
+                            description: Regular expression pattern to apply to each
+                              token
+                            type: string
+                          replacement:
+                            description: Replacement string to substitute wherever
+                              a matching pattern occurs
+                            type: string
+                          stemmerName:
+                            description: Snowball-generated stemmer to use
+                            enum:
+                            - arabic
+                            - armenian
+                            - basque
+                            - catalan
+                            - danish
+                            - dutch
+                            - english
+                            - finnish
+                            - french
+                            - german
+                            - german2
+                            - hungarian
+                            - irish
+                            - italian
+                            - kp
+                            - lithuanian
+                            - lovins
+                            - norwegian
+                            - porter
+                            - portuguese
+                            - romanian
+                            - russian
+                            - spanish
+                            - swedish
+                            - turkish
+                            type: string
+                          termNotInBounds:
+                            description: Value that indicates whether to index tokens
+                              shorter than minGram or longer than maxGram
+                            enum:
+                            - omit
+                            - include
+                            type: string
+                          tokens:
+                            description: The stop words that correspond to the tokens
+                              to remove. Value must be one or more stop words.
+                            items:
+                              type: string
+                            type: array
                           type:
-                            description: Human-readable label that identifies this
-                              token filter type
+                            enum:
+                            - asciiFolding
+                            - daitchMokotoffSoundex
+                            - edgeGram
+                            - icuFolding
+                            - icuNormalizer
+                            - length
+                            - lowercase
+                            - nGram
+                            - regex
+                            - reverse
+                            - shingle
+                            - snowballStemming
+                            - stopword
+                            - trim
                             type: string
                         type: object
                       type: array
@@ -290,98 +273,31 @@ spec:
                         Tokens determine how Atlas Search splits up text into discrete
                         chunks for indexing
                       properties:
-                        NGram:
-                          properties:
-                            maxGram:
-                              description: Characters to include in the longest token
-                                that Atlas Search creates
-                              type: integer
-                            minGram:
-                              description: Characters to include in the shortest token
-                                that Atlas Search creates
-                              type: integer
-                          required:
-                          - maxGram
-                          - minGram
-                          type: object
-                        edgeGram:
-                          properties:
-                            maxGram:
-                              description: Characters to include in the longest token
-                                that Atlas Search creates
-                              type: integer
-                            minGram:
-                              description: Characters to include in the shortest token
-                                that Atlas Search creates
-                              type: integer
-                          required:
-                          - maxGram
-                          - minGram
-                          type: object
-                        regexCaptureGroup:
-                          properties:
-                            group:
-                              description: Index of the character group within the
-                                matching expression to extract into tokens. Use 0
-                                to extract all character groups
-                              type: integer
-                            pattern:
-                              description: Regular expression to match against
-                              type: string
-                          required:
-                          - group
-                          - pattern
-                          type: object
-                        regexSplit:
-                          properties:
-                            pattern:
-                              description: Regular expression to match against
-                              type: string
-                          required:
-                          - pattern
-                          type: object
-                        standard:
-                          properties:
-                            maxTokenLength:
-                              default: 255
-                              description: Maximum number of characters in a single
-                                token. Tokens greater than this length are split at
-                                this length into multiple tokens.
-                              type: integer
-                          type: object
-                        type:
-                          enum:
-                          - whiteSpace
-                          - uaxUrlEmail
-                          - standard
-                          - regexSplit
-                          - regexCaptureGroup
-                          - nGram
-                          - keyword
-                          - edgeGram
+                        group:
+                          description: Index of the character group within the matching
+                            expression to extract into tokens. Use `0` to extract
+                            all character groups.
+                          type: integer
+                        maxGram:
+                          description: Characters to include in the longest token
+                            that Atlas Search creates.
+                          type: integer
+                        maxTokenLength:
+                          description: Maximum number of characters in a single token.
+                            Tokens greater than this length are split at this length
+                            into multiple tokens.
+                          type: integer
+                        minGram:
+                          description: Characters to include in the shortest token
+                            that Atlas Search creates.
+                          type: integer
+                        pattern:
+                          description: Regular expression to match against.
                           type: string
-                        uaxUrlEmail:
-                          properties:
-                            maxTokenLength:
-                              default: 255
-                              description: Maximum number of characters in a single
-                                token. Tokens greater than this length are split at
-                                this length into multiple tokens.
-                              type: integer
-                          type: object
-                        whitespace:
-                          description: 'Applied for following types: Whitespace, UaxUrlEmail,
-                            Standard'
-                          properties:
-                            maxTokenLength:
-                              default: 255
-                              description: Maximum number of characters in a single
-                                token. Tokens greater than this length are split at
-                                this length into multiple tokens.
-                              type: integer
-                          type: object
-                      required:
-                      - type
+                        type:
+                          description: Human-readable label that identifies this tokenizer
+                            type.
+                          type: string
                       type: object
                   required:
                   - name
