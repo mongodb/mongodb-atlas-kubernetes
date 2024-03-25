@@ -38,148 +38,97 @@ The will update two Helm charts:
     
 Merge the PR - the chart will get released automatically.
 
-## Create the Pull Request to publish the bundle to operatorhub.io
+## Create Pull Requests to publish OLM bundles
 
-All bundles/package manifests for Operators for operatorhub.io reside in:
-* `https://github.com/k8s-operatorhub/community-operators` - for public Operators from operatorhub.io
-* `https://github.com/redhat-openshift-ecosystem/community-operators-prod` - for Operators from "internal" operatorhub that are synchronized with Openshift clusters
+All bundles/package manifests for Operators for operatorhub.io reside in the following repositories:
+* https://github.com/k8s-operatorhub/community-operators - Kubernetes Operators that appear on [OperatorHub.io](https://operatorhub.io/)
+* https://github.com/redhat-openshift-ecosystem/community-operators-prod - Kubernetes Operators that appear on [OpenShift](https://openshift.com/) and [OKD](https://www.okd.io/)
+* https://github.com/redhat-openshift-ecosystem/certified-operators - Red Hat certified Kubernetes Operators
 
 ### Fork/Update the community operators repositories
 
-**(First time only) Fork 2 separate repositories**
+**Note**: this has to be done once only:
+1. Clone each of the above forked OLM repositories from https://github.com/mongodb-forks
+2. Add `upstream` remotes
+3. Export each cloned repository directory in environment variables
 
-#### 1. OperatorHub
-
-Clone, if not done before, the MongoDB fork of [the community operators repo](https://github.com/k8s-operatorhub/community-operators):
-
-```bash
+#### community-operators repository
+```
 git clone git@github.com:mongodb-forks/community-operators.git
-```
-
-Add the upstream repository as a remote one:
-
-```bash
 git remote add upstream https://github.com/k8s-operatorhub/community-operators.git
+export RH_COMMUNITY_OPERATORHUB_REPO_PATH=$PWD/community-operators
 ```
-
-Assign the repo path to `RH_COMMUNITY_OPERATORHUB_REPO_PATH` env variable.
-
-#### 2. Openshift
-
-Clone, if not done before, the MongoDB fork of [the OpenShift Community Operators repo](https://github.com/redhat-openshift-ecosystem/community-operators-prod):
-
-```bash
+#### community-operators-prod repository
+```
 git clone git@github.com:mongodb-forks/community-operators-prod.git
-```
-
-Add the upstream repository as a remote one:
-
-```bash
 git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
+export RH_COMMUNITY_OPENSHIFT_REPO_PATH=$PWD/community-operators-prod
 ```
-
-Assign the repo path to `RH_COMMUNITY_OPENSHIFT_REPO_PATH` env variable.
-
-#### 3. OpenShift Certified
-
-Clone, if not done before, the MongoDB fork of [the Red Hat certified operators production catalog repo](https://github.com/redhat-openshift-ecosystem/certified-operators):
-
-```bash
+#### certified-operators repository
+```
 git clone git@github.com:mongodb-forks/certified-operators.git
-```
-
-Add the upstream repository as a remote one:
-
-```bash
 git remote add upstream https://github.com/redhat-openshift-ecosystem/certified-operators
+export RH_CERTIFIED_OPENSHIFT_REPO_PATH=$PWD/certified-operators
 ```
 
-Assign the repo path to `RH_CERTIFIED_OPENSHIFT_REPO_PATH` env variable.
+### Create a Pull Request for the `community-operators` repository
 
-### Create a Pull Request for `operatorhub` with a new bundle
-
-This is necessary for the Operator to appear on [operatorhub.io] site.
-This step should be done after the previous PR is approved and merged.
-
-Ensure you have the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
-pointing to the directory where `operatorhub-operator` repository was cloned in the previous step.
-
-For this PR the sources are copied from the `community-operators` folder instead of the one where the `mongodb-atlas-kubernetes` resides.
-
-Invoke with <version> like `1.0.0` (never use the `v` prefix here, just the plain SEMVER version `x.y.z`):
-
+1. Ensure the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable is set.
+2. Invoke the following script with `<version>` set to `1.0.0` (don't use a `v` prefix):
 ```
 ./scripts/release-redhat.sh <version>
 ```
-
-Before posting the PR there is a manual change you need to make:
-
-* Ensure to add the `quay.io/` prefix in all Operator image references.
 
 You can see an [example fixed PR here on Community Operators for version 1.9.1](https://github.com/k8s-operatorhub/community-operators/pull/3457).
 
 Create the PR to the main repository and wait until CI jobs get green. 
 After the PR is approved and merged - it will soon get available on https://operatorhub.io
 
-### Create a Pull Request for `openshift` with a new bundle
+### Create a Pull Request for the `community-operators-prod` repository
 
-This is necessary for the Operator to appear on "operators" tab in Openshift clusters
-
-Ensure you have the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
-pointing to the directory where `community-operators-prod` repository was cloned in the previous step.
-
-*(This is temporary, to be fixed)
-Change the `mongodb-atlas-kubernetes.clusterserviceversion.yaml` file and change the `replaces:` setting the previous version
-
-Invoke the following script with <version> like `1.0.0` (no `v` prefix):
+1. Ensure the `RH_COMMUNITY_OPENSHIFT_REPO_PATH` environment variable is set.
+2. Invoke the following script with `<version>` set to `1.0.0` (don't use a `v` prefix):
 ```
 ./scripts/release-redhat-openshift.sh <version>
 ```
 
-Before posting the PR there is a manual change you need to make:
+Submit the PR to the upstream repository and wait until CI jobs get green.
 
-* Ensure to add the `quay.io/` prefix in all Operator image references.
-
-You can see an [example fixed PR here on OpenShift for version 1.9.1](https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/3521).
-
-Create the PR to the main repository and wait until CI jobs get green.
-
-(note, that it's required that the PR consists of only one commit - you may need to do
+**Note**: It is required that the PR consists of only one commit - you may need to do
 `git rebase -i HEAD~2; git push origin +mongodb-atlas-operator-community-<version>` if you need to squash multiple commits into one and perform force push)
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 
-### Create a Pull Request for `openshift-certified-operators` with a new bundle
+### Create a Pull Request for the `certified-operators` repository
 
 This is necessary for the Operator to appear on "operators" tab in Openshift clusters in the "certified" section.
 
-**Prerequisites**:
- - Ensure you have the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable exported in `~/.bashrc` or `~/.zshrc`
-pointing to the directory where `certified-operators` repository: https://github.com/redhat-openshift-ecosystem/certified-operators.
- - Download (and build locally, if you're running MacOS) https://github.com/redhat-openshift-ecosystem/openshift-preflight and put the binary to your `$PATH`
- - Use the image reference including the hash (`quay.io/mongodb/mongodb-atlas-kubernetes-operator:...@sha256:...`) from the [release process step "Push Atlas Operator to Quay.io"](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-post-merge.yml) as `IMG_SHA`
+1. Ensure the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable is set.
+2. Set the image SHA environment variables of the **certified** images. 
+To get the SHAs, go to https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images and copy the **certified** image SHAs of the **amd64** and the **arm64** image:
+
+![img.png](certified-image-sha.png)
+
+```
+export IMG_SHA_AMD64=sha256:c997f8ab49ed5680c258ee4a3e6a9e5bbd8d8d0eef26574345d4c78a4f728186
+export IMG_SHA_ARM64=sha256:aa3ed7b73f8409dda9ac32375dfddb25ee52d7ea172e08a54ecd144d52fe44da
+```
+
  - Use the version of the release as `VERSION`, remember the SEMVER x.y.z version without the `v`prefix.
+
+```
+export VERSION=<image-version>
+```
 
 Invoke the following script:
 ```
-IMG_SHA=<image hash pushed to scan.connect.redhat.com with sha had rather than tag> \
-VERSION=<image-version> \
 ./scripts/release-redhat-certified.sh
 ```
-
-If script successfully finishes, you should be able to see new tag (e.g. 1.2.0) here https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images
 
 Then go the GitHub and create a PR
 from the `mongodb-fork` repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).
 
-Before posting the PR there are manual changes you need to make:
-
-1. Ensure to add the `quay.io/` prefix in all Operator image references.
-1. Add a missing `com.redhat.openshift.versions: "v4.8"` line at the end of `metadata/annotations.yaml`.
-1. Ensure all image references, including `containerImage`, do NOT use the version *tag*. They **should only use the SHA of the AMD image**, NEVER the multi arch SHA.
-1. Add the missing`spec.relatedImages` section in `manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml`, to pin all the images per architecture.
-
-For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
+Note: For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
 
 You can see an [example fixed PR here for certified version 1.9.1](https://github.com/redhat-openshift-ecosystem/certified-operators/pull/3020).
 
