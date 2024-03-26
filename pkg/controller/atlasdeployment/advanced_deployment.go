@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"time"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
@@ -89,11 +88,9 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 	defer ctx.Log.Debug("finished search node processing")
 
 	nodesInAkoEmpty := deployment.Spec.DeploymentSpec.SearchNodes == nil || len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
-	callctx, cancelF := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelF()
 
 	nodesInAtlasEmpty := false
-	currentNodesInAtlas, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName()).Execute()
+	currentNodesInAtlas, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 	if err != nil {
 		if httpResp == nil {
 			ctx.Log.Debugf("unable to get current search nodes status: %v", err)
@@ -111,15 +108,15 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 	}
 
 	if !nodesInAtlasEmpty && currentNodesInAtlas.GetStateName() != "IDLE" {
-		return workflow.InProgress(workflow.SearchNodesReady, "search nodes are not ready")
+		msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
+		ctx.Log.Debug(msg)
+		return workflow.InProgress(workflow.SearchNodesReady, msg)
 	}
 
 	switch {
 	case !nodesInAkoEmpty && nodesInAtlasEmpty:
 		ctx.Log.Debugf("creating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
-		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancelF()
-		_, _, err = ctx.SdkClient.AtlasSearchApi.CreateAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
+		_, _, err = ctx.SdkClient.AtlasSearchApi.CreateAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
@@ -136,9 +133,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			return workflow.OK()
 		}
 
-		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancelF()
-		_, _, err = ctx.SdkClient.AtlasSearchApi.UpdateAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
+		_, _, err = ctx.SdkClient.AtlasSearchApi.UpdateAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
@@ -147,9 +142,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
 		ctx.Log.Debug("deleting search nodes")
-		callctx, cancelF = context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancelF()
-		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(callctx, projectID, deployment.GetDeploymentName()).Execute()
+		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 		if err != nil {
 			ctx.Log.Debugf("unable to delete search nodes: %v", err)
 			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
