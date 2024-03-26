@@ -339,7 +339,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change ReplicationSpecs", func() {
+	Describe("Create deployment & change ReplicationSpecs", Label("deployment-sharding"), func() {
 		It("Should Succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -363,10 +363,22 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				checkAtlasState(replicationSpecsCheck, singleNumShard)
 			})
 
-			By("Updating ReplicationSpecs", func() {
+			By("Upgrade to sharded", func() {
+				createdDeployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
+
+				performUpdate(40 * time.Minute)
+				doDeploymentStatusChecks()
+
+				singleNumShard := func(deployment *admin.AdvancedClusterDescription) {
+					Expect(deployment.GetReplicationSpecs()[0].GetNumShards()).To(Equal(1))
+				}
+				// ReplicationSpecs has the same defaults but the number of shards has changed
+				checkAtlasState(replicationSpecsCheck, singleNumShard)
+			})
+
+			By("Increase number of shards", func() {
 				numShards := 2
 				createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].NumShards = numShards
-				createdDeployment.Spec.DeploymentSpec.ClusterType = "SHARDED"
 
 				performUpdate(40 * time.Minute)
 				doDeploymentStatusChecks()
