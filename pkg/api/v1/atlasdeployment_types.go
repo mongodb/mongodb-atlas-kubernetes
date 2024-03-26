@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,6 +69,14 @@ type AtlasDeploymentSpec struct {
 	// ProcessArgs allows to modify Advanced Configuration Options
 	// +optional
 	ProcessArgs *ProcessArgs `json:"processArgs,omitempty"`
+}
+
+type SearchNode struct {
+	// +kubebuilder:validation:Enum:=S20_HIGHCPU_NVME;S30_HIGHCPU_NVME;S40_HIGHCPU_NVME;S50_HIGHCPU_NVME;S60_HIGHCPU_NVME;S70_HIGHCPU_NVME;S80_HIGHCPU_NVME;S30_LOWCPU_NVME;S40_LOWCPU_NVME;S50_LOWCPU_NVME;S60_LOWCPU_NVME;S80_LOWCPU_NVME;S90_LOWCPU_NVME;S100_LOWCPU_NVME;S110_LOWCPU_NVME
+	InstanceSize string `json:"instanceSize,omitempty"`
+	// +kubebuilder:validation:Minimum:=2
+	// +kubebuilder:validation:Maximum:=32
+	NodeCount uint8 `json:"nodeCount,omitempty"`
 }
 
 type AdvancedDeploymentSpec struct {
@@ -130,6 +139,10 @@ type AdvancedDeploymentSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
+	// Settings for Search Nodes for the cluster. Despite being a list, only one configuration may be defined.
+	// +kubebuilder:validation:MaxItems=1
+	// +optional
+	SearchNodes []SearchNode `json:"searchNodes,omitempty"`
 }
 
 // ToAtlas converts the AdvancedDeploymentSpec to native Atlas client ToAtlas format.
@@ -137,6 +150,21 @@ func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error
 	result := &mongodbatlas.AdvancedCluster{}
 	err := compat.JSONCopy(result, s)
 	return result, err
+}
+
+func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() *[]admin.ApiSearchDeploymentSpec {
+	if len(s.SearchNodes) == 0 {
+		return nil
+	}
+	result := make([]admin.ApiSearchDeploymentSpec, len(s.SearchNodes))
+
+	for i := 0; i < len(s.SearchNodes); i++ {
+		result[i] = admin.ApiSearchDeploymentSpec{
+			InstanceSize: s.SearchNodes[i].InstanceSize,
+			NodeCount:    int(s.SearchNodes[i].NodeCount),
+		}
+	}
+	return &result
 }
 
 func LessAD(a, b interface{}) bool {

@@ -20,12 +20,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -851,8 +854,40 @@ func TestReconciliation(t *testing.T) {
 			WithStatusSubresource(bPolicy, bSchedule).
 			Build()
 
+		searchAPI := atlasmock.NewAtlasSearchApiMock(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(project.ID()),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S100_LOWCPU_NVME",
+							NodeCount:    4,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
+			Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&http.Response{},
+				nil,
+			)
+
+		orgID := "0987654321"
 		logger := zaptest.NewLogger(t).Sugar()
 		atlasProvider := &atlasmock.TestProvider{
+			SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				return &admin.APIClient{
+					AtlasSearchApi: searchAPI,
+				}, orgID, nil
+			},
 			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
 				return &mongodbatlas.Client{
 					AdvancedClusters: &atlasmock.AdvancedClustersClientMock{
@@ -919,7 +954,7 @@ func TestReconciliation(t *testing.T) {
 							}, nil, nil
 						},
 					},
-				}, "0987654321", nil
+				}, orgID, nil
 			},
 			IsCloudGovFunc: func() bool {
 				return false

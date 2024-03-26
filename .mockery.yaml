@@ -11,3 +11,4 @@ packages:
       FederatedAuthenticationApi:
       ProjectIPAccessListApi:
       CloudProviderAccessApi:
+      AtlasSearchApi:

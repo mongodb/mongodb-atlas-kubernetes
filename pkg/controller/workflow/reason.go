@@ -55,6 +55,7 @@ const (
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
+	SearchNodesReady                      ConditionReason = "SearchNodesReady"
 )
 
 // Atlas Database User reasons
