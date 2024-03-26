@@ -363,8 +363,8 @@ spec:
                   rootCertType:
                     type: string
                   searchNodes:
-                    description: List of settings that configure the search nodes
-                      for your cluster
+                    description: Settings for Search Nodes for the cluster. Despite
+                      being a list, only one configuration may be defined.
                     items:
                       properties:
                         instanceSize:
@@ -390,6 +390,7 @@ spec:
                           minimum: 2
                           type: integer
                       type: object
+                    maxItems: 1
                     type: array
                   tags:
                     description: Key-value pairs for resource tagging.
