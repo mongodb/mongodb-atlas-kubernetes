@@ -18,3 +18,6 @@ type StreamConnection struct {
 	// Reference for the resource that contains connection configuration
 	ResourceRef common.ResourceRefNamespaced `json:"resourceRef,omitempty"`
 }
+
+// +kubebuilder:object:generate=false
+type AtlasStreamInstanceStatusOption func(s *AtlasStreamInstanceStatus)

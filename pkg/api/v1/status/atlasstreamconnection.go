@@ -7,3 +7,6 @@ type AtlasStreamConnectionStatus struct {
 	// List of instances using the connection configuration
 	Instances []common.ResourceRefNamespaced `json:"instances,omitempty"`
 }
+
+// +kubebuilder:object:generate=false
+type AtlasStreamConnectionStatusOption func(s *AtlasStreamConnectionStatus)

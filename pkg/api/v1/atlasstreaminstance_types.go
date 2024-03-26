@@ -57,3 +57,18 @@ type AtlasStreamInstanceList struct {
 func init() {
 	SchemeBuilder.Register(&AtlasStreamInstance{}, &AtlasStreamInstanceList{})
 }
+
+func (f *AtlasStreamInstance) GetStatus() status.Status {
+	return f.Status
+}
+
+func (f *AtlasStreamInstance) UpdateStatus(conditions []status.Condition, options ...status.Option) {
+	f.Status.Conditions = conditions
+	f.Status.ObservedGeneration = f.ObjectMeta.Generation
+
+	for _, o := range options {
+		// This will fail if the Option passed is incorrect - which is expected
+		v := o.(status.AtlasStreamInstanceStatusOption)
+		v(&f.Status)
+	}
+}
