@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 

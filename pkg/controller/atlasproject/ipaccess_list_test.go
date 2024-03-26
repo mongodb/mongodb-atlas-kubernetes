@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
@@ -56,7 +56,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	})
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			nil, nil, errors.New("failed to retrieve data"),
@@ -70,7 +70,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{}, nil, nil,
@@ -84,7 +84,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{
@@ -117,7 +117,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{
@@ -154,7 +154,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 	})
 
 	t.Run("should return false when unable to reconcile IP Access List", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{
@@ -193,7 +193,7 @@ func TestCanIPAccessListReconcile(t *testing.T) {
 
 func TestEnsureIPAccessList(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			nil, nil, errors.New("failed to retrieve data"),
@@ -211,7 +211,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{
@@ -259,7 +259,7 @@ func TestEnsureIPAccessList(t *testing.T) {
 	})
 
 	t.Run("should reconcile successfully", func(t *testing.T) {
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).Return(admin.ListProjectIpAccessListsApiRequest{ApiService: m})
 		m.EXPECT().ListProjectIpAccessListsExecute(mock.Anything).Return(
 			&admin.PaginatedNetworkAccess{
@@ -330,7 +330,7 @@ func TestSyncIPAccessList(t *testing.T) {
 				CIDRBlock: "10.0.0.0/24",
 			},
 		}
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().DeleteProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: m})
 		m.EXPECT().DeleteProjectIpAccessListExecute(mock.Anything).Return(
 			nil, nil, errors.New("failed"),
@@ -356,7 +356,7 @@ func TestSyncIPAccessList(t *testing.T) {
 				CIDRBlock: "10.0.0.0/24",
 			},
 		}
-		m := atlasmock.NewProjectIPAccessListApiMock(t)
+		m := mockadmin.NewProjectIPAccessListApi(t)
 		m.EXPECT().CreateProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).Return(admin.CreateProjectIpAccessListApiRequest{ApiService: m})
 		m.EXPECT().CreateProjectIpAccessListExecute(mock.Anything).Return(
 			nil, nil, errors.New("failed"),

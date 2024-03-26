@@ -7,7 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -86,7 +87,7 @@ func TestReconcile(t *testing.T) {
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()
-		fedAuthAPI := atlasmock.NewFederatedAuthenticationApiMock(t)
+		fedAuthAPI := mockadmin.NewFederatedAuthenticationApi(t)
 		fedAuthAPI.EXPECT().GetFederationSettings(context.Background(), orgID).
 			Return(admin.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
@@ -131,7 +132,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		groupAPI := atlasmock.NewProjectsApiMock(t)
+		groupAPI := mockadmin.NewProjectsApi(t)
 		groupAPI.EXPECT().ListProjects(context.Background()).
 			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
 		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).

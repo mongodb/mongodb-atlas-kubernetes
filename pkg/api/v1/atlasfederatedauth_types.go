@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
