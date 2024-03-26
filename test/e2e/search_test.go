@@ -80,20 +80,6 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 		By("Upgrading the deployment with different search nodes", func() {
 			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchNodes[0].InstanceSize = "S30_HIGHCPU_NVME"
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
-			time.Sleep(10 * time.Second)
-
-			Eventually(func(g Gomega) bool {
-				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
-					Name:      testData.InitialDeployments[0].Name,
-					Namespace: testData.InitialDeployments[0].Namespace,
-				}, testData.InitialDeployments[0])).To(Succeed())
-				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
-					if condition.Type == status.DeploymentReadyType {
-						return condition.Status == v1.ConditionTrue
-					}
-				}
-				return false
-			}).WithTimeout(20 * time.Minute).Should(BeTrue())
 
 			Eventually(func(g Gomega) {
 				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
@@ -101,11 +87,6 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 				g.Expect(atlasSearchNodes.GetSpecs()[0].InstanceSize).Should(Equal("S30_HIGHCPU_NVME"))
 				g.Expect(atlasSearchNodes.GetSpecs()[0].NodeCount).Should(Equal(2))
 			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
-		})
-		By("Removing the search nodes from the deployment", func() {
-			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchNodes = nil
-			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
-			time.Sleep(10 * time.Second)
 
 			Eventually(func(g Gomega) bool {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
@@ -119,11 +100,31 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 				}
 				return false
 			}).WithTimeout(20 * time.Minute).Should(BeTrue())
+
+		})
+		By("Removing the search nodes from the deployment", func() {
+			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchNodes = nil
+			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+
 			Eventually(func(g Gomega) {
 				_, resp, _ := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
 				g.Expect(resp).NotTo(BeNil())
+				// This will start failing when the Search team changes the error code to 404: CLOUDP-239015
 				g.Expect(resp.StatusCode).Should(Equal(400))
 			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
+
+			Eventually(func(g Gomega) bool {
+				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+					Name:      testData.InitialDeployments[0].Name,
+					Namespace: testData.InitialDeployments[0].Namespace,
+				}, testData.InitialDeployments[0])).To(Succeed())
+				for _, condition := range testData.InitialDeployments[0].Status.Conditions {
+					if condition.Type == status.DeploymentReadyType {
+						return condition.Status == v1.ConditionTrue
+					}
+				}
+				return false
+			}).WithTimeout(20 * time.Minute).Should(BeTrue())
 
 		})
 	})

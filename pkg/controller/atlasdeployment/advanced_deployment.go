@@ -124,8 +124,6 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
-		// TODO: verify nodes status
-
 		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas) {
@@ -159,7 +157,6 @@ func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, 
 	}
 
 	searchNodeResult := handleSearchNodes(ctx, deployment, project.ID())
-	ctx.SetConditionFromResult(status.SearchNodesReadyType, searchNodeResult)
 	if !searchNodeResult.IsOk() {
 		return atlasDeploymentAsAtlas, searchNodeResult
 	}
