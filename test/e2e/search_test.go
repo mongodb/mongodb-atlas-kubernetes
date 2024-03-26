@@ -11,6 +11,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
 )
@@ -35,8 +36,15 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 	})
 
 	It("Creates, upgrades, and deletes search nodes", func() {
+		testData = model.DataProvider(
+			"atlas-search-nodes",
+			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			40000,
+			[]func(*model.TestDataProvider){},
+		).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-nodes-test"))
+		atlasClient = atlas.GetClientOrFail()
 		By("Setting up project", func() {
-			actions.ProjectCreationFlow(testData.WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-simple-s20")))
+			actions.ProjectCreationFlow(testData)
 		})
 		By("Creating a deployment with search nodes", func() {
 			search := []akov2.SearchNode{
@@ -61,10 +69,18 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 				}
 				return false
 			}).WithTimeout(20 * time.Minute).Should(BeTrue())
+
+			Eventually(func(g Gomega) {
+				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(atlasSearchNodes.GetSpecs()[0].InstanceSize).Should(Equal("S20_HIGHCPU_NVME"))
+				g.Expect(atlasSearchNodes.GetSpecs()[0].NodeCount).Should(Equal(2))
+			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
 		By("Upgrading the deployment with different search nodes", func() {
 			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchNodes[0].InstanceSize = "S30_HIGHCPU_NVME"
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			time.Sleep(10 * time.Second)
 
 			Eventually(func(g Gomega) bool {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
@@ -79,10 +95,17 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 				return false
 			}).WithTimeout(20 * time.Minute).Should(BeTrue())
 
+			Eventually(func(g Gomega) {
+				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(atlasSearchNodes.GetSpecs()[0].InstanceSize).Should(Equal("S30_HIGHCPU_NVME"))
+				g.Expect(atlasSearchNodes.GetSpecs()[0].NodeCount).Should(Equal(2))
+			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 		})
 		By("Removing the search nodes from the deployment", func() {
 			testData.InitialDeployments[0].Spec.DeploymentSpec.SearchNodes = nil
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
+			time.Sleep(10 * time.Second)
 
 			Eventually(func(g Gomega) bool {
 				g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
@@ -96,8 +119,12 @@ var _ = Describe("Search Nodes", Label("atlas-search"), func() {
 				}
 				return false
 			}).WithTimeout(20 * time.Minute).Should(BeTrue())
+			Eventually(func(g Gomega) {
+				_, resp, _ := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				g.Expect(resp).NotTo(BeNil())
+				g.Expect(resp.StatusCode).Should(Equal(400))
+			}).WithPolling(10 * time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 
 		})
 	})
-
 })
