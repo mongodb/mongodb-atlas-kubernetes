@@ -7,10 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -82,13 +81,10 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 
 func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
 	// Get the current state from Atlas
-	// If no nodes configured in atlas, but some in the operator - create them. If not - do nothing
-	// If nodes already configured in atlas and in the operator - update them. If not - delete them
 	ctx.Log.Debug("starting search node processing")
 	defer ctx.Log.Debug("finished search node processing")
 
-	nodesInAkoEmpty := deployment.Spec.DeploymentSpec.SearchNodes == nil || len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
-
+	// NOTE: Despite being an array/slice, the Atlas API only allows 1 item.
 	nodesInAtlasEmpty := false
 	currentNodesInAtlas, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 	if err != nil {
@@ -107,14 +103,11 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}
 	}
 
-	if !nodesInAtlasEmpty && currentNodesInAtlas.GetStateName() != "IDLE" {
-		msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
-		ctx.Log.Debug(msg)
-		return workflow.InProgress(workflow.SearchNodesReady, msg)
-	}
+	nodesInAkoEmpty := deployment.Spec.DeploymentSpec.SearchNodes == nil || len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
 
 	switch {
 	case !nodesInAkoEmpty && nodesInAtlasEmpty:
+		// If no nodes configured in atlas, but some in the operator - create them.
 		ctx.Log.Debugf("creating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		_, _, err = ctx.SdkClient.AtlasSearchApi.CreateAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
@@ -124,9 +117,18 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
+		// If nodes already configured in atlas and in the operator - update them.
 		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
-		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas) {
+		// We can deepequal without normalization here because there is only ever 1 spec in the array
+		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas.Specs) {
+			// If the nodes are not marked as IDLE, they are not yet ready.
+			if currentNodesInAtlas.GetStateName() != "IDLE" {
+				msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
+				ctx.Log.Debug(msg)
+				return workflow.InProgress(workflow.SearchNodesReady, msg)
+			}
+
 			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
 			return workflow.OK()
 		}
@@ -139,6 +141,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
+		// If no nodes configured in the operator, but some in atlas - delete them.
 		ctx.Log.Debug("deleting search nodes")
 		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 		if err != nil {

@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
-
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -140,7 +139,8 @@ type AdvancedDeploymentSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
-	// List of settings that configure the search nodes for your cluster
+	// Settings for Search Nodes for the cluster. Despite being a list, only one configuration may be defined.
+	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	SearchNodes []SearchNode `json:"searchNodes,omitempty"`
 }
@@ -153,7 +153,7 @@ func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error
 }
 
 func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() *[]admin.ApiSearchDeploymentSpec {
-	if s.SearchNodes == nil {
+	if len(s.SearchNodes) == 0 {
 		return nil
 	}
 	result := make([]admin.ApiSearchDeploymentSpec, len(s.SearchNodes))
