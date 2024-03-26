@@ -387,6 +387,7 @@ spec:
                           type: string
                         nodeCount:
                           maximum: 32
+                          minimum: 2
                           type: integer
                       type: object
                     type: array
