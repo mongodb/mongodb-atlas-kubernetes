@@ -9,7 +9,7 @@ import (
 	"tools/clean/provider"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 )
 
 const (

@@ -11,7 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	github.com/aws/aws-sdk-go v1.45.25
 	github.com/jedib0t/go-pretty/v6 v6.4.8
-	go.mongodb.org/atlas-sdk/v20231115004 v20231115004.0.0
+	go.mongodb.org/atlas-sdk/v20231115008 v20231115008.1.0
 	google.golang.org/api v0.147.0
 )
 
@@ -34,7 +34,6 @@ require (
 	github.com/mongodb-forks/digest v1.0.5 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.17.0 // indirect

@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
 
-	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -23,7 +23,7 @@ import (
 
 func TestSyncCloudProviderIntegration(t *testing.T) {
 	t.Run("should fail when atlas is unavailable", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -83,7 +83,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-4"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -172,7 +172,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-2"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -239,7 +239,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-2"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -817,7 +817,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			IamAssumedRoleArn: "aws:arn/my_role-1",
 			Status:            status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			CreateCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.CreateCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -854,7 +854,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			IamAssumedRoleArn: "aws:arn/my_role-1",
 			Status:            status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			CreateCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.CreateCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -895,7 +895,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			RoleID:                     "role-1",
 			Status:                     status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -941,7 +941,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			RoleID:                     "role-1",
 			Status:                     status.CloudProviderIntegrationStatusCreated,
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -971,7 +971,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			DeauthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.DeauthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -997,7 +997,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			DeauthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.DeauthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
@@ -1039,7 +1039,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1059,7 +1059,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1079,7 +1079,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1119,7 +1119,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1167,7 +1167,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when access was created but not authorized yet", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1206,7 +1206,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return false when unable to reconcile cloud provider integration", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1254,7 +1254,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 	})
 
 	t.Run("should return true when migrating configuration but spec are equal", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1304,7 +1304,7 @@ func TestCanCloudProviderIntegrationReconcile(t *testing.T) {
 
 func TestEnsureCloudProviderIntegration(t *testing.T) {
 	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1323,7 +1323,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 	})
 
 	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1402,7 +1402,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 				},
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1466,7 +1466,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-4"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1561,7 +1561,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-2"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
@@ -1638,7 +1638,7 @@ func TestEnsureCloudProviderIntegration(t *testing.T) {
 				RoleId:                     pointer.MakePtr("role-2"),
 			},
 		}
-		cpa := atlasmock.NewCloudProviderAccessApiMock(t)
+		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
 			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})

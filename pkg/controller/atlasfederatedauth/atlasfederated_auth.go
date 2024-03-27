@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
@@ -101,7 +101,7 @@ func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, fe
 			return workflow.OK()
 		}
 
-		idpUpdate := admin.IdentityProviderUpdate{
+		idpUpdate := admin.FederationIdentityProviderUpdate{
 			DisplayName:     idp.DisplayName,
 			IssuerUri:       idp.IssuerUri,
 			SsoUrl:          idp.SsoUrl,

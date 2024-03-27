@@ -5,7 +5,7 @@ import (
 	"io"
 	"sort"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -3,7 +3,7 @@ package atlas
 import (
 	"context"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 )
 
 type IPAccessListStatus func(ctx context.Context, projectID, entryValue string) (string, error)

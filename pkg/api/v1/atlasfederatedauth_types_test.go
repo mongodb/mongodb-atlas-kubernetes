@@ -3,7 +3,7 @@ package v1
 import (
 	"testing"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
