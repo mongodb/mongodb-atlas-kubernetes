@@ -1,6 +1,7 @@
 package cmp
 
 import (
+	"fmt"
 	"math/rand"
 	"reflect"
 	"slices"
@@ -24,23 +25,22 @@ func NormalizeSlice[S ~[]E, E any](slice S, cmp func(a, b E) int) S {
 	return slice
 }
 
-func NormalizeSliceUsingJSON[S ~[]E, E any](slice S) S {
-	if len(slice) == 0 {
-		return nil
-	}
-	slices.SortFunc(slice, ByJSON[E])
-	return slice
-}
-
-func Normalize(data any) {
+func Normalize(data any) error {
+	var err error
 	traverse(data, func(slice reflect.Value) {
 		sort.Slice(slice.Interface(), func(i, j int) bool {
-			return ByJSON(
+			result, e := ByJSON(
 				reflect.ValueOf(slice.Interface()).Index(i).Interface(),
 				reflect.ValueOf(slice.Interface()).Index(j).Interface(),
-			) < 0
+			)
+			if e != nil {
+				err = fmt.Errorf("error converting slice %v to JSON: %w", slice, e)
+				return false
+			}
+			return result < 0
 		})
 	})
+	return err
 }
 
 func PermuteOrder(data any) {
@@ -83,6 +83,11 @@ func traverse(data any, f func(slice reflect.Value)) {
 			}
 
 			if fieldValue.Len() == 0 {
+				continue
+			}
+
+			// skip byte slices
+			if fieldValue.Type().Elem().Kind() == reflect.Uint8 {
 				continue
 			}
 
