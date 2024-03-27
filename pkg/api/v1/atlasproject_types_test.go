@@ -1,15 +1,15 @@
 package v1
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
 
+	"github.com/google/go-cmp/cmp"
 	internalcmp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"sigs.k8s.io/yaml"
 )
 
 func TestSpecEquality(t *testing.T) {
@@ -81,19 +81,30 @@ func TestSpecEquality(t *testing.T) {
 		},
 	}
 
+	t.Log(mustMarshal(t, ref))
 	internalcmp.Normalize(ref)
+	t.Log(mustMarshal(t, ref))
 	for i := 0; i < 1_000; i++ {
 		perm := ref.DeepCopy()
 		internalcmp.PermuteOrder(perm)
 		internalcmp.Normalize(perm)
 
 		if !reflect.DeepEqual(ref, perm) {
-			jRef, _ := json.MarshalIndent(ref, "", "\t")
-			jPermutedCopy, _ := json.MarshalIndent(perm, "", "\t")
+			jRef := mustMarshal(t, ref)
+			jPermutedCopy := mustMarshal(t, perm)
 			t.Errorf("expected reference:\n%v\nto be equal to the reordered copy:\n%v\nbut it isn't, diff:\n%v",
-				string(jRef), string(jPermutedCopy), cmp.Diff(string(jRef), string(jPermutedCopy)),
+				jRef, jPermutedCopy, cmp.Diff(jRef, jPermutedCopy),
 			)
 			return
 		}
 	}
+}
+
+func mustMarshal(t *testing.T, what any) string {
+	t.Helper()
+	result, err := yaml.Marshal(what)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(result)
 }

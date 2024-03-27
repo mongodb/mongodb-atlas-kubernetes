@@ -3,6 +3,7 @@ package cmp
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -29,14 +30,22 @@ func ByKey[S Sortable](x, y S) int {
 	return cmp.Compare(x.Key(), y.Key())
 }
 
-func ByJSON[T any](x, y T) int {
-	return cmp.Compare(mustJSONMarshal(x), mustJSONMarshal(y))
+func ByJSON[T any](x, y T) (int, error) {
+	xJSON, err := mustJSONMarshal(x)
+	if err != nil {
+		return -1, fmt.Errorf("error converting %v to JSON: %w", x, err)
+	}
+	yJSON, err := mustJSONMarshal(y)
+	if err != nil {
+		return -1, fmt.Errorf("error converting %v to JSON: %w", x, err)
+	}
+	return cmp.Compare(xJSON, yJSON), nil
 }
 
-func mustJSONMarshal[T any](obj T) string {
+func mustJSONMarshal[T any](obj T) (string, error) {
 	jObj, err := json.Marshal(obj)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(jObj)
+	return string(jObj), nil
 }

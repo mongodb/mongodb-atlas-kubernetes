@@ -17,8 +17,6 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-
 	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -155,46 +153,6 @@ func (p AtlasProjectSpec) MarshalLogObject(e zapcore.ObjectEncoder) error {
 
 	e.AddReflected("AtlasProjectSpec", printable)
 	return nil
-}
-
-func (s *AtlasProjectSpec) Normalize() *AtlasProjectSpec {
-	sCopy := s.DeepCopy()
-
-	for i := range sCopy.PrivateEndpoints {
-		sCopy.PrivateEndpoints[i].Endpoints = cmp.NormalizeSliceUsingJSON(sCopy.PrivateEndpoints[i].Endpoints)
-	}
-	sCopy.PrivateEndpoints = cmp.NormalizeSliceUsingJSON(sCopy.PrivateEndpoints)
-
-	for i := range sCopy.AlertConfigurations {
-		for j := range sCopy.AlertConfigurations[i].Notifications {
-			sCopy.AlertConfigurations[i].Notifications[j].Roles = cmp.NormalizeSliceUsingJSON(sCopy.AlertConfigurations[i].Notifications[j].Roles)
-		}
-		sCopy.AlertConfigurations[i].Notifications = cmp.NormalizeSliceUsingJSON(sCopy.AlertConfigurations[i].Notifications)
-		sCopy.AlertConfigurations[i].Matchers = cmp.NormalizeSliceUsingJSON(sCopy.AlertConfigurations[i].Matchers)
-	}
-	sCopy.AlertConfigurations = cmp.NormalizeSliceUsingJSON(sCopy.AlertConfigurations)
-
-	for i := range sCopy.CustomRoles {
-		for j := range sCopy.CustomRoles[i].Actions {
-			sCopy.CustomRoles[i].Actions[j].Resources = cmp.NormalizeSliceUsingJSON(sCopy.CustomRoles[i].Actions[j].Resources)
-		}
-		sCopy.CustomRoles[i].Actions = cmp.NormalizeSliceUsingJSON(sCopy.CustomRoles[i].Actions)
-		sCopy.CustomRoles[i].InheritedRoles = cmp.NormalizeSliceUsingJSON(sCopy.CustomRoles[i].InheritedRoles)
-	}
-	sCopy.CustomRoles = cmp.NormalizeSliceUsingJSON(sCopy.CustomRoles)
-
-	for i := range sCopy.Teams {
-		sCopy.Teams[i].Roles = cmp.NormalizeSliceUsingJSON(sCopy.Teams[i].Roles)
-	}
-	sCopy.Teams = cmp.NormalizeSliceUsingJSON(sCopy.Teams)
-
-	sCopy.ProjectIPAccessList = cmp.NormalizeSliceUsingJSON(sCopy.ProjectIPAccessList)
-	sCopy.CloudProviderAccessRoles = cmp.NormalizeSliceUsingJSON(sCopy.CloudProviderAccessRoles)
-	sCopy.CloudProviderIntegrations = cmp.NormalizeSliceUsingJSON(sCopy.CloudProviderIntegrations)
-	sCopy.NetworkPeers = cmp.NormalizeSliceUsingJSON(sCopy.NetworkPeers)
-	sCopy.Integrations = cmp.NormalizeSliceUsingJSON(sCopy.Integrations)
-
-	return sCopy
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
