@@ -67,6 +67,15 @@ func TestSpecEquality(t *testing.T) {
 					},
 					{
 						FieldName: "bar",
+						Operator:  "foo",
+					},
+					{
+						FieldName: "bar",
+						Operator:  "bar",
+					},
+					{
+						FieldName: "baz",
+						Operator:  "foo",
 					},
 				},
 			},
