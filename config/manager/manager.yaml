@@ -48,7 +48,7 @@ spec:
               memory: 1Gi
             requests:
               cpu: 100m
-              memory: 1Gi
+              memory: 256Mi
           env:
             - name: OPERATOR_POD_NAME
               valueFrom:
