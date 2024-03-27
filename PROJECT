@@ -1,6 +1,6 @@
 domain: mongodb.com
 layout:
-- go.kubebuilder.io/v2
+- go.kubebuilder.io/v4
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
@@ -35,7 +35,7 @@ resources:
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
 - api:
-    crdVersion: v1beta1
+    crdVersion: v1
     namespaced: true
   controller: true
   domain: mongodb.com
@@ -44,7 +44,7 @@ resources:
   path: github.com/mongodb/mongodb-atlas-kubernetes/api/v1
   version: v1
 - api:
-    crdVersion: v1beta1
+    crdVersion: v1
     namespaced: true
   controller: true
   domain: mongodb.com
