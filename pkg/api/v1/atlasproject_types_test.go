@@ -81,10 +81,8 @@ func TestSpecEquality(t *testing.T) {
 		},
 	}
 
-	t.Log(mustMarshal(t, ref))
 	internalcmp.Normalize(ref)
-	t.Log(mustMarshal(t, ref))
-	for i := 0; i < 1_000; i++ {
+	for i := 0; i < 100_000; i++ {
 		perm := ref.DeepCopy()
 		internalcmp.PermuteOrder(perm)
 		internalcmp.Normalize(perm)
