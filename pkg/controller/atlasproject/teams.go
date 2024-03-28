@@ -62,7 +62,6 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 					r.Log.Errorw("failed to update Team object", "error", err)
 					return err
 				}
-
 			}
 			return nil
 		})
