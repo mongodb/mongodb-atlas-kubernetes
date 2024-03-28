@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -854,7 +855,7 @@ func TestReconciliation(t *testing.T) {
 			WithStatusSubresource(bPolicy, bSchedule).
 			Build()
 
-		searchAPI := atlasmock.NewAtlasSearchApiMock(t)
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).

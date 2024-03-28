@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -152,7 +152,7 @@ func (s *AdvancedDeploymentSpec) ToAtlas() (*mongodbatlas.AdvancedCluster, error
 	return result, err
 }
 
-func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() *[]admin.ApiSearchDeploymentSpec {
+func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentSpec {
 	if len(s.SearchNodes) == 0 {
 		return nil
 	}
@@ -164,7 +164,7 @@ func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() *[]admin.ApiSearchDeployme
 			NodeCount:    int(s.SearchNodes[i].NodeCount),
 		}
 	}
-	return &result
+	return result
 }
 
 func LessAD(a, b interface{}) bool {
