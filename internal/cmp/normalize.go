@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"slices"
 	"sort"
-	"time"
 )
 
 type Normalizer[T any] interface {
@@ -58,13 +57,11 @@ func compareSortable(i, j any) (bool, int) {
 	return false, -1
 }
 
-func PermuteOrder(data any) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+func PermuteOrder(data any, r *rand.Rand) {
 	traverse(data, func(slice reflect.Value) {
-		sliceIface := slice.Interface()
-		for i, j := range r.Perm(slice.Len()) {
-			reflect.Swapper(sliceIface)(i, j)
-		}
+		r.Shuffle(slice.Len(), func(i, j int) {
+			reflect.Swapper(slice.Interface())(i, j)
+		})
 	})
 }
 
@@ -93,7 +90,7 @@ func traverseValue(value reflect.Value, f func(slice reflect.Value)) {
 		if value.Len() == 0 {
 			return
 		}
-		// skip byte slices
+		// skip []byte slices
 		if value.Type().Elem().Kind() == reflect.Uint8 {
 			return
 		}

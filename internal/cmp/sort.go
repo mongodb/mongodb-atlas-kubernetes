@@ -31,18 +31,18 @@ func ByKey[S Sortable](x, y S) int {
 }
 
 func ByJSON[T any](x, y T) (int, error) {
-	xJSON, err := mustJSONMarshal(x)
+	xJSON, err := marshalJSON(x)
 	if err != nil {
 		return -1, fmt.Errorf("error converting %v to JSON: %w", x, err)
 	}
-	yJSON, err := mustJSONMarshal(y)
+	yJSON, err := marshalJSON(y)
 	if err != nil {
 		return -1, fmt.Errorf("error converting %v to JSON: %w", x, err)
 	}
 	return cmp.Compare(xJSON, yJSON), nil
 }
 
-func mustJSONMarshal[T any](obj T) (string, error) {
+func marshalJSON[T any](obj T) (string, error) {
 	jObj, err := json.Marshal(obj)
 	if err != nil {
 		return "", err

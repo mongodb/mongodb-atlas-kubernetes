@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"go.mongodb.org/atlas-sdk/v20231115004/admin"
@@ -90,11 +92,18 @@ func TestSpecEquality(t *testing.T) {
 		},
 	}
 
-	internalcmp.Normalize(ref)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	err := internalcmp.Normalize(ref)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for i := 0; i < 100_000; i++ {
 		perm := ref.DeepCopy()
-		internalcmp.PermuteOrder(perm)
-		internalcmp.Normalize(perm)
+		internalcmp.PermuteOrder(perm, r)
+		err := internalcmp.Normalize(perm)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		if !reflect.DeepEqual(ref, perm) {
 			jRef := mustMarshal(t, ref)
