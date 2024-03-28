@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"golang.org/x/sync/errgroup"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -30,8 +31,54 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
+func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projectID string) error {
+	teams := &akov2.AtlasTeamList{}
+	err := r.Client.List(ctx, teams)
+	if err != nil {
+		return fmt.Errorf("unable to retrieve a list of teams: %w", err)
+	}
+	g, ctx := errgroup.WithContext(ctx)
+	for _, t := range teams.Items {
+		team := t
+		g.Go(func() error {
+			for _, project := range team.Status.Projects {
+				if project.ID != projectID {
+					continue
+				}
+
+				team.UpdateStatus([]status.Condition{}, status.AtlasTeamUnsetProject(projectID))
+
+				if err = r.Client.Status().Update(ctx, &team); err != nil {
+					r.Log.Errorw("failed to update Team status", "error", err)
+					return err
+				}
+
+				if len(team.Status.Projects) == 0 &&
+					customresource.HaveFinalizer(&team, customresource.FinalizerLabel) {
+					customresource.UnsetFinalizer(&team, customresource.FinalizerLabel)
+				}
+
+				if err = r.Client.Update(ctx, &team); err != nil {
+					r.Log.Errorw("failed to update Team object", "error", err)
+					return err
+				}
+
+			}
+			return nil
+		})
+	}
+
+	return g.Wait()
+}
+
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
+
+	err := r.garbageCollectTeams(workflowCtx.Context, project.ID())
+	if err != nil {
+		return workflow.Terminate(workflow.TeamNotCleaned, err.Error())
+	}
+
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
