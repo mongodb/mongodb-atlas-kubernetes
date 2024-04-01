@@ -37,6 +37,9 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 	if err != nil {
 		return fmt.Errorf("unable to retrieve a list of teams: %w", err)
 	}
+	if len(teams.Items) == 0 {
+		return nil
+	}
 	g, ctx := errgroup.WithContext(ctx)
 	for _, t := range teams.Items {
 		team := t

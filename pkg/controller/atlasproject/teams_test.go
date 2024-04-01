@@ -269,13 +269,23 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		akoProject := &akov2.AtlasProject{}
 		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
 		logger := zaptest.NewLogger(t).Sugar()
+
+		testScheme := runtime.NewScheme()
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			Build()
+
 		workflowCtx := &workflow.Context{
 			Client:  &atlasClient,
 			Log:     logger,
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Log: logger,
+			Log:    logger,
+			Client: k8sClient,
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 
@@ -304,6 +314,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 
 		testScheme := runtime.NewScheme()
 		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
+		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
 		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
