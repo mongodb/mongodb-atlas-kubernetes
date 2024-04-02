@@ -61,6 +61,18 @@ spec:
       kind: AtlasProject
       name: atlasprojects.atlas.mongodb.com
       version: v1
+    - description: AtlasStreamConnection is the Schema for the atlasstreamconnections
+        API
+      displayName: Atlas Stream Connection
+      kind: AtlasStreamConnection
+      name: atlasstreamconnections.atlas.mongodb.com
+      version: v1
+    - description: AtlasStreamInstance is the Schema for the atlasstreaminstances
+        API
+      displayName: Atlas Stream Instance
+      kind: AtlasStreamInstance
+      name: atlasstreaminstances.atlas.mongodb.com
+      version: v1
     - description: AtlasTeam is the Schema for the Atlas Teams API
       displayName: Atlas Team
       kind: AtlasTeam

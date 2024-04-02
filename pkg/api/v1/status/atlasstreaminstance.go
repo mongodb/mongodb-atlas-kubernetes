@@ -21,3 +21,10 @@ type StreamConnection struct {
 
 // +kubebuilder:object:generate=false
 type AtlasStreamInstanceStatusOption func(s *AtlasStreamInstanceStatus)
+
+func AtlasStreamInstanceDetails(ID string, hostnames []string) AtlasStreamInstanceStatusOption {
+	return func(s *AtlasStreamInstanceStatus) {
+		s.ID = ID
+		s.Hostnames = hostnames
+	}
+}

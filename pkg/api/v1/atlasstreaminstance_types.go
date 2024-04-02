@@ -2,6 +2,9 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 
@@ -71,4 +74,13 @@ func (f *AtlasStreamInstance) UpdateStatus(conditions []status.Condition, option
 		v := o.(status.AtlasStreamInstanceStatusOption)
 		v(&f.Status)
 	}
+}
+
+func (f *AtlasStreamInstance) AtlasProjectObjectKey() client.ObjectKey {
+	ns := f.Namespace
+	if f.Spec.Project.Namespace != "" {
+		ns = f.Spec.Project.Namespace
+	}
+
+	return kube.ObjectKey(ns, f.Spec.Project.Name)
 }
