@@ -464,7 +464,7 @@ sign: ## Sign an AKO multi-architecture image
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
 
 cosign:
-	@which cosign || go install github.com/sigstore/cosign/cmd/cosign@latest
+	@which cosign || go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
 ./ako.pem:
 	curl $(AKO_SIGN_PUBKEY) > $@
