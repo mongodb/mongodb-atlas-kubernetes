@@ -6,19 +6,22 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasdeployment"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("UserLogin", Label("serverless-pe"), func() {
+var _ = Describe("Serverless Private Endpoint", Label("serverless-pe"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
@@ -98,32 +101,6 @@ var _ = Describe("UserLogin", Label("serverless-pe"), func() {
 				},
 			},
 		),
-		Entry("Test[spe-aws-1]: Serverless deployment with one AWS PE (protected)", Label("spe-aws-4-protected"),
-			model.DataProvider(
-				"spe-aws-1-protected",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test4-protected", "AWS", "US_EAST_1")).WithSubObjectDeletionProtection(true),
-			[]akov2.ServerlessPrivateEndpoint{
-				{
-					Name: newRandomName("pe"),
-				},
-			},
-		),
-		Entry("Test[spe-azure-1]: Serverless deployment with one Azure PE (protected)", Label("spe-azure-5-protected"),
-			model.DataProvider(
-				"spe-azure-1-protected",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateServerlessDeployment("spe-test-5-protected", "AZURE", "US_EAST_2")).WithSubObjectDeletionProtection(true),
-			[]akov2.ServerlessPrivateEndpoint{
-				{
-					Name: newRandomName("pe"),
-				},
-			},
-		),
 	)
 })
 
@@ -132,13 +109,12 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 		Expect(userData.InitialDeployments).ShouldNot(BeEmpty())
 		userData.InitialDeployments[0].Namespace = userData.Resources.Namespace
 		Expect(userData.K8SClient.Create(userData.Context, userData.InitialDeployments[0])).To(Succeed())
-		Eventually(func(g Gomega) bool {
-			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
-				Name:      userData.InitialDeployments[0].Name,
-				Namespace: userData.InitialDeployments[0].Namespace,
-			}, userData.InitialDeployments[0])).To(Succeed())
-			return userData.InitialDeployments[0].Status.StateName == status.StateIDLE
-		}).WithTimeout(15 * time.Minute).Should(BeTrue())
+
+		Eventually(func(g Gomega) {
+			deployment := userData.InitialDeployments[0]
+			g.Expect(userData.K8SClient.Get(userData.Context, client.ObjectKeyFromObject(deployment), deployment)).To(Succeed())
+			g.Expect(deployment.Status.Conditions).To(ContainElement(conditions.MatchCondition(status.TrueCondition(status.DeploymentReadyType))))
+		}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 15).Should(Succeed())
 	})
 
 	By("Adding Private Endpoints to Deployment", func() {
@@ -193,15 +169,18 @@ func speFlow(userData *model.TestDataProvider, providerAction cloud.Provider, sp
 	By("Delete Private Endpoints", func() {
 		updateSPE(userData, []akov2.ServerlessPrivateEndpoint{})
 		Eventually(func(g Gomega) {
-			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
-				Name:      userData.InitialDeployments[0].Name,
-				Namespace: userData.InitialDeployments[0].Namespace,
-			}, userData.InitialDeployments[0])).To(Succeed())
+			Expect(
+				userData.K8SClient.Get(
+					userData.Context,
+					client.ObjectKeyFromObject(userData.InitialDeployments[0]),
+					userData.InitialDeployments[0],
+				),
+			).To(Succeed())
 			g.Expect(len(userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints)).To(Equal(0))
 			for _, condition := range userData.InitialDeployments[0].Status.Conditions {
 				g.Expect(condition.Type).ToNot(Equal(status.ServerlessPrivateEndpointReadyType))
 			}
-		}).WithTimeout(5*time.Minute).Should(Succeed(), "Deployment should not have any Private Endpoints")
+		}).WithTimeout(15*time.Minute).Should(Succeed(), "Deployment should not have any Private Endpoints")
 	})
 }
 
@@ -215,19 +194,11 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []akov2.ServerlessPriv
 		}
 	}
 	if !isValid {
-		// check that deployment is not ready
-		Eventually(func(g Gomega) bool {
-			g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
-				Name:      userData.InitialDeployments[0].Name,
-				Namespace: userData.InitialDeployments[0].Namespace,
-			}, userData.InitialDeployments[0])).To(Succeed())
-			for _, speStatus := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
-				if speStatus.Status == atlasdeployment.SPEStatusFailed {
-					return true
-				}
-			}
-			return false
-		}).WithTimeout(5*time.Minute).Should(BeTrue(), "Deployment should be failed if one of the SPEs is invalid")
+		expectedCondition := status.FalseCondition(status.ServerlessPrivateEndpointReadyType).WithReason(string(workflow.ServerlessPrivateEndpointFailed))
+		Eventually(func() bool {
+			return resources.CheckCondition(userData.K8SClient, userData.InitialDeployments[0], expectedCondition)
+		}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
+
 		// fix spe
 		for i, pe := range spe {
 			if pe.PrivateEndpointIPAddress != "" || pe.CloudProviderEndpointID != "" {
@@ -240,24 +211,37 @@ func invalidSPEFlow(userData *model.TestDataProvider, spe []akov2.ServerlessPriv
 }
 
 func updateSPE(userData *model.TestDataProvider, spe []akov2.ServerlessPrivateEndpoint) {
-	Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.InitialDeployments[0].Name,
-		Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
+	Expect(
+		userData.K8SClient.Get(
+			userData.Context,
+			client.ObjectKeyFromObject(userData.InitialDeployments[0]),
+			userData.InitialDeployments[0],
+		),
+	).To(Succeed())
 	userData.InitialDeployments[0].Spec.ServerlessSpec.PrivateEndpoints = spe
 	Expect(userData.K8SClient.Update(userData.Context, userData.InitialDeployments[0])).To(Succeed())
 }
 
 func waitSPEStatus(userData *model.TestDataProvider, status string, speLen int) {
 	Eventually(func(g Gomega) bool {
-		g.Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.InitialDeployments[0].Name,
-			Namespace: userData.Resources.Namespace}, userData.InitialDeployments[0])).To(Succeed())
+		g.Expect(
+			userData.K8SClient.Get(
+				userData.Context,
+				client.ObjectKeyFromObject(userData.InitialDeployments[0]),
+				userData.InitialDeployments[0],
+			),
+		).To(Succeed())
+
 		if len(userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints) != speLen {
 			return false
 		}
+
 		for _, pe := range userData.InitialDeployments[0].Status.ServerlessPrivateEndpoints {
 			if pe.Status != status {
 				return false
 			}
 		}
+
 		return true
-	}).WithTimeout(30*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
+	}).WithTimeout(15*time.Minute).Should(BeTrue(), fmt.Sprintf("Private Endpoints should be %s", status))
 }

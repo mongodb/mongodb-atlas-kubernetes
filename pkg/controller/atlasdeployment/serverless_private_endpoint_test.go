@@ -2,289 +2,576 @@ package atlasdeployment
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas/mongodbatlas"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
+	"go.uber.org/zap/zaptest"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-const (
-	fakeInstanceName = "fake-instance-name"
-)
+func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
+	t.Run("should fail when deployment is nil", func(t *testing.T) {
+		result := ensureServerlessPrivateEndpoints(&workflow.Context{}, "project-id", nil)
 
-func TestCanReconcileServerlessPrivateEndpoints(t *testing.T) {
-	t.Run("when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canServerlessPrivateEndpointsReconcile(
-			&workflow.Context{},
-			false,
-			"fake-project-id-wont-be-checked",
-			&akov2.AtlasDeployment{})
-
-		require.NoError(t, err)
-		assert.True(t, result)
+		assert.Equal(
+			t,
+			workflow.Terminate(workflow.Internal, "serverless deployment spec is empty"),
+			result,
+		)
 	})
 
-	t.Run("when protected but there is no Atlas Serverless Endpoint configured", func(t *testing.T) {
-		ctx := context.Background()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return []mongodbatlas.ServerlessPrivateEndpointConnection{}, nil, nil
+	t.Run("should fail when serverless spec is nil", func(t *testing.T) {
+		result := ensureServerlessPrivateEndpoints(&workflow.Context{}, "project-id", &akov2.AtlasDeployment{})
+
+		assert.Equal(
+			t,
+			workflow.Terminate(workflow.Internal, "serverless deployment spec is empty"),
+			result,
+		)
+	})
+
+	t.Run("should fail when setting a GCP serverless instance with a private endpoint", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "GCP",
+					},
+					PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+						{
+							Name: "spe-1",
+						},
+					},
 				},
 			},
 		}
-		deployment := sampleServerlessDeployment()
-		workflowCtx := workflow.Context{Client: &client, Context: ctx}
+		result := ensureServerlessPrivateEndpoints(&workflow.Context{}, "project-id", &deployment)
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.True(t, result)
+		assert.Equal(
+			t,
+			workflow.Terminate(workflow.AtlasUnsupportedFeature, "serverless private endpoints are not supported for GCP"),
+			result,
+		)
 	})
 
-	t.Run("when protected but configs match", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
+	t.Run("should succeed when setting a GCP serverless instance without private endpoints", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "GCP",
+					},
 				},
 			},
 		}
-		deployment := sampleAnnotatedServerlessDeployment(endpointsFrom(endpointsConfig))
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
+		result := ensureServerlessPrivateEndpoints(&workflow.Context{}, "project-id", &deployment)
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.True(t, result)
+		assert.Equal(t, workflow.OK(), result)
 	})
 
-	t.Run("when protected but configs match, even with different order", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
+	t.Run("should succeed when there are nothing to sync", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "AWS",
+					},
 				},
 			},
 		}
-		deployment := sampleAnnotatedServerlessDeployment(reverse(endpointsFrom(endpointsConfig)))
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.Anything).
+			Return([]admin.ServerlessTenantEndpoint{}, &http.Response{}, nil)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.True(t, result)
+		assert.Equal(t, workflow.OK(), result)
 	})
 
-	t.Run("when protected but only old configs matches", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
+	t.Run("should fail when error happens syncing private endpoints", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "AWS",
+					},
+					PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+						{
+							Name: "spe-1",
+						},
+					},
 				},
 			},
 		}
-		deployment := sampleAnnotatedServerlessDeployment(endpointsFrom(endpointsConfig))
-		// remove all PEs in the current desired setup
-		deployment.Spec.ServerlessSpec.PrivateEndpoints = []akov2.ServerlessPrivateEndpoint{}
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.Anything).
+			Return(nil, &http.Response{}, errors.New("connection failed"))
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
+		assert.Equal(
+			t,
+			workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, "unable to retrieve list of serverless private endpoints from Atlas: connection failed"),
+			result,
+		)
+	})
 
-		require.NoError(t, err)
-		assert.True(t, result)
+	t.Run("should succeed when syncing private endpoints still in progress", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "AWS",
+					},
+					PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+						{
+							Name: "spe-1",
+						},
+					},
+				},
+			},
+		}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.Anything).
+			Return([]admin.ServerlessTenantEndpoint{}, &http.Response{}, nil)
+		speAPI.EXPECT().CreateServerlessPrivateEndpoint(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.CreateServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().CreateServerlessPrivateEndpointExecute(mock.Anything).
+			Return(
+				&admin.ServerlessTenantEndpoint{
+					Id:      pointer.MakePtr("spe-id"),
+					Comment: pointer.MakePtr("spe-1"),
+					Status:  pointer.MakePtr("RESERVATION_REQUESTED"),
+				},
+				&http.Response{},
+				nil,
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
+
+		assert.Equal(
+			t,
+			workflow.InProgress(workflow.ServerlessPrivateEndpointInProgress, "Waiting serverless private endpoint to be configured"),
+			result,
+		)
+	})
+
+	t.Run("should succeed when finish syncing private endpoints", func(t *testing.T) {
+		deployment := akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				ServerlessSpec: &akov2.ServerlessSpec{
+					Name: "instance-0",
+					ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderName:        "SERVERLESS",
+						BackingProviderName: "AWS",
+					},
+					PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+						{
+							Name:                    "spe-1",
+							CloudProviderEndpointID: "aws-endpoint-id",
+						},
+					},
+				},
+			},
+		}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.Anything).
+			Return(
+				[]admin.ServerlessTenantEndpoint{
+					{
+						Id:                      pointer.MakePtr("spe-id"),
+						ProviderName:            pointer.MakePtr("AWS"),
+						CloudProviderEndpointId: pointer.MakePtr("aws-endpoint-id"),
+						Comment:                 pointer.MakePtr("spe-1"),
+						Status:                  pointer.MakePtr(SPEStatusAvailable),
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
+
+		assert.Equal(t, workflow.OK(), result)
 	})
 }
 
-func TestCannotReconcileServerlessPrivateEndpoints(t *testing.T) {
-	t.Run("when configs do not match", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
+func TestSyncServerlessPrivateEndpoints(t *testing.T) {
+	t.Run("should succeed adding, creating and deleting private endpoints", func(t *testing.T) {
+		spec := akov2.ServerlessSpec{
+			Name: "instance-0",
+			ProviderSettings: &akov2.ProviderSettingsSpec{
+				ProviderName:        "SERVERLESS",
+				BackingProviderName: "AWS",
+			},
+			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+				{
+					Name: "spe-1",
+				},
+				{
+					Name:                    "spe-2",
+					CloudProviderEndpointID: "aws-endpoint-id",
 				},
 			},
 		}
-		endpoints := endpointsFrom(endpointsConfig)
-		endpoints[0].Name = "non-matching-fake-name"
-		deployment := sampleAnnotatedServerlessDeployment(endpoints)
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
-
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.False(t, result)
-	})
-
-	t.Run("when ownership cannot be assured (empty prior config)", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(context.Background(), "project-id", "instance-0").
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
+			Return(
+				[]admin.ServerlessTenantEndpoint{
+					{
+						Id:           pointer.MakePtr("spe-2-id"),
+						ProviderName: pointer.MakePtr("AWS"),
+						Comment:      pointer.MakePtr("spe-2"),
+						Status:       pointer.MakePtr(SPEStatusReserved),
+					},
+					{
+						Id:           pointer.MakePtr("spe-3-id"),
+						ProviderName: pointer.MakePtr("AWS"),
+						Comment:      pointer.MakePtr("spe-3"),
+						Status:       pointer.MakePtr(SPEStatusAvailable),
+					},
 				},
+				&http.Response{},
+				nil,
+			)
+		speAPI.EXPECT().CreateServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", mock.AnythingOfType("*admin.ServerlessTenantCreateRequest")).
+			Return(admin.CreateServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().CreateServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.CreateServerlessPrivateEndpointApiRequest")).
+			Return(
+				&admin.ServerlessTenantEndpoint{
+					Id:           pointer.MakePtr("spe-1-id"),
+					ProviderName: pointer.MakePtr("AWS"),
+					Comment:      pointer.MakePtr("spe-1"),
+					Status:       pointer.MakePtr("RESERVATION_REQUESTED"),
+				},
+				&http.Response{},
+				nil,
+			)
+		speAPI.EXPECT().UpdateServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", "spe-2-id", mock.AnythingOfType("*admin.ServerlessTenantEndpointUpdate")).
+			Return(admin.UpdateServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().UpdateServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.UpdateServerlessPrivateEndpointApiRequest")).
+			Return(
+				&admin.ServerlessTenantEndpoint{
+					Id:                      pointer.MakePtr("spe-2-id"),
+					ProviderName:            pointer.MakePtr("AWS"),
+					CloudProviderEndpointId: pointer.MakePtr("aws-endpoint-id"),
+					Comment:                 pointer.MakePtr("spe-2"),
+					Status:                  pointer.MakePtr("INITIATING"),
+				},
+				&http.Response{},
+				nil,
+			)
+		speAPI.EXPECT().DeleteServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", "spe-3-id").
+			Return(admin.DeleteServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().DeleteServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.DeleteServerlessPrivateEndpointApiRequest")).
+			Return(
+				map[string]interface{}{},
+				&http.Response{},
+				nil,
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
 			},
 		}
-		deployment := sampleServerlessDeployment()
-		deployment.Annotations = map[string]string{
-			customresource.AnnotationLastAppliedConfiguration: "{}",
-		}
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.False(t, result)
-	})
-
-	t.Run("when ownership cannot be assured (unset prior config)", func(t *testing.T) {
-		ctx := context.Background()
-		endpointsConfig := sampleAtlasSPEConfig()
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return endpointsConfig, nil, nil
-				},
-			},
-		}
-		deployment := sampleServerlessDeployment()
-		deployment.Annotations = map[string]string{}
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
-
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.NoError(t, err)
-		assert.False(t, result)
+		finished, err := syncServerlessPrivateEndpoints(&service, "project-id", &spec)
+		assert.NoError(t, err)
+		assert.False(t, finished)
 	})
 }
 
-func TestCanReconcileServerlessPrivateEndpointsFail(t *testing.T) {
-	t.Run("when the old config is not a proper JSON", func(t *testing.T) {
-		ctx := context.Background()
-		client := mongodbatlas.Client{}
-		deployment := sampleServerlessDeployment()
-		deployment.Annotations = map[string]string{
-			customresource.AnnotationLastAppliedConfiguration: "{",
-		}
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
-
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
-
-		require.False(t, result)
-		var aJSONError *json.SyntaxError
-		assert.ErrorAs(t, err, &aJSONError)
-	})
-
-	t.Run("when list fails in Atlas", func(t *testing.T) {
-		ctx := context.Background()
-		fakeError := fmt.Errorf("fake error from Atlas")
-		client := mongodbatlas.Client{
-			ServerlessPrivateEndpoints: ServerlessPrivateEndpointClientMock{
-				ListFn: func(groupID string, instanceName string, opts *mongodbatlas.ListOptions) ([]mongodbatlas.ServerlessPrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return nil, nil, fakeError
+func TestIsGCPWithPrivateEndpoints(t *testing.T) {
+	t.Run("should return true when is GCP serverless instance containing private endpoint configuration", func(t *testing.T) {
+		deployment := akov2.ServerlessSpec{
+			ProviderSettings: &akov2.ProviderSettingsSpec{
+				BackingProviderName: "GCP",
+			},
+			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+				{
+					Name: "spe-1",
 				},
 			},
 		}
-		deployment := sampleServerlessDeployment()
-		workflowCtx := workflow.Context{Client: &client, Log: debugLogger(t), Context: ctx}
 
-		result, err := canServerlessPrivateEndpointsReconcile(&workflowCtx, true, fakeProjectID, deployment)
+		assert.True(t, isGCPWithPrivateEndpoints(&deployment))
+	})
 
-		require.False(t, result)
-		assert.ErrorIs(t, err, fakeError)
+	t.Run("should return false when is GCP serverless instance without private endpoint configuration", func(t *testing.T) {
+		deployment := akov2.ServerlessSpec{
+			ProviderSettings: &akov2.ProviderSettingsSpec{
+				BackingProviderName: "GCP",
+			},
+		}
+
+		assert.False(t, isGCPWithPrivateEndpoints(&deployment))
 	})
 }
 
-func sampleServerlessDeployment() *akov2.AtlasDeployment {
-	return &akov2.AtlasDeployment{
-		Spec: akov2.AtlasDeploymentSpec{
-			ServerlessSpec: &akov2.ServerlessSpec{Name: fakeInstanceName},
+func TestIsGCPWithoutPrivateEndpoints(t *testing.T) {
+	t.Run("should return false when is GCP serverless instance containing private endpoint configuration", func(t *testing.T) {
+		deployment := akov2.ServerlessSpec{
+			ProviderSettings: &akov2.ProviderSettingsSpec{
+				BackingProviderName: "GCP",
+			},
+			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+				{
+					Name: "spe-1",
+				},
+			},
+		}
+
+		assert.False(t, isGCPWithoutPrivateEndpoints(&deployment))
+	})
+
+	t.Run("should return true when is GCP serverless instance without private endpoint configuration", func(t *testing.T) {
+		deployment := akov2.ServerlessSpec{
+			ProviderSettings: &akov2.ProviderSettingsSpec{
+				BackingProviderName: "GCP",
+			},
+		}
+
+		assert.True(t, isGCPWithoutPrivateEndpoints(&deployment))
+	})
+}
+
+func TestSortTasks(t *testing.T) {
+	t.Run("should sort one of each operation", func(t *testing.T) {
+		spes := []akov2.ServerlessPrivateEndpoint{
+			{
+				Name: "spe-1",
+			},
+			{
+				Name:                    "spe-2",
+				CloudProviderEndpointID: "endpoint-id",
+			},
+		}
+		atlas := []admin.ServerlessTenantEndpoint{
+			{
+				ProviderName: pointer.MakePtr("AWS"),
+				Comment:      pointer.MakePtr("spe-2"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			{
+				Comment: pointer.MakePtr("spe-3"),
+			},
+		}
+
+		toCreate, toUpdate, toDelete := sortTasks(spes, atlas)
+
+		assert.Equal(
+			t,
+			[]akov2.ServerlessPrivateEndpoint{
+				{
+					Name: "spe-1",
+				},
+			},
+			toCreate,
+		)
+		assert.Equal(
+			t,
+			[]akov2.ServerlessPrivateEndpoint{
+				{
+					Name:                    "spe-2",
+					CloudProviderEndpointID: "endpoint-id",
+				},
+			},
+			toUpdate,
+		)
+		assert.Equal(
+			t,
+			[]admin.ServerlessTenantEndpoint{
+				{
+					Comment: pointer.MakePtr("spe-3"),
+				},
+			},
+			toDelete,
+		)
+	})
+}
+
+func TestIsReadyToConnect(t *testing.T) {
+	data := map[string]struct {
+		spe      akov2.ServerlessPrivateEndpoint
+		atlas    admin.ServerlessTenantEndpoint
+		expected bool
+	}{
+		"should return false when private endpoint is not in RESERVED state": {
+			spe: akov2.ServerlessPrivateEndpoint{},
+			atlas: admin.ServerlessTenantEndpoint{
+				Status: pointer.MakePtr("RESERVATION_REQUESTED"),
+			},
+			expected: false,
+		},
+		"should return false when a AWS private endpoint is in RESERVED state but miss endpoint ID": {
+			spe: akov2.ServerlessPrivateEndpoint{},
+			atlas: admin.ServerlessTenantEndpoint{
+				ProviderName: pointer.MakePtr("AWS"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			expected: false,
+		},
+		"should return false when a Azure private endpoint is in RESERVED state but miss endpoint ID": {
+			spe: akov2.ServerlessPrivateEndpoint{
+				PrivateEndpointIPAddress: "some-ip-address",
+			},
+			atlas: admin.ServerlessTenantEndpoint{
+				ProviderName: pointer.MakePtr("AZURE"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			expected: false,
+		},
+		"should return false when a Azure private endpoint is in RESERVED state but miss IP address": {
+			spe: akov2.ServerlessPrivateEndpoint{
+				CloudProviderEndpointID: "azure-endpoint-id",
+			},
+			atlas: admin.ServerlessTenantEndpoint{
+				ProviderName: pointer.MakePtr("AZURE"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			expected: false,
+		},
+		"should return true when a Azure private endpoint is in RESERVED state and has connection data": {
+			spe: akov2.ServerlessPrivateEndpoint{
+				CloudProviderEndpointID:  "azure-endpoint-id",
+				PrivateEndpointIPAddress: "some-ip-address",
+			},
+			atlas: admin.ServerlessTenantEndpoint{
+				ProviderName: pointer.MakePtr("AZURE"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			expected: true,
+		},
+		"should return true when a AWS private endpoint is in RESERVED state and has connection data": {
+			spe: akov2.ServerlessPrivateEndpoint{
+				CloudProviderEndpointID: "aws-endpoint-id",
+			},
+			atlas: admin.ServerlessTenantEndpoint{
+				ProviderName: pointer.MakePtr("AWS"),
+				Status:       pointer.MakePtr(SPEStatusReserved),
+			},
+			expected: true,
 		},
 	}
-}
 
-func sampleAnnotatedServerlessDeployment(endpoints []akov2.ServerlessPrivateEndpoint) *akov2.AtlasDeployment {
-	deployment := &akov2.AtlasDeployment{
-		Spec: akov2.AtlasDeploymentSpec{ServerlessSpec: &akov2.ServerlessSpec{
-			Name:             fakeInstanceName,
-			PrivateEndpoints: endpoints,
-		}},
-	}
-	deployment.Annotations = map[string]string{
-		customresource.AnnotationLastAppliedConfiguration: jsonize(deployment.Spec),
-	}
-	return deployment
-}
-
-func sampleAtlasSPEConfig() []mongodbatlas.ServerlessPrivateEndpointConnection {
-	return []mongodbatlas.ServerlessPrivateEndpointConnection{
-		{
-			ID:                      "fake-id-1",
-			CloudProviderEndpointID: "opaque-cloud-fake-id-1",
-			Comment:                 "fake-name-1",
-			Status:                  SPEStatusAvailable,
-			ProviderName:            "AWS",
-		},
-		{
-			ID:                       "fake-id-2",
-			CloudProviderEndpointID:  "opaque-cloud-fake-id-2",
-			Comment:                  "fake-name-2",
-			Status:                   SPEStatusAvailable,
-			ProviderName:             "Azure",
-			PrivateEndpointIPAddress: "11.11.10.0",
-		},
-	}
-}
-
-func endpointsFrom(configs []mongodbatlas.ServerlessPrivateEndpointConnection) []akov2.ServerlessPrivateEndpoint {
-	endpoints := []akov2.ServerlessPrivateEndpoint{}
-	for _, cfg := range configs {
-		endpoints = append(endpoints, akov2.ServerlessPrivateEndpoint{
-			Name:                     cfg.Comment,
-			CloudProviderEndpointID:  cfg.CloudProviderEndpointID,
-			PrivateEndpointIPAddress: cfg.PrivateEndpointIPAddress,
+	for desc, val := range data {
+		t.Run(desc, func(t *testing.T) {
+			spe := val.spe
+			atlas := val.atlas
+			assert.Equal(t, val.expected, isReadyToConnect(&spe, &atlas))
 		})
 	}
-	return endpoints
 }
 
-func reverse(endpoints []akov2.ServerlessPrivateEndpoint) []akov2.ServerlessPrivateEndpoint {
-	reversed := make([]akov2.ServerlessPrivateEndpoint, 0, len(endpoints))
-	for i := len(endpoints) - 1; i >= 0; i-- {
-		reversed = append(reversed, endpoints[i])
+func TestCheckStatuses(t *testing.T) {
+	data := map[string]struct {
+		spes     []status.ServerlessPrivateEndpoint
+		expected bool
+	}{
+		"should return true when nil": {
+			spes:     nil,
+			expected: true,
+		},
+		"should return true when empty": {
+			spes:     []status.ServerlessPrivateEndpoint{},
+			expected: true,
+		},
+		"should return true when all status are available": {
+			spes: []status.ServerlessPrivateEndpoint{
+				{
+					Status: SPEStatusAvailable,
+				},
+				{
+					Status: SPEStatusAvailable,
+				},
+			},
+			expected: true,
+		},
+		"should return false when all status are not available": {
+			spes: []status.ServerlessPrivateEndpoint{
+				{
+					Status: SPEStatusReserved,
+				},
+				{
+					Status: SPEStatusDeleting,
+				},
+			},
+			expected: false,
+		},
+		"should return false when at least one status is not available": {
+			spes: []status.ServerlessPrivateEndpoint{
+				{
+					Status: SPEStatusReserved,
+				},
+				{
+					Status: SPEStatusAvailable,
+				},
+				{
+					Status: SPEStatusAvailable,
+				},
+			},
+			expected: false,
+		},
 	}
-	return reversed
-}
 
-func jsonize(obj any) string {
-	jsonBytes, err := json.Marshal(obj)
-	if err != nil {
-		return err.Error()
+	for desc, val := range data {
+		t.Run(desc, func(t *testing.T) {
+			assert.Equal(t, val.expected, checkStatuses(val.spes))
+		})
 	}
-	return string(jsonBytes)
-}
-
-func debugLogger(t *testing.T) *zap.SugaredLogger {
-	t.Helper()
-
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
-	return logger.Sugar()
 }
