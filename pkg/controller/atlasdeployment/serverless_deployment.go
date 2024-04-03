@@ -68,7 +68,7 @@ func (r *AtlasDeploymentReconciler) ensureServerlessInstanceState(workflowCtx *w
 			}
 			return atlasDeployment, workflow.InProgress(workflow.DeploymentUpdating, "deployment is updating")
 		}
-		result := ensureServerlessPrivateEndpoints(workflowCtx, project.ID(), deployment, atlasDeployment.Name, r.SubObjectDeletionProtection)
+		result := ensureServerlessPrivateEndpoints(workflowCtx, project.ID(), deployment)
 		return atlasDeployment, result
 
 	case status.StateCREATING:
