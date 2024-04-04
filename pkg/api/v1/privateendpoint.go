@@ -1,11 +1,9 @@
 package v1
 
 import (
-	"errors"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"go.mongodb.org/atlas/mongodbatlas"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
@@ -42,30 +40,21 @@ type GCPEndpoint struct {
 	IPAddress string `json:"ipAddress,omitempty"`
 }
 
-// ToAtlas converts the PrivateEndpoint to native Atlas client format.
-func (i PrivateEndpoint) ToAtlas() (*mongodbatlas.PrivateEndpoint, error) {
-	result := &mongodbatlas.PrivateEndpoint{}
-	err := compat.JSONCopy(result, i)
-	return result, err
-}
-
 // Identifier is required to satisfy "Identifiable" iterface
 func (i PrivateEndpoint) Identifier() interface{} {
 	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }
 
-func (endpoints GCPEndpoints) ConvertToAtlas() ([]*mongodbatlas.GCPEndpoint, error) {
+func (endpoints GCPEndpoints) ConvertToAtlas() []admin.CreateGCPForwardingRuleRequest {
 	if len(endpoints) == 0 {
-		return nil, errors.New("list of endpoints is empty")
+		return nil
 	}
-	result := make([]*mongodbatlas.GCPEndpoint, 0)
+	result := make([]admin.CreateGCPForwardingRuleRequest, 0, len(endpoints))
 	for _, e := range endpoints {
-		endpoint := &mongodbatlas.GCPEndpoint{}
-		err := compat.JSONCopy(endpoint, e)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, endpoint)
+		result = append(result, admin.CreateGCPForwardingRuleRequest{
+			EndpointName: pointer.SetOrNil(e.EndpointName, ""),
+			IpAddress:    pointer.SetOrNil(e.IPAddress, ""),
+		})
 	}
-	return result, nil
+	return result
 }

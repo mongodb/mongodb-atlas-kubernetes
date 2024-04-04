@@ -285,7 +285,7 @@ func (r *AtlasProjectReconciler) ensureProjectResources(workflowCtx *workflow.Co
 	}
 	results = append(results, result)
 
-	if result = ensurePrivateEndpoint(workflowCtx, project, r.SubObjectDeletionProtection); result.IsOk() {
+	if result = ensurePrivateEndpoint(workflowCtx, project); result.IsOk() {
 		r.EventRecorder.Event(project, "Normal", string(status.PrivateEndpointReadyType), "")
 	}
 	results = append(results, result)
