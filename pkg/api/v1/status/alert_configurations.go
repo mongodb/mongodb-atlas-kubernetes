@@ -5,7 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.mongodb.org/atlas/mongodbatlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/unstructured"
+
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.uber.org/zap"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
 type AlertConfiguration struct {
@@ -112,31 +117,24 @@ type Notification struct {
 	Roles []string `json:"roles,omitempty"`
 }
 
-func NotificationFromAtlas(notification mongodbatlas.Notification) Notification {
+func NotificationFromAtlas(notification admin.AlertsNotificationRootForGroup) Notification {
 	return Notification{
-		APIToken:            notification.APIToken,
-		ChannelName:         notification.ChannelName,
-		DatadogAPIKey:       notification.DatadogAPIKey,
-		DatadogRegion:       notification.DatadogRegion,
-		DelayMin:            notification.DelayMin,
-		EmailAddress:        notification.EmailAddress,
-		EmailEnabled:        notification.EmailEnabled,
-		FlowdockAPIToken:    notification.FlowdockAPIToken,
-		FlowName:            notification.FlowName,
-		IntervalMin:         notification.IntervalMin,
-		MobileNumber:        notification.MobileNumber,
-		OpsGenieAPIKey:      notification.OpsGenieAPIKey,
-		OpsGenieRegion:      notification.OpsGenieRegion,
-		OrgName:             notification.OrgName,
-		ServiceKey:          notification.ServiceKey,
-		SMSEnabled:          notification.SMSEnabled,
-		TeamID:              notification.TeamID,
-		TeamName:            notification.TeamName,
-		TypeName:            notification.TypeName,
-		Username:            notification.Username,
-		VictorOpsAPIKey:     notification.VictorOpsAPIKey,
-		VictorOpsRoutingKey: notification.VictorOpsRoutingKey,
-		Roles:               notification.Roles,
+		APIToken:       notification.GetApiToken(),
+		ChannelName:    notification.GetChannelName(),
+		DatadogRegion:  notification.GetDatadogRegion(),
+		DelayMin:       notification.DelayMin,
+		EmailAddress:   notification.GetEmailAddress(),
+		EmailEnabled:   notification.EmailEnabled,
+		IntervalMin:    notification.GetIntervalMin(),
+		MobileNumber:   notification.GetMobileNumber(),
+		OpsGenieRegion: notification.GetOpsGenieRegion(),
+		ServiceKey:     notification.GetServiceKey(),
+		SMSEnabled:     notification.SmsEnabled,
+		TeamID:         notification.GetTeamId(),
+		TeamName:       notification.GetTeamName(),
+		TypeName:       notification.GetTypeName(),
+		Username:       notification.GetUsername(),
+		Roles:          notification.GetRoles(),
 	}
 }
 
@@ -149,14 +147,15 @@ type Threshold struct {
 	Threshold string `json:"threshold,omitempty"`
 }
 
-func ThresholdFromAtlas(threshold *mongodbatlas.Threshold) *Threshold {
+func ThresholdFromAtlas(threshold *admin.GreaterThanRawThreshold) *Threshold {
 	if threshold == nil {
 		return nil
 	}
+
 	return &Threshold{
-		Operator:  threshold.Operator,
-		Units:     threshold.Units,
-		Threshold: strconv.FormatFloat(threshold.Threshold, 'f', -1, 64),
+		Operator:  threshold.GetOperator(),
+		Units:     threshold.GetUnits(),
+		Threshold: strconv.FormatInt(int64(threshold.GetThreshold()), 10),
 	}
 }
 
@@ -173,16 +172,18 @@ type MetricThreshold struct {
 	Mode string `json:"mode,omitempty"`
 }
 
-func MetricThresholdFromAtlas(threshold *mongodbatlas.MetricThreshold) *MetricThreshold {
+func MetricThresholdFromAtlas(threshold *admin.ServerlessMetricThreshold) *MetricThreshold {
 	if threshold == nil {
 		return nil
 	}
+
 	metricThreshold := &MetricThreshold{}
-	metricThreshold.MetricName = threshold.MetricName
-	metricThreshold.Operator = threshold.Operator
-	metricThreshold.Threshold = strconv.FormatFloat(threshold.Threshold, 'f', -1, 64)
-	metricThreshold.Units = threshold.Units
-	metricThreshold.Mode = threshold.Mode
+	metricThreshold.MetricName = threshold.GetMetricName()
+	metricThreshold.Operator = threshold.GetOperator()
+	metricThreshold.Threshold = strconv.FormatFloat(threshold.GetThreshold(), 'f', -1, 64)
+	metricThreshold.Units = threshold.GetUnits()
+	metricThreshold.Mode = threshold.GetMode()
+
 	return metricThreshold
 }
 
@@ -195,53 +196,33 @@ type Matcher struct {
 	Value string `json:"value,omitempty"`
 }
 
-func MatcherFromAtlas(matcher mongodbatlas.Matcher) Matcher {
-	return Matcher{
-		FieldName: matcher.FieldName,
-		Operator:  matcher.Operator,
-		Value:     matcher.Value,
-	}
-}
-
-func ParseAlertConfiguration(alertConfiguration mongodbatlas.AlertConfiguration) AlertConfiguration {
+func ParseAlertConfiguration(alertConfiguration admin.GroupAlertsConfig, logger *zap.SugaredLogger) AlertConfiguration {
 	status := AlertConfiguration{
-		ID:                     alertConfiguration.ID,
-		GroupID:                alertConfiguration.GroupID,
-		AlertConfigID:          alertConfiguration.AlertConfigID,
-		EventTypeName:          alertConfiguration.EventTypeName,
-		Created:                alertConfiguration.Created,
-		Status:                 alertConfiguration.Status,
-		AcknowledgedUntil:      alertConfiguration.AcknowledgedUntil,
-		AcknowledgementComment: alertConfiguration.AcknowledgementComment,
-		AcknowledgingUsername:  alertConfiguration.AcknowledgingUsername,
-		Updated:                alertConfiguration.Updated,
-		Resolved:               alertConfiguration.Resolved,
-		LastNotified:           alertConfiguration.LastNotified,
-		HostnameAndPort:        alertConfiguration.HostnameAndPort,
-		HostID:                 alertConfiguration.HostID,
-		ReplicaSetName:         alertConfiguration.ReplicaSetName,
-		MetricName:             alertConfiguration.MetricName,
-		Enabled:                alertConfiguration.Enabled,
-		ClusterID:              alertConfiguration.ClusterID,
-		ClusterName:            alertConfiguration.ClusterName,
-		SourceTypeName:         alertConfiguration.SourceTypeName,
+		ID:            alertConfiguration.GetId(),
+		GroupID:       alertConfiguration.GetGroupId(),
+		EventTypeName: alertConfiguration.GetEventTypeName(),
+		Created:       timeutil.FormatISO8601(alertConfiguration.GetCreated()),
+		Updated:       timeutil.FormatISO8601(alertConfiguration.GetUpdated()),
+		Enabled:       alertConfiguration.Enabled,
 	}
-	status.CurrentValue = CurrentValueFromAtlas(alertConfiguration.CurrentValue)
 
-	if alertConfiguration.Matchers != nil {
-		status.Matchers = make([]Matcher, 0, len(alertConfiguration.Matchers))
-		for _, matcher := range alertConfiguration.Matchers {
-			matcherFromAtlas := MatcherFromAtlas(matcher)
-			status.Matchers = append(status.Matchers, matcherFromAtlas)
+	if unstructuredMatchers, ok := alertConfiguration.GetMatchersOk(); ok {
+		matchers, err := unstructured.TypedFromUnstructured[[]map[string]interface{}, []Matcher](*unstructuredMatchers)
+		if err != nil {
+			logger.Errorf("unable to convert matchers to structured type: %s", err)
 		}
+		status.Matchers = *matchers
 	}
 
-	status.MetricThreshold = MetricThresholdFromAtlas(alertConfiguration.MetricThreshold)
-	status.Threshold = ThresholdFromAtlas(alertConfiguration.Threshold)
+	mThreshold := alertConfiguration.GetMetricThreshold()
+	status.MetricThreshold = MetricThresholdFromAtlas(&mThreshold)
 
-	if alertConfiguration.Notifications != nil {
-		status.Notifications = make([]Notification, 0, len(alertConfiguration.Notifications))
-		for _, notification := range alertConfiguration.Notifications {
+	threshold := alertConfiguration.GetThreshold()
+	status.Threshold = ThresholdFromAtlas(&threshold)
+
+	if notifications, ok := alertConfiguration.GetNotificationsOk(); ok {
+		status.Notifications = make([]Notification, 0, len(*notifications))
+		for _, notification := range *notifications {
 			notificationFromAtlas := NotificationFromAtlas(notification)
 			status.Notifications = append(status.Notifications, notificationFromAtlas)
 		}
@@ -257,18 +238,6 @@ type CurrentValue struct {
 	Units string `json:"units,omitempty"`
 }
 
-func CurrentValueFromAtlas(value *mongodbatlas.CurrentValue) *CurrentValue {
-	if value == nil {
-		return nil
-	}
-	currentValue := &CurrentValue{}
-	if value.Number != nil {
-		currentValue.Number = strconv.FormatFloat(*value.Number, 'f', -1, 64)
-	}
-	currentValue.Units = value.Units
-	return currentValue
-}
-
 func NewFailedParseAlertConfigStatus(errorMessage string, jsonSpec string) AlertConfiguration {
 	result := AlertConfiguration{}
 	err := json.Unmarshal([]byte(jsonSpec), &result)
@@ -280,13 +249,13 @@ func NewFailedParseAlertConfigStatus(errorMessage string, jsonSpec string) Alert
 	return result
 }
 
-func NewIncorrectAlertConfigStatus(errorMessage string, alertConfig *mongodbatlas.AlertConfiguration) AlertConfiguration {
+func NewIncorrectAlertConfigStatus(errorMessage string, alertConfig *admin.GroupAlertsConfig, logger *zap.SugaredLogger) AlertConfiguration {
 	if alertConfig == nil {
 		return AlertConfiguration{
 			ErrorMessage: fmt.Sprintf("Error: %s. alertConfig is nil", errorMessage),
 		}
 	}
-	result := ParseAlertConfiguration(*alertConfig)
+	result := ParseAlertConfiguration(*alertConfig, logger)
 	result.ErrorMessage = errorMessage
 	return result
 }
