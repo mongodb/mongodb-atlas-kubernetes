@@ -14,6 +14,7 @@ const (
 	AtlasDeletionProtection       ConditionReason = "AtlasDeletionProtection"
 	AtlasGovUnsupported           ConditionReason = "AtlasGovUnsupported"
 	AtlasAPIAccessNotConfigured   ConditionReason = "AtlasAPIAccessNotConfigured"
+	AtlasUnsupportedFeature       ConditionReason = "AtlasUnsupportedFeature"
 )
 
 // Atlas Project reasons
@@ -53,6 +54,8 @@ const (
 	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
 	DeploymentAdvancedOptionsReady        ConditionReason = "DeploymentAdvancedOptionsReady"
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"
+	ServerlessPrivateEndpointFailed       ConditionReason = "ServerlessPrivateEndpointFailed"
+	ServerlessPrivateEndpointInProgress   ConditionReason = "ServerlessPrivateEndpointInProgress"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
 )

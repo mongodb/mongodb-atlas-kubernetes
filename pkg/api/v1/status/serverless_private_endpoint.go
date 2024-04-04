@@ -1,9 +1,7 @@
 package status
 
 import (
-	"fmt"
-
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 )
 
 type ServerlessPrivateEndpoint struct {
@@ -27,48 +25,16 @@ type ServerlessPrivateEndpoint struct {
 	PrivateLinkServiceResourceID string `json:"privateLinkServiceResourceId,omitempty"`
 }
 
-func SPEFromAtlas(in mongodbatlas.ServerlessPrivateEndpointConnection) ServerlessPrivateEndpoint {
+func SPEStatusFromAtlas(in *admin.ServerlessTenantEndpoint) ServerlessPrivateEndpoint {
 	return ServerlessPrivateEndpoint{
-		ID:                           in.ID,
-		CloudProviderEndpointID:      in.CloudProviderEndpointID,
-		Name:                         in.Comment,
-		EndpointServiceName:          in.EndpointServiceName,
-		ErrorMessage:                 in.ErrorMessage,
-		Status:                       in.Status,
-		ProviderName:                 in.ProviderName,
-		PrivateEndpointIPAddress:     in.PrivateEndpointIPAddress,
-		PrivateLinkServiceResourceID: in.PrivateLinkServiceResourceID,
-	}
-}
-
-func FailedToCreateSPE(comment, message string) ServerlessPrivateEndpoint {
-	return ServerlessPrivateEndpoint{
-		ErrorMessage: message,
-		Name:         comment,
-		Status:       StatusFailed,
-	}
-}
-
-func FailedDuplicationSPE(name, cloudProviderEndpointID, privateEndpointIPAddress string) ServerlessPrivateEndpoint {
-	return ServerlessPrivateEndpoint{
-		CloudProviderEndpointID:  cloudProviderEndpointID,
-		PrivateEndpointIPAddress: privateEndpointIPAddress,
-		ErrorMessage:             fmt.Sprintf("The SPE with same name exists: %s. Please use unique names", name),
-		Name:                     name,
-		Status:                   StatusFailed,
-	}
-}
-
-func FailedToConnectSPE(pe mongodbatlas.ServerlessPrivateEndpointConnection, message string) ServerlessPrivateEndpoint {
-	return ServerlessPrivateEndpoint{
-		ID:                           pe.ID,
-		CloudProviderEndpointID:      pe.CloudProviderEndpointID,
-		Name:                         pe.Comment,
-		EndpointServiceName:          pe.EndpointServiceName,
-		ErrorMessage:                 message,
-		Status:                       StatusFailed,
-		ProviderName:                 pe.ProviderName,
-		PrivateEndpointIPAddress:     pe.PrivateEndpointIPAddress,
-		PrivateLinkServiceResourceID: pe.PrivateLinkServiceResourceID,
+		ID:                           in.GetId(),
+		Name:                         in.GetComment(),
+		ProviderName:                 in.GetProviderName(),
+		CloudProviderEndpointID:      in.GetCloudProviderEndpointId(),
+		PrivateEndpointIPAddress:     in.GetPrivateEndpointIpAddress(),
+		EndpointServiceName:          in.GetEndpointServiceName(),
+		PrivateLinkServiceResourceID: in.GetPrivateLinkServiceResourceId(),
+		Status:                       in.GetStatus(),
+		ErrorMessage:                 in.GetErrorMessage(),
 	}
 }

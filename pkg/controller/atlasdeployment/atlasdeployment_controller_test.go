@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -920,6 +921,9 @@ func TestReconciliation(t *testing.T) {
 						},
 					},
 				}, "0987654321", nil
+			},
+			SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
+				return &admin.APIClient{}, "", nil
 			},
 			IsCloudGovFunc: func() bool {
 				return false

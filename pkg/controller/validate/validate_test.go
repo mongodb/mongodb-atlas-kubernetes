@@ -1125,3 +1125,47 @@ func TestAutoscalingForAdvancedDeployment(t *testing.T) {
 		assert.EqualError(t, autoscalingForAdvancedDeployment(replicationSpecs), "autoscaling must be the same for all regions and across all replication specs for advanced deployment")
 	})
 }
+
+func TestServerlessPrivateEndpoints(t *testing.T) {
+	t.Run("should pass when there are no private endpoints with the same name", func(t *testing.T) {
+		privateEndpoints := []akov2.ServerlessPrivateEndpoint{
+			{
+				Name: "spe-1",
+			},
+			{
+				Name: "spe-2",
+			},
+			{
+				Name: "spe-3",
+			},
+		}
+
+		err := serverlessPrivateEndpoints(privateEndpoints)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("should fail when there are private endpoints with duplicated name", func(t *testing.T) {
+		privateEndpoints := []akov2.ServerlessPrivateEndpoint{
+			{
+				Name: "spe-1",
+			},
+			{
+				Name: "spe-2",
+			},
+			{
+				Name: "spe-1",
+			},
+			{
+				Name: "spe-3",
+			},
+			{
+				Name: "spe-2",
+			},
+		}
+
+		err := serverlessPrivateEndpoints(privateEndpoints)
+
+		assert.ErrorContains(t, err, "serverless private endpoint should have a unique name: spe-1 is duplicated\nserverless private endpoint should have a unique name: spe-2 is duplicated")
+	})
+}

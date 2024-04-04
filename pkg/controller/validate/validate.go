@@ -51,6 +51,28 @@ func DeploymentSpec(deploymentSpec *akov2.AtlasDeploymentSpec, isGov bool, regio
 		}
 	}
 
+	if deploymentSpec.ServerlessSpec != nil {
+		speErrors := serverlessPrivateEndpoints(deploymentSpec.ServerlessSpec.PrivateEndpoints)
+		if speErrors != nil {
+			err = errors.Join(err, speErrors)
+		}
+	}
+
+	return err
+}
+
+func serverlessPrivateEndpoints(privateEndpoints []akov2.ServerlessPrivateEndpoint) error {
+	var err error
+	namesMap := map[string]struct{}{}
+
+	for _, privateEndpoint := range privateEndpoints {
+		if _, ok := namesMap[privateEndpoint.Name]; ok {
+			err = errors.Join(err, fmt.Errorf("serverless private endpoint should have a unique name: %s is duplicated", privateEndpoint.Name))
+		}
+
+		namesMap[privateEndpoint.Name] = struct{}{}
+	}
+
 	return err
 }
 
