@@ -339,7 +339,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change ReplicationSpecs", Label("deployment-sharding"), func() {
+	Describe("Create deployment & change ReplicationSpecs", Label("AtlasDeploymentSharding"), func() {
 		It("Should Succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 

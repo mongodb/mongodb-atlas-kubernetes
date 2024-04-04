@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+	"net"
+	"strconv"
 	"strings"
-	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -14,7 +16,6 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
-	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -325,15 +326,26 @@ func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string)
 	return nil
 }
 
+func (a *GCPAction) randomIP(subnet string) string {
+	ip, network, _ := net.ParseCIDR(a.network.Subnets[subnet])
+
+	ipParts := strings.Split(ip.String(), ".")
+
+	for {
+		ipParts[3] = strconv.Itoa(rand.IntN(255))
+		genIP := net.ParseIP(strings.Join(ipParts, "."))
+
+		if network.Contains(genIP) {
+			return genIP.String()
+		}
+	}
+}
+
 func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
 	a.t.Helper()
 
-	rand.Seed(time.Now().UnixNano())
+	ip := a.randomIP(subnet)
 
-	ip := fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(10, 120))
-	if subnet == Subnet2Name {
-		ip = fmt.Sprintf(gcpSubnetIPMask, rand.IntnRange(150, 250))
-	}
 	addressRequest := &computepb.InsertAddressRequest{
 		Project: a.projectID,
 		Region:  region,

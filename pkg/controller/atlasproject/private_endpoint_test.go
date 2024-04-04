@@ -1,19 +1,13 @@
 package atlasproject
 
 import (
-	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas/mongodbatlas"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestGetEndpointsNotInAtlas(t *testing.T) {
@@ -41,8 +35,10 @@ func TestGetEndpointsNotInAtlas(t *testing.T) {
 	assert.Equalf(t, 3, itemCounts[0]+itemCounts[1], "item counts should sum up to the actual value of spec endpoints")
 
 	atlasPEs = append(atlasPEs, atlasPE{
-		ProviderName: string(provider.ProviderAWS),
-		RegionName:   region1,
+		EndpointService: admin.EndpointService{
+			CloudProvider: string(provider.ProviderAWS),
+			RegionName:    admin.PtrString(region1),
+		},
 	})
 
 	uniqueItems, _ = getEndpointsNotInAtlas(specPEs, atlasPEs)
@@ -64,12 +60,16 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 	}
 	atlasPEs := []atlasPE{
 		{
-			ProviderName: string(provider.ProviderAWS),
-			RegionName:   region1,
+			EndpointService: admin.EndpointService{
+				CloudProvider: string(provider.ProviderAWS),
+				RegionName:    admin.PtrString(region1),
+			},
 		},
 		{
-			ProviderName: string(provider.ProviderAWS),
-			RegionName:   region1,
+			EndpointService: admin.EndpointService{
+				CloudProvider: string(provider.ProviderAWS),
+				RegionName:    admin.PtrString(region1),
+			},
 		},
 	}
 
@@ -77,261 +77,11 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 	assert.Equalf(t, 0, len(uniqueItems), "getEndpointsNotInSpec should not return anything if PEs are in spec")
 
 	atlasPEs = append(atlasPEs, atlasPE{
-		ProviderName: string(provider.ProviderAWS),
-		Region:       region2,
+		EndpointService: admin.EndpointService{
+			CloudProvider: string(provider.ProviderAWS),
+			RegionName:    admin.PtrString(region2),
+		},
 	})
 	uniqueItems = getEndpointsNotInSpec(specPEs, atlasPEs)
 	assert.Equalf(t, 1, len(uniqueItems), "getEndpointsNotInSpec should get a spec item")
-}
-
-func TestCanPrivateEndpointReconcile(t *testing.T) {
-	t.Run("should return true when subResourceDeletionProtection is disabled", func(t *testing.T) {
-		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, false, &akov2.AtlasProject{})
-		require.NoError(t, err)
-		require.True(t, result)
-	})
-
-	t.Run("should return error when unable to deserialize last applied configuration", func(t *testing.T) {
-		akoProject := &akov2.AtlasProject{}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &mongodbatlas.Client{}, true, akoProject)
-		require.EqualError(t, err, "invalid character 'w' looking for beginning of object key string")
-		require.False(t, result)
-	})
-
-	t.Run("should return error when unable to fetch data from Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return nil, nil, errors.New("failed to retrieve data")
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
-
-		require.EqualError(t, err, "failed to retrieve data")
-		require.False(t, result)
-	})
-
-	t.Run("should return true when there are no items in Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
-
-		require.NoError(t, err)
-		require.True(t, result)
-	})
-
-	t.Run("should return true when there are no difference between current Atlas and previous applied configuration", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					if providerName == "AWS" {
-						return []mongodbatlas.PrivateEndpointConnection{
-							{
-								ID:           "123456",
-								ProviderName: "AWS",
-								Region:       "eu-west-2",
-								RegionName:   "eu-west-2",
-							},
-						}, nil, nil
-					}
-
-					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{
-			Spec: akov2.AtlasProjectSpec{
-				PrivateEndpoints: []akov2.PrivateEndpoint{
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-2",
-					},
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-1",
-					},
-				},
-			},
-		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
-
-		require.NoError(t, err)
-		require.True(t, result)
-	})
-
-	t.Run("should return true when there are differences but new configuration synchronize operator", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					if providerName == "AWS" {
-						return []mongodbatlas.PrivateEndpointConnection{
-							{
-								ID:           "123456",
-								ProviderName: "AWS",
-								Region:       "eu-west-2",
-								RegionName:   "eu-west-2",
-							}, {
-								ID:           "654321",
-								ProviderName: "AWS",
-								Region:       "eu-west-1",
-								RegionName:   "eu-west-1",
-							},
-						}, nil, nil
-					}
-
-					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{
-			Spec: akov2.AtlasProjectSpec{
-				PrivateEndpoints: []akov2.PrivateEndpoint{
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-2",
-					},
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-1",
-					},
-				},
-			},
-		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
-
-		require.NoError(t, err)
-		require.True(t, result)
-	})
-
-	t.Run("should return false when unable to reconcile private endpoints", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					if providerName == "AWS" {
-						return []mongodbatlas.PrivateEndpointConnection{
-							{
-								ID:           "123456",
-								ProviderName: "AWS",
-								Region:       "eu-west-2",
-								RegionName:   "eu-west-2",
-							}, {
-								ID:           "654321",
-								ProviderName: "AWS",
-								Region:       "us-west-1",
-								RegionName:   "us-west-1",
-							},
-						}, nil, nil
-					}
-
-					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{
-			Spec: akov2.AtlasProjectSpec{
-				PrivateEndpoints: []akov2.PrivateEndpoint{
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-2",
-					},
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-1",
-					},
-				},
-			},
-		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		result, err := canPrivateEndpointReconcile(context.Background(), &atlasClient, true, akoProject)
-
-		require.NoError(t, err)
-		require.False(t, result)
-	})
-}
-
-func TestEnsurePrivateEndpoint(t *testing.T) {
-	t.Run("should failed to reconcile when unable to decide resource ownership", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					return nil, nil, errors.New("failed to retrieve data")
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{}"})
-		workflowCtx := &workflow.Context{
-			Client: &atlasClient,
-		}
-		result := ensurePrivateEndpoint(workflowCtx, akoProject, true)
-
-		require.Equal(t, workflow.Terminate(workflow.Internal, "unable to resolve ownership for deletion protection: failed to retrieve data"), result)
-	})
-
-	t.Run("should failed to reconcile when unable to synchronize with Atlas", func(t *testing.T) {
-		atlasClient := mongodbatlas.Client{
-			PrivateEndpoints: &atlas.PrivateEndpointsClientMock{
-				ListFunc: func(projectID, providerName string) ([]mongodbatlas.PrivateEndpointConnection, *mongodbatlas.Response, error) {
-					if providerName == "AWS" {
-						return []mongodbatlas.PrivateEndpointConnection{
-							{
-								ID:           "123456",
-								ProviderName: "AWS",
-								Region:       "eu-west-2",
-								RegionName:   "eu-west-2",
-							}, {
-								ID:           "654321",
-								ProviderName: "AWS",
-								Region:       "us-west-1",
-								RegionName:   "us-west-1",
-							},
-						}, nil, nil
-					}
-
-					return []mongodbatlas.PrivateEndpointConnection{}, nil, nil
-				},
-			},
-		}
-		akoProject := &akov2.AtlasProject{
-			Spec: akov2.AtlasProjectSpec{
-				PrivateEndpoints: []akov2.PrivateEndpoint{
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-2",
-					},
-					{
-						Provider: provider.ProviderAWS,
-						Region:   "eu-west-1",
-					},
-				},
-			},
-		}
-		akoProject.WithAnnotations(map[string]string{customresource.AnnotationLastAppliedConfiguration: "{\"privateEndpoints\":[{\"provider\":\"AWS\",\"region\":\"eu-west-2\"}]}"})
-		workflowCtx := &workflow.Context{
-			Client: &atlasClient,
-		}
-		result := ensurePrivateEndpoint(workflowCtx, akoProject, true)
-
-		require.Equal(
-			t,
-			workflow.Terminate(
-				workflow.AtlasDeletionProtection,
-				"unable to reconcile Private Endpoint(s) due to deletion protection being enabled. see https://dochub.mongodb.org/core/ako-deletion-protection for further information",
-			),
-			result,
-		)
-	})
 }
