@@ -476,7 +476,8 @@ spec:
                       service provider.
                     properties:
                       autoScaling:
-                        description: Range of instance sizes to which your deployment
+                        description: DEPRECATED FIELD. The value of this field doesn't
+                          take any effect. Range of instance sizes to which your deployment
                           can scale.
                         properties:
                           autoIndexingEnabled:
@@ -528,23 +529,26 @@ spec:
                         type: string
                       diskIOPS:
                         description: |-
-                          Disk IOPS setting for AWS storage.
+                          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
                           Set only if you selected AWS as your cloud service provider.
                         format: int64
                         type: integer
                       diskTypeName:
-                        description: Type of disk if you selected Azure as your cloud
-                          service provider.
+                        description: DEPRECATED FIELD. The value of this field doesn't
+                          take any effect. Type of disk if you selected Azure as your
+                          cloud service provider.
                         type: string
                       encryptEBSVolume:
-                        description: Flag that indicates whether the Amazon EBS encryption
-                          feature encrypts the host's root volume for both data at
-                          rest within the volume and for data moving between the volume
-                          and the deployment.
+                        description: DEPRECATED FIELD. The value of this field doesn't
+                          take any effect. Flag that indicates whether the Amazon
+                          EBS encryption feature encrypts the host's root volume for
+                          both data at rest within the volume and for data moving
+                          between the volume and the deployment.
                         type: boolean
                       instanceSizeName:
-                        description: Atlas provides different deployment tiers, each
-                          with a default storage capacity and RAM size. The deployment
+                        description: DEPRECATED FIELD. The value of this field doesn't
+                          take any effect. Atlas provides different deployment tiers,
+                          each with a default storage capacity and RAM size. The deployment
                           you select is used for all the data-bearing hosts in your
                           deployment tier.
                         type: string
@@ -565,7 +569,7 @@ spec:
                         type: string
                       volumeType:
                         description: |-
-                          Disk IOPS setting for AWS storage.
+                          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
                           Set only if you selected AWS as your cloud service provider.
                         enum:
                         - STANDARD

@@ -44,7 +44,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "GCP",
 					},
@@ -70,7 +70,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "GCP",
 					},
@@ -87,7 +87,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "AWS",
 					},
@@ -116,7 +116,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "AWS",
 					},
@@ -154,7 +154,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "AWS",
 					},
@@ -204,7 +204,7 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			Spec: akov2.AtlasDeploymentSpec{
 				ServerlessSpec: &akov2.ServerlessSpec{
 					Name: "instance-0",
-					ProviderSettings: &akov2.ProviderSettingsSpec{
+					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 						ProviderName:        "SERVERLESS",
 						BackingProviderName: "AWS",
 					},
@@ -251,7 +251,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 	t.Run("should succeed adding, creating and deleting private endpoints", func(t *testing.T) {
 		spec := akov2.ServerlessSpec{
 			Name: "instance-0",
-			ProviderSettings: &akov2.ProviderSettingsSpec{
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 				ProviderName:        "SERVERLESS",
 				BackingProviderName: "AWS",
 			},
@@ -339,7 +339,7 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 func TestIsGCPWithPrivateEndpoints(t *testing.T) {
 	t.Run("should return true when is GCP serverless instance containing private endpoint configuration", func(t *testing.T) {
 		deployment := akov2.ServerlessSpec{
-			ProviderSettings: &akov2.ProviderSettingsSpec{
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 				BackingProviderName: "GCP",
 			},
 			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
@@ -354,7 +354,7 @@ func TestIsGCPWithPrivateEndpoints(t *testing.T) {
 
 	t.Run("should return false when is GCP serverless instance without private endpoint configuration", func(t *testing.T) {
 		deployment := akov2.ServerlessSpec{
-			ProviderSettings: &akov2.ProviderSettingsSpec{
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 				BackingProviderName: "GCP",
 			},
 		}
@@ -366,7 +366,7 @@ func TestIsGCPWithPrivateEndpoints(t *testing.T) {
 func TestIsGCPWithoutPrivateEndpoints(t *testing.T) {
 	t.Run("should return false when is GCP serverless instance containing private endpoint configuration", func(t *testing.T) {
 		deployment := akov2.ServerlessSpec{
-			ProviderSettings: &akov2.ProviderSettingsSpec{
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 				BackingProviderName: "GCP",
 			},
 			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
@@ -381,7 +381,7 @@ func TestIsGCPWithoutPrivateEndpoints(t *testing.T) {
 
 	t.Run("should return true when is GCP serverless instance without private endpoint configuration", func(t *testing.T) {
 		deployment := akov2.ServerlessSpec{
-			ProviderSettings: &akov2.ProviderSettingsSpec{
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 				BackingProviderName: "GCP",
 			},
 		}

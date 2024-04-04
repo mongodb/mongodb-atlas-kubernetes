@@ -625,7 +625,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 					},
 					ServerlessSpec: &akov2.ServerlessSpec{
 						Name: clusterName,
-						ProviderSettings: &akov2.ProviderSettingsSpec{
+						ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 							BackingProviderName: "AWS",
 							ProviderName:        "SERVERLESS",
 							RegionName:          "US_GOV_EAST_1",

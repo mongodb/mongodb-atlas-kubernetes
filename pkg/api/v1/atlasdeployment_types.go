@@ -162,8 +162,8 @@ type ServerlessSpec struct {
 	// +kubebuilder:validation:Pattern:=^[a-zA-Z0-9][a-zA-Z0-9-]*$
 	Name string `json:"name"`
 	// Configuration for the provisioned hosts on which MongoDB runs. The available options are specific to the cloud service provider.
-	ProviderSettings *ProviderSettingsSpec       `json:"providerSettings"`
-	PrivateEndpoints []ServerlessPrivateEndpoint `json:"privateEndpoints,omitempty"`
+	ProviderSettings *ServerlessProviderSettingsSpec `json:"providerSettings"`
+	PrivateEndpoints []ServerlessPrivateEndpoint     `json:"privateEndpoints,omitempty"`
 	// Key-value pairs for resource tagging.
 	// +kubebuilder:validation:MaxItems=50
 	// +optional
@@ -440,28 +440,28 @@ type BiConnectorSpec struct {
 // Check compatibility with library type.
 var _ = BiConnectorSpec(mongodbatlas.BiConnector{})
 
-// ProviderSettingsSpec configuration for the provisioned servers on which MongoDB runs. The available options are specific to the cloud service provider.
-type ProviderSettingsSpec struct {
+// ServerlessProviderSettingsSpec configuration for the provisioned servers on which MongoDB runs. The available options are specific to the cloud service provider.
+type ServerlessProviderSettingsSpec struct {
 	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 	// This setting only works when "providerSetting.providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
 	// +optional
 	BackingProviderName string `json:"backingProviderName,omitempty"`
 
-	// Disk IOPS setting for AWS storage.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
 	// Set only if you selected AWS as your cloud service provider.
 	// +optional
 	DiskIOPS *int64 `json:"diskIOPS,omitempty"`
 
-	// Type of disk if you selected Azure as your cloud service provider.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Type of disk if you selected Azure as your cloud service provider.
 	// +optional
 	DiskTypeName string `json:"diskTypeName,omitempty"`
 
-	// Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
 	// +optional
 	EncryptEBSVolume *bool `json:"encryptEBSVolume,omitempty"`
 
-	// Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
 	// +optional
 	InstanceSizeName string `json:"instanceSizeName,omitempty"`
 
@@ -474,12 +474,12 @@ type ProviderSettingsSpec struct {
 	// +optional
 	RegionName string `json:"regionName,omitempty"`
 
-	// Disk IOPS setting for AWS storage.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
 	// Set only if you selected AWS as your cloud service provider.
 	// +kubebuilder:validation:Enum=STANDARD;PROVISIONED
 	VolumeType string `json:"volumeType,omitempty"`
 
-	// Range of instance sizes to which your deployment can scale.
+	// DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.
 	AutoScaling *AutoScalingSpec `json:"autoScaling,omitempty"`
 }
 
@@ -610,7 +610,7 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 		Spec: AtlasDeploymentSpec{
 			ServerlessSpec: &ServerlessSpec{
 				Name: nameInAtlas,
-				ProviderSettings: &ProviderSettingsSpec{
+				ProviderSettings: &ServerlessProviderSettingsSpec{
 					BackingProviderName: backingProviderName,
 					ProviderName:        "SERVERLESS",
 					RegionName:          regionName,
