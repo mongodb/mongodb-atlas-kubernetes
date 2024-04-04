@@ -51,14 +51,17 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 
 				team.UpdateStatus([]status.Condition{}, status.AtlasTeamUnsetProject(projectID))
 
+				if len(team.Status.Projects) == 0 {
+					team.Status.ID = ""
+				}
+
+				if customresource.HaveFinalizer(&team, customresource.FinalizerLabel) {
+					customresource.UnsetFinalizer(&team, customresource.FinalizerLabel)
+				}
+
 				if err = r.Client.Status().Update(ctx, &team); err != nil {
 					r.Log.Errorw("failed to update Team status", "error", err)
 					return err
-				}
-
-				if len(team.Status.Projects) == 0 {
-					team.Status.ID = ""
-					return customresource.ManageFinalizer(ctx, r.Client, &team, customresource.UnsetFinalizer)
 				}
 			}
 			return nil
