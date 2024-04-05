@@ -89,7 +89,7 @@ func CreateServerlessDeployment(name string, providerName string, regionName str
 			},
 			ServerlessSpec: &akov2.ServerlessSpec{
 				Name: name,
-				ProviderSettings: &akov2.ProviderSettingsSpec{
+				ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
 					ProviderName:        ServerlessProviderName,
 					BackingProviderName: providerName,
 					RegionName:          regionName,

@@ -213,7 +213,7 @@ func (r *AtlasDeploymentReconciler) registerConfigAndReturn(
 }
 
 func (r *AtlasDeploymentReconciler) verifyNonTenantCase(deployment *akov2.AtlasDeployment) {
-	var pSettings *akov2.ProviderSettingsSpec
+	var pSettings *akov2.ServerlessProviderSettingsSpec
 	var deploymentType string
 
 	if deployment.Spec.ServerlessSpec != nil {
@@ -334,7 +334,7 @@ func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, dep
 	return r.garbageCollectBackupResource(context, deployment.GetDeploymentName())
 }
 
-func modifyProviderSettings(pSettings *akov2.ProviderSettingsSpec, deploymentType string) {
+func modifyProviderSettings(pSettings *akov2.ServerlessProviderSettingsSpec, deploymentType string) {
 	if pSettings == nil || string(pSettings.ProviderName) == deploymentType {
 		return
 	}
