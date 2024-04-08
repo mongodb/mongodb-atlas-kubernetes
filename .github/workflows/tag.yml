@@ -22,6 +22,8 @@ jobs:
           ref: ${{ env.BRANCH }}
       - name: Tag and kick release
         id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version=$(echo "$BRANCH" | awk -F '/' '{print $2}')
           tag="v${version}"
@@ -31,4 +33,3 @@ jobs:
           fi
           git tag "${tag}"
           git push origin "${tag}"
-
