@@ -27,9 +27,5 @@ jobs:
         run: |
           version=$(echo "$BRANCH" | awk -F '/' '{print $2}')
           tag="v${version}"
-          release=$(echo "$BRANCH" | awk -F '/' '{print $1}')
-          if [[ "$release" == "pre-release" ]]; then
-            tag="v${version}-rc"
-          fi
           git tag "${tag}"
           git push origin "${tag}"
