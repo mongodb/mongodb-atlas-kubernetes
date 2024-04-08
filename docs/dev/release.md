@@ -24,6 +24,8 @@ The new job "Create Release" will be triggered and the following will be done:
 * Atlas Operator image built and pushed to dockerhub
 * Draft Release will be created with all commits since the previous release
 
+Once the Pull Request is approved, a tag is created out of the branch, which can then be discarded. A branch `release/X.Y.Z` will imply a tag `vX.Y.Z`, and `pre-release/X.Y.Z-...` will imply `vX.Y.Z-...`. The `tag.yml` workflow is the one responsible for creating such tag and triggering the release process workflow (`release-post-merge.yml`).
+
 ## Edit the Release Notes and publish the release
 
 Follow the format described in the release-notes-template.md file. Publish the release.
