@@ -363,8 +363,8 @@ spec:
                   rootCertType:
                     type: string
                   searchNodes:
-                    description: Settings for Search Nodes for the cluster. Despite
-                      being a list, only one configuration may be defined.
+                    description: Settings for Search Nodes for the cluster. Currently,
+                      at most one search node configuration may be defined.
                     items:
                       properties:
                         instanceSize:

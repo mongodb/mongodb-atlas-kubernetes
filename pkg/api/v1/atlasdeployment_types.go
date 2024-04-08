@@ -139,7 +139,7 @@ type AdvancedDeploymentSpec struct {
 	// Flag that indicates whether termination protection is enabled on the cluster. If set to true, MongoDB Cloud won't delete the cluster. If set to false, MongoDB Cloud will delete the cluster.
 	// +kubebuilder:default:=false
 	TerminationProtectionEnabled bool `json:"terminationProtectionEnabled,omitempty"`
-	// Settings for Search Nodes for the cluster. Despite being a list, only one configuration may be defined.
+	// Settings for Search Nodes for the cluster. Currently, at most one search node configuration may be defined.
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	SearchNodes []SearchNode `json:"searchNodes,omitempty"`

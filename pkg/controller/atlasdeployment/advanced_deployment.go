@@ -103,7 +103,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		}
 	}
 
-	nodesInAkoEmpty := deployment.Spec.DeploymentSpec.SearchNodes == nil || len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
+	nodesInAkoEmpty := len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
 
 	switch {
 	case !nodesInAkoEmpty && nodesInAtlasEmpty:
@@ -113,19 +113,18 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
-			ctx.Log.Debugf("unable to create search nodes: %v", err)
-			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
+			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to create search nodes: %v", err))
 		}
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// If nodes already configured in atlas and in the operator - update them.
 		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
 		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 		// We can deepequal without normalization here because there is only ever 1 spec in the array
-		if reflect.DeepEqual(currentAkoNodesAsAtlas, currentNodesInAtlas.Specs) {
+		if reflect.DeepEqual(currentAkoNodesAsAtlas, *currentNodesInAtlas.Specs) {
 			// If the nodes are not marked as IDLE, they are not yet ready.
+			// TODO: should we check this earlier?
 			if currentNodesInAtlas.GetStateName() != "IDLE" {
 				msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
-				ctx.Log.Debug(msg)
 				return workflow.InProgress(workflow.SearchNodesReady, msg)
 			}
 
@@ -137,16 +136,14 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
-			ctx.Log.Debugf("unable to update search nodes: %v", err)
-			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
+			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to update search nodes: %v", err))
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// If no nodes configured in the operator, but some in atlas - delete them.
 		ctx.Log.Debug("deleting search nodes")
 		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 		if err != nil {
-			ctx.Log.Debugf("unable to delete search nodes: %v", err)
-			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
+			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to delete search nodes: %v", err))
 		}
 	}
 
