@@ -178,7 +178,7 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.2.1-rc0
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.2.1-rc1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
@@ -482,7 +482,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.2.1-rc0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.2.1-rc1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -567,5 +567,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.2.1-rc0
+  version: 2.2.1-rc1
   replaces: mongodb-atlas-kubernetes.v2.1.0
