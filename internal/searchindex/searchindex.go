@@ -77,7 +77,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 
 	mappings, mappingsError := convertMappings(index.Mappings)
 	if mappingsError != nil {
-		return nil, fmt.Errorf("unable to convert mappings: %v", mappingsError)
+		return nil, fmt.Errorf("unable to convert mappings: %w", mappingsError)
 	}
 
 	search := &akov2.Search{
@@ -91,7 +91,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		Fields: vectorFields,
 	}
 	if mappingsError != nil {
-		return nil, fmt.Errorf("unable to convert vector fields: %v", vectorError)
+		return nil, fmt.Errorf("unable to convert vector fields: %w", vectorError)
 	}
 
 	convertAnalyzers := func(in *[]admin.ApiAtlasFTSAnalyzers) (*[]akov2.AtlasSearchIndexAnalyzer, error) {
@@ -123,19 +123,19 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		for i := range *in {
 			tokenFilters, err := convertFilters((*in)[i].TokenFilters)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert tokenFilters: %v", err))
+				errs = append(errs, fmt.Errorf("unable to convert tokenFilters: %w", err))
 				continue
 			}
 
 			charFilters, err := convertFilters((*in)[i].CharFilters)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert charFilters: %v", err))
+				errs = append(errs, fmt.Errorf("unable to convert charFilters: %w", err))
 				continue
 			}
 
 			tokenizer, err := convertTokenizer(&(*in)[i].Tokenizer)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("unable to convert tokenizer: %v", err))
+				errs = append(errs, fmt.Errorf("unable to convert tokenizer: %w", err))
 				continue
 			}
 
@@ -158,7 +158,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		return &apiextensionsv1.JSON{Raw: val}, nil
 	}
 
-	errs := []error{}
+	var errs []error
 	analyzers, err := convertAnalyzers(index.Analyzers)
 	if err != nil {
 		errs = append(errs, err)
@@ -185,15 +185,11 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			SearchAnalyzer: index.SearchAnalyzer,
 			StoredSource:   storedSource,
 		},
-	}, err
+	}, errors.Join(errs...)
 }
 
 func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
-	if value == nil {
-		return false
-	}
-
-	return true
+	return value != nil
 }
 
 //func (s *SearchIndex) ToAtlas() *admin.ClusterSearchIndex {

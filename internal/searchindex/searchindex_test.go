@@ -163,7 +163,6 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := NewSearchIndexFromAKO(tt.args.index, tt.args.config)
 			if diff := cmp.Diff(got, tt.want, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("NewSearchIndexFromAKO() = %v, want %v.\nDiff: %s", got, tt.want, diff)
