@@ -1,0 +1,34 @@
+name: Tag Release
+
+on:
+  pull_request:
+    types:
+    - closed
+
+jobs:
+  tag-release:
+    if: (github.event.pull_request.merged == true && (startsWith(github.head_ref, 'release/') || startsWith(github.head_ref, 'pre-release/')))
+    environment: release
+    name: Tag Release
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ github.head_ref }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          ref: ${{ env.BRANCH }}
+      - name: Tag and kick release
+        id: tag
+        run: |
+          version=$(echo "$BRANCH" | awk -F '/' '{print $2}')
+          tag="v${version}"
+          release=$(echo "$BRANCH" | awk -F '/' '{print $1}')
+          if [[ "$release" == "pre-release" ]]; then
+            tag="v${version}-rc"
+          fi
+          git tag "${tag}"
+          git push origin "${tag}"
+

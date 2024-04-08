@@ -5,20 +5,13 @@
 name: Create Release
 
 on:
-  pull_request:
-    branches:
-      - pre-release/**
-      - release/**
-    types:
-      - closed
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
-      version:
-        description: "Release version (Be sure `Release-branch` is successful):"
-        required: true
-      branch:
-        description: "Name of the branch to release, defaults to 'main'"
-        default: main
+      tag:
+        description: "Name of existing tag (or branch) to release (format should be 'v*')"
         required: true
       image_repo:
         type: choice
@@ -56,15 +49,13 @@ jobs:
   create-release:
     environment: release
     name: Create Release
-    if: github.event.pull_request.merged == true || github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       IMAGE_REPOSITORY: ${{ github.event.inputs.image_repo }}
       RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
-      BRANCH: ${{ github.event.inputs.branch || github.head_ref || github.ref_name || 'main' }}
-      VERSION: ${{ github.event.inputs.version }}
+      TAG: ${{ github.event.inputs.tag || github.head_ref || github.ref_name }}
     steps:
       - name: Free disk space
         run: | 
@@ -76,39 +67,31 @@ jobs:
       - name: Check release and show environment & version
         id: tag
         run: |
-          version="$VERSION"
-          if [[ "$version" == "" ]]; then
-            version=$(echo "$BRANCH" | awk -F '/' '{print $2}')
-            release=$(echo "$BRANCH" | awk -F '/' '{print $1}')
-            if [[ "$release" == "release" ]]; then
-              echo "Releasing version $version..."
-              repo="mongodb/mongodb-atlas-kubernetes-operator"
-            elif [[ "$release" == "pre-release" ]]; then
-              echo "Pre-releasing version $version..."
-              repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
-              RELEASE_HELM=false
-              CERTIFY=false
-              RELEASE_TO_GITHUB=false
-            else
-              echo "Release branch must be 'release/...' or 'pre-release/...' but got: $release"
-              exit 1
-            fi
+          version=$(echo "${TAG}"" |awk -F'^v' '{print $2}')
+          pre-release-tail=$(echo "${VERSION}" | awk -F'-' '{print $2}')
+          if [[ "$pre-release-tail" == "" ]]; then
+            echo "Releasing version $version..."
+            repo="mongodb/mongodb-atlas-kubernetes-operator"
+          else
+            echo "Pre-releasing version $version..."
+            repo="mongodb/mongodb-atlas-kubernetes-operator-prerelease"
+            RELEASE_HELM=false
+            CERTIFY=false
+            RELEASE_TO_GITHUB=false
           fi
-          tag="v${version}"
-          certified_version="${version}-certified"
           echo "release_helm=$RELEASE_HELM" >> "$GITHUB_OUTPUT"
           echo "certify=$CERTIFY" >> "$GITHUB_OUTPUT"
           echo "release_to_github=$RELEASE_TO_GITHUB" >> "$GITHUB_OUTPUT"
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          certified_version="${version}-certified"
           echo "certified_version=$certified_version" >> "$GITHUB_OUTPUT"
       - name: Check out code
         uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
-          ref: ${{ env.BRANCH }}
+          ref: ${{ env.TAG }}
       - name: Set up Go
         if: ${{ steps.tag.outputs.release_helm == 'true' }}
         uses: actions/setup-go@v5
