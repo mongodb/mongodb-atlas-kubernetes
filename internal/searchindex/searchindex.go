@@ -1,10 +1,11 @@
 package searchindex
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
@@ -60,13 +61,20 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		if in == nil {
 			return nil, nil
 		}
-		var fields apiextensionsv1.JSON
-		err := compat.JSONCopy(&fields, in)
-		return &akov2.Mapping{
+		result := &akov2.Mapping{
 			Dynamic: in.Dynamic,
-			Fields:  &fields,
-		}, err
+			Fields:  nil,
+		}
+		if in.Fields == nil {
+			return result, nil
+		}
+
+		var fields apiextensionsv1.JSON
+		err := compat.JSONCopy(&fields, in.Fields)
+		result.Fields = &fields
+		return result, err
 	}
+
 	mappings, mappingsError := convertMappings(index.Mappings)
 	if mappingsError != nil {
 		return nil, fmt.Errorf("unable to convert mappings: %v", mappingsError)
@@ -142,8 +150,21 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 		return &result, e
 	}
 
+	convertStoredSource := func(in map[string]interface{}) (*apiextensionsv1.JSON, error) {
+		val, err := json.Marshal(in)
+		if err != nil {
+			return nil, err
+		}
+		return &apiextensionsv1.JSON{Raw: val}, nil
+	}
+
 	errs := []error{}
 	analyzers, err := convertAnalyzers(index.Analyzers)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	storedSource, err := convertStoredSource(index.StoredSource)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -162,7 +183,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			Analyzer:       index.Analyzer,
 			Analyzers:      analyzers,
 			SearchAnalyzer: index.SearchAnalyzer,
-			StoredSource:   pointer.MakePtr(""),
+			StoredSource:   storedSource,
 		},
 	}, err
 }

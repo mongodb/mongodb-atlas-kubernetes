@@ -53,7 +53,7 @@ type AtlasSearchIndexConfigSpec struct {
 	// Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search. Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search. To learn more, see documentation:
 	// https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/
 	// +optional
-	StoredSource *string `json:"storedSource,omitempty"`
+	StoredSource *apiextensions.JSON `json:"storedSource,omitempty"`
 	// Synonyms and mappings can be found in the AtlasDeployment resource spec
 }
 

@@ -1252,8 +1252,8 @@ func (in *AtlasSearchIndexConfigSpec) DeepCopyInto(out *AtlasSearchIndexConfigSp
 	}
 	if in.StoredSource != nil {
 		in, out := &in.StoredSource, &out.StoredSource
-		*out = new(string)
-		**out = **in
+		*out = new(apiextensionsv1.JSON)
+		(*in).DeepCopyInto(*out)
 	}
 }
 

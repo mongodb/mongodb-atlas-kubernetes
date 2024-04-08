@@ -5,59 +5,106 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/searchindex"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mdbv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const (
 	DeploymentIndicesAnnotation = "mongodb.com/deployment-search-indices"
 	DeploymentIndicesSeparator  = ","
+	IndexToIDSeparator          = ":"
 )
 
-func handleSearchIndices(ctx *workflow.Context, k8sClient client.Client, deployment *mdbv1.AtlasDeployment, projectID string) error {
+// getIndicesFromAnnotations returns a map IndexName -> IndexID
+func getIndicesFromAnnotations(in map[string]string) map[string]string {
+	result := map[string]string{}
+	indices, ok := in[DeploymentIndicesAnnotation]
+	if !ok {
+		return nil
+	}
+	indexNameIDPairs := strings.Split(indices, DeploymentIndicesSeparator)
+	for _, pair := range indexNameIDPairs {
+		res := strings.Split(pair, IndexToIDSeparator)
+		if len(res) != 2 {
+			continue
+		}
+		result[res[0]] = res[1]
+	}
+	return result
+}
+
+func verifyAllIndicesNamesAreUnique(indices []akov2.SearchIndex) bool {
+	buff := make(map[string]bool, len(indices))
+	for i := range indices {
+		if _, ok := buff[indices[i].Name]; ok {
+			return false
+		}
+		buff[indices[i].Name] = true
+	}
+	return true
+}
+func handleSearchIndices(ctx *workflow.Context, k8sClient client.Client, deployment *akov2.AtlasDeployment, projectID string) error {
 	ctx.Log.Debug("starting indexes processing")
 	defer ctx.Log.Debug("finished indexes processing")
 	// TODO: Verify if all names are unique
 
-	// Step 0
-	var previousAKOIndexIDs []string
 	if deployment.GetAnnotations() == nil {
 		return fmt.Errorf("unable to get deployment annotations")
 	}
-	if indices, ok := deployment.GetAnnotations()[DeploymentIndicesAnnotation]; ok {
-		previousAKOIndexIDs = strings.Split(indices, DeploymentIndicesSeparator)
+
+	if !verifyAllIndicesNamesAreUnique(deployment.Spec.DeploymentSpec.SearchIndexes) {
+		return fmt.Errorf("every index 'Name' must be unique")
 	}
 
-	var atlasExistingIndices []*admin.ClusterSearchIndex
+	previousAKOIndices := getIndicesFromAnnotations(deployment.GetAnnotations())
 
-	// Fetch existing indices from Atlas
-	for _, prevIndexID := range previousAKOIndexIDs {
-		resp, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchIndex(context.Background(), projectID, deployment.GetDeploymentName(), prevIndexID).Execute()
-		if err != nil {
-			ctx.Log.Debug("couldn't fetch index. ID: %s. Status code: %d, Err: %w", prevIndexID, httpResp.StatusCode, err)
-			continue
-		}
-		atlasExistingIndices = append(atlasExistingIndices, resp)
-	}
-
+	var atlasExistingIndices []*searchindex.SearchIndex
 	// Map[indexName][]listOfErrors
 	var errors map[string][]error
+
+	// Fetch existing indices from Atlas
+	for prevIndexName, prevIndexID := range previousAKOIndices {
+		resp, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchIndex(
+			context.Background(), projectID, deployment.GetDeploymentName(), prevIndexID).Execute()
+		if err != nil {
+			ctx.Log.Debug("couldn't fetch index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			continue
+		}
+		if resp == nil {
+			ctx.Log.Debug("received an empty index. ID: %s. Status code: %d, E: %w", prevIndexID, httpResp.StatusCode, err)
+			continue
+		}
+
+		akoIndex, err := searchindex.NewSearchIndexFromAtlas(*resp)
+		if err != nil {
+			errors[prevIndexName] = append(errors[prevIndexName],
+				fmt.Errorf("unable to convert index to AKO. Name: %s, ID: %s, E: %w", prevIndexName, prevIndexID, err))
+		}
+		atlasExistingIndices = append(atlasExistingIndices, akoIndex)
+	}
+
 	// Build indices for AKO
-	//var akoIndices = make([]*admin.ClusterSearchIndex, len(deployment.Spec.DeploymentSpec.SearchIndexes))
+	var akoIndices = make([]*searchindex.SearchIndex, len(deployment.Spec.DeploymentSpec.SearchIndexes))
 	for i := range deployment.Spec.DeploymentSpec.SearchIndexes {
 		akoIndex := &deployment.Spec.DeploymentSpec.SearchIndexes[i]
-		var idxConfig mdbv1.AtlasSearchIndexConfig
+		var idxConfig akov2.AtlasSearchIndexConfig
 
 		err := k8sClient.Get(context.Background(), *akoIndex.IndexConfigRef.GetObject(deployment.Namespace), &idxConfig)
 		if err != nil {
-			errors[akoIndex.Name] = append(errors[akoIndex.Name], fmt.Errorf("couldn't get search index configuration. E: %w\r\n", err))
+			errors[akoIndex.Name] = append(errors[akoIndex.Name], fmt.Errorf("couldn't get search index configuration. E: %w", err))
 			continue
 		}
-		//akoIndices = append(akoIndices, akoIndex.ToAtlas(&idxConfig.Spec))
+		akoIndices = append(akoIndices, searchindex.NewSearchIndexFromAKO(akoIndex, &idxConfig.Spec))
 	}
+
+	// indicesToCreate := findIntersection(akoIndices, atlasIndices, leftJoin)
+	// indicesToDelete := findIntersection(akoIndices, atlasIndices, rightJoin)
+	// indicesToUpdate := findIntersection(akoIndices, atlasIndices, innerJoin)
+	// setAnnotationsForAKO
 
 	// Action plan:
 	// 0. List all existing indexes IDs from the Annotations
