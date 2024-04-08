@@ -271,9 +271,7 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		logger := zaptest.NewLogger(t).Sugar()
 
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
+		akov2.AddToScheme(testScheme)
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			Build()
@@ -313,9 +311,8 @@ func TestEnsureAssignedTeams(t *testing.T) {
 		}
 
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
+		akov2.AddToScheme(testScheme)
+		corev1.AddToScheme(testScheme)
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(team1, team2).
@@ -381,9 +378,8 @@ func TestUpdateTeamState(t *testing.T) {
 			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &corev1.Secret{})
+		akov2.AddToScheme(testScheme)
+		corev1.AddToScheme(testScheme)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",
@@ -458,10 +454,8 @@ func Test_TeamGarbageCollect(t *testing.T) {
 			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &corev1.Secret{})
+		akov2.AddToScheme(testScheme)
+		corev1.AddToScheme(testScheme)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",

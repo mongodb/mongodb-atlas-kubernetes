@@ -256,9 +256,9 @@ func (r *AtlasProjectReconciler) handleDeletion(workflowCtx *workflow.Context, a
 				}
 
 				if err := r.garbageCollectTeams(workflowCtx.Context, project.ID()); err != nil {
-					result := workflow.Terminate(workflow.Internal, err.Error())
-					log.Errorw("failed to cleanup project teams", "error", err)
-					return result
+					e := fmt.Errorf("failed to cleanup project teams. error: %w", err)
+					log.Error(e)
+					return workflow.Terminate(workflow.Internal, e.Error())
 				}
 
 				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {

@@ -41,8 +41,8 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 		return nil
 	}
 	g, ctx := errgroup.WithContext(ctx)
-	for _, t := range teams.Items {
-		team := t
+	for i := range teams.Items {
+		team := &teams.Items[i]
 		g.Go(func() error {
 			for _, project := range team.Status.Projects {
 				if project.ID != projectID {
@@ -55,13 +55,13 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 					team.Status.ID = ""
 				}
 
-				if customresource.HaveFinalizer(&team, customresource.FinalizerLabel) {
-					customresource.UnsetFinalizer(&team, customresource.FinalizerLabel)
+				if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
+					customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
 				}
 
-				if err = r.Client.Status().Update(ctx, &team); err != nil {
+				if err = r.Client.Status().Update(ctx, team); err != nil {
 					r.Log.Errorw("failed to update Team status", "error", err)
-					return err
+					return fmt.Errorf("failed to update Team status. error: %w", err)
 				}
 			}
 			return nil
