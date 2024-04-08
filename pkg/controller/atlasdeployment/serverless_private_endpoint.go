@@ -31,19 +31,19 @@ func ensureServerlessPrivateEndpoints(service *workflow.Context, projectID strin
 		return workflow.Terminate(workflow.AtlasUnsupportedFeature, "serverless private endpoints are not supported for GCP")
 	}
 
-	result := workflow.OK()
-
 	if isGCPWithoutPrivateEndpoints(deploymentSpec) {
-		return result
+		return workflow.OK()
 	}
 
 	finished, err := syncServerlessPrivateEndpoints(service, projectID, deploymentSpec)
-	if err != nil {
+	var result workflow.Result
+	switch {
+	case err != nil:
 		result = workflow.Terminate(workflow.ServerlessPrivateEndpointFailed, err.Error())
-	}
-
-	if err == nil && !finished {
+	case err == nil && !finished:
 		result = workflow.InProgress(workflow.ServerlessPrivateEndpointInProgress, "Waiting serverless private endpoint to be configured")
+	default:
+		result = workflow.OK()
 	}
 
 	switch len(deploymentSpec.PrivateEndpoints) {
@@ -65,7 +65,7 @@ func syncServerlessPrivateEndpoints(service *workflow.Context, projectID string,
 	}
 
 	toCreate, toUpdate, toDelete := sortTasks(deployment.PrivateEndpoints, atlasPrivateEndpoints)
-	speStatusesMap := mapStatuses(atlasPrivateEndpoints)
+	speStatusMap := newSPEStatusMap(atlasPrivateEndpoints)
 
 	service.Log.Debugf("Creating %d serverless private endpoints for deployment %s", len(toCreate), deployment.Name)
 	for i := range toCreate {
@@ -76,20 +76,20 @@ func syncServerlessPrivateEndpoints(service *workflow.Context, projectID string,
 			return false, fmt.Errorf("unable to create serverless private endpoint on Atlas: %w", err)
 		}
 
-		speStatusesMap[privateEndpointCreate.Name] = status.SPEStatusFromAtlas(atlasPrivateEndpoint)
+		speStatusMap[privateEndpointCreate.Name] = speStatusFromAtlas(atlasPrivateEndpoint)
 	}
 
 	service.Log.Debugf("Connecting %d serverless private endpoints for deployment %s", len(toUpdate), deployment.Name)
 	for i := range toUpdate {
 		privateEndpointUpdate := toUpdate[i]
 		service.Log.Debugf("Connecting serverless private endpoint %s", privateEndpointUpdate.Name)
-		latestPEStatus := speStatusesMap[privateEndpointUpdate.Name]
+		latestPEStatus := speStatusMap[privateEndpointUpdate.Name]
 		atlasPrivateEndpoint, err := updateServerLessPrivateEndpoint(service, projectID, deployment.Name, latestPEStatus.ID, latestPEStatus.ProviderName, &privateEndpointUpdate)
 		if err != nil {
 			return false, fmt.Errorf("unable to update/connect serverless private endpoint on Atlas: %w", err)
 		}
 
-		speStatusesMap[privateEndpointUpdate.Name] = status.SPEStatusFromAtlas(atlasPrivateEndpoint)
+		speStatusMap[privateEndpointUpdate.Name] = speStatusFromAtlas(atlasPrivateEndpoint)
 	}
 
 	service.Log.Debugf("Deleting %d serverless private endpoints for deployment %s", len(toDelete), deployment.Name)
@@ -101,18 +101,18 @@ func syncServerlessPrivateEndpoints(service *workflow.Context, projectID string,
 		}
 
 		// Serverless private endpoints first go through DELETING state before they are gone
-		speStatus := speStatusesMap[privateEndpointDelete.GetComment()]
+		speStatus := speStatusMap[privateEndpointDelete.GetComment()]
 		speStatus.Status = SPEStatusDeleting
-		speStatusesMap[privateEndpointDelete.GetComment()] = speStatus
+		speStatusMap[privateEndpointDelete.GetComment()] = speStatus
 	}
 
-	speStatuses := make([]status.ServerlessPrivateEndpoint, 0, len(speStatusesMap))
-	for _, speStatus := range speStatusesMap {
+	speStatuses := make([]status.ServerlessPrivateEndpoint, 0, len(speStatusMap))
+	for _, speStatus := range speStatusMap {
 		speStatuses = append(speStatuses, speStatus)
 	}
 	service.EnsureStatusOption(status.AtlasDeploymentSPEOption(speStatuses))
 
-	return checkStatuses(speStatuses), nil
+	return areSPEsAvailable(speStatuses), nil
 }
 
 func isGCPWithPrivateEndpoints(deployment *akov2.ServerlessSpec) bool {
@@ -202,16 +202,16 @@ func sortTasks(
 		privateEndpointsByName[privateEndpoint.Name] = &privateEndpoint
 	}
 
-	atlasPrivateEndpointsByName := map[string]*admin.ServerlessTenantEndpoint{}
+	atlasPrivateEndpointsByComment := map[string]*admin.ServerlessTenantEndpoint{}
 	for i := range atlasPrivateEndpoints {
 		atlasPrivateEndpoint := atlasPrivateEndpoints[i]
-		atlasPrivateEndpointsByName[atlasPrivateEndpoint.GetComment()] = &atlasPrivateEndpoint
+		atlasPrivateEndpointsByComment[atlasPrivateEndpoint.GetComment()] = &atlasPrivateEndpoint
 	}
 
 	// Collect all endpoints to create and update (connect)
 	for i := range privateEndpoints {
 		privateEndpoint := privateEndpoints[i]
-		atlasPrivateEndpoint, ok := atlasPrivateEndpointsByName[privateEndpoint.Name]
+		atlasPrivateEndpoint, ok := atlasPrivateEndpointsByComment[privateEndpoint.Name]
 
 		// If a private endpoint with a given name doesn't exist on Atlas, add to creation list
 		if !ok {
@@ -234,12 +234,12 @@ func sortTasks(
 	return toCreate, toUpdate, toDelete
 }
 
-func mapStatuses(atlasPrivateEndpoints []admin.ServerlessTenantEndpoint) map[string]status.ServerlessPrivateEndpoint {
+func newSPEStatusMap(atlasPrivateEndpoints []admin.ServerlessTenantEndpoint) map[string]status.ServerlessPrivateEndpoint {
 	statuses := map[string]status.ServerlessPrivateEndpoint{}
 
 	for i := range atlasPrivateEndpoints {
 		atlasPrivateEndpoint := atlasPrivateEndpoints[i]
-		statuses[atlasPrivateEndpoint.GetComment()] = status.SPEStatusFromAtlas(&atlasPrivateEndpoint)
+		statuses[atlasPrivateEndpoint.GetComment()] = speStatusFromAtlas(&atlasPrivateEndpoint)
 	}
 
 	return statuses
@@ -260,7 +260,7 @@ func isReadyToConnect(privateEndpoint *akov2.ServerlessPrivateEndpoint, atlasPri
 	return false
 }
 
-func checkStatuses(pe []status.ServerlessPrivateEndpoint) bool {
+func areSPEsAvailable(pe []status.ServerlessPrivateEndpoint) bool {
 	for _, p := range pe {
 		if p.Status != SPEStatusAvailable {
 			return false
@@ -268,4 +268,19 @@ func checkStatuses(pe []status.ServerlessPrivateEndpoint) bool {
 	}
 
 	return true
+}
+
+func speStatusFromAtlas(in *admin.ServerlessTenantEndpoint) status.ServerlessPrivateEndpoint {
+	return status.ServerlessPrivateEndpoint{
+		ID: in.GetId(),
+		// Comment property is internally used as name to identify and match items on the operator against their peers on Atlas
+		Name:                         in.GetComment(),
+		ProviderName:                 in.GetProviderName(),
+		CloudProviderEndpointID:      in.GetCloudProviderEndpointId(),
+		PrivateEndpointIPAddress:     in.GetPrivateEndpointIpAddress(),
+		EndpointServiceName:          in.GetEndpointServiceName(),
+		PrivateLinkServiceResourceID: in.GetPrivateLinkServiceResourceId(),
+		Status:                       in.GetStatus(),
+		ErrorMessage:                 in.GetErrorMessage(),
+	}
 }

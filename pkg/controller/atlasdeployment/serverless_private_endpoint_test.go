@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -197,6 +199,20 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 			workflow.InProgress(workflow.ServerlessPrivateEndpointInProgress, "Waiting serverless private endpoint to be configured"),
 			result,
 		)
+
+		condition, ok := service.GetCondition(status.ServerlessPrivateEndpointReadyType)
+		assert.True(t, ok)
+		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
+		assert.Equal(
+			t,
+			status.Condition{
+				Type:    status.ServerlessPrivateEndpointReadyType,
+				Status:  corev1.ConditionFalse,
+				Reason:  string(workflow.ServerlessPrivateEndpointInProgress),
+				Message: "Waiting serverless private endpoint to be configured",
+			},
+			condition,
+		)
 	})
 
 	t.Run("should succeed when finish syncing private endpoints", func(t *testing.T) {
@@ -244,6 +260,18 @@ func TestEnsureServerlessPrivateEndpoints(t *testing.T) {
 		result := ensureServerlessPrivateEndpoints(&service, "project-id", &deployment)
 
 		assert.Equal(t, workflow.OK(), result)
+
+		condition, ok := service.GetCondition(status.ServerlessPrivateEndpointReadyType)
+		assert.True(t, ok)
+		condition.LastTransitionTime = metav1.Time{} // not relevant for the unit test
+		assert.Equal(
+			t,
+			status.Condition{
+				Type:   status.ServerlessPrivateEndpointReadyType,
+				Status: corev1.ConditionTrue,
+			},
+			condition,
+		)
 	})
 }
 
@@ -332,6 +360,141 @@ func TestSyncServerlessPrivateEndpoints(t *testing.T) {
 
 		finished, err := syncServerlessPrivateEndpoints(&service, "project-id", &spec)
 		assert.NoError(t, err)
+		assert.False(t, finished)
+	})
+
+	t.Run("should fail adding a private endpoint", func(t *testing.T) {
+		spec := akov2.ServerlessSpec{
+			Name: "instance-0",
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+				ProviderName:        "SERVERLESS",
+				BackingProviderName: "AWS",
+			},
+			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+				{
+					Name: "spe-1",
+				},
+			},
+		}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(context.Background(), "project-id", "instance-0").
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
+			Return([]admin.ServerlessTenantEndpoint{}, &http.Response{}, nil)
+		speAPI.EXPECT().CreateServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", mock.AnythingOfType("*admin.ServerlessTenantCreateRequest")).
+			Return(admin.CreateServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().CreateServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.CreateServerlessPrivateEndpointApiRequest")).
+			Return(
+				nil,
+				&http.Response{},
+				errors.New("failed to create serverless private endpoint"),
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+
+		finished, err := syncServerlessPrivateEndpoints(&service, "project-id", &spec)
+		assert.ErrorContains(t, err, "failed to create serverless private endpoint")
+		assert.False(t, finished)
+	})
+
+	t.Run("should fail updating a private endpoint", func(t *testing.T) {
+		spec := akov2.ServerlessSpec{
+			Name: "instance-0",
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+				ProviderName:        "SERVERLESS",
+				BackingProviderName: "AWS",
+			},
+			PrivateEndpoints: []akov2.ServerlessPrivateEndpoint{
+				{
+					Name:                    "spe-1",
+					CloudProviderEndpointID: "endpoint-id",
+				},
+			},
+		}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(context.Background(), "project-id", "instance-0").
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
+			Return(
+				[]admin.ServerlessTenantEndpoint{
+					{
+						Id:           pointer.MakePtr("spe-1-id"),
+						Comment:      pointer.MakePtr("spe-1"),
+						Status:       pointer.MakePtr(SPEStatusReserved),
+						ProviderName: pointer.MakePtr("AWS"),
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		speAPI.EXPECT().UpdateServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", "spe-1-id", mock.AnythingOfType("*admin.ServerlessTenantEndpointUpdate")).
+			Return(admin.UpdateServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().UpdateServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.UpdateServerlessPrivateEndpointApiRequest")).
+			Return(
+				nil,
+				&http.Response{},
+				errors.New("failed to update serverless private endpoint"),
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+
+		finished, err := syncServerlessPrivateEndpoints(&service, "project-id", &spec)
+		assert.ErrorContains(t, err, "failed to update serverless private endpoint")
+		assert.False(t, finished)
+	})
+
+	t.Run("should fail delete a private endpoint", func(t *testing.T) {
+		spec := akov2.ServerlessSpec{
+			Name: "instance-0",
+			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
+				ProviderName:        "SERVERLESS",
+				BackingProviderName: "AWS",
+			},
+		}
+		speAPI := mockadmin.NewServerlessPrivateEndpointsApi(t)
+		speAPI.EXPECT().ListServerlessPrivateEndpoints(context.Background(), "project-id", "instance-0").
+			Return(admin.ListServerlessPrivateEndpointsApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().ListServerlessPrivateEndpointsExecute(mock.AnythingOfType("admin.ListServerlessPrivateEndpointsApiRequest")).
+			Return(
+				[]admin.ServerlessTenantEndpoint{
+					{
+						Id:           pointer.MakePtr("spe-1-id"),
+						Comment:      pointer.MakePtr("spe-1"),
+						Status:       pointer.MakePtr(SPEStatusAvailable),
+						ProviderName: pointer.MakePtr("AWS"),
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		speAPI.EXPECT().DeleteServerlessPrivateEndpoint(context.Background(), "project-id", "instance-0", "spe-1-id").
+			Return(admin.DeleteServerlessPrivateEndpointApiRequest{ApiService: speAPI})
+		speAPI.EXPECT().DeleteServerlessPrivateEndpointExecute(mock.AnythingOfType("admin.DeleteServerlessPrivateEndpointApiRequest")).
+			Return(
+				nil,
+				&http.Response{},
+				errors.New("failed to delete serverless private endpoint"),
+			)
+		service := workflow.Context{
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+			SdkClient: &admin.APIClient{
+				ServerlessPrivateEndpointsApi: speAPI,
+			},
+		}
+
+		finished, err := syncServerlessPrivateEndpoints(&service, "project-id", &spec)
+		assert.ErrorContains(t, err, "failed to delete serverless private endpoint")
 		assert.False(t, finished)
 	})
 }
@@ -571,7 +734,7 @@ func TestCheckStatuses(t *testing.T) {
 
 	for desc, val := range data {
 		t.Run(desc, func(t *testing.T) {
-			assert.Equal(t, val.expected, checkStatuses(val.spes))
+			assert.Equal(t, val.expected, areSPEsAvailable(val.spes))
 		})
 	}
 }
