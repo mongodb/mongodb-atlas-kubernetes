@@ -28,7 +28,7 @@ To view the list of custom resources and their respective schemas, visit our [re
 documentation. See the [Quickstart](https://www.mongodb.com/docs/atlas/operator/stable/ak8so-quick-start/) to get started
 with Atlas Kubernetes Operator.
 
-If you just want to check the released images signatures, please [check this instructions](docs/dev/signed-images.md).
+If you just want to check the released images signatures, please [check these instructions](docs/dev/signed-images.md).
 
 ## How to Contribute
 
