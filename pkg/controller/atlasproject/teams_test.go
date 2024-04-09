@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -16,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
@@ -531,10 +532,8 @@ func Test_TeamGarbageCollect(t *testing.T) {
 			Log:     logger,
 		}
 		testScheme := runtime.NewScheme()
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasProject{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeam{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &akov2.AtlasTeamList{})
-		testScheme.AddKnownTypes(akov2.GroupVersion, &corev1.Secret{})
+		akov2.AddToScheme(testScheme)
+		corev1.AddToScheme(testScheme)
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-secret",
@@ -598,4 +597,135 @@ func Test_TeamGarbageCollect(t *testing.T) {
 
 		assert.Empty(t, newTeam.Status.ID)
 	})
+
+	t.Run("Ensure AtlasTeam drops its ID when unassigned from a last assigned project", func(t *testing.T) {
+		logger := zaptest.NewLogger(t).Sugar()
+		workflowCtx := &workflow.Context{
+			Context: context.Background(),
+			Log:     logger,
+		}
+		testScheme := runtime.NewScheme()
+		akov2.AddToScheme(testScheme)
+		corev1.AddToScheme(testScheme)
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-secret",
+			},
+			Data: map[string][]byte{
+				"orgId":         []byte("0987654321"),
+				"publicApiKey":  []byte("api-pub-key"),
+				"privateApiKey": []byte("api-priv-key"),
+			},
+			Type: "Opaque",
+		}
+		project := &akov2.AtlasProject{
+			Spec: akov2.AtlasProjectSpec{
+				Name: "projectName",
+				ConnectionSecret: &common.ResourceRefNamespaced{
+					Name: "my-secret",
+				},
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "projectID",
+			},
+		}
+		team := &akov2.AtlasTeam{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testTeam",
+				Namespace: "testNS",
+			},
+			Status: status.TeamStatus{
+				ID: "testTeamStatus",
+				Projects: []status.TeamProject{
+					{
+						ID:   project.Status.ID,
+						Name: project.Spec.Name,
+					},
+				},
+			},
+		}
+		atlasProvider := &atlas.TestProvider{
+			ClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*mongodbatlas.Client, string, error) {
+				return &mongodbatlas.Client{}, "0987654321", nil
+			},
+		}
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(secret, project, team).
+			WithStatusSubresource(team).
+			Build()
+		reconciler := &AtlasProjectReconciler{
+			Client:        k8sClient,
+			Log:           logger,
+			AtlasProvider: atlasProvider,
+		}
+		err := reconciler.garbageCollectTeams(workflowCtx.Context, project.ID())
+		assert.NoError(t, err)
+
+		newTeam := &akov2.AtlasTeam{}
+		err = k8sClient.Get(workflowCtx.Context, client.ObjectKey{Name: team.Name, Namespace: team.Namespace}, newTeam)
+		assert.NoError(t, err)
+
+		assert.Len(t, newTeam.Status.Projects, 0)
+
+		assert.Empty(t, newTeam.Status.ID)
+	})
+
+	//t.Run("Ensure AtlasTeam is removed from Atlas when unassigned from all projects", func(t *testing.T) {
+	//	logger := zaptest.NewLogger(t).Sugar()
+	//	workflowCtx := &workflow.Context{
+	//		Context: context.Background(),
+	//		Log:     logger,
+	//	}
+	//	testScheme := runtime.NewScheme()
+	//	akov2.AddToScheme(testScheme)
+	//	corev1.AddToScheme(testScheme)
+	//	secret := &corev1.Secret{
+	//		ObjectMeta: metav1.ObjectMeta{
+	//			Name: "my-secret",
+	//		},
+	//		Data: map[string][]byte{
+	//			"orgId":         []byte("0987654321"),
+	//			"publicApiKey":  []byte("api-pub-key"),
+	//			"privateApiKey": []byte("api-priv-key"),
+	//		},
+	//		Type: "Opaque",
+	//	}
+	//	project := &akov2.AtlasProject{
+	//		Spec: akov2.AtlasProjectSpec{
+	//			Name: "projectName",
+	//			ConnectionSecret: &common.ResourceRefNamespaced{
+	//				Name: "my-secret",
+	//			},
+	//		},
+	//		Status: status.AtlasProjectStatus{
+	//			ID: "projectID",
+	//		},
+	//	}
+	//	team := &akov2.AtlasTeam{
+	//		ObjectMeta: metav1.ObjectMeta{
+	//			Name:      "testTeam",
+	//			Namespace: "testNS",
+	//		},
+	//		Status: status.TeamStatus{
+	//			ID:       "testTeamStatus",
+	//			Projects: []status.TeamProject{},
+	//		},
+	//	}
+	//
+	//	k8sClient := fake.NewClientBuilder().
+	//		WithScheme(testScheme).
+	//		WithObjects(secret, project, team).
+	//		WithStatusSubresource(team).
+	//		Build()
+	//	mockTeamsApi := mockadmin.NewTeamsApi(t)
+	//	orgID := "test-org-id"
+	//	mockTeamsApi.EXPECT().DeleteTeam(context.Background(), orgID, team.Status.ID).
+	//		Return(admin.DeleteTeamApiRequest{
+	//			ApiService: mockTeamsApi,
+	//		})
+	//	mockTeamsApi.EXPECT().DeleteTeamExecute(mock.Anything).Return(nil, &http.Response{}, nil)
+	//	err := removeUnassignedTeamsFromAtlas(workflowCtx, orgID, mockTeamsApi, k8sClient)
+	//	assert.NoError(t, err)
+	//})
 }

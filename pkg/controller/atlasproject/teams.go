@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+
 	"golang.org/x/sync/errgroup"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -52,11 +54,9 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 				team.UpdateStatus([]status.Condition{}, status.AtlasTeamUnsetProject(projectID))
 
 				if len(team.Status.Projects) == 0 {
-					team.Status.ID = ""
-				}
-
-				if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
-					customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
+					if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
+						customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
+					}
 				}
 
 				if err = r.Client.Status().Update(ctx, team); err != nil {
@@ -69,6 +69,31 @@ func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projec
 	}
 
 	return g.Wait()
+}
+
+func removeUnassignedTeamsFromAtlas(ctx *workflow.Context, ordID string, teamAPI admin.TeamsApi, k8sClient client.Client) error {
+	teams := &akov2.AtlasTeamList{}
+	err := k8sClient.List(ctx.Context, teams)
+	if err != nil {
+		return fmt.Errorf("unable to retrieve a list of teams: %w", err)
+	}
+	if len(teams.Items) == 0 {
+		return nil
+	}
+	group, _ := errgroup.WithContext(ctx.Context)
+	for i := range teams.Items {
+		team := &teams.Items[i]
+		group.Go(func() error {
+			if len(team.Status.Projects) == 0 && team.Status.ID != "" {
+				_, _, err := teamAPI.DeleteTeam(ctx.Context, ordID, team.Status.ID).Execute()
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+	return group.Wait()
 }
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
@@ -90,7 +115,6 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 		if assignedTeam.TeamRef.Name == "" {
 			workflowCtx.Log.Warnf("missing team name. skipping assignment for entry %v", assignedTeam)
-
 			continue
 		}
 
@@ -133,6 +157,20 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
 
 		return result
+	}
+
+	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context,
+		project.ConnectionSecretObjectKey(),
+		workflowCtx.Log)
+	if err != nil {
+		e := fmt.Errorf("unable to remove unassigned teams. error: %w", err)
+		return workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, e.Error())
+	}
+
+	err = removeUnassignedTeamsFromAtlas(workflowCtx, orgID, atlasClient.TeamsApi, r.Client)
+	if err != nil {
+		e := fmt.Errorf("unable to delete unassigned teams from Atlas. error: %w", err)
+		return workflow.Terminate(workflow.Internal, e.Error())
 	}
 
 	err = r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
