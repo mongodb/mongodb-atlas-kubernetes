@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115004/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 
 	"golang.org/x/sync/errgroup"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
