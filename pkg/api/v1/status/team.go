@@ -23,22 +23,6 @@ func AtlasTeamSetProjects(projects []TeamProject) AtlasTeamStatusOption {
 	}
 }
 
-func AtlasTeamUnsetProject(projectID string) AtlasTeamStatusOption {
-	return func(s *TeamStatus) {
-		index := -1
-		for i := 0; i < len(s.Projects); i++ {
-			if s.Projects[i].ID == projectID {
-				index = i
-				break
-			}
-		}
-		if index == -1 {
-			return
-		}
-		s.Projects = append(s.Projects[:index], s.Projects[index+1:]...)
-	}
-}
-
 type TeamStatus struct {
 	Common `json:",inline"`
 
