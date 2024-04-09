@@ -255,10 +255,10 @@ func (r *AtlasProjectReconciler) handleDeletion(workflowCtx *workflow.Context, a
 					return result
 				}
 
-				if err := r.garbageCollectTeams(workflowCtx.Context, project.ID()); err != nil {
-					e := fmt.Errorf("failed to cleanup project teams. error: %w", err)
-					log.Error(e)
-					return workflow.Terminate(workflow.Internal, e.Error())
+				err := r.syncAssignedTeams(workflowCtx, project.ID(), project, map[string]*akov2.Team{})
+				if err != nil {
+					workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
+					return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
 				}
 
 				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {

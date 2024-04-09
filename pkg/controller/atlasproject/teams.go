@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
-	"golang.org/x/sync/errgroup"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -33,75 +30,13 @@ type TeamDataContainer struct {
 	Context     *workflow.Context
 }
 
-func (r *AtlasProjectReconciler) garbageCollectTeams(ctx context.Context, projectID string) error {
-	teams := &akov2.AtlasTeamList{}
-	err := r.Client.List(ctx, teams)
-	if err != nil {
-		return fmt.Errorf("unable to retrieve a list of teams: %w", err)
-	}
-	if len(teams.Items) == 0 {
-		return nil
-	}
-	g, ctx := errgroup.WithContext(ctx)
-	for i := range teams.Items {
-		team := &teams.Items[i]
-		g.Go(func() error {
-			for _, project := range team.Status.Projects {
-				if project.ID != projectID {
-					continue
-				}
-
-				team.UpdateStatus([]status.Condition{}, status.AtlasTeamUnsetProject(projectID))
-
-				if len(team.Status.Projects) == 0 {
-					if customresource.HaveFinalizer(team, customresource.FinalizerLabel) {
-						customresource.UnsetFinalizer(team, customresource.FinalizerLabel)
-					}
-				}
-
-				if err = r.Client.Status().Update(ctx, team); err != nil {
-					r.Log.Errorw("failed to update Team status", "error", err)
-					return fmt.Errorf("failed to update Team status. error: %w", err)
-				}
-			}
-			return nil
-		})
-	}
-
-	return g.Wait()
-}
-
-func removeUnassignedTeamsFromAtlas(ctx *workflow.Context, ordID string, teamAPI admin.TeamsApi, k8sClient client.Client) error {
-	teams := &akov2.AtlasTeamList{}
-	err := k8sClient.List(ctx.Context, teams)
-	if err != nil {
-		return fmt.Errorf("unable to retrieve a list of teams: %w", err)
-	}
-	if len(teams.Items) == 0 {
-		return nil
-	}
-	group, _ := errgroup.WithContext(ctx.Context)
-	for i := range teams.Items {
-		team := &teams.Items[i]
-		group.Go(func() error {
-			if len(team.Status.Projects) == 0 && team.Status.ID != "" {
-				_, _, err := teamAPI.DeleteTeam(ctx.Context, ordID, team.Status.ID).Execute()
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	}
-	return group.Wait()
-}
-
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 
-	err := r.garbageCollectTeams(workflowCtx.Context, project.ID())
+	err := r.syncAssignedTeams(workflowCtx, project.ID(), project, nil)
 	if err != nil {
-		return workflow.Terminate(workflow.TeamNotCleaned, fmt.Errorf("unable to garbage collect teams. error: %w", err).Error())
+		workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
+		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
 	}
 
 	defer func() {
@@ -157,20 +92,6 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		workflowCtx.SetConditionFromResult(status.ProjectTeamsReadyType, result)
 
 		return result
-	}
-
-	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context,
-		project.ConnectionSecretObjectKey(),
-		workflowCtx.Log)
-	if err != nil {
-		e := fmt.Errorf("unable to remove unassigned teams. error: %w", err)
-		return workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, e.Error())
-	}
-
-	err = removeUnassignedTeamsFromAtlas(workflowCtx, orgID, atlasClient.TeamsApi, r.Client)
-	if err != nil {
-		e := fmt.Errorf("unable to delete unassigned teams from Atlas. error: %w", err)
-		return workflow.Terminate(workflow.Internal, e.Error())
 	}
 
 	err = r.syncAssignedTeams(workflowCtx, project.ID(), project, teamsToAssign)
