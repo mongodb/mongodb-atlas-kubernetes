@@ -33,12 +33,6 @@ type TeamDataContainer struct {
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
 
-	err := r.syncAssignedTeams(workflowCtx, project.ID(), project, nil)
-	if err != nil {
-		workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
-		return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
-	}
-
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
