@@ -1,9 +1,5 @@
 package status
 
-import (
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-)
-
 type ServerlessPrivateEndpoint struct {
 	// ID is the identifier of the Serverless PrivateLink Service.
 	ID string `json:"_id,omitempty"`
@@ -23,18 +19,4 @@ type ServerlessPrivateEndpoint struct {
 	PrivateEndpointIPAddress string `json:"privateEndpointIpAddress,omitempty"`
 	// PrivateLinkServiceResourceID is the root-relative path that identifies the Azure Private Link Service that MongoDB Cloud manages. MongoDB Cloud returns null while it creates the endpoint service.
 	PrivateLinkServiceResourceID string `json:"privateLinkServiceResourceId,omitempty"`
-}
-
-func SPEStatusFromAtlas(in *admin.ServerlessTenantEndpoint) ServerlessPrivateEndpoint {
-	return ServerlessPrivateEndpoint{
-		ID:                           in.GetId(),
-		Name:                         in.GetComment(),
-		ProviderName:                 in.GetProviderName(),
-		CloudProviderEndpointID:      in.GetCloudProviderEndpointId(),
-		PrivateEndpointIPAddress:     in.GetPrivateEndpointIpAddress(),
-		EndpointServiceName:          in.GetEndpointServiceName(),
-		PrivateLinkServiceResourceID: in.GetPrivateLinkServiceResourceId(),
-		Status:                       in.GetStatus(),
-		ErrorMessage:                 in.GetErrorMessage(),
-	}
 }

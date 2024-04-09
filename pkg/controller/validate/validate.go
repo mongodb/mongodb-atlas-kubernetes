@@ -61,6 +61,11 @@ func DeploymentSpec(deploymentSpec *akov2.AtlasDeploymentSpec, isGov bool, regio
 	return err
 }
 
+// serverlessPrivateEndpoints validates the configuration of ServerlessPrivateEndpoint entries
+//
+// Validation checks are:
+//
+//	No duplicated names for configured entries
 func serverlessPrivateEndpoints(privateEndpoints []akov2.ServerlessPrivateEndpoint) error {
 	var err error
 	namesMap := map[string]struct{}{}
