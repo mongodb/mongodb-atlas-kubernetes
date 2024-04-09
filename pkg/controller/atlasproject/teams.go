@@ -101,7 +101,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 	err := r.garbageCollectTeams(workflowCtx.Context, project.ID())
 	if err != nil {
-		return workflow.Terminate(workflow.TeamNotCleaned, err.Error())
+		return workflow.Terminate(workflow.TeamNotCleaned, fmt.Errorf("unable to garbage collect teams. error: %w", err).Error())
 	}
 
 	defer func() {

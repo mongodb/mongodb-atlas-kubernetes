@@ -3,11 +3,12 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"net/http"
+	"testing"
+
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
-	"net/http"
-	"testing"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -722,14 +723,14 @@ func Test_TeamGarbageCollect(t *testing.T) {
 			WithObjects(secret, project, team).
 			WithStatusSubresource(team).
 			Build()
-		mockTeamsApi := mockadmin.NewTeamsApi(t)
+		mockTeamsAPI := mockadmin.NewTeamsApi(t)
 		orgID := "test-org-id"
-		mockTeamsApi.EXPECT().DeleteTeam(context.Background(), orgID, team.Status.ID).
+		mockTeamsAPI.EXPECT().DeleteTeam(context.Background(), orgID, team.Status.ID).
 			Return(admin.DeleteTeamApiRequest{
-				ApiService: mockTeamsApi,
+				ApiService: mockTeamsAPI,
 			})
-		mockTeamsApi.EXPECT().DeleteTeamExecute(mock.Anything).Return(nil, &http.Response{}, nil)
-		err := removeUnassignedTeamsFromAtlas(workflowCtx, orgID, mockTeamsApi, k8sClient)
+		mockTeamsAPI.EXPECT().DeleteTeamExecute(mock.Anything).Return(nil, &http.Response{}, nil)
+		err := removeUnassignedTeamsFromAtlas(workflowCtx, orgID, mockTeamsAPI, k8sClient)
 		assert.NoError(t, err)
 	})
 }
