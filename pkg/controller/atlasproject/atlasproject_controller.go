@@ -258,7 +258,7 @@ func (r *AtlasProjectReconciler) handleDeletion(workflowCtx *workflow.Context, a
 				err := r.syncAssignedTeams(workflowCtx, project.ID(), project, map[string]*akov2.Team{})
 				if err != nil {
 					workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
-					return workflow.Terminate(workflow.ProjectTeamUnavailable, err.Error())
+					return workflow.Terminate(workflow.TeamCleanupFailed, err.Error())
 				}
 
 				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {
