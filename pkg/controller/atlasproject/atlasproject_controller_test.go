@@ -153,7 +153,6 @@ func TestAtlasProjectReconciler_handleDeletion(t *testing.T) {
 			Log: zap.S(),
 		}
 		_ = reconciler.handleDeletion(workflowCtx, workflowCtx.Client, testProject)
-		//assert.True(t, result.IsOk())
 		fmt.Println("DEBUG", teamsMock.RemoveTeamFromOrganizationRequests)
 		assert.Len(t, teamsMock.RemoveTeamFromOrganizationRequests, 1)
 	})
