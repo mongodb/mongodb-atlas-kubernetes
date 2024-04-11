@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.14.0
   creationTimestamp: null
   labels:
     app.kubernetes.io/component: controller
@@ -28,14 +28,19 @@ spec:
         description: AtlasProject is the Schema for the atlasprojects API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -44,11 +49,10 @@ spec:
               Atlas
             properties:
               alertConfigurationSyncEnabled:
-                description: AlertConfigurationSyncEnabled is a flag that enables/disables
-                  Alert Configurations sync for the current Project. If true - project
-                  alert configurations will be synced according to AlertConfigurations.
-                  If not - alert configurations will not be modified by the operator.
-                  They can be managed through API, cli, UI.
+                description: |-
+                  AlertConfigurationSyncEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
+                  If true - project alert configurations will be synced according to AlertConfigurations.
+                  If not - alert configurations will not be modified by the operator. They can be managed through API, cli, UI.
                 type: boolean
               alertConfigurations:
                 description: AlertConfiguration is a list of Alert Configurations
@@ -308,13 +312,13 @@ spec:
                     type: boolean
                 type: object
               cloudProviderAccessRoles:
-                description: 'CloudProviderAccessRoles is a list of Cloud Provider
-                  Access Roles configured for the current Project. Deprecated: This
-                  configuration was deprecated in favor of CloudProviderIntegrations'
+                description: |-
+                  CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
+                  Deprecated: This configuration was deprecated in favor of CloudProviderIntegrations
                 items:
-                  description: 'CloudProviderAccessRole define an integration to a
-                    cloud provider Deprecated: This type is deprecated in favor of
-                    CloudProviderIntegration'
+                  description: |-
+                    CloudProviderAccessRole define an integration to a cloud provider
+                    Deprecated: This type is deprecated in favor of CloudProviderIntegration
                   properties:
                     iamAssumedRoleArn:
                       description: IamAssumedRoleArn is the ARN of the IAM role that
@@ -348,10 +352,9 @@ spec:
                   type: object
                 type: array
               connectionSecretRef:
-                description: ConnectionSecret is the name of the Kubernetes Secret
-                  which contains the information about the way to connect to Atlas
-                  (organization ID, API keys). The default Operator connection configuration
-                  will be used if not provided.
+                description: |-
+                  ConnectionSecret is the name of the Kubernetes Secret which contains the information about the way to connect to
+                  Atlas (organization ID, API keys). The default Operator connection configuration will be used if not provided.
                 properties:
                   name:
                     description: Name is the name of the Kubernetes Resource
@@ -687,37 +690,37 @@ spec:
                   type: object
                 type: array
               maintenanceWindow:
-                description: MaintenanceWindow allows to specify a preferred time
-                  in the week to run maintenance operations. See more information
-                  at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
+                description: |-
+                  MaintenanceWindow allows to specify a preferred time in the week to run maintenance operations. See more
+                  information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-windows/
                 properties:
                   autoDefer:
                     description: Flag indicating whether any scheduled project maintenance
                       should be deferred automatically for one week.
                     type: boolean
                   dayOfWeek:
-                    description: Day of the week when you would like the maintenance
-                      window to start as a 1-based integer. Sunday 1, Monday 2, Tuesday
-                      3, Wednesday 4, Thursday 5, Friday 6, Saturday 7
+                    description: |-
+                      Day of the week when you would like the maintenance window to start as a 1-based integer.
+                      Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7
                     maximum: 7
                     minimum: 1
                     type: integer
                   defer:
-                    description: Flag indicating whether the next scheduled project
-                      maintenance should be deferred for one week. Cannot be specified
-                      if startASAP is true
+                    description: |-
+                      Flag indicating whether the next scheduled project maintenance should be deferred for one week.
+                      Cannot be specified if startASAP is true
                     type: boolean
                   hourOfDay:
-                    description: Hour of the day when you would like the maintenance
-                      window to start. This parameter uses the 24-hour clock, where
-                      midnight is 0, noon is 12.
+                    description: |-
+                      Hour of the day when you would like the maintenance window to start.
+                      This parameter uses the 24-hour clock, where midnight is 0, noon is 12.
                     maximum: 23
                     minimum: 0
                     type: integer
                   startASAP:
-                    description: Flag indicating whether project maintenance has been
-                      directed to start immediately. Cannot be specified if defer
-                      is true
+                    description: |-
+                      Flag indicating whether project maintenance has been directed to start immediately.
+                      Cannot be specified if defer is true
                     type: boolean
                 type: object
               name:
@@ -841,8 +844,9 @@ spec:
                   type: object
                 type: array
               projectIpAccessList:
-                description: ProjectIPAccessList allows to enable the IP Access List
-                  for the Project. See more information at https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+                description: |-
+                  ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
+                  https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
                 items:
                   properties:
                     awsSecurityGroup:
@@ -867,10 +871,10 @@ spec:
                 type: array
               regionUsageRestrictions:
                 default: NONE
-                description: RegionUsageRestrictions designate the project's AWS region
-                  when using Atlas for Government. This parameter should not be used
-                  with commercial Atlas. In Atlas for Government, not setting this
-                  field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
+                description: |-
+                  RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.
+                  This parameter should not be used with commercial Atlas.
+                  In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
                 enum:
                 - NONE
                 - GOV_REGIONS_ONLY
@@ -1229,10 +1233,10 @@ spec:
                   type: object
                 type: array
               authModes:
-                description: AuthModes contains a list of configured authentication
-                  modes "SCRAM" is default authentication method and requires a password
-                  for each user "X509" signifies that self-managed X.509 authentication
-                  is configured
+                description: |-
+                  AuthModes contains a list of configured authentication modes
+                  "SCRAM" is default authentication method and requires a password for each user
+                  "X509" signifies that self-managed X.509 authentication is configured
                 items:
                   type: string
                 type: array
@@ -1323,10 +1327,9 @@ spec:
                   type: object
                 type: array
               expiredIpAccessList:
-                description: The list of IP Access List entries that are expired due
-                  to 'deleteAfterDate' being less than the current date. Note, that
-                  this field is updated by the Atlas Operator only after specification
-                  changes
+                description: |-
+                  The list of IP Access List entries that are expired due to 'deleteAfterDate' being less than the current date.
+                  Note, that this field is updated by the Atlas Operator only after specification changes
                 items:
                   properties:
                     awsSecurityGroup:
@@ -1408,9 +1411,9 @@ spec:
                         AWS.
                       type: string
                     vpc:
-                      description: VPC is general purpose field for storing the name
-                        of the VPC. VPC is vpcID for AWS, user networkName for GCP,
-                        and vnetName for Azure.
+                      description: |-
+                        VPC is general purpose field for storing the name of the VPC.
+                        VPC is vpcID for AWS, user networkName for GCP, and vnetName for Azure.
                       type: string
                   required:
                   - id
@@ -1419,10 +1422,9 @@ spec:
                   type: object
                 type: array
               observedGeneration:
-                description: ObservedGeneration indicates the generation of the resource
-                  specification that the Atlas Operator is aware of. The Atlas Operator
-                  updates this field to the 'metadata.generation' as soon as it starts
-                  reconciliation of the resource.
+                description: |-
+                  ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
+                  The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
               privateEndpoints:
@@ -1484,7 +1486,8 @@ spec:
                   type: object
                 type: array
               prometheus:
-                description: Prometheus contains the status for Prometheus integration
+                description: |-
+                  Prometheus contains the status for Prometheus integration
                   including the prometheusDiscoveryURL
                 properties:
                   prometheusDiscoveryURL:

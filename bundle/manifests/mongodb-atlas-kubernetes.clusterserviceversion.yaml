@@ -168,6 +168,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Database
+    createdAt: "2024-04-11T15:54:56Z"
     description: The MongoDB Atlas Kubernetes Operator enables easy management of Clusters in MongoDB Atlas
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
@@ -176,14 +177,14 @@ metadata:
     features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
-    operators.operatorframework.io/builder: operator-sdk-v1.15.0+git
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.2.0
+    operators.operatorframework.io/builder: operator-sdk-v1.34.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+    containerImage: mongodb/mongodb-atlas-kubernetes-operator:2.2.1
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
     operatorframework.io/os.linux: supported
-  name: mongodb-atlas-kubernetes.v2.2.0
+  name: mongodb-atlas-kubernetes.v2.2.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -443,7 +444,11 @@ spec:
                 - update
           serviceAccountName: mongodb-atlas-operator
       deployments:
-        - name: mongodb-atlas-operator
+        - label:
+            app.kubernetes.io/component: controller
+            app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+            app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+          name: mongodb-atlas-operator
           spec:
             replicas: 1
             selector:
@@ -482,7 +487,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: mongodb/mongodb-atlas-kubernetes-operator:2.2.0
+                    image: mongodb/mongodb-atlas-kubernetes-operator:2.2.1
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -499,11 +504,10 @@ spec:
                       periodSeconds: 10
                     resources:
                       limits:
-                        cpu: 500m
-                        memory: 256Mi
+                        memory: 1Gi
                       requests:
                         cpu: 100m
-                        memory: 50Mi
+                        memory: 256Mi
                     securityContext:
                       allowPrivilegeEscalation: false
                 serviceAccountName: mongodb-atlas-operator
@@ -567,5 +571,5 @@ spec:
   maturity: beta
   provider:
     name: MongoDB, Inc
-  version: 2.2.0
-  replaces: mongodb-atlas-kubernetes.v2.1.0
+  version: 2.2.1
+  replaces: mongodb-atlas-kubernetes.v2.2.0
