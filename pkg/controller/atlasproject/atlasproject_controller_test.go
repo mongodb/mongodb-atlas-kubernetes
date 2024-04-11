@@ -2,7 +2,6 @@ package atlasproject
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -152,8 +151,8 @@ func TestAtlasProjectReconciler_handleDeletion(t *testing.T) {
 			},
 			Log: zap.S(),
 		}
-		_ = reconciler.handleDeletion(workflowCtx, workflowCtx.Client, testProject)
-		fmt.Println("DEBUG", teamsMock.RemoveTeamFromOrganizationRequests)
+		workflowResult := reconciler.handleDeletion(workflowCtx, workflowCtx.Client, testProject)
+		assert.True(t, workflowResult.IsOk())
 		assert.Len(t, teamsMock.RemoveTeamFromOrganizationRequests, 1)
 	})
 }
