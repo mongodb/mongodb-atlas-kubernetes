@@ -86,20 +86,22 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 
 	// NOTE: Despite being an array/slice, the Atlas API only allows 1 item.
 	nodesInAtlasEmpty := false
-	currentNodesInAtlas, httpResp, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
+	currentNodesInAtlas, _, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 	if err != nil {
-		if httpResp == nil {
-			ctx.Log.Debugf("unable to get current search nodes status: %v", err)
-			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
-		}
-
-		switch httpResp.StatusCode {
-		// TODO: Should be only NotFound: CLOUDP-239015
-		case http.StatusBadRequest, http.StatusNotFound:
+		apiError, ok := admin.AsError(err)
+		// TODO: Currently 400, should be be 404: CLOUDP-239015
+		fmt.Println(err.Error())
+		fmt.Println(apiError.GetError())
+		if ok && (apiError.GetError() == http.StatusBadRequest || apiError.GetError() == http.StatusNotFound) {
+			fmt.Println("ROO HERE")
 			ctx.Log.Debug("no search nodes in atlas found")
 			nodesInAtlasEmpty = true
-		default:
-			return workflow.Terminate(workflow.SearchNodesReady, err.Error())
+		} else {
+			fmt.Println("ROO THERE")
+			ctx.Log.Errorf("unable to get current search nodes status: %v", err)
+			result := workflow.Terminate(workflow.Internal, err.Error())
+			ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
+			return result
 		}
 	}
 
@@ -113,7 +115,10 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
-			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to create search nodes: %v", err))
+			ctx.Log.Errorf("error creating: %v", err)
+			result := workflow.Terminate(workflow.SearchNodesNotCreatedInAtlas, err.Error())
+			ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
+			return result
 		}
 	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// If nodes already configured in atlas and in the operator - update them.
@@ -122,10 +127,9 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 		// We can deepequal without normalization here because there is only ever 1 spec in the array
 		if reflect.DeepEqual(currentAkoNodesAsAtlas, *currentNodesInAtlas.Specs) {
 			// If the nodes are not marked as IDLE, they are not yet ready.
-			// TODO: should we check this earlier?
 			if currentNodesInAtlas.GetStateName() != "IDLE" {
 				msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
-				return workflow.InProgress(workflow.SearchNodesReady, msg)
+				return workflow.InProgress(workflow.SearchNodesUpdating, msg)
 			}
 
 			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
@@ -136,14 +140,18 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 		}).Execute()
 		if err != nil {
-			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to update search nodes: %v", err))
+			result := workflow.Terminate(workflow.SearchNodesNotUpdatedInAtlas, err.Error())
+			ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
+			return result
 		}
 	case nodesInAkoEmpty && !nodesInAtlasEmpty:
 		// If no nodes configured in the operator, but some in atlas - delete them.
 		ctx.Log.Debug("deleting search nodes")
 		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
 		if err != nil {
-			return workflow.Terminate(workflow.SearchNodesReady, fmt.Sprintf("unable to delete search nodes: %v", err))
+			result := workflow.Terminate(workflow.SearchNodesNotDeletedInAtlas, err.Error())
+			ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
+			return result
 		}
 	}
 

@@ -58,7 +58,10 @@ const (
 	ServerlessPrivateEndpointInProgress   ConditionReason = "ServerlessPrivateEndpointInProgress"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
-	SearchNodesReady                      ConditionReason = "SearchNodesReady"
+	SearchNodesNotCreatedInAtlas          ConditionReason = "SearchNodesNotCreatedInAtlas"
+	SearchNodesNotUpdatedInAtlas          ConditionReason = "SearchNodesNotUpdatedInAtlas"
+	SearchNodesNotDeletedInAtlas          ConditionReason = "SearchNodesNotDeletedInAtlas"
+	SearchNodesUpdating                   ConditionReason = "SearchNodesUpdating"
 )
 
 // Atlas Database User reasons

@@ -404,6 +404,11 @@ func TestHandleSearchNodes(t *testing.T) {
 			},
 		}
 
+		mockError := &admin.GenericOpenAPIError{}
+		model := *admin.NewApiError()
+		model.SetError(http.StatusBadRequest)
+		mockError.SetModel(model)
+
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
@@ -414,7 +419,7 @@ func TestHandleSearchNodes(t *testing.T) {
 					Status:     http.StatusText(http.StatusBadRequest),
 					StatusCode: http.StatusBadRequest,
 				},
-				errors.New("no search nodes found"),
+				mockError,
 			)
 		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
 			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
@@ -456,6 +461,11 @@ func TestHandleSearchNodes(t *testing.T) {
 			},
 		}
 
+		mockError := &admin.GenericOpenAPIError{}
+		model := *admin.NewApiError()
+		model.SetError(http.StatusBadRequest)
+		mockError.SetModel(model)
+
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
 		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
@@ -466,7 +476,7 @@ func TestHandleSearchNodes(t *testing.T) {
 					Status:     http.StatusText(http.StatusBadRequest),
 					StatusCode: http.StatusBadRequest,
 				},
-				errors.New("no search nodes found"),
+				mockError,
 			)
 		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
 			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
