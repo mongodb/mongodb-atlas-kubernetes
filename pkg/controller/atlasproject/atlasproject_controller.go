@@ -177,7 +177,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	workflowCtx.EnsureStatusOption(status.AtlasProjectIDOption(projectID))
 
-	if result = r.ensureDeletionFinalizer(workflowCtx, atlasClient, project); !result.IsOk() {
+	if result = r.handleDeletion(workflowCtx, atlasClient, project); !result.IsOk() {
 		setCondition(workflowCtx, status.ProjectReadyType, result)
 		return result.ReconcileResult(), nil
 	}
@@ -228,7 +228,7 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return workflow.OK().ReconcileResult(), nil
 }
 
-func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *akov2.AtlasProject) (result workflow.Result) {
+func (r *AtlasProjectReconciler) handleDeletion(workflowCtx *workflow.Context, atlasClient *mongodbatlas.Client, project *akov2.AtlasProject) (result workflow.Result) {
 	log := workflowCtx.Log
 
 	if project.GetDeletionTimestamp().IsZero() {
@@ -253,6 +253,12 @@ func (r *AtlasProjectReconciler) ensureDeletionFinalizer(workflowCtx *workflow.C
 				if result = DeleteAllNetworkPeers(workflowCtx.Context, project.ID(), workflowCtx.SdkClient.NetworkPeeringApi, workflowCtx.Log); !result.IsOk() {
 					setCondition(workflowCtx, status.NetworkPeerReadyType, result)
 					return result
+				}
+
+				err := r.syncAssignedTeams(workflowCtx, project.ID(), project, nil)
+				if err != nil {
+					workflowCtx.SetConditionFalse(status.ProjectTeamsReadyType)
+					return workflow.Terminate(workflow.TeamNotCleaned, err.Error())
 				}
 
 				if err := r.deleteAtlasProject(workflowCtx.Context, atlasClient, project); err != nil {

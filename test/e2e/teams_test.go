@@ -128,7 +128,8 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 func ensureTeamsStatus(g Gomega, testData model.TestDataProvider, teams []akov2.Team, check func(res *akov2.AtlasTeam) bool) bool {
 	for _, team := range teams {
 		resource := &akov2.AtlasTeam{}
-		g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: team.TeamRef.Name, Namespace: testData.Resources.Namespace}, resource)).Should(Succeed())
+		g.Expect(testData.K8SClient.Get(testData.Context,
+			types.NamespacedName{Name: team.TeamRef.Name, Namespace: testData.Resources.Namespace}, resource)).Should(Succeed())
 
 		if !check(resource) {
 			return false

@@ -32,6 +32,7 @@ type TeamDataContainer struct {
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, project *akov2.AtlasProject, protected bool) workflow.Result {
 	resourcesToWatch := make([]watch.WatchedObject, 0, len(project.Spec.Teams))
+
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
 		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
@@ -43,7 +44,6 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 		if assignedTeam.TeamRef.Name == "" {
 			workflowCtx.Log.Warnf("missing team name. skipping assignment for entry %v", assignedTeam)
-
 			continue
 		}
 

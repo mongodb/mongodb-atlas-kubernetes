@@ -88,6 +88,7 @@ const (
 	TeamInvalidSpec       ConditionReason = "TeamInvalidSpec"
 	TeamUsersNotReady     ConditionReason = "TeamUsersNotReady"
 	TeamDoesNotExist      ConditionReason = "TeamDoesNotExist"
+	TeamNotCleaned        ConditionReason = "TeamCleanupFailed"
 )
 
 // Atlas Federated Auth reasons
