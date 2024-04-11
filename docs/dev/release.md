@@ -107,7 +107,16 @@ This is necessary for the Operator to appear on "operators" tab in Openshift clu
 
 1. Ensure the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable is set.
 2. Set the image SHA environment variables of the **certified** images. 
-To get the SHAs, go to https://connect.redhat.com/projects/63568bb95612f26f8db42d7a/images and copy the **certified** image SHAs of the **amd64** and the **arm64** image:
+To get the SHAs:
+
+1. Go to https://connect.redhat.com/manage/components
+2. search for "mongodb-atlas-kubernetes-operator"
+3. select "[Quay] mongodb-atlas-kubernetes-operator"
+4. filter for the given tag, i.e. "2.2.0"
+
+The direct link, at the time of writing is https://connect.redhat.com/component/view/63568bb95612f26f8db42d7a/images.
+
+Copy the **certified** image SHAs of the **amd64** and the **arm64** image:
 
 ![img.png](certified-image-sha.png)
 
