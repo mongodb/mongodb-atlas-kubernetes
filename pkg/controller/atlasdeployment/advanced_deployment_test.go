@@ -1,16 +1,24 @@
 package atlasdeployment
 
 import (
+	"context"
+	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 func TestMergedAdvancedDeployment(t *testing.T) {
@@ -237,5 +245,334 @@ func TestDbUserBelongsToProjects(t *testing.T) {
 		}
 
 		assert.True(t, dbUserBelongsToProject(dbUser, project))
+	})
+}
+
+func TestHandleSearchNodes(t *testing.T) {
+	projectName := "test-project"
+	projectID := "abc123"
+
+	t.Run("get search nodes request errors", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
+			{
+				InstanceSize: "S80_LOWCPU_NVME",
+				NodeCount:    3,
+			},
+		}
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				nil,
+				&http.Response{},
+				errors.New("get test error"),
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.False(t, result.IsOk())
+		assert.True(t, result.IsWarning())
+	})
+
+	t.Run("search nodes are in AKO and atlas (update)", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
+			{
+				InstanceSize: "S80_LOWCPU_NVME",
+				NodeCount:    4,
+			},
+		}
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S80_LOWCPU_NVME",
+							NodeCount:    3,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		searchAPI.EXPECT().UpdateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
+			&admin.ApiSearchDeploymentRequest{Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas()}).
+			Return(admin.UpdateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().UpdateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S100_LOWCPU_NVME",
+							NodeCount:    4,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.True(t, result.IsOk())
+	})
+
+	t.Run("search nodes are in AKO and atlas but update errors", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
+			{
+				InstanceSize: "S80_LOWCPU_NVME",
+				NodeCount:    4,
+			},
+		}
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S80_LOWCPU_NVME",
+							NodeCount:    3,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		searchAPI.EXPECT().UpdateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
+			&admin.ApiSearchDeploymentRequest{Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas()}).
+			Return(admin.UpdateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().UpdateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				nil,
+				&http.Response{},
+				errors.New("update test error"),
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.False(t, result.IsOk())
+		assert.True(t, result.IsWarning())
+	})
+
+	t.Run("search nodes are in AKO but not in Atlas (create)", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
+			{
+				InstanceSize: "S80_LOWCPU_NVME",
+				NodeCount:    3,
+			},
+		}
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{},
+				&http.Response{
+					Status:     http.StatusText(http.StatusBadRequest),
+					StatusCode: http.StatusBadRequest,
+				},
+				errors.New("no search nodes found"),
+			)
+		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
+			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().CreateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S100_LOWCPU_NVME",
+							NodeCount:    3,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.True(t, result.IsOk())
+	})
+
+	t.Run("search nodes are in AKO but not in Atlas but create errors", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
+			{
+				InstanceSize: "S80_LOWCPU_NVME",
+				NodeCount:    3,
+			},
+		}
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{},
+				&http.Response{
+					Status:     http.StatusText(http.StatusBadRequest),
+					StatusCode: http.StatusBadRequest,
+				},
+				errors.New("no search nodes found"),
+			)
+		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
+			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().CreateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{},
+				&http.Response{},
+				errors.New("create test error"),
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.False(t, result.IsOk())
+		assert.True(t, result.IsWarning())
+	})
+
+	t.Run("search nodes are in Atlas but not in AKO (delete)", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S80_LOWCPU_NVME",
+							NodeCount:    3,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&http.Response{},
+				nil,
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.True(t, result.IsOk())
+	})
+
+	t.Run("search nodes are in Atlas but not in AKO but delete errors", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{
+					GroupId:   pointer.MakePtr(projectID),
+					StateName: pointer.MakePtr("IDLE"),
+					Specs: &[]admin.ApiSearchDeploymentSpec{
+						{
+							InstanceSize: "S80_LOWCPU_NVME",
+							NodeCount:    3,
+						},
+					},
+				},
+				&http.Response{},
+				nil,
+			)
+		searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&http.Response{},
+				errors.New("delete test error"),
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.False(t, result.IsOk())
+		assert.True(t, result.IsWarning())
 	})
 }

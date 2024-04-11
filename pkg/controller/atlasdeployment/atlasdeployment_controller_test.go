@@ -879,31 +879,6 @@ func TestReconciliation(t *testing.T) {
 			&http.Response{},
 			nil,
 		)
-	searchAPI.EXPECT().UpdateAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name,
-		&admin.ApiSearchDeploymentRequest{Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas()}).
-		Return(admin.UpdateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-	searchAPI.EXPECT().UpdateAtlasSearchDeploymentExecute(mock.Anything).
-		Return(
-			&admin.ApiSearchDeploymentResponse{
-				GroupId:   pointer.MakePtr(project.ID()),
-				StateName: pointer.MakePtr("IDLE"),
-				Specs: &[]admin.ApiSearchDeploymentSpec{
-					{
-						InstanceSize: "S100_LOWCPU_NVME",
-						NodeCount:    6,
-					},
-				},
-			},
-			&http.Response{},
-			nil,
-		)
-	searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), project.ID(), deployment.Spec.DeploymentSpec.Name).
-		Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-	searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
-		Return(
-			&http.Response{},
-			nil,
-		)
 
 	orgID := "0987654321"
 	logger := zaptest.NewLogger(t).Sugar()
@@ -1000,44 +975,6 @@ func TestReconciliation(t *testing.T) {
 	}
 
 	t.Run("should reconcile with existing cluster", func(t *testing.T) {
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: deployment.Namespace,
-					Name:      deployment.Name,
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: 0}, result)
-	})
-
-	t.Run("update search nodes", func(t *testing.T) {
-		deployment.Spec.DeploymentSpec.SearchNodes = []akov2.SearchNode{
-			{
-				InstanceSize: "S100_LOWCPU_NVME",
-				NodeCount:    10,
-			},
-		}
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: deployment.Namespace,
-					Name:      deployment.Name,
-				},
-			},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{Requeue: false, RequeueAfter: 0}, result)
-	})
-
-	t.Run("delete search nodes", func(t *testing.T) {
-		patch := client.MergeFrom(deployment.DeepCopy())
-		deployment.Spec.DeploymentSpec.SearchNodes = nil
-		err := k8sClient.Patch(context.Background(), deployment, patch)
-		assert.NoError(t, err)
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
