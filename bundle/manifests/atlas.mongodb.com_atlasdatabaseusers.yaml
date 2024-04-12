@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.14.0
   creationTimestamp: null
   labels:
     app.kubernetes.io/component: controller
@@ -28,14 +28,19 @@ spec:
         description: AtlasDatabaseUser is the Schema for the Atlas Database User API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -45,10 +50,11 @@ spec:
             properties:
               awsIamType:
                 default: NONE
-                description: Human-readable label that indicates whether the new database
-                  user authenticates with the Amazon Web Services (AWS) Identity and
-                  Access Management (IAM) credentials associated with the user or
-                  the user's role
+                description: |-
+                  Human-readable label that indicates whether the new database
+                  user authenticates with the Amazon Web Services (AWS)
+                  Identity and Access Management (IAM) credentials associated with
+                  the user or the user's role
                 enum:
                 - NONE
                 - USER
@@ -60,14 +66,14 @@ spec:
                   the user. Default value is 'admin'.
                 type: string
               deleteAfterDate:
-                description: DeleteAfterDate is a timestamp in ISO 8601 date and time
-                  format in UTC after which Atlas deletes the user. The specified
-                  date must be in the future and within one week.
+                description: |-
+                  DeleteAfterDate is a timestamp in ISO 8601 date and time format in UTC after which Atlas deletes the user.
+                  The specified date must be in the future and within one week.
                 type: string
               labels:
-                description: Labels is an array containing key-value pairs that tag
-                  and categorize the database user. Each key and value has a maximum
-                  length of 255 characters.
+                description: |-
+                  Labels is an array containing key-value pairs that tag and categorize the database user.
+                  Each key and value has a maximum length of 255 characters.
                 items:
                   description: LabelSpec contains key-value pairs that tag and categorize
                     the Cluster/DBUser
@@ -84,9 +90,11 @@ spec:
                 type: array
               oidcAuthType:
                 default: NONE
-                description: Human-readable label that indicates whether the new database
-                  Username with OIDC federated authentication. To create a federated
-                  authentication user, specify the value of IDP_GROUP for this field
+                description: |-
+                  Human-readable label that indicates whether the new database Username
+                  with OIDC federated authentication.
+                  To create a federated authentication user, specify the value
+                  of IDP_GROUP for this field
                 enum:
                 - NONE
                 - IDP_GROUP
@@ -115,21 +123,21 @@ spec:
                 - name
                 type: object
               roles:
-                description: Roles is an array of this user's roles and the databases
-                  / collections on which the roles apply. A role allows the user to
-                  perform particular actions on the specified database.
+                description: |-
+                  Roles is an array of this user's roles and the databases / collections on which the roles apply. A role allows
+                  the user to perform particular actions on the specified database.
                 items:
-                  description: RoleSpec allows the user to perform particular actions
-                    on the specified database. A role on the admin database can include
-                    privileges that apply to the other databases as well.
+                  description: |-
+                    RoleSpec allows the user to perform particular actions on the specified database.
+                    A role on the admin database can include privileges that apply to the other databases as well.
                   properties:
                     collectionName:
                       description: CollectionName is a collection for which the role
                         applies.
                       type: string
                     databaseName:
-                      description: DatabaseName is a database on which the user has
-                        the specified role. A role on the admin database can include
+                      description: |-
+                        DatabaseName is a database on which the user has the specified role. A role on the admin database can include
                         privileges that apply to the other databases.
                       type: string
                     roleName:
@@ -146,11 +154,10 @@ spec:
                 description: Scopes is an array of clusters and Atlas Data Lakes that
                   this user has access to.
                 items:
-                  description: ScopeSpec if present a database user only have access
-                    to the indicated resource (Cluster or Atlas Data Lake) if none
-                    is given then it has access to all. It's highly recommended to
-                    restrict the access of the database users only to a limited set
-                    of resources.
+                  description: |-
+                    ScopeSpec if present a database user only have access to the indicated resource (Cluster or Atlas Data Lake)
+                    if none is given then it has access to all.
+                    It's highly recommended to restrict the access of the database users only to a limited set of resources.
                   properties:
                     name:
                       description: Name is a name of the cluster or Atlas Data Lake
@@ -169,12 +176,12 @@ spec:
                   type: object
                 type: array
               username:
-                description: 'Username is a username for authenticating to MongoDB
-                  Human-readable label that represents the user that authenticates
-                  to MongoDB. The format of this label depends on the method of authentication:
+                description: |-
+                  Username is a username for authenticating to MongoDB
+                  Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
                   In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
-                  In case of OIDC: the value should be the Identity Provider ID; In
-                  case of Plain text auth: the value can be anything'
+                  In case of OIDC: the value should be the Identity Provider ID;
+                  In case of Plain text auth: the value can be anything
                 maxLength: 1024
                 type: string
               x509Type:
@@ -223,10 +230,9 @@ spec:
                 description: UserName is the current name of database user.
                 type: string
               observedGeneration:
-                description: ObservedGeneration indicates the generation of the resource
-                  specification that the Atlas Operator is aware of. The Atlas Operator
-                  updates this field to the 'metadata.generation' as soon as it starts
-                  reconciliation of the resource.
+                description: |-
+                  ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
+                  The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
                 format: int64
                 type: integer
               passwordVersion:

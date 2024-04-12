@@ -11,9 +11,9 @@ LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=mongodb-atlas-kubernetes
 LABEL operators.operatorframework.io.bundle.channels.v1=stable
 LABEL operators.operatorframework.io.bundle.channel.default.v1=stable
-LABEL operators.operatorframework.io.metrics.builder=operator-sdk-v1.15.0+git
+LABEL operators.operatorframework.io.metrics.builder=operator-sdk-v1.34.1
 LABEL operators.operatorframework.io.metrics.mediatype.v1=metrics+v1
-LABEL operators.operatorframework.io.metrics.project_layout=go.kubebuilder.io/v2
+LABEL operators.operatorframework.io.metrics.project_layout=go.kubebuilder.io/v4
 
 # Labels for testing.
 LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1

@@ -332,7 +332,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: mongodb/mongodb-atlas-kubernetes-operator:2.2.0
+        image: mongodb/mongodb-atlas-kubernetes-operator:2.2.1
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -349,11 +349,10 @@ spec:
           periodSeconds: 10
         resources:
           limits:
-            cpu: 500m
-            memory: 256Mi
+            memory: 1Gi
           requests:
             cpu: 100m
-            memory: 50Mi
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
       serviceAccountName: mongodb-atlas-operator
