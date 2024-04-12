@@ -41,9 +41,9 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 		matchers = append(
 			matchers,
 			map[string]interface{}{
-				"FieldName": m.FieldName,
-				"Operator":  m.Operator,
-				"Value":     m.Value,
+				"fieldName": m.FieldName,
+				"operator":  m.Operator,
+				"value":     m.Value,
 			},
 		)
 	}
