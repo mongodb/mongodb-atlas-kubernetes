@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/unstructured"
-
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
@@ -207,11 +206,12 @@ func ParseAlertConfiguration(alertConfiguration admin.GroupAlertsConfig, logger 
 	}
 
 	if unstructuredMatchers, ok := alertConfiguration.GetMatchersOk(); ok {
-		matchers, err := unstructured.TypedFromUnstructured[[]map[string]interface{}, []Matcher](*unstructuredMatchers)
+		var matchers []Matcher
+		err := compat.JSONCopy(matchers, *unstructuredMatchers)
 		if err != nil {
 			logger.Errorf("unable to convert matchers to structured type: %s", err)
 		}
-		status.Matchers = *matchers
+		status.Matchers = matchers
 	}
 
 	mThreshold := alertConfiguration.GetMetricThreshold()
