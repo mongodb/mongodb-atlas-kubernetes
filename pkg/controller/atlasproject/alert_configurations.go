@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
@@ -314,14 +314,16 @@ func isAlertConfigSpecEqualToAtlas(logger *zap.SugaredLogger, alertConfigSpec ak
 		logger.Debugf("len(alertConfigSpec.Matchers) %v != len(atlasAlertConfig.Matchers) %v", len(alertConfigSpec.Matchers), len(atlasAlertConfig.GetMatchers()))
 		return false
 	}
-	atlasMatchers, err := unstructured.TypedFromUnstructured[[]map[string]interface{}, []akov2.Matcher](atlasAlertConfig.GetMatchers())
+
+	var atlasMatchers []akov2.Matcher
+	err := compat.JSONCopy(atlasMatchers, atlasAlertConfig.GetMatchers())
 	if err != nil {
 		logger.Errorf("unable to convert matchers to structured type: %s", err)
 		return false
 	}
 	for _, matcher := range alertConfigSpec.Matchers {
 		found := false
-		for _, atlasMatcher := range *atlasMatchers {
+		for _, atlasMatcher := range atlasMatchers {
 			if matcher.IsEqual(atlasMatcher) {
 				found = true
 			}

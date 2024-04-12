@@ -41,9 +41,9 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 		matchers = append(
 			matchers,
 			map[string]interface{}{
-				"FieldName": m.FieldName,
-				"Operator":  m.Operator,
-				"Value":     m.Value,
+				"fieldName": m.FieldName,
+				"operator":  m.Operator,
+				"value":     m.Value,
 			},
 		)
 	}
@@ -63,13 +63,13 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	result.SetThreshold(*tr)
+	result.Threshold = tr
 
 	metricThreshold, err := in.MetricThreshold.ToAtlas()
 	if err != nil {
 		return nil, err
 	}
-	result.SetMetricThreshold(*metricThreshold)
+	result.MetricThreshold = metricThreshold
 
 	return result, err
 }
@@ -130,7 +130,7 @@ func (in *Threshold) IsEqual(threshold *admin.GreaterThanRawThreshold) bool {
 
 func (in *Threshold) ToAtlas() (*admin.GreaterThanRawThreshold, error) {
 	if in == nil {
-		return &admin.GreaterThanRawThreshold{}, nil
+		return nil, nil
 	}
 
 	tr64, err := strconv.ParseInt(in.Threshold, 10, 64)
@@ -317,7 +317,7 @@ func (in *MetricThreshold) IsEqual(threshold *admin.ServerlessMetricThreshold) b
 
 func (in *MetricThreshold) ToAtlas() (*admin.ServerlessMetricThreshold, error) {
 	if in == nil {
-		return &admin.ServerlessMetricThreshold{}, nil
+		return nil, nil
 	}
 
 	tr, err := strconv.ParseFloat(in.Threshold, 64)
