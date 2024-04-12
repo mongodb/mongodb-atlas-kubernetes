@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"os"
 	"time"
 
@@ -142,6 +143,44 @@ var _ = Describe("Alert configuration tests", Label("alert-config"), func() {
 				},
 			},
 		),
+		Entry("Test[alert-configs-3]: Project with an alert config containing a matcher", Label("alert-configs-3"),
+			model.DataProvider(
+				"alert-configs-3",
+				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+				40000,
+				[]func(*model.TestDataProvider){},
+			).WithProject(data.DefaultProject()),
+			[]akov2.AlertConfiguration{
+				{
+					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
+					Enabled:       true,
+					Threshold: &akov2.Threshold{
+						Operator:  "LESS_THAN",
+						Threshold: "1",
+						Units:     "HOURS",
+					},
+					Matchers: []akov2.Matcher{
+						{
+							FieldName: "CLUSTER_NAME",
+							Operator:  "STARTS_WITH",
+							Value:     "ako_e2e_test_",
+						},
+					},
+					Notifications: []akov2.Notification{
+						{
+							IntervalMin:  5,
+							DelayMin:     pointer.MakePtr(5),
+							EmailEnabled: pointer.MakePtr(true),
+							SMSEnabled:   pointer.MakePtr(false),
+							Roles: []string{
+								"GROUP_OWNER",
+							},
+							TypeName: "GROUP",
+						},
+					},
+				},
+			},
+		),
 	)
 
 })
@@ -172,6 +211,36 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.Aler
 		statusIDList = append(statusIDList, alertConfig.ID)
 	}
 	Expect(compare.IsEqualWithoutOrder(statusIDList, atlasIDList)).Should(BeTrue())
+
+	atlasConfigs := alertConfigurations.GetResults()
+	for i := range atlasConfigs {
+		atlasConfig := normalizeAtlasAlertConfig(atlasConfigs[i])
+		akoConfig, err := alertConfigs[i].ToAtlas()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(atlasConfig).Should(Equal(*akoConfig))
+	}
+}
+
+func normalizeAtlasAlertConfig(atlasConfig admin.GroupAlertsConfig) admin.GroupAlertsConfig {
+	atlasConfig.Id = nil
+	atlasConfig.GroupId = nil
+	atlasConfig.Created = nil
+	atlasConfig.Updated = nil
+	atlasConfig.Links = nil
+
+	notifications := atlasConfig.GetNotifications()
+	for j := range notifications {
+		notifications[j].NotifierId = nil
+		notifications[j].DatadogApiKey = pointer.MakePtr("")
+		notifications[j].OpsGenieApiKey = pointer.MakePtr("")
+		notifications[j].ServiceKey = pointer.MakePtr("")
+		notifications[j].ApiToken = pointer.MakePtr("")
+		notifications[j].VictorOpsApiKey = pointer.MakePtr("")
+		notifications[j].VictorOpsRoutingKey = pointer.MakePtr("")
+	}
+	atlasConfig.SetNotifications(notifications)
+
+	return atlasConfig
 }
 
 var _ = Describe("Alert configuration with secrets test", Label("alert-config"), func() {
