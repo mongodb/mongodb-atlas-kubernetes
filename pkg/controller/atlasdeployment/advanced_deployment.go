@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -77,77 +75,6 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedDeploymentState(ctx *workflow.
 	default:
 		return advancedDeployment, workflow.Terminate(workflow.Internal, fmt.Sprintf("unknown deployment state %q", advancedDeployment.StateName))
 	}
-}
-
-func terminate(ctx *workflow.Context, reason workflow.ConditionReason, err error) workflow.Result {
-	ctx.Log.Error(err)
-	result := workflow.Terminate(reason, err.Error())
-	ctx.SetConditionFromResult(status.SearchNodesReadyType, result)
-	return result
-}
-
-func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment, projectID string) workflow.Result {
-	// Get the current state from Atlas
-	ctx.Log.Debug("starting search node processing")
-	defer ctx.Log.Debug("finished search node processing")
-
-	// NOTE: Despite being an array/slice, the Atlas API only allows 1 item.
-	nodesInAtlasEmpty := false
-	currentNodesInAtlas, _, err := ctx.SdkClient.AtlasSearchApi.GetAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
-	if err != nil {
-		apiError, ok := admin.AsError(err)
-		// TODO: Currently 400, should be be 404: CLOUDP-239015
-		if ok && (apiError.GetError() == http.StatusBadRequest || apiError.GetError() == http.StatusNotFound) {
-			ctx.Log.Debug("no search nodes in atlas found")
-			nodesInAtlasEmpty = true
-		} else {
-			return terminate(ctx, workflow.Internal, err)
-		}
-	}
-
-	nodesInAkoEmpty := len(deployment.Spec.DeploymentSpec.SearchNodes) == 0
-
-	switch {
-	case !nodesInAkoEmpty && nodesInAtlasEmpty:
-		// If no nodes configured in atlas, but some in the operator - create them.
-		ctx.Log.Debugf("creating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
-		_, _, err = ctx.SdkClient.AtlasSearchApi.CreateAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
-			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
-		}).Execute()
-		if err != nil {
-			return terminate(ctx, workflow.SearchNodesNotCreatedInAtlas, err)
-		}
-	case !nodesInAkoEmpty && !nodesInAtlasEmpty:
-		// If nodes already configured in atlas and in the operator - update them.
-		ctx.Log.Debugf("updating search nodes %v", deployment.Spec.DeploymentSpec.SearchNodes)
-		currentAkoNodesAsAtlas := deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
-		// We can deepequal without normalization here because there is only ever 1 spec in the array
-		if reflect.DeepEqual(currentAkoNodesAsAtlas, *currentNodesInAtlas.Specs) {
-			// If the nodes are not marked as IDLE, they are not yet ready.
-			if currentNodesInAtlas.GetStateName() != "IDLE" {
-				msg := fmt.Sprintf("search nodes are not ready: %v", currentNodesInAtlas.GetStateName())
-				return workflow.InProgress(workflow.SearchNodesUpdating, msg)
-			}
-			ctx.Log.Debug("search nodes in AKO and Atlas are equal")
-			return workflow.OK()
-		}
-
-		_, _, err = ctx.SdkClient.AtlasSearchApi.UpdateAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
-			Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
-		}).Execute()
-		if err != nil {
-			return terminate(ctx, workflow.SearchNodesNotUpdatedInAtlas, err)
-		}
-	case nodesInAkoEmpty && !nodesInAtlasEmpty:
-		// If no nodes configured in the operator, but some in atlas - delete them.
-		ctx.Log.Debug("deleting search nodes")
-		_, err = ctx.SdkClient.AtlasSearchApi.DeleteAtlasSearchDeployment(ctx.Context, projectID, deployment.GetDeploymentName()).Execute()
-		if err != nil {
-			return terminate(ctx, workflow.SearchNodesNotDeletedInAtlas, err)
-		}
-	}
-
-	return workflow.OK()
 }
 
 func advancedDeploymentIdle(ctx *workflow.Context, project *akov2.AtlasProject, deployment *akov2.AtlasDeployment, atlasDeploymentAsAtlas *mongodbatlas.AdvancedCluster) (*mongodbatlas.AdvancedCluster, workflow.Result) {

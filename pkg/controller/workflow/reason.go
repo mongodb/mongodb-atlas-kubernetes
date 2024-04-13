@@ -58,10 +58,17 @@ const (
 	ServerlessPrivateEndpointInProgress   ConditionReason = "ServerlessPrivateEndpointInProgress"
 	ManagedNamespacesReady                ConditionReason = "ManagedNamespacesReady"
 	CustomZoneMappingReady                ConditionReason = "CustomZoneMappingReady"
-	SearchNodesNotCreatedInAtlas          ConditionReason = "SearchNodesNotCreatedInAtlas"
-	SearchNodesNotUpdatedInAtlas          ConditionReason = "SearchNodesNotUpdatedInAtlas"
-	SearchNodesNotDeletedInAtlas          ConditionReason = "SearchNodesNotDeletedInAtlas"
-	SearchNodesUpdating                   ConditionReason = "SearchNodesUpdating"
+)
+
+// Atlas SearchNodes reasons
+const (
+	SearchNodesUpdating ConditionReason = "SearchNodesUpdating"
+	SearchNodesCreating ConditionReason = "SearchNodesCreating"
+	SearchNodesDeleting ConditionReason = "SearchNodesDeleting"
+
+	ErrorSearchNodesNotUpsertedInAtlas ConditionReason = "SearchNodesNotUpsertedInAtlas"
+	ErrorSearchNodesNotDeletedInAtlas  ConditionReason = "SearchNodesNotDeletedInAtlas"
+	ErrorSearchNodesOperationAborted   ConditionReason = "SearchNodesOperationAborted"
 )
 
 // Atlas Database User reasons
