@@ -2,7 +2,6 @@ package atlasstream
 
 import (
 	"context"
-	"fmt"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,97 +40,49 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
+// https://dreampuf.github.io/GraphvizOnline/#digraph%20G%20%7B%0A%20%20%20%20subgraph%20cluster_pending%20%7B%0A%20%20%20%20%20%20%20%20skipped%3B%0A%20%20%20%20%20%20%20%20invalid%3B%0A%20%20%20%20%20%20%20%20unsupported%3B%0A%20%20%20%20%20%20%20%20terminated%3B%0A%20%20%20%20%20%20%20%20label%20%3D%20%22pending%22%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20deleted%20%5Blabel%3D%22deleted%5Cnfinalizer%20unset%22%5D%0A%0A%20%20%20%20pending%20-%3E%20pending%20%5Blabel%3D%22skip%5Cninvalidate%5Cnunsupport%5Cnterminate%22%5D%0A%20%20%20%20pending%20-%3E%20ready%20%5Blabel%3D%22create%22%5D%0A%20%20%20%20pending%20-%3E%20deleted%20%5Blabel%3D%22delete%22%5D%0A%20%20%20%20ready%20-%3E%20ready%20%5Blabel%3D%22update%22%5D%0A%20%20%20%20ready%20-%3E%20deleted%20%5Blabel%3D%22delete%22%5D%0A%20%20%20%20ready%20-%3E%20pending%20%5Blabel%3D%22terminate%22%5D%0A%7D%0A
+
 func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("atlasstreaminstance", req.NamespacedName)
+	log.Infow("-> Starting AtlasStreamInstance reconciliation")
 
-	streamInstance := akov2.AtlasStreamInstance{}
-	result := customresource.PrepareResource(ctx, r.Client, req, &streamInstance, log)
+	akoStreamInstance := akov2.AtlasStreamInstance{}
+	result := customresource.PrepareResource(ctx, r.Client, req, &akoStreamInstance, log)
 	if !result.IsOk() {
 		return result.ReconcileResult(), nil
 	}
 
-	if customresource.ReconciliationShouldBeSkipped(&streamInstance) {
-		log.Infow(fmt.Sprintf("-> Skipping AtlasStreamInstance reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", streamInstance.Spec)
-		if !streamInstance.GetDeletionTimestamp().IsZero() {
-			if err := customresource.ManageFinalizer(ctx, r.Client, &streamInstance, customresource.UnsetFinalizer); err != nil {
-				result = workflow.Terminate(workflow.Internal, err.Error())
-				log.Errorw("Failed to remove finalizer", "error", err)
-
-				return result.ReconcileResult(), nil
-			}
-		}
-
-		return workflow.OK().ReconcileResult(), nil
+	// starting from this point we have an entity at hand and can dispatch
+	if customresource.ReconciliationShouldBeSkipped(&akoStreamInstance) {
+		return r.skip(ctx, log, &akoStreamInstance), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, &streamInstance, log, ctx)
-	log.Infow("-> Starting AtlasStreamInstance reconciliation")
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, &akoStreamInstance, log, ctx)
+	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, &akoStreamInstance)
 
-	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, &streamInstance)
-
-	resourceVersionIsValid := customresource.ValidateResourceVersion(workflowCtx, &streamInstance, r.Log)
-	if !resourceVersionIsValid.IsOk() {
-		r.Log.Debugf("AtlasStreamInstance validation result: %v", resourceVersionIsValid)
-
-		return resourceVersionIsValid.ReconcileResult(), nil
+	// is it "invalid" state?
+	isValid := customresource.ValidateResourceVersion(workflowCtx, &akoStreamInstance, r.Log)
+	if !isValid.IsOk() {
+		return r.invalidate(isValid)
 	}
 
-	if !r.AtlasProvider.IsResourceSupported(&streamInstance) {
-		result = workflow.Terminate(workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
-			WithoutRetry()
-		setCondition(workflowCtx, status.ReadyType, result)
-
-		return result.ReconcileResult(), nil
+	if !r.AtlasProvider.IsResourceSupported(&akoStreamInstance) {
+		return r.unsupport(workflowCtx)
 	}
 
 	project := akov2.AtlasProject{}
-	if result = r.readProjectResource(ctx, &streamInstance, &project); !result.IsOk() {
-		setCondition(workflowCtx, status.ReadyType, result)
-
-		return result.ReconcileResult(), nil
+	if err := r.Client.Get(ctx, akoStreamInstance.AtlasProjectObjectKey(), &project); err != nil {
+		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
 	atlasClient, orgID, err := r.AtlasProvider.SdkClient(workflowCtx.Context, project.ConnectionSecretObjectKey(), log)
 	if err != nil {
-		result = workflow.Terminate(workflow.AtlasAPIAccessNotConfigured, err.Error())
-		setCondition(workflowCtx, status.ReadyType, result)
-
-		return result.ReconcileResult(), nil
+		return r.terminate(workflowCtx, workflow.AtlasAPIAccessNotConfigured, err)
 	}
 	workflowCtx.SdkClient = atlasClient
 	workflowCtx.OrgID = orgID
 
-	result = r.ensureStreamInstance(workflowCtx, &project, &streamInstance)
-	setCondition(workflowCtx, status.StreamInstanceReadyType, result)
-
-	/*
-		connReconciler := r.connectionReconcile(&project, &streamInstance)
-		for _, connRef := range streamInstance.Spec.ConnectionRegistry {
-			connResult, err := connReconciler(
-				workflowCtx.Context,
-				ctrl.Request{
-					NamespacedName: types.NamespacedName{
-						Namespace: connRef.Namespace,
-						Name:      connRef.Name,
-					},
-				},
-			)
-			if err != nil {
-				workflowCtx.Log.Warnf("unable to reconcile connection %v. %s", connRef, err)
-				continue
-			}
-			//setCondition(workflowCtx, status.StreamConnectionReadyType, connResult)
-		}*/
-
-	return result.ReconcileResult(), nil
-}
-
-func (r *InstanceReconciler) readProjectResource(ctx context.Context, instance *akov2.AtlasStreamInstance, project *akov2.AtlasProject) workflow.Result {
-	if err := r.Client.Get(ctx, instance.AtlasProjectObjectKey(), project); err != nil {
-		return workflow.Terminate(workflow.Internal, err.Error())
-	}
-
-	return workflow.OK()
+	return r.handlePendingOrReady(workflowCtx, &project, &akoStreamInstance)
 }
 
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
