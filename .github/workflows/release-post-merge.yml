@@ -177,6 +177,7 @@ jobs:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+          IMAGE_REPOSITORY: ${{ steps.tag.outputs.repo }}
         run: |
           make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
@@ -189,6 +190,7 @@ jobs:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
+          IMAGE_REPOSITORY: ${{ steps.tag.outputs.repo }}
         run: |
           make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
           make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.version }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}

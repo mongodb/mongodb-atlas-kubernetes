@@ -37,5 +37,6 @@ jobs:
     needs:
     - tag-release
     uses: ./.github/workflows/release-post-merge.yml
+    secrets: inherit
     with:
       tag: ${{ needs.tag-release.outputs.tag }}
