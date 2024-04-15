@@ -76,6 +76,12 @@ const (
 	FederatedAuthRolesReadyType ConditionType = "RolesReady"
 )
 
+// Atlas Streams condition types
+const (
+	StreamInstanceReadyType   ConditionType = "StreamInstanceReady"
+	StreamConnectionReadyType ConditionType = "StreamConnectionReady"
+)
+
 // Generic condition type
 const (
 	ResourceVersionStatus ConditionType = "ResourceVersionIsValid"

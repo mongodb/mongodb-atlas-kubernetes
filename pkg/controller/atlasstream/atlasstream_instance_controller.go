@@ -4,11 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
-
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -18,7 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -104,7 +102,26 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	workflowCtx.OrgID = orgID
 
 	result = r.ensureStreamInstance(workflowCtx, &project, &streamInstance)
-	setCondition(workflowCtx, status.ReadyType, result)
+	setCondition(workflowCtx, status.StreamInstanceReadyType, result)
+
+	/*
+		connReconciler := r.connectionReconcile(&project, &streamInstance)
+		for _, connRef := range streamInstance.Spec.ConnectionRegistry {
+			connResult, err := connReconciler(
+				workflowCtx.Context,
+				ctrl.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: connRef.Namespace,
+						Name:      connRef.Name,
+					},
+				},
+			)
+			if err != nil {
+				workflowCtx.Log.Warnf("unable to reconcile connection %v. %s", connRef, err)
+				continue
+			}
+			//setCondition(workflowCtx, status.StreamConnectionReadyType, connResult)
+		}*/
 
 	return result.ReconcileResult(), nil
 }

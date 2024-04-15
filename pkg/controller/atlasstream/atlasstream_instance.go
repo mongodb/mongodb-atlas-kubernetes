@@ -47,7 +47,7 @@ func (r *InstanceReconciler) ensureStreamInstance(workflowCtx *workflow.Context,
 		}
 	}
 
-	if HasStreamInstanceChanged(streamInstance, atlasStreamInstance) {
+	if hasStreamInstanceChanged(streamInstance, atlasStreamInstance) {
 		err = updateStreamInstance(workflowCtx, project, streamInstance)
 		if err != nil {
 			return workflow.Terminate(workflow.StreamInstanceNotUpdated, err.Error())
@@ -111,7 +111,7 @@ func updateStreamInstance(workflowCtx *workflow.Context, project *akov2.AtlasPro
 	return nil
 }
 
-func HasStreamInstanceChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant) bool {
+func hasStreamInstanceChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant) bool {
 	config := streamInstance.Spec.Config
 	dataProcessRegion := atlasStreamInstance.GetDataProcessRegion()
 
