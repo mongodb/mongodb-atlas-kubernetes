@@ -3,6 +3,8 @@ package atlasstream
 import (
 	"context"
 
+	"go.mongodb.org/atlas-sdk/v20231115008/admin"
+
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -52,21 +54,27 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return result.ReconcileResult(), nil
 	}
 
-	// starting from this point we have an entity at hand and can dispatch
-	if customresource.ReconciliationShouldBeSkipped(&akoStreamInstance) {
-		return r.skip(ctx, log, &akoStreamInstance), nil
+	return r.ensureAtlasStreamsInstance(ctx, log, &akoStreamInstance)
+}
+
+// this is the central state dispatcher
+func (r *InstanceReconciler) ensureAtlasStreamsInstance(ctx context.Context, log *zap.SugaredLogger, akoStreamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
+	// check if stream instance is in "skipped" state
+	if customresource.ReconciliationShouldBeSkipped(akoStreamInstance) {
+		return r.skip(ctx, log, akoStreamInstance), nil
 	}
 
-	workflowCtx := customresource.MarkReconciliationStarted(r.Client, &akoStreamInstance, log, ctx)
-	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, &akoStreamInstance)
+	workflowCtx := customresource.MarkReconciliationStarted(r.Client, akoStreamInstance, log, ctx)
+	defer statushandler.Update(workflowCtx, r.Client, r.EventRecorder, akoStreamInstance)
 
-	// is it "invalid" state?
-	isValid := customresource.ValidateResourceVersion(workflowCtx, &akoStreamInstance, r.Log)
+	// check if stream instance is in "invalid" state
+	isValid := customresource.ValidateResourceVersion(workflowCtx, akoStreamInstance, r.Log)
 	if !isValid.IsOk() {
 		return r.invalidate(isValid)
 	}
 
-	if !r.AtlasProvider.IsResourceSupported(&akoStreamInstance) {
+	// check if stream instance is in "unsupported" state
+	if !r.AtlasProvider.IsResourceSupported(akoStreamInstance) {
 		return r.unsupport(workflowCtx)
 	}
 
@@ -82,7 +90,50 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	workflowCtx.SdkClient = atlasClient
 	workflowCtx.OrgID = orgID
 
-	return r.handlePendingOrReady(workflowCtx, &project, &akoStreamInstance)
+	atlasStreamInstance, _, err := workflowCtx.SdkClient.StreamsApi.
+		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
+		Execute()
+
+	if err != nil && !admin.IsErrorCode(err, atlas.ResourceNotFound) {
+		return r.terminate(workflowCtx, workflow.Internal, err)
+	}
+
+	isMarkedAsDeleted := !akoStreamInstance.GetDeletionTimestamp().IsZero()
+	isNotInAtlas := err != nil && admin.IsErrorCode(err, atlas.ResourceNotFound)
+
+	switch {
+	case isNotInAtlas && !isMarkedAsDeleted:
+		// if no streams processing instance is not in atlas and is not marked as deleted - create
+		// hence, create the stream instance and transition to "ready" state
+		return r.create(workflowCtx, &project, akoStreamInstance)
+	default:
+		// here, the stream instance is ready, hence invoke the state handler
+		return r.handleReady(workflowCtx, akoStreamInstance, atlasStreamInstance, &project)
+	}
+}
+
+func (r *InstanceReconciler) handleReady(workflowCtx *workflow.Context, akoStreamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant, project *akov2.AtlasProject) (ctrl.Result, error) {
+	isMarkedAsDeleted := !akoStreamInstance.GetDeletionTimestamp().IsZero()
+
+	switch {
+	case isMarkedAsDeleted:
+		// if a streams processing instance is marked as deleted,
+		// independently whether it exists in Atlas or not - delete
+		return r.delete(workflowCtx, project, akoStreamInstance)
+	case hasChanged(akoStreamInstance, atlasStreamInstance):
+		// if a streams processing instance is ready and has changed - update
+		return r.update(workflowCtx, project, akoStreamInstance)
+	default:
+		// no change, streams processing instance stays in ready or pending state
+		return workflow.OK().ReconcileResult(), nil
+	}
+}
+
+func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant) bool {
+	config := streamInstance.Spec.Config
+	dataProcessRegion := atlasStreamInstance.GetDataProcessRegion()
+
+	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region == dataProcessRegion.GetRegion()
 }
 
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
