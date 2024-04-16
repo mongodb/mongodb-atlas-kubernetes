@@ -54,8 +54,14 @@ jobs:
           run: |
             # Evaluate whether or not cloud tests should run
             RUN_CLOUD_TESTS='false'
+            # Scheduled runs on default branch always run all tests
+            if [ "${EVENT}" == "schedule" ];then
+              RUN_CLOUD_TESTS='true'
+            # Release branches always run all tests
+            elif [[ "${GH_REF}" == release/* ]];then
+              RUN_CLOUD_TESTS='true'
             # push events run all tests when code was changed
-            if [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
+            elif [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
               RUN_CLOUD_TESTS='true'
             # cloud-tests label forces cloud tests to run, BUT only on AKO PRs, not from forked repos 
             elif [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
