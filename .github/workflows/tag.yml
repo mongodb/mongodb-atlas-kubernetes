@@ -6,7 +6,7 @@ on:
     - closed
 
 jobs:
-  tag-release:
+  tag:
     if: (github.event.pull_request.merged == true && (startsWith(github.head_ref, 'release/') || startsWith(github.head_ref, 'pre-release/')))
     environment: release
     name: Tag Release
@@ -32,11 +32,12 @@ jobs:
           git tag "${tag}"
           git push origin "${tag}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
 
   release-post-merge:
     needs:
-    - tag-release
+    - tag
     uses: ./.github/workflows/release-post-merge.yml
     secrets: inherit
     with:
-      tag: ${{ needs.tag-release.outputs.tag }}
+      tag: ${{ needs.tag.outputs.tag }}
