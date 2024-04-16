@@ -12,7 +12,7 @@ on:
     inputs:
       tag:
         type: string
-        description: "Name of existing tag (or branch) to release (format should be 'v*')"
+        description: "Name of existing tag to release (format should be 'v*')"
         required: true
   workflow_dispatch:
     inputs:
@@ -61,7 +61,7 @@ jobs:
       RELEASE_HELM: ${{ github.event.inputs.release_helm || 'true' }}
       CERTIFY: ${{ github.event.inputs.certify || 'true' }}
       RELEASE_TO_GITHUB: ${{ github.event.inputs.release_to_github || 'true' }}
-      TAG: ${{ github.event.inputs.tag || github.head_ref || github.ref_name }}
+      TAG: ${{ inputs.tag || github.head_ref || github.ref_name }}
     steps:
       - name: Free disk space
         run: | 
@@ -70,7 +70,7 @@ jobs:
           sudo apt clean
           docker rmi $(docker image ls -aq)
           df -h
-      - name: Check release and show environment & version
+      - name: Compute release tag and options
         id: tag
         run: |
           version=$(echo "${TAG}" |awk -F'^v' '{print $2}')
@@ -91,6 +91,7 @@ jobs:
           echo "repo=${repo}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "certified_version=${version}-certified" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
       - name: Check out code
         uses: actions/checkout@v4
         with:
