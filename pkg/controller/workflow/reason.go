@@ -112,10 +112,11 @@ const (
 
 // Atlas Streams reasons
 const (
-	StreamInstanceNotCreated   ConditionReason = "StreamInstanceNotCreated"
-	StreamInstanceNotRemoved   ConditionReason = "StreamInstanceNotRemoved"
-	StreamInstanceNotUpdated   ConditionReason = "StreamInstanceNotUpdated"
-	StreamConnectionNotCreated ConditionReason = "StreamConnectionNotCreated"
-	StreamConnectionNotRemoved ConditionReason = "StreamConnectionNotRemoved"
-	StreamConnectionNotUpdated ConditionReason = "StreamConnectionNotUpdated"
+	StreamInstanceNotCreated      ConditionReason = "StreamInstanceNotCreated"
+	StreamInstanceNotRemoved      ConditionReason = "StreamInstanceNotRemoved"
+	StreamInstanceNotUpdated      ConditionReason = "StreamInstanceNotUpdated"
+	StreamConnectionNotConfigured ConditionReason = "StreamConnectionNotConfigured"
+	StreamConnectionNotCreated    ConditionReason = "StreamConnectionNotCreated"
+	StreamConnectionNotRemoved    ConditionReason = "StreamConnectionNotRemoved"
+	StreamConnectionNotUpdated    ConditionReason = "StreamConnectionNotUpdated"
 )

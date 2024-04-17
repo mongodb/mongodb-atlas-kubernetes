@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
-
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -14,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
@@ -39,6 +37,8 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasstreaminstances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasstreaminstances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasstreaminstances/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlasstreamconnections,verbs=get;list
+// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlasstreamconnections,verbs=get;list
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
@@ -105,18 +105,21 @@ func (r *InstanceReconciler) ensureAtlasStreamsInstance(ctx context.Context, log
 	case isNotInAtlas && !isMarkedAsDeleted:
 		// if no streams processing instance is not in atlas and is not marked as deleted - create
 		// hence, create the stream instance and transition to "ready" state
-		return r.create(workflowCtx, &project, akoStreamInstance)
+		return r.create(workflowCtx, &project, akoStreamInstance, streamConnectionToAtlas(workflowCtx.Context, r.Client))
 	case isMarkedAsDeleted:
 		// if a streams processing instance is marked as deleted,
 		// independently whether it exists in Atlas or not - delete
 		return r.delete(workflowCtx, &project, akoStreamInstance)
 	case hasChanged(akoStreamInstance, atlasStreamInstance):
 		// if a streams processing instance is ready and has changed - update
-		return r.update(workflowCtx, &project, akoStreamInstance)
+		err = r.update(workflowCtx, &project, akoStreamInstance)
+		if err != nil {
+			return r.terminate(workflowCtx, workflow.StreamInstanceNotUpdated, err)
+		}
 	}
 
-	// we can transition straight away to ready state
-	return r.ready(workflowCtx, atlasStreamInstance)
+	// handle connection registry management
+	return r.handleConnectionRegistry(workflowCtx, &project, akoStreamInstance, atlasStreamInstance)
 }
 
 func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant) bool {
@@ -131,15 +134,4 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Named("AtlasStreamInstance").
 		For(&akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Complete(r)
-}
-
-func setCondition(ctx *workflow.Context, condition status.ConditionType, result workflow.Result) {
-	ctx.SetConditionFromResult(condition, result)
-	logIfWarning(ctx, result)
-}
-
-func logIfWarning(ctx *workflow.Context, result workflow.Result) {
-	if result.IsWarning() {
-		ctx.Log.Warnw(result.GetMessage())
-	}
 }

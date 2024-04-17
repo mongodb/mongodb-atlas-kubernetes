@@ -20,11 +20,37 @@ type StreamConnection struct {
 }
 
 // +kubebuilder:object:generate=false
+
 type AtlasStreamInstanceStatusOption func(s *AtlasStreamInstanceStatus)
 
 func AtlasStreamInstanceDetails(ID string, hostnames []string) AtlasStreamInstanceStatusOption {
 	return func(s *AtlasStreamInstanceStatus) {
 		s.ID = ID
 		s.Hostnames = hostnames
+	}
+}
+
+func AtlasStreamInstanceAddConnection(name string, ref common.ResourceRefNamespaced) AtlasStreamInstanceStatusOption {
+	return func(s *AtlasStreamInstanceStatus) {
+		for i := range s.Connections {
+			if s.Connections[i].Name == name {
+				s.Connections[i].ResourceRef = ref
+
+				return
+			}
+		}
+
+		s.Connections = append(s.Connections, StreamConnection{Name: name, ResourceRef: ref})
+	}
+}
+
+func AtlasStreamInstanceRemoveConnection(name string) AtlasStreamInstanceStatusOption {
+	return func(s *AtlasStreamInstanceStatus) {
+		for i := range s.Connections {
+			if s.Connections[i].Name == name {
+				s.Connections = append(s.Connections[:i], s.Connections[i+1:]...)
+				break
+			}
+		}
 	}
 }
