@@ -106,27 +106,17 @@ func (r *InstanceReconciler) ensureAtlasStreamsInstance(ctx context.Context, log
 		// if no streams processing instance is not in atlas and is not marked as deleted - create
 		// hence, create the stream instance and transition to "ready" state
 		return r.create(workflowCtx, &project, akoStreamInstance)
-	default:
-		// here, the stream instance is ready, hence invoke the state handler
-		return r.handleReady(workflowCtx, akoStreamInstance, atlasStreamInstance, &project)
-	}
-}
-
-func (r *InstanceReconciler) handleReady(workflowCtx *workflow.Context, akoStreamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant, project *akov2.AtlasProject) (ctrl.Result, error) {
-	isMarkedAsDeleted := !akoStreamInstance.GetDeletionTimestamp().IsZero()
-
-	switch {
 	case isMarkedAsDeleted:
 		// if a streams processing instance is marked as deleted,
 		// independently whether it exists in Atlas or not - delete
-		return r.delete(workflowCtx, project, akoStreamInstance)
+		return r.delete(workflowCtx, &project, akoStreamInstance)
 	case hasChanged(akoStreamInstance, atlasStreamInstance):
 		// if a streams processing instance is ready and has changed - update
-		return r.update(workflowCtx, project, akoStreamInstance)
-	default:
-		// no change, streams processing instance stays in ready or pending state
-		return workflow.OK().ReconcileResult(), nil
+		return r.update(workflowCtx, &project, akoStreamInstance)
 	}
+
+	// we can transition straight away to ready state
+	return r.ready(workflowCtx, atlasStreamInstance)
 }
 
 func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *admin.StreamsTenant) bool {
