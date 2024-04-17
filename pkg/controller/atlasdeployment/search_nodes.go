@@ -133,11 +133,17 @@ func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) w
 	}
 
 	atlasNodes, found, err := s.getAtlasSearchDeployment()
-	switch {
-	case err != nil:
+	if err != nil {
 		return s.terminate(workflow.ErrorSearchNodesNotUpsertedInAtlas, err)
-	case !found:
+	}
+	if !found {
 		return s.terminate(workflow.ErrorSearchNodesNotUpsertedInAtlas, errors.New("no search nodes found in Atlas"))
+	}
+
+	hasChanged := !reflect.DeepEqual(s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(), atlasNodes.GetSpecs())
+	switch {
+	case hasChanged:
+		return s.terminate(workflow.ErrorSearchNodesOperationAborted, errors.New("aborting update/create: spec has changed"))
 	case atlasNodes.GetStateName() != "IDLE":
 		return s.progress(
 			state,
