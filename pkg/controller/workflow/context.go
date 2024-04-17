@@ -125,6 +125,15 @@ func (c *Context) SetConditionTrue(conditionType status.ConditionType) *Context 
 	return c
 }
 
+func (c *Context) HasReason(reason ConditionReason) bool {
+	for _, condition := range c.Conditions() {
+		if condition.Reason == string(reason) {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Context) SetConditionTrueMsg(conditionType status.ConditionType, msg string) *Context {
 	c.EnsureCondition(status.Condition{
 		Type:    conditionType,

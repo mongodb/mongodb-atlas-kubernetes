@@ -127,6 +127,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		result := handleSearchNodes(ctx, deployment, projectID)
 
 		assert.True(t, result.IsInProgress())
+		assert.True(t, ctx.HasReason(workflow.SearchNodesUpdating))
 	})
 
 	t.Run("search nodes are in AKO and atlas, but are not IDLE", func(t *testing.T) {
@@ -168,6 +169,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		result := handleSearchNodes(ctx, deployment, projectID)
 
 		assert.True(t, result.IsInProgress())
+		assert.True(t, ctx.HasReason(workflow.SearchNodesUpdating))
 	})
 
 	t.Run("search nodes are in AKO and atlas but update errors", func(t *testing.T) {
@@ -276,6 +278,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		result := handleSearchNodes(ctx, deployment, projectID)
 
 		assert.True(t, result.IsInProgress())
+		assert.True(t, ctx.HasReason(workflow.SearchNodesCreating))
 	})
 
 	t.Run("search nodes are in AKO but not in Atlas but create errors", func(t *testing.T) {
@@ -367,6 +370,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		result := handleSearchNodes(ctx, deployment, projectID)
 
 		assert.True(t, result.IsInProgress())
+		assert.True(t, ctx.HasReason(workflow.SearchNodesDeleting))
 	})
 
 	t.Run("search nodes are in Atlas but not in AKO but delete errors", func(t *testing.T) {
@@ -410,5 +414,40 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		assert.False(t, result.IsOk())
 		assert.True(t, result.IsWarning())
+	})
+
+	t.Run("no search nodes in Atlas nor in AKO (unmanaged)", func(t *testing.T) {
+		deployment := akov2.DefaultAWSDeployment("default", projectName)
+
+		mockError := &admin.GenericOpenAPIError{}
+		model := *admin.NewApiError()
+		model.SetError(http.StatusBadRequest)
+		mockError.SetModel(model)
+
+		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			Return(
+				&admin.ApiSearchDeploymentResponse{},
+				&http.Response{
+					Status:     http.StatusText(http.StatusBadRequest),
+					StatusCode: http.StatusBadRequest,
+				},
+				mockError,
+			)
+
+		ctx := &workflow.Context{
+			SdkClient: &admin.APIClient{
+				AtlasSearchApi: searchAPI,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+
+		result := handleSearchNodes(ctx, deployment, projectID)
+
+		assert.True(t, result.IsOk())
+		assert.Empty(t, ctx.Conditions())
 	})
 }
