@@ -458,8 +458,11 @@ test-metrics:
 .PHONY: test-tools ## Test all tools
 test-tools: test-clean test-makejwt test-metrics
 
+tools/retry/retry: tools/retry/*.go
+	cd tools/retry && go build .
+
 .PHONY: sign 
-sign: ## Sign an AKO multi-architecture image
+sign: tools/retry/retry ## Sign an AKO multi-architecture image
 	@echo "Signing multi-architecture image $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) ./scripts/sign-multiarch.sh
 
@@ -470,7 +473,7 @@ cosign:
 	curl $(AKO_SIGN_PUBKEY) > $@
 
 .PHONY: verify 
-verify: cosign ./ako.pem ## Verify an AKO multi-architecture image's signature
+verify: cosign tools/retry/retry ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@echo "Verifying multi-architecture image signature $(IMG)..."
 	IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify && echo "VERIFIED OK"

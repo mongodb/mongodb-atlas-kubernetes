@@ -47,6 +47,7 @@ deploy/
 tools/clean/clean
 tools/makejwt/makejwt
 tools/metrics/metrics
+tools/retry/retry
 
 # ignore the ako.siging key local copy
 ako.pem
