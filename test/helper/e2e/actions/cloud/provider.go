@@ -1,10 +1,12 @@
 package cloud
 
 import (
+	"errors"
 	"path"
 	"time"
 
 	. "github.com/onsi/gomega"
+	"google.golang.org/api/googleapi"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
@@ -225,7 +227,8 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, req.SubnetName, target, index)
+			retries := 7
+			rule, ip, err := a.RetryGCPCreateEndpoint(retries, req.ID, req.Region, req.SubnetName, target, index)
 			Expect(err).To(BeNil())
 
 			endpoints = append(
@@ -274,6 +277,23 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	}
 
 	return nil
+}
+
+func (a *ProviderAction) RetryGCPCreateEndpoint(maxRetries int, name, region, subnet, target string, index int) (string, string, error) {
+	retries := maxRetries
+	for {
+		rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(name, region, subnet, target, index)
+		if retries > 0 && err != nil {
+			googleErr := &googleapi.Error{}
+			if errors.As(err, &googleErr) &&
+				googleErr.Code == 409 &&
+				googleErr.Message == "IP_IN_USE_BY_ANOTHER_RESOURCE" {
+				retries--
+				continue // retry IP conflict errors
+			}
+		}
+		return rule, ip, err
+	}
 }
 
 func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
