@@ -2,13 +2,10 @@ package cloud
 
 import (
 	"context"
-	"errors"
 	"path"
 	"time"
 
 	. "github.com/onsi/gomega"
-	"google.golang.org/api/googleapi"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
@@ -23,8 +20,12 @@ const (
 	ResourceGroupName = "svet-test"
 	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
 	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
+	Subnet3Name       = "atlas-operator-e2e-test-subnet3"
+	Subnet4Name       = "atlas-operator-e2e-test-subnet4"
 	Subnet1CIDR       = "10.0.0.0/25"
 	Subnet2CIDR       = "10.0.0.128/25"
+	Subnet3CIDR       = "10.3.0.0/16"
+	Subnet4CIDR       = "10.4.0.0/16"
 	vpcName           = "atlas-operator-e2e-test-vpc"
 	vpcCIDR           = "10.0.0.0/24"
 )
@@ -229,8 +230,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
-			retries := 7
-			rule, ip, err := a.RetryGCPCreateEndpoint(retries, req.ID, req.Region, req.SubnetName, target, index)
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(context.TODO(), req.ID, req.Region, req.SubnetName, target, index)
 			Expect(err).To(BeNil())
 
 			endpoints = append(
@@ -279,31 +279,6 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	}
 
 	return nil
-}
-
-func (a *ProviderAction) RetryGCPCreateEndpoint(maxRetries int, name, region, subnet, target string, index int) (string, string, error) {
-	backoff := wait.Backoff{
-		Duration: time.Second,
-		Factor:   1.5,
-		Jitter:   0.7,
-		Steps:    7,
-		Cap:      25 * time.Second,
-	}
-	var rule, ip string
-	var err error
-	wait.ExponentialBackoffWithContext(context.TODO(), backoff, func(ctx context.Context) (done bool, err error) {
-		rule, ip, err = a.gcpProvider.CreatePrivateEndpoint(ctx, name, region, subnet, target, index)
-		if err != nil {
-			googleErr := &googleapi.Error{}
-			if errors.As(err, &googleErr) &&
-				googleErr.Code == 409 &&
-				googleErr.Message == "IP_IN_USE_BY_ANOTHER_RESOURCE" {
-				return false, err
-			}
-		}
-		return true, err
-	})
-	return rule, ip, err
 }
 
 func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
@@ -373,7 +348,7 @@ func getGCPConfigDefaults() *GCPConfig {
 	return &GCPConfig{
 		Region:  GCPRegion,
 		VPC:     vpcName,
-		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
+		Subnets: map[string]string{Subnet3Name: Subnet3CIDR, Subnet4Name: Subnet4CIDR},
 	}
 }
 

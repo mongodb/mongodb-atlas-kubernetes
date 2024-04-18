@@ -330,8 +330,12 @@ func (a *GCPAction) randomIP(subnet string) string {
 	ip, network, _ := net.ParseCIDR(a.network.Subnets[subnet])
 
 	ipParts := strings.Split(ip.String(), ".")
+	if len(ipParts) != 4 {
+		panic(fmt.Errorf("failed to parse IPv4 %q into 4 byte parts", ip))
+	}
 
 	for {
+		ipParts[2] = strconv.Itoa(rand.IntN(255))
 		ipParts[3] = strconv.Itoa(rand.IntN(255))
 		genIP := net.ParseIP(strings.Join(ipParts, "."))
 

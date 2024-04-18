@@ -204,7 +204,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 						ID:         peName,
 						Region:     peStatusItem.Region,
 						Targets:    peStatusItem.ServiceAttachmentNames,
-						SubnetName: cloud.Subnet1Name,
+						SubnetName: cloud.Subnet3Name,
 					},
 				)
 			case provider.ProviderAzure:
