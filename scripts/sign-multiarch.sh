@@ -8,7 +8,7 @@ action=${1:-sign}
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-docker pull "${img}"
+"${SCRIPT_DIR}"/retry.sh docker pull "${img}"
 MULTIARCH_IMG_SHA=$(docker inspect --format='{{index .RepoDigests 0}}' "${img}" |awk -F@ '{print $2}')
 IMG_PLATFORMS_SHAS=$(docker manifest inspect "${img}" | \
   jq -rc '.manifests[] | select(.platform.os != "unknown" and .platform.architecture != "unknown") | .digest')
