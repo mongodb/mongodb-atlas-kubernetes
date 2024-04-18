@@ -22,9 +22,9 @@ jobs:
       - id: test
         run: |
           # Note the use of external single quotes to allow for doble quotes at inline YAML array
-          matrix='["v1.21.1-kind"]'
+          matrix='["v1.27.1-kind"]'
           if [ "${GH_HEAD_REF}" == "main" ];then
-            matrix='["v1.21.1-kind", "v1.29.2-kind"]'
+            matrix='["v1.27.1-kind", "v1.29.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
