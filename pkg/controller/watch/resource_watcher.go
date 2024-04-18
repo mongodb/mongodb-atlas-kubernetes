@@ -3,22 +3,27 @@ package watch
 import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 func NewResourceWatcher() ResourceWatcher {
 	return ResourceWatcher{
+		mtx:              &sync.Mutex{},
 		WatchedResources: map[WatchedObject]map[client.ObjectKey]bool{},
 	}
 }
 
 // ResourceWatcher is the object containing the map of watched_resource -> []dependant_resource.
 type ResourceWatcher struct {
+	mtx              *sync.Mutex
 	WatchedResources map[WatchedObject]map[client.ObjectKey]bool
 }
 
 // EnsureResourcesAreWatched registers a dependant for the watched objects.
 // This will let the controller to react on the events for the watched objects and trigger reconciliation for dependants.
 func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, resourceKind string, log *zap.SugaredLogger, watchedObjectsKeys ...client.ObjectKey) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
 	for _, watchedObjectKey := range watchedObjectsKeys {
 		r.addWatchedResourceIfNotAdded(watchedObjectKey, resourceKind, dependant, log)
 	}
@@ -28,6 +33,8 @@ func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, r
 }
 
 func (r ResourceWatcher) EnsureMultiplesResourcesAreWatched(dependant client.ObjectKey, log *zap.SugaredLogger, resources ...WatchedObject) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
 	for _, res := range resources {
 		r.addWatchedResourceIfNotAdded(res.Resource, res.ResourceKind, dependant, log)
 		log.Debugf("resource watcher: watching %v to trigger reconciliation for %v", res.Resource, dependant)
