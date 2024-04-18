@@ -1,9 +1,10 @@
 package watch
 
 import (
+	"sync"
+
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
 )
 
 func NewResourceWatcher() ResourceWatcher {
