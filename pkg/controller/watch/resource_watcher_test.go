@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,9 +18,18 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		project2 := kube.ObjectKey("test", "project2")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
 
-		watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret)
-		watcher.EnsureResourcesAreWatched(project2, "Secret", zap.S(), connectionSecret)
+		var wg sync.WaitGroup
 
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			watcher.EnsureResourcesAreWatched(project1, "Secret", zap.S(), connectionSecret)
+		}()
+		go func() {
+			defer wg.Done()
+			watcher.EnsureResourcesAreWatched(project2, "Secret", zap.S(), connectionSecret)
+		}()
+		wg.Wait()
 		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
 			{ResourceKind: "Secret", Resource: connectionSecret}: {project1: true, project2: true},
 		}
