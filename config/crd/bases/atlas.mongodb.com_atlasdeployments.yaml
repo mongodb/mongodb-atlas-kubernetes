@@ -440,13 +440,10 @@ spec:
                                     is omitted.
                                   type: boolean
                                 fields:
-                                  additionalProperties:
-                                    x-kubernetes-preserve-unknown-fields: true
                                   description: One or more field specifications for
                                     the Atlas Search index. Required if mapping.dynamic
-                                    is omitted or set to false. Fields map[string]runtime.RawExtension
-                                    `json:"fields,omitempty"`
-                                  type: object
+                                    is omitted or set to false.
+                                  x-kubernetes-preserve-unknown-fields: true
                               type: object
                             searchConfigurationRef:
                               description: A reference to the AtlasSearchIndexConfig
@@ -557,20 +554,10 @@ spec:
                           description: Atlas vector search index configuration
                           properties:
                             fields:
-                              description: Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
-                              items:
-                                properties:
-                                  dimensions:
-                                    type: integer
-                                  path:
-                                    type: string
-                                  similarity:
-                                    type: string
-                                  type:
-                                    default: vector
-                                    type: string
-                                type: object
-                              type: array
+                              description: |-
+                                Array of JSON objects. See examples https://dochub.mongodb.org/core/avs-vector-type
+                                Fields []VectorSearchField `json:"fields,omitempty"`
+                              x-kubernetes-preserve-unknown-fields: true
                           type: object
                       required:
                       - DBName

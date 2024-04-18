@@ -18,6 +18,8 @@ import (
 type SearchIndex struct {
 	akov2.SearchIndex
 	akov2.AtlasSearchIndexConfigSpec
+	ID     *string
+	Status *string
 }
 
 func NewSearchIndexFromAKO(index *akov2.SearchIndex, config *akov2.AtlasSearchIndexConfigSpec) *SearchIndex {
@@ -51,17 +53,17 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			result = append(result, akov2.Synonym{
 				Name:     (*in)[i].Name,
 				Analyzer: (*in)[i].Analyzer,
-				Source:   &akov2.Source{Collection: (*in)[i].Source.Collection},
+				Source:   akov2.Source{Collection: (*in)[i].Source.Collection},
 			})
 		}
 		return &result
 	}
 
-	convertMappings := func(in *admin.ApiAtlasFTSMappings) (*akov2.Mapping, error) {
+	convertMappings := func(in *admin.ApiAtlasFTSMappings) (*akov2.Mappings, error) {
 		if in == nil {
 			return nil, nil
 		}
-		result := &akov2.Mapping{
+		result := &akov2.Mappings{
 			Dynamic: in.Dynamic,
 			Fields:  nil,
 		}
@@ -82,7 +84,7 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 
 	search := &akov2.Search{
 		Synonyms:               convertSynonyms(index.Synonyms),
-		Mapping:                mappings,
+		Mappings:               mappings,
 		SearchConfigurationRef: common.ResourceRefNamespaced{},
 	}
 
@@ -109,13 +111,13 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			return &res, err
 		}
 
-		convertTokenizer := func(in *admin.ApiAtlasFTSAnalyzersTokenizer) (*akov2.Tokenizer, error) {
+		convertTokenizer := func(in *admin.ApiAtlasFTSAnalyzersTokenizer) (akov2.Tokenizer, error) {
+			res := akov2.Tokenizer{}
 			if in == nil {
-				return nil, nil
+				return res, nil
 			}
 
-			res := &akov2.Tokenizer{}
-			err := compat.JSONCopy(res, *in)
+			err := compat.JSONCopy(&res, *in)
 			return res, err
 		}
 
@@ -185,6 +187,8 @@ func NewSearchIndexFromAtlas(index admin.ClusterSearchIndex) (*SearchIndex, erro
 			SearchAnalyzer: index.SearchAnalyzer,
 			StoredSource:   storedSource,
 		},
+		ID:     index.IndexID,
+		Status: index.Status,
 	}, errors.Join(errs...)
 }
 
@@ -192,110 +196,133 @@ func (s *SearchIndex) EqualTo(value *SearchIndex) bool {
 	return value != nil
 }
 
-//func (s *SearchIndex) ToAtlas() *admin.ClusterSearchIndex {
-//	convertTokenizerType := func(t *akov2.Tokenizer) admin.ApiAtlasFTSAnalyzersTokenizer {
-//		return admin.ApiAtlasFTSAnalyzersTokenizer{
-//			MaxGram:        t.MaxGram,
-//			MinGram:        t.MinGram,
-//			Type:           t.Type,
-//			Group:          t.Group,
-//			Pattern:        t.Pattern,
-//			MaxTokenLength: t.MaxTokenLength,
-//		}
-//	}
-//
-//	convertCharFilters := func(in []akov2.CharFilter) *[]interface{} {
-//		result := make([]interface{}, 0, len(in))
-//
-//		for i := range in {
-//			resultItem, _ := json.Marshal((in)[i])
-//			result = append(result, resultItem)
-//		}
-//		return &result
-//	}
-//
-//	convertTokenFilters := func(in []akov2.TokenFilter) *[]interface{} {
-//		result := make([]interface{}, 0, len(in))
-//		for i := range in {
-//			resultItem, _ := json.Marshal((in)[i])
-//			result = append(result, resultItem)
-//		}
-//		return &result
-//	}
-//
-//	convertAnalyzers := func(in *[]akov2.AtlasSearchIndexAnalyzer) *[]admin.ApiAtlasFTSAnalyzers {
-//		if in == nil {
-//			return nil
-//		}
-//		result := make([]admin.ApiAtlasFTSAnalyzers, 0, len(*in))
-//
-//		for i := range *in {
-//			result = append(result, admin.ApiAtlasFTSAnalyzers{
-//				CharFilters:  convertCharFilters((*in)[i].CharFilters),
-//				Name:         (*in)[i].Name,
-//				TokenFilters: convertTokenFilters((*in)[i].TokenFilters),
-//				Tokenizer:    convertTokenizerType((*in)[i].Tokenizer),
-//			})
-//		}
-//		return &result
-//	}
-//
-//	convertMappings := func(in *akov2.Mapping) *admin.ApiAtlasFTSMappings {
-//		resultMap := map[string]interface{}{}
-//		for k, v := range in.Fields {
-//			resultMap[k] = v
-//		}
-//		return &admin.ApiAtlasFTSMappings{
-//			Dynamic: in.Dynamic,
-//			Fields:  resultMap,
-//		}
-//	}
-//
-//	convertSynonyms := func(in *[]akov2.Synonym) *[]admin.SearchSynonymMappingDefinition {
-//		if in == nil {
-//			return nil
-//		}
-//		result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
-//
-//		for i := range *in {
-//			result = append(result, admin.SearchSynonymMappingDefinition{
-//				Analyzer: (*in)[i].Analyzer,
-//				Name:     (*in)[i].Name,
-//				Source: admin.SynonymSource{
-//					Collection: (*in)[i].Source.Collection,
-//				},
-//			})
-//		}
-//		return &result
-//	}
-//
-//	convertFields := func(in []akov2.VectorSearchField) *[]map[string]interface{} {
-//		result := make([]map[string]interface{}, 0, len(in))
-//
-//		for i := range in {
-//			result = append(result, map[string]interface{}{
-//				"type":       in[i].Type,
-//				"path":       in[i].Path,
-//				"dimensions": in[i].Dimensions,
-//				"similarity": in[i].Similarity,
-//			})
-//		}
-//		return &result
-//	}
-//
-//	return &admin.ClusterSearchIndex{
-//		CollectionName: s.CollectionName,
-//		Database:       s.DBName,
-//		// Should be nil
-//		IndexID:        nil,
-//		Name:           s.Name,
-//		Status:         nil,
-//		Type:           &s.Type,
-//		Analyzer:       s.Analyzer,
-//		Analyzers:      convertAnalyzers(s.Analyzers),
-//		Mappings:       convertMappings(s.Search.Mapping),
-//		SearchAnalyzer: s.SearchAnalyzer,
-//		Synonyms:       convertSynonyms(s.Search.Synonyms),
-//		Fields:         convertFields(s.VectorSearch.Fields),
-//	}
-//}
+func (s *SearchIndex) ToAtlas() (*admin.ClusterSearchIndex, error) {
+	convertJsonToListOfMaps := func(in *apiextensionsv1.JSON) (*[]map[string]interface{}, error) {
+		if in == nil {
+			return nil, nil
+		}
+		var result []map[string]interface{}
+		err := json.Unmarshal(in.Raw, &result)
+		return &result, err
+	}
+
+	convertJsonToMap := func(in *apiextensionsv1.JSON) (map[string]interface{}, error) {
+		if in == nil {
+			return nil, nil
+		}
+		result := map[string]interface{}{}
+		err := json.Unmarshal(in.Raw, &result)
+		return result, err
+	}
+	convertJsonToInterface := func(in *apiextensionsv1.JSON) (*[]interface{}, error) {
+		if in == nil {
+			return pointer.MakePtr([]interface{}{}), nil
+		}
+		var result []interface{}
+		err := json.Unmarshal(in.Raw, &result)
+		return &result, err
+	}
+
+	storedSource, err := convertJsonToMap(s.StoredSource)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert storedSource: %w", err)
+	}
+
+	analyzers, err := func(in *[]akov2.AtlasSearchIndexAnalyzer) (*[]admin.ApiAtlasFTSAnalyzers, error) {
+		if in == nil {
+			return nil, nil
+		}
+
+		result := make([]admin.ApiAtlasFTSAnalyzers, 0, len(*in))
+		for i := range *in {
+			analyzer := (*in)[i]
+			charFilters, err := convertJsonToInterface(analyzer.CharFilters)
+			if err != nil {
+				return nil, err
+			}
+
+			tokenFilters, err := convertJsonToInterface(analyzer.TokenFilters)
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, admin.ApiAtlasFTSAnalyzers{
+				CharFilters:  charFilters,
+				Name:         analyzer.Name,
+				TokenFilters: tokenFilters,
+				Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
+					MaxGram:        analyzer.Tokenizer.MaxGram,
+					MinGram:        analyzer.Tokenizer.MinGram,
+					Type:           analyzer.Tokenizer.Type,
+					Group:          analyzer.Tokenizer.Group,
+					Pattern:        analyzer.Tokenizer.Pattern,
+					MaxTokenLength: analyzer.Tokenizer.MaxTokenLength,
+				},
+			})
+		}
+		return &result, nil
+	}(s.Analyzers)
+	if err != nil {
+		return nil, err
+	}
+
+	mappings, err := func(in *akov2.Mappings) (*admin.ApiAtlasFTSMappings, error) {
+		if in == nil {
+			return nil, nil
+		}
+		fields, err := convertJsonToMap(in.Fields)
+		if err != nil {
+			return nil, err
+		}
+		return &admin.ApiAtlasFTSMappings{
+			Dynamic: in.Dynamic,
+			Fields:  fields,
+		}, nil
+	}(s.Search.Mappings)
+	if err != nil {
+		return nil, err
+	}
+
+	synonyms, err := func(in *[]akov2.Synonym) (*[]admin.SearchSynonymMappingDefinition, error) {
+		if in == nil {
+			return nil, nil
+		}
+
+		result := make([]admin.SearchSynonymMappingDefinition, 0, len(*in))
+		for i := range *in {
+			syn := &(*in)[i]
+
+			result = append(result, admin.SearchSynonymMappingDefinition{
+				Analyzer: syn.Analyzer,
+				Name:     syn.Name,
+				Source:   admin.SynonymSource{Collection: syn.Source.Collection},
+			})
+		}
+
+		return &result, nil
+	}(s.Search.Synonyms)
+	if err != nil {
+		return nil, err
+	}
+
+	searchFields, err := convertJsonToListOfMaps(s.VectorSearch.Fields)
+	if err != nil {
+		return nil, err
+	}
+
+	return &admin.ClusterSearchIndex{
+		CollectionName: s.CollectionName,
+		Database:       s.DBName,
+		IndexID:        s.ID,
+		Name:           s.Name,
+		Status:         s.Status,
+		Type:           pointer.MakePtr(s.SearchIndex.Type),
+		Analyzer:       s.Analyzer,
+		Analyzers:      analyzers,
+		Mappings:       mappings,
+		SearchAnalyzer: s.SearchAnalyzer,
+		StoredSource:   storedSource,
+		Synonyms:       synonyms,
+		Fields:         searchFields,
+	}, nil
+}

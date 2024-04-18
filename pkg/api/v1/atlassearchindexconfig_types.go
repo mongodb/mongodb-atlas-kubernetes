@@ -72,7 +72,7 @@ type AtlasSearchIndexAnalyzer struct {
 	CharFilters *apiextensions.JSON `json:"charFilters,omitempty"`
 	// Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing
 	// +required
-	Tokenizer *Tokenizer `json:"tokenizer"`
+	Tokenizer Tokenizer `json:"tokenizer"`
 }
 
 type Tokenizer struct {

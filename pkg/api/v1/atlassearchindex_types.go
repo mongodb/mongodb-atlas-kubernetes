@@ -51,7 +51,7 @@ type SearchIndex struct {
 //	convertSynonyms := func(in *[]admin.SearchSynonymMappingDefinition) []Synonym {
 //
 //	}
-//	convertMappings := func(in *admin.ApiAtlasFTSMappings) *Mapping {
+//	convertMappings := func(in *admin.ApiAtlasFTSMappings) *Mappings {
 //
 //	}
 //	convertAnalyzers := func(in *[]admin.ApiAtlasFTSAnalyzers) []AtlasSearchIndexAnalyzer {
@@ -63,7 +63,7 @@ type SearchIndex struct {
 //		CollectionName: index.CollectionName,
 //		Type:           *index.Type,
 //		Synonyms:       index.Synonyms, // convert
-//		Mapping:        index.Mappings, // convert
+//		Mappings:        index.Mappings, // convert
 //		Fields:         index.Fields,   // convert
 //		AtlasSearchIndexConfigSpec: AtlasSearchIndexConfigSpec{
 //			Analyzer:       index.Analyzer,
@@ -121,8 +121,8 @@ type SearchIndex struct {
 //			case in[i].IcuNormalize != nil:
 //				resultItem["icuNormalize"] = in[i].IcuNormalize
 //				resultItem["type"] = "icuNormalize"
-//			case in[i].Mapping != nil:
-//				resultItem["mappings"] = in[i].Mapping.Mappings
+//			case in[i].Mappings != nil:
+//				resultItem["mappings"] = in[i].Mappings.Mappings
 //				resultItem["type"] = "mapping"
 //			case in[i].Persian != nil:
 //				resultItem["persian"] = in[i].Persian
@@ -207,7 +207,7 @@ type SearchIndex struct {
 //		return &result
 //	}
 //
-//	convertMappings := func(in *Mapping) *admin.ApiAtlasFTSMappings {
+//	convertMappings := func(in *Mappings) *admin.ApiAtlasFTSMappings {
 //		return &admin.ApiAtlasFTSMappings{
 //			Dynamic: &in.Dynamic,
 //			//Fields:  map[string]interface{}(in.Fields),
@@ -239,7 +239,7 @@ type SearchIndex struct {
 //		Type:           &si.Type,
 //		Analyzer:       ic.Analyzer,
 //		Analyzers:      convertAnalyzers(ic.Analyzers),
-//		Mappings:       convertMappings(si.Search.Mapping),
+//		Mappings:       convertMappings(si.Search.Mappings),
 //		SearchAnalyzer: ic.SearchAnalyzer,
 //		Synonyms:       convertSynonyms(si.Search.Synonyms),
 //		// TODO: Not described in the docs
@@ -253,7 +253,7 @@ type Search struct {
 	Synonyms *[]Synonym `json:"synonyms,omitempty"`
 	// Index specifications for the collection's fields
 	// +optional
-	Mapping *Mapping `json:"mappings,omitempty"`
+	Mappings *Mappings `json:"mappings,omitempty"`
 	// +required
 	// A reference to the AtlasSearchIndexConfig custom resource
 	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
@@ -268,7 +268,8 @@ type Synonym struct {
 	// +required
 	Analyzer string `json:"analyzer"`
 	// Data set that stores the mapping one or more words map to one or more synonyms of those words
-	Source *Source `json:"source"`
+	// +required
+	Source Source `json:"source"`
 }
 
 type Source struct {
@@ -276,7 +277,7 @@ type Source struct {
 	Collection string `json:"collection"`
 }
 
-type Mapping struct {
+type Mappings struct {
 	// Flag that indicates whether the index uses dynamic or static mappings. Required if mapping.fields is omitted.
 	Dynamic *bool `json:"dynamic,omitempty"`
 	// One or more field specifications for the Atlas Search index. Required if mapping.dynamic is omitted or set to false.

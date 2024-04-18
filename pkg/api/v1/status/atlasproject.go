@@ -117,6 +117,9 @@ type AtlasProjectStatus struct {
 	// Teams contains a list of teams assignment statuses
 	Teams []ProjectTeamStatus `json:"teams,omitempty"`
 
+	// SearchIndexes contains a list of search indexes statuses configured for a project
+	SearchIndexes []AtlasSearchIndex `json:"searchIndexes,omitempty"`
+
 	// Prometheus contains the status for Prometheus integration
 	// including the prometheusDiscoveryURL
 	// +optional
