@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"context"
 	"errors"
 	"path"
 	"time"
@@ -290,8 +291,8 @@ func (a *ProviderAction) RetryGCPCreateEndpoint(maxRetries int, name, region, su
 	}
 	var rule, ip string
 	var err error
-	wait.ExponentialBackoff(backoff, func() (done bool, err error) {
-		rule, ip, err = a.gcpProvider.CreatePrivateEndpoint(name, region, subnet, target, index)
+	wait.ExponentialBackoffWithContext(context.TODO(), backoff, func(ctx context.Context) (done bool, err error) {
+		rule, ip, err = a.gcpProvider.CreatePrivateEndpoint(ctx, name, region, subnet, target, index)
 		if err != nil {
 			googleErr := &googleapi.Error{}
 			if errors.As(err, &googleErr) &&

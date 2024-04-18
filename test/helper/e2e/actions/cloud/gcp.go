@@ -99,9 +99,9 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 
 	return vpcName, nil
 }
-func (a *GCPAction) CreatePrivateEndpoint(name, region, subnet, target string, index int) (string, string, error) {
+
+func (a *GCPAction) CreatePrivateEndpoint(ctx context.Context, name, region, subnet, target string, index int) (string, string, error) {
 	a.t.Helper()
-	ctx := context.Background()
 
 	address := fmt.Sprintf("%s-%s-ip-%d", googleConnectPrefix, name, index)
 	rule := fmt.Sprintf("%s-%s-fr-%d", googleConnectPrefix, name, index)
