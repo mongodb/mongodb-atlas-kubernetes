@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"google.golang.org/api/googleapi"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
@@ -280,21 +281,28 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 }
 
 func (a *ProviderAction) RetryGCPCreateEndpoint(maxRetries int, name, region, subnet, target string, index int) (string, string, error) {
-	retries := 0
-	for {
-		rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(name, region, subnet, target, index)
-		if retries < maxRetries && err != nil {
+	backoff := wait.Backoff{
+		Duration: time.Second,
+		Factor:   1.5,
+		Jitter:   0.7,
+		Steps:    7,
+		Cap:      25 * time.Second,
+	}
+	var rule, ip string
+	var err error
+	wait.ExponentialBackoff(backoff, func() (done bool, err error) {
+		rule, ip, err = a.gcpProvider.CreatePrivateEndpoint(name, region, subnet, target, index)
+		if err != nil {
 			googleErr := &googleapi.Error{}
 			if errors.As(err, &googleErr) &&
 				googleErr.Code == 409 &&
 				googleErr.Message == "IP_IN_USE_BY_ANOTHER_RESOURCE" {
-				retries++
-				time.Sleep(time.Duration(retries) * time.Second)
-				continue // retry IP conflict errors
+				return false, err
 			}
 		}
-		return rule, ip, err
-	}
+		return true, err
+	})
+	return rule, ip, err
 }
 
 func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
