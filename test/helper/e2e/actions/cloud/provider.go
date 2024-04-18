@@ -280,15 +280,16 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 }
 
 func (a *ProviderAction) RetryGCPCreateEndpoint(maxRetries int, name, region, subnet, target string, index int) (string, string, error) {
-	retries := maxRetries
+	retries := 0
 	for {
 		rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(name, region, subnet, target, index)
-		if retries > 0 && err != nil {
+		if retries < maxRetries && err != nil {
 			googleErr := &googleapi.Error{}
 			if errors.As(err, &googleErr) &&
 				googleErr.Code == 409 &&
 				googleErr.Message == "IP_IN_USE_BY_ANOTHER_RESOURCE" {
-				retries--
+				retries++
+				time.Sleep(time.Duration(retries) * time.Second)
 				continue // retry IP conflict errors
 			}
 		}
