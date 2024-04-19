@@ -52,9 +52,7 @@ func handleSearchNodes(ctx *workflow.Context, deployment *akov2.AtlasDeployment,
 	c, ok := ctx.GetCondition(status.SearchNodesReadyType)
 	if ok {
 		switch reason := workflow.ConditionReason(c.Reason); reason {
-		case workflow.SearchNodesCreating:
-			return s.handleUpserting(reason)
-		case workflow.SearchNodesUpdating:
+		case workflow.SearchNodesCreating, workflow.SearchNodesUpdating:
 			return s.handleUpserting(reason)
 		case workflow.SearchNodesDeleting:
 			return s.handleDeleting()
