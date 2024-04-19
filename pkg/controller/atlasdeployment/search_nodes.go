@@ -153,7 +153,7 @@ func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) w
 	}
 }
 
-// handleCreating handles creating search nodes. The following state is handled here:
+// handleDeleting handles deleting search nodes. The following state is handled here:
 //
 //	Conditions:
 //	  Status:                False
