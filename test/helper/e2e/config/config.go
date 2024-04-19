@@ -41,5 +41,5 @@ const (
 	AzureRegionEU = "northeurope"
 
 	// GCP
-	FileNameSAGCP = "gcp_service_account.json"
+	FileNameSAGCP = "../../output/gcp_service_account.json"
 )
