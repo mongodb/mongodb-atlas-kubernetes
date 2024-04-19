@@ -48,14 +48,21 @@ jobs:
             DRAFT: ${{ github.event.pull_request.draft }}
             CODE_CHANGED: ${{ steps.paths-filter.outputs.production-code-changed }}
             GH_REF: ${{ github.ref }}
+            GH_HEAD_REF: ${{ github.head_ref }}
             PR_HEAD_REPONAME: ${{ github.event.pull_request.head.repo.full_name }}
             REPONAME: ${{ github.repository }}
             ACTOR: ${{ github.actor }}
           run: |
             # Evaluate whether or not cloud tests should run
             RUN_CLOUD_TESTS='false'
+            # Scheduled runs on default branch always run all tests
+            if [ "${EVENT}" == "schedule" ];then
+              RUN_CLOUD_TESTS='true'
+            # Release branches always run all tests
+            elif [[ "${GH_HEAD_REF}" == release/* ]];then
+              RUN_CLOUD_TESTS='true'
             # push events run all tests when code was changed
-            if [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
+            elif [ "${EVENT}" == "push" ] && [ "${CODE_CHANGED}" == "true" ];then
               RUN_CLOUD_TESTS='true'
             # cloud-tests label forces cloud tests to run, BUT only on AKO PRs, not from forked repos 
             elif [ "${CLOUD_TESTS_LABEL}" == "true" ] && [ "${FORKED}" == "false" ];then
