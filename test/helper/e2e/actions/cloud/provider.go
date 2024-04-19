@@ -20,12 +20,8 @@ const (
 	ResourceGroupName = "svet-test"
 	Subnet1Name       = "atlas-operator-e2e-test-subnet1"
 	Subnet2Name       = "atlas-operator-e2e-test-subnet2"
-	Subnet3Name       = "atlas-operator-e2e-test-subnet3"
-	Subnet4Name       = "atlas-operator-e2e-test-subnet4"
 	Subnet1CIDR       = "10.0.0.0/25"
 	Subnet2CIDR       = "10.0.0.128/25"
-	Subnet3CIDR       = "10.3.0.0/16"
-	Subnet4CIDR       = "10.4.0.0/16"
 	vpcName           = "atlas-operator-e2e-test-vpc"
 	vpcCIDR           = "10.0.0.0/24"
 )
@@ -348,7 +344,7 @@ func getGCPConfigDefaults() *GCPConfig {
 	return &GCPConfig{
 		Region:  GCPRegion,
 		VPC:     vpcName,
-		Subnets: map[string]string{Subnet3Name: Subnet3CIDR, Subnet4Name: Subnet4CIDR},
+		Subnets: map[string]string{Subnet1Name: Subnet1CIDR, Subnet2Name: Subnet2CIDR},
 	}
 }
 

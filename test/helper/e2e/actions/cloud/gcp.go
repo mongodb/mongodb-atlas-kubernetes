@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -16,6 +17,7 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -106,13 +108,13 @@ func (a *GCPAction) CreatePrivateEndpoint(ctx context.Context, name, region, sub
 	address := fmt.Sprintf("%s-%s-ip-%d", googleConnectPrefix, name, index)
 	rule := fmt.Sprintf("%s-%s-fr-%d", googleConnectPrefix, name, index)
 
-	ipAddress, err := a.createVirtualAddress(ctx, address, subnet, region)
+	ipAddress, err := a.reserveFreeVirtualAddress(ctx, address, subnet, region)
 	if err != nil {
 		return "", "", err
 	}
 
 	a.t.Cleanup(func() {
-		err = a.deleteVirtualAddress(ctx, address, region)
+		err := a.deleteVirtualAddress(ctx, address, region)
 		if err != nil {
 			a.t.Error(err)
 		}
@@ -326,6 +328,29 @@ func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string)
 	return nil
 }
 
+func (a *GCPAction) reserveFreeVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
+	backoff := wait.Backoff{
+		Duration: time.Second,
+		Factor:   1.5,
+		Jitter:   0.7,
+		Steps:    7,
+		Cap:      time.Minute,
+	}
+	var err error
+	ip := ""
+	wait.ExponentialBackoffWithContext(ctx, backoff, func(ctx context.Context) (bool, error) {
+		ip = a.randomIP(subnet)
+		err = a.createVirtualAddress(ctx, ip, name, subnet, region)
+		if err != nil {
+			if strings.Contains(err.Error(), "IP_IN_USE_BY_ANOTHER_RESOURCE") {
+				return false, nil
+			}
+		}
+		return true, err
+	})
+	return ip, err
+}
+
 func (a *GCPAction) randomIP(subnet string) string {
 	ip, network, _ := net.ParseCIDR(a.network.Subnets[subnet])
 
@@ -335,7 +360,6 @@ func (a *GCPAction) randomIP(subnet string) string {
 	}
 
 	for {
-		ipParts[2] = strconv.Itoa(rand.IntN(255))
 		ipParts[3] = strconv.Itoa(rand.IntN(255))
 		genIP := net.ParseIP(strings.Join(ipParts, "."))
 
@@ -345,10 +369,8 @@ func (a *GCPAction) randomIP(subnet string) string {
 	}
 }
 
-func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, region string) (string, error) {
+func (a *GCPAction) createVirtualAddress(ctx context.Context, ip, name, subnet, region string) error {
 	a.t.Helper()
-
-	ip := a.randomIP(subnet)
 
 	addressRequest := &computepb.InsertAddressRequest{
 		Project: a.projectID,
@@ -371,15 +393,14 @@ func (a *GCPAction) createVirtualAddress(ctx context.Context, name, subnet, regi
 
 	op, err := a.addressClient.Insert(ctx, addressRequest)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	err = op.Wait(ctx)
-	if err != nil {
-		return "", err
+	if err = op.Wait(ctx); err != nil {
+		return err
 	}
 
-	return ip, nil
+	return nil
 }
 
 func (a *GCPAction) deleteVirtualAddress(ctx context.Context, name, region string) error {
