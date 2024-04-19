@@ -169,11 +169,6 @@ func (s *searchNodeController) handleDeleting() workflow.Result {
 	}
 
 	atlasNodes, found, err := s.getAtlasSearchDeployment()
-	if err != nil {
-		// transition back to pending, something went wrong.
-		return s.terminate(workflow.ErrorSearchNodesNotDeletedInAtlas, err)
-	}
-
 	switch {
 	case err != nil:
 		return s.terminate(workflow.ErrorSearchNodesNotUpsertedInAtlas, err)
