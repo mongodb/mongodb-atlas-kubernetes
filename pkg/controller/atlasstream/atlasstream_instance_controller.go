@@ -126,7 +126,7 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 	config := streamInstance.Spec.Config
 	dataProcessRegion := atlasStreamInstance.GetDataProcessRegion()
 
-	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region == dataProcessRegion.GetRegion()
+	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region != dataProcessRegion.GetRegion()
 }
 
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {

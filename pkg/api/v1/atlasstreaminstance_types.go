@@ -27,7 +27,7 @@ type Config struct {
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT;SERVERLESS
 	// +kubebuilder:default=AWS
 	Provider string `json:"provider"`
-	// The name of a Built in or Custom DB Role to connect to an Atlas Cluster
+	// Name of the cloud provider region hosting Atlas Stream Processing.
 	Region string `json:"region"`
 	// Selected tier for the Stream Instance. Configures Memory / VCPU allowances.
 	// +kubebuilder:validation:Enum=SP10;SP30;SP50

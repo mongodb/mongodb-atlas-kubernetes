@@ -79,7 +79,7 @@ func (r *InstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasP
 
 func (r *InstanceReconciler) delete(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(streamInstance, r.ObjectDeletionProtection) {
-		ctx.Log.Info("Not removing AtlasStreamInstance from Atlas as per configuration")
+		r.Log.Info("Not removing AtlasStreamInstance from Atlas as per configuration")
 	} else {
 		if err := deleteStreamInstance(ctx, project, streamInstance); err != nil {
 			return r.terminate(ctx, workflow.StreamInstanceNotRemoved, err)
@@ -223,7 +223,7 @@ func (r *InstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, erro
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
 		WithoutRetry()
-	ctx.SetConditionFromResult(status.ReadyType, unsupported)
+	ctx.SetConditionFromResult(status.StreamInstanceReadyType, unsupported)
 	return unsupported.ReconcileResult(), nil
 }
 
@@ -238,6 +238,7 @@ func (r *InstanceReconciler) terminate(ctx *workflow.Context, errorCondition wor
 func (r *InstanceReconciler) ready(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.OK()
+	ctx.SetConditionFromResult(status.ReadyType, result)
 	ctx.SetConditionFromResult(status.StreamInstanceReadyType, result)
 	return result.ReconcileResult(), nil
 }
