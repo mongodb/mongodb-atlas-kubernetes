@@ -15,7 +15,7 @@ jobs:
     name: "Compute test matrix"
     runs-on: ubuntu-latest
     env:
-      GH_HEAD_REF: ${{ github.head_ref }}
+      GH_REF: ${{ github.ref }}
     outputs:
       test_matrix: ${{ steps.test.outputs.matrix }}
     steps:
@@ -24,7 +24,7 @@ jobs:
         run: |
           # Note the use of external single quotes to allow for doble quotes at inline YAML array
           matrix='["v1.27.1-kind"]'
-          if [ "${GH_HEAD_REF}" == "main" ];then
+          if [ "${GH_REF}" == "refs/heads/main" ];then
             matrix='["v1.27.1-kind", "v1.29.2-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
