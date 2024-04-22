@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -31,25 +30,25 @@ func (w WatchedObject) String() string {
 // done via consulting the 'TrackedResources' map. The map is stored in relevant Reconciler which ensures it's up-to-date
 // on each reconciliation
 type ResourcesHandler struct {
-	ResourceKind     string
-	TrackedResources map[WatchedObject]map[client.ObjectKey]bool
+	ResourceKind    string
+	ResourceWatcher *DeprecatedResourceWatcher
 }
 
 // NewSecretHandler TODO Igor: refactor this to create generic constructor
-func NewSecretHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
-	return &ResourcesHandler{ResourceKind: "Secret", TrackedResources: tracked}
+func NewSecretHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "Secret", ResourceWatcher: r}
 }
 
-func NewBackupScheduleHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
-	return &ResourcesHandler{ResourceKind: "AtlasBackupSchedule", TrackedResources: tracked}
+func NewBackupScheduleHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasBackupSchedule", ResourceWatcher: r}
 }
 
-func NewBackupPolicyHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
-	return &ResourcesHandler{ResourceKind: "AtlasBackupPolicy", TrackedResources: tracked}
+func NewBackupPolicyHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasBackupPolicy", ResourceWatcher: r}
 }
 
-func NewAtlasTeamHandler(tracked map[WatchedObject]map[client.ObjectKey]bool) *ResourcesHandler {
-	return &ResourcesHandler{ResourceKind: "AtlasTeam", TrackedResources: tracked}
+func NewAtlasTeamHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
+	return &ResourcesHandler{ResourceKind: "AtlasTeam", ResourceWatcher: r}
 }
 
 // Create handles the Create event for the resource.
@@ -92,7 +91,8 @@ func (c *ResourcesHandler) doHandle(_ context.Context, namespace, name, kind str
 		ResourceKind: kind,
 		Resource:     types.NamespacedName{Name: name, Namespace: namespace},
 	}
-	for k := range c.TrackedResources[watchedResource] {
+	trackedResources := c.ResourceWatcher.WatchedResourcesSnapshot()
+	for k := range trackedResources[watchedResource] {
 		zap.S().Infof("%s has been modified -> triggering reconciliation for the %s", watchedResource, k)
 		q.Add(reconcile.Request{NamespacedName: k})
 	}

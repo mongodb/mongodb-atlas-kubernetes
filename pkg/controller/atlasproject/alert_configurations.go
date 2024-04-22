@@ -54,7 +54,7 @@ func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *ako
 	projectNs := project.Namespace
 	defer func() {
 		service.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watching alert configuration secrets: %v\r\n", r.WatchedResources)
+		r.Log.Debugf("watching alert configuration secrets: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
 	}()
 
 	for i := 0; i < len(alertConfigs); i++ {

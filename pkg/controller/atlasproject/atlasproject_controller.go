@@ -47,7 +47,7 @@ import (
 // AtlasProjectReconciler reconciles a AtlasProject object
 type AtlasProjectReconciler struct {
 	Client client.Client
-	watch.ResourceWatcher
+	watch.DeprecatedResourceWatcher
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
 	GlobalPredicates            []predicate.Predicate
@@ -367,8 +367,8 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
 		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
-		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(r.WatchedResources)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
+		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
 }
 

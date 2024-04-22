@@ -48,7 +48,7 @@ var ErrOIDCNotEnabled = fmt.Errorf("'OIDCAuthType' field is set but OIDC authent
 
 // AtlasDatabaseUserReconciler reconciles an AtlasDatabaseUser object
 type AtlasDatabaseUserReconciler struct {
-	watch.ResourceWatcher
+	watch.DeprecatedResourceWatcher
 	Client                        client.Client
 	Log                           *zap.SugaredLogger
 	Scheme                        *runtime.Scheme
@@ -278,7 +278,7 @@ func (r *AtlasDatabaseUserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasDatabaseUser").
 		For(&akov2.AtlasDatabaseUser{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
 }
 

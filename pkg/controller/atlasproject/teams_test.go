@@ -5,25 +5,24 @@ import (
 	"errors"
 	"testing"
 
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"go.uber.org/zap"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
@@ -283,8 +282,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Log:    logger,
-			Client: k8sClient,
+			Log:                       logger,
+			Client:                    k8sClient,
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 
@@ -355,8 +355,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-			Log:    logger,
+			Client:                    k8sClient,
+			Log:                       logger,
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 

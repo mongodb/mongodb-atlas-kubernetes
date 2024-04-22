@@ -145,32 +145,32 @@ var _ = BeforeSuite(func() {
 		atlasProvider := atlas.NewProductionProvider(atlasDomain, kube.ObjectKey(namespace.Name, "atlas-operator-api-key"), k8sManager.GetClient())
 
 		err = (&atlasproject.AtlasProjectReconciler{
-			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasProject").Sugar(),
-			ResourceWatcher:  watch.NewResourceWatcher(),
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasProject"),
-			AtlasProvider:    atlasProvider,
-			GlobalPredicates: globalPredicates,
+			Client:                    k8sManager.GetClient(),
+			Log:                       logger.Named("controllers").Named("AtlasProject").Sugar(),
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasProject"),
+			AtlasProvider:             atlasProvider,
+			GlobalPredicates:          globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = (&atlasdeployment.AtlasDeploymentReconciler{
-			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			ResourceWatcher:  watch.NewResourceWatcher(),
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
-			AtlasProvider:    atlasProvider,
-			GlobalPredicates: globalPredicates,
+			Client:                    k8sManager.GetClient(),
+			Log:                       logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasDeployment"),
+			AtlasProvider:             atlasProvider,
+			GlobalPredicates:          globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-			Client:           k8sManager.GetClient(),
-			Log:              logger.Named("controllers").Named("AtlasDeployment").Sugar(),
-			ResourceWatcher:  watch.NewResourceWatcher(),
-			EventRecorder:    k8sManager.GetEventRecorderFor("AtlasDeployment"),
-			AtlasProvider:    atlasProvider,
-			GlobalPredicates: globalPredicates,
+			Client:                    k8sManager.GetClient(),
+			Log:                       logger.Named("controllers").Named("AtlasDeployment").Sugar(),
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
+			EventRecorder:             k8sManager.GetEventRecorderFor("AtlasDeployment"),
+			AtlasProvider:             atlasProvider,
+			GlobalPredicates:          globalPredicates,
 		}).SetupWithManager(k8sManager)
 		Expect(err).ToNot(HaveOccurred())
 

@@ -165,7 +165,7 @@ func TestReconcile(t *testing.T) {
 		}
 
 		reconciler := &AtlasFederatedAuthReconciler{
-			ResourceWatcher:             watch.NewResourceWatcher(),
+			DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 			Client:                      k8sClient,
 			Log:                         logger,
 			AtlasProvider:               &atlasProvider,
