@@ -34,20 +34,23 @@ func (r *InstanceReconciler) handleConnectionRegistry(
 	}
 
 	// we do all operations in a single flow and only return earlier in case of failure
-	switch {
-	case len(toCreate) > 0:
+	if len(toCreate) > 0 {
 		// if there are connection to be added to the instance
 		err = createConnections(ctx, project, akoStreamInstance, toCreate, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
 			return r.terminate(ctx, workflow.StreamConnectionNotCreated, err)
 		}
-	case len(toUpdate) > 0:
+	}
+
+	if len(toUpdate) > 0 {
 		// if there are connection to be updated in the instance
 		err = updateConnections(ctx, project, akoStreamInstance, toUpdate, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
 			return r.terminate(ctx, workflow.StreamConnectionNotUpdated, err)
 		}
-	case len(toDelete) > 0:
+	}
+
+	if len(toDelete) > 0 {
 		// if there are connection to be deleted from the instance
 		err = deleteConnections(ctx, project, akoStreamInstance, toDelete)
 		if err != nil {
@@ -198,7 +201,9 @@ func hasStreamConnectionChanged(
 	if err != nil {
 		return false, err
 	}
-	connection.Authentication.Password = nil
+	if _, ok := connection.GetAuthenticationOk(); ok {
+		connection.Authentication.Password = nil
+	}
 
 	return !reflect.DeepEqual(*connection, atlasStreamConnection), nil
 }
