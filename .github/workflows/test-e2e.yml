@@ -20,6 +20,7 @@ jobs:
       test_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - id: test
+        name: Compute Test Matrix
         run: |
           # Note the use of external single quotes to allow for doble quotes at inline YAML array
           matrix='["v1.27.1-kind"]'
