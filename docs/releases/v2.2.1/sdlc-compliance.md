@@ -18,7 +18,7 @@ Overview:
   - Silk
 
 - **Dependency Information**
-  - See SBOMS (CycloneDX in JSON format) for [Intel](./linux-amd64.sbom.json) or [ARM](./linux-arm64.sbom.json)
+  - See SBOMS Lite manifests (CycloneDX in JSON format) for [Intel](./linux-amd64.sbom.json) or [ARM](./linux-arm64.sbom.json)
 
 - **Static Analysis Report**
   - No reports (filtered before release by CI tests)
