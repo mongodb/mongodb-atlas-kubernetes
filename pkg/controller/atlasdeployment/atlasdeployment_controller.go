@@ -509,13 +509,13 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for Backup schedules
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(&r.ResourceWatcher))
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup policies
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(r.WatchedResources))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(&r.ResourceWatcher))
 	if err != nil {
 		return err
 	}

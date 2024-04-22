@@ -3,68 +3,95 @@ package watch
 import (
 	"sync"
 
+	"golang.org/x/exp/maps"
+
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// NewResourceWatcher creates a new resource watcher.
+//
+// NOTE: ResourceWatcher is DEPRECATED and DISCOURAGED to be used in new implementations.
+// Use controller-runtime intrinsics instead, see https://book.kubebuilder.io/reference/watching-resources/externally-managed.
 func NewResourceWatcher() ResourceWatcher {
 	return ResourceWatcher{
-		mtx:              &sync.Mutex{},
-		WatchedResources: map[WatchedObject]map[client.ObjectKey]bool{},
+		mtx:              &sync.RWMutex{},
+		watchedResources: map[WatchedObject]map[client.ObjectKey]bool{},
 	}
 }
 
 // ResourceWatcher is the object containing the map of watched_resource -> []dependant_resource.
 type ResourceWatcher struct {
-	mtx              *sync.Mutex
-	WatchedResources map[WatchedObject]map[client.ObjectKey]bool
+	mtx              *sync.RWMutex
+	watchedResources map[WatchedObject]map[client.ObjectKey]bool
+}
+
+// WatchedResourcesSnapshot returns the most recent snapshot of watched resources.
+// Note that entries here can change concurrently.
+func (r *ResourceWatcher) WatchedResourcesSnapshot() map[WatchedObject]map[client.ObjectKey]bool {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	if len(r.watchedResources) == 0 {
+		return nil
+	}
+
+	result := make(map[WatchedObject]map[client.ObjectKey]bool, len(r.watchedResources))
+	for watchedKey, dependentResources := range r.watchedResources {
+		dependentResourcesCopy := make(map[client.ObjectKey]bool, len(dependentResources))
+		maps.Copy(dependentResourcesCopy, dependentResources)
+		result[watchedKey] = dependentResourcesCopy
+	}
+	return result
 }
 
 // EnsureResourcesAreWatched registers a dependant for the watched objects.
 // This will let the controller to react on the events for the watched objects and trigger reconciliation for dependants.
-func (r ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, resourceKind string, log *zap.SugaredLogger, watchedObjectsKeys ...client.ObjectKey) {
+func (r *ResourceWatcher) EnsureResourcesAreWatched(dependant client.ObjectKey, resourceKind string, log *zap.SugaredLogger, watchedObjectsKeys ...client.ObjectKey) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
+
 	for _, watchedObjectKey := range watchedObjectsKeys {
-		r.addWatchedResourceIfNotAdded(watchedObjectKey, resourceKind, dependant, log)
+		r.unsafeAddWatchedResourceIfNotAdded(watchedObjectKey, resourceKind, dependant, log)
 	}
 	// Next we need to clean any watched resources that are not referenced any more. This could happen if the SecretRef
 	// has been updated to reference another Secret, for example
-	r.cleanNonWatchedResources(dependant, resourceKind, watchedObjectsKeys)
+	r.unsafeCleanNonWatchedResources(dependant, resourceKind, watchedObjectsKeys)
 }
 
-func (r ResourceWatcher) EnsureMultiplesResourcesAreWatched(dependant client.ObjectKey, log *zap.SugaredLogger, resources ...WatchedObject) {
+func (r *ResourceWatcher) EnsureMultiplesResourcesAreWatched(dependant client.ObjectKey, log *zap.SugaredLogger, resources ...WatchedObject) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
+
 	for _, res := range resources {
-		r.addWatchedResourceIfNotAdded(res.Resource, res.ResourceKind, dependant, log)
+		r.unsafeAddWatchedResourceIfNotAdded(res.Resource, res.ResourceKind, dependant, log)
 		log.Debugf("resource watcher: watching %v to trigger reconciliation for %v", res.Resource, dependant)
 	}
 
-	r.cleanNonWatchedResourcesExceptMultiple(dependant, resources...)
+	r.unsafeCleanNonWatchedResourcesExceptMultiple(dependant, resources...)
 }
 
-func (r *ResourceWatcher) addWatchedResourceIfNotAdded(watchedObjectKey client.ObjectKey, resourceKind string, dependentResourceNsName client.ObjectKey, log *zap.SugaredLogger) {
+func (r *ResourceWatcher) unsafeAddWatchedResourceIfNotAdded(watchedObjectKey client.ObjectKey, resourceKind string, dependentResourceNsName client.ObjectKey, log *zap.SugaredLogger) {
 	key := WatchedObject{ResourceKind: resourceKind, Resource: watchedObjectKey}
-	if _, ok := r.WatchedResources[key]; !ok {
-		r.WatchedResources[key] = make(map[client.ObjectKey]bool)
+	if _, ok := r.watchedResources[key]; !ok {
+		r.watchedResources[key] = make(map[client.ObjectKey]bool)
 	}
-	if _, ok := r.WatchedResources[key][dependentResourceNsName]; !ok {
+	if _, ok := r.watchedResources[key][dependentResourceNsName]; !ok {
 		log.Debugf("resource watcher: watching %s to trigger reconciliation for %s", key, dependentResourceNsName)
 	}
-	r.WatchedResources[key][dependentResourceNsName] = true
+	r.watchedResources[key][dependentResourceNsName] = true
 }
 
-func (r ResourceWatcher) cleanNonWatchedResources(dependant client.ObjectKey, resourceKind string, watchedKeys []client.ObjectKey) {
-	for k, v := range r.WatchedResources {
+func (r *ResourceWatcher) unsafeCleanNonWatchedResources(dependant client.ObjectKey, resourceKind string, watchedKeys []client.ObjectKey) {
+	for k, v := range r.watchedResources {
 		if !contains(watchedKeys, k.Resource) || k.ResourceKind != resourceKind {
 			delete(v, dependant)
 		}
 	}
 }
 
-func (r ResourceWatcher) cleanNonWatchedResourcesExceptMultiple(dependant client.ObjectKey, resources ...WatchedObject) {
-	for k, v := range r.WatchedResources {
+func (r *ResourceWatcher) unsafeCleanNonWatchedResourcesExceptMultiple(dependant client.ObjectKey, resources ...WatchedObject) {
+	for k, v := range r.watchedResources {
 		toRemove := true
 		for _, res := range resources {
 			if res.Resource == k.Resource {

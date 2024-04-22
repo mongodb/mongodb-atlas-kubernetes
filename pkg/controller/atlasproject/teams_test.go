@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
+
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"go.uber.org/zap"
@@ -283,8 +285,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Log:    logger,
-			Client: k8sClient,
+			Log:             logger,
+			Client:          k8sClient,
+			ResourceWatcher: watch.NewResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 
@@ -355,8 +358,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Client: k8sClient,
-			Log:    logger,
+			Client:          k8sClient,
+			Log:             logger,
+			ResourceWatcher: watch.NewResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 

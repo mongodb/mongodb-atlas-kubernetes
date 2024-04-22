@@ -367,8 +367,8 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasProject").
 		For(&akov2.AtlasProject{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
-		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(r.WatchedResources)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.ResourceWatcher)).
+		Watches(&akov2.AtlasTeam{}, watch.NewAtlasTeamHandler(&r.ResourceWatcher)).
 		Complete(r)
 }
 

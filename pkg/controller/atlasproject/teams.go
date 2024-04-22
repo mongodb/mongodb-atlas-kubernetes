@@ -35,7 +35,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 
 	defer func() {
 		workflowCtx.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watching team resources: %v\r\n", r.WatchedResources)
+		r.Log.Debugf("watching team resources: %v\r\n", r.ResourceWatcher.WatchedResourcesSnapshot())
 	}()
 
 	teamsToAssign := map[string]*akov2.Team{}

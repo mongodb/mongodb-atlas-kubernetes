@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"reflect"
 	"sync"
 	"testing"
 
@@ -10,6 +11,82 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
+
+func TestWatchedResourcesSnapshot(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		dependant client.ObjectKey
+		resources []WatchedObject
+		want      map[WatchedObject]map[client.ObjectKey]bool
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name:      "no watched resources",
+			dependant: kube.ObjectKey("test", "project1"),
+		},
+		{
+			name: "one watched resources",
+
+			dependant: kube.ObjectKey("test", "project1"),
+			resources: []WatchedObject{
+				{
+					ResourceKind: "Secret",
+					Resource:     kube.ObjectKey("test", "secret"),
+				},
+			},
+
+			want: map[WatchedObject]map[client.ObjectKey]bool{
+				{
+					ResourceKind: "Secret",
+					Resource:     kube.ObjectKey("test", "secret"),
+				}: {
+					kube.ObjectKey("test", "project1"): true,
+				},
+			},
+		},
+		{
+			name: "multiple watched resources",
+
+			dependant: kube.ObjectKey("test", "project1"),
+			resources: []WatchedObject{
+				{
+					ResourceKind: "Secret",
+					Resource:     kube.ObjectKey("test", "secret"),
+				},
+				{
+					ResourceKind: "ConfigMap",
+					Resource:     kube.ObjectKey("test", "configmap"),
+				},
+			},
+
+			want: map[WatchedObject]map[client.ObjectKey]bool{
+				{
+					ResourceKind: "ConfigMap",
+					Resource:     kube.ObjectKey("test", "configmap"),
+				}: {
+					kube.ObjectKey("test", "project1"): true,
+				},
+				{
+					ResourceKind: "Secret",
+					Resource:     kube.ObjectKey("test", "secret"),
+				}: {
+					kube.ObjectKey("test", "project1"): true,
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewResourceWatcher()
+			r.EnsureMultiplesResourcesAreWatched(tc.dependant, zap.S(), tc.resources...)
+			got := r.WatchedResourcesSnapshot()
+			if !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want watched resources %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
 
 func TestEnsureResourcesAreWatched(t *testing.T) {
 	t.Run("One secret is watched by two resources", func(t *testing.T) {
@@ -33,7 +110,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		expectedWatched := map[WatchedObject]map[client.ObjectKey]bool{
 			{ResourceKind: "Secret", Resource: connectionSecret}: {project1: true, project2: true},
 		}
-		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("One resource watches two secrets", func(t *testing.T) {
 		watcher := NewResourceWatcher()
@@ -47,7 +124,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 			{ResourceKind: "Secret", Resource: connectionSecret}:  {project1: true},
 			{ResourceKind: "Secret", Resource: connectionSecret2}: {project1: true},
 		}
-		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Resource stops watching one secret", func(t *testing.T) {
 		watcher := NewResourceWatcher()
@@ -70,7 +147,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 			{ResourceKind: "Secret", Resource: connectionSecret2}: {project2: true},
 			{ResourceKind: "Secret", Resource: connectionSecret3}: {project1: true},
 		}
-		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Watcher to watch multiple resources of different kinds", func(t *testing.T) {
 		watcher := NewResourceWatcher()
@@ -94,7 +171,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 			{ResourceKind: "AtlasBackupSchedule", Resource: backupSchedule}: {project1: true},
 		}
 
-		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Watcher to watch multiple resources of different kinds for multiple projects", func(t *testing.T) {
 		watcher := NewResourceWatcher()
@@ -130,7 +207,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 			{ResourceKind: "AtlasBackupSchedule", Resource: backupSchedule}: {project1: true, project2: true},
 		}
 
-		assert.Equal(t, expectedWatched, watcher.WatchedResources)
+		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	// TODO: add test for different kind of resources
 }

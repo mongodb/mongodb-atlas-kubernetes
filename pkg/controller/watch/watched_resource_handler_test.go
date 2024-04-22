@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/workqueue"
@@ -19,7 +20,8 @@ import (
 func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is not handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
-		handler := NewSecretHandler(make(map[WatchedObject]map[client.ObjectKey]bool))
+		watcher := NewResourceWatcher()
+		handler := NewSecretHandler(&watcher)
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
@@ -29,7 +31,12 @@ func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
 		dependentResourceKey := kube.ObjectKey("ns", "testAtlasProject")
-		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
+		watcher := NewResourceWatcher()
+		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
+			ResourceKind: secret.GetObjectKind().GroupVersionKind().Kind,
+			Resource:     kube.ObjectKeyFromObject(secret),
+		})
+		handler := NewSecretHandler(&watcher)
 
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
@@ -53,7 +60,12 @@ func TestHandleUpdate(t *testing.T) {
 		oldSecret := secretForTesting("testSecret")
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
-		handler := NewSecretHandler(watchedResourcesMap(watchedSecret, dependentResourceKey))
+		watcher := NewResourceWatcher()
+		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
+			ResourceKind: watchedSecret.GetObjectKind().GroupVersionKind().Kind,
+			Resource:     kube.ObjectKeyFromObject(watchedSecret),
+		})
+		handler := NewSecretHandler(&watcher)
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
 
@@ -68,7 +80,12 @@ func TestHandleUpdate(t *testing.T) {
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
 
-		handler := NewSecretHandler(watchedResourcesMap(secret, dependentResourceKey))
+		watcher := NewResourceWatcher()
+		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
+			ResourceKind: secret.GetObjectKind().GroupVersionKind().Kind,
+			Resource:     kube.ObjectKeyFromObject(secret),
+		})
+		handler := NewSecretHandler(&watcher)
 
 		updateEvent := event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}
 		queue := controllertest.Queue{Interface: workqueue.New()}

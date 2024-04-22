@@ -124,7 +124,7 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasFederatedAuth").
 		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(r.WatchedResources)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.ResourceWatcher)).
 		Complete(r)
 }
 
