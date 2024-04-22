@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlasstream"
 	"log"
 	"os"
 	"strings"
@@ -219,6 +220,20 @@ func main() {
 		SubObjectDeletionProtection: false,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasFederatedAuth")
+		os.Exit(1)
+	}
+
+	if err = (&atlasstream.AtlasStreamsInstanceReconciler{
+		Scheme:                      mgr.GetScheme(),
+		Client:                      mgr.GetClient(),
+		EventRecorder:               mgr.GetEventRecorderFor("AtlasStreamsInstance"),
+		GlobalPredicates:            globalPredicates,
+		Log:                         logger.Named("controllers").Named("AtlasStreamsInstance").Sugar(),
+		AtlasProvider:               atlasProvider,
+		ObjectDeletionProtection:    config.ObjectDeletionProtection,
+		SubObjectDeletionProtection: false,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsInstance")
 		os.Exit(1)
 	}
 

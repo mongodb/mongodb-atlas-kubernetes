@@ -22,7 +22,7 @@ const kafkaConnectionSecCertificate = "certificate"
 type streamConnectionMapper func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error)
 
 // this is the dispatcher of connection registry management
-func (r *InstanceReconciler) handleConnectionRegistry(
+func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	akoStreamInstance *akov2.AtlasStreamInstance,
@@ -62,7 +62,7 @@ func (r *InstanceReconciler) handleConnectionRegistry(
 	return r.ready(ctx, atlasStreamInstance)
 }
 
-func (r *InstanceReconciler) sortConnectionRegistryTasks(
+func (r *AtlasStreamsInstanceReconciler) sortConnectionRegistryTasks(
 	ctx *workflow.Context,
 	akoStreamInstance *akov2.AtlasStreamInstance,
 	atlasStreamInstance *admin.StreamsTenant,

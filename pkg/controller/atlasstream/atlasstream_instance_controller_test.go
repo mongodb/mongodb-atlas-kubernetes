@@ -39,7 +39,7 @@ func TestReconcile(t *testing.T) {
 			WithScheme(testScheme).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -88,7 +88,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithObjects(streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -140,7 +140,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -208,7 +208,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -277,7 +277,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -364,7 +364,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -460,7 +460,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
 			Return(nil, &http.Response{}, errors.New("failed to get instance"))
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -572,7 +572,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				nil,
 			)
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -685,7 +685,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				nil,
 			)
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -799,7 +799,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				nil,
 			)
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -913,7 +913,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				nil,
 			)
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),
@@ -1025,7 +1025,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				errors.New("failed to update instance"),
 			)
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
 			Log:           zaptest.NewLogger(t).Sugar(),
 			EventRecorder: record.NewFakeRecorder(1),

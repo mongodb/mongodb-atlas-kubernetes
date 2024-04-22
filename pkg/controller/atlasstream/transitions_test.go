@@ -80,7 +80,7 @@ func TestCreate(t *testing.T) {
 			WithObjects(project, streamInstance, streamConnection).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -191,7 +191,7 @@ func TestCreate(t *testing.T) {
 			WithObjects(project, streamInstance, streamConnection).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -290,7 +290,7 @@ func TestCreate(t *testing.T) {
 			WithObjects(project, streamInstance, streamConnection).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -362,7 +362,7 @@ func TestCreate(t *testing.T) {
 			WithObjects(project, streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -452,7 +452,7 @@ func TestDelete(t *testing.T) {
 				WithObjects(project, streamInstance).
 				Build()
 
-			reconciler := &InstanceReconciler{
+			reconciler := &AtlasStreamsInstanceReconciler{
 				Client: k8sClient,
 				Log:    zaptest.NewLogger(t).Sugar(),
 			}
@@ -542,7 +542,7 @@ func TestDelete(t *testing.T) {
 				WithObjects(project, streamInstance).
 				Build()
 
-			reconciler := &InstanceReconciler{
+			reconciler := &AtlasStreamsInstanceReconciler{
 				Client: k8sClient,
 				Log:    zaptest.NewLogger(t).Sugar(),
 			}
@@ -615,7 +615,7 @@ func TestDelete(t *testing.T) {
 				WithObjects(project, streamInstance).
 				Build()
 
-			reconciler := &InstanceReconciler{
+			reconciler := &AtlasStreamsInstanceReconciler{
 				Client: k8sClient,
 				Log:    zaptest.NewLogger(t).Sugar(),
 			}
@@ -714,7 +714,7 @@ func TestDelete(t *testing.T) {
 				WithObjects(project, streamInstance).
 				Build()
 
-			reconciler := &InstanceReconciler{
+			reconciler := &AtlasStreamsInstanceReconciler{
 				Client:                   k8sClient,
 				Log:                      zaptest.NewLogger(t).Sugar(),
 				ObjectDeletionProtection: true,
@@ -805,7 +805,7 @@ func TestDelete(t *testing.T) {
 				WithObjects(project, streamInstance).
 				Build()
 
-			reconciler := &InstanceReconciler{
+			reconciler := &AtlasStreamsInstanceReconciler{
 				Client:                   k8sClient,
 				Log:                      zaptest.NewLogger(t).Sugar(),
 				ObjectDeletionProtection: true,
@@ -883,7 +883,7 @@ func TestDelete(t *testing.T) {
 			WithObjects(project).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -963,7 +963,7 @@ func TestUpdate(t *testing.T) {
 			WithObjects(project, streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -1064,7 +1064,7 @@ func TestUpdate(t *testing.T) {
 			WithObjects(project, streamInstance).
 			Build()
 
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}

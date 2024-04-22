@@ -84,7 +84,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, streamConnection1, streamConnection2).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
@@ -192,7 +192,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -271,7 +271,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, streamConnection).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -346,7 +346,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, streamConnection).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -415,7 +415,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
@@ -488,7 +488,7 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 		}
 		ctx := &workflow.Context{}
@@ -546,7 +546,7 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			WithScheme(testScheme).
 			WithObjects(streamInstance, streamConnection1, streamConnection2).
 			Build()
-		reconciler := &InstanceReconciler{
+		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 		}
 		ctx := &workflow.Context{}

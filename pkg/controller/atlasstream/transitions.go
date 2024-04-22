@@ -17,7 +17,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-func (r *InstanceReconciler) create(
+func (r *AtlasStreamsInstanceReconciler) create(
 	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	streamInstance *akov2.AtlasStreamInstance,
@@ -60,7 +60,7 @@ func (r *InstanceReconciler) create(
 	return r.ready(ctx, atlasStreamInstance)
 }
 
-func (r *InstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
+func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
 	dataProcessRegion := admin.StreamsDataProcessRegion{
 		CloudProvider: streamInstance.Spec.Config.Provider,
 		Region:        streamInstance.Spec.Config.Region,
@@ -77,7 +77,7 @@ func (r *InstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasP
 	return nil
 }
 
-func (r *InstanceReconciler) delete(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
+func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(streamInstance, r.ObjectDeletionProtection) {
 		r.Log.Info("Not removing AtlasStreamInstance from Atlas as per configuration")
 	} else {
@@ -197,7 +197,7 @@ func deleteConnections(
 
 // transitions back to pending state
 // also terminates if a "terminate" occurred
-func (r *InstanceReconciler) skip(ctx context.Context, log *zap.SugaredLogger, streamInstance *akov2.AtlasStreamInstance) ctrl.Result {
+func (r *AtlasStreamsInstanceReconciler) skip(ctx context.Context, log *zap.SugaredLogger, streamInstance *akov2.AtlasStreamInstance) ctrl.Result {
 	log.Infow(fmt.Sprintf("-> Skipping AtlasStreamInstance reconciliation as annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip), "spec", streamInstance.Spec)
 	if !streamInstance.GetDeletionTimestamp().IsZero() {
 		if err := customresource.ManageFinalizer(ctx, r.Client, streamInstance, customresource.UnsetFinalizer); err != nil {
@@ -212,14 +212,14 @@ func (r *InstanceReconciler) skip(ctx context.Context, log *zap.SugaredLogger, s
 }
 
 // transitions back to pending state setting an terminate state
-func (r *InstanceReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
+func (r *AtlasStreamsInstanceReconciler) invalidate(invalid workflow.Result) (ctrl.Result, error) {
 	// note: ValidateResourceVersion already set the state so we don't have to do it here.
 	r.Log.Debugf("AtlasStreamInstance is invalid: %v", invalid)
 	return invalid.ReconcileResult(), nil
 }
 
 // transitions back to pending setting unsupported state
-func (r *InstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
+func (r *AtlasStreamsInstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, error) {
 	unsupported := workflow.Terminate(
 		workflow.AtlasGovUnsupported, "the AtlasStreamInstance is not supported by Atlas for government").
 		WithoutRetry()
@@ -228,14 +228,14 @@ func (r *InstanceReconciler) unsupport(ctx *workflow.Context) (ctrl.Result, erro
 }
 
 // transitions back to pending state setting an error status
-func (r *InstanceReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
+func (r *AtlasStreamsInstanceReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
 	r.Log.Error(err)
 	terminated := workflow.Terminate(errorCondition, err.Error())
 	ctx.SetConditionFromResult(status.StreamInstanceReadyType, terminated)
 	return terminated.ReconcileResult(), nil
 }
 
-func (r *InstanceReconciler) ready(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
+func (r *AtlasStreamsInstanceReconciler) ready(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.OK()
 	ctx.SetConditionFromResult(status.ReadyType, result)
