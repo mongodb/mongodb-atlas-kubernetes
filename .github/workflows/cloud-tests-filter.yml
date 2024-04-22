@@ -52,11 +52,7 @@ jobs:
             PR_HEAD_REPONAME: ${{ github.event.pull_request.head.repo.full_name }}
             REPONAME: ${{ github.repository }}
             ACTOR: ${{ github.actor }}
-            GITHUB_CONTEXT: ${{ toJson(github) }}
           run: |
-            echo "Start ------ GitHub Context ------"
-            echo "$GITHUB_CONTEXT"
-            echo "End ------ GitHub Context ------"
             # Evaluate whether or not cloud tests should run
             RUN_CLOUD_TESTS='false'
             # Scheduled runs on default branch always run all tests
