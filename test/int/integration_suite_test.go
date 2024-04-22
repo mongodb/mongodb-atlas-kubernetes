@@ -86,6 +86,11 @@ var (
 )
 
 func TestAPIs(t *testing.T) {
+	err := akov2.AddToScheme(scheme.Scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if !control.Enabled("AKO_INT_TEST") {
 		t.Skip("Skipping int tests, AKO_INT_TEST is not set")
 	}
@@ -174,9 +179,6 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
-	err := akov2.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
