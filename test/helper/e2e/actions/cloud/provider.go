@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"context"
 	"path"
 	"time"
 
@@ -225,7 +226,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(req.ID, req.Region, req.SubnetName, target, index)
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(context.TODO(), req.ID, req.Region, req.SubnetName, target, index)
 			Expect(err).To(BeNil())
 
 			endpoints = append(
