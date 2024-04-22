@@ -3,9 +3,8 @@ package watch
 import (
 	"sync"
 
-	"golang.org/x/exp/maps"
-
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
