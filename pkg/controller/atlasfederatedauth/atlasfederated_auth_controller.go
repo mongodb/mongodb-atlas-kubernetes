@@ -26,7 +26,7 @@ import (
 
 // AtlasFederatedAuthReconciler reconciles an AtlasFederatedAuth object
 type AtlasFederatedAuthReconciler struct {
-	watch.ResourceWatcher
+	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -124,7 +124,7 @@ func (r *AtlasFederatedAuthReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasFederatedAuth").
 		For(&akov2.AtlasFederatedAuth{}, builder.WithPredicates(r.GlobalPredicates...)).
-		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.ResourceWatcher)).
+		Watches(&corev1.Secret{}, watch.NewSecretHandler(&r.DeprecatedResourceWatcher)).
 		Complete(r)
 }
 

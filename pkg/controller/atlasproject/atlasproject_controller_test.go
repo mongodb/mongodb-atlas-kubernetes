@@ -115,7 +115,7 @@ func TestAtlasProjectReconciler_handleDeletion(t *testing.T) {
 		}
 		reconciler := AtlasProjectReconciler{
 			Client:                      k8sClient,
-			ResourceWatcher:             watch.ResourceWatcher{},
+			DeprecatedResourceWatcher:   watch.DeprecatedResourceWatcher{},
 			Log:                         zap.S(),
 			Scheme:                      sch,
 			ObjectDeletionProtection:    false,

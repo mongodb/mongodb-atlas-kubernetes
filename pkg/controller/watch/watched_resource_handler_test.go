@@ -19,7 +19,7 @@ import (
 func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is not handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		handler := NewSecretHandler(&watcher)
 		createEvent := event.CreateEvent{Object: secret}
 		queue := controllertest.Queue{Interface: workqueue.New()}
@@ -30,7 +30,7 @@ func TestHandleCreate(t *testing.T) {
 	t.Run("Create event is handled", func(t *testing.T) {
 		secret := secretForTesting("testSecret")
 		dependentResourceKey := kube.ObjectKey("ns", "testAtlasProject")
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
 			ResourceKind: secret.GetObjectKind().GroupVersionKind().Kind,
 			Resource:     kube.ObjectKeyFromObject(secret),
@@ -59,7 +59,7 @@ func TestHandleUpdate(t *testing.T) {
 		oldSecret := secretForTesting("testSecret")
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
 			ResourceKind: watchedSecret.GetObjectKind().GroupVersionKind().Kind,
 			Resource:     kube.ObjectKeyFromObject(watchedSecret),
@@ -79,7 +79,7 @@ func TestHandleUpdate(t *testing.T) {
 		newSecret := oldSecret.DeepCopy()
 		newSecret.Data["secondKey"] = []byte("secondValue")
 
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		watcher.EnsureMultiplesResourcesAreWatched(dependentResourceKey, zap.S(), WatchedObject{
 			ResourceKind: secret.GetObjectKind().GroupVersionKind().Kind,
 			Resource:     kube.ObjectKeyFromObject(secret),

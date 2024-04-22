@@ -33,7 +33,7 @@ import (
 
 // AtlasDataFederationReconciler reconciles an DataFederation object
 type AtlasDataFederationReconciler struct {
-	watch.ResourceWatcher
+	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme

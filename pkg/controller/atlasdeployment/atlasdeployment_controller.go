@@ -54,7 +54,7 @@ import (
 
 // AtlasDeploymentReconciler reconciles an AtlasDeployment object
 type AtlasDeploymentReconciler struct {
-	watch.ResourceWatcher
+	watch.DeprecatedResourceWatcher
 	Client                      client.Client
 	Log                         *zap.SugaredLogger
 	Scheme                      *runtime.Scheme
@@ -509,13 +509,13 @@ func (r *AtlasDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for Backup schedules
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(&r.ResourceWatcher))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupSchedule{}), watch.NewBackupScheduleHandler(&r.DeprecatedResourceWatcher))
 	if err != nil {
 		return err
 	}
 
 	// Watch for Backup policies
-	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(&r.ResourceWatcher))
+	err = c.Watch(source.Kind(mgr.GetCache(), &akov2.AtlasBackupPolicy{}), watch.NewBackupPolicyHandler(&r.DeprecatedResourceWatcher))
 	if err != nil {
 		return err
 	}

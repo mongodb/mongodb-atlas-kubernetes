@@ -31,23 +31,23 @@ func (w WatchedObject) String() string {
 // on each reconciliation
 type ResourcesHandler struct {
 	ResourceKind    string
-	ResourceWatcher *ResourceWatcher
+	ResourceWatcher *DeprecatedResourceWatcher
 }
 
 // NewSecretHandler TODO Igor: refactor this to create generic constructor
-func NewSecretHandler(r *ResourceWatcher) *ResourcesHandler {
+func NewSecretHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "Secret", ResourceWatcher: r}
 }
 
-func NewBackupScheduleHandler(r *ResourceWatcher) *ResourcesHandler {
+func NewBackupScheduleHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "AtlasBackupSchedule", ResourceWatcher: r}
 }
 
-func NewBackupPolicyHandler(r *ResourceWatcher) *ResourcesHandler {
+func NewBackupPolicyHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "AtlasBackupPolicy", ResourceWatcher: r}
 }
 
-func NewAtlasTeamHandler(r *ResourceWatcher) *ResourcesHandler {
+func NewAtlasTeamHandler(r *DeprecatedResourceWatcher) *ResourcesHandler {
 	return &ResourcesHandler{ResourceKind: "AtlasTeam", ResourceWatcher: r}
 }
 

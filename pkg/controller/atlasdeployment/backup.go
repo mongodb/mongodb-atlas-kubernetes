@@ -48,7 +48,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupScheduleAndPolicy(
 	resourcesToWatch := []watch.WatchedObject{}
 	defer func() {
 		service.AddResourcesToWatch(resourcesToWatch...)
-		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.ResourceWatcher.WatchedResourcesSnapshot())
+		r.Log.Debugf("watched backup schedule and policy resources: %v\r\n", r.DeprecatedResourceWatcher.WatchedResourcesSnapshot())
 	}()
 
 	bSchedule, err := r.ensureBackupSchedule(service, deployment, &resourcesToWatch)

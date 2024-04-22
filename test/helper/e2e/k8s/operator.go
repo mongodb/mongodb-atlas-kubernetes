@@ -116,7 +116,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDeployment").Sugar(),
 		Scheme:                      mgr.GetScheme(),
-		ResourceWatcher:             watch.NewResourceWatcher(),
+		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasDeployment"),
 		AtlasProvider:               atlasProvider,
@@ -131,7 +131,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasProject").Sugar(),
 		Scheme:                      mgr.GetScheme(),
-		ResourceWatcher:             watch.NewResourceWatcher(),
+		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		GlobalPredicates:            globalPredicates,
 		EventRecorder:               mgr.GetEventRecorderFor("AtlasProject"),
 		AtlasProvider:               atlasProvider,
@@ -143,7 +143,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	}
 
 	if err = (&atlasdatabaseuser.AtlasDatabaseUserReconciler{
-		ResourceWatcher:               watch.NewResourceWatcher(),
+		DeprecatedResourceWatcher:     watch.NewDeprecatedResourceWatcher(),
 		Client:                        mgr.GetClient(),
 		Log:                           logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		Scheme:                        mgr.GetScheme(),
@@ -159,7 +159,7 @@ func BuildManager(initCfg *Config) (manager.Manager, error) {
 	}
 
 	if err = (&atlasdatafederation.AtlasDataFederationReconciler{
-		ResourceWatcher:             watch.NewResourceWatcher(),
+		DeprecatedResourceWatcher:   watch.NewDeprecatedResourceWatcher(),
 		Client:                      mgr.GetClient(),
 		Log:                         logger.Named("controllers").Named("AtlasDataFederation").Sugar(),
 		Scheme:                      mgr.GetScheme(),

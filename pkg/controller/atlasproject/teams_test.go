@@ -285,9 +285,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Log:             logger,
-			Client:          k8sClient,
-			ResourceWatcher: watch.NewResourceWatcher(),
+			Log:                       logger,
+			Client:                    k8sClient,
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 
@@ -358,9 +358,9 @@ func TestEnsureAssignedTeams(t *testing.T) {
 			Context: context.Background(),
 		}
 		reconciler := &AtlasProjectReconciler{
-			Client:          k8sClient,
-			Log:             logger,
-			ResourceWatcher: watch.NewResourceWatcher(),
+			Client:                    k8sClient,
+			Log:                       logger,
+			DeprecatedResourceWatcher: watch.NewDeprecatedResourceWatcher(),
 		}
 		result := reconciler.ensureAssignedTeams(workflowCtx, akoProject, true)
 

@@ -78,7 +78,7 @@ func TestWatchedResourcesSnapshot(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewResourceWatcher()
+			r := NewDeprecatedResourceWatcher()
 			r.EnsureMultiplesResourcesAreWatched(tc.dependant, zap.S(), tc.resources...)
 			got := r.WatchedResourcesSnapshot()
 			if !reflect.DeepEqual(tc.want, got) {
@@ -90,7 +90,7 @@ func TestWatchedResourcesSnapshot(t *testing.T) {
 
 func TestEnsureResourcesAreWatched(t *testing.T) {
 	t.Run("One secret is watched by two resources", func(t *testing.T) {
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		project1 := kube.ObjectKey("test", "project1")
 		project2 := kube.ObjectKey("test", "project2")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
@@ -113,7 +113,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("One resource watches two secrets", func(t *testing.T) {
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		project1 := kube.ObjectKey("test", "project1")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
 		connectionSecret2 := kube.ObjectKey("test", "connectionSecret2")
@@ -127,7 +127,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Resource stops watching one secret", func(t *testing.T) {
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		project1 := kube.ObjectKey("test", "project1")
 		project2 := kube.ObjectKey("test", "project2")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
@@ -150,7 +150,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Watcher to watch multiple resources of different kinds", func(t *testing.T) {
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		project1 := kube.ObjectKey("test", "project1")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
 		backupSchedule := kube.ObjectKey("test", "backupSchedule")
@@ -174,7 +174,7 @@ func TestEnsureResourcesAreWatched(t *testing.T) {
 		assert.Equal(t, expectedWatched, watcher.WatchedResourcesSnapshot())
 	})
 	t.Run("Watcher to watch multiple resources of different kinds for multiple projects", func(t *testing.T) {
-		watcher := NewResourceWatcher()
+		watcher := NewDeprecatedResourceWatcher()
 		project1 := kube.ObjectKey("test", "project1")
 		project2 := kube.ObjectKey("test", "project2")
 		connectionSecret := kube.ObjectKey("test", "connectionSecret")
