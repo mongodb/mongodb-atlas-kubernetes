@@ -9,7 +9,7 @@ type AtlasStreamInstanceStatus struct {
 	// List that contains the hostnames assigned to the stream instance.
 	Hostnames []string `json:"hostnames,omitempty"`
 	// List of connections configured in the stream instance.
-	Connections []StreamConnection `json:"connections"`
+	Connections []StreamConnection `json:"connections,omitempty"`
 }
 
 type StreamConnection struct {

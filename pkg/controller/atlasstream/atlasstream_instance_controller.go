@@ -23,6 +23,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
+const instanceNotFound = "STREAM_TENANT_NOT_FOUND_FOR_NAME"
+
 type AtlasStreamsInstanceReconciler struct {
 	watch.ResourceWatcher
 
@@ -97,28 +99,25 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
 		Execute()
 
-	if err != nil && !admin.IsErrorCode(err, atlas.ResourceNotFound) {
+	if err != nil && !admin.IsErrorCode(err, instanceNotFound) {
 		return r.terminate(workflowCtx, workflow.Internal, err)
 	}
 
 	isMarkedAsDeleted := !akoStreamInstance.GetDeletionTimestamp().IsZero()
-	isNotInAtlas := err != nil && admin.IsErrorCode(err, atlas.ResourceNotFound)
+	isNotInAtlas := err != nil && admin.IsErrorCode(err, instanceNotFound)
 
 	switch {
 	case isNotInAtlas && !isMarkedAsDeleted:
 		// if no streams processing instance is not in atlas and is not marked as deleted - create
 		// hence, create the stream instance and transition to "ready" state
-		return r.create(workflowCtx, &project, akoStreamInstance, streamConnectionToAtlas(workflowCtx.Context, r.Client))
+		return r.create(workflowCtx, &project, akoStreamInstance)
 	case isMarkedAsDeleted:
 		// if a streams processing instance is marked as deleted,
 		// independently whether it exists in Atlas or not - delete
 		return r.delete(workflowCtx, &project, akoStreamInstance)
 	case hasChanged(akoStreamInstance, atlasStreamInstance):
 		// if a streams processing instance is ready and has changed - update
-		err = r.update(workflowCtx, &project, akoStreamInstance)
-		if err != nil {
-			return r.terminate(workflowCtx, workflow.StreamInstanceNotUpdated, err)
-		}
+		return r.update(workflowCtx, &project, akoStreamInstance)
 	}
 
 	// handle connection registry management
@@ -143,7 +142,7 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager) erro
 		Complete(r)
 }
 
-func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(ctx context.Context, obj client.Object) []reconcile.Request {
+func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(_ context.Context, obj client.Object) []reconcile.Request {
 	streamConnection, ok := obj.(*akov2.AtlasStreamConnection)
 	if !ok {
 		r.Log.Warnf("watching AtlasStreamConnection but got %t", obj)

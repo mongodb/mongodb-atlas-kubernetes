@@ -185,7 +185,6 @@ spec:
                 type: integer
             required:
             - conditions
-            - connections
             type: object
         type: object
     served: true

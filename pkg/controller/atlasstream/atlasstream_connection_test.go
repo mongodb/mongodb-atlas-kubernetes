@@ -124,6 +124,31 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results: &[]admin.StreamsConnection{
+						{
+							Name:        pointer.MakePtr("sample-connection2"),
+							Type:        pointer.MakePtr("Cluster"),
+							ClusterName: pointer.MakePtr("my-cluster"),
+							DbRoleToExecute: &admin.DBRoleToExecute{
+								Role: pointer.MakePtr("readWrite"),
+								Type: pointer.MakePtr("BUILT_IN"),
+							},
+						},
+						{
+							Name: pointer.MakePtr("sample-connection3"),
+							Type: pointer.MakePtr("Sample"),
+						},
+					},
+					TotalCount: pointer.MakePtr(2),
+				},
+				&http.Response{},
+				nil,
+			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClient: &admin.APIClient{
@@ -132,21 +157,6 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 		atlasInstance := &admin.StreamsTenant{
 			Name: pointer.MakePtr("instance-0"),
-			Connections: &[]admin.StreamsConnection{
-				{
-					Name:        pointer.MakePtr("sample-connection2"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
-					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("readWrite"),
-						Type: pointer.MakePtr("BUILT_IN"),
-					},
-				},
-				{
-					Name: pointer.MakePtr("sample-connection3"),
-					Type: pointer.MakePtr("Sample"),
-				},
-			},
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -196,26 +206,40 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results: &[]admin.StreamsConnection{
+						{
+							Name:        pointer.MakePtr("sample-connection2"),
+							Type:        pointer.MakePtr("Cluster"),
+							ClusterName: pointer.MakePtr("my-cluster"),
+							DbRoleToExecute: &admin.DBRoleToExecute{
+								Role: pointer.MakePtr("readWrite"),
+								Type: pointer.MakePtr("BUILT_IN"),
+							},
+						},
+						{
+							Name: pointer.MakePtr("sample-connection3"),
+							Type: pointer.MakePtr("Sample"),
+						},
+					},
+					TotalCount: pointer.MakePtr(2),
+				},
+				&http.Response{},
+				nil,
+			)
 		ctx := &workflow.Context{
 			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
 		}
 		atlasInstance := &admin.StreamsTenant{
 			Name: pointer.MakePtr("instance-0"),
-			Connections: &[]admin.StreamsConnection{
-				{
-					Name:        pointer.MakePtr("sample-connection2"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
-					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("readWrite"),
-						Type: pointer.MakePtr("BUILT_IN"),
-					},
-				},
-				{
-					Name: pointer.MakePtr("sample-connection3"),
-					Type: pointer.MakePtr("Sample"),
-				},
-			},
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -276,6 +300,17 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results:    nil,
+					TotalCount: pointer.MakePtr(0),
+				},
+				&http.Response{},
+				nil,
+			)
 		streamsAPI.EXPECT().
 			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -351,6 +386,27 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results: &[]admin.StreamsConnection{
+						{
+							Name:        pointer.MakePtr("sample-connection"),
+							Type:        pointer.MakePtr("Cluster"),
+							ClusterName: pointer.MakePtr("my-cluster"),
+							DbRoleToExecute: &admin.DBRoleToExecute{
+								Role: pointer.MakePtr("readWrite"),
+								Type: pointer.MakePtr("BUILT_IN"),
+							},
+						},
+					},
+					TotalCount: pointer.MakePtr(1),
+				},
+				&http.Response{},
+				nil,
+			)
 		streamsAPI.EXPECT().
 			UpdateStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.UpdateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -365,17 +421,6 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 		atlasInstance := &admin.StreamsTenant{
 			Name: pointer.MakePtr("instance-0"),
-			Connections: &[]admin.StreamsConnection{
-				{
-					Name:        pointer.MakePtr("sample-connection"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
-					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("readWrite"),
-						Type: pointer.MakePtr("BUILT_IN"),
-					},
-				},
-			},
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -420,6 +465,27 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results: &[]admin.StreamsConnection{
+						{
+							Name:        pointer.MakePtr("sample-connection"),
+							Type:        pointer.MakePtr("Cluster"),
+							ClusterName: pointer.MakePtr("my-cluster"),
+							DbRoleToExecute: &admin.DBRoleToExecute{
+								Role: pointer.MakePtr("readWrite"),
+								Type: pointer.MakePtr("BUILT_IN"),
+							},
+						},
+					},
+					TotalCount: pointer.MakePtr(1),
+				},
+				&http.Response{},
+				nil,
+			)
 		streamsAPI.EXPECT().
 			DeleteStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection").
 			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -434,17 +500,6 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		}
 		atlasInstance := &admin.StreamsTenant{
 			Name: pointer.MakePtr("instance-0"),
-			Connections: &[]admin.StreamsConnection{
-				{
-					Name:        pointer.MakePtr("sample-connection"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
-					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("readWrite"),
-						Type: pointer.MakePtr("BUILT_IN"),
-					},
-				},
-			},
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -493,11 +548,9 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 		}
 		ctx := &workflow.Context{}
 
-		toCreate, toUpdate, toDelete, err := reconciler.sortConnectionRegistryTasks(ctx, streamInstance, nil)
+		ops, err := reconciler.sortConnectionRegistryTasks(ctx, streamInstance, []admin.StreamsConnection{})
 		assert.ErrorContains(t, err, "failed to retrieve connection {my-sample-connection default}")
-		assert.Nil(t, toCreate)
-		assert.Nil(t, toUpdate)
-		assert.Nil(t, toDelete)
+		assert.Nil(t, ops)
 	})
 
 	t.Run("should sort operation to transition connections", func(t *testing.T) {
@@ -550,26 +603,23 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			Client: k8sClient,
 		}
 		ctx := &workflow.Context{}
-		atlasInstance := &admin.StreamsTenant{
-			Name: pointer.MakePtr("instance-0"),
-			Connections: &[]admin.StreamsConnection{
-				{
-					Name:        pointer.MakePtr("sample-connection2"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
-					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("readWrite"),
-						Type: pointer.MakePtr("BUILT_IN"),
-					},
+		atlasInstanceConnections := []admin.StreamsConnection{
+			{
+				Name:        pointer.MakePtr("sample-connection2"),
+				Type:        pointer.MakePtr("Cluster"),
+				ClusterName: pointer.MakePtr("my-cluster"),
+				DbRoleToExecute: &admin.DBRoleToExecute{
+					Role: pointer.MakePtr("readWrite"),
+					Type: pointer.MakePtr("BUILT_IN"),
 				},
-				{
-					Name: pointer.MakePtr("sample-connection3"),
-					Type: pointer.MakePtr("Sample"),
-				},
+			},
+			{
+				Name: pointer.MakePtr("sample-connection3"),
+				Type: pointer.MakePtr("Sample"),
 			},
 		}
 
-		toCreate, toUpdate, toDelete, err := reconciler.sortConnectionRegistryTasks(ctx, streamInstance, atlasInstance)
+		ops, err := reconciler.sortConnectionRegistryTasks(ctx, streamInstance, atlasInstanceConnections)
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
@@ -586,7 +636,7 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 					},
 				},
 			},
-			toCreate,
+			ops.Create,
 		)
 		assert.Equal(
 			t,
@@ -603,7 +653,7 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 					},
 				},
 			},
-			toUpdate,
+			ops.Update,
 		)
 		assert.Equal(
 			t,
@@ -613,7 +663,7 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 					Type: pointer.MakePtr("Sample"),
 				},
 			},
-			toDelete,
+			ops.Delete,
 		)
 	})
 }

@@ -26,7 +26,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -571,6 +570,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
+		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
+			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
+			Return(
+				&admin.PaginatedApiStreamsConnection{
+					Results:    nil,
+					TotalCount: pointer.MakePtr(0),
+				},
+				&http.Response{},
+				nil,
+			)
 
 		reconciler := &AtlasStreamsInstanceReconciler{
 			Client:        k8sClient,
@@ -611,7 +621,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		assert.Equal(t, corev1.ConditionTrue, conditions[2].Status)
 	})
 
-	t.Run("should transition to ready state when creating new instance", func(t *testing.T) {
+	t.Run("should transition to in-progress state when creating new instance", func(t *testing.T) {
 		project := &akov2.AtlasProject{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-project",
@@ -655,7 +665,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
 		notFound := admin.ApiError{}
 		notFound.SetError(404)
-		notFound.SetErrorCode(atlas.ResourceNotFound)
+		notFound.SetErrorCode(instanceNotFound)
 		apiError := admin.GenericOpenAPIError{}
 		apiError.SetModel(notFound)
 		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
@@ -709,19 +719,21 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, result)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
 		conditions := streamInstance.Status.GetConditions()
 		assert.Len(t, conditions, 3)
 		assert.Equal(t, status.ReadyType, conditions[0].Type)
-		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
+		assert.Equal(t, corev1.ConditionFalse, conditions[0].Status)
 		assert.Empty(t, conditions[0].Reason)
 		assert.Empty(t, conditions[0].Message)
 		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 		assert.Equal(t, status.StreamInstanceReadyType, conditions[2].Type)
-		assert.Equal(t, corev1.ConditionTrue, conditions[2].Status)
+		assert.Equal(t, corev1.ConditionFalse, conditions[2].Status)
+		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), conditions[2].Reason)
+		assert.Equal(t, "configuring stream instance in Atlas", conditions[2].Message)
 	})
 
 	t.Run("should transition succeed when deleting an instance", func(t *testing.T) {
@@ -937,118 +949,6 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, result)
-
-		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
-		conditions := streamInstance.Status.GetConditions()
-		assert.Len(t, conditions, 3)
-		assert.Equal(t, status.ReadyType, conditions[0].Type)
-		assert.Equal(t, corev1.ConditionTrue, conditions[0].Status)
-		assert.Empty(t, conditions[0].Reason)
-		assert.Empty(t, conditions[0].Message)
-		assert.Equal(t, status.ResourceVersionStatus, conditions[1].Type)
-		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
-		assert.Equal(t, status.StreamInstanceReadyType, conditions[2].Type)
-		assert.Equal(t, corev1.ConditionTrue, conditions[2].Status)
-	})
-
-	t.Run("should transition to terminate state when failed to update an instance", func(t *testing.T) {
-		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasProjectSpec{
-				Name: "my-project",
-			},
-			Status: status.AtlasProjectStatus{
-				ID: "my-project-id",
-			},
-		}
-		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasStreamInstanceSpec{
-				Name: "instance-0",
-				Config: akov2.Config{
-					Provider: "AWS",
-					Region:   "DUBLIN_IRL",
-					Tier:     "SP30",
-				},
-				Project: common.ResourceRefNamespaced{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-			},
-			Status: status.AtlasStreamInstanceStatus{
-				ID:        "instance-0-id",
-				Hostnames: []string{"mdb://host1", "mdb://host2"},
-			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
-			WithStatusSubresource(streamInstance).
-			Build()
-
-		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(context.Background(), "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
-			Return(
-				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
-					DataProcessRegion: &admin.StreamsDataProcessRegion{
-						CloudProvider: "AWS",
-						Region:        "FRANKFURT_DEU",
-					},
-					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
-					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
-				},
-				&http.Response{},
-				nil,
-			)
-		streamsAPI.EXPECT().UpdateStreamInstance(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
-			Return(admin.UpdateStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().UpdateStreamInstanceExecute(mock.AnythingOfType("admin.UpdateStreamInstanceApiRequest")).
-			Return(
-				nil,
-				&http.Response{},
-				errors.New("failed to update instance"),
-			)
-
-		reconciler := &AtlasStreamsInstanceReconciler{
-			Client:        k8sClient,
-			Log:           zaptest.NewLogger(t).Sugar(),
-			EventRecorder: record.NewFakeRecorder(1),
-			AtlasProvider: &atlasmock.TestProvider{
-				IsSupportedFunc: func() bool {
-					return true
-				},
-				SdkClientFunc: func(secretRef *client.ObjectKey, log *zap.SugaredLogger) (*admin.APIClient, string, error) {
-					return &admin.APIClient{StreamsApi: streamsAPI}, "org-id", nil
-				},
-			},
-		}
-
-		result, err := reconciler.Reconcile(
-			context.Background(),
-			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
-			},
-		)
-		assert.NoError(t, err)
 		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 
 		assert.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(streamInstance), streamInstance))
@@ -1062,7 +962,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		assert.Equal(t, corev1.ConditionTrue, conditions[1].Status)
 		assert.Equal(t, status.StreamInstanceReadyType, conditions[2].Type)
 		assert.Equal(t, corev1.ConditionFalse, conditions[2].Status)
-		assert.Equal(t, string(workflow.StreamInstanceNotUpdated), conditions[2].Reason)
-		assert.Equal(t, "failed to update instance", conditions[2].Message)
+		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), conditions[2].Reason)
+		assert.Equal(t, "configuring stream instance in Atlas", conditions[2].Message)
 	})
 }

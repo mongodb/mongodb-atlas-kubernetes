@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	t.Run("should transition to a ready state when creates a stream instance in Atlas", func(t *testing.T) {
+	t.Run("should transition to in-progress state when creates a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-project",
@@ -120,21 +120,14 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		connectionMapper := func(conn *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
-			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
-			}, nil
-		}
-
-		result, err := reconciler.create(ctx, project, streamInstance, connectionMapper)
+		result, err := reconciler.create(ctx, project, streamInstance)
 		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, result)
-		assert.Len(t, ctx.Conditions(), 2)
-		assert.Equal(t, status.ReadyType, ctx.Conditions()[0].Type)
-		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[0].Status)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[1].Type)
-		assert.Equal(t, corev1.ConditionTrue, ctx.Conditions()[1].Status)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
+		assert.Len(t, ctx.Conditions(), 1)
+		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
+		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), ctx.Conditions()[0].Reason)
+		assert.Equal(t, "configuring stream instance in Atlas", ctx.Conditions()[0].Message)
 	})
 
 	t.Run("should transition to a terminate state when fail to create a stream instance in Atlas", func(t *testing.T) {
@@ -213,181 +206,14 @@ func TestCreate(t *testing.T) {
 			},
 		}
 
-		connectionMapper := func(conn *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
-			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
-			}, nil
-		}
-
-		result, err := reconciler.create(ctx, project, streamInstance, connectionMapper)
+		result, err := reconciler.create(ctx, project, streamInstance)
 		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
 		assert.Len(t, ctx.Conditions(), 1)
 		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
 		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
 		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
 		assert.Equal(t, "failed to create instance", ctx.Conditions()[0].Message)
-	})
-
-	t.Run("should transition to a terminate state when fail to map connection resource", func(t *testing.T) {
-		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasProjectSpec{
-				Name: "my-project",
-			},
-			Status: status.AtlasProjectStatus{
-				ID: "my-project-id",
-			},
-		}
-		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasStreamInstanceSpec{
-				Name: "instance-0",
-				Config: akov2.Config{
-					Provider: "AWS",
-					Region:   "FRANKFURT_DEU",
-					Tier:     "SP30",
-				},
-				Project: common.ResourceRefNamespaced{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-				ConnectionRegistry: []common.ResourceRefNamespaced{
-					{
-						Name:      "my-sample-connection",
-						Namespace: "default",
-					},
-				},
-			},
-		}
-		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasStreamConnectionSpec{
-				Name:           "sample-connection",
-				ConnectionType: "Sample",
-			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(project, streamInstance, streamConnection).
-			Build()
-
-		reconciler := &AtlasStreamsInstanceReconciler{
-			Client: k8sClient,
-			Log:    zaptest.NewLogger(t).Sugar(),
-		}
-		ctx := &workflow.Context{
-			Context: context.Background(),
-		}
-
-		connectionMapper := func(conn *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
-			return nil, errors.New("failed to map sample-connection")
-		}
-
-		result, err := reconciler.create(ctx, project, streamInstance, connectionMapper)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
-		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
-		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
-		assert.Equal(t, "failed to map sample-connection", ctx.Conditions()[0].Message)
-	})
-
-	t.Run("should transition to a terminate state when fail to get connection resource", func(t *testing.T) {
-		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasProjectSpec{
-				Name: "my-project",
-			},
-			Status: status.AtlasProjectStatus{
-				ID: "my-project-id",
-			},
-		}
-		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
-			Spec: akov2.AtlasStreamInstanceSpec{
-				Name: "instance-0",
-				Config: akov2.Config{
-					Provider: "AWS",
-					Region:   "FRANKFURT_DEU",
-					Tier:     "SP30",
-				},
-				Project: common.ResourceRefNamespaced{
-					Name:      "my-project",
-					Namespace: "default",
-				},
-				ConnectionRegistry: []common.ResourceRefNamespaced{
-					{
-						Name:      "my-sample-connection",
-						Namespace: "default",
-					},
-				},
-			},
-		}
-		testScheme := runtime.NewScheme()
-		assert.NoError(t, akov2.AddToScheme(testScheme))
-		k8sClient := fake.NewClientBuilder().
-			WithScheme(testScheme).
-			WithObjects(project, streamInstance).
-			Build()
-
-		reconciler := &AtlasStreamsInstanceReconciler{
-			Client: k8sClient,
-			Log:    zaptest.NewLogger(t).Sugar(),
-		}
-		ctx := &workflow.Context{
-			Context: context.Background(),
-		}
-
-		connectionMapper := func(conn *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
-			return nil, nil
-		}
-
-		result, err := reconciler.create(ctx, project, streamInstance, connectionMapper)
-		assert.NoError(t, err)
-		assert.Equal(
-			t,
-			ctrl.Result{
-				RequeueAfter: workflow.DefaultRetry,
-			},
-			result,
-		)
-		assert.Len(t, ctx.Conditions(), 1)
-		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
-		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
-		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
-		assert.Contains(t, ctx.Conditions()[0].Message, "failed to retrieve connection {my-sample-connection default}:")
 	})
 }
 
@@ -1003,11 +829,17 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 
-		err := reconciler.update(ctx, project, streamInstance)
+		result, err := reconciler.update(ctx, project, streamInstance)
 		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
+		assert.Len(t, ctx.Conditions(), 1)
+		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
+		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), ctx.Conditions()[0].Reason)
+		assert.Equal(t, "configuring stream instance in Atlas", ctx.Conditions()[0].Message)
 	})
 
-	t.Run("should return error when fail to update a stream instance in Atlas", func(t *testing.T) {
+	t.Run("should transition to in-progress state when fail to update a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-project",
@@ -1086,8 +918,14 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 
-		err := reconciler.update(ctx, project, streamInstance)
-		assert.ErrorContains(t, err, "failed to update instance")
+		result, err := reconciler.update(ctx, project, streamInstance)
+		assert.NoError(t, err)
+		assert.Equal(t, ctrl.Result{RequeueAfter: workflow.DefaultRetry}, result)
+		assert.Len(t, ctx.Conditions(), 1)
+		assert.Equal(t, status.StreamInstanceReadyType, ctx.Conditions()[0].Type)
+		assert.Equal(t, corev1.ConditionFalse, ctx.Conditions()[0].Status)
+		assert.Equal(t, string(workflow.StreamInstanceNotCreated), ctx.Conditions()[0].Reason)
+		assert.Equal(t, "failed to update instance", ctx.Conditions()[0].Message)
 	})
 }
 

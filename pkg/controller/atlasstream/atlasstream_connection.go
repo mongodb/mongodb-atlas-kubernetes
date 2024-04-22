@@ -3,6 +3,9 @@ package atlasstream
 import (
 	"context"
 	"fmt"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"reflect"
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -21,6 +24,25 @@ const kafkaConnectionSecCertificate = "certificate"
 
 type streamConnectionMapper func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error)
 
+type streamConnectionOperations struct {
+	NoOp   []*akov2.AtlasStreamConnection
+	Create []*akov2.AtlasStreamConnection
+	Update []*akov2.AtlasStreamConnection
+	Delete []*admin.StreamsConnection
+}
+
+func newStreamConnectionOperations(
+	akoStreamInstance *akov2.AtlasStreamInstance,
+	atlasStreamConnections []admin.StreamsConnection,
+) *streamConnectionOperations {
+	return &streamConnectionOperations{
+		NoOp:   make([]*akov2.AtlasStreamConnection, 0, len(akoStreamInstance.Spec.ConnectionRegistry)),
+		Create: make([]*akov2.AtlasStreamConnection, 0, len(akoStreamInstance.Spec.ConnectionRegistry)),
+		Update: make([]*akov2.AtlasStreamConnection, 0, len(akoStreamInstance.Spec.ConnectionRegistry)),
+		Delete: make([]*admin.StreamsConnection, 0, len(atlasStreamConnections)),
+	}
+}
+
 // this is the dispatcher of connection registry management
 func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	ctx *workflow.Context,
@@ -28,34 +50,58 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	akoStreamInstance *akov2.AtlasStreamInstance,
 	atlasStreamInstance *admin.StreamsTenant,
 ) (ctrl.Result, error) {
-	toCreate, toUpdate, toDelete, err := r.sortConnectionRegistryTasks(ctx, akoStreamInstance, atlasStreamInstance)
+	streamConnections, _, err := ctx.SdkClient.StreamsApi.
+		ListStreamConnections(ctx.Context, project.ID(), akoStreamInstance.Spec.Name).
+		Execute()
+	if err != nil {
+		return r.terminate(ctx, workflow.StreamConnectionNotConfigured, err)
+	}
+
+	ops, err := r.sortConnectionRegistryTasks(ctx, akoStreamInstance, streamConnections.GetResults())
 	if err != nil {
 		return r.terminate(ctx, workflow.StreamConnectionNotConfigured, err)
 	}
 
 	// we do all operations in a single flow and only return earlier in case of failure
-	if len(toCreate) > 0 {
+	if len(ops.Create) > 0 {
 		// if there are connection to be added to the instance
-		err = createConnections(ctx, project, akoStreamInstance, toCreate, streamConnectionToAtlas(ctx.Context, r.Client))
+		err = createConnections(ctx, project, akoStreamInstance, ops.Create, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
 			return r.terminate(ctx, workflow.StreamConnectionNotCreated, err)
 		}
 	}
 
-	if len(toUpdate) > 0 {
+	if len(ops.Update) > 0 {
 		// if there are connection to be updated in the instance
-		err = updateConnections(ctx, project, akoStreamInstance, toUpdate, streamConnectionToAtlas(ctx.Context, r.Client))
+		err = updateConnections(ctx, project, akoStreamInstance, ops.Update, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
 			return r.terminate(ctx, workflow.StreamConnectionNotUpdated, err)
 		}
 	}
 
-	if len(toDelete) > 0 {
+	if len(ops.Delete) > 0 {
 		// if there are connection to be deleted from the instance
-		err = deleteConnections(ctx, project, akoStreamInstance, toDelete)
+		err = deleteConnections(ctx, project, akoStreamInstance, ops.Delete)
 		if err != nil {
 			return r.terminate(ctx, workflow.StreamConnectionNotRemoved, err)
 		}
+	}
+
+	for i := range ops.NoOp {
+		akoStreamConnection := ops.NoOp[i]
+		ctx.EnsureStatusOption(
+			status.AtlasStreamInstanceAddConnection(
+				akoStreamConnection.Spec.Name,
+				common.ResourceRefNamespaced{
+					Name:      akoStreamConnection.Name,
+					Namespace: akoStreamConnection.Namespace,
+				},
+			),
+		)
+	}
+
+	if err = customresource.ManageFinalizer(ctx.Context, r.Client, akoStreamInstance, customresource.SetFinalizer); err != nil {
+		return r.terminate(ctx, workflow.AtlasFinalizerNotSet, err)
 	}
 
 	// we can transition straight away to ready state
@@ -65,25 +111,22 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 func (r *AtlasStreamsInstanceReconciler) sortConnectionRegistryTasks(
 	ctx *workflow.Context,
 	akoStreamInstance *akov2.AtlasStreamInstance,
-	atlasStreamInstance *admin.StreamsTenant,
-) ([]*akov2.AtlasStreamConnection, []*akov2.AtlasStreamConnection, []*admin.StreamsConnection, error) {
-	toCreate := make([]*akov2.AtlasStreamConnection, 0, len(akoStreamInstance.Spec.ConnectionRegistry))
-	toUpdate := make([]*akov2.AtlasStreamConnection, 0, len(akoStreamInstance.Spec.ConnectionRegistry))
-	toDelete := make([]*admin.StreamsConnection, 0, len(atlasStreamInstance.GetConnections()))
+	atlasStreamConnections []admin.StreamsConnection,
+) (*streamConnectionOperations, error) {
+	ops := newStreamConnectionOperations(akoStreamInstance, atlasStreamConnections)
 
 	atlasConnectionByName := map[string]*admin.StreamsConnection{}
 	akoConnectionByName := map[string]*akov2.AtlasStreamConnection{}
-	atlasConnections := atlasStreamInstance.GetConnections()
 
-	for i := range atlasConnections {
-		atlasConnectionByName[atlasConnections[i].GetName()] = &atlasConnections[i]
+	for i := range atlasStreamConnections {
+		atlasConnectionByName[atlasStreamConnections[i].GetName()] = &atlasStreamConnections[i]
 	}
 
 	for _, akoConnectionRef := range akoStreamInstance.Spec.ConnectionRegistry {
 		akoConnection := akov2.AtlasStreamConnection{}
 		err := r.Client.Get(ctx.Context, *akoConnectionRef.GetObject(akoStreamInstance.Namespace), &akoConnection)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to retrieve connection %v: %w", akoConnectionRef, err)
+			return nil, fmt.Errorf("failed to retrieve connection %v: %w", akoConnectionRef, err)
 		}
 
 		akoConnectionByName[akoConnection.Spec.Name] = &akoConnection
@@ -91,29 +134,33 @@ func (r *AtlasStreamsInstanceReconciler) sortConnectionRegistryTasks(
 		// when connection doesn't exist in Atlas, we need to add it hence connection registry has changed and we return earlier
 		atlasConnection, ok := atlasConnectionByName[akoConnection.Spec.Name]
 		if !ok {
-			toCreate = append(toCreate, &akoConnection)
+			ops.Create = append(ops.Create, &akoConnection)
 
 			continue
 		}
 
 		hasConnectionChanged, err := hasStreamConnectionChanged(&akoConnection, *atlasConnection, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 
 		// when connection has been modified, we need to update it hence connection registry has changed and we return earlier
 		if hasConnectionChanged {
-			toUpdate = append(toUpdate, &akoConnection)
+			ops.Update = append(ops.Update, &akoConnection)
+
+			continue
+		}
+
+		ops.NoOp = append(ops.NoOp, &akoConnection)
+	}
+
+	for i := range atlasStreamConnections {
+		if _, ok := akoConnectionByName[atlasStreamConnections[i].GetName()]; !ok {
+			ops.Delete = append(ops.Delete, &atlasStreamConnections[i])
 		}
 	}
 
-	for i := range atlasConnections {
-		if _, ok := akoConnectionByName[atlasConnections[i].GetName()]; !ok {
-			toDelete = append(toDelete, &atlasConnections[i])
-		}
-	}
-
-	return toCreate, toUpdate, toDelete, nil
+	return ops, nil
 }
 
 func streamConnectionToAtlas(ctx context.Context, k8sClient client.Client) streamConnectionMapper {

@@ -112,6 +112,7 @@ const (
 
 // Atlas Streams reasons
 const (
+	StreamInstanceSetupInProgress ConditionReason = "StreamInstanceSetupInProgress"
 	StreamInstanceNotCreated      ConditionReason = "StreamInstanceNotCreated"
 	StreamInstanceNotRemoved      ConditionReason = "StreamInstanceNotRemoved"
 	StreamInstanceNotUpdated      ConditionReason = "StreamInstanceNotUpdated"

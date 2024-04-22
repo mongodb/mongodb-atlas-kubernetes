@@ -12,7 +12,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
@@ -21,32 +20,14 @@ func (r *AtlasStreamsInstanceReconciler) create(
 	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	streamInstance *akov2.AtlasStreamInstance,
-	mapper streamConnectionMapper,
 ) (ctrl.Result, error) {
-	connections := make([]admin.StreamsConnection, 0, len(streamInstance.Spec.ConnectionRegistry))
 	streamTenant := admin.StreamsTenant{
-		Name: &streamInstance.Name,
+		Name: &streamInstance.Spec.Name,
 		DataProcessRegion: &admin.StreamsDataProcessRegion{
 			CloudProvider: streamInstance.Spec.Config.Provider,
 			Region:        streamInstance.Spec.Config.Region,
 		},
-		GroupId:     pointer.MakePtr(project.ID()),
-		Connections: &connections,
-	}
-
-	for _, connectionRef := range streamInstance.Spec.ConnectionRegistry {
-		streamConnection := akov2.AtlasStreamConnection{}
-		err := r.Client.Get(ctx.Context, *connectionRef.GetObject(connectionRef.Namespace), &streamConnection)
-		if err != nil {
-			return r.terminate(ctx, workflow.StreamInstanceNotCreated, fmt.Errorf("failed to retrieve connection %v: %w", connectionRef, err))
-		}
-
-		connection, err := mapper(&streamConnection)
-		if err != nil {
-			return r.terminate(ctx, workflow.StreamInstanceNotCreated, err)
-		}
-
-		connections = append(connections, *connection)
+		GroupId: pointer.MakePtr(project.ID()),
 	}
 
 	atlasStreamInstance, _, err := ctx.SdkClient.StreamsApi.
@@ -57,24 +38,24 @@ func (r *AtlasStreamsInstanceReconciler) create(
 		return r.terminate(ctx, workflow.StreamInstanceNotCreated, err)
 	}
 
-	return r.ready(ctx, atlasStreamInstance)
+	return r.inProgress(ctx, atlasStreamInstance)
 }
 
-func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
+func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	dataProcessRegion := admin.StreamsDataProcessRegion{
 		CloudProvider: streamInstance.Spec.Config.Provider,
 		Region:        streamInstance.Spec.Config.Region,
 	}
 
-	_, _, err := ctx.SdkClient.StreamsApi.
+	atlasStreamInstance, _, err := ctx.SdkClient.StreamsApi.
 		UpdateStreamInstance(ctx.Context, project.ID(), streamInstance.Spec.Name, &dataProcessRegion).
 		Execute()
 
 	if err != nil {
-		return err
+		return r.terminate(ctx, workflow.StreamInstanceNotCreated, err)
 	}
 
-	return nil
+	return r.inProgress(ctx, atlasStreamInstance)
 }
 
 func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
@@ -97,7 +78,7 @@ func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, st
 		DeleteStreamInstance(ctx.Context, project.ID(), streamInstance.Spec.Name).
 		Execute()
 
-	if err != nil && !admin.IsErrorCode(err, atlas.ResourceNotFound) {
+	if err != nil && !admin.IsErrorCode(err, instanceNotFound) {
 		return err
 	}
 
@@ -105,7 +86,7 @@ func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, st
 }
 
 func createConnections(
-	workflowCtx *workflow.Context,
+	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	akoStreamInstance *akov2.AtlasStreamInstance,
 	akoStreamConnections []*akov2.AtlasStreamConnection,
@@ -117,15 +98,15 @@ func createConnections(
 			return err
 		}
 
-		_, _, err = workflowCtx.SdkClient.StreamsApi.
-			CreateStreamConnection(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name, connection).
+		_, _, err = ctx.SdkClient.StreamsApi.
+			CreateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, connection).
 			Execute()
 
 		if err != nil {
 			return err
 		}
 
-		workflowCtx.EnsureStatusOption(
+		ctx.EnsureStatusOption(
 			status.AtlasStreamInstanceAddConnection(
 				connection.GetName(),
 				common.ResourceRefNamespaced{
@@ -140,7 +121,7 @@ func createConnections(
 }
 
 func updateConnections(
-	workflowCtx *workflow.Context,
+	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	akoStreamInstance *akov2.AtlasStreamInstance,
 	akoStreamConnections []*akov2.AtlasStreamConnection,
@@ -152,15 +133,15 @@ func updateConnections(
 			return err
 		}
 
-		_, _, err = workflowCtx.SdkClient.StreamsApi.
-			UpdateStreamConnection(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name, akoStreamConnection.Spec.Name, connection).
+		_, _, err = ctx.SdkClient.StreamsApi.
+			UpdateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, akoStreamConnection.Spec.Name, connection).
 			Execute()
 
 		if err != nil {
 			return err
 		}
 
-		workflowCtx.EnsureStatusOption(
+		ctx.EnsureStatusOption(
 			status.AtlasStreamInstanceAddConnection(
 				connection.GetName(),
 				common.ResourceRefNamespaced{
@@ -175,21 +156,21 @@ func updateConnections(
 }
 
 func deleteConnections(
-	workflowCtx *workflow.Context,
+	ctx *workflow.Context,
 	project *akov2.AtlasProject,
 	streamInstance *akov2.AtlasStreamInstance,
 	atlasStreamConnections []*admin.StreamsConnection,
 ) error {
 	for _, atlasStreamConnection := range atlasStreamConnections {
-		_, _, err := workflowCtx.SdkClient.StreamsApi.
-			DeleteStreamConnection(workflowCtx.Context, project.ID(), streamInstance.Spec.Name, atlasStreamConnection.GetName()).
+		_, _, err := ctx.SdkClient.StreamsApi.
+			DeleteStreamConnection(ctx.Context, project.ID(), streamInstance.Spec.Name, atlasStreamConnection.GetName()).
 			Execute()
 
-		if err != nil && !admin.IsErrorCode(err, atlas.ResourceNotFound) {
+		if err != nil && !admin.IsErrorCode(err, instanceNotFound) {
 			return err
 		}
 
-		workflowCtx.EnsureStatusOption(status.AtlasStreamInstanceRemoveConnection(atlasStreamConnection.GetName()))
+		ctx.EnsureStatusOption(status.AtlasStreamInstanceRemoveConnection(atlasStreamConnection.GetName()))
 	}
 
 	return nil
@@ -239,6 +220,13 @@ func (r *AtlasStreamsInstanceReconciler) ready(ctx *workflow.Context, streamInst
 	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
 	result := workflow.OK()
 	ctx.SetConditionFromResult(status.ReadyType, result)
+	ctx.SetConditionFromResult(status.StreamInstanceReadyType, result)
+	return result.ReconcileResult(), nil
+}
+
+func (r *AtlasStreamsInstanceReconciler) inProgress(ctx *workflow.Context, streamInstance *admin.StreamsTenant) (ctrl.Result, error) {
+	ctx.EnsureStatusOption(status.AtlasStreamInstanceDetails(streamInstance.GetId(), streamInstance.GetHostnames()))
+	result := workflow.InProgress(workflow.StreamInstanceSetupInProgress, "configuring stream instance in Atlas")
 	ctx.SetConditionFromResult(status.StreamInstanceReadyType, result)
 	return result.ReconcileResult(), nil
 }
