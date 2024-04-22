@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -128,11 +127,4 @@ func secretForTesting(name string) *corev1.Secret {
 		},
 		Data: map[string][]byte{"testKey": []byte("testValue")},
 	}
-}
-
-func watchedResourcesMap(watched *corev1.Secret, dependent client.ObjectKey) map[WatchedObject]map[client.ObjectKey]bool {
-	watchedResources := make(map[WatchedObject]map[client.ObjectKey]bool)
-	watchedObject := WatchedObject{ResourceKind: watched.GetObjectKind().GroupVersionKind().Kind, Resource: kube.ObjectKeyFromObject(watched)}
-	watchedResources[watchedObject] = map[client.ObjectKey]bool{dependent: true}
-	return watchedResources
 }
