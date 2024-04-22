@@ -9,4 +9,5 @@ type AtlasStreamConnectionStatus struct {
 }
 
 // +kubebuilder:object:generate=false
+
 type AtlasStreamConnectionStatusOption func(s *AtlasStreamConnectionStatus)

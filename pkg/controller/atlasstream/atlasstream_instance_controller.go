@@ -19,15 +19,12 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/statushandler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
 const instanceNotFound = "STREAM_TENANT_NOT_FOUND_FOR_NAME"
 
 type AtlasStreamsInstanceReconciler struct {
-	watch.ResourceWatcher
-
 	Client                      client.Client
 	Scheme                      *runtime.Scheme
 	GlobalPredicates            []predicate.Predicate
