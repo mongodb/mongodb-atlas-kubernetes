@@ -3,7 +3,6 @@ package atlasstream
 import (
 	"context"
 	"errors"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
@@ -1087,5 +1086,585 @@ func TestUpdate(t *testing.T) {
 
 		err := reconciler.update(ctx, project, streamInstance)
 		assert.ErrorContains(t, err, "failed to update instance")
+	})
+}
+
+func TestCreateConnections(t *testing.T) {
+	t.Run("should add an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
+			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			CreateStreamConnectionExecute(mock.AnythingOfType("admin.CreateStreamConnectionApiRequest")).
+			Return(
+				&admin.StreamsConnection{
+					Name: pointer.MakePtr("sample-connection"),
+					Type: pointer.MakePtr("Sample"),
+				},
+				&http.Response{},
+				nil,
+			)
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := createConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return &admin.StreamsConnection{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			}, nil
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("should return error when fail adding an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
+			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			CreateStreamConnectionExecute(mock.AnythingOfType("admin.CreateStreamConnectionApiRequest")).
+			Return(nil, &http.Response{}, errors.New("failed to create connection"))
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := createConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return &admin.StreamsConnection{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			}, nil
+		})
+		assert.ErrorContains(t, err, "failed to create connection")
+	})
+
+	t.Run("should return error when fail mapping an instance connection", func(t *testing.T) {
+		ctx := &workflow.Context{}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := createConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return nil, errors.New("failed to map connection")
+		})
+		assert.ErrorContains(t, err, "failed to map connection")
+	})
+}
+
+func TestUpdateConnections(t *testing.T) {
+	t.Run("should update an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			UpdateStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection", mock.AnythingOfType("*admin.StreamsConnection")).
+			Return(admin.UpdateStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			UpdateStreamConnectionExecute(mock.AnythingOfType("admin.UpdateStreamConnectionApiRequest")).
+			Return(
+				&admin.StreamsConnection{
+					Name: pointer.MakePtr("sample-connection"),
+					Type: pointer.MakePtr("Sample"),
+				},
+				&http.Response{},
+				nil,
+			)
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := updateConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return &admin.StreamsConnection{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			}, nil
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("should return error when fail updating an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			UpdateStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection", mock.AnythingOfType("*admin.StreamsConnection")).
+			Return(admin.UpdateStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			UpdateStreamConnectionExecute(mock.AnythingOfType("admin.UpdateStreamConnectionApiRequest")).
+			Return(nil, &http.Response{}, errors.New("failed to update connection"))
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := updateConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return &admin.StreamsConnection{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			}, nil
+		})
+		assert.ErrorContains(t, err, "failed to update connection")
+	})
+
+	t.Run("should return error when fail mapping an instance connection", func(t *testing.T) {
+		ctx := &workflow.Context{}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*akov2.AtlasStreamConnection{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-sample-connection",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasStreamConnectionSpec{
+					Name:           "sample-connection",
+					ConnectionType: "Sample",
+				},
+			},
+		}
+
+		err := updateConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
+			return nil, errors.New("failed to map connection")
+		})
+		assert.ErrorContains(t, err, "failed to map connection")
+	})
+}
+
+func TestDeleteConnections(t *testing.T) {
+	t.Run("should delete an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			DeleteStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection").
+			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
+			Return(
+				nil,
+				&http.Response{},
+				nil,
+			)
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*admin.StreamsConnection{
+			{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			},
+		}
+
+		err := deleteConnections(ctx, project, streamInstance, connections)
+		assert.NoError(t, err)
+	})
+
+	t.Run("should return error when fail deleting an instance connection", func(t *testing.T) {
+		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI.EXPECT().
+			DeleteStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection").
+			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().
+			DeleteStreamConnectionExecute(mock.AnythingOfType("admin.DeleteStreamConnectionApiRequest")).
+			Return(nil, &http.Response{}, errors.New("failed to delete connection"))
+		ctx := &workflow.Context{
+			Context: context.Background(),
+			SdkClient: &admin.APIClient{
+				StreamsApi: streamsAPI,
+			},
+		}
+		project := &akov2.AtlasProject{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-project",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasProjectSpec{
+				Name: "my-project",
+			},
+			Status: status.AtlasProjectStatus{
+				ID: "my-project-id",
+			},
+		}
+		streamInstance := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance-0",
+				Config: akov2.Config{
+					Provider: "AWS",
+					Region:   "DUBLIN_IRL",
+					Tier:     "SP30",
+				},
+				Project: common.ResourceRefNamespaced{
+					Name:      "my-project",
+					Namespace: "default",
+				},
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "my-sample-connection",
+						Namespace: "default",
+					},
+				},
+			},
+			Status: status.AtlasStreamInstanceStatus{
+				ID:        "instance-0-id",
+				Hostnames: []string{"mdb://host1", "mdb://host2"},
+			},
+		}
+		connections := []*admin.StreamsConnection{
+			{
+				Name: pointer.MakePtr("sample-connection"),
+				Type: pointer.MakePtr("Sample"),
+			},
+		}
+
+		err := deleteConnections(ctx, project, streamInstance, connections)
+		assert.ErrorContains(t, err, "failed to delete connection")
 	})
 }
