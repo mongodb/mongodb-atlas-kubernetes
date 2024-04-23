@@ -3,9 +3,8 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1/status"
 )
 
 type AtlasStreamConnectionSpec struct {
@@ -87,6 +86,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasStreamConnection{}, &AtlasStreamConnectionList{})
 }
 
+// GetStatus implements status.Reader
 func (f *AtlasStreamConnection) GetStatus() status.Status {
 	return f.Status
 }

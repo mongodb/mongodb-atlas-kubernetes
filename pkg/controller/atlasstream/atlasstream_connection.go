@@ -18,9 +18,11 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/workflow"
 )
 
-const kafkaConnectionAuthUsername = "username"
-const kafkaConnectionAuthPassword = "password"
-const kafkaConnectionSecCertificate = "certificate"
+const (
+	kafkaConnectionAuthUsername   = "username"
+	kafkaConnectionAuthPassword   = "password"
+	kafkaConnectionSecCertificate = "certificate"
+)
 
 type streamConnectionMapper func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error)
 
@@ -43,7 +45,7 @@ func newStreamConnectionOperations(
 	}
 }
 
-// this is the dispatcher of connection registry management
+// handleConnectionRegistry is the dispatcher of connection registry management
 func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	ctx *workflow.Context,
 	project *akov2.AtlasProject,

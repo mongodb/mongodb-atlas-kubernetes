@@ -59,7 +59,7 @@ func (r *AtlasStreamsInstanceReconciler) Reconcile(ctx context.Context, req ctrl
 	return r.ensureAtlasStreamsInstance(ctx, log, &akoStreamInstance)
 }
 
-// this is the central state dispatcher
+// ensureAtlasStreamsInstance is the central state dispatcher
 func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.Context, log *zap.SugaredLogger, akoStreamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
 	// check if stream instance is in "skipped" state
 	if customresource.ReconciliationShouldBeSkipped(akoStreamInstance) {
