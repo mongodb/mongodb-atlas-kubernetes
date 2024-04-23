@@ -741,6 +741,16 @@ func (c *AtlasDeployment) WithBackingProvider(name string) *AtlasDeployment {
 	return c
 }
 
+func (c *AtlasDeployment) WithSearchNodes(instanceSize string, count uint8) *AtlasDeployment {
+	c.Spec.DeploymentSpec.SearchNodes = []SearchNode{
+		{
+			InstanceSize: instanceSize,
+			NodeCount:    count,
+		},
+	}
+	return c
+}
+
 // Lightweight makes the deployment work with small shared instance M2. This is useful for non-deployment tests (e.g.
 // database users) and saves some money for the company.
 func (c *AtlasDeployment) Lightweight() *AtlasDeployment {
