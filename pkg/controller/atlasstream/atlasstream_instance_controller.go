@@ -3,6 +3,8 @@ package atlasstream
 import (
 	"context"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/indexer"
+
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/fields"
@@ -129,8 +131,8 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 	return config.Provider != dataProcessRegion.GetCloudProvider() || config.Region != dataProcessRegion.GetRegion()
 }
 
-func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	err := mgr.GetFieldIndexer().IndexField(context.Background(), &akov2.AtlasStreamInstance{}, ".spec.connectionRegistry", instanceIndexer)
+func (r *AtlasStreamsInstanceReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	err := indexer.NewAtlasStreamInstancesByConnectionRegistryIndex(ctx, mgr.GetFieldIndexer())
 	if err != nil {
 		return err
 	}
@@ -155,7 +157,10 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 
 	atlasStreamInstances := &akov2.AtlasStreamInstanceList{}
 	listOps := &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(".spec.connectionRegistry", client.ObjectKeyFromObject(streamConnection).String()),
+		FieldSelector: fields.OneTermEqualSelector(
+			indexer.AtlasStreamInstancesByConnectionRegistry,
+			client.ObjectKeyFromObject(streamConnection).String(),
+		),
 	}
 
 	err := r.Client.List(ctx, atlasStreamInstances, listOps)
@@ -179,20 +184,4 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 	}
 
 	return requests
-}
-
-func instanceIndexer(object client.Object) []string {
-	streamInstance := object.(*akov2.AtlasStreamInstance)
-	if len(streamInstance.Spec.ConnectionRegistry) == 0 {
-		return nil
-	}
-
-	registry := streamInstance.Spec.ConnectionRegistry
-	indices := make([]string, 0, len(registry))
-	for i := range registry {
-		key := registry[i].GetObject(streamInstance.GetNamespace())
-		indices = append(indices, key.String())
-	}
-
-	return indices
 }

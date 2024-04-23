@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/indexer"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
@@ -1035,7 +1037,11 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(connection, instance1, instance2).
-			WithIndex(&akov2.AtlasStreamInstance{}, ".spec.connectionRegistry", instanceIndexer).
+			WithIndex(
+				&akov2.AtlasStreamInstance{},
+				indexer.AtlasStreamInstancesByConnectionRegistry,
+				indexer.AtlasStreamInstancesByConnectionRegistryIndices,
+			).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,

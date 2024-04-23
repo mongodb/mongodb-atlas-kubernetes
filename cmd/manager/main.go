@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -137,6 +138,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.TODO()
+
 	// globalPredicates should be used for general controller Predicates
 	// that should be applied to all controllers in order to limit the
 	// resources they receive events for.
@@ -232,7 +235,7 @@ func main() {
 		AtlasProvider:               atlasProvider,
 		ObjectDeletionProtection:    config.ObjectDeletionProtection,
 		SubObjectDeletionProtection: false,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AtlasStreamsInstance")
 		os.Exit(1)
 	}
