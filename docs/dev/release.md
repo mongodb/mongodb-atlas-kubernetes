@@ -153,4 +153,21 @@ release version.
 
 # Post Release actions
 
-Following the instructions above the release is completed, but the AKO repo is left using a `helm-charts/` submodule which is not pointing to the latest released Helm Chart. Make a PR to update that submodule.
+Following the instructions above the release is completed, but the AKO repo is left using a `helm-charts/` submodule which is not pointing to the latest released Helm Chart. Make a PR to update that submodule:
+```
+cd helm-charts
+git pull
+```
+Checkout to the branch for the release:
+```
+git checkout mongodb-atlas-kubernetes-<VERSION>
+```
+Return up to the AKO repo, and create a new branch & PR with the newer submodule:
+```
+cd ..
+git checkout -b update-helm-submodule-<VERSION>
+git add helm-charts
+git push
+```
+
+If the release is a new minor version, then the CLI must be updated with the new version (and any new CRDs) [here](https://github.com/mongodb/mongodb-atlas-cli/blob/master/internal/kubernetes/operator/features/crds.go).
