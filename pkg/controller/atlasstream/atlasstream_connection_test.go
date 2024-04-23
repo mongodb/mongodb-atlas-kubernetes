@@ -55,6 +55,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 						Name:      "my-sample-connection2",
 						Namespace: "default",
 					},
+					{
+						Name:      "my-sample-connection4",
+						Namespace: "default",
+					},
 				},
 			},
 		}
@@ -78,11 +82,21 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				ConnectionType: "Sample",
 			},
 		}
+		streamConnection4 := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-sample-connection4",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamConnectionSpec{
+				Name:           "sample-connection4",
+				ConnectionType: "Sample",
+			},
+		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(project, streamInstance, streamConnection1, streamConnection2).
+			WithObjects(project, streamInstance, streamConnection1, streamConnection2, streamConnection4).
 			Build()
 		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
@@ -141,6 +155,10 @@ func TestHandleConnectionRegistry(t *testing.T) {
 						},
 						{
 							Name: pointer.MakePtr("sample-connection3"),
+							Type: pointer.MakePtr("Sample"),
+						},
+						{
+							Name: pointer.MakePtr("sample-connection4"),
 							Type: pointer.MakePtr("Sample"),
 						},
 					},
@@ -1015,7 +1033,7 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 
 		ok, err := hasStreamConnectionChanged(
 			&akoConnection,
-			atlasConnection,
+			&atlasConnection,
 			func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 				return nil, errors.New("failed to map connection")
 			},
@@ -1039,7 +1057,7 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 
 		ok, err := hasStreamConnectionChanged(
 			&akoConnection,
-			atlasConnection,
+			&atlasConnection,
 			func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 				return &admin.StreamsConnection{
 					Name: pointer.MakePtr("sample-connection"),
@@ -1073,7 +1091,7 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 
 		ok, err := hasStreamConnectionChanged(
 			&akoConnection,
-			atlasConnection,
+			&atlasConnection,
 			func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 				return &admin.StreamsConnection{
 					Name:        pointer.MakePtr("cluster-connection"),

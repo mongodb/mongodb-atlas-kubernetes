@@ -3,7 +3,6 @@ package atlasstream
 import (
 	"context"
 	"errors"
-	"go.uber.org/zap/zaptest/observer"
 	"net/http"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20231115008/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -982,8 +982,41 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 	})
 
 	t.Run("should return slice of requests for instances", func(t *testing.T) {
-		reconciler := &AtlasStreamsInstanceReconciler{}
+		instance1 := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance1",
+				Namespace: "default",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance1",
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "connection",
+						Namespace: "default",
+					},
+				},
+			},
+		}
+		instance2 := &akov2.AtlasStreamInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance2",
+				Namespace: "other-ns",
+			},
+			Spec: akov2.AtlasStreamInstanceSpec{
+				Name: "instance2",
+				ConnectionRegistry: []common.ResourceRefNamespaced{
+					{
+						Name:      "connection",
+						Namespace: "default",
+					},
+				},
+			},
+		}
 		connection := &akov2.AtlasStreamConnection{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "connection",
+				Namespace: "default",
+			},
 			Status: status.AtlasStreamConnectionStatus{
 				Instances: []common.ResourceRefNamespaced{
 					{
@@ -997,6 +1030,17 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 				},
 			},
 		}
+		testScheme := runtime.NewScheme()
+		assert.NoError(t, akov2.AddToScheme(testScheme))
+		k8sClient := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(connection, instance1, instance2).
+			WithIndex(&akov2.AtlasStreamInstance{}, ".spec.connectionRegistry", instanceIndexer).
+			Build()
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
+		}
 
 		requests := reconciler.findStreamInstancesForStreamConnection(context.Background(), connection)
 		assert.Equal(
@@ -1004,13 +1048,13 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			[]ctrl.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Namespace: "ns1",
+						Namespace: "default",
 						Name:      "instance1",
 					},
 				},
 				{
 					NamespacedName: types.NamespacedName{
-						Namespace: "ns2",
+						Namespace: "other-ns",
 						Name:      "instance2",
 					},
 				},

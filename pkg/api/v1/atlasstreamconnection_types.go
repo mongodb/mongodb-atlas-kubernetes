@@ -42,7 +42,7 @@ type StreamsKafkaConnection struct {
 	// Properties for the secure transport connection to Kafka. For SSL, this can include the trusted certificate to use
 	Security StreamsKafkaSecurity `json:"security"`
 	// A map of Kafka key-value pairs for optional configuration. This is a flat object, and keys can have '.' characters
-	Config map[string]string `json:"config"`
+	Config map[string]string `json:"config,omitempty"`
 }
 
 type StreamsKafkaAuthentication struct {

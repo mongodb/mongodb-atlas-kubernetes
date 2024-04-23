@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/atlas-sdk/v20231115008/admin"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -129,26 +130,43 @@ func hasChanged(streamInstance *akov2.AtlasStreamInstance, atlasStreamInstance *
 }
 
 func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	err := mgr.GetFieldIndexer().IndexField(context.Background(), &akov2.AtlasStreamInstance{}, ".spec.connectionRegistry", instanceIndexer)
+	if err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("AtlasStreamInstance").
 		For(&akov2.AtlasStreamInstance{}, builder.WithPredicates(r.GlobalPredicates...)).
 		Watches(
 			&akov2.AtlasStreamConnection{},
 			handler.EnqueueRequestsFromMapFunc(r.findStreamInstancesForStreamConnection),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Complete(r)
 }
 
-func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(_ context.Context, obj client.Object) []reconcile.Request {
+func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(ctx context.Context, obj client.Object) []reconcile.Request {
 	streamConnection, ok := obj.(*akov2.AtlasStreamConnection)
 	if !ok {
 		r.Log.Warnf("watching AtlasStreamConnection but got %T", obj)
 		return nil
 	}
 
-	requests := make([]reconcile.Request, 0, len(streamConnection.Status.Instances))
-	for i := range streamConnection.Status.Instances {
-		item := streamConnection.Status.Instances[i]
+	atlasStreamInstances := &akov2.AtlasStreamInstanceList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(".spec.connectionRegistry", client.ObjectKeyFromObject(streamConnection).String()),
+	}
+
+	err := r.Client.List(ctx, atlasStreamInstances, listOps)
+	if err != nil {
+		r.Log.Errorf("failed to list Atlas stream instances: %e", err)
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, 0, len(atlasStreamInstances.Items))
+	for i := range atlasStreamInstances.Items {
+		item := atlasStreamInstances.Items[i]
 		requests = append(
 			requests,
 			reconcile.Request{
@@ -161,4 +179,20 @@ func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(
 	}
 
 	return requests
+}
+
+func instanceIndexer(object client.Object) []string {
+	streamInstance := object.(*akov2.AtlasStreamInstance)
+	if len(streamInstance.Spec.ConnectionRegistry) == 0 {
+		return nil
+	}
+
+	registry := streamInstance.Spec.ConnectionRegistry
+	indices := make([]string, 0, len(registry))
+	for i := range registry {
+		key := registry[i].GetObject(streamInstance.GetNamespace())
+		indices = append(indices, key.String())
+	}
+
+	return indices
 }

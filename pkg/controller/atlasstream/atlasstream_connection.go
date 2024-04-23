@@ -141,7 +141,7 @@ func (r *AtlasStreamsInstanceReconciler) sortConnectionRegistryTasks(
 			continue
 		}
 
-		hasConnectionChanged, err := hasStreamConnectionChanged(&akoConnection, *atlasConnection, streamConnectionToAtlas(ctx.Context, r.Client))
+		hasConnectionChanged, err := hasStreamConnectionChanged(&akoConnection, atlasConnection, streamConnectionToAtlas(ctx.Context, r.Client))
 		if err != nil {
 			return nil, err
 		}
@@ -241,11 +241,24 @@ func getSecretData(ctx context.Context, k8sClient client.Client, ref client.Obje
 
 func hasStreamConnectionChanged(
 	streamConnection *akov2.AtlasStreamConnection,
-	atlasStreamConnection admin.StreamsConnection,
+	atlasStreamConnection *admin.StreamsConnection,
 	mapper streamConnectionMapper,
 ) (bool, error) {
 	// Unset API metadata for comparison
 	atlasStreamConnection.Links = nil
+
+	if _, ok := atlasStreamConnection.GetDbRoleToExecuteOk(); ok {
+		atlasStreamConnection.DbRoleToExecute.Links = nil
+	}
+
+	if _, ok := atlasStreamConnection.GetAuthenticationOk(); ok {
+		atlasStreamConnection.Authentication.Links = nil
+	}
+
+	if _, ok := atlasStreamConnection.GetSecurityOk(); ok {
+		atlasStreamConnection.Security.Links = nil
+	}
+
 	connection, err := mapper(streamConnection)
 	if err != nil {
 		return false, err
@@ -254,5 +267,5 @@ func hasStreamConnectionChanged(
 		connection.Authentication.Password = nil
 	}
 
-	return !reflect.DeepEqual(*connection, atlasStreamConnection), nil
+	return !reflect.DeepEqual(*connection, *atlasStreamConnection), nil
 }

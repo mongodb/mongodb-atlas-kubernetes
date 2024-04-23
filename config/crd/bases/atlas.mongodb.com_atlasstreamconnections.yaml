@@ -143,7 +143,6 @@ spec:
                 required:
                 - authentication
                 - bootstrapServers
-                - config
                 - security
                 type: object
               name:
