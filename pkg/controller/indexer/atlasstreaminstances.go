@@ -3,8 +3,9 @@ package indexer
 import (
 	"context"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/api/v1"
 )
 
 const (
