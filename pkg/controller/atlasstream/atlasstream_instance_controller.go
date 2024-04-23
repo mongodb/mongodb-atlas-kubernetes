@@ -142,18 +142,22 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager) erro
 func (r *AtlasStreamsInstanceReconciler) findStreamInstancesForStreamConnection(_ context.Context, obj client.Object) []reconcile.Request {
 	streamConnection, ok := obj.(*akov2.AtlasStreamConnection)
 	if !ok {
-		r.Log.Warnf("watching AtlasStreamConnection but got %t", obj)
+		r.Log.Warnf("watching AtlasStreamConnection but got %T", obj)
 		return nil
 	}
 
 	requests := make([]reconcile.Request, 0, len(streamConnection.Status.Instances))
-	for i, item := range streamConnection.Status.Instances {
-		requests[i] = reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name:      item.Name,
-				Namespace: item.Namespace,
+	for i := range streamConnection.Status.Instances {
+		item := streamConnection.Status.Instances[i]
+		requests = append(
+			requests,
+			reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
 			},
-		}
+		)
 	}
 
 	return requests

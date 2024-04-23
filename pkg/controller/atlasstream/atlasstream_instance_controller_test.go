@@ -3,6 +3,7 @@ package atlasstream
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap/zaptest/observer"
 	"net/http"
 	"testing"
 
@@ -964,5 +965,57 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		assert.Equal(t, corev1.ConditionFalse, conditions[2].Status)
 		assert.Equal(t, string(workflow.StreamInstanceSetupInProgress), conditions[2].Reason)
 		assert.Equal(t, "configuring stream instance in Atlas", conditions[2].Message)
+	})
+}
+
+func TestFindStreamInstancesForStreamConnection(t *testing.T) {
+	t.Run("should fail when watching wrong object", func(t *testing.T) {
+		core, logs := observer.New(zap.DebugLevel)
+		reconciler := &AtlasStreamsInstanceReconciler{
+			Log: zap.New(core).Sugar(),
+		}
+
+		assert.Nil(t, reconciler.findStreamInstancesForStreamConnection(context.Background(), &akov2.AtlasProject{}))
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, zap.WarnLevel, logs.All()[0].Level)
+		assert.Equal(t, "watching AtlasStreamConnection but got *v1.AtlasProject", logs.All()[0].Message)
+	})
+
+	t.Run("should return slice of requests for instances", func(t *testing.T) {
+		reconciler := &AtlasStreamsInstanceReconciler{}
+		connection := &akov2.AtlasStreamConnection{
+			Status: status.AtlasStreamConnectionStatus{
+				Instances: []common.ResourceRefNamespaced{
+					{
+						Namespace: "ns1",
+						Name:      "instance1",
+					},
+					{
+						Namespace: "ns2",
+						Name:      "instance2",
+					},
+				},
+			},
+		}
+
+		requests := reconciler.findStreamInstancesForStreamConnection(context.Background(), connection)
+		assert.Equal(
+			t,
+			[]ctrl.Request{
+				{
+					NamespacedName: types.NamespacedName{
+						Namespace: "ns1",
+						Name:      "instance1",
+					},
+				},
+				{
+					NamespacedName: types.NamespacedName{
+						Namespace: "ns2",
+						Name:      "instance2",
+					},
+				},
+			},
+			requests,
+		)
 	})
 }
